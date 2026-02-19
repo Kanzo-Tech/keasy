@@ -1,0 +1,126 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import {
+  getNodeRadius,
+  getGraphScale,
+  drawNode,
+  drawLink,
+  buildNodeTooltip,
+} from "@/lib/graph-rendering";
+import { usePreferences } from "@/components/preferences-provider";
+import { GraphLegend } from "@/components/graph-legend";
+import type { GraphData, GraphNode } from "@/lib/types";
+
+const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
+  ssr: false,
+});
+
+interface ForceGraphProps {
+  data: GraphData;
+  selectedId?: string;
+  onNodeClick?: (node: GraphNode) => void;
+  legendExtra?: React.ReactNode;
+}
+
+export function ForceGraph({
+  data,
+  selectedId,
+  onNodeClick,
+  legendExtra,
+}: ForceGraphProps) {
+  const { preferences } = usePreferences();
+  const scale = useMemo(
+    () => getGraphScale(preferences.font_size),
+    [preferences.font_size],
+  );
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const graphRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(800);
+  const [height, setHeight] = useState(500);
+
+  // Responsive size
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(([entry]) => {
+      setWidth(Math.floor(entry.contentRect.width));
+      setHeight(Math.floor(entry.contentRect.height));
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  // Zoom to fit when data changes
+  useEffect(() => {
+    if (data && data.nodes.length > 0) {
+      const timer = setTimeout(() => {
+        graphRef.current?.zoomToFit(400, 60);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [data]);
+
+  const nodeCanvasObject = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+      drawNode(node, ctx, globalScale, selectedId, scale);
+    },
+    [selectedId, scale],
+  );
+
+  const linkCanvasObject = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+      drawLink(link, ctx, globalScale, scale);
+    },
+    [scale],
+  );
+
+  const nodeTooltip = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (node: any): string => buildNodeTooltip(node),
+    [],
+  );
+
+  return (
+    <div
+      ref={containerRef}
+      className="flex-1 min-h-0 rounded-md border border-border overflow-hidden bg-background flex flex-col"
+    >
+      <GraphLegend extra={legendExtra} />
+      <ForceGraph2D
+        ref={graphRef}
+        graphData={data}
+        width={width}
+        height={Math.max(height - 36, 200)}
+        backgroundColor="transparent"
+        nodeCanvasObject={nodeCanvasObject}
+        nodePointerAreaPaint={(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          node: any,
+          color: string,
+          ctx: CanvasRenderingContext2D,
+          globalScale: number,
+        ) => {
+          const radius = getNodeRadius(node.group, globalScale, scale);
+          ctx.beginPath();
+          ctx.arc(node.x ?? 0, node.y ?? 0, radius, 0, 2 * Math.PI);
+          ctx.fillStyle = color;
+          ctx.fill();
+        }}
+        nodeLabel={nodeTooltip}
+        linkCanvasObject={linkCanvasObject}
+        cooldownTicks={100}
+        onNodeClick={
+          onNodeClick
+            ? (node) => onNodeClick(node as unknown as GraphNode)
+            : () => graphRef.current?.zoomToFit(400, 60)
+        }
+      />
+    </div>
+  );
+}

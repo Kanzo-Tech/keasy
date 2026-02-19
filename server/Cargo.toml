@@ -1,0 +1,48 @@
+[package]
+name = "keasy-server"
+version = "0.1.0"
+description = "Fossil HTTP server for API-driven pipeline execution"
+homepage = ""
+repository = ""
+documentation = ""
+license = ""
+categories = ["database"]
+keywords = [""]
+authors = ["Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>"]
+edition = "2024"
+rust-version = "1.90.0"
+
+[dependencies]
+jiff = "0.2"
+tokio = { version = "1", features = ["full"] }
+axum = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4"] }
+dashmap = "6"
+tower-http = { version = "0.6", features = ["trace", "cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+oxrdf = "0.3.3"
+oxrdfio = "0.2.3"
+oxigraph = "0.5"
+object_store = { version = "0.12", features = ["aws", "gcp", "azure"] }
+futures = "0.3"
+rudof_lib = "0.1"
+url = "2"
+aes-gcm = "0.10"
+pbkdf2 = { version = "0.12", features = ["hmac"] }
+sha2 = "0.10"
+getrandom = "0.2"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+secrecy = { version = "0.10", features = ["serde"] }
+subtle = "2"
+fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git" }
+fossil-stdlib = { git = "https://github.com/angelip2303/fossil-lang.git" }
+fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git" }
+fossil-ifc = { git = "https://github.com/angelip2303/fossil-lang.git" }
+
+[profile.release]
+lto = "thin"
+panic = "abort"
+strip = "debuginfo"

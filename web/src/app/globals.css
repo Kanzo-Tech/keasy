@@ -1,0 +1,226 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+:root {
+  --radius: 0.625rem;
+  --font-size-mono: 0.75rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --accent-preview-neutral: oklch(0.205 0 0);
+  --accent-preview-blue: oklch(0.488 0.243 264.376);
+  --accent-preview-green: oklch(0.527 0.154 150.069);
+  --accent-preview-violet: oklch(0.536 0.245 292.756);
+  --accent-preview-orange: oklch(0.646 0.222 41.116);
+  --accent-preview-rose: oklch(0.577 0.245 27.325);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --accent-preview-neutral: oklch(0.922 0 0);
+  --accent-preview-blue: oklch(0.623 0.214 259.815);
+  --accent-preview-green: oklch(0.696 0.17 162.48);
+  --accent-preview-violet: oklch(0.627 0.265 303.9);
+  --accent-preview-orange: oklch(0.769 0.188 70.08);
+  --accent-preview-rose: oklch(0.645 0.246 16.439);
+}
+
+/* ── Accent color presets — override --primary family ── */
+
+/* Blue */
+:root[data-accent="blue"] {
+  --primary: oklch(0.488 0.243 264.376);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.488 0.243 264.376);
+}
+.dark:is(:root[data-accent="blue"] *),
+:root[data-accent="blue"].dark {
+  --primary: oklch(0.623 0.214 259.815);
+  --primary-foreground: oklch(0.145 0 0);
+  --ring: oklch(0.623 0.214 259.815);
+}
+
+/* Green */
+:root[data-accent="green"] {
+  --primary: oklch(0.527 0.154 150.069);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.527 0.154 150.069);
+}
+.dark:is(:root[data-accent="green"] *),
+:root[data-accent="green"].dark {
+  --primary: oklch(0.696 0.17 162.48);
+  --primary-foreground: oklch(0.145 0 0);
+  --ring: oklch(0.696 0.17 162.48);
+}
+
+/* Violet */
+:root[data-accent="violet"] {
+  --primary: oklch(0.536 0.245 292.756);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.536 0.245 292.756);
+}
+.dark:is(:root[data-accent="violet"] *),
+:root[data-accent="violet"].dark {
+  --primary: oklch(0.627 0.265 303.9);
+  --primary-foreground: oklch(0.145 0 0);
+  --ring: oklch(0.627 0.265 303.9);
+}
+
+/* Orange */
+:root[data-accent="orange"] {
+  --primary: oklch(0.646 0.222 41.116);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.646 0.222 41.116);
+}
+.dark:is(:root[data-accent="orange"] *),
+:root[data-accent="orange"].dark {
+  --primary: oklch(0.769 0.188 70.08);
+  --primary-foreground: oklch(0.145 0 0);
+  --ring: oklch(0.769 0.188 70.08);
+}
+
+/* Rose */
+:root[data-accent="rose"] {
+  --primary: oklch(0.577 0.245 27.325);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.577 0.245 27.325);
+}
+.dark:is(:root[data-accent="rose"] *),
+:root[data-accent="rose"].dark {
+  --primary: oklch(0.645 0.246 16.439);
+  --primary-foreground: oklch(0.145 0 0);
+  --ring: oklch(0.645 0.246 16.439);
+}
+
+/* ── Font size presets ── */
+
+[data-font-size="compact"]     { font-size: 14px; }
+[data-font-size="comfortable"] { font-size: 18px; }
+
+[data-mono-font-size="compact"]     { --font-size-mono: 0.6875rem; } /* 11px */
+[data-mono-font-size="comfortable"] { --font-size-mono: 0.8125rem; } /* 13px */
+
+/* ── Font family presets — override --font-sans ── */
+
+[data-font="inter"] {
+  --font-sans: var(--font-inter);
+}
+
+[data-font="system"] {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ── Monospace font presets — override --font-mono ── */
+
+[data-mono-font="jetbrains-mono"] {
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+[data-mono-font="system"] {
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  code, pre, .font-mono {
+    font-size: var(--font-size-mono);
+  }
+}
+
+/* ── Code block line numbers ── */
+
+[data-shiki] code {
+  counter-reset: line;
+}
+[data-shiki] code .line::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 2rem;
+  margin-right: 1rem;
+  text-align: right;
+  color: oklch(0.556 0 0 / 40%);
+  user-select: none;
+}
+
+/* ── Code block fill remaining height ── */
+
+[data-shiki] pre {
+  flex: 1;
+  min-height: 0;
+}

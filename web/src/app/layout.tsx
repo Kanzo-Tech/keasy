@@ -47,8 +47,8 @@ export default function RootLayout({
               <PreferencesProvider>
             <div className="flex h-full">
               <Nav />
-              <main className="flex-1 min-h-0 min-w-0 overflow-y-auto">
-                <div className="max-w-5xl mx-auto p-6">{children}</div>
+              <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-y-auto">
+                <div className="max-w-5xl mx-auto w-full flex-1 p-6">{children}</div>
               </main>
             </div>
             <Toaster position="bottom-right" closeButton />

@@ -4,8 +4,9 @@ import { MetaItem } from "@/components/meta-item";
 import { PipelineSection } from "@/components/pipeline-section";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { getErrorInfo } from "@/lib/error-codes";
 import { formatDuration } from "@/lib/formatters";
-import type { Job } from "@/lib/types";
+import type { Job, JobError } from "@/lib/types";
 
 interface OverviewContentProps {
   job: Job;
@@ -13,6 +14,33 @@ interface OverviewContentProps {
   hasPipeline: boolean;
   isTerminal: boolean;
   onCancel: () => void;
+}
+
+function JobErrorBlock({ error }: { error: JobError }) {
+  const info = getErrorInfo(error.code);
+  return (
+    <div className="mt-4 flex flex-col gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+      <div className="flex items-start gap-3">
+        <AlertCircle className="size-4 mt-0.5 shrink-0" />
+        <span className="text-sm">{info.message}</span>
+      </div>
+      {info.link && (
+        <Button variant="outline" size="sm" className="w-fit" asChild>
+          <Link href={info.link.href}>{info.link.label}</Link>
+        </Button>
+      )}
+      {error.detail && (
+        <Collapsible>
+          <CollapsibleTrigger className="text-xs underline underline-offset-2 opacity-70 hover:opacity-100">
+            Technical details
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <pre className="mt-2 whitespace-pre-wrap font-mono text-xs opacity-70">{error.detail}</pre>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+    </div>
+  );
 }
 
 export function OverviewContent({
@@ -44,29 +72,7 @@ export function OverviewContent({
         <PipelineSection pipeline={job.pipeline} className="flex-1 min-h-0 flex flex-col" />
       )}
 
-      {job.error && (
-        <div className="mt-4 flex flex-col gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="size-4 mt-0.5 shrink-0" />
-            <pre className="whitespace-pre-wrap font-mono text-sm">{job.error.message}</pre>
-          </div>
-          {job.error.code.startsWith("CLOUD_") && (
-            <Button variant="outline" size="sm" className="w-fit" asChild>
-              <Link href="/settings/cloud-accounts">Go to Cloud Accounts</Link>
-            </Button>
-          )}
-          {job.error.detail && (
-            <Collapsible>
-              <CollapsibleTrigger className="text-xs underline underline-offset-2 opacity-70 hover:opacity-100">
-                Technical details
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <pre className="mt-2 whitespace-pre-wrap font-mono text-xs opacity-70">{job.error.detail}</pre>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
-        </div>
-      )}
+      {job.error && <JobErrorBlock error={job.error} />}
 
       {!isTerminal && (
         <Button variant="destructive" onClick={onCancel} className="mt-4 w-fit">

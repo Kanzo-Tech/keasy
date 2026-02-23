@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS messages (
     content TEXT NOT NULL,
     sparql TEXT,
     data TEXT,
+    code TEXT,
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);

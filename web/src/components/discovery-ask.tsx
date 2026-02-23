@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import useSWR from "swr";
 import {
+  ApiError,
   askDiscover,
   listConversations,
   getMessages,
@@ -22,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CodeView } from "@/components/code-view";
+import { ErrorAlert } from "@/components/ui/error-alert";
 import { Markdown } from "@/components/ui/markdown";
 import {
   Table,
@@ -31,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { isError } from "@/lib/error-codes";
 import type {
   Conversation,
   ConversationMessage,
@@ -47,9 +50,18 @@ function MessageEntry({ msg }: { msg: ConversationMessage }) {
     return <div className="text-sm font-medium break-words">{msg.content}</div>;
   }
 
-  const isError = !msg.sparql && !msg.data;
+  const hasError = isError(msg.code);
   const hasData = msg.data && msg.data.rows.length > 0;
   const hasEmptyData = msg.data && msg.data.rows.length === 0;
+
+  if (hasError) {
+    return (
+      <div className="space-y-2 min-w-0">
+        <ErrorAlert code={msg.code!} />
+        {msg.sparql && <CodeView code={msg.sparql} lang="sparql" />}
+      </div>
+    );
+  }
 
   if (hasEmptyData) {
     return (
@@ -63,14 +75,7 @@ function MessageEntry({ msg }: { msg: ConversationMessage }) {
   return (
     <div className="space-y-2 min-w-0">
       {msg.content && (
-        isError ? (
-          <p className="text-sm leading-relaxed break-words text-destructive">
-            <AlertCircle size={14} className="inline mr-1.5 -mt-0.5" />
-            {msg.content}
-          </p>
-        ) : (
-          <Markdown className="text-sm leading-relaxed break-words">{msg.content}</Markdown>
-        )
+        <Markdown className="text-sm leading-relaxed break-words">{msg.content}</Markdown>
       )}
 
       {(hasData || msg.sparql) && (
@@ -252,16 +257,17 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
         content: response.answer,
         sparql: response.sparql,
         data: response.data,
+        code: response.code,
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Ask failed";
       const assistantMsg: ConversationMessage = {
         id: crypto.randomUUID(),
         conversation_id: activeConversationId ?? "",
         role: "assistant",
-        content: msg,
+        content: err instanceof Error ? err.message : "Ask failed",
+        code: err instanceof ApiError ? err.code : "UNKNOWN",
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, assistantMsg]);

@@ -24,12 +24,20 @@ import type {
   UpdateConnectionRequest,
 } from "./types";
 
+export class ApiError extends Error {
+  constructor(public readonly code: string, message: string) {
+    super(message);
+  }
+}
+
 async function throwResponseError(
   res: Response,
   fallback: string
 ): Promise<never> {
   const body = await res.json().catch(() => null);
-  throw new Error(body?.error?.message ?? `${fallback} (${res.status})`);
+  const code = body?.error?.code ?? "UNKNOWN";
+  const message = body?.error?.message ?? `${fallback} (${res.status})`;
+  throw new ApiError(code, message);
 }
 
 async function request<T>(path: string, method: string, body?: unknown): Promise<T> {

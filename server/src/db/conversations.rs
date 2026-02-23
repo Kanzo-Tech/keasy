@@ -24,6 +24,8 @@ pub struct ConversationMessage {
     pub sparql: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<TabularData>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code: Option<String>,
     pub created_at: String,
 }
 
@@ -70,6 +72,7 @@ impl Database {
         content: &str,
         sparql: Option<&str>,
         data: Option<&TabularData>,
+        code: Option<&str>,
     ) -> ConversationMessage {
         let msg = ConversationMessage {
             id: uuid::Uuid::new_v4().to_string(),
@@ -78,13 +81,14 @@ impl Database {
             content: content.to_string(),
             sparql: sparql.map(|s| s.to_string()),
             data: data.cloned(),
+            code: code.map(|s| s.to_string()),
             created_at: now_iso8601(),
         };
         let data_json = msg.data.as_ref().map(|d| serde_json::to_string(d).unwrap());
         let conn = self.conn.lock().await;
         let _ = conn.execute(
-            "INSERT INTO messages (id, conversation_id, role, content, sparql, data, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            "INSERT INTO messages (id, conversation_id, role, content, sparql, data, code, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             params![
                 msg.id,
                 msg.conversation_id,
@@ -92,6 +96,7 @@ impl Database {
                 msg.content,
                 msg.sparql,
                 data_json,
+                msg.code,
                 msg.created_at,
             ],
         );
@@ -102,7 +107,7 @@ impl Database {
         let conn = self.conn.lock().await;
         let mut stmt = conn
             .prepare(
-                "SELECT id, conversation_id, role, content, sparql, data, created_at
+                "SELECT id, conversation_id, role, content, sparql, data, code, created_at
                  FROM messages WHERE conversation_id = ?1 ORDER BY created_at ASC",
             )
             .expect("prepare get messages");
@@ -115,7 +120,8 @@ impl Database {
                 content: row.get(3)?,
                 sparql: row.get(4)?,
                 data: data_json.and_then(|j| serde_json::from_str(&j).ok()),
-                created_at: row.get(6)?,
+                code: row.get(6)?,
+                created_at: row.get(7)?,
             })
         })
         .expect("query messages")

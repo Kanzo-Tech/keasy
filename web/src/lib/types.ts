@@ -215,6 +215,7 @@ export interface AskResponse {
   sparql?: string;
   data?: TabularData;
   conversation_id?: string;
+  code: string;
 }
 
 export interface Conversation {
@@ -231,6 +232,7 @@ export interface ConversationMessage {
   content: string;
   sparql?: string;
   data?: TabularData;
+  code?: string;
   created_at: string;
 }
 

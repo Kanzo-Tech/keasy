@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 
 use std::fmt::Write as FmtWrite;
 
+use tracing::warn;
+
 use crate::AppState;
 use crate::ai::client::ask_llm;
 use crate::db::conversations::{Conversation, ConversationMessage};
@@ -30,6 +32,7 @@ pub struct AskResponse {
     pub data: Option<crate::graph::rdf_graph::TabularData>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conversation_id: Option<String>,
+    pub code: String,
 }
 
 pub async fn ask_discover(
@@ -69,7 +72,7 @@ pub async fn ask_discover(
         }
     };
 
-    state.db.add_message(&conversation_id, "user", &req.question, None, None).await;
+    state.db.add_message(&conversation_id, "user", &req.question, None, None, None).await;
 
     let sparql_system = format!(
         "You are a SPARQL query assistant for an RDF knowledge graph.\n\
@@ -86,13 +89,15 @@ pub async fn ask_discover(
     let raw = match ask_llm(&ai_settings, &sparql_system, &req.question).await {
         Ok(s) => s.trim().to_string(),
         Err(e) => {
-            let answer = format!("Failed to generate query: {e}");
-            state.db.add_message(&conversation_id, "assistant", &answer, None, None).await;
+            warn!("LLM call failed: {e}");
+            let answer = "Something went wrong while generating a query. Please try again.".to_string();
+            state.db.add_message(&conversation_id, "assistant", &answer, None, None, Some("LLM_FAILED")).await;
             return Json(AskResponse {
                 answer,
                 sparql: None,
                 data: None,
                 conversation_id: Some(conversation_id),
+                code: "LLM_FAILED".to_string(),
             }).into_response();
         }
     };
@@ -110,52 +115,31 @@ pub async fn ask_discover(
         Ok(p) => p,
         Err(_) => {
             let answer = "I wasn't able to understand the data well enough to generate a query. Could you rephrase your question?".to_string();
-            state.db.add_message(&conversation_id, "assistant", &answer, None, None).await;
+            state.db.add_message(&conversation_id, "assistant", &answer, None, None, Some("PARSE_FAILED")).await;
             return Json(AskResponse {
                 answer,
                 sparql: None,
                 data: None,
                 conversation_id: Some(conversation_id),
+                code: "PARSE_FAILED".to_string(),
             }).into_response();
         }
     };
 
     let sparql = format_sparql(&parsed.sparql);
 
-    let exec_result = match graph.sparql_select(&sparql) {
-        Ok(data) => Ok(data),
-        Err(first_err) => {
-            let retry_prompt = format!(
-                "The SPARQL query you generated failed with this error:\n{first_err}\n\n\
-                 Original query:\n{sparql}\n\n\
-                 Please fix the query and respond with the same JSON format."
-            );
-            match ask_llm(&ai_settings, &sparql_system, &retry_prompt).await {
-                Ok(retry_raw) => {
-                    let retry_str = strip_markdown_fences(&retry_raw);
-                    match serde_json::from_str::<LlmResponse>(retry_str) {
-                        Ok(retry_parsed) => graph.sparql_select(&retry_parsed.sparql),
-                        Err(_) => Err(first_err),
-                    }
-                }
-                Err(_) => Err(first_err),
-            }
-        }
-    };
-
-    let (sparql_used, data) = match exec_result {
-        Ok(data) => (sparql.clone(), Some(data)),
+    let data = match graph.sparql_select(&sparql) {
+        Ok(data) => Some(data),
         Err(err) => {
-            let answer = format!(
-                "I generated a query but it didn't work against your data. \
-                 Try rephrasing your question.\n\nError: {err}"
-            );
-            state.db.add_message(&conversation_id, "assistant", &answer, Some(&sparql), None).await;
+            warn!("SPARQL execution failed: {err}");
+            let answer = "I generated a query but it didn't work against your data. Try rephrasing your question.".to_string();
+            state.db.add_message(&conversation_id, "assistant", &answer, Some(&sparql), None, Some("SPARQL_FAILED")).await;
             return Json(AskResponse {
                 answer,
                 sparql: Some(sparql),
                 data: None,
                 conversation_id: Some(conversation_id),
+                code: "SPARQL_FAILED".to_string(),
             }).into_response();
         }
     };
@@ -185,13 +169,14 @@ pub async fn ask_discover(
         "No data matched your query. Try rephrasing your question.".to_string()
     };
 
-    state.db.add_message(&conversation_id, "assistant", &answer, Some(&sparql_used), data.as_ref()).await;
+    state.db.add_message(&conversation_id, "assistant", &answer, Some(&sparql), data.as_ref(), Some("SUCCESS")).await;
 
     Json(AskResponse {
         answer,
-        sparql: Some(sparql_used),
+        sparql: Some(sparql),
         data,
         conversation_id: Some(conversation_id),
+        code: "SUCCESS".to_string(),
     })
     .into_response()
 }

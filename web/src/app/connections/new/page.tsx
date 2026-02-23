@@ -121,36 +121,32 @@ function NewConnectionContent() {
             <Label
               htmlFor="type-data"
               className={cn(
-                "flex items-start gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer",
+                "flex flex-col items-center justify-center text-center gap-1 rounded-md border p-3 transition-colors cursor-pointer",
                 connectionKind === "data"
-                  ? "border-primary/50 bg-primary/5"
-                  : "border-border hover:border-muted-foreground/30",
+                  ? "border-primary bg-accent"
+                  : "border-border hover:bg-accent/50",
               )}
             >
-              <RadioGroupItem value="data" id="type-data" className="mt-0.5" />
-              <div>
-                <p className="text-sm font-medium leading-none">Data</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Read/write data for fossil pipelines
-                </p>
-              </div>
+              <RadioGroupItem value="data" id="type-data" className="sr-only" />
+              <p className="text-sm font-medium leading-none">Data</p>
+              <p className="text-xs text-muted-foreground">
+                Read/write data for fossil pipelines
+              </p>
             </Label>
             <Label
               htmlFor="type-vocab"
               className={cn(
-                "flex items-start gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer",
+                "flex flex-col items-center justify-center text-center gap-1 rounded-md border p-3 transition-colors cursor-pointer",
                 connectionKind === "vocab"
-                  ? "border-primary/50 bg-primary/5"
-                  : "border-border hover:border-muted-foreground/30",
+                  ? "border-primary bg-accent"
+                  : "border-border hover:bg-accent/50",
               )}
             >
-              <RadioGroupItem value="vocab" id="type-vocab" className="mt-0.5" />
-              <div>
-                <p className="text-sm font-medium leading-none">Vocabulary</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  ShEx/SHACL shapes for validation
-                </p>
-              </div>
+              <RadioGroupItem value="vocab" id="type-vocab" className="sr-only" />
+              <p className="text-sm font-medium leading-none">Vocabulary</p>
+              <p className="text-xs text-muted-foreground">
+                ShEx/SHACL shapes for validation
+              </p>
             </Label>
           </RadioGroup>
         </FormField>
@@ -164,32 +160,28 @@ function NewConnectionContent() {
             <Label
               htmlFor="loc-cloud"
               className={cn(
-                "flex items-start gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer",
+                "flex flex-col items-center justify-center text-center gap-1 rounded-md border p-3 transition-colors cursor-pointer",
                 locationType === "cloud"
-                  ? "border-primary/50 bg-primary/5"
-                  : "border-border hover:border-muted-foreground/30",
+                  ? "border-primary bg-accent"
+                  : "border-border hover:bg-accent/50",
               )}
             >
-              <RadioGroupItem value="cloud" id="loc-cloud" className="mt-0.5" />
-              <div>
-                <p className="text-sm font-medium leading-none">Cloud</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  S3, GCS, or Azure storage
-                </p>
-              </div>
+              <RadioGroupItem value="cloud" id="loc-cloud" className="sr-only" />
+              <p className="text-sm font-medium leading-none">Cloud</p>
+              <p className="text-xs text-muted-foreground">
+                S3, GCS, or Azure storage
+              </p>
             </Label>
             <ComingSoon placement="inline">
               <Label
                 htmlFor="loc-local"
-                className="flex items-start gap-3 rounded-lg border border-border p-3 text-left"
+                className="flex flex-col items-center justify-center text-center gap-1 rounded-md border border-border p-3"
               >
-                <RadioGroupItem value="local" id="loc-local" disabled className="mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium leading-none">Local</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Local filesystem path
-                  </p>
-                </div>
+                <RadioGroupItem value="local" id="loc-local" disabled className="sr-only" />
+                <p className="text-sm font-medium leading-none">Local</p>
+                <p className="text-xs text-muted-foreground">
+                  Local filesystem path
+                </p>
               </Label>
             </ComingSoon>
           </RadioGroup>

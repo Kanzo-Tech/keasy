@@ -30,6 +30,7 @@ interface ComboboxProps {
   emptyMessage?: string;
   disabled?: boolean;
   mono?: boolean;
+  className?: string;
 }
 
 export function Combobox({
@@ -41,6 +42,7 @@ export function Combobox({
   emptyMessage = "No results found.",
   disabled,
   mono,
+  className,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -53,7 +55,7 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between font-normal"
+          className={cn("w-full justify-between font-normal", className)}
           disabled={disabled}
         >
           <span className={cn("truncate", mono && "font-mono text-xs")}>

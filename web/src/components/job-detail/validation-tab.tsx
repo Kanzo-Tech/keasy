@@ -172,6 +172,20 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
       {result && (
         <div className="space-y-3 pt-6">
           <div className="flex items-center justify-between">
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              value={view}
+              onValueChange={(v) => { if (v) setView(v as "errors" | "valid"); }}
+            >
+              <ToggleGroupItem value="errors" className="text-[11px] h-6 px-2">
+                Errors
+              </ToggleGroupItem>
+              <ToggleGroupItem value="valid" className="text-[11px] h-6 px-2">
+                Valid
+              </ToggleGroupItem>
+            </ToggleGroup>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5 text-sm text-green-500">
                 <CheckCircle2 size={16} />
@@ -184,19 +198,6 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
                 </div>
               )}
             </div>
-            <ToggleGroup
-              type="single"
-              size="sm"
-              value={view}
-              onValueChange={(v) => { if (v) setView(v as "errors" | "valid"); }}
-            >
-              <ToggleGroupItem value="errors" className="text-[11px] h-6 px-2">
-                Errors
-              </ToggleGroupItem>
-              <ToggleGroupItem value="valid" className="text-[11px] h-6 px-2">
-                Valid
-              </ToggleGroupItem>
-            </ToggleGroup>
           </div>
 
           {view === "errors" && result.errors.length > 0 && (

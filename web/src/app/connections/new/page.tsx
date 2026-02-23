@@ -7,11 +7,13 @@ import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
 import useSWR, { useSWRConfig } from "swr";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { fetchSchema, fetchCloudAccounts, createConnection } from "@/lib/api";
+import Link from "next/link";
+import { fetchCloudAccounts, createConnection } from "@/lib/api";
+import { getProviderIcon } from "@/lib/provider-icons";
 import { PageHeader } from "@/components/page-header";
 import { FormField, FormActions } from "@/components/form-layout";
-import { CloudAccountPicker } from "@/components/cloud-account-picker";
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -42,20 +44,19 @@ function NewConnectionContent() {
 
   const { data, isLoading } = useSWR(
     "connection-new-init",
-    () => Promise.all([fetchSchema(), fetchCloudAccounts()]),
+    fetchCloudAccounts,
   );
   const showSkeleton = useDelayedLoading(isLoading);
-  const [schema, accounts] = data ?? [[], []];
+  const accounts = data ?? [];
 
   const [name, setName] = useState("");
   const [connectionKind, setConnectionKind] = useState<ConnectionKind>(initialType);
   const [locationType, setLocationType] = useState<LocationType>("cloud");
-  const [selectedAccount, setSelectedAccount] = useState<string[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState("");
   const [url, setUrl] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const accountId = selectedAccount[0] ?? "";
-  const selectedAccountObj = accounts.find((a) => a.id === accountId);
+  const selectedAccountObj = accounts.find((a) => a.id === selectedAccount);
   const urlPlaceholder =
     locationType === "local"
       ? "/data/uploads/project/"
@@ -66,7 +67,7 @@ function NewConnectionContent() {
   const canSave =
     name.trim().length > 0 &&
     url.trim().length > 0 &&
-    (locationType === "local" || !!accountId);
+    (locationType === "local" || !!selectedAccount);
 
   async function handleSubmit() {
     if (!canSave) return;
@@ -76,7 +77,7 @@ function NewConnectionContent() {
         name: name.trim(),
         kind: connectionKind,
         location_type: locationType,
-        cloud_account_id: locationType === "cloud" ? accountId : undefined,
+        cloud_account_id: locationType === "cloud" ? selectedAccount : undefined,
         url: url.trim(),
       });
       toast.success("Connection created");
@@ -115,12 +116,12 @@ function NewConnectionContent() {
           <RadioGroup
             value={connectionKind}
             onValueChange={(v) => setConnectionKind(v as ConnectionKind)}
-            className="flex gap-2"
+            className="grid grid-cols-2 gap-2"
           >
             <Label
               htmlFor="type-data"
               className={cn(
-                "flex-1 flex items-start gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer",
+                "flex items-start gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer",
                 connectionKind === "data"
                   ? "border-primary/50 bg-primary/5"
                   : "border-border hover:border-muted-foreground/30",
@@ -137,7 +138,7 @@ function NewConnectionContent() {
             <Label
               htmlFor="type-vocab"
               className={cn(
-                "flex-1 flex items-start gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer",
+                "flex items-start gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer",
                 connectionKind === "vocab"
                   ? "border-primary/50 bg-primary/5"
                   : "border-border hover:border-muted-foreground/30",
@@ -158,12 +159,12 @@ function NewConnectionContent() {
           <RadioGroup
             value={locationType}
             onValueChange={(v) => setLocationType(v as LocationType)}
-            className="flex gap-2"
+            className="grid grid-cols-2 gap-2"
           >
             <Label
               htmlFor="loc-cloud"
               className={cn(
-                "flex-1 flex items-start gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer",
+                "flex items-start gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer",
                 locationType === "cloud"
                   ? "border-primary/50 bg-primary/5"
                   : "border-border hover:border-muted-foreground/30",
@@ -177,7 +178,7 @@ function NewConnectionContent() {
                 </p>
               </div>
             </Label>
-            <ComingSoon placement="inline" className="flex-1">
+            <ComingSoon placement="inline">
               <Label
                 htmlFor="loc-local"
                 className="flex items-start gap-3 rounded-lg border border-border p-3 text-left"
@@ -194,26 +195,51 @@ function NewConnectionContent() {
           </RadioGroup>
         </FormField>
 
-        {locationType === "cloud" && (
-          <FormField label="Cloud Account" required>
-            <CloudAccountPicker
-              schema={schema}
-              accounts={accounts}
-              value={selectedAccount}
-              onChange={setSelectedAccount}
-              single
+        {locationType === "cloud" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Cloud Account" required>
+              {accounts.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No cloud accounts configured.{" "}
+                  <Link href="/settings/cloud-accounts" className="text-primary hover:underline">
+                    Create one first
+                  </Link>
+                  .
+                </p>
+              ) : (
+                <Combobox
+                  options={accounts.map((a) => {
+                    const Icon = getProviderIcon(a.provider_id);
+                    return { value: a.id, label: a.name, suffix: <Icon className="h-3.5 w-3.5 ml-auto opacity-60" /> };
+                  })}
+                  value={selectedAccount}
+                  onValueChange={setSelectedAccount}
+                  placeholder="Select account..."
+                  searchPlaceholder="Search accounts..."
+                  emptyMessage="No accounts found."
+                  className="h-8 text-sm"
+                />
+              )}
+            </FormField>
+            <FormField label="URL" required>
+              <Input
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder={urlPlaceholder}
+                className="h-8 text-sm font-mono"
+              />
+            </FormField>
+          </div>
+        ) : (
+          <FormField label="URL" required>
+            <Input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder={urlPlaceholder}
+              className="h-8 text-sm font-mono"
             />
           </FormField>
         )}
-
-        <FormField label="URL" required>
-          <Input
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder={urlPlaceholder}
-            className="h-8 text-sm font-mono"
-          />
-        </FormField>
 
         <FormActions>
           <Button variant="ghost" size="sm" onClick={() => router.push(`/connections?type=${connectionKind}`)}>

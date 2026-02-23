@@ -182,6 +182,7 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
       <div className="flex items-center gap-2">
         <ToggleGroup
           type="single"
+          variant="outline"
           size="sm"
           value={String(effectiveColumns)}
           onValueChange={handleColumnsChange}

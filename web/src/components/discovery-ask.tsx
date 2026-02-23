@@ -84,6 +84,7 @@ function MessageEntry({ msg }: { msg: ConversationMessage }) {
           {hasData && msg.sparql && (
             <ToggleGroup
               type="single"
+              variant="outline"
               size="sm"
               value={showSparql ? "sparql" : "results"}
               onValueChange={(v) => { if (v) setShowSparql(v === "sparql"); }}

@@ -10,7 +10,6 @@ use subtle::ConstantTimeEq;
 use crate::AppState;
 use crate::routes::error_response;
 
-/// Middleware that validates the API key from `X-Api-Key` or `Authorization: Bearer <key>`.
 pub async fn api_key_auth(
     State(state): State<AppState>,
     request: Request,
@@ -30,7 +29,6 @@ pub async fn api_key_auth(
     }
 }
 
-/// Constant-time comparison to prevent timing attacks.
 fn constant_time_eq(a: &str, b: &str) -> bool {
     a.as_bytes().ct_eq(b.as_bytes()).into()
 }
@@ -40,10 +38,10 @@ fn extract_key(headers: &axum::http::HeaderMap) -> Option<&str> {
         return val.to_str().ok();
     }
 
-    if let Some(val) = headers.get("authorization") {
-        if let Ok(s) = val.to_str() {
-            return s.strip_prefix("Bearer ");
-        }
+    if let Some(val) = headers.get("authorization")
+        && let Ok(s) = val.to_str()
+    {
+        return s.strip_prefix("Bearer ");
     }
 
     None

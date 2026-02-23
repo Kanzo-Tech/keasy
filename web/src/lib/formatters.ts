@@ -1,4 +1,4 @@
-import type { Job } from "@/lib/types";
+import type { Job, Connection, PipelineSummary } from "@/lib/types";
 
 export function formatDuration(startIso: string, endIso: string): string {
   const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
@@ -12,9 +12,9 @@ export function formatDuration(startIso: string, endIso: string): string {
 }
 
 export function formatJobDuration(job: Job): string {
-  const start = job.started_at ?? job.created_at;
+  if (!job.started_at) return "";
   const end = job.completed_at ?? new Date().toISOString();
-  return formatDuration(start, end);
+  return formatDuration(job.started_at, end);
 }
 
 export function formatDate(iso: string): string {
@@ -49,6 +49,30 @@ export function localName(iri: string): string {
 }
 
 /** Strip redundant node references and technical noise from validation messages. */
+/** Reverse-map a URL to @connection-name/path using the given connections. */
+export function reverseMapUrl(url: string, connections: Connection[]): string {
+  for (const connection of connections) {
+    const base = connection.url.replace(/\/+$/, "");
+    if (url.startsWith(base)) {
+      const path = url.slice(base.length).replace(/^\/+/, "");
+      return path ? `@${connection.name}/${path}` : `@${connection.name}`;
+    }
+  }
+  return url;
+}
+
+/** Apply reverse mapping to all destinations in a pipeline summary. */
+export function reverseMapPipeline(pipeline: PipelineSummary, connections: Connection[]): PipelineSummary {
+  if (connections.length === 0) return pipeline;
+  return {
+    ...pipeline,
+    outputs: pipeline.outputs.map((out) => ({
+      ...out,
+      destination: out.destination ? reverseMapUrl(out.destination, connections) : out.destination,
+    })),
+  };
+}
+
 export function cleanValidationMessage(message: string, node: string): string {
   let msg = message
     .replace(new RegExp(`\\s*for node\\s+<?${node.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}>?`, "gi"), "")

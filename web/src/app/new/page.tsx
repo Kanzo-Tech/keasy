@@ -1,43 +1,63 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { useSWRConfig } from "swr";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FormField, FormActions } from "@/components/form-layout";
 import { JobSummaryPanel } from "@/components/job-summary-dialog";
 import { PageHeader } from "@/components/page-header";
+import { CodeEditor } from "@/components/code-editor";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { CloudAccountPicker } from "@/components/cloud-account-picker";
+import { ComingSoon } from "@/components/coming-soon";
 import {
   createJob,
+  updateJob,
+  fetchJob,
   validateScript,
   fetchOrgSettings,
-  fetchCloudAccounts,
-  fetchSchema,
+  fetchConnections,
+  fetchProviders,
+  deleteJob,
 } from "@/lib/api";
-import type { RunMode, ValidationResult, CloudAccountSummary, ProviderSchema } from "@/lib/types";
+import type { RunMode, ValidationResult, Connection, ProviderInfo } from "@/lib/types";
 
 export default function NewJobPage() {
+  return (
+    <Suspense>
+      <NewJobContent />
+    </Suspense>
+  );
+}
+
+function NewJobContent() {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
+  const searchParams = useSearchParams();
+  const draftId = searchParams.get("draft");
+
   const [script, setScript] = useState("");
-  const [fileName, setFileName] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [mode, setMode] = useState<RunMode>("integrated");
   const [showSummary, setShowSummary] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [validating, setValidating] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [loadingDraft, setLoadingDraft] = useState(!!draftId);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [dcatEnabled, setDcatEnabled] = useState(false);
   const [orgConfigured, setOrgConfigured] = useState(false);
 
-  const [accounts, setAccounts] = useState<CloudAccountSummary[]>([]);
-  const [schema, setSchema] = useState<ProviderSchema[]>([]);
-  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [providers, setProviders] = useState<ProviderInfo[]>([]);
 
   useEffect(() => {
     fetchOrgSettings()
@@ -48,23 +68,58 @@ export default function NewJobPage() {
       })
       .catch(() => {});
 
-    Promise.all([fetchCloudAccounts(), fetchSchema()])
-      .then(([accts, s]) => {
-        setAccounts(accts);
-        setSchema(s);
-        setSelectedAccountIds(accts.map((a) => a.id));
-      })
+    fetchConnections()
+      .then(setConnections)
+      .catch(() => {});
+
+    fetchProviders()
+      .then(setProviders)
       .catch(() => {});
   }, []);
 
-  const readFile = useCallback((file: File) => {
-    if (!file.name.endsWith(".fossil")) {
-      toast.error("Only .fossil files are accepted");
-      return;
+  useEffect(() => {
+    if (!draftId) return;
+    fetchJob(draftId)
+      .then((job) => {
+        if (job.status !== "draft") return;
+        if (job.script) setScript(job.script);
+        if (job.name) setName(job.name);
+        setMode(job.mode);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingDraft(false));
+  }, [draftId]);
+
+  async function handleSaveDraft() {
+    setSavingDraft(true);
+    try {
+      if (draftId) {
+        await updateJob(draftId, {
+          script,
+          name: name.trim() || undefined,
+        });
+        toast.success("Draft updated");
+      } else {
+        const connectionIds = connections
+          .filter((s) => script.includes(`@${s.name}/`))
+          .map((s) => s.id);
+        await createJob({
+          script,
+          name: name.trim() || undefined,
+          mode,
+          draft: true,
+          connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
+        });
+        toast.success("Draft saved");
+      }
+      mutate("jobs");
+      router.push("/jobs");
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : "Failed to save draft");
+    } finally {
+      setSavingDraft(false);
     }
-    setFileName(file.name);
-    file.text().then((text) => setScript(text));
-  }, []);
+  }
 
   async function handleReview() {
     setValidating(true);
@@ -78,7 +133,7 @@ export default function NewJobPage() {
       setShowSummary(true);
     } catch (err) {
       toastError(
-        err instanceof Error ? err.message : "Failed to validate script"
+        err instanceof Error ? err.message : "Failed to validate script",
       );
     } finally {
       setValidating(false);
@@ -89,28 +144,50 @@ export default function NewJobPage() {
     setSubmitting(true);
     try {
       const jobName = name.trim() || undefined;
+      const connectionIds = connections
+        .filter((s) => script.includes(`@${s.name}/`))
+        .map((s) => s.id);
+
+      // Delete the draft before creating the real job
+      if (draftId) {
+        await deleteJob(draftId).catch(() => {});
+      }
+
       const job = await createJob({
         script,
         name: jobName,
         mode,
-        sources: validation?.sources,
-        outputs: validation?.outputs,
+        pipeline: validation?.pipeline,
         dcat_enabled: dcatEnabled || undefined,
-        cloud_account_ids: selectedAccountIds.length > 0 ? selectedAccountIds : undefined,
+        connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
       });
+      mutate("jobs");
       router.push(`/jobs/${job.id}`);
     } catch (err) {
       toastError(
-        err instanceof Error ? err.message : "Failed to create job"
+        err instanceof Error ? err.message : "Failed to create job",
       );
       setSubmitting(false);
     }
   }
 
+  if (loadingDraft) {
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader title="New Job" backHref="/jobs" backLabel="Jobs" />
+        <div className="flex flex-col gap-4 flex-1 min-h-0">
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="flex-1 w-full" />
+        </div>
+      </div>
+    );
+  }
+
   if (showSummary && validation) {
     return (
       <div className="flex flex-col h-full">
-        <PageHeader title="New Job" />
+        <PageHeader title="New Job" backHref="/jobs" backLabel="Jobs" />
         <JobSummaryPanel
           onConfirm={handleConfirm}
           onCancel={() => setShowSummary(false)}
@@ -121,6 +198,7 @@ export default function NewJobPage() {
           dcatEnabled={dcatEnabled}
           onDcatToggle={setDcatEnabled}
           orgConfigured={orgConfigured}
+          connections={connections}
         />
       </div>
     );
@@ -128,139 +206,96 @@ export default function NewJobPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="New Job" />
+      <PageHeader title="New Job" backHref="/jobs" backLabel="Jobs" />
       <div className="flex flex-col gap-4 flex-1 min-h-0">
-        <div className="space-y-1">
-          <Label>Job Name</Label>
-          <Input
-            type="text"
-            placeholder="Optional name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-
-        <div className="space-y-1">
-          <Label>Run Mode</Label>
-          <RadioGroup
-            value={mode}
-            onValueChange={(v) => setMode(v as RunMode)}
-            className="flex gap-2"
-          >
-            <label
-              className={cn(
-                "flex-1 flex items-start gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer",
-                mode === "integrated"
-                  ? "border-primary/50 bg-primary/5"
-                  : "border-border hover:border-muted-foreground/30"
-              )}
-            >
-              <RadioGroupItem value="integrated" className="mt-0.5" />
-              <div>
-                <p className="text-sm font-medium leading-none">Integrated</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Runs immediately on submit
-                </p>
-              </div>
-            </label>
-            <div
-              className="flex-1 flex items-start gap-3 rounded-lg border p-3 text-left border-border opacity-50 cursor-not-allowed"
-            >
-              <RadioGroupItem value="scheduled" disabled className="mt-0.5" />
-              <div>
-                <p className="text-sm font-medium leading-none">Scheduled</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Runs on a configured schedule — Coming soon
-                </p>
-              </div>
-            </div>
-          </RadioGroup>
-        </div>
-
-        {accounts.length > 0 && (
-          <div className="space-y-2">
-            <Label>Cloud Accounts</Label>
-            <p className="text-xs text-muted-foreground">
-              Select which cloud accounts this job may access.
-            </p>
-            <CloudAccountPicker
-              schema={schema}
-              accounts={accounts}
-              value={selectedAccountIds}
-              onChange={setSelectedAccountIds}
+        <div className="flex flex-col gap-4 shrink-0">
+          <FormField label="Job Name">
+            <Input
+              type="text"
+              placeholder="Optional name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
+          </FormField>
+          <FormField label="Run Mode">
+            <RadioGroup
+              value={mode}
+              onValueChange={(v) => setMode(v as RunMode)}
+              className="flex gap-2"
+            >
+              <Label
+                htmlFor="mode-integrated"
+                className={cn(
+                  "flex-1 flex items-center gap-3 rounded-lg border p-2.5 text-left transition-colors cursor-pointer",
+                  mode === "integrated"
+                    ? "border-primary/50 bg-primary/5"
+                    : "border-border hover:border-muted-foreground/30",
+                )}
+              >
+                <RadioGroupItem value="integrated" id="mode-integrated" />
+                <span className="text-sm font-medium">Integrated</span>
+                <span className="text-xs text-muted-foreground ml-auto">Runs immediately</span>
+              </Label>
+              <ComingSoon placement="inline" className="flex-1">
+                <Label
+                  htmlFor="mode-scheduled"
+                  className="flex items-center gap-3 rounded-lg border border-border p-2.5 text-left"
+                >
+                  <RadioGroupItem value="scheduled" id="mode-scheduled" disabled />
+                  <span className="text-sm font-medium">Scheduled</span>
+                </Label>
+              </ComingSoon>
+            </RadioGroup>
+          </FormField>
+        </div>
+
+        <Tabs defaultValue="script" className="flex-1 min-h-0 flex flex-col">
+          <div className="flex items-center justify-between mb-1">
+            <TabsList>
+              <TabsTrigger value="script">Script</TabsTrigger>
+              <ComingSoon>
+                <TabsTrigger value="visual" disabled>Visual</TabsTrigger>
+              </ComingSoon>
+            </TabsList>
+            {connections.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                Type <kbd className="rounded border px-1 py-0.5 text-[10px] font-mono">@</kbd> to reference connections
+              </span>
+            )}
           </div>
-        )}
+          <TabsContent value="script" className="flex-1 min-h-0 flex flex-col mt-0">
+            <CodeEditor
+              value={script}
+              onChange={setScript}
+              connections={connections}
+              providers={providers}
+              placeholder="Write your fossil script here..."
+              className="flex-1"
+            />
+          </TabsContent>
+        </Tabs>
 
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setIsDragging(true);
-          }}
-          onDragLeave={() => setIsDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setIsDragging(false);
-            const file = e.dataTransfer.files[0];
-            if (file) readFile(file);
-          }}
-          className={`flex-1 min-h-[200px] flex flex-col items-center justify-center rounded-md border-2 border-dashed transition-colors ${
-            isDragging
-              ? "border-primary bg-accent"
-              : fileName
-                ? "border-primary/50 bg-primary/5"
-                : "border-border"
-          }`}
-        >
-          {fileName ? (
-            <div className="text-center">
-              <p className="font-medium">{fileName}</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {script.split("\n").length} lines
-              </p>
-              <label className="mt-3 inline-block cursor-pointer text-sm text-primary hover:underline">
-                Replace file
-                <input
-                  type="file"
-                  className="hidden"
-                  accept=".fossil"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) readFile(file);
-                  }}
-                />
-              </label>
-            </div>
-          ) : (
-            <div className="text-center">
-              <p className="text-muted-foreground">
-                Drag & drop a <span className="font-mono">.fossil</span> file
-                here
-              </p>
-              <label className="mt-2 inline-block cursor-pointer text-sm text-primary hover:underline">
-                or browse files
-                <input
-                  type="file"
-                  className="hidden"
-                  accept=".fossil"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) readFile(file);
-                  }}
-                />
-              </label>
-            </div>
-          )}
-        </div>
-
-        <div className="flex justify-end shrink-0 pt-2">
-          <Button
-            onClick={handleReview}
-            disabled={!script.trim() || validating}
-          >
-            {validating ? "Validating..." : "Review & Submit"}
+        <FormActions>
+          <Button variant="ghost" size="sm" onClick={() => router.push("/jobs")}>
+            <ArrowLeft size={14} />
+            Back
           </Button>
-        </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleSaveDraft}
+              disabled={!script.trim() || savingDraft}
+            >
+              {savingDraft ? "Saving..." : "Save Draft"}
+            </Button>
+            <Button
+              onClick={handleReview}
+              disabled={!script.trim() || validating}
+            >
+              {validating ? "Validating..." : "Review & Submit"}
+            </Button>
+          </div>
+        </FormActions>
       </div>
     </div>
   );

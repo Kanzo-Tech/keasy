@@ -3,14 +3,22 @@ pub mod resolver;
 
 use std::collections::HashMap;
 
+use object_store::aws::AmazonS3ConfigKey;
+use object_store::azure::AzureConfigKey;
+use object_store::gcp::GoogleConfigKey;
 use object_store::path::Path as ObjectPath;
 use object_store::ObjectStore;
 
-/// Parse a cloud URL into an `ObjectStore` + `ObjectPath`.
-///
-/// Shared between resolver (writes) and reader (list/download).
-/// Credentials are applied directly to each builder using the same env var
-/// names as the provider schema (e.g. AZURE_STORAGE_ACCOUNT_NAME).
+use crate::settings::schema::{all_cloud_schemes, find_provider_by_scheme};
+
+pub fn is_cloud_url(s: &str) -> bool {
+    all_cloud_schemes().any(|scheme| s.starts_with(scheme) && s[scheme.len()..].starts_with("://"))
+}
+
+pub fn is_data_path(s: &str) -> bool {
+    is_cloud_url(s) || s.starts_with('/') || s.starts_with("./") || s.starts_with("../")
+}
+
 pub fn build_store(
     url_str: &str,
     creds: &HashMap<String, String>,
@@ -28,63 +36,39 @@ pub fn build_store(
         ObjectPath::parse(object_key)?
     };
 
-    let store: Box<dyn ObjectStore> = match parsed.scheme() {
-        "az" | "azure" | "abfss" | "abfs" | "adl" => {
-            let mut b =
-                object_store::azure::MicrosoftAzureBuilder::new().with_container_name(bucket);
-            if let Some(v) = creds.get("AZURE_STORAGE_ACCOUNT_NAME") {
-                b = b.with_account(v);
+    let provider = find_provider_by_scheme(parsed.scheme())
+        .ok_or_else(|| format!("unsupported cloud scheme: {}://", parsed.scheme()))?;
+
+    let fields = provider.all_fields();
+
+    macro_rules! build_with_creds {
+        ($builder:expr, $key_type:ty) => {{
+            let mut b = $builder;
+            for field in &fields {
+                if let (Some(ev), Some(ck)) = (field.env_var, field.store_config_key) {
+                    if let Some(v) = creds.get(ev) {
+                        b = b.with_config(ck.parse::<$key_type>().unwrap(), v);
+                    }
+                }
             }
-            if let Some(v) = creds.get("AZURE_STORAGE_ACCOUNT_KEY") {
-                b = b.with_access_key(v);
-            }
-            if let Some(v) = creds.get("AZURE_STORAGE_SAS_KEY") {
-                let query = v.strip_prefix('?').unwrap_or(v);
-                let pairs: Vec<(String, String)> = url::form_urlencoded::parse(query.as_bytes())
-                    .map(|(k, v)| (k.into_owned(), v.into_owned()))
-                    .collect();
-                b = b.with_sas_authorization(pairs);
-            }
-            if let Some(v) = creds.get("AZURE_STORAGE_CLIENT_ID") {
-                b = b.with_client_id(v);
-            }
-            if let Some(v) = creds.get("AZURE_STORAGE_CLIENT_SECRET") {
-                b = b.with_client_secret(v);
-            }
-            if let Some(v) = creds.get("AZURE_STORAGE_TENANT_ID") {
-                b = b.with_tenant_id(v);
-            }
-            Box::new(b.build()?)
-        }
-        "s3" | "s3a" => {
-            let mut b =
-                object_store::aws::AmazonS3Builder::new().with_bucket_name(bucket);
-            if let Some(v) = creds.get("AWS_ACCESS_KEY_ID") {
-                b = b.with_access_key_id(v);
-            }
-            if let Some(v) = creds.get("AWS_SECRET_ACCESS_KEY") {
-                b = b.with_secret_access_key(v);
-            }
-            if let Some(v) = creds.get("AWS_DEFAULT_REGION") {
-                b = b.with_region(v);
-            }
-            if let Some(v) = creds.get("AWS_ENDPOINT_URL") {
-                b = b.with_endpoint(v);
-            }
-            Box::new(b.build()?)
-        }
-        "gs" | "gcs" => {
-            let mut b =
-                object_store::gcp::GoogleCloudStorageBuilder::new().with_bucket_name(bucket);
-            if let Some(v) = creds.get("GOOGLE_SERVICE_ACCOUNT_KEY") {
-                b = b.with_service_account_key(v);
-            }
-            if let Some(v) = creds.get("GOOGLE_SERVICE_ACCOUNT") {
-                b = b.with_service_account_path(v);
-            }
-            Box::new(b.build()?)
-        }
-        scheme => return Err(format!("unsupported cloud scheme: {scheme}://").into()),
+            Box::new(b.build()?) as Box<dyn ObjectStore>
+        }};
+    }
+
+    let store: Box<dyn ObjectStore> = match provider.id {
+        "azure" => build_with_creds!(
+            object_store::azure::MicrosoftAzureBuilder::new().with_container_name(bucket),
+            AzureConfigKey
+        ),
+        "s3" => build_with_creds!(
+            object_store::aws::AmazonS3Builder::new().with_bucket_name(bucket),
+            AmazonS3ConfigKey
+        ),
+        "gcp" => build_with_creds!(
+            object_store::gcp::GoogleCloudStorageBuilder::new().with_bucket_name(bucket),
+            GoogleConfigKey
+        ),
+        _ => return Err(format!("no builder for provider: {}", provider.id).into()),
     };
 
     Ok((store, path))

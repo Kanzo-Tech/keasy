@@ -5,6 +5,7 @@ import { BarChart3, MessageCircle, Search } from "lucide-react";
 import { DashboardBuilder } from "@/components/dashboard-builder";
 import { DiscoveryAsk } from "@/components/discovery-ask";
 import { DiscoveryExplorer } from "@/components/discovery-explorer";
+import { ExperimentalBadge } from "@/components/experimental-badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface DiscoveryViewProps {
@@ -34,6 +35,9 @@ export function DiscoveryView({ jobId }: DiscoveryViewProps) {
             <MessageCircle size={14} />
           </ToggleGroupItem>
         </ToggleGroup>
+        {(viewMode === "dashboard" || viewMode === "ask") && (
+          <ExperimentalBadge />
+        )}
       </div>
       {viewMode === "explorer" ? (
         <DiscoveryExplorer jobId={jobId} />

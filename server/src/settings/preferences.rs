@@ -2,8 +2,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Preferences {
-    #[serde(default = "default_shiki_theme")]
-    pub shiki_theme: String,
     #[serde(default = "default_accent_color")]
     pub accent_color: String,
     #[serde(default = "default_font_family")]
@@ -16,7 +14,6 @@ pub struct Preferences {
     pub mono_font_size: String,
 }
 
-fn default_shiki_theme() -> String { "github-dark".into() }
 fn default_accent_color() -> String { "neutral".into() }
 fn default_font_family() -> String { "geist".into() }
 fn default_mono_font_family() -> String { "geist-mono".into() }
@@ -25,7 +22,6 @@ fn default_font_size() -> String { "default".into() }
 impl Default for Preferences {
     fn default() -> Self {
         Self {
-            shiki_theme: default_shiki_theme(),
             accent_color: default_accent_color(),
             font_family: default_font_family(),
             mono_font_family: default_mono_font_family(),

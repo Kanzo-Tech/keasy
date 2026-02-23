@@ -27,18 +27,15 @@ export function PageHeader({
           {backLabel ?? "Back"}
         </Link>
       )}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-semibold leading-none">{title}</h2>
-            {badge}
-          </div>
-          {subtitle && (
-            <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
-          )}
-        </div>
-        {action && <div className="shrink-0">{action}</div>}
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 className="text-2xl font-semibold leading-none">{title}</h2>
+        {badge}
+        {(subtitle || action) && <div className="flex-1" />}
+        {action && <div>{action}</div>}
       </div>
+      {subtitle && (
+        <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+      )}
     </div>
   );
 }

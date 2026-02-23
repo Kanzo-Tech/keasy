@@ -11,6 +11,8 @@ pub struct FieldSchema {
     pub default_value: Option<&'static str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub env_var: Option<&'static str>,
+    #[serde(skip)]
+    pub store_config_key: Option<&'static str>,
 }
 
 fn is_false(v: &bool) -> bool {
@@ -29,18 +31,27 @@ pub struct ProviderSchema {
     pub id: &'static str,
     pub label: &'static str,
     pub icon: &'static str,
+    #[serde(skip)]
+    pub schemes: &'static [&'static str],
     pub common_fields: &'static [FieldSchema],
     pub auth_methods: &'static [AuthMethodSchema],
 }
 
 impl ProviderSchema {
-    /// Returns common fields + the fields for the given auth method (if any).
     pub fn active_fields(&self, auth_method: Option<&str>) -> Vec<&FieldSchema> {
         let mut fields: Vec<&FieldSchema> = self.common_fields.iter().collect();
-        if let Some(method) = auth_method {
-            if let Some(am) = self.auth_methods.iter().find(|a| a.name == method) {
-                fields.extend(am.fields.iter());
-            }
+        if let Some(method) = auth_method
+            && let Some(am) = self.auth_methods.iter().find(|a| a.name == method)
+        {
+            fields.extend(am.fields.iter());
+        }
+        fields
+    }
+
+    pub fn all_fields(&self) -> Vec<&FieldSchema> {
+        let mut fields: Vec<&FieldSchema> = self.common_fields.iter().collect();
+        for am in self.auth_methods {
+            fields.extend(am.fields.iter());
         }
         fields
     }
@@ -51,6 +62,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
         id: "azure",
         label: "Azure Blob Storage",
         icon: "azure",
+        schemes: &["az", "azure", "abfss", "abfs", "adl"],
         common_fields: &[FieldSchema {
             name: "account_name",
             label: "Account Name",
@@ -58,6 +70,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
             optional: false,
             default_value: None,
             env_var: Some("AZURE_STORAGE_ACCOUNT_NAME"),
+            store_config_key: Some("account_name"),
         }],
         auth_methods: &[
             AuthMethodSchema {
@@ -70,6 +83,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                     optional: false,
                     default_value: None,
                     env_var: Some("AZURE_STORAGE_ACCOUNT_KEY"),
+                    store_config_key: Some("access_key"),
                 }],
             },
             AuthMethodSchema {
@@ -82,6 +96,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                     optional: false,
                     default_value: None,
                     env_var: Some("AZURE_STORAGE_SAS_KEY"),
+                    store_config_key: Some("sas_key"),
                 }],
             },
             AuthMethodSchema {
@@ -95,6 +110,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                         optional: false,
                         default_value: None,
                         env_var: Some("AZURE_STORAGE_CLIENT_ID"),
+                        store_config_key: Some("client_id"),
                     },
                     FieldSchema {
                         name: "client_secret",
@@ -103,6 +119,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                         optional: false,
                         default_value: None,
                         env_var: Some("AZURE_STORAGE_CLIENT_SECRET"),
+                        store_config_key: Some("client_secret"),
                     },
                     FieldSchema {
                         name: "tenant_id",
@@ -111,6 +128,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                         optional: false,
                         default_value: None,
                         env_var: Some("AZURE_STORAGE_TENANT_ID"),
+                        store_config_key: Some("tenant_id"),
                     },
                 ],
             },
@@ -120,6 +138,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
         id: "gcp",
         label: "Google Cloud Storage",
         icon: "gcp",
+        schemes: &["gs", "gcs"],
         common_fields: &[],
         auth_methods: &[
             AuthMethodSchema {
@@ -132,6 +151,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                     optional: false,
                     default_value: None,
                     env_var: Some("GOOGLE_SERVICE_ACCOUNT_KEY"),
+                    store_config_key: Some("service_account_key"),
                 }],
             },
             AuthMethodSchema {
@@ -144,6 +164,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                     optional: false,
                     default_value: None,
                     env_var: Some("GOOGLE_SERVICE_ACCOUNT"),
+                    store_config_key: Some("service_account"),
                 }],
             },
         ],
@@ -152,6 +173,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
         id: "s3",
         label: "Amazon S3",
         icon: "s3",
+        schemes: &["s3", "s3a"],
         common_fields: &[
             FieldSchema {
                 name: "access_key_id",
@@ -160,6 +182,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                 optional: false,
                 default_value: None,
                 env_var: Some("AWS_ACCESS_KEY_ID"),
+                store_config_key: Some("access_key_id"),
             },
             FieldSchema {
                 name: "secret_access_key",
@@ -168,6 +191,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                 optional: false,
                 default_value: None,
                 env_var: Some("AWS_SECRET_ACCESS_KEY"),
+                store_config_key: Some("secret_access_key"),
             },
             FieldSchema {
                 name: "region",
@@ -176,6 +200,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                 optional: false,
                 default_value: Some("us-east-1"),
                 env_var: Some("AWS_DEFAULT_REGION"),
+                store_config_key: Some("region"),
             },
             FieldSchema {
                 name: "endpoint_url",
@@ -184,6 +209,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                 optional: true,
                 default_value: None,
                 env_var: Some("AWS_ENDPOINT_URL"),
+                store_config_key: Some("endpoint"),
             },
         ],
         auth_methods: &[],
@@ -192,4 +218,16 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
 
 pub fn find_provider(id: &str) -> Option<&'static ProviderSchema> {
     PROVIDER_REGISTRY.iter().find(|p| p.id == id)
+}
+
+pub fn all_cloud_schemes() -> impl Iterator<Item = &'static str> {
+    PROVIDER_REGISTRY
+        .iter()
+        .flat_map(|p| p.schemes.iter().copied())
+}
+
+pub fn find_provider_by_scheme(scheme: &str) -> Option<&'static ProviderSchema> {
+    PROVIDER_REGISTRY
+        .iter()
+        .find(|p| p.schemes.contains(&scheme))
 }

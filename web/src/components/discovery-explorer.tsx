@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Search, X, Loader2 } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { searchGraphNodes, expandGraphNode, loadJobDiscovery } from "@/lib/api";
 import { ForceGraph } from "@/components/force-graph";
 import { useGraphModel } from "@/hooks/use-graph-model";
+import { useDelayedLoading } from "@/hooks/use-delayed-loading";
+import useSWR from "swr";
 import type { GraphNode, SearchResult } from "@/lib/types";
 
 interface DiscoveryExplorerProps {
@@ -16,9 +19,18 @@ interface DiscoveryExplorerProps {
 }
 
 export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [tripleCount, setTripleCount] = useState(0);
+  const { data: initial, isLoading, error: loadError } = useSWR(
+    `explorer-${jobId}`,
+    async () => {
+      const discovery = await loadJobDiscovery(jobId);
+      const nodes = await searchGraphNodes("", jobId);
+      return { discovery, nodes };
+    },
+  );
+  const showSkeleton = useDelayedLoading(isLoading);
+
+  const tripleCount = initial?.discovery.triple_count ?? 0;
+  const subjectCount = initial?.discovery.subject_count ?? 0;
 
   const [query, setQuery] = useState("");
   const [allNodes, setAllNodes] = useState<SearchResult[]>([]);
@@ -31,35 +43,13 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
 
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>(null);
 
-  // Load output data into GraphStore on mount
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setLoadError(null);
-    loadJobDiscovery(jobId)
-      .then((res) => {
-        if (cancelled) return;
-        setTripleCount(res.triple_count);
-        // Now load all available nodes
-        return searchGraphNodes("", jobId);
-      })
-      .then((r) => {
-        if (cancelled || !r) return;
-        setAllNodes(r);
-        setResults(r);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setLoadError(err instanceof Error ? err.message : "Failed to load data");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [jobId]);
+    if (initial?.nodes) {
+      setAllNodes(initial.nodes);
+      setResults(initial.nodes);
+    }
+  }, [initial]);
 
-  // Debounced search
   useEffect(() => {
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     if (!query.trim()) {
@@ -83,7 +73,6 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
           setResults((prev) => [...prev, ...extra]);
         }
       } catch {
-        // Local results are enough
       } finally {
         setSearching(false);
       }
@@ -98,9 +87,15 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
     setQuery("");
     try {
       const data = await expandGraphNode(result.id, jobId);
-      graph.merge(data);
-      const hasOutgoing = data.links.some((l) => l.source === result.id);
-      if (hasOutgoing) {
+      if (data.nodes.length === 0 && data.links.length === 0) {
+        graph.merge({
+          nodes: [{ id: result.id, label: result.label, group: result.group }],
+          links: [],
+        });
+      } else {
+        graph.merge(data);
+      }
+      if (data.links.length > 0 || (data.nodes.length === 0 && data.links.length === 0)) {
         graph.markExpanded(result);
       }
     } catch {
@@ -114,8 +109,7 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
     try {
       const data = await expandGraphNode(node.id, jobId);
       graph.merge(data);
-      const hasOutgoing = data.links.some((l) => l.source === node.id);
-      if (hasOutgoing) {
+      if (data.links.length > 0) {
         graph.markExpanded({ id: node.id, label: node.label, group: node.group });
       }
     } catch {
@@ -130,19 +124,20 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
     setResults(allNodes);
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-        <Loader2 size={16} className="animate-spin mr-2" />
-        Loading output data...
+  if (isLoading) {
+    return showSkeleton ? (
+      <div className="flex flex-col h-full">
+        <Skeleton className="h-4 w-48 mb-3" />
+        <Skeleton className="h-9 w-full mb-4" />
+        <Skeleton className="flex-1 min-h-[300px] rounded-md" />
       </div>
-    );
+    ) : null;
   }
 
   if (loadError) {
     return (
       <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-        {loadError}
+        {loadError?.message}
       </div>
     );
   }
@@ -151,7 +146,7 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
     <div className="flex flex-col h-full">
       {/* Stats */}
       <p className="text-xs text-muted-foreground mb-3">
-        {tripleCount} triples loaded &middot; {allNodes.length} distinct subjects
+        {tripleCount.toLocaleString()} triples &middot; {subjectCount.toLocaleString()} subjects
       </p>
 
       {/* Search bar */}
@@ -166,7 +161,7 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search nodes by label or IRI..."
-              className="pl-9 h-9"
+              className="pl-9 h-9 focus-visible:ring-1"
               onFocus={() => setShowResults(true)}
               onBlur={() => {
                 setTimeout(() => setShowResults(false), 200);
@@ -193,7 +188,10 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
               <button
                 key={r.id}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent text-left"
-                onClick={() => handleSelectResult(r)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSelectResult(r);
+                }}
               >
                 <span
                   className="w-2.5 h-2.5 rounded-full shrink-0"

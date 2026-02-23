@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Workflow, Cable, Settings, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Workflow, Database, Settings, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const topLinks = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/connections", label: "Connections", icon: Cable },
+  { href: "/connections", label: "Connections", icon: Database },
   { href: "/jobs", label: "Jobs", icon: Workflow },
 ];
 

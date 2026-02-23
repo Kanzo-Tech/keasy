@@ -9,14 +9,14 @@ use crate::settings::types::{CreateCloudAccountRequest, UpdateCloudAccountReques
 use super::error_response;
 
 pub async fn list_accounts(State(state): State<AppState>) -> impl IntoResponse {
-    Json(state.cloud_accounts.list())
+    Json(state.db.list_cloud_accounts().await)
 }
 
 pub async fn create_account(
     State(state): State<AppState>,
     Json(payload): Json<CreateCloudAccountRequest>,
 ) -> Response {
-    match state.cloud_accounts.create(payload) {
+    match state.db.create_cloud_account(payload).await {
         Ok(summary) => (StatusCode::CREATED, Json(summary)).into_response(),
         Err(msg) => error_response(StatusCode::BAD_REQUEST, "validation_error", msg),
     }
@@ -26,7 +26,7 @@ pub async fn get_account(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    match state.cloud_accounts.get_summary(&id) {
+    match state.db.get_cloud_account_summary(&id).await {
         Some(summary) => (StatusCode::OK, Json(summary)).into_response(),
         None => error_response(StatusCode::NOT_FOUND, "not_found", "Cloud account not found"),
     }
@@ -37,7 +37,7 @@ pub async fn update_account(
     Path(id): Path<String>,
     Json(payload): Json<UpdateCloudAccountRequest>,
 ) -> Response {
-    match state.cloud_accounts.update(&id, payload) {
+    match state.db.update_cloud_account(&id, payload).await {
         Ok(summary) => (StatusCode::OK, Json(summary)).into_response(),
         Err(msg) => error_response(StatusCode::BAD_REQUEST, "validation_error", msg),
     }
@@ -47,6 +47,6 @@ pub async fn delete_account(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    state.cloud_accounts.remove(&id);
+    state.db.remove_cloud_account(&id).await;
     StatusCode::NO_CONTENT.into_response()
 }

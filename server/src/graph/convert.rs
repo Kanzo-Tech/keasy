@@ -2,8 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
 
-use oxigraph::model::Quad;
-use oxrdf::Term;
+use oxrdf::{Term, Triple};
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
@@ -28,7 +27,6 @@ pub struct GraphLink {
     pub label: String,
 }
 
-/// Namespace prefixes for shortening IRIs in labels.
 const PREFIXES: &[(&str, &str)] = &[
     ("http://www.w3.org/2000/01/rdf-schema#", "rdfs:"),
     ("http://www.w3.org/2004/02/skos/core#", "skos:"),
@@ -42,7 +40,6 @@ const PREFIXES: &[(&str, &str)] = &[
     ("http://www.w3.org/2001/XMLSchema#", "xsd:"),
 ];
 
-/// Properties whose literal values become the node label.
 const LABEL_PROPERTIES: &[&str] = &[
     "http://www.w3.org/2000/01/rdf-schema#label",
     "http://www.w3.org/2004/02/skos/core#prefLabel",
@@ -51,7 +48,6 @@ const LABEL_PROPERTIES: &[&str] = &[
     "http://schema.org/name",
 ];
 
-/// Strip `<>` brackets from oxrdf `Display` output (e.g. `<urn:foo>` → `urn:foo`).
 fn clean_id(s: &str) -> String {
     s.strip_prefix('<')
         .and_then(|inner| inner.strip_suffix('>'))
@@ -65,11 +61,9 @@ pub fn shorten_iri(iri: &str) -> String {
             return format!("{}{}", prefix, local);
         }
     }
-    // Shorten keasy URNs: urn:keasy:catalog:abc → catalog:abc
     if let Some(local) = iri.strip_prefix("urn:keasy:") {
         return local.to_string();
     }
-    // Fallback: take the fragment or last path segment
     if let Some((_, frag)) = iri.rsplit_once('#') {
         return frag.to_string();
     }
@@ -79,47 +73,59 @@ pub fn shorten_iri(iri: &str) -> String {
     iri.to_string()
 }
 
-/// Convert a set of quads into a graph visualization structure.
-///
-/// - rdf:type triples determine the node group (shortened IRI, e.g. "dcat:Catalog")
-/// - Label properties set the display label but still generate literal nodes
-/// - ALL literals become visible literal nodes with links (no suppression)
-/// - ALL URI-to-URI triples become links between nodes
-pub fn quads_to_graph_data(quads: &[Quad]) -> GraphData {
+fn build_label(id: &str, label_map: &HashMap<String, String>) -> String {
+    if let Some(label) = label_map.get(id) {
+        return label.clone();
+    }
+    shorten_iri(id)
+}
+
+fn ensure_node(
+    nodes: &mut HashMap<String, GraphNode>,
+    id: &str,
+    label_map: &HashMap<String, String>,
+    type_map: &HashMap<String, String>,
+    props_map: &mut HashMap<String, BTreeMap<String, String>>,
+) {
+    nodes.entry(id.to_string()).or_insert_with(|| {
+        let label = build_label(id, label_map);
+        let group = type_map.get(id).cloned().unwrap_or_else(|| "resource".to_string());
+        let properties = props_map.remove(id).unwrap_or_default();
+        GraphNode { id: id.to_string(), label, group, properties }
+    });
+}
+
+pub fn triples_to_graph_data(triples: &[Triple]) -> GraphData {
     let rdf_type = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 
-    // Pass 1: classify nodes via rdf:type
     let mut type_map: HashMap<String, String> = HashMap::new();
-    for quad in quads {
-        if quad.predicate.as_str() == rdf_type {
-            if let Term::NamedNode(obj) = &quad.object {
-                let subj = clean_id(&quad.subject.to_string());
-                type_map
-                    .entry(subj)
-                    .or_insert_with(|| shorten_iri(obj.as_str()));
-            }
+    for triple in triples {
+        if triple.predicate.as_str() == rdf_type
+            && let Term::NamedNode(obj) = &triple.object
+        {
+            let subj = clean_id(&triple.subject.to_string());
+            type_map
+                .entry(subj)
+                .or_insert_with(|| shorten_iri(obj.as_str()));
         }
     }
 
-    // Pass 2: collect labels and all literal properties
     let mut label_map: HashMap<String, String> = HashMap::new();
     let mut props_map: HashMap<String, BTreeMap<String, String>> = HashMap::new();
 
-    for quad in quads {
-        let pred = quad.predicate.as_str();
-        let subj = clean_id(&quad.subject.to_string());
+    for triple in triples {
+        let pred = triple.predicate.as_str();
+        let subj = clean_id(&triple.subject.to_string());
 
-        // Label properties
-        if LABEL_PROPERTIES.contains(&pred) {
-            if let Term::Literal(lit) = &quad.object {
-                label_map
-                    .entry(subj.clone())
-                    .or_insert_with(|| lit.value().to_string());
-            }
+        if LABEL_PROPERTIES.contains(&pred)
+            && let Term::Literal(lit) = &triple.object
+        {
+            label_map
+                .entry(subj.clone())
+                .or_insert_with(|| lit.value().to_string());
         }
 
-        // ALL literals go into properties for tooltip display
-        if let Term::Literal(lit) = &quad.object {
+        if let Term::Literal(lit) = &triple.object {
             props_map
                 .entry(subj)
                 .or_default()
@@ -127,59 +133,23 @@ pub fn quads_to_graph_data(quads: &[Quad]) -> GraphData {
         }
     }
 
-    // Pass 3: build nodes and links (deduplicated via HashMaps)
     let mut all_nodes: HashMap<String, GraphNode> = HashMap::new();
     let mut all_links: HashMap<(String, String, String), GraphLink> = HashMap::new();
 
-    for quad in quads {
-        let pred = quad.predicate.as_str();
-        let subj = clean_id(&quad.subject.to_string());
+    for triple in triples {
+        let pred = triple.predicate.as_str();
+        let subj = clean_id(&triple.subject.to_string());
 
-        // rdf:type — already handled in pass 1, just register node
         if pred == rdf_type {
-            all_nodes.entry(subj.clone()).or_insert_with(|| {
-                let label = label_map
-                    .get(&subj)
-                    .cloned()
-                    .unwrap_or_else(|| shorten_iri(&subj));
-                let group = type_map
-                    .get(&subj)
-                    .cloned()
-                    .unwrap_or_else(|| "resource".to_string());
-                let properties = props_map.remove(&subj).unwrap_or_default();
-                GraphNode { id: subj.clone(), label, group, properties }
-            });
+            ensure_node(&mut all_nodes, &subj, &label_map, &type_map, &mut props_map);
             continue;
         }
 
-        match &quad.object {
+        match &triple.object {
             Term::NamedNode(obj) => {
                 let obj_iri = obj.as_str().to_string();
-                // Ensure both resource nodes exist
-                all_nodes.entry(subj.clone()).or_insert_with(|| {
-                    let label = label_map
-                        .get(&subj)
-                        .cloned()
-                        .unwrap_or_else(|| shorten_iri(&subj));
-                    let group = type_map
-                        .get(&subj)
-                        .cloned()
-                        .unwrap_or_else(|| "resource".to_string());
-                    let properties = props_map.remove(&subj).unwrap_or_default();
-                    GraphNode { id: subj.clone(), label, group, properties }
-                });
-                all_nodes.entry(obj_iri.clone()).or_insert_with(|| {
-                    let label = label_map
-                        .get(&obj_iri)
-                        .cloned()
-                        .unwrap_or_else(|| shorten_iri(&obj_iri));
-                    let group = type_map
-                        .get(&obj_iri)
-                        .cloned()
-                        .unwrap_or_else(|| "resource".to_string());
-                    let properties = props_map.remove(&obj_iri).unwrap_or_default();
-                    GraphNode { id: obj_iri.clone(), label, group, properties }
-                });
+                ensure_node(&mut all_nodes, &subj, &label_map, &type_map, &mut props_map);
+                ensure_node(&mut all_nodes, &obj_iri, &label_map, &type_map, &mut props_map);
                 let link_label = shorten_iri(pred);
                 all_links
                     .entry((subj.clone(), obj_iri.clone(), link_label.clone()))
@@ -190,19 +160,7 @@ pub fn quads_to_graph_data(quads: &[Quad]) -> GraphData {
                     });
             }
             Term::Literal(lit) => {
-                // Ensure subject node exists
-                all_nodes.entry(subj.clone()).or_insert_with(|| {
-                    let label = label_map
-                        .get(&subj)
-                        .cloned()
-                        .unwrap_or_else(|| shorten_iri(&subj));
-                    let group = type_map
-                        .get(&subj)
-                        .cloned()
-                        .unwrap_or_else(|| "resource".to_string());
-                    let properties = props_map.remove(&subj).unwrap_or_default();
-                    GraphNode { id: subj.clone(), label, group, properties }
-                });
+                ensure_node(&mut all_nodes, &subj, &label_map, &type_map, &mut props_map);
 
                 let value = lit.value().to_string();
 
@@ -212,7 +170,6 @@ pub fn quads_to_graph_data(quads: &[Quad]) -> GraphData {
                 value.hash(&mut hasher);
                 let literal_id = format!("literal:{:x}", hasher.finish());
 
-                // Deduplicated literal node
                 all_nodes.entry(literal_id.clone()).or_insert_with(|| {
                     let label = if value.chars().count() > 40 {
                         let truncated: String = value.chars().take(40).collect();

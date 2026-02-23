@@ -2,9 +2,11 @@
 
 import { use } from "react";
 import { useRouter } from "next/navigation";
+import { useSWRConfig } from "swr";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
-import { useAsync } from "@/hooks/use-async";
+import useSWR from "swr";
+import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { fetchSchema, fetchCloudAccount, updateCloudAccount } from "@/lib/api";
 import { CloudAccountForm } from "@/components/cloud-account-form";
 import { PageHeader } from "@/components/page-header";
@@ -17,21 +19,23 @@ export default function EditCloudAccountPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const { mutate: globalMutate } = useSWRConfig();
 
-  const { data, loading } = useAsync(
+  const { data, isLoading } = useSWR(
+    `cloud-edit-${id}`,
     () => Promise.all([fetchSchema(), fetchCloudAccount(id)]),
-    [id],
   );
+  const showSkeleton = useDelayedLoading(isLoading);
 
   const [schema, account] = data ?? [[], null];
 
-  if (loading) {
-    return (
+  if (isLoading) {
+    return showSkeleton ? (
       <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-40 w-full" />
       </div>
-    );
+    ) : null;
   }
 
   if (!account) {
@@ -40,7 +44,7 @@ export default function EditCloudAccountPage({
 
   return (
     <>
-      <PageHeader title={account.name} backHref="/settings?tab=cloud-accounts" backLabel="Cloud Accounts" />
+      <PageHeader title={account.name} backHref="/settings/cloud-accounts" backLabel="Cloud Accounts" />
       <CloudAccountForm
         schema={schema}
         account={account}
@@ -52,13 +56,14 @@ export default function EditCloudAccountPage({
               fields: data.fields,
             });
             toast.success("Cloud account updated");
-            router.push("/settings?tab=cloud-accounts");
+            globalMutate("cloud-init");
+            router.push("/settings/cloud-accounts");
           } catch (err) {
             toastError(err instanceof Error ? err.message : "Failed to update");
             throw err;
           }
         }}
-        onCancel={() => router.push("/settings?tab=cloud-accounts")}
+        onCancel={() => router.push("/settings/cloud-accounts")}
       />
     </>
   );

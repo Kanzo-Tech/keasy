@@ -34,7 +34,6 @@ fn nn(iri: &str) -> NamedNode {
     NamedNode::new_unchecked(iri)
 }
 
-/// URN for per-job entities (catalog, dataset, distribution).
 fn job_urn(kind: &str, job_id: &str, name: &str) -> NamedNode {
     if name.is_empty() {
         nn(&format!("urn:keasy:{kind}:{job_id}"))
@@ -46,12 +45,10 @@ fn job_urn(kind: &str, job_id: &str, name: &str) -> NamedNode {
     }
 }
 
-/// URN for shared entities — same data produces the same URI across jobs.
 fn shared_urn(kind: &str, identity: &str) -> NamedNode {
     nn(&format!("urn:keasy:{kind}:{}", slug(identity)))
 }
 
-/// Normalize a string for use in URIs.
 fn slug(s: &str) -> String {
     s.trim()
         .to_lowercase()
@@ -63,7 +60,6 @@ fn slug(s: &str) -> String {
         .to_string()
 }
 
-/// Generate a DCAT-AP catalog from structured input in the requested format.
 pub fn generate_dcat_catalog(input: &DcatInput, format: RdfExportFormat) -> Result<String, String> {
     let triples = build_catalog_triples(input);
     serialize_triples(&triples, format)
@@ -78,7 +74,6 @@ pub fn build_catalog_triples(input: &DcatInput) -> Vec<Triple> {
         .as_deref()
         .unwrap_or("Keasy Pipeline Output");
 
-    // Catalog type and title
     triples.push(Triple::new(catalog.clone(), rdf::TYPE, nn(DCAT_CATALOG)));
     triples.push(Triple::new(
         catalog.clone(),
@@ -86,7 +81,6 @@ pub fn build_catalog_triples(input: &DcatInput) -> Vec<Triple> {
         Literal::new_simple_literal(catalog_title),
     ));
 
-    // Description
     if let Some(desc) = &input.org.catalog_description {
         triples.push(Triple::new(
             catalog.clone(),
@@ -95,14 +89,12 @@ pub fn build_catalog_triples(input: &DcatInput) -> Vec<Triple> {
         ));
     }
 
-    // Issued
     triples.push(Triple::new(
         catalog.clone(),
         nn(DCT_ISSUED),
         Literal::new_typed_literal(&input.completed_at, nn(XSD_DATETIME)),
     ));
 
-    // Publisher — shared entity: same name/URI yields the same node across jobs
     let publisher = match &input.org.publisher_uri {
         Some(uri) => nn(uri),
         None => shared_urn("publisher", &input.org.publisher_name),
@@ -118,7 +110,6 @@ pub fn build_catalog_triples(input: &DcatInput) -> Vec<Triple> {
         triples.push(Triple::new(publisher, nn(FOAF_HOMEPAGE), nn(uri)));
     }
 
-    // Contact point
     if let Some(email) = &input.org.contact_email {
         let contact = shared_urn("contact", email);
         triples.push(Triple::new(catalog.clone(), nn(DCAT_CONTACT_POINT), contact.clone()));
@@ -130,12 +121,10 @@ pub fn build_catalog_triples(input: &DcatInput) -> Vec<Triple> {
         ));
     }
 
-    // License
     if let Some(license) = &input.org.license_uri {
         triples.push(Triple::new(catalog.clone(), nn(DCT_LICENSE), nn(license)));
     }
 
-    // Dataset references + dataset triples
     for dataset in &input.datasets {
         let dataset_uri = job_urn("dataset", &input.job_id, &dataset.type_name);
         triples.push(Triple::new(
@@ -249,7 +238,6 @@ fn serialize_triples(triples: &[Triple], format: RdfExportFormat) -> Result<Stri
     }
 }
 
-/// Map a file extension to a DCAT media type.
 pub fn media_type_from_extension(path: &str) -> String {
     let ext = path.rsplit('.').next().unwrap_or("");
     match ext {
@@ -265,7 +253,6 @@ pub fn media_type_from_extension(path: &str) -> String {
     .to_string()
 }
 
-/// Minimal URI component encoding for use in URNs.
 fn encode_uri_component(s: &str) -> String {
     s.replace(' ', "%20")
         .replace('<', "%3C")

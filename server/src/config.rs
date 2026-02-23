@@ -67,9 +67,6 @@ impl ServerConfig {
             std::env::var("KEASY_DATA_DIR").unwrap_or_else(|_| "./data".to_string()),
         );
 
-        // Secret key resolution order:
-        // 1. KEASY_SECRET_KEY_FILE → read contents from file (Docker/K8s secrets)
-        // 2. KEASY_SECRET_KEY     → use value directly (env var / compose)
         let secret_key = resolve_secret("KEASY_SECRET_KEY");
 
         let cache_capacity = std::env::var("KEASY_CACHE_CAPACITY")
@@ -91,13 +88,7 @@ impl ServerConfig {
     }
 }
 
-/// Resolve a secret from either a `_FILE` path or the env var directly.
-///
-/// Pattern used by Docker official images (e.g. `POSTGRES_PASSWORD_FILE`):
-/// - If `{name}_FILE` is set, read the file contents as the secret value.
-/// - Otherwise fall back to `{name}` env var.
 fn resolve_secret(name: &str) -> Option<SecretString> {
-    // Try _FILE variant first
     let file_var = format!("{name}_FILE");
     if let Ok(path) = std::env::var(&file_var) {
         match std::fs::read_to_string(&path) {
@@ -114,10 +105,8 @@ fn resolve_secret(name: &str) -> Option<SecretString> {
         }
     }
 
-    // Fall back to direct env var
     std::env::var(name)
         .ok()
         .filter(|s| !s.trim().is_empty())
         .map(SecretString::from)
 }
-

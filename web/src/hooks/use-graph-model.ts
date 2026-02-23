@@ -47,23 +47,19 @@ export function useGraphModel() {
 
   const removeNode = useCallback((id: string) => {
     setModel((prev) => {
-      // Drop all links touching this node
       const links = prev.links.filter(
         (l) => l.source !== id && l.target !== id,
       );
 
-      // Collect every node still referenced by a surviving link
       const referenced = new Set<string>();
       for (const l of links) {
         referenced.add(l.source);
         referenced.add(l.target);
       }
 
-      // Build new expanded map (without the removed node)
       const expanded = new Map(prev.expanded);
       expanded.delete(id);
 
-      // Keep nodes that are still referenced OR explicitly expanded
       const nodes = new Map<string, GraphNode>();
       for (const [nid, node] of prev.nodes) {
         if (nid !== id && (referenced.has(nid) || expanded.has(nid))) {
@@ -79,7 +75,6 @@ export function useGraphModel() {
     setModel(emptyModel);
   }, []);
 
-  // Derive stable output for ForceGraph — clone links so d3 can mutate freely
   const graphData = useMemo(
     () => ({
       nodes: [...model.nodes.values()],

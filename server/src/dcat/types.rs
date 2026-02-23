@@ -15,7 +15,7 @@ pub struct DcatInput {
 pub struct DatasetInfo {
     pub type_name: String,
     pub source_name: Option<String>,
-    pub rdf_base: Option<String>,
+    pub rdf_subject: Option<String>,
     pub rdf_type: Option<String>,
     pub fields: Vec<FieldInfo>,
     pub distributions: Vec<DistributionInfo>,

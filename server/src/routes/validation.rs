@@ -2,11 +2,12 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use rudof_rdf::rdf_core::RDFFormat;
 
 use crate::cloud::reader;
-use crate::graph::loader;
-use crate::graph::rdf_graph::RdfGraph;
+use crate::settings::types::LocationType;
 use crate::validation::types::{ShapeFormat, ValidationRequest};
+use crate::validation::ValidatableGraph;
 use crate::AppState;
 
 use super::error_response;
@@ -15,9 +16,8 @@ pub async fn validate_job(
     State(state): State<AppState>,
     Json(req): Json<ValidationRequest>,
 ) -> Response {
-    // Look up connection (for shapes)
-    let conn = match state.connections.get(&req.connection_id) {
-        Some(c) => c,
+    let connection = match state.db.get_connection(&req.connection_id).await {
+        Some(s) => s,
         None => {
             return error_response(
                 StatusCode::NOT_FOUND,
@@ -27,10 +27,28 @@ pub async fn validate_job(
         }
     };
 
-    let creds = state.cloud_accounts.env_snapshot_all();
+    if connection.location_type == LocationType::Local {
+        return error_response(
+            StatusCode::BAD_REQUEST,
+            "UNSUPPORTED",
+            "Validation from local connections is not yet supported",
+        );
+    }
 
-    // Download the actual output data from cloud
-    let data_bytes = match reader::download_from_url(&req.data_url, &creds).await {
+    let account_id = match &connection.cloud_account_id {
+        Some(id) => id.clone(),
+        None => {
+            return error_response(
+                StatusCode::BAD_REQUEST,
+                "NO_ACCOUNT",
+                "Connection has no cloud account",
+            )
+        }
+    };
+
+    let creds = state.db.env_snapshot(std::slice::from_ref(&account_id)).await;
+
+    let data_bytes = match reader::download(&req.data_url, &creds).await {
         Ok(bytes) => bytes,
         Err(msg) => {
             return error_response(
@@ -41,30 +59,21 @@ pub async fn validate_job(
         }
     };
 
-    // Parse data as RDF triples
-    let triples = match loader::parse_rdf_to_triples(&data_bytes, &req.data_url) {
-        Ok(t) => t,
+    let shape_url = format!(
+        "{}/{}",
+        connection.url.trim_end_matches('/'),
+        req.shape_path.trim_start_matches('/')
+    );
+    let shape_bytes = match reader::download(&shape_url, &creds).await {
+        Ok(bytes) => bytes,
         Err(msg) => {
             return error_response(
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "PARSE_ERROR",
-                format!("Failed to parse output data: {msg}"),
+                StatusCode::BAD_GATEWAY,
+                "CLOUD_ERROR",
+                format!("Failed to download shape file: {msg}"),
             )
         }
     };
-
-    // Download shape file from connection
-    let shape_bytes =
-        match reader::download_file(&conn.container_url, &req.shape_path, &creds).await {
-            Ok(bytes) => bytes,
-            Err(msg) => {
-                return error_response(
-                    StatusCode::BAD_GATEWAY,
-                    "CLOUD_ERROR",
-                    format!("Failed to download shape file: {msg}"),
-                )
-            }
-        };
 
     let shape_content = match String::from_utf8(shape_bytes) {
         Ok(s) => s,
@@ -77,7 +86,6 @@ pub async fn validate_job(
         }
     };
 
-    // Detect shape format from file extension
     let path_lower = req.shape_path.to_lowercase();
     let shape_format = if path_lower.ends_with(".shex") {
         ShapeFormat::ShEx
@@ -91,12 +99,14 @@ pub async fn validate_job(
         );
     };
 
-    // Load data into a temporary RdfGraph, then validate
-    let shape_map = req.shape_map.clone();
+    let data_format = rdf_format_from_url(&req.data_url);
+
     let result = tokio::task::spawn_blocking(move || {
-        let graph = RdfGraph::new();
-        graph.insert_triples(None, &triples);
-        graph.validate(&shape_content, shape_map.as_deref(), shape_format)
+        let graph = ValidatableGraph::from_bytes(&data_bytes, &data_format)?;
+        match shape_format {
+            ShapeFormat::ShEx => graph.validate_shex(&shape_content),
+            ShapeFormat::Shacl => graph.validate_shacl(&shape_content),
+        }
     })
     .await;
 
@@ -112,5 +122,18 @@ pub async fn validate_job(
             "INTERNAL_ERROR",
             format!("Validation task panicked: {e}"),
         ),
+    }
+}
+
+fn rdf_format_from_url(url: &str) -> RDFFormat {
+    let path = url.split('?').next().unwrap_or(url);
+    match path.rsplit('.').next() {
+        Some("nt") | Some("ntriples") => RDFFormat::NTriples,
+        Some("ttl") | Some("turtle") => RDFFormat::Turtle,
+        Some("rdf") | Some("xml") => RDFFormat::Rdfxml,
+        Some("nq") | Some("nquads") => RDFFormat::NQuads,
+        Some("trig") => RDFFormat::TriG,
+        Some("n3") => RDFFormat::N3,
+        _ => RDFFormat::Turtle,
     }
 }

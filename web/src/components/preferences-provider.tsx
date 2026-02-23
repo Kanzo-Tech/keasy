@@ -17,7 +17,6 @@ interface PreferencesContextValue {
 }
 
 const defaultPreferences: Preferences = {
-  shiki_theme: "github-dark",
   accent_color: "neutral",
   font_family: "geist",
   mono_font_family: "geist-mono",
@@ -52,7 +51,6 @@ function applyToDOM(prefs: Preferences) {
       el.setAttribute(attr, prefs[key]);
     }
   }
-  localStorage.setItem("preferences:shiki-theme", prefs.shiki_theme);
 }
 
 export function PreferencesProvider({ children }: { children: React.ReactNode }) {

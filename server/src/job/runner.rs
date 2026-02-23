@@ -9,22 +9,20 @@ use fossil_lang::runtime::executor::ExecutionConfig;
 use fossil_lang::runtime::storage::StorageConfig;
 
 use super::errors::{JobError, classify_error};
-use super::store::JobStore;
 use super::types::{JobStatus, now_iso8601};
 use crate::cloud::resolver::CloudOutputResolver;
+use crate::db::Database;
 use crate::dcat::extract::extract_dcat_input;
 use crate::dcat::generator::{build_catalog_triples, generate_dcat_catalog};
 use crate::dcat::types::DcatInput;
 use crate::rdf::format::RdfExportFormat;
 use crate::graph::rdf_graph::RdfGraph;
-use crate::routes::scripts::OutputInfo;
-use crate::script::ScriptContext;
-use crate::settings::accounts::CloudAccountStore;
+use crate::pipeline::PipelineOutput;
+use crate::script;
 use crate::settings::org::OrgSettings;
 
 pub struct JobRunner {
-    store: JobStore,
-    cloud_accounts: CloudAccountStore,
+    db: Database,
     catalog: Arc<RdfGraph>,
     semaphore: Arc<Semaphore>,
     job_timeout: Duration,
@@ -33,15 +31,13 @@ pub struct JobRunner {
 
 impl JobRunner {
     pub fn new(
-        store: JobStore,
-        cloud_accounts: CloudAccountStore,
+        db: Database,
         catalog: Arc<RdfGraph>,
         max_concurrent: usize,
         job_timeout_secs: u64,
     ) -> Self {
         Self {
-            store,
-            cloud_accounts,
+            db,
             catalog,
             semaphore: Arc::new(Semaphore::new(max_concurrent)),
             job_timeout: Duration::from_secs(job_timeout_secs),
@@ -57,43 +53,39 @@ impl JobRunner {
         &self,
         job_id: String,
         script: String,
-        cloud_account_ids: Vec<String>,
+        storage: StorageConfig,
         org_settings: Option<OrgSettings>,
         dcat_enabled: bool,
         dcat_format: Option<String>,
     ) {
-        let store = self.store.clone();
+        let db = self.db.clone();
         let semaphore = self.semaphore.clone();
-        let cloud_accounts = self.cloud_accounts.clone();
         let catalog = self.catalog.clone();
         let job_timeout = self.job_timeout;
-
-        // Build StorageConfig from selected cloud accounts
-        let storage = cloud_accounts.build_storage_config(&cloud_account_ids);
 
         self.tasks.lock().expect("tasks lock poisoned").spawn(async move {
             let _permit = match semaphore.acquire_owned().await {
                 Ok(permit) => permit,
                 Err(_) => {
-                    store.update(&job_id, |job| {
+                    db.update_job(&job_id, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(JobError::new("INTERNAL_ERROR", "Failed to acquire execution permit"));
                         job.completed_at = Some(now_iso8601());
-                    });
+                    }).await;
                     return;
                 }
             };
 
-            // Snapshot outputs from the stored job for DCAT extraction
-            let (job_name, outputs) = store
-                .get(&job_id)
-                .map(|j| (j.name.clone(), j.outputs.clone()))
+            let (job_name, pipeline_outputs) = db
+                .get_job(&job_id)
+                .await
+                .map(|j| (j.name.clone(), j.pipeline.outputs.clone()))
                 .unwrap_or_default();
 
-            store.update(&job_id, |job| {
+            db.update_job(&job_id, |job| {
                 job.status = JobStatus::Running;
                 job.started_at = Some(now_iso8601());
-            });
+            }).await;
 
             info!(job_id = %job_id, "Job started");
 
@@ -107,7 +99,7 @@ impl JobRunner {
                         storage,
                         if dcat_enabled { org_settings.as_ref() } else { None },
                         job_name.as_deref(),
-                        &outputs,
+                        &pipeline_outputs,
                         dcat_format.as_deref(),
                     )
                 }),
@@ -117,42 +109,41 @@ impl JobRunner {
             match result {
                 Ok(Ok(Ok((catalog_str, dcat_input)))) => {
                     info!(job_id = %job_id, "Job completed");
-                    // Insert DCAT triples into the catalog
                     if let Some(input) = &dcat_input {
                         let graph_name = format!("urn:keasy:job:{job_id}");
                         let triples = build_catalog_triples(input);
                         catalog.insert_triples(Some(&graph_name), &triples);
                     }
-                    store.update(&job_id, |job| {
+                    db.update_job(&job_id, |job| {
                         job.status = JobStatus::Completed;
                         job.completed_at = Some(now_iso8601());
                         job.catalog = catalog_str;
                         job.dcat_input = dcat_input;
-                    });
+                    }).await;
                 }
                 Ok(Ok(Err(err))) => {
                     error!(job_id = %job_id, error = %err, "Job failed");
-                    store.update(&job_id, |job| {
+                    db.update_job(&job_id, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(classify_error(&err));
                         job.completed_at = Some(now_iso8601());
-                    });
+                    }).await;
                 }
                 Ok(Err(join_err)) => {
                     error!(job_id = %job_id, error = %join_err, "Job panicked");
-                    store.update(&job_id, |job| {
+                    db.update_job(&job_id, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(JobError::with_detail("INTERNAL_ERROR", "An internal error occurred", join_err.to_string()));
                         job.completed_at = Some(now_iso8601());
-                    });
+                    }).await;
                 }
                 Err(_elapsed) => {
                     error!(job_id = %job_id, "Job execution timed out");
-                    store.update(&job_id, |job| {
+                    db.update_job(&job_id, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(JobError::new("TIMEOUT", "Job execution timed out"));
                         job.completed_at = Some(now_iso8601());
-                    });
+                    }).await;
                 }
             }
         });
@@ -191,16 +182,12 @@ fn run_job(
     storage: StorageConfig,
     org: Option<&OrgSettings>,
     job_name: Option<&str>,
-    outputs: &[OutputInfo],
+    outputs: &[PipelineOutput],
     dcat_format: Option<&str>,
 ) -> Result<(Option<String>, Option<DcatInput>), String> {
-    let ctx = ScriptContext::new();
-
-    let compiled = ctx
-        .compile(&format!("job-{}", job_id), script, storage.clone())
+    let compiled = script::compile(&format!("job-{}", job_id), script, storage.clone())
         .map_err(|errors| errors.join("; "))?;
 
-    // Extract DCAT metadata BEFORE execute (program is moved by execute)
     let completed_at = now_iso8601();
     let dcat_input = org.map(|org| {
         extract_dcat_input(&compiled.program, job_id, job_name, &completed_at, org, outputs)
@@ -214,9 +201,8 @@ fn run_job(
         storage,
     };
 
-    ctx.execute(compiled, config)?;
+    script::execute(compiled, config)?;
 
-    // Generate catalog string after successful execution
     let format = dcat_format
         .map(RdfExportFormat::from_name)
         .transpose()?

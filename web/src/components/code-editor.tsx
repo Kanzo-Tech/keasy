@@ -1,0 +1,277 @@
+"use client";
+
+import { useEffect, useRef, useCallback } from "react";
+import { EditorView, keymap, lineNumbers, drawSelection, highlightActiveLine, placeholder as cmPlaceholder } from "@codemirror/view";
+import { EditorState, Extension } from "@codemirror/state";
+import { defaultKeymap, indentWithTab } from "@codemirror/commands";
+import { syntaxHighlighting, StreamLanguage } from "@codemirror/language";
+import {
+  autocompletion,
+  startCompletion,
+  CompletionContext,
+  type CompletionResult,
+} from "@codemirror/autocomplete";
+import { cn } from "@/lib/utils";
+import {
+  lightHighlight, darkHighlight,
+  lightTheme, darkTheme,
+  editorLayout, useIsDark,
+} from "@/lib/codemirror-theme";
+import { fetchConnectionFiles } from "@/lib/api";
+import type { Connection, FileEntry, ProviderInfo } from "@/lib/types";
+
+function fossilLanguage() {
+  return StreamLanguage.define({
+    token(stream) {
+      if (stream.match(/^\/\/.*/)) return "comment";
+      if (stream.match(/^"(?:[^"\\]|\\.)*"/)) return "string";
+      if (stream.match(/^#\[/)) {
+        let depth = 1;
+        while (depth > 0 && !stream.eol()) {
+          const ch = stream.next();
+          if (ch === "[") depth++;
+          else if (ch === "]") depth--;
+        }
+        return "meta";
+      }
+      if (stream.match(/^@[a-zA-Z0-9_-]+\/[a-zA-Z0-9_./-]+/)) return "special(string)";
+      if (stream.match(/^(?:type|do|end|let|each|join|on|ref|if|else|match|fn|use|import|export|pub|mod)\b/)) return "keyword";
+      if (stream.match(/^(?:true|false)\b/)) return "bool";
+      if (stream.match(/^(?:string|int|float|bool)\b/)) return "typeName";
+      if (stream.match(/^\w+!/)) return "keyword";
+      if (stream.match(/^(?:Rdf|Report|String|Math|List|Map)\b/)) return "typeName";
+      if (stream.match(/^[+-]?\d+(\.\d+)?([eE][+-]?\d+)?/)) return "number";
+      if (stream.match(/^\.\./)) return "operator";
+      if (stream.match(/^\|>/)) return "operator";
+      if (stream.match(/^\+>/)) return "operator";
+      if (stream.match(/^->/)) return "operator";
+      if (stream.match(/^[=<>!]+/)) return "operator";
+      if (stream.match(/^[{}()\[\];,.:]/)) return "punctuation";
+      if (stream.match(/^\$\{/)) return "operator";
+      if (stream.match(/^[A-Z]\w*/)) return "typeName";
+      if (stream.match(/^[a-z_]\w*/)) return "variableName";
+      stream.next();
+      return null;
+    },
+    startState() { return {}; },
+  });
+}
+
+function detectMacroContext(doc: string, pos: number, providers: ProviderInfo[]): "data" | "schema" | null {
+  const before = doc.slice(0, pos);
+  const match = before.match(/(\w+)!\s*\([^)]*$/);
+  if (!match) return null;
+
+  const macroName = match[1];
+  const provider = providers.find((p) => p.name === macroName);
+  if (!provider) return null;
+
+  if (provider.kind === "data" || provider.kind === "both") return "data";
+  if (provider.kind === "schema") return "schema";
+  return null;
+}
+
+function connectionCompletion(
+  connections: Connection[],
+  providers: ProviderInfo[],
+  fileCache: Map<string, FileEntry[]>,
+) {
+  return async (context: CompletionContext): Promise<CompletionResult | null> => {
+    // Try path completion first: @connectionName/partialPath
+    const pathMatch = context.matchBefore(/@[a-zA-Z0-9_-]+\/[a-zA-Z0-9_./-]*/);
+    if (pathMatch) {
+      const slashIdx = pathMatch.text.indexOf("/");
+      const connectionName = pathMatch.text.slice(1, slashIdx);
+      const pathPrefix = pathMatch.text.slice(slashIdx + 1);
+      const connection = connections.find((s) => s.name === connectionName);
+      if (!connection) return null;
+
+      let files = fileCache.get(connection.id);
+      if (!files) {
+        try {
+          files = await fetchConnectionFiles(connection.id);
+          fileCache.set(connection.id, files);
+        } catch {
+          return null;
+        }
+      }
+
+      // Filter by provider extensions based on macro context
+      const macroKind = detectMacroContext(
+        context.state.doc.toString(),
+        context.pos,
+        providers,
+      );
+      const supportedExts = providers
+        .filter((p) => !macroKind || p.kind === macroKind || p.kind === "both")
+        .flatMap((p) => p.extensions);
+
+      const filtered = files.filter((f) => {
+        const matchesPrefix = f.path.toLowerCase().includes(pathPrefix.toLowerCase());
+        if (supportedExts.length === 0) return matchesPrefix;
+        const ext = f.path.split(".").pop()?.toLowerCase() ?? "";
+        return matchesPrefix && supportedExts.includes(ext);
+      });
+
+      if (filtered.length === 0) return null;
+
+      return {
+        from: pathMatch.from + slashIdx + 1,
+        options: filtered.map((f) => ({
+          label: f.path,
+          type: "file",
+          detail: formatSize(f.size),
+          apply: f.path,
+        })),
+      };
+    }
+
+    // Connection name completion: @partialName
+    const nameMatch = context.matchBefore(/@[a-zA-Z0-9_-]*/);
+    if (!nameMatch) return null;
+
+    const prefix = nameMatch.text.slice(1);
+
+    // Filter by macro context
+    const macroKind = detectMacroContext(
+      context.state.doc.toString(),
+      context.pos,
+      providers,
+    );
+    const filtered = connections.filter((s) => {
+      const matchesName = s.name.toLowerCase().includes(prefix.toLowerCase());
+      if (!macroKind) return matchesName;
+      if (macroKind === "data") return matchesName && s.kind === "data";
+      if (macroKind === "schema") return matchesName && s.kind === "vocab";
+      return matchesName;
+    });
+
+    if (filtered.length === 0) return null;
+
+    return {
+      from: nameMatch.from,
+      options: filtered.map((s) => ({
+        label: `@${s.name}`,
+        type: s.kind === "data" ? "variable" : "class",
+        detail: s.kind === "data" ? "Data" : "Vocabulary",
+        info: s.url,
+        apply: (view, _completion, from, to) => {
+          const insert = `@${s.name}/`;
+          view.dispatch({
+            changes: { from, to, insert },
+            selection: { anchor: from + insert.length },
+          });
+          setTimeout(() => startCompletion(view), 0);
+        },
+      })),
+    };
+  };
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+interface CodeEditorProps {
+  value: string;
+  onChange: (value: string) => void;
+  connections?: Connection[];
+  providers?: ProviderInfo[];
+  placeholder?: string;
+  className?: string;
+}
+
+export function CodeEditor({
+  value,
+  onChange,
+  connections = [],
+  providers = [],
+  placeholder,
+  className,
+}: CodeEditorProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<EditorView | null>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const fileCacheRef = useRef(new Map<string, FileEntry[]>());
+  const isDark = useIsDark();
+
+  const createExtensions = useCallback((): Extension[] => {
+    const exts: Extension[] = [
+      lineNumbers(),
+      drawSelection(),
+      highlightActiveLine(),
+      keymap.of([...defaultKeymap, indentWithTab]),
+      isDark ? darkTheme : lightTheme,
+      syntaxHighlighting(isDark ? darkHighlight : lightHighlight),
+      fossilLanguage(),
+      EditorView.updateListener.of((update) => {
+        if (update.docChanged) {
+          onChangeRef.current(update.state.doc.toString());
+        }
+      }),
+      editorLayout,
+      EditorView.theme({
+        ".cm-activeLineGutter": {
+          backgroundColor: "oklch(var(--cm-active-bg) / 5%)",
+        },
+        ".cm-activeLine": {
+          backgroundColor: "oklch(var(--cm-active-bg) / 5%)",
+        },
+      }),
+    ];
+
+    if (placeholder) {
+      exts.push(cmPlaceholder(placeholder));
+    }
+
+    if (connections.length > 0) {
+      exts.push(
+        autocompletion({
+          override: [connectionCompletion(connections, providers, fileCacheRef.current)],
+          activateOnTyping: true,
+        }),
+      );
+    }
+
+    return exts;
+  }, [isDark, connections, providers, placeholder]);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    if (viewRef.current) {
+      viewRef.current.destroy();
+    }
+
+    const state = EditorState.create({
+      doc: value,
+      extensions: createExtensions(),
+    });
+
+    viewRef.current = new EditorView({
+      state,
+      parent: containerRef.current,
+    });
+
+    return () => {
+      viewRef.current?.destroy();
+      viewRef.current = null;
+    };
+    // Only recreate on theme/sources change, not on value change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createExtensions]);
+
+  return (
+    <div
+      className={cn(
+        "rounded-md border relative flex-1 min-h-0 overflow-hidden",
+        className,
+      )}
+    >
+      <div ref={containerRef} className="absolute inset-0" />
+    </div>
+  );
+}

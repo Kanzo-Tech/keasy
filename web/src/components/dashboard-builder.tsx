@@ -1,23 +1,30 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   BarChart3,
   TrendingUp,
   Mountain,
   PieChart as PieChartIcon,
   Crosshair,
-  Loader2,
   Columns2,
   Columns3,
   Square,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import useSWR from "swr";
+import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { ChartWidget, isNumeric, isCategorical } from "@/components/chart-widget";
+import {
+  ChartWidget,
+  CHART_RULES,
+  isNumeric,
+  isChartAvailable,
+  defaultAxesForType,
+} from "@/components/chart-widget";
 import { fetchJob, loadJobDiscovery } from "@/lib/api";
 import {
   loadDashboard,
@@ -26,7 +33,7 @@ import {
   type ChartWidget as ChartWidgetType,
   type DashboardColumns,
 } from "@/lib/dashboard-store";
-import type { OutputInfo } from "@/lib/types";
+import type { PipelineOutput } from "@/lib/types";
 
 interface DashboardBuilderProps {
   jobId: string;
@@ -38,34 +45,30 @@ export interface FieldSchema {
   iri: string;
 }
 
-interface ChartTypeOption {
-  value: ChartType;
-  label: string;
-  icon: LucideIcon;
-}
+const CHART_TYPE_ICONS: Record<ChartType, LucideIcon> = {
+  bar: BarChart3,
+  line: TrendingUp,
+  area: Mountain,
+  pie: PieChartIcon,
+  scatter: Crosshair,
+};
 
-const ALL_CHART_TYPES: ChartTypeOption[] = [
-  { value: "bar", label: "Bar", icon: BarChart3 },
-  { value: "line", label: "Line", icon: TrendingUp },
-  { value: "area", label: "Area", icon: Mountain },
-  { value: "pie", label: "Pie", icon: PieChartIcon },
-  { value: "scatter", label: "Scatter", icon: Crosshair },
-];
+const ALL_CHART_TYPES = (Object.keys(CHART_RULES) as ChartType[]).map((value) => ({
+  value,
+  icon: CHART_TYPE_ICONS[value],
+}));
 
-function buildSchema(outputs: OutputInfo[]): FieldSchema[] {
+function buildSchema(outputs: PipelineOutput[]): FieldSchema[] {
   const seen = new Set<string>();
   const fields: FieldSchema[] = [];
   for (const o of outputs) {
-    const types = o.field_types ?? {};
-    const uris = o.field_uris ?? {};
-    for (const name of o.fields) {
-      const iri = uris[name];
-      if (!iri || seen.has(name)) continue;
-      seen.add(name);
+    for (const field of o.fields) {
+      if (!field.uri || seen.has(field.name)) continue;
+      seen.add(field.name);
       fields.push({
-        name,
-        type: types[name] ?? "String",
-        iri,
+        name: field.name,
+        type: field.type,
+        iri: field.uri,
       });
     }
   }
@@ -74,50 +77,38 @@ function buildSchema(outputs: OutputInfo[]): FieldSchema[] {
 
 export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
   const { data: job } = useSWR(`job-${jobId}`, () => fetchJob(jobId));
-  const [graphReady, setGraphReady] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [widgets, setWidgets] = useState<ChartWidgetType[]>([]);
-  const [columns, setColumns] = useState<DashboardColumns>(2);
 
-  useEffect(() => {
-    const layout = loadDashboard(jobId);
-    setWidgets(layout.widgets);
-    setColumns(layout.columns);
-  }, [jobId]);
+  const { data: savedLayout, isLoading: layoutLoading } = useSWR(
+    `dashboard-${jobId}`,
+    () => loadDashboard(jobId),
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
+  const [widgets, setWidgets] = useState<ChartWidgetType[] | null>(null);
+  const [columns, setColumns] = useState<DashboardColumns | null>(null);
 
-    loadJobDiscovery(jobId)
-      .then(() => { if (!cancelled) setGraphReady(true); })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load data");
-      })
-      .finally(() => { if (!cancelled) setLoading(false); });
+  const effectiveWidgets = widgets ?? savedLayout?.widgets ?? [];
+  const effectiveColumns = columns ?? savedLayout?.columns ?? 2;
 
-    return () => { cancelled = true; };
-  }, [jobId]);
+  const { data: discovery, isLoading, error } = useSWR(
+    `discovery-db-${jobId}`,
+    () => loadJobDiscovery(jobId),
+  );
+  const showSkeleton = useDelayedLoading(isLoading || layoutLoading);
 
+  const graphReady = discovery != null;
+
+  const pipelineOutputs = job?.pipeline?.outputs;
   const schema = useMemo(() => {
-    if (!job?.outputs) return [];
-    return buildSchema(job.outputs);
-  }, [job?.outputs]);
+    if (!pipelineOutputs) return [];
+    return buildSchema(pipelineOutputs);
+  }, [pipelineOutputs]);
 
-  const availableChartTypes = useMemo(() => {
-    const numericCount = schema.filter((f) => isNumeric(f.type)).length;
-    const categoricalCount = schema.filter((f) => isCategorical(f.type)).length;
+  const availableChartTypes = useMemo(
+    () => ALL_CHART_TYPES.filter((t) => isChartAvailable(t.value, schema)),
+    [schema],
+  );
 
-    return ALL_CHART_TYPES.filter((t) => {
-      if (t.value === "scatter") return numericCount >= 2;
-      if (t.value === "pie") return categoricalCount > 0;
-      return schema.length > 0;
-    });
-  }, [schema]);
-
-  function persist(updated: ChartWidgetType[], cols: DashboardColumns = columns) {
+  function persist(updated: ChartWidgetType[], cols: DashboardColumns = effectiveColumns) {
     setWidgets(updated);
     saveDashboard(jobId, { widgets: updated, columns: cols });
   }
@@ -126,45 +117,23 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
     if (!value) return;
     const cols = Number(value) as DashboardColumns;
     setColumns(cols);
-    saveDashboard(jobId, { widgets, columns: cols });
+    saveDashboard(jobId, { widgets: effectiveWidgets, columns: cols });
   }
 
   function addChart(type: ChartType) {
-    const id = crypto.randomUUID();
-    const categoricalFields = schema.filter((f) => isCategorical(f.type));
-    const numericFields = schema.filter((f) => isNumeric(f.type));
-
-    let xAxis = "";
-    let yAxis: string | undefined;
-
-    switch (type) {
-      case "bar":
-      case "line":
-      case "area":
-        xAxis = categoricalFields[0]?.name ?? schema[0]?.name ?? "";
-        yAxis = numericFields[0]?.name;
-        break;
-      case "pie":
-        xAxis = categoricalFields[0]?.name ?? "";
-        break;
-      case "scatter":
-        xAxis = numericFields[0]?.name ?? "";
-        yAxis = numericFields[1]?.name;
-        break;
-    }
-
+    const { xAxis, yAxis } = defaultAxesForType(type, schema);
     persist([
-      ...widgets,
-      { id, type, title: `Chart ${widgets.length + 1}`, xAxis, yAxis },
+      ...effectiveWidgets,
+      { id: crypto.randomUUID(), type, title: `Chart ${effectiveWidgets.length + 1}`, xAxis, yAxis },
     ]);
   }
 
   function updateWidget(id: string, updated: ChartWidgetType) {
-    persist(widgets.map((w) => (w.id === id ? updated : w)));
+    persist(effectiveWidgets.map((w) => (w.id === id ? updated : w)));
   }
 
   function removeWidget(id: string) {
-    persist(widgets.filter((w) => w.id !== id));
+    persist(effectiveWidgets.filter((w) => w.id !== id));
   }
 
   const summaryText = useMemo(() => {
@@ -173,19 +142,22 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
     return `${schema.length} fields (${numericCount} numeric, ${schema.length - numericCount} categorical)`;
   }, [schema]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-        <Loader2 size={16} className="animate-spin mr-2" />
-        Loading output data...
+  if (isLoading || layoutLoading) {
+    return showSkeleton ? (
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Skeleton className="h-[260px] rounded-lg" />
+          <Skeleton className="h-[260px] rounded-lg" />
+        </div>
       </div>
-    );
+    ) : null;
   }
 
   if (error) {
     return (
       <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-        {error}
+        {error?.message}
       </div>
     );
   }
@@ -199,9 +171,9 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
   }
 
   const gridColsClass =
-    columns === 1
+    effectiveColumns === 1
       ? "grid-cols-1"
-      : columns === 3
+      : effectiveColumns === 3
         ? "lg:grid-cols-3"
         : "lg:grid-cols-2";
 
@@ -211,7 +183,7 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
         <ToggleGroup
           type="single"
           size="sm"
-          value={String(columns)}
+          value={String(effectiveColumns)}
           onValueChange={handleColumnsChange}
         >
           <ToggleGroupItem value="1" aria-label="1 column">
@@ -229,8 +201,8 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
         </span>
       </div>
 
-      <div className={`grid gap-4 ${gridColsClass}`}>
-        {widgets.map((w) => (
+      <div className={`grid gap-4 auto-rows-[minmax(340px,auto)] ${gridColsClass}`}>
+        {effectiveWidgets.map((w) => (
           <ChartWidget
             key={w.id}
             widget={w}
@@ -242,8 +214,8 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
         ))}
 
         <Card
-          className={`border-dashed shadow-none min-h-[280px] flex items-center justify-center ${
-            widgets.length === 0 ? "col-span-full" : ""
+          className={`border-dashed shadow-none min-h-[340px] flex items-center justify-center ${
+            effectiveWidgets.length === 0 ? "col-span-full" : ""
           }`}
         >
           <CardContent className="flex flex-col items-center gap-4 py-6">
@@ -257,7 +229,7 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
                   className="flex flex-col items-center gap-1.5 h-auto w-20 px-4 py-3 text-muted-foreground"
                 >
                   <t.icon size={20} />
-                  <span className="text-xs">{t.label}</span>
+                  <span className="text-xs">{CHART_RULES[t.value].label}</span>
                 </Button>
               ))}
             </div>

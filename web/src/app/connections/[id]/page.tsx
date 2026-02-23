@@ -1,29 +1,41 @@
 "use client";
 
-import React, { use, useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { createElement, use } from "react";
+
 import { toast } from "sonner";
-import { useAsync } from "@/hooks/use-async";
+import useSWR from "swr";
+import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from "@/components/ui/resizable";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
-  fetchConnections,
+  fetchConnection,
   fetchSchema,
   fetchCloudAccounts,
   fetchConnectionFiles,
-  downloadConnectionFile,
+  fetchProviders,
 } from "@/lib/api";
-import { CodeBlock } from "@/components/code-block";
 import { MetaItem } from "@/components/meta-item";
-import { FileTree } from "@/components/file-tree";
 import { getProviderIcon } from "@/lib/provider-icons";
-import type { FileEntry } from "@/lib/types";
+
+
+function ProviderIcon({ icon }: { icon: string }) {
+  return createElement(getProviderIcon(icon), { className: "h-4 w-4 text-muted-foreground" });
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default function ConnectionDetailPage({
   params,
@@ -32,134 +44,120 @@ export default function ConnectionDetailPage({
 }) {
   const { id } = use(params);
 
-  const { data, loading } = useAsync(
-    () => Promise.all([fetchConnections(), fetchSchema(), fetchCloudAccounts()]),
-    [id],
+  const { data, isLoading } = useSWR(
+    `connection-edit-${id}`,
+    () => Promise.all([fetchConnection(id), fetchSchema(), fetchCloudAccounts(), fetchProviders()]),
+  );
+  const showSkeleton = useDelayedLoading(isLoading);
+
+  const [connection, schema, accounts, providers] = data ?? [null, [], [], []];
+  const account = connection?.cloud_account_id
+    ? accounts.find((a) => a.id === connection.cloud_account_id)
+    : null;
+  const provider = account
+    ? (schema.find((s) => s.id === account.provider_id) ?? null)
+    : null;
+
+  const { data: files = [], isLoading: filesLoading } = useSWR(
+    connection && connection.location_type !== "local" ? `connection-files-${id}` : null,
+    () => fetchConnectionFiles(id),
+    { onError: () => toast.error("Failed to list files") },
   );
 
-  const [conns, schema, accounts] = data ?? [[], [], []];
-  const connection = conns.find((c) => c.id === id) ?? null;
-  const account = connection ? accounts.find((a) => a.id === connection.cloud_account_id) : null;
-  const provider = account ? (schema.find((s) => s.id === account.provider_id) ?? null) : null;
-
-  const [files, setFiles] = useState<FileEntry[]>([]);
-  const [filesLoading, setFilesLoading] = useState(true);
-  const [selectedPath, setSelectedPath] = useState<string | null>(null);
-  const [previewContent, setPreviewContent] = useState<string>("");
-  const [previewLoading, setPreviewLoading] = useState(false);
-
-  useEffect(() => {
-    if (!connection) return;
-    setFilesLoading(true);
-    fetchConnectionFiles(id)
-      .then(setFiles)
-      .catch(() => {
-        toast.error("Failed to list files");
-        setFiles([]);
-      })
-      .finally(() => setFilesLoading(false));
-  }, [id, connection]);
-
-  function langForPath(path: string): string {
-    const ext = path.split(".").pop()?.toLowerCase() ?? "";
-    const map: Record<string, string> = {
-      ttl: "turtle", json: "json", jsonld: "json", rdf: "xml",
-      owl: "xml", xml: "xml", nt: "text", nq: "text", csv: "csv",
-      tsv: "csv", yaml: "yaml", yml: "yaml", shex: "text",
-      md: "markdown", txt: "text",
-    };
-    return map[ext] ?? "text";
-  }
-
-  async function handleFileSelect(path: string) {
-    if (selectedPath === path) return;
-    setSelectedPath(path);
-    setPreviewLoading(true);
-    try {
-      const content = await downloadConnectionFile(id, path);
-      setPreviewContent(content);
-    } catch {
-      toast.error("Failed to load file content");
-      setSelectedPath(null);
-    } finally {
-      setPreviewLoading(false);
-    }
-  }
-
-  if (loading) {
-    return (
+  if (isLoading) {
+    return showSkeleton ? (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-64" />
         <Skeleton className="h-40 w-full" />
       </div>
-    );
+    ) : null;
   }
 
   if (!connection) {
     return <p className="text-muted-foreground">Connection not found.</p>;
   }
 
-  const Icon = provider ? getProviderIcon(provider.icon) : null;
-
   return (
-    <div className="flex flex-col h-full">
+    <div>
       <PageHeader
         title={connection.name}
-        backHref="/connections"
+        badge={
+          <Badge variant="outline">
+            {connection.kind === "data" ? "Data" : "Vocabulary"}
+          </Badge>
+        }
+        backHref={`/connections?type=${connection.kind}`}
         backLabel="Connections"
-        action={undefined}
       />
 
-      <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 mb-4">
-        <div className="space-y-0.5">
-          <p className="text-xs text-muted-foreground">Cloud Account</p>
-          <div className="flex items-center gap-2">
-            {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-            <p className="text-sm font-medium">{account?.name ?? connection.cloud_account_id}</p>
+      <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
+        {connection.location_type === "cloud" && (
+          <div className="space-y-0.5">
+            <p className="text-xs text-muted-foreground">Cloud Account</p>
+            <div className="flex items-center gap-2">
+              {provider && <ProviderIcon icon={provider.icon} />}
+              <p className="text-sm font-medium">
+                {account?.name ?? connection.cloud_account_id}
+              </p>
+            </div>
           </div>
-        </div>
-        <MetaItem label="Container URL" value={connection.container_url} mono />
+        )}
+        <MetaItem label="URL" value={connection.url} mono />
+        <MetaItem
+          label="Location"
+          value={connection.location_type === "cloud" ? "Cloud" : "Local"}
+        />
       </div>
 
-      <h3 className="text-sm font-medium mb-2">Files</h3>
-      {filesLoading ? (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 size={12} className="animate-spin" />
-          Loading files...
-        </div>
-      ) : files.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No files found.</p>
-      ) : (
-        <div className="flex-1 min-h-0 border rounded-md overflow-hidden">
-          <ResizablePanelGroup orientation="horizontal">
-            <ResizablePanel defaultSize={25} minSize={20}>
-              <ScrollArea className="h-full">
-                <FileTree
-                  files={files}
-                  selectedPath={selectedPath}
-                  onSelect={handleFileSelect}
-                />
-              </ScrollArea>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={75}>
-              <div className="flex flex-col h-full overflow-auto [&_[data-shiki]]:rounded-none [&_[data-shiki]_pre]:rounded-none">
-                {selectedPath === null ? (
-                  <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                    Select a file to preview
-                  </div>
-                ) : previewLoading ? (
-                  <div className="flex items-center gap-2 p-4 text-xs text-muted-foreground">
-                    <Loader2 size={12} className="animate-spin" />
-                    Loading file...
-                  </div>
-                ) : (
-                  <CodeBlock code={previewContent} lang={langForPath(selectedPath)} />
-                )}
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+      {connection.location_type === "cloud" && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">Files</h3>
+          {filesLoading ? (
+            <div className="border rounded-md p-3 space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-4 w-full" />
+              ))}
+            </div>
+          ) : files.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No files found.</p>
+          ) : (() => {
+            const supportedExts = providers
+              .filter((p) =>
+                connection.kind === "data"
+                  ? p.kind === "data" || p.kind === "both"
+                  : p.kind === "schema" || p.kind === "both",
+              )
+              .flatMap((p) => p.extensions);
+            const filtered = supportedExts.length > 0
+              ? files.filter((f) => {
+                  const ext = f.path.split(".").pop()?.toLowerCase() ?? "";
+                  return supportedExts.includes(ext);
+                })
+              : files;
+            return filtered.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No supported files found.</p>
+            ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Path</TableHead>
+                      <TableHead className="w-24 text-right">Size</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((f) => (
+                      <TableRow key={f.path}>
+                        <TableCell className="font-mono text-xs">{f.path}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground text-right">
+                          {formatSize(f.size)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+            );
+          })()}
         </div>
       )}
     </div>

@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Code2, Network, Copy } from "lucide-react";
-import { toast } from "sonner";
-import { CodeBlock } from "@/components/code-block";
+import { Code2, Network } from "lucide-react";
+import { CodeView } from "@/components/code-view";
 import { KnowledgeGraph } from "@/components/knowledge-graph";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -67,20 +65,6 @@ export function CatalogView({
                 <SelectItem value="nquads">N-Quads</SelectItem>
               </SelectContent>
             </Select>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1.5 text-xs"
-              onClick={() => {
-                if (catalogContent) {
-                  navigator.clipboard.writeText(catalogContent);
-                  toast.success("Catalog copied to clipboard");
-                }
-              }}
-            >
-              <Copy size={12} />
-              Copy
-            </Button>
           </>
         )}
       </div>
@@ -92,7 +76,7 @@ export function CatalogView({
             <Skeleton className="h-4 w-5/6" />
           </div>
         ) : (
-          <CodeBlock
+          <CodeView
             code={catalogContent ?? catalog}
             lang={dcatFormat === "jsonld" ? "json" : dcatFormat === "rdfxml" ? "xml" : "turtle"}
           />

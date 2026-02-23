@@ -1,14 +1,17 @@
 import type {
   Job,
   CreateJobRequest,
+  UpdateJobRequest,
   ValidationResult,
   ProviderSchema,
+  ProviderInfo,
   OrgSettings,
   Preferences,
   AiSettings,
   AskResponse,
   GraphData,
-  Connection,
+  Conversation,
+  ConversationMessage,
   FileEntry,
   SearchResult,
   ShapeValidationResult,
@@ -16,6 +19,9 @@ import type {
   CloudAccountSummary,
   CreateCloudAccountRequest,
   UpdateCloudAccountRequest,
+  Connection,
+  CreateConnectionRequest,
+  UpdateConnectionRequest,
 } from "./types";
 
 async function throwResponseError(
@@ -41,11 +47,11 @@ const post = <T>(path: string, body?: unknown) => request<T>(path, "POST", body)
 const put = <T>(path: string, body: unknown) => request<T>(path, "PUT", body);
 const del = (path: string) => request<void>(path, "DELETE");
 
-// --- Jobs ---
 
 export const fetchJobs = () => get<Job[]>("/api/jobs");
 export const fetchJob = (id: string) => get<Job>(`/api/jobs/${id}`);
 export const createJob = (req: CreateJobRequest) => post<Job>("/api/jobs", req);
+export const updateJob = (id: string, req: UpdateJobRequest) => put<Job>(`/api/jobs/${id}`, req);
 export const cancelJob = (id: string) => post<Job>(`/api/jobs/${id}/cancel`);
 export const deleteJob = (id: string) => del(`/api/jobs/${id}`);
 export const fetchJobGraph = (id: string) => get<GraphData>(`/api/jobs/${id}/graph`);
@@ -59,24 +65,25 @@ export async function fetchJobCatalog(id: string, format: string): Promise<strin
 export const validateScript = (script: string) =>
   post<ValidationResult>("/api/scripts/validate", { script });
 
-// --- Shape Validation ---
 
 export function validateJob(
   dataUrl: string,
-  connectionId: string,
+  sourceId: string,
   shapePath: string,
-  shapeMap?: string
 ): Promise<ShapeValidationResult> {
-  const body: Record<string, string> = {
+  return post<ShapeValidationResult>("/api/validate", {
     data_url: dataUrl,
-    connection_id: connectionId,
+    connection_id: sourceId,
     shape_path: shapePath,
-  };
-  if (shapeMap) body.shape_map = shapeMap;
-  return post<ShapeValidationResult>("/api/validate", body);
+  });
 }
 
-// --- Discovery ---
+
+export const fetchDashboardLayout = (jobId: string) =>
+  get<Record<string, unknown> | undefined>(`/api/jobs/${jobId}/dashboard-layout`);
+export const saveDashboardLayout = (jobId: string, layout: unknown) =>
+  put<void>(`/api/jobs/${jobId}/dashboard-layout`, layout);
+
 
 export function searchGraphNodes(query: string, jobId?: string): Promise<SearchResult[]> {
   const body: Record<string, unknown> = { query };
@@ -91,10 +98,7 @@ export function expandGraphNode(nodeId: string, jobId?: string): Promise<GraphDa
 }
 
 export const loadJobDiscovery = (jobId: string) =>
-  post<{ loaded: boolean; triple_count: number }>(`/api/jobs/${jobId}/discover/load`);
-
-export const queryJobSparql = (jobId: string, sparql: string) =>
-  post<TabularData>(`/api/jobs/${jobId}/discover/query`, { sparql });
+  post<{ loaded: boolean; triple_count: number; subject_count: number }>(`/api/jobs/${jobId}/discover/load`);
 
 export const chartJobData = (
   jobId: string,
@@ -106,19 +110,29 @@ export const chartJobData = (
   }
 ) => post<TabularData>(`/api/jobs/${jobId}/discover/chart`, request);
 
-export const askDiscover = (jobId: string, question: string) =>
-  post<AskResponse>(`/api/jobs/${jobId}/discover/ask`, { question });
+export const askDiscover = (jobId: string, question: string, conversationId?: string) =>
+  post<AskResponse>(`/api/jobs/${jobId}/discover/ask`, { question, conversation_id: conversationId });
 
-// --- AI Settings ---
+
+export const createConversation = (jobId: string, title?: string) =>
+  post<Conversation>(`/api/jobs/${jobId}/conversations`, { title });
+export const listConversations = (jobId: string) =>
+  get<Conversation[]>(`/api/jobs/${jobId}/conversations`);
+export const getMessages = (conversationId: string) =>
+  get<ConversationMessage[]>(`/api/conversations/${conversationId}/messages`);
+export const renameConversation = (conversationId: string, title: string) =>
+  put<void>(`/api/conversations/${conversationId}`, { title });
+export const deleteConversation = (conversationId: string) =>
+  del(`/api/conversations/${conversationId}`);
+
 
 export const fetchAiSettings = () => get<AiSettings | null>("/api/settings/ai");
 export const saveAiSettings = (settings: AiSettings) => put<AiSettings>("/api/settings/ai", settings);
 
-// --- Schema ---
 
 export const fetchSchema = () => get<ProviderSchema[]>("/api/settings/schema");
+export const fetchProviders = () => get<ProviderInfo[]>("/api/providers");
 
-// --- Cloud Accounts ---
 
 export const fetchCloudAccounts = () => get<CloudAccountSummary[]>("/api/cloud-accounts");
 export const fetchCloudAccount = (id: string) => get<CloudAccountSummary>(`/api/cloud-accounts/${id}`);
@@ -126,25 +140,20 @@ export const createCloudAccount = (req: CreateCloudAccountRequest) => post<Cloud
 export const updateCloudAccount = (id: string, req: UpdateCloudAccountRequest) => put<CloudAccountSummary>(`/api/cloud-accounts/${id}`, req);
 export const deleteCloudAccount = (id: string) => del(`/api/cloud-accounts/${id}`);
 
-// --- Connections ---
 
-export const fetchConnections = () => get<Connection[]>("/api/connections");
-export const createConnection = (req: { name: string; cloud_account_id: string; container_url: string }) =>
-  post<Connection>("/api/connections", req);
-export const deleteConnection = (id: string) => del(`/api/connections/${id}`);
-export const fetchConnectionFiles = (id: string) => get<FileEntry[]>(`/api/connections/${id}/files`);
-
-export async function downloadConnectionFile(id: string, path: string): Promise<string> {
-  const data = await get<{ content: string }>(`/api/connections/${id}/files/download?path=${encodeURIComponent(path)}`);
-  return data.content;
-}
-
-// --- Preferences ---
 
 export const fetchPreferences = () => get<Preferences>("/api/settings/preferences");
 export const savePreferences = (prefs: Preferences) => put<Preferences>("/api/settings/preferences", prefs);
 
-// --- Organization Settings ---
 
 export const fetchOrgSettings = () => get<OrgSettings | null>("/api/settings/organization");
 export const saveOrgSettings = (settings: OrgSettings) => put<OrgSettings>("/api/settings/organization", settings);
+
+
+export const fetchConnections = (type?: string) =>
+  get<Connection[]>(type ? `/api/connections?type=${encodeURIComponent(type)}` : "/api/connections");
+export const fetchConnection = (id: string) => get<Connection>(`/api/connections/${id}`);
+export const createConnection = (req: CreateConnectionRequest) => post<Connection>("/api/connections", req);
+export const updateConnection = (id: string, req: UpdateConnectionRequest) => put<Connection>(`/api/connections/${id}`, req);
+export const deleteConnection = (id: string) => del(`/api/connections/${id}`);
+export const fetchConnectionFiles = (id: string) => get<FileEntry[]>(`/api/connections/${id}/files`);

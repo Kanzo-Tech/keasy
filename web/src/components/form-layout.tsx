@@ -1,28 +1,26 @@
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-export function FormLayout({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("flex flex-col gap-4", className)}>{children}</div>;
-}
-
 export function FormField({
   label,
   description,
   required,
   optional,
+  className,
   children,
 }: {
   label: string;
   description?: string;
   required?: boolean;
   optional?: boolean;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1">
+    <div className={cn("space-y-1", className)}>
       <Label>
         {label}
-        {required && <span className="text-red-400"> *</span>}
+        {required && <span className="text-destructive"> *</span>}
         {optional && <span className="text-muted-foreground text-xs"> (optional)</span>}
       </Label>
       {description && <p className="text-xs text-muted-foreground">{description}</p>}
@@ -31,6 +29,13 @@ export function FormField({
   );
 }
 
-export function FormActions({ children }: { children: React.ReactNode }) {
-  return <div className="flex items-center justify-between pt-2">{children}</div>;
+export function FormActions({ children, sticky }: { children: React.ReactNode; sticky?: boolean }) {
+  return (
+    <div className={cn(
+      "flex items-center justify-between pt-2",
+      sticky && "sticky bottom-0 bg-background py-4",
+    )}>
+      {children}
+    </div>
+  );
 }

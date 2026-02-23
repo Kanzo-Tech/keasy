@@ -6,16 +6,12 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::{Deserialize, Serialize};
 
-use std::fmt::Write as FmtWrite;
-
 use crate::AppState;
-use crate::ai::client::ask_llm;
 use crate::cloud::reader;
 use crate::graph::loader;
 use crate::graph::rdf_graph::RdfGraph;
 use crate::job::types::JobStatus;
 use crate::rdf::format::RdfExportFormat;
-use crate::routes::scripts::OutputInfo;
 
 use super::error_response;
 
@@ -69,6 +65,7 @@ pub async fn expand_node(
 pub struct LoadDiscoverResponse {
     pub loaded: bool,
     pub triple_count: usize,
+    pub subject_count: usize,
 }
 
 #[derive(Deserialize)]
@@ -142,9 +139,9 @@ fn build_chart_sparql(req: &ChartRequest) -> String {
         }
         (Some(y), None) => {
             let agg = match req.aggregation.as_str() {
-                "sum" => format!("(SUM(?y) AS ?value)"),
-                "avg" => format!("(AVG(?y) AS ?value)"),
-                _ => format!("(COUNT(*) AS ?value)"),
+                "sum" => "(SUM(?y) AS ?value)".to_string(),
+                "avg" => "(AVG(?y) AS ?value)".to_string(),
+                _ => "(COUNT(*) AS ?value)".to_string(),
             };
             format!(
                 "SELECT ?x {agg} WHERE {{ ?s <{x}> ?x . ?s <{y}> ?y }} GROUP BY ?x ORDER BY ?x"
@@ -162,7 +159,7 @@ pub async fn load_discover(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    let job = match state.store.get(&id) {
+    let job = match state.db.get_job(&id).await {
         Some(j) => j,
         None => return error_response(StatusCode::NOT_FOUND, "NOT_FOUND", "Job not found"),
     };
@@ -171,25 +168,25 @@ pub async fn load_discover(
         return error_response(StatusCode::BAD_REQUEST, "NOT_COMPLETED", "Job is not completed yet");
     }
 
-    // Check if already cached
     if let Some(graph) = get_cached_graph(&state, &id).await {
         let count = graph.triple_count(None);
         if count > 0 {
-            return Json(LoadDiscoverResponse { loaded: true, triple_count: count }).into_response();
+            let subjects = graph.subject_count();
+            return Json(LoadDiscoverResponse { loaded: true, triple_count: count, subject_count: subjects }).into_response();
         }
     }
 
-    let destinations: Vec<String> = job.outputs.iter().filter_map(|o| o.destination.clone()).collect();
+    let destinations: Vec<String> = job.pipeline.outputs.iter().filter_map(|o| o.destination.clone()).collect();
 
     if destinations.is_empty() {
         return error_response(StatusCode::BAD_REQUEST, "NO_DESTINATIONS", "Job has no output destinations");
     }
 
-    let creds = state.cloud_accounts.env_snapshot_all();
+    let creds = state.db.env_snapshot_all().await;
     let mut all_triples = Vec::new();
 
     for dest_url in &destinations {
-        let bytes = match reader::download_from_url(dest_url, &creds).await {
+        let bytes = match reader::download(dest_url, &creds).await {
             Ok(b) => b,
             Err(msg) => {
                 return error_response(
@@ -212,16 +209,17 @@ pub async fn load_discover(
         all_triples.extend(triples);
     }
 
-    let total = all_triples.len();
     let graph = RdfGraph::new();
     graph.insert_triples(None, &all_triples);
+    let total = graph.triple_count(None);
+    let subjects = graph.subject_count();
 
     {
         let mut cache = state.output_cache.lock().await;
         cache.insert(id, graph);
     }
 
-    Json(LoadDiscoverResponse { loaded: true, triple_count: total }).into_response()
+    Json(LoadDiscoverResponse { loaded: true, triple_count: total, subject_count: subjects }).into_response()
 }
 
 #[derive(Deserialize)]
@@ -264,117 +262,6 @@ pub async fn export_discover(
         }
         Err(err) => error_response(StatusCode::INTERNAL_SERVER_ERROR, "SERIALIZATION_ERROR", err),
     }
-}
-
-#[derive(Deserialize)]
-pub struct AskRequest {
-    pub question: String,
-}
-
-#[derive(Serialize)]
-pub struct AskResponse {
-    pub answer: String,
-    pub sparql: Option<String>,
-    pub data: Option<crate::graph::rdf_graph::TabularData>,
-}
-
-pub async fn ask_discover(
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-    Json(req): Json<AskRequest>,
-) -> Response {
-    let graph = match get_cached_graph(&state, &id).await {
-        Some(g) => g,
-        None => return not_loaded_error(),
-    };
-
-    let ai_settings = state.ai_settings.read();
-    let ai_settings = match ai_settings {
-        Some(s) if !s.api_key.is_empty() => s,
-        _ => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                "AI_NOT_CONFIGURED",
-                "AI settings are not configured. Go to Settings > AI to add an API key.",
-            )
-        }
-    };
-
-    let job = match state.store.get(&id) {
-        Some(j) => j,
-        None => return error_response(StatusCode::NOT_FOUND, "NOT_FOUND", "Job not found"),
-    };
-
-    let schema = build_schema_from_outputs(&job.outputs);
-
-    let system = format!(
-        "You are a SPARQL query assistant for an RDF knowledge graph.\n\
-         The data was generated from typed fossil-lang records. Below is the schema with types, \
-         fields, their RDF predicate URIs, and primitive types.\n\
-         Generate a SPARQL SELECT query to answer the user's question.\n\
-         Return ONLY the SPARQL query, nothing else. No explanations, no markdown fences.\n\n\
-         {schema}"
-    );
-
-    let sparql_text = match ask_llm(&ai_settings, &system, &req.question).await {
-        Ok(s) => s.trim().to_string(),
-        Err(e) => {
-            return error_response(StatusCode::BAD_GATEWAY, "LLM_ERROR", e);
-        }
-    };
-
-    // Strip markdown fences if present
-    let sparql = sparql_text
-        .strip_prefix("```sparql")
-        .or_else(|| sparql_text.strip_prefix("```"))
-        .unwrap_or(&sparql_text)
-        .strip_suffix("```")
-        .unwrap_or(&sparql_text)
-        .trim()
-        .to_string();
-
-    match graph.sparql_select(&sparql) {
-        Ok(data) => Json(AskResponse {
-            answer: String::new(),
-            sparql: Some(sparql),
-            data: Some(data),
-        })
-        .into_response(),
-        Err(sparql_err) => {
-            // If SPARQL fails, return the raw LLM answer as a fallback
-            Json(AskResponse {
-                answer: format!("Generated query failed: {sparql_err}\n\nGenerated SPARQL:\n{sparql}"),
-                sparql: Some(sparql),
-                data: None,
-            })
-            .into_response()
-        }
-    }
-}
-
-fn build_schema_from_outputs(outputs: &[OutputInfo]) -> String {
-    let mut schema = String::from("Schema:\n");
-    for output in outputs {
-        let _ = writeln!(schema, "\nType: {}", output.type_name);
-        if !output.ctor_params.is_empty() {
-            let _ = writeln!(schema, "  Constructor params: {}", output.ctor_params.join(", "));
-        }
-        for field in &output.fields {
-            let ftype = output.field_types.get(field).map(|s| s.as_str()).unwrap_or("String");
-            let uri = output.field_uris.get(field);
-            match uri {
-                Some(u) => { let _ = writeln!(schema, "  - {field}: {ftype} → <{u}>"); }
-                None => { let _ = writeln!(schema, "  - {field}: {ftype}"); }
-            }
-        }
-        if !output.mappings.is_empty() {
-            let _ = writeln!(schema, "  Mappings:");
-            for m in &output.mappings {
-                let _ = writeln!(schema, "    {} ← {}", m.target, m.source);
-            }
-        }
-    }
-    schema
 }
 
 async fn get_cached_graph(state: &AppState, job_id: &str) -> Option<Arc<RdfGraph>> {

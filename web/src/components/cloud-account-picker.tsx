@@ -26,7 +26,7 @@ export function CloudAccountPicker({
     return (
       <p className="text-xs text-muted-foreground">
         No cloud accounts configured.{" "}
-        <Link href="/settings?tab=cloud-accounts" className="text-primary hover:underline">
+        <Link href="/settings/cloud-accounts" className="text-primary hover:underline">
           Create one first
         </Link>
         .

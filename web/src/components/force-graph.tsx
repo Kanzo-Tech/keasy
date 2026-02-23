@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   getNodeRadius,
+  getLiteralBox,
   getGraphScale,
   drawNode,
   drawLink,
@@ -42,7 +43,6 @@ export function ForceGraph({
   const [width, setWidth] = useState(800);
   const [height, setHeight] = useState(500);
 
-  // Responsive size
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -54,7 +54,6 @@ export function ForceGraph({
     return () => obs.disconnect();
   }, []);
 
-  // Zoom to fit when data changes
   useEffect(() => {
     if (data && data.nodes.length > 0) {
       const timer = setTimeout(() => {
@@ -106,9 +105,15 @@ export function ForceGraph({
           ctx: CanvasRenderingContext2D,
           globalScale: number,
         ) => {
-          const radius = getNodeRadius(node.group, globalScale, scale);
-          ctx.beginPath();
-          ctx.arc(node.x ?? 0, node.y ?? 0, radius, 0, 2 * Math.PI);
+          if (node.group === "literal") {
+            const { boxW, boxH, cornerR } = getLiteralBox(node, ctx, globalScale, scale);
+            ctx.beginPath();
+            ctx.roundRect((node.x ?? 0) - boxW / 2, (node.y ?? 0) - boxH / 2, boxW, boxH, cornerR);
+          } else {
+            const radius = getNodeRadius(node.group, globalScale, scale);
+            ctx.beginPath();
+            ctx.arc(node.x ?? 0, node.y ?? 0, radius, 0, 2 * Math.PI);
+          }
           ctx.fillStyle = color;
           ctx.fill();
         }}

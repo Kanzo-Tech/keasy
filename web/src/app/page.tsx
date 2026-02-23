@@ -2,20 +2,23 @@
 
 import Link from "next/link";
 import useSWR from "swr";
-import { Cloud, Cable, Building2, FileText, type LucideIcon } from "lucide-react";
+import { Cloud, Database, Building2, FileText, type LucideIcon } from "lucide-react";
 import { fetchJobs, fetchCloudAccounts, fetchConnections, fetchOrgSettings } from "@/lib/api";
 import { hasRunningJobs } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
-  const { data: jobs } = useSWR("jobs", fetchJobs, {
+  const { data: jobs, isLoading: jobsLoading } = useSWR("jobs", fetchJobs, {
     refreshInterval: (data) => (hasRunningJobs(data) ? 2000 : 0),
   });
-  const { data: accounts } = useSWR("cloud-accounts", fetchCloudAccounts);
-  const { data: connections } = useSWR("connections", () => fetchConnections());
-  const { data: orgSettings } = useSWR("org-settings", fetchOrgSettings);
+  const { data: accounts, isLoading: accountsLoading } = useSWR("cloud-accounts", fetchCloudAccounts);
+  const { data: connections, isLoading: connectionsLoading } = useSWR("connections", () => fetchConnections());
+  const { data: orgSettings, isLoading: orgLoading } = useSWR("org-settings", fetchOrgSettings);
+
+  const loading = jobsLoading || accountsLoading || connectionsLoading || orgLoading;
 
   const completedJobs = jobs?.filter((j) => j.status === "completed") ?? [];
   const failedJobs = jobs?.filter((j) => j.status === "failed") ?? [];
@@ -38,40 +41,40 @@ export default function DashboardPage() {
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <ReadinessCard
-              href="/settings?tab=cloud-accounts"
+              href="/settings/cloud-accounts"
               icon={Cloud}
               title="Cloud Accounts"
-              value={String(accountCount)}
+              value={loading ? undefined : String(accountCount)}
               description={
                 accountCount === 1 ? "account configured" : "accounts configured"
               }
-              ok={accountCount > 0}
+              ok={loading ? undefined : accountCount > 0}
             />
             <ReadinessCard
               href="/connections"
-              icon={Cable}
+              icon={Database}
               title="Connections"
-              value={String(connectionCount)}
+              value={loading ? undefined : String(connectionCount)}
               description={
                 connectionCount === 1 ? "connection configured" : "connections configured"
               }
-              ok={connectionCount > 0}
+              ok={loading ? undefined : connectionCount > 0}
             />
             <ReadinessCard
-              href="/settings?tab=organization"
+              href="/settings/organization"
               icon={Building2}
               title="Organization"
-              value={orgConfigured ? "Ready" : "Pending"}
+              value={loading ? undefined : orgConfigured ? "Ready" : "Pending"}
               description={
                 orgConfigured ? "Metadata set" : "Required for DCAT generation"
               }
-              ok={orgConfigured}
+              ok={loading ? undefined : orgConfigured}
             />
             <ReadinessCard
               href="/jobs"
               icon={FileText}
               title="DCAT Catalogs"
-              value={String(catalogCount)}
+              value={loading ? undefined : String(catalogCount)}
               description={
                 catalogCount === 1 ? "catalog generated" : "catalogs generated"
               }
@@ -84,10 +87,10 @@ export default function DashboardPage() {
             Recent Activity
           </p>
           <div className="grid gap-4 sm:grid-cols-4">
-            <StatCard label="Total Jobs" value={jobs?.length ?? 0} />
-            <StatCard label="Completed" value={completedJobs.length} />
-            <StatCard label="Failed" value={failedJobs.length} />
-            <StatCard label="Running" value={runningJobs.length} />
+            <StatCard label="Total Jobs" value={loading ? undefined : jobs?.length ?? 0} />
+            <StatCard label="Completed" value={loading ? undefined : completedJobs.length} />
+            <StatCard label="Failed" value={loading ? undefined : failedJobs.length} />
+            <StatCard label="Running" value={loading ? undefined : runningJobs.length} />
           </div>
         </section>
       </div>
@@ -136,7 +139,11 @@ function ReadinessCard({
           </span>
         </div>
         <div className="flex items-end pt-3">
-          <p className="text-2xl font-semibold tracking-tight">{value}</p>
+          {value === undefined ? (
+            <Skeleton className="h-8 w-10" />
+          ) : (
+            <p className="text-2xl font-semibold tracking-tight">{value}</p>
+          )}
         </div>
         <p className="text-sm text-muted-foreground pt-1">{description}</p>
       </Card>
@@ -144,10 +151,14 @@ function ReadinessCard({
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({ label, value }: { label: string; value?: number }) {
   return (
     <Card className="p-4 gap-0 rounded-lg shadow-none text-center">
-      <p className="text-2xl font-semibold">{value}</p>
+      {value === undefined ? (
+        <Skeleton className="h-8 w-10 mx-auto" />
+      ) : (
+        <p className="text-2xl font-semibold">{value}</p>
+      )}
       <p className="text-xs text-muted-foreground mt-1">{label}</p>
     </Card>
   );

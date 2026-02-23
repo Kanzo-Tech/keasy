@@ -1,17 +1,20 @@
 mod ai;
 mod cloud;
 mod config;
+mod crypto;
+mod db;
 mod dcat;
 mod graph;
 mod job;
 mod middleware;
+mod pipeline;
 mod rdf;
 mod routes;
 mod script;
 mod settings;
 mod validation;
 
-use std::collections::{HashMap, VecDeque};
+use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -20,72 +23,33 @@ use tokio::sync::Mutex;
 use tracing::{info, warn};
 
 use config::ServerConfig;
+use db::Database;
 use graph::rdf_graph::RdfGraph;
 use job::runner::JobRunner;
-use job::store::JobStore;
-use settings::accounts::CloudAccountStore;
-use settings::ai::AiSettings;
-use settings::connections::ConnectionStore;
-use settings::file_store::FileStore;
-use settings::org::OrgSettings;
-use settings::preferences::Preferences;
 
-pub struct OutputCache {
-    entries: HashMap<String, Arc<RdfGraph>>,
-    order: VecDeque<String>,
-    capacity: usize,
-}
+pub struct OutputCache(lru::LruCache<String, Arc<RdfGraph>>);
 
 impl OutputCache {
-    pub fn new(capacity: usize) -> Self {
-        Self {
-            entries: HashMap::new(),
-            order: VecDeque::new(),
-            capacity,
-        }
+    pub fn new(cap: usize) -> Self {
+        Self(lru::LruCache::new(NonZeroUsize::new(cap).unwrap()))
     }
-
-    pub fn get(&mut self, job_id: &str) -> Option<Arc<RdfGraph>> {
-        if self.entries.contains_key(job_id) {
-            self.order.retain(|k| k != job_id);
-            self.order.push_back(job_id.to_string());
-            self.entries.get(job_id).cloned()
-        } else {
-            None
-        }
+    pub fn get(&mut self, key: &str) -> Option<Arc<RdfGraph>> {
+        self.0.get(key).cloned()
     }
-
-    pub fn insert(&mut self, job_id: String, graph: RdfGraph) -> Arc<RdfGraph> {
-        if self.entries.contains_key(&job_id) {
-            self.order.retain(|k| k != &job_id);
-        } else {
-            while self.entries.len() >= self.capacity {
-                if let Some(evicted) = self.order.pop_front() {
-                    self.entries.remove(&evicted);
-                }
-            }
-        }
+    pub fn insert(&mut self, key: String, graph: RdfGraph) -> Arc<RdfGraph> {
         let arc = Arc::new(graph);
-        self.entries.insert(job_id.clone(), arc.clone());
-        self.order.push_back(job_id);
+        self.0.put(key, arc.clone());
         arc
     }
-
-    pub fn remove(&mut self, job_id: &str) {
-        self.entries.remove(job_id);
-        self.order.retain(|k| k != job_id);
+    pub fn remove(&mut self, key: &str) {
+        self.0.pop(key);
     }
 }
 
 #[derive(Clone)]
 pub struct AppState {
-    pub store: JobStore,
+    pub db: Database,
     pub runner: Arc<JobRunner>,
-    pub cloud_accounts: CloudAccountStore,
-    pub connections: ConnectionStore,
-    pub org_settings: FileStore<Option<OrgSettings>>,
-    pub preferences: FileStore<Preferences>,
-    pub ai_settings: FileStore<Option<AiSettings>>,
     pub catalog: Arc<RdfGraph>,
     pub output_cache: Arc<Mutex<OutputCache>>,
     pub api_key: SecretString,
@@ -109,21 +73,46 @@ async fn main() {
     }
 
     if config.secret_key.is_none() {
-        warn!("KEASY_SECRET_KEY is not set — cloud accounts will NOT be persisted to disk");
+        warn!("KEASY_SECRET_KEY is not set — secrets will be stored unencrypted");
     }
 
-    let store = JobStore::new();
-    let ai_secret = config.secret_key.clone();
-    let cloud_accounts = CloudAccountStore::new(&config.data_dir, config.secret_key);
-    let connections = ConnectionStore::new(&config.data_dir);
-    let org_settings = FileStore::new(config.data_dir.join("org_settings.json"), None);
-    let preferences = FileStore::new(config.data_dir.join("preferences.json"), None);
-    let ai_settings = FileStore::new(config.data_dir.join("ai_settings.json"), ai_secret);
+    let db_path = config.data_dir.join("keasy.db");
+    let db = match Database::open(&db_path, config.secret_key) {
+        Ok(db) => db,
+        Err(e) => {
+            eprintln!("FATAL: Failed to open database: {e}");
+            std::process::exit(1);
+        }
+    };
+
+    info!(path = %db_path.display(), "Database opened");
+
+    if !db.verify_secret_key().await {
+        eprintln!("FATAL: KEASY_SECRET_KEY does not match the key used to encrypt stored secrets");
+        eprintln!("       Cloud account credentials will not be accessible.");
+        eprintln!("       Set the correct KEASY_SECRET_KEY or remove the database to start fresh.");
+        std::process::exit(1);
+    }
+
     let catalog = Arc::new(RdfGraph::new());
+
+    let mut restored = 0usize;
+    for (job_id, turtle) in &db.completed_catalogs().await {
+        match graph::loader::parse_rdf_to_triples(turtle.as_bytes(), "catalog.ttl") {
+            Ok(triples) => {
+                catalog.insert_triples(Some(&format!("urn:keasy:job:{job_id}")), &triples);
+                restored += 1;
+            }
+            Err(e) => warn!(job_id = %job_id, error = %e, "Failed to restore catalog"),
+        }
+    }
+    if restored > 0 {
+        info!(count = restored, "Restored catalogs into graph store");
+    }
+
     let output_cache = Arc::new(Mutex::new(OutputCache::new(config.cache_capacity)));
     let runner = Arc::new(JobRunner::new(
-        store.clone(),
-        cloud_accounts.clone(),
+        db.clone(),
         catalog.clone(),
         config.max_concurrent_jobs,
         config.job_timeout_secs,
@@ -131,13 +120,8 @@ async fn main() {
 
     let shutdown_grace = Duration::from_secs(config.shutdown_grace_secs);
     let state = AppState {
-        store,
+        db,
         runner: runner.clone(),
-        cloud_accounts,
-        connections,
-        org_settings,
-        preferences,
-        ai_settings,
         catalog,
         output_cache,
         api_key: config.api_key,

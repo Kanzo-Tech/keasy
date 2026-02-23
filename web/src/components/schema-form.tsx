@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SecretInput } from "@/components/ui/secret-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -149,7 +150,7 @@ export function SchemaForm({
                 key={p.id}
                 htmlFor={`schema-${p.id}`}
                 className={cn(
-                  "flex flex-col items-center gap-2 py-4 px-3 rounded-md border cursor-pointer transition-colors",
+                  "flex flex-col items-center justify-center text-center gap-2 py-4 px-3 rounded-md border cursor-pointer transition-colors",
                   selectedId === p.id
                     ? "border-primary bg-accent"
                     : "border-border hover:bg-accent/50",
@@ -192,14 +193,20 @@ export function SchemaForm({
 
           {allActiveFields.map((f) => (
             <FormField key={f.name} label={f.label} optional={f.optional}>
-              <Input
-                type={f.secret ? "password" : "text"}
-                value={fields[f.name] ?? ""}
-                onChange={(e) => setField(f.name, e.target.value)}
-                autoComplete="off"
-                placeholder={f.secret && locked ? "Leave empty to keep current" : undefined}
-                className="h-8 text-sm"
-              />
+              {f.secret ? (
+                <SecretInput
+                  hasStoredValue={locked}
+                  value={fields[f.name] ?? ""}
+                  onChange={(e) => setField(f.name, e.target.value)}
+                  className="h-8 text-sm"
+                />
+              ) : (
+                <Input
+                  value={fields[f.name] ?? ""}
+                  onChange={(e) => setField(f.name, e.target.value)}
+                  className="h-8 text-sm"
+                />
+              )}
             </FormField>
           ))}
         </>

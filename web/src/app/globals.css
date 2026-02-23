@@ -39,7 +39,6 @@
 
 :root {
   --radius: 0.625rem;
-  --font-size-mono: 0.75rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -165,9 +164,6 @@
 [data-font-size="compact"]     { font-size: 14px; }
 [data-font-size="comfortable"] { font-size: 18px; }
 
-[data-mono-font-size="compact"]     { --font-size-mono: 0.6875rem; } /* 11px */
-[data-mono-font-size="comfortable"] { --font-size-mono: 0.8125rem; } /* 13px */
-
 /* ── Font family presets — override --font-sans ── */
 
 [data-font="inter"] {
@@ -198,29 +194,13 @@
     @apply bg-background text-foreground;
   }
   code, pre, .font-mono {
-    font-size: var(--font-size-mono);
+    font-size: 0.75rem;
   }
 }
 
-/* ── Code block line numbers ── */
+/* ── CodeMirror integration ── */
 
-[data-shiki] code {
-  counter-reset: line;
-}
-[data-shiki] code .line::before {
-  counter-increment: line;
-  content: counter(line);
-  display: inline-block;
-  width: 2rem;
-  margin-right: 1rem;
-  text-align: right;
-  color: oklch(0.556 0 0 / 40%);
-  user-select: none;
-}
-
-/* ── Code block fill remaining height ── */
-
-[data-shiki] pre {
-  flex: 1;
-  min-height: 0;
+.cm-editor .cm-scroller {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
 }

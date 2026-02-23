@@ -1,18 +1,33 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useMemo } from "react";
 import { X, Loader2, Settings2 } from "lucide-react";
+import useSWR from "swr";
 import {
-  BarChart, Bar,
-  LineChart, Line,
-  AreaChart, Area,
-  PieChart, Pie, Cell,
-  ScatterChart, Scatter,
-  XAxis, YAxis, CartesianGrid,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  CartesianGrid,
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   type ChartConfig,
   ChartContainer,
@@ -21,9 +36,13 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from "@/components/ui/chart";
-import { Input } from "@/components/ui/input";
+import { EditableText } from "@/components/ui/editable-text";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -31,32 +50,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+
 import { chartJobData } from "@/lib/api";
-import type { ChartWidget as ChartWidgetType, ChartType } from "@/lib/dashboard-store";
+import type {
+  ChartWidget as ChartWidgetType,
+  ChartType,
+} from "@/lib/dashboard-store";
 import type { FieldSchema } from "@/components/dashboard-builder";
 
-const CHART_TYPE_LABELS: Record<ChartType, string> = {
-  bar: "Bar",
-  line: "Line",
-  area: "Area",
-  pie: "Pie",
-  scatter: "Scatter",
-};
+interface RenderContext {
+  widget: ChartWidgetType;
+  data: Record<string, string | number>[];
+  yKey: string;
+  groupKeys: string[];
+}
 
-const AGGREGATION_OPTIONS = [
-  { value: "count", label: "Count" },
-  { value: "sum", label: "Sum" },
-  { value: "avg", label: "Avg" },
-];
-
-const COLORS = [
-  "var(--primary)", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6",
-  "#06b6d4", "#ec4899", "#14b8a6",
-];
-
-function sanitizeKey(key: string): string {
-  return key.replace(/[^a-zA-Z0-9_-]/g, "_");
+interface ChartRule {
+  label: string;
+  xAxis: "numeric" | "any";
+  minNumeric: number;
+  rawAxes: boolean;
+  splitBy: boolean;
+  defaultYField: boolean;
+  render: (ctx: RenderContext) => ReactNode;
 }
 
 export function isNumeric(type: string): boolean {
@@ -67,6 +83,203 @@ export function isCategorical(type: string): boolean {
   return type === "String" || type === "Bool";
 }
 
+function sanitizeKey(key: string): string {
+  return key.replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
+const CHART_MARGIN = { top: 5, right: 20, bottom: 5, left: 0 };
+
+function renderSeries(
+  yKey: string,
+  groupKeys: string[],
+  factory: (key: string, color: string) => ReactNode,
+): ReactNode {
+  if (groupKeys.length > 0) {
+    return groupKeys.map((key) =>
+      factory(sanitizeKey(key), `var(--color-${sanitizeKey(key)})`),
+    );
+  }
+  return factory(yKey, `var(--color-${yKey})`);
+}
+
+function cartesian(
+  Wrapper: React.ElementType,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Recharts series have required props we always provide via spread
+  Series: any,
+  seriesProps: (color: string) => Record<string, unknown>,
+): ChartRule["render"] {
+  return function CartesianRenderer({ widget, data, yKey, groupKeys }) {
+    const legend = groupKeys.length > 1 && (
+      <ChartLegend content={<ChartLegendContent />} />
+    );
+    return (
+      <Wrapper data={data} margin={CHART_MARGIN}>
+        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+        <XAxis dataKey={widget.xAxis} tick={{ fontSize: 11 }} />
+        <YAxis tick={{ fontSize: 11 }} />
+        <ChartTooltip content={<ChartTooltipContent />} />
+        {renderSeries(yKey, groupKeys, (key, color) => (
+          <Series key={key} dataKey={key} {...seriesProps(color)} />
+        ))}
+        {legend}
+      </Wrapper>
+    );
+  };
+}
+
+function renderPie({ data }: RenderContext): ReactNode {
+  return (
+    <PieChart>
+      <Pie
+        data={data}
+        dataKey="value"
+        nameKey="name"
+        cx="50%"
+        cy="50%"
+        outerRadius={80}
+        label
+      >
+        {data.map((entry, i) => (
+          <Cell
+            key={i}
+            fill={`var(--color-${sanitizeKey(String(entry.name))})`}
+          />
+        ))}
+      </Pie>
+      <ChartTooltip content={<ChartTooltipContent />} />
+      <ChartLegend content={<ChartLegendContent />} />
+    </PieChart>
+  );
+}
+
+function renderScatter({ widget, data, yKey }: RenderContext): ReactNode {
+  return (
+    <ScatterChart data={data} margin={CHART_MARGIN}>
+      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+      <XAxis
+        type="number"
+        dataKey={widget.xAxis}
+        tick={{ fontSize: 11 }}
+        name={widget.xAxis}
+      />
+      <YAxis type="number" dataKey={yKey} tick={{ fontSize: 11 }} name={yKey} />
+      <ChartTooltip content={<ChartTooltipContent />} />
+      <Scatter data={data} fill={`var(--color-${yKey})`} />
+    </ScatterChart>
+  );
+}
+
+export const CHART_RULES: Record<ChartType, ChartRule> = {
+  bar: {
+    label: "Bar",
+    xAxis: "any",
+    minNumeric: 0,
+    rawAxes: false,
+    splitBy: true,
+    defaultYField: true,
+    render: cartesian(BarChart, Bar, (c) => ({ fill: c })),
+  },
+  line: {
+    label: "Line",
+    xAxis: "numeric",
+    minNumeric: 1,
+    rawAxes: false,
+    splitBy: true,
+    defaultYField: true,
+    render: cartesian(LineChart, Line, (c) => ({
+      type: "monotone",
+      stroke: c,
+      dot: false,
+    })),
+  },
+  area: {
+    label: "Area",
+    xAxis: "numeric",
+    minNumeric: 1,
+    rawAxes: false,
+    splitBy: true,
+    defaultYField: true,
+    render: cartesian(AreaChart, Area, (c) => ({
+      type: "monotone",
+      fill: c,
+      stroke: c,
+      fillOpacity: 0.3,
+    })),
+  },
+  pie: {
+    label: "Pie",
+    xAxis: "any",
+    minNumeric: 0,
+    rawAxes: false,
+    splitBy: false,
+    defaultYField: false,
+    render: renderPie,
+  },
+  scatter: {
+    label: "Scatter",
+    xAxis: "numeric",
+    minNumeric: 2,
+    rawAxes: true,
+    splitBy: false,
+    defaultYField: true,
+    render: renderScatter,
+  },
+};
+
+export function xColumnsForType(
+  type: ChartType,
+  schema: FieldSchema[],
+): FieldSchema[] {
+  return CHART_RULES[type].xAxis === "numeric"
+    ? schema.filter((f) => isNumeric(f.type))
+    : schema;
+}
+
+export function isChartAvailable(
+  type: ChartType,
+  schema: FieldSchema[],
+): boolean {
+  if (schema.length === 0) return false;
+  const numericCount = schema.filter((f) => isNumeric(f.type)).length;
+  return numericCount >= CHART_RULES[type].minNumeric;
+}
+
+export function defaultAxesForType(
+  type: ChartType,
+  schema: FieldSchema[],
+): { xAxis: string; yAxis?: string } {
+  const rule = CHART_RULES[type];
+  const numeric = schema.filter((f) => isNumeric(f.type));
+  const categorical = schema.filter((f) => isCategorical(f.type));
+
+  const xAxis =
+    rule.xAxis === "numeric"
+      ? (numeric[0]?.name ?? "")
+      : (categorical[0]?.name ?? schema[0]?.name ?? "");
+
+  if (!rule.defaultYField) return { xAxis };
+
+  const yAxis = numeric.find((f) => f.name !== xAxis)?.name;
+  return { xAxis, yAxis };
+}
+
+const MEASURE_OPTIONS = [
+  { value: "count", label: "Count" },
+  { value: "sum", label: "Sum" },
+  { value: "avg", label: "Average" },
+];
+
+const COLORS = [
+  "var(--primary)",
+  "#22c55e",
+  "#f59e0b",
+  "#ef4444",
+  "#8b5cf6",
+  "#06b6d4",
+  "#ec4899",
+  "#14b8a6",
+];
+
 interface ChartWidgetProps {
   widget: ChartWidgetType;
   jobId: string;
@@ -75,9 +288,14 @@ interface ChartWidgetProps {
   onRemove: () => void;
 }
 
-export function ChartWidget({ widget, jobId, schema, onChange, onRemove }: ChartWidgetProps) {
-  const [chartData, setChartData] = useState<Record<string, string | number>[]>([]);
-  const [queryLoading, setQueryLoading] = useState(false);
+export function ChartWidget({
+  widget,
+  jobId,
+  schema,
+  onChange,
+  onRemove,
+}: ChartWidgetProps) {
+  const rule = CHART_RULES[widget.type];
 
   const fieldMap = useMemo(() => {
     const m: Record<string, FieldSchema> = {};
@@ -85,91 +303,103 @@ export function ChartWidget({ widget, jobId, schema, onChange, onRemove }: Chart
     return m;
   }, [schema]);
 
-  // Type-aware column filtering
-  const xColumns = useMemo(() => {
-    if (widget.type === "scatter") return schema.filter((f) => isNumeric(f.type));
-    if (widget.type === "pie") return schema.filter((f) => isCategorical(f.type));
-    return schema;
-  }, [schema, widget.type]);
+  const xColumns = useMemo(
+    () => xColumnsForType(widget.type, schema),
+    [schema, widget.type],
+  );
 
-  const yColumns = useMemo(() => {
-    return schema.filter((f) => isNumeric(f.type));
-  }, [schema]);
+  const yColumns = useMemo(
+    () => schema.filter((f) => isNumeric(f.type)),
+    [schema],
+  );
 
-  const groupByColumns = useMemo(() => {
-    return schema.filter((f) => isCategorical(f.type) && f.name !== widget.xAxis);
-  }, [schema, widget.xAxis]);
+  const groupByColumns = useMemo(
+    () =>
+      schema.filter((f) => isCategorical(f.type) && f.name !== widget.xAxis),
+    [schema, widget.xAxis],
+  );
 
-  const showYAxis = widget.type !== "pie";
-  const showGroupBy = widget.type !== "pie" && widget.type !== "scatter";
-  const showAggregation = showYAxis && showGroupBy && !!widget.yAxis;
+  const measureType = rule.rawAxes
+    ? "none"
+    : !widget.yAxis
+      ? "count"
+      : widget.aggregation === "count"
+        ? "sum"
+        : (widget.aggregation ?? "sum");
 
-  // Derive aggregation for API
-  const effectiveAggregation = useMemo(() => {
-    if (widget.type === "scatter") return "none";
-    if (widget.type === "pie") return "count";
-    if (!widget.yAxis) return "count";
-    return widget.aggregation ?? "count";
-  }, [widget.type, widget.yAxis, widget.aggregation]);
-
-  useEffect(() => {
-    const xField = fieldMap[widget.xAxis];
-    if (!xField) {
-      setChartData([]);
-      return;
+  function handleMeasureChange(type: string) {
+    if (type === "count") {
+      onChange({ ...widget, yAxis: undefined, aggregation: "count" });
+    } else {
+      onChange({
+        ...widget,
+        yAxis: widget.yAxis ?? yColumns[0]?.name,
+        aggregation: type,
+      });
     }
+  }
 
-    const yField = widget.yAxis ? fieldMap[widget.yAxis] : undefined;
-    const groupField = widget.groupBy ? fieldMap[widget.groupBy] : undefined;
+  const effectiveAggregation = useMemo(() => {
+    if (rule.rawAxes) return "none";
+    if (!widget.yAxis) return "count";
+    if (widget.aggregation === "count") return "sum";
+    return widget.aggregation ?? "sum";
+  }, [rule.rawAxes, widget.yAxis, widget.aggregation]);
 
-    setQueryLoading(true);
+  const xField = fieldMap[widget.xAxis];
+  const yField = widget.yAxis ? fieldMap[widget.yAxis] : undefined;
+  const groupField = widget.groupBy ? fieldMap[widget.groupBy] : undefined;
+
+  const chartSwrKey = xField
+    ? `chart-${jobId}-${widget.xAxis}-${widget.yAxis ?? ""}-${widget.groupBy ?? ""}-${widget.type}-${effectiveAggregation}`
+    : null;
+
+  const { data: rawResult, isLoading: queryLoading } = useSWR(chartSwrKey, () =>
     chartJobData(jobId, {
-      x_predicate: xField.iri,
+      x_predicate: xField!.iri,
       y_predicate: yField?.iri,
       group_predicate: groupField?.iri,
       aggregation: effectiveAggregation,
-    })
-      .then((result) => {
-        if (widget.groupBy && result.rows.length > 0) {
-          const groups = new Map<string, Map<string, number>>();
-          for (const row of result.rows) {
-            const x = String(row.x ?? "");
-            const group = String(row.group ?? "other");
-            const value = Number(row.value ?? row.count ?? 0);
-            if (!groups.has(x)) groups.set(x, new Map());
-            groups.get(x)!.set(group, value);
-          }
-          const data: Record<string, string | number>[] = [];
-          for (const [x, gm] of groups) {
-            const point: Record<string, string | number> = { [widget.xAxis]: x };
-            for (const [g, v] of gm) point[sanitizeKey(g)] = v;
-            data.push(point);
-          }
-          setChartData(data);
-        } else if (widget.type === "pie") {
-          setChartData(
-            result.rows.map((r) => ({
-              name: String(r.x ?? ""),
-              value: Number(r.value ?? r.count ?? 0),
-            }))
-          );
-        } else {
-          setChartData(
-            result.rows.map((r) => {
-              const point: Record<string, string | number> = {
-                [widget.xAxis]: r.x ?? "",
-              };
-              if (widget.yAxis) {
-                point[sanitizeKey(widget.yAxis)] = r.y ?? r.value ?? "";
-              }
-              return point;
-            })
-          );
-        }
-      })
-      .catch(() => setChartData([]))
-      .finally(() => setQueryLoading(false));
-  }, [jobId, widget.xAxis, widget.yAxis, widget.groupBy, widget.type, fieldMap, effectiveAggregation]);
+    }),
+  );
+
+  const chartData = useMemo<Record<string, string | number>[]>(() => {
+    if (!rawResult) return [];
+    if (widget.groupBy && rawResult.rows.length > 0) {
+      const groups = new Map<string, Map<string, number>>();
+      for (const row of rawResult.rows) {
+        const x = String(row.x ?? "");
+        const group = String(row.group ?? "other");
+        const value = Number(row.value ?? row.count ?? 0);
+        if (!groups.has(x)) groups.set(x, new Map());
+        groups.get(x)!.set(group, value);
+      }
+      const data: Record<string, string | number>[] = [];
+      for (const [x, gm] of groups) {
+        const point: Record<string, string | number> = { [widget.xAxis]: x };
+        for (const [g, v] of gm) point[sanitizeKey(g)] = v;
+        data.push(point);
+      }
+      return data;
+    }
+    if (widget.type === "pie") {
+      return rawResult.rows.map((r) => ({
+        name: String(r.x ?? ""),
+        value: Number(r.value ?? r.count ?? 0),
+      }));
+    }
+    return rawResult.rows.map((r) => {
+      const point: Record<string, string | number> = {
+        [widget.xAxis]: r.x ?? "",
+      };
+      if (widget.yAxis) {
+        point[sanitizeKey(widget.yAxis)] = r.y ?? r.value ?? "";
+      } else if (r.value != null) {
+        point.value = Number(r.value);
+      }
+      return point;
+    });
+  }, [rawResult, widget.groupBy, widget.type, widget.xAxis, widget.yAxis]);
 
   const groupKeys = useMemo(() => {
     if (!widget.groupBy || chartData.length === 0) return [];
@@ -192,11 +422,17 @@ export function ChartWidget({ widget, jobId, schema, onChange, onRemove }: Chart
     const config: ChartConfig = {};
     if (widget.type === "pie") {
       chartData.forEach((d, i) => {
-        config[sanitizeKey(String(d.name))] = { label: String(d.name), color: COLORS[i % COLORS.length] };
+        config[sanitizeKey(String(d.name))] = {
+          label: String(d.name),
+          color: COLORS[i % COLORS.length],
+        };
       });
     } else if (groupKeys.length > 0) {
       groupKeys.forEach((key, i) => {
-        config[sanitizeKey(key)] = { label: key, color: COLORS[i % COLORS.length] };
+        config[sanitizeKey(key)] = {
+          label: key,
+          color: COLORS[i % COLORS.length],
+        };
       });
     } else {
       const key = widget.yAxis ?? "value";
@@ -206,22 +442,31 @@ export function ChartWidget({ widget, jobId, schema, onChange, onRemove }: Chart
   }, [widget.type, widget.yAxis, groupKeys, chartData]);
 
   const configParts: string[] = [];
-  if (widget.xAxis) configParts.push(`X: ${widget.xAxis}`);
-  if (showYAxis && widget.yAxis) configParts.push(`Y: ${widget.yAxis}`);
-  if (showGroupBy && widget.groupBy) configParts.push(`Group: ${widget.groupBy}`);
-  if (showAggregation) configParts.push(`Agg: ${widget.aggregation ?? "count"}`);
+  if (rule.rawAxes) {
+    if (widget.xAxis) configParts.push(`X: ${widget.xAxis}`);
+    if (widget.yAxis) configParts.push(`Y: ${widget.yAxis}`);
+  } else {
+    if (widget.xAxis) configParts.push(`Category: ${widget.xAxis}`);
+    if (!widget.yAxis) {
+      configParts.push("Measure: Count");
+    } else {
+      const label = effectiveAggregation === "avg" ? "Avg" : "Sum";
+      configParts.push(`Measure: ${label} of ${widget.yAxis}`);
+    }
+    if (widget.groupBy) configParts.push(`Split by: ${widget.groupBy}`);
+  }
 
   return (
     <Card className="py-4 gap-3 shadow-none">
       <CardHeader className="px-4 py-0">
         <CardTitle className="flex items-center gap-2">
-          <Input
-            className="text-sm font-medium bg-transparent border-transparent rounded-none shadow-none flex-1 min-w-0 h-auto p-0 focus-visible:ring-0 focus-visible:border-border"
+          <EditableText
+            className="text-sm font-medium flex-1 min-w-0"
             value={widget.title}
-            onChange={(e) => onChange({ ...widget, title: e.target.value })}
+            onSave={(title) => onChange({ ...widget, title })}
             placeholder="Chart title..."
           />
-          <Badge variant="secondary">{CHART_TYPE_LABELS[widget.type]}</Badge>
+          <Badge variant="secondary">{rule.label}</Badge>
         </CardTitle>
         <CardAction className="flex items-center gap-0.5">
           <Popover>
@@ -231,97 +476,162 @@ export function ChartWidget({ widget, jobId, schema, onChange, onRemove }: Chart
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-72 space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs">X Axis</Label>
-                <Select value={widget.xAxis || ""} onValueChange={(v) => onChange({ ...widget, xAxis: v })}>
-                  <SelectTrigger className="w-full text-xs">
-                    <SelectValue placeholder="Select column..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {xColumns.map((f) => (
-                      <SelectItem key={f.name} value={f.name}>
-                        <span className="flex items-center gap-2">
-                          {f.name}
-                          <span className="text-[10px] text-muted-foreground">{f.type}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {rule.rawAxes ? (
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-xs">X Axis</Label>
+                    <Select
+                      value={widget.xAxis || ""}
+                      onValueChange={(v) => onChange({ ...widget, xAxis: v })}
+                    >
+                      <SelectTrigger className="w-full text-xs">
+                        <SelectValue placeholder="Select column..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {xColumns.map((f) => (
+                          <SelectItem key={f.name} value={f.name}>
+                            <span className="flex items-center gap-2">
+                              {f.name}
+                              <span className="text-[10px] text-muted-foreground">
+                                {f.type}
+                              </span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Y Axis</Label>
+                    <Select
+                      value={widget.yAxis ?? ""}
+                      onValueChange={(v) => onChange({ ...widget, yAxis: v })}
+                    >
+                      <SelectTrigger className="w-full text-xs">
+                        <SelectValue placeholder="Select column..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {yColumns.map((f) => (
+                          <SelectItem key={f.name} value={f.name}>
+                            <span className="flex items-center gap-2">
+                              {f.name}
+                              <span className="text-[10px] text-muted-foreground">
+                                {f.type}
+                              </span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Category</Label>
+                    <Select
+                      value={widget.xAxis || ""}
+                      onValueChange={(v) => onChange({ ...widget, xAxis: v })}
+                    >
+                      <SelectTrigger className="w-full text-xs">
+                        <SelectValue placeholder="Select column..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {xColumns.map((f) => (
+                          <SelectItem key={f.name} value={f.name}>
+                            <span className="flex items-center gap-2">
+                              {f.name}
+                              <span className="text-[10px] text-muted-foreground">
+                                {f.type}
+                              </span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              {showYAxis && (
-                <div className="space-y-2">
-                  <Label className="text-xs">Y Axis</Label>
-                  <Select
-                    value={widget.yAxis ?? "__none__"}
-                    onValueChange={(v) => onChange({ ...widget, yAxis: v === "__none__" ? undefined : v })}
-                  >
-                    <SelectTrigger className="w-full text-xs">
-                      <SelectValue placeholder="Select column..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">(none)</SelectItem>
-                      {yColumns.map((f) => (
-                        <SelectItem key={f.name} value={f.name}>
-                          <span className="flex items-center gap-2">
-                            {f.name}
-                            <span className="text-[10px] text-muted-foreground">{f.type}</span>
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                  <div className="space-y-2">
+                    <Label className="text-xs">Measure</Label>
+                    <div className="flex gap-2">
+                      <Select
+                        value={measureType}
+                        onValueChange={handleMeasureChange}
+                      >
+                        <SelectTrigger className="w-24 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MEASURE_OPTIONS.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>
+                              {o.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {measureType !== "count" && (
+                        <Select
+                          value={widget.yAxis ?? ""}
+                          onValueChange={(v) =>
+                            onChange({ ...widget, yAxis: v })
+                          }
+                        >
+                          <SelectTrigger className="flex-1 text-xs">
+                            <SelectValue placeholder="Field..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {yColumns.map((f) => (
+                              <SelectItem key={f.name} value={f.name}>
+                                {f.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  </div>
 
-              {showGroupBy && (
-                <div className="space-y-2">
-                  <Label className="text-xs">Group By</Label>
-                  <Select
-                    value={widget.groupBy ?? "__none__"}
-                    onValueChange={(v) => onChange({ ...widget, groupBy: v === "__none__" ? undefined : v })}
-                  >
-                    <SelectTrigger className="w-full text-xs">
-                      <SelectValue placeholder="Select column..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">(none)</SelectItem>
-                      {groupByColumns.map((f) => (
-                        <SelectItem key={f.name} value={f.name}>
-                          <span className="flex items-center gap-2">
-                            {f.name}
-                            <span className="text-[10px] text-muted-foreground">{f.type}</span>
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {showAggregation && (
-                <div className="space-y-2">
-                  <Label className="text-xs">Aggregation</Label>
-                  <ToggleGroup
-                    type="single"
-                    variant="outline"
-                    size="sm"
-                    className="justify-start"
-                    value={widget.aggregation ?? "count"}
-                    onValueChange={(v) => { if (v) onChange({ ...widget, aggregation: v }); }}
-                  >
-                    {AGGREGATION_OPTIONS.map((o) => (
-                      <ToggleGroupItem key={o.value} value={o.value} className="text-xs px-3">
-                        {o.label}
-                      </ToggleGroupItem>
-                    ))}
-                  </ToggleGroup>
-                </div>
+                  {rule.splitBy && (
+                    <div className="space-y-2">
+                      <Label className="text-xs">Split by</Label>
+                      <Select
+                        value={widget.groupBy ?? "__none__"}
+                        onValueChange={(v) =>
+                          onChange({
+                            ...widget,
+                            groupBy: v === "__none__" ? undefined : v,
+                          })
+                        }
+                      >
+                        <SelectTrigger className="w-full text-xs">
+                          <SelectValue placeholder="Select column..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">(none)</SelectItem>
+                          {groupByColumns.map((f) => (
+                            <SelectItem key={f.name} value={f.name}>
+                              <span className="flex items-center gap-2">
+                                {f.name}
+                                <span className="text-[10px] text-muted-foreground">
+                                  {f.type}
+                                </span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </>
               )}
             </PopoverContent>
           </Popover>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={onRemove}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={onRemove}
+          >
             <X size={14} />
           </Button>
         </CardAction>
@@ -335,11 +645,20 @@ export function ChartWidget({ widget, jobId, schema, onChange, onRemove }: Chart
           </div>
         ) : chartData.length > 0 && widget.xAxis ? (
           <ChartContainer config={chartConfig} className="h-64 w-full">
-            {renderChart(widget, chartData, yKey, groupKeys)}
+            {
+              rule.render({
+                widget,
+                data: chartData,
+                yKey,
+                groupKeys,
+              }) as React.ReactElement
+            }
           </ChartContainer>
         ) : (
           <div className="h-64 flex items-center justify-center text-xs text-muted-foreground">
-            Select axes to render chart
+            {rule.rawAxes
+              ? "Select X and Y axes"
+              : "Select a category to render chart"}
           </div>
         )}
 
@@ -351,93 +670,4 @@ export function ChartWidget({ widget, jobId, schema, onChange, onRemove }: Chart
       </CardContent>
     </Card>
   );
-}
-
-function renderChart(
-  widget: ChartWidgetType,
-  data: Record<string, string | number>[],
-  yKey: string,
-  groupKeys: string[],
-) {
-  const commonProps = { data, margin: { top: 5, right: 20, bottom: 5, left: 0 } };
-
-  switch (widget.type) {
-    case "bar":
-      return (
-        <BarChart {...commonProps}>
-          <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-          <XAxis dataKey={widget.xAxis} tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 11 }} />
-          <ChartTooltip content={<ChartTooltipContent />} />
-          {groupKeys.length > 0 ? (
-            groupKeys.map((key) => (
-              <Bar key={key} dataKey={sanitizeKey(key)} fill={`var(--color-${sanitizeKey(key)})`} />
-            ))
-          ) : (
-            <Bar dataKey={yKey} fill={`var(--color-${yKey})`} />
-          )}
-          {groupKeys.length > 1 && <ChartLegend content={<ChartLegendContent />} />}
-        </BarChart>
-      );
-
-    case "line":
-      return (
-        <LineChart {...commonProps}>
-          <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-          <XAxis dataKey={widget.xAxis} tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 11 }} />
-          <ChartTooltip content={<ChartTooltipContent />} />
-          {groupKeys.length > 0 ? (
-            groupKeys.map((key) => (
-              <Line key={key} type="monotone" dataKey={sanitizeKey(key)} stroke={`var(--color-${sanitizeKey(key)})`} dot={false} />
-            ))
-          ) : (
-            <Line type="monotone" dataKey={yKey} stroke={`var(--color-${yKey})`} dot={false} />
-          )}
-          {groupKeys.length > 1 && <ChartLegend content={<ChartLegendContent />} />}
-        </LineChart>
-      );
-
-    case "area":
-      return (
-        <AreaChart {...commonProps}>
-          <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-          <XAxis dataKey={widget.xAxis} tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 11 }} />
-          <ChartTooltip content={<ChartTooltipContent />} />
-          {groupKeys.length > 0 ? (
-            groupKeys.map((key) => (
-              <Area key={key} type="monotone" dataKey={sanitizeKey(key)} fill={`var(--color-${sanitizeKey(key)})`} stroke={`var(--color-${sanitizeKey(key)})`} fillOpacity={0.3} />
-            ))
-          ) : (
-            <Area type="monotone" dataKey={yKey} fill={`var(--color-${yKey})`} stroke={`var(--color-${yKey})`} fillOpacity={0.3} />
-          )}
-          {groupKeys.length > 1 && <ChartLegend content={<ChartLegendContent />} />}
-        </AreaChart>
-      );
-
-    case "pie":
-      return (
-        <PieChart>
-          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-            {data.map((entry, i) => (
-              <Cell key={i} fill={`var(--color-${sanitizeKey(String(entry.name))})`} />
-            ))}
-          </Pie>
-          <ChartTooltip content={<ChartTooltipContent />} />
-          <ChartLegend content={<ChartLegendContent />} />
-        </PieChart>
-      );
-
-    case "scatter":
-      return (
-        <ScatterChart {...commonProps}>
-          <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-          <XAxis dataKey={widget.xAxis} tick={{ fontSize: 11 }} name={widget.xAxis} />
-          <YAxis dataKey={yKey} tick={{ fontSize: 11 }} name={yKey} />
-          <ChartTooltip content={<ChartTooltipContent />} />
-          <Scatter data={data} fill={`var(--color-${yKey})`} />
-        </ScatterChart>
-      );
-  }
 }

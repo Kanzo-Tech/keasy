@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { MetaItem } from "@/components/meta-item";
-import { PipelineSummary } from "@/components/pipeline-summary";
+import { PipelineSection } from "@/components/pipeline-section";
+import { Section } from "@/components/section";
 import { cn } from "@/lib/utils";
-import type { RunMode, ValidationResult } from "@/lib/types";
+import { reverseMapUrl, reverseMapPipeline } from "@/lib/formatters";
+import type { RunMode, ValidationResult, Connection } from "@/lib/types";
 
 interface JobSummaryPanelProps {
   onConfirm: () => void;
@@ -19,6 +21,7 @@ interface JobSummaryPanelProps {
   dcatEnabled: boolean;
   onDcatToggle: (enabled: boolean) => void;
   orgConfigured: boolean;
+  connections?: Connection[];
 }
 
 const FORMAT_LABELS: Record<string, string> = {
@@ -51,25 +54,27 @@ export function JobSummaryPanel({
   dcatEnabled,
   onDcatToggle,
   orgConfigured,
+  connections = [],
 }: JobSummaryPanelProps) {
-  // Collect unique destinations and formats
-  const destinations = [
+  const rawDests = [
     ...new Set(
-      validation.outputs
+      validation.pipeline.outputs
         .map((o) => o.destination)
-        .filter((d): d is string => d !== null)
+        .filter((d): d is string => d != null)
     ),
   ];
+  const destinations = rawDests.map((d) => reverseMapUrl(d, connections));
   const formats = [
     ...new Set(
-      destinations
+      rawDests
         .map((d) => inferFormat(d))
         .filter((f): f is string => f !== null)
     ),
   ];
+  const mappedPipeline = reverseMapPipeline(validation.pipeline, connections);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 flex-1 min-h-0">
       {/* Job info */}
       <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetaItem label="Name" value={jobName || "Unnamed"} />
@@ -83,28 +88,16 @@ export function JobSummaryPanel({
       </div>
 
       {/* Pipeline */}
-      {(validation.sources.length > 0 || validation.outputs.length > 0) ? (
-        <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-            Pipeline
-          </p>
-          <PipelineSummary
-            sources={validation.sources}
-            outputs={validation.outputs}
-            hideDestination
-          />
-        </div>
+      {(mappedPipeline.inputs.length > 0 || mappedPipeline.outputs.length > 0) ? (
+        <PipelineSection pipeline={mappedPipeline} className="flex-1 min-h-0 flex flex-col" />
       ) : (
         <p className="text-sm text-muted-foreground">
-          No data sources or outputs detected in the script.
+          No data connections or outputs detected in the script.
         </p>
       )}
 
       {/* DCAT toggle card — always visible, disabled when org not configured */}
-      <div>
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-          Options
-        </p>
+      <Section label="Options">
         <div
           className={cn(
             "flex items-center justify-between rounded-lg border p-3 transition-colors",
@@ -132,7 +125,7 @@ export function JobSummaryPanel({
             disabled={!orgConfigured}
           />
         </div>
-      </div>
+      </Section>
 
       <div className="flex items-center justify-between pt-2">
         <Button

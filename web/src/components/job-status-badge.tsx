@@ -2,6 +2,10 @@ import { Badge } from "@/components/ui/badge";
 import type { JobStatus } from "@/lib/types";
 
 const config: Record<JobStatus, { label: string; className: string }> = {
+  draft: {
+    label: "Draft",
+    className: "bg-muted text-muted-foreground",
+  },
   pending: {
     label: "Pending",
     className: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",

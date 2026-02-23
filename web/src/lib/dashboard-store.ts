@@ -1,3 +1,5 @@
+import { fetchDashboardLayout, saveDashboardLayout } from "./api";
+
 export type ChartType = "bar" | "line" | "area" | "pie" | "scatter";
 
 export interface ChartWidget {
@@ -17,30 +19,27 @@ export interface DashboardLayout {
   columns: DashboardColumns;
 }
 
-const STORAGE_KEY = "keasy:dashboard";
+const DEFAULT_LAYOUT: DashboardLayout = { widgets: [], columns: 2 };
 
-function storageKey(jobId: string): string {
-  return `${STORAGE_KEY}:${jobId}`;
-}
-
-export function loadDashboard(jobId: string): DashboardLayout {
-  if (typeof window === "undefined") return { widgets: [], columns: 2 };
+export async function loadDashboard(jobId: string): Promise<DashboardLayout> {
   try {
-    const raw = localStorage.getItem(storageKey(jobId));
-    if (!raw) return { widgets: [], columns: 2 };
-    const parsed = JSON.parse(raw);
-    // Backward-compatible: old format stored a raw array of widgets
-    if (Array.isArray(parsed)) return { widgets: parsed, columns: 2 };
+    const data = await fetchDashboardLayout(jobId);
+    if (!data) return DEFAULT_LAYOUT;
     return {
-      widgets: parsed.widgets ?? [],
-      columns: parsed.columns ?? 2,
+      widgets: (data.widgets as ChartWidget[]) ?? [],
+      columns: (data.columns as DashboardColumns) ?? 2,
     };
   } catch {
-    return { widgets: [], columns: 2 };
+    return DEFAULT_LAYOUT;
   }
 }
 
-export function saveDashboard(jobId: string, layout: DashboardLayout): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(storageKey(jobId), JSON.stringify(layout));
+export async function saveDashboard(
+  jobId: string,
+  layout: DashboardLayout,
+): Promise<void> {
+  try {
+    await saveDashboardLayout(jobId, layout);
+  } catch {
+  }
 }

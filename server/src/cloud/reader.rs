@@ -1,5 +1,8 @@
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
+use fossil_lang::traits::provider::FileReader;
+use futures::StreamExt;
 use object_store::ObjectStore;
 use serde::Serialize;
 
@@ -10,7 +13,6 @@ pub struct FileEntry {
     pub last_modified: Option<String>,
 }
 
-/// List files in a cloud container.
 pub async fn list_files(
     container_url: &str,
     creds: &HashMap<String, String>,
@@ -34,7 +36,7 @@ pub async fn list_files(
             Ok(meta) => {
                 entries.push(FileEntry {
                     path: meta.location.to_string(),
-                    size: meta.size as u64,
+                    size: meta.size,
                     last_modified: Some(meta.last_modified.to_string()),
                 });
             }
@@ -45,21 +47,7 @@ pub async fn list_files(
     Ok(entries)
 }
 
-/// Download a file from a cloud container.
-pub async fn download_file(
-    container_url: &str,
-    file_path: &str,
-    creds: &HashMap<String, String>,
-) -> Result<Vec<u8>, String> {
-    let (store, _) = super::build_store(container_url, creds).map_err(|e| e.to_string())?;
-    let path = object_store::path::Path::parse(file_path).map_err(|e| e.to_string())?;
-    let result = store.get(&path).await.map_err(|e| e.to_string())?;
-    let bytes = result.bytes().await.map_err(|e| e.to_string())?;
-    Ok(bytes.to_vec())
-}
-
-/// Download a file directly from a full cloud URL (e.g. az://container/path/file.ttl).
-pub async fn download_from_url(
+pub async fn download(
     url: &str,
     creds: &HashMap<String, String>,
 ) -> Result<Vec<u8>, String> {
@@ -69,5 +57,66 @@ pub async fn download_from_url(
     Ok(bytes.to_vec())
 }
 
-// We need the futures StreamExt for collect
-use futures::StreamExt;
+pub struct CloudReader {
+    inner: Box<dyn FileReader>,
+    creds: HashMap<String, String>,
+}
+
+impl CloudReader {
+    pub fn new(inner: Box<dyn FileReader>, creds: HashMap<String, String>) -> Self {
+        Self { inner, creds }
+    }
+}
+
+impl std::fmt::Debug for CloudReader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CloudReader").finish()
+    }
+}
+
+impl FileReader for CloudReader {
+    fn read_to_string(&self, url: &str) -> Result<String, String> {
+        if super::is_cloud_url(url) {
+            let handle = tokio::runtime::Handle::current();
+            tokio::task::block_in_place(|| {
+                handle.block_on(async {
+                    let bytes = download(url, &self.creds).await?;
+                    String::from_utf8(bytes).map_err(|e| e.to_string())
+                })
+            })
+        } else {
+            self.inner.read_to_string(url)
+        }
+    }
+}
+
+pub struct CachedCloudReader {
+    inner: Arc<dyn FileReader>,
+    cache: Mutex<HashMap<String, String>>,
+}
+
+impl CachedCloudReader {
+    pub fn new(inner: Arc<dyn FileReader>) -> Self {
+        Self {
+            inner,
+            cache: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+impl std::fmt::Debug for CachedCloudReader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CachedCloudReader").finish()
+    }
+}
+
+impl FileReader for CachedCloudReader {
+    fn read_to_string(&self, url: &str) -> Result<String, String> {
+        if let Some(cached) = self.cache.lock().unwrap().get(url) {
+            return Ok(cached.clone());
+        }
+        let content = self.inner.read_to_string(url)?;
+        self.cache.lock().unwrap().insert(url.to_string(), content.clone());
+        Ok(content)
+    }
+}

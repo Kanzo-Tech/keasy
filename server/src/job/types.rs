@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::dcat::types::DcatInput;
-use crate::routes::scripts::{OutputInfo, SourceInfo};
+use crate::pipeline::PipelineSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -13,6 +13,7 @@ pub enum RunMode {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum JobStatus {
+    Draft,
     Pending,
     Running,
     Completed,
@@ -34,16 +35,15 @@ pub struct Job {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<super::errors::JobError>,
     pub mode: RunMode,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub sources: Vec<SourceInfo>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub outputs: Vec<OutputInfo>,
+    pub pipeline: PipelineSummary,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalog: Option<String>,
     #[serde(skip)]
     pub dcat_input: Option<DcatInput>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub cloud_account_ids: Vec<String>,
+    pub connection_ids: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub script: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -51,12 +51,19 @@ pub struct CreateJobRequest {
     pub script: String,
     pub name: Option<String>,
     pub mode: Option<RunMode>,
-    pub sources: Option<Vec<SourceInfo>>,
-    pub outputs: Option<Vec<OutputInfo>>,
+    pub pipeline: Option<PipelineSummary>,
     pub dcat_enabled: Option<bool>,
     pub dcat_format: Option<String>,
     #[serde(default)]
-    pub cloud_account_ids: Vec<String>,
+    pub connection_ids: Vec<String>,
+    #[serde(default)]
+    pub draft: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateJobRequest {
+    pub script: Option<String>,
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -71,5 +78,5 @@ pub struct ErrorDetail {
 }
 
 pub fn now_iso8601() -> String {
-    jiff::Zoned::now().strftime("%Y-%m-%dT%H:%M:%SZ").to_string()
+    jiff::Timestamp::now().strftime("%Y-%m-%dT%H:%M:%SZ").to_string()
 }

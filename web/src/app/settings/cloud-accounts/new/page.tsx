@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useSWRConfig } from "swr";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
-import { useAsync } from "@/hooks/use-async";
+import useSWR from "swr";
+import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { fetchSchema, createCloudAccount } from "@/lib/api";
 import { CloudAccountForm } from "@/components/cloud-account-form";
 import { PageHeader } from "@/components/page-header";
@@ -11,33 +13,36 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function NewCloudAccountPage() {
   const router = useRouter();
-  const { data: schema, loading } = useAsync(() => fetchSchema(), []);
+  const { mutate } = useSWRConfig();
+  const { data: schema, isLoading } = useSWR("schema", fetchSchema);
+  const showSkeleton = useDelayedLoading(isLoading);
 
-  if (loading || !schema) {
-    return (
+  if (isLoading || !schema) {
+    return showSkeleton ? (
       <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-40 w-full" />
       </div>
-    );
+    ) : null;
   }
 
   return (
     <>
-      <PageHeader title="New Cloud Account" backHref="/settings?tab=cloud-accounts" backLabel="Cloud Accounts" />
+      <PageHeader title="New Cloud Account" backHref="/settings/cloud-accounts" backLabel="Cloud Accounts" />
       <CloudAccountForm
         schema={schema}
         onSubmit={async (data) => {
           try {
             await createCloudAccount(data);
             toast.success("Cloud account created");
-            router.push("/settings?tab=cloud-accounts");
+            mutate("cloud-init");
+            router.push("/settings/cloud-accounts");
           } catch (err) {
             toastError(err instanceof Error ? err.message : "Failed to create");
             throw err;
           }
         }}
-        onCancel={() => router.push("/settings?tab=cloud-accounts")}
+        onCancel={() => router.push("/settings/cloud-accounts")}
       />
     </>
   );

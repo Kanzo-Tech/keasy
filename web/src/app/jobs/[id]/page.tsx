@@ -2,9 +2,9 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import useSWR from "swr";
-import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
-import { fetchJob, fetchJobCatalog, cancelJob } from "@/lib/api";
+import { fetchJob, fetchJobCatalog, cancelJob, fetchConnections } from "@/lib/api";
+import { reverseMapUrl, reverseMapPipeline } from "@/lib/formatters";
 import { JobStatusBadge } from "@/components/job-status-badge";
 import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,33 +25,17 @@ export default function JobDetailPage({
   const { data: job, isLoading, mutate } = useSWR(`job-${id}`, () => fetchJob(id), {
     refreshInterval: (data) => (data && isTerminal(data.status) ? 0 : 2000),
   });
+  const { data: connections } = useSWR("connections", fetchConnections);
 
   const [dcatFormat, setDcatFormat] = useState("turtle");
-  const [catalogContent, setCatalogContent] = useState<string | null>(null);
-  const [catalogLoading, setCatalogLoading] = useState(false);
 
-  // Re-fetch catalog when format changes
-  useEffect(() => {
-    if (!job?.catalog) return;
-    if (dcatFormat === "turtle") {
-      // Default format — use the stored catalog directly
-      setCatalogContent(job.catalog);
-      return;
-    }
-    let cancelled = false;
-    setCatalogLoading(true);
-    fetchJobCatalog(id, dcatFormat)
-      .then((content) => {
-        if (!cancelled) setCatalogContent(content);
-      })
-      .catch(() => {
-        if (!cancelled) toast.error("Failed to fetch catalog in this format");
-      })
-      .finally(() => {
-        if (!cancelled) setCatalogLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [id, job?.catalog, dcatFormat]);
+  const catalogSwrKey = job?.catalog && dcatFormat !== "turtle"
+    ? `catalog-${id}-${dcatFormat}` : null;
+  const { data: fetchedCatalog, isLoading: catalogLoading } = useSWR(
+    catalogSwrKey,
+    () => fetchJobCatalog(id, dcatFormat),
+  );
+  const catalogContent = dcatFormat === "turtle" ? (job?.catalog ?? null) : (fetchedCatalog ?? null);
 
   const toastShown = useRef(false);
   useEffect(() => {
@@ -86,26 +70,30 @@ export default function JobDetailPage({
     return <p className="text-muted-foreground">Job not found.</p>;
   }
 
-  const hasPipeline =
-    (job.sources != null && job.sources.length > 0) ||
-    (job.outputs != null && job.outputs.length > 0);
+  const rawPipeline = job.pipeline;
+  const pipeline = rawPipeline
+    ? reverseMapPipeline(rawPipeline, connections ?? [])
+    : rawPipeline;
+  const hasPipeline = pipeline != null &&
+    (pipeline.inputs.length > 0 || pipeline.outputs.length > 0);
 
-  const hasCatalog = !!job.catalog;
+  const hasCatalog = !!job.catalog && job.status !== "cancelled";
 
   const hasDestinations =
     job.status === "completed" &&
-    (job.outputs ?? []).some((o) => o.destination != null);
+    (pipeline?.outputs ?? []).some((o) => o.destination != null);
 
   const hasTabs = hasCatalog || hasDestinations;
 
-  const dests = [...new Set(
-    (job.outputs ?? [])
+  const rawDests = [...new Set(
+    (rawPipeline?.outputs ?? [])
       .map((o) => o.destination)
-      .filter((d): d is string => d !== null)
+      .filter((d): d is string => d != null)
   )];
+  const dests = rawDests.map((d) => reverseMapUrl(d, connections ?? []));
 
   return (
-    <div className={hasTabs ? "flex flex-col h-full" : undefined}>
+    <div className="flex flex-col h-full">
       {hasTabs ? (
         <Tabs defaultValue="overview" className="flex-1 min-h-0 flex flex-col">
           <PageHeader
@@ -117,13 +105,13 @@ export default function JobDetailPage({
               <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 {hasCatalog && <TabsTrigger value="catalog">Catalog</TabsTrigger>}
-                {hasCatalog && <TabsTrigger value="validation">Quality</TabsTrigger>}
+                {hasDestinations && <TabsTrigger value="validation">Quality</TabsTrigger>}
                 {hasDestinations && <TabsTrigger value="discover">Discovery</TabsTrigger>}
               </TabsList>
             }
           />
 
-          <TabsContent value="overview" className="overflow-y-auto">
+          <TabsContent value="overview" className="flex flex-col flex-1 min-h-0">
             <OverviewContent
               job={job}
               dests={dests}
@@ -146,7 +134,7 @@ export default function JobDetailPage({
 
           <TabsContent value="validation" className="overflow-y-auto">
             <ValidationTab
-              destinations={dests}
+              destinations={rawDests}
             />
           </TabsContent>
 
@@ -157,7 +145,7 @@ export default function JobDetailPage({
           )}
         </Tabs>
       ) : (
-        <>
+        <div className="flex flex-col flex-1 min-h-0">
           <PageHeader
             title={job.name ?? job.id.slice(0, 8)}
             badge={<JobStatusBadge status={job.status} />}
@@ -172,7 +160,7 @@ export default function JobDetailPage({
             isTerminal={isTerminal(job.status)}
             onCancel={handleCancel}
           />
-        </>
+        </div>
       )}
     </div>
   );

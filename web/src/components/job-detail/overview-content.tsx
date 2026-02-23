@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { AlertCircle } from "lucide-react";
 import { MetaItem } from "@/components/meta-item";
-import { PipelineSummary } from "@/components/pipeline-summary";
-import { Section } from "@/components/section";
+import { PipelineSection } from "@/components/pipeline-section";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatDuration } from "@/lib/formatters";
@@ -24,9 +23,8 @@ export function OverviewContent({
   onCancel,
 }: OverviewContentProps) {
   return (
-    <>
-      {/* Metadata */}
-      <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2 lg:grid-cols-4 mb-4">
         <MetaItem label="ID" value={job.id.slice(0, 12)} mono />
         <MetaItem label="Created" value={new Date(job.created_at).toLocaleString()} />
         {job.started_at && (
@@ -42,26 +40,19 @@ export function OverviewContent({
         {dests.length > 0 && <MetaItem label="Destination" value={dests.join(", ")} mono />}
       </div>
 
-      {/* Pipeline */}
-      {hasPipeline && (
-        <Section label="Pipeline" className="mb-8">
-          <PipelineSummary
-            sources={job.sources ?? []}
-            outputs={job.outputs ?? []}
-            hideDestination
-          />
-        </Section>
+      {hasPipeline && job.pipeline && (
+        <PipelineSection pipeline={job.pipeline} className="flex-1 min-h-0 flex flex-col" />
       )}
 
       {job.error && (
-        <div className="mb-8 flex flex-col gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+        <div className="mt-4 flex flex-col gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
           <div className="flex items-start gap-3">
             <AlertCircle className="size-4 mt-0.5 shrink-0" />
             <pre className="whitespace-pre-wrap font-mono text-sm">{job.error.message}</pre>
           </div>
           {job.error.code.startsWith("CLOUD_") && (
             <Button variant="outline" size="sm" className="w-fit" asChild>
-              <Link href="/settings?tab=cloud-accounts">Go to Cloud Accounts</Link>
+              <Link href="/settings/cloud-accounts">Go to Cloud Accounts</Link>
             </Button>
           )}
           {job.error.detail && (
@@ -77,12 +68,11 @@ export function OverviewContent({
         </div>
       )}
 
-      {/* Cancel */}
       {!isTerminal && (
-        <Button variant="destructive" onClick={onCancel}>
+        <Button variant="destructive" onClick={onCancel} className="mt-4 w-fit">
           Cancel Job
         </Button>
       )}
-    </>
+    </div>
   );
 }

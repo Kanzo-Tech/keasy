@@ -7,24 +7,49 @@ use axum::{
 use serde::Deserialize;
 
 use crate::AppState;
-use crate::dcat::generator::generate_dcat_catalog;
 use crate::rdf::format::RdfExportFormat;
-use crate::job::types::{CreateJobRequest, Job, JobStatus, RunMode, now_iso8601};
+use crate::job::types::{CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601};
+use crate::script::rewrite;
 
 use super::error_response;
 
 pub async fn list_jobs(State(state): State<AppState>) -> impl IntoResponse {
-    let mut jobs = state.store.list_all();
-    jobs.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    let jobs = state.db.list_jobs().await;
     Json(jobs)
 }
 
 pub async fn create_job(
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
-) -> impl IntoResponse {
+) -> Response {
     let id = uuid::Uuid::new_v4().to_string();
+
+    if payload.draft {
+        let job = Job {
+            id: id.clone(),
+            status: JobStatus::Draft,
+            name: payload.name.or_else(|| Some(id[..8].to_string())),
+            created_at: now_iso8601(),
+            started_at: None,
+            completed_at: None,
+            error: None,
+            mode: payload.mode.unwrap_or(RunMode::Integrated),
+            pipeline: payload.pipeline.unwrap_or_default(),
+            catalog: None,
+            dcat_input: None,
+            connection_ids: payload.connection_ids.clone(),
+            script: Some(payload.script),
+        };
+        state.db.insert_job(&job).await;
+        return (StatusCode::CREATED, Json(job)).into_response();
+    }
+
     let dcat_enabled = payload.dcat_enabled.unwrap_or(false);
+
+    let resolved = match rewrite::resolve(&payload.script, &state.db).await {
+        Ok(r) => r,
+        Err(err) => return error_response(StatusCode::BAD_REQUEST, "REWRITE_ERROR", err),
+    };
 
     let job = Job {
         id: id.clone(),
@@ -35,39 +60,61 @@ pub async fn create_job(
         completed_at: None,
         error: None,
         mode: payload.mode.unwrap_or(RunMode::Integrated),
-        sources: payload.sources.unwrap_or_default(),
-        outputs: payload.outputs.unwrap_or_default(),
+        pipeline: payload.pipeline.unwrap_or_default(),
         catalog: None,
         dcat_input: None,
-        cloud_account_ids: payload.cloud_account_ids.clone(),
+        connection_ids: payload.connection_ids.clone(),
+        script: None,
     };
 
-    state.store.insert(job.clone());
+    state.db.insert_job(&job).await;
 
     let org_settings = if dcat_enabled {
-        state.org_settings.read()
+        state.db.get_org_settings().await
     } else {
         None
     };
 
     state.runner.spawn(
         id,
-        payload.script,
-        payload.cloud_account_ids,
+        resolved.script,
+        resolved.storage,
         org_settings,
         dcat_enabled,
         payload.dcat_format,
     );
 
-    (StatusCode::ACCEPTED, Json(job))
+    (StatusCode::ACCEPTED, Json(job)).into_response()
 }
 
 pub async fn get_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    match state.store.get(&id) {
+    match state.db.get_job(&id).await {
         Some(job) => (StatusCode::OK, Json(job)).into_response(),
+        None => not_found(&id),
+    }
+}
+
+pub async fn update_job(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(payload): Json<UpdateJobRequest>,
+) -> Response {
+    match state.db.update_job(&id, |job| {
+        if job.status != JobStatus::Draft {
+            return;
+        }
+        if let Some(script) = payload.script {
+            job.script = Some(script);
+        }
+        if let Some(name) = payload.name {
+            job.name = Some(name);
+        }
+    }).await {
+        Some(job) if job.status == JobStatus::Draft => (StatusCode::OK, Json(job)).into_response(),
+        Some(_) => error_response(StatusCode::BAD_REQUEST, "NOT_DRAFT", "Only draft jobs can be updated"),
         None => not_found(&id),
     }
 }
@@ -76,10 +123,10 @@ pub async fn cancel_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    match state.store.update(&id, |job| {
+    match state.db.update_job(&id, |job| {
         job.status = JobStatus::Cancelled;
         job.completed_at = Some(now_iso8601());
-    }) {
+    }).await {
         Some(job) => (StatusCode::OK, Json(job)).into_response(),
         None => not_found(&id),
     }
@@ -89,12 +136,10 @@ pub async fn delete_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    // Check job exists
-    if state.store.get(&id).is_none() {
+    if state.db.get_job(&id).await.is_none() {
         return not_found(&id);
     }
 
-    // Clear named graph from catalog
     let graph_name = format!("urn:keasy:job:{id}");
     state.catalog.clear_named_graph(&graph_name);
 
@@ -103,8 +148,7 @@ pub async fn delete_job(
         cache.remove(&id);
     }
 
-    // Remove job from store
-    state.store.remove(&id);
+    state.db.remove_job(&id).await;
 
     StatusCode::NO_CONTENT.into_response()
 }
@@ -119,21 +163,9 @@ pub async fn get_job_catalog(
     Path(id): Path<String>,
     Query(query): Query<CatalogQuery>,
 ) -> Response {
-    let job = match state.store.get(&id) {
-        Some(job) => job,
-        None => return not_found(&id),
-    };
-
-    let dcat_input = match &job.dcat_input {
-        Some(input) => input,
-        None => {
-            return error_response(
-                StatusCode::NOT_FOUND,
-                "no_catalog",
-                "No DCAT catalog available for this job",
-            )
-        }
-    };
+    if state.db.get_job(&id).await.is_none() {
+        return not_found(&id);
+    }
 
     let format = match query
         .format
@@ -147,8 +179,12 @@ pub async fn get_job_catalog(
         }
     };
 
-    match generate_dcat_catalog(dcat_input, format) {
-        Ok(catalog) => (StatusCode::OK, Json(serde_json::json!({ "catalog": catalog }))).into_response(),
+    let graph_name = format!("urn:keasy:job:{id}");
+    match state.catalog.serialize_graph(Some(&graph_name), format) {
+        Ok(catalog) if !catalog.trim().is_empty() => {
+            (StatusCode::OK, Json(serde_json::json!({ "catalog": catalog }))).into_response()
+        }
+        Ok(_) => error_response(StatusCode::NOT_FOUND, "no_catalog", "No DCAT catalog available for this job"),
         Err(err) => error_response(StatusCode::INTERNAL_SERVER_ERROR, "serialization_error", err),
     }
 }
@@ -157,7 +193,7 @@ pub async fn get_job_graph(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    match state.store.get(&id) {
+    match state.db.get_job(&id).await {
         Some(_) => {
             let graph_name = format!("urn:keasy:job:{id}");
             let graph_data = state.catalog.get_graph(Some(&graph_name));
@@ -172,6 +208,31 @@ pub async fn get_unified_graph(
 ) -> impl IntoResponse {
     let graph_data = state.catalog.get_graph(None);
     Json(graph_data)
+}
+
+pub async fn get_dashboard_layout(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Response {
+    if state.db.get_job(&id).await.is_none() {
+        return not_found(&id);
+    }
+    match state.db.get_dashboard_layout(&id).await {
+        Some(layout) => (StatusCode::OK, Json(layout)).into_response(),
+        None => StatusCode::NO_CONTENT.into_response(),
+    }
+}
+
+pub async fn save_dashboard_layout(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(body): Json<serde_json::Value>,
+) -> Response {
+    if state.db.get_job(&id).await.is_none() {
+        return not_found(&id);
+    }
+    state.db.set_dashboard_layout(&id, &body).await;
+    StatusCode::OK.into_response()
 }
 
 fn not_found(id: &str) -> Response {

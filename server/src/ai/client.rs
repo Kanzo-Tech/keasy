@@ -1,3 +1,4 @@
+use secrecy::ExposeSecret;
 use serde::{Deserialize, Serialize};
 
 use crate::settings::ai::AiSettings;
@@ -70,7 +71,7 @@ async fn ask_anthropic(
 
     let body = AnthropicRequest {
         model: model.to_string(),
-        max_tokens: 1024,
+        max_tokens: settings.max_tokens.unwrap_or(1024),
         system: system.to_string(),
         messages: vec![Message {
             role: "user".to_string(),
@@ -80,7 +81,7 @@ async fn ask_anthropic(
 
     let res = client
         .post("https://api.anthropic.com/v1/messages")
-        .header("x-api-key", &settings.api_key)
+        .header("x-api-key", settings.api_key.expose_secret())
         .header("anthropic-version", "2023-06-01")
         .header("content-type", "application/json")
         .json(&body)
@@ -121,7 +122,7 @@ async fn ask_openai(
 
     let body = OpenAiRequest {
         model: model.to_string(),
-        max_tokens: 1024,
+        max_tokens: settings.max_tokens.unwrap_or(1024),
         messages: vec![
             Message {
                 role: "system".to_string(),
@@ -136,7 +137,7 @@ async fn ask_openai(
 
     let res = client
         .post("https://api.openai.com/v1/chat/completions")
-        .header("Authorization", format!("Bearer {}", &settings.api_key))
+        .header("Authorization", format!("Bearer {}", settings.api_key.expose_secret()))
         .header("content-type", "application/json")
         .json(&body)
         .send()

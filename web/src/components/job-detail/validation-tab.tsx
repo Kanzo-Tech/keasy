@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Play, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
-import { useAsync } from "@/hooks/use-async";
+import useSWR from "swr";
 import {
   fetchConnections,
   fetchConnectionFiles,
@@ -36,17 +35,17 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
   const [selectedDest, setSelectedDest] = useState(
     destinations.length === 1 ? destinations[0] : "",
   );
-  const [selectedConn, setSelectedConn] = useState("");
+  const [selectedConnection, setSelectedConnection] = useState("");
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [selectedFile, setSelectedFile] = useState("");
   const [filesLoading, setFilesLoading] = useState(false);
   const [validating, setValidating] = useState(false);
   const [result, setResult] = useState<ShapeValidationResult | null>(null);
 
-  const { data: connections } = useAsync(() => fetchConnections(), []);
+  const { data: vocabConnections } = useSWR("vocab-connections", () => fetchConnections("vocab"));
 
   useEffect(() => {
-    if (!selectedConn) {
+    if (!selectedConnection) {
       setFiles([]);
       setSelectedFile("");
       return;
@@ -54,21 +53,21 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
     setFilesLoading(true);
     setSelectedFile("");
     setResult(null);
-    fetchConnectionFiles(selectedConn)
+    fetchConnectionFiles(selectedConnection)
       .then((f) => setFiles(f.filter((e) => isShapeFile(e.path))))
       .catch(() => {
-        toast.error("Failed to list files");
+        toastError("Failed to list files");
         setFiles([]);
       })
       .finally(() => setFilesLoading(false));
-  }, [selectedConn]);
+  }, [selectedConnection]);
 
   async function handleValidate() {
-    if (!selectedDest || !selectedConn || !selectedFile) return;
+    if (!selectedDest || !selectedConnection || !selectedFile) return;
     setValidating(true);
     setResult(null);
     try {
-      const r = await validateJob(selectedDest, selectedConn, selectedFile);
+      const r = await validateJob(selectedDest, selectedConnection, selectedFile);
       setResult(r);
     } catch (err) {
       toastError(err instanceof Error ? err.message : "Validation failed");
@@ -86,7 +85,7 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
   }
 
   const canValidate =
-    !!selectedDest && !!selectedConn && !!selectedFile && !validating;
+    !!selectedDest && !!selectedConnection && !!selectedFile && !validating;
 
   return (
     <div className="space-y-4">
@@ -111,27 +110,27 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
         </div>
       </div>
 
-      {/* Step 2 — Shape */}
+      {/* Step 2 — Shape from vocab source */}
       <div className="flex gap-4">
         <div className="flex flex-col items-center">
           <Badge variant="secondary" className="size-6 p-0 justify-center text-xs shrink-0">2</Badge>
         </div>
         <div className="flex-1 pb-6 space-y-3">
           <p className="text-sm font-medium leading-6">Select the shape</p>
-          <p className="text-xs text-muted-foreground">Pick a connection and a ShEx/SHACL file to validate the output.</p>
-          {(connections ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No connections configured.</p>
+          <p className="text-xs text-muted-foreground">Pick a vocabulary connection and a ShEx/SHACL file to validate the output.</p>
+          {(vocabConnections ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">No vocabulary connections configured.</p>
           ) : (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Connection</Label>
+                <Label>Vocab Connection</Label>
                 <Combobox
-                  options={(connections ?? []).map((c) => ({ value: c.id, label: c.name }))}
-                  value={selectedConn}
-                  onValueChange={setSelectedConn}
+                  options={(vocabConnections ?? []).map((s) => ({ value: s.id, label: s.name }))}
+                  value={selectedConnection}
+                  onValueChange={setSelectedConnection}
                   placeholder="Select connection..."
                   searchPlaceholder="Search connections..."
-                  emptyMessage="No connections found."
+                  emptyMessage="No vocab connections found."
                 />
               </div>
               <div className="space-y-2">
@@ -150,7 +149,7 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
                   placeholder={filesLoading ? "Loading..." : "Select shape..."}
                   searchPlaceholder="Search shapes..."
                   emptyMessage="No shape files found."
-                  disabled={!selectedConn || filesLoading}
+                  disabled={!selectedConnection || filesLoading}
                   mono
                 />
               </div>
@@ -182,14 +181,9 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
                 Invalid
               </div>
             )}
-            {result.conformant > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {result.conformant} conformant
-              </span>
-            )}
-            {result.non_conformant > 0 && (
+            {result.errors.length > 0 && (
               <span className="text-xs text-destructive">
-                {result.non_conformant} non-conformant
+                {result.errors.length} {result.errors.length === 1 ? "error" : "errors"}
               </span>
             )}
           </div>

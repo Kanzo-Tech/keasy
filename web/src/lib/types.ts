@@ -1,4 +1,4 @@
-export type JobStatus = "pending" | "running" | "completed" | "failed" | "cancelled";
+export type JobStatus = "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
 
 export type RunMode = "integrated" | "scheduled";
 
@@ -17,25 +17,36 @@ export interface Job {
   completed_at?: string;
   error?: JobError;
   mode: RunMode;
-  sources?: SourceInfo[];
-  outputs?: OutputInfo[];
+  pipeline?: PipelineSummary;
   catalog?: string | null;
-  cloud_account_ids?: string[];
+  connection_ids?: string[];
+  script?: string;
 }
 
 export interface CreateJobRequest {
   script: string;
   name?: string;
   mode?: RunMode;
-  sources?: SourceInfo[];
-  outputs?: OutputInfo[];
+  pipeline?: PipelineSummary;
   dcat_enabled?: boolean;
-  cloud_account_ids?: string[];
+  connection_ids?: string[];
+  draft?: boolean;
 }
 
-export interface SourceInfo {
+export interface UpdateJobRequest {
+  script?: string;
+  name?: string;
+}
+
+export interface Field {
   name: string;
-  fields: string[];
+  type: string;
+  uri?: string;
+}
+
+export interface PipelineInput {
+  name: string;
+  fields: Field[];
 }
 
 export interface FieldMapping {
@@ -43,21 +54,36 @@ export interface FieldMapping {
   source: string;
 }
 
-export interface OutputInfo {
-  source?: string;
+export interface OperationInput {
+  source: string;
+  key_fields: string[];
+}
+
+export interface PipelineOperation {
+  kind: string;
+  label: string;
+  fields: Field[];
+  inputs: OperationInput[];
+}
+
+export interface PipelineOutput {
   type_name: string;
-  ctor_params: string[];
-  fields: string[];
-  destination: string | null;
+  fields: Field[];
   mappings?: FieldMapping[];
-  field_types?: Record<string, string>;
-  field_uris?: Record<string, string>;
+  source?: string;
+  destination?: string;
+  rdf_type?: string;
+}
+
+export interface PipelineSummary {
+  inputs: PipelineInput[];
+  operations: PipelineOperation[];
+  outputs: PipelineOutput[];
 }
 
 export interface ValidationResult {
   valid: boolean;
-  sources: SourceInfo[];
-  outputs: OutputInfo[];
+  pipeline: PipelineSummary;
   errors: string[];
 }
 
@@ -114,7 +140,6 @@ export interface OrgSettings {
 }
 
 export interface Preferences {
-  shiki_theme: string;
   accent_color: string;
   font_family: string;
   mono_font_family: string;
@@ -122,11 +147,32 @@ export interface Preferences {
   mono_font_size: string;
 }
 
+export type ConnectionKind = "data" | "vocab";
+export type LocationType = "cloud" | "local";
+
 export interface Connection {
   id: string;
   name: string;
-  cloud_account_id: string;
-  container_url: string;
+  kind: ConnectionKind;
+  location_type: LocationType;
+  cloud_account_id?: string;
+  url: string;
+}
+
+export interface CreateConnectionRequest {
+  name: string;
+  kind: ConnectionKind;
+  location_type: LocationType;
+  cloud_account_id?: string;
+  url: string;
+}
+
+export interface UpdateConnectionRequest {
+  name?: string;
+  kind?: ConnectionKind;
+  location_type?: LocationType;
+  cloud_account_id?: string;
+  url?: string;
 }
 
 export interface FileEntry {
@@ -137,8 +183,6 @@ export interface FileEntry {
 
 export interface ShapeValidationResult {
   valid: boolean;
-  conformant: number;
-  non_conformant: number;
   errors: ShapeValidationError[];
 }
 
@@ -163,12 +207,37 @@ export interface AiSettings {
   provider: string;
   api_key: string;
   model?: string;
+  max_tokens?: number;
 }
 
 export interface AskResponse {
   answer: string;
   sparql?: string;
   data?: TabularData;
+  conversation_id?: string;
+}
+
+export interface Conversation {
+  id: string;
+  job_id: string;
+  created_at: string;
+  title?: string;
+}
+
+export interface ConversationMessage {
+  id: string;
+  conversation_id: string;
+  role: "user" | "assistant";
+  content: string;
+  sparql?: string;
+  data?: TabularData;
+  created_at: string;
+}
+
+export interface ProviderInfo {
+  name: string;
+  extensions: string[];
+  kind: "schema" | "data" | "both";
 }
 
 export interface GraphNode {

@@ -2,9 +2,11 @@
 
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import { useAsync } from "@/hooks/use-async";
+import useSWR from "swr";
+import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { useMutation } from "@/hooks/use-mutation";
 import { fetchOrgSettings, saveOrgSettings } from "@/lib/api";
+import { SettingsSection, SettingsPage } from "@/components/settings/settings-section";
 import { FormField, FormActions } from "@/components/form-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,125 +15,127 @@ import { Textarea } from "@/components/ui/textarea";
 import type { OrgSettings } from "@/lib/types";
 
 export function OrganizationTab() {
-  const [publisherName, setPublisherName] = useState("");
-  const [publisherUri, setPublisherUri] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [licenseUri, setLicenseUri] = useState("");
-  const [catalogDescription, setCatalogDescription] = useState("");
+  const { data: settings, isLoading, mutate } = useSWR("org-settings", fetchOrgSettings);
+  const showSkeleton = useDelayedLoading(isLoading);
 
-  const { loading } = useAsync(async () => {
-    const settings = await fetchOrgSettings();
-    if (settings) {
-      setPublisherName(settings.publisher_name || "");
-      setPublisherUri(settings.publisher_uri || "");
-      setContactEmail(settings.contact_email || "");
-      setLicenseUri(settings.license_uri || "");
-      setCatalogDescription(settings.catalog_description || "");
-    }
-  }, []);
+  if (isLoading) {
+    return showSkeleton ? (
+      <div className="space-y-6 max-w-2xl">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+        ))}
+      </div>
+    ) : null;
+  }
+
+  return (
+    <OrgForm
+      settings={settings ?? { publisher_name: "" }}
+      onSaved={() => mutate()}
+    />
+  );
+}
+
+function OrgForm({
+  settings,
+  onSaved,
+}: {
+  settings: OrgSettings;
+  onSaved: () => void;
+}) {
+  const [publisherName, setPublisherName] = useState(settings.publisher_name || "");
+  const [publisherUri, setPublisherUri] = useState(settings.publisher_uri || "");
+  const [contactEmail, setContactEmail] = useState(settings.contact_email || "");
+  const [licenseUri, setLicenseUri] = useState(settings.license_uri || "");
+  const [catalogDescription, setCatalogDescription] = useState(settings.catalog_description || "");
 
   const handleSave = useCallback(async () => {
-    const settings: OrgSettings = {
+    const s: OrgSettings = {
       publisher_name: publisherName.trim(),
       publisher_uri: publisherUri.trim() || undefined,
       contact_email: contactEmail.trim() || undefined,
       license_uri: licenseUri.trim() || undefined,
       catalog_description: catalogDescription.trim() || undefined,
     };
-    await saveOrgSettings(settings);
+    await saveOrgSettings(s);
+    onSaved();
     toast.success("Organization settings saved");
-  }, [publisherName, publisherUri, contactEmail, licenseUri, catalogDescription]);
+  }, [publisherName, publisherUri, contactEmail, licenseUri, catalogDescription, onSaved]);
 
-  const { mutate, pending: saving } = useMutation(handleSave);
-
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="space-y-1">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-9 w-full" />
-          </div>
-        ))}
-      </div>
-    );
-  }
+  const { mutate: save, pending: saving } = useMutation(handleSave);
 
   const canSave = publisherName.trim().length > 0;
 
   return (
-    <div className="space-y-4">
-      <FormField
-        label="Publisher Name"
-        required
-        description="The name of the organization that publishes the data."
+    <SettingsPage>
+      <SettingsSection
+        title="Publisher"
+        description="Identity of the organization that publishes data. Used in generated DCAT catalogs."
       >
-        <Input
-          type="text"
-          value={publisherName}
-          onChange={(e) => setPublisherName(e.target.value)}
-          placeholder="e.g. Acme Corp"
-        />
-      </FormField>
+        <div className="space-y-3">
+          <FormField label="Name" required>
+            <Input
+              value={publisherName}
+              onChange={(e) => setPublisherName(e.target.value)}
+              placeholder="e.g. Acme Corp"
+            />
+          </FormField>
+          <FormField label="URI" description="Linked data identifier for the publisher.">
+            <Input
+              value={publisherUri}
+              onChange={(e) => setPublisherUri(e.target.value)}
+              placeholder="e.g. https://acme.example.org"
+            />
+          </FormField>
+        </div>
+      </SettingsSection>
 
-      <FormField
-        label="Publisher URI"
-        optional
-        description="A URI identifying the publisher in linked data contexts."
+      <SettingsSection
+        title="Contact"
+        description="Contact point included in generated catalogs."
       >
-        <Input
-          type="text"
-          value={publisherUri}
-          onChange={(e) => setPublisherUri(e.target.value)}
-          placeholder="e.g. https://acme.example.org"
-        />
-      </FormField>
+        <FormField label="Email">
+          <Input
+            type="email"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+            placeholder="e.g. data@acme.example.org"
+          />
+        </FormField>
+      </SettingsSection>
 
-      <FormField
-        label="Contact Email"
-        optional
-        description="Contact point included in generated DCAT catalogs."
+      <SettingsSection
+        title="Catalog defaults"
+        description="Default metadata applied to all generated DCAT catalogs."
       >
-        <Input
-          type="email"
-          value={contactEmail}
-          onChange={(e) => setContactEmail(e.target.value)}
-          placeholder="e.g. data@acme.example.org"
-        />
-      </FormField>
+        <div className="space-y-3">
+          <FormField label="License URI">
+            <Input
+              value={licenseUri}
+              onChange={(e) => setLicenseUri(e.target.value)}
+              placeholder="e.g. https://creativecommons.org/licenses/by/4.0/"
+            />
+          </FormField>
+          <FormField label="Description">
+            <Textarea
+              value={catalogDescription}
+              onChange={(e) => setCatalogDescription(e.target.value)}
+              placeholder="Brief description for generated catalogs"
+              rows={3}
+            />
+          </FormField>
+        </div>
+      </SettingsSection>
 
-      <FormField
-        label="License URI"
-        optional
-        description="Default license applied to datasets in generated catalogs."
-      >
-        <Input
-          type="text"
-          value={licenseUri}
-          onChange={(e) => setLicenseUri(e.target.value)}
-          placeholder="e.g. https://creativecommons.org/licenses/by/4.0/"
-        />
-      </FormField>
-
-      <FormField
-        label="Catalog Description"
-        optional
-        description="Brief description embedded in generated DCAT catalog metadata."
-      >
-        <Textarea
-          value={catalogDescription}
-          onChange={(e) => setCatalogDescription(e.target.value)}
-          placeholder="Brief description for generated DCAT catalogs"
-          rows={3}
-        />
-      </FormField>
-
-      <FormActions>
+      <FormActions sticky>
         <div />
-        <Button onClick={() => mutate()} disabled={!canSave || saving}>
+        <Button onClick={() => save()} disabled={!canSave || saving}>
           {saving ? "Saving..." : "Save"}
         </Button>
       </FormActions>
-    </div>
+    </SettingsPage>
   );
 }

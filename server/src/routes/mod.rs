@@ -1,10 +1,12 @@
 pub mod cloud_accounts;
-pub mod connections;
+pub mod conversations;
 pub mod graph;
 pub mod health;
 pub mod jobs;
+pub mod providers;
 pub mod scripts;
 pub mod settings;
+pub mod connections;
 pub mod validation;
 
 use axum::{Json, Router, http::StatusCode, middleware, response::{IntoResponse, Response}};
@@ -40,6 +42,10 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
             "/v1/settings/schema",
             axum::routing::get(settings::get_schema),
         )
+        .route(
+            "/v1/providers",
+            axum::routing::get(providers::list_providers),
+        )
         .with_state(state.clone());
 
     let api_routes = Router::new()
@@ -49,7 +55,9 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
         )
         .route(
             "/v1/jobs/{id}",
-            axum::routing::get(jobs::get_job).delete(jobs::delete_job),
+            axum::routing::get(jobs::get_job)
+                .put(jobs::update_job)
+                .delete(jobs::delete_job),
         )
         .route(
             "/v1/jobs/{id}/cancel",
@@ -96,6 +104,11 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
             axum::routing::post(graph::expand_node),
         )
         .route(
+            "/v1/jobs/{id}/dashboard-layout",
+            axum::routing::get(jobs::get_dashboard_layout)
+                .put(jobs::save_dashboard_layout),
+        )
+        .route(
             "/v1/jobs/{id}/discover/load",
             axum::routing::post(graph::load_discover),
         )
@@ -113,7 +126,21 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
         )
         .route(
             "/v1/jobs/{id}/discover/ask",
-            axum::routing::post(graph::ask_discover),
+            axum::routing::post(conversations::ask_discover),
+        )
+        .route(
+            "/v1/jobs/{id}/conversations",
+            axum::routing::get(conversations::list_conversations)
+                .post(conversations::create_conversation),
+        )
+        .route(
+            "/v1/conversations/{id}/messages",
+            axum::routing::get(conversations::get_conversation_messages),
+        )
+        .route(
+            "/v1/conversations/{id}",
+            axum::routing::put(conversations::rename_conversation)
+                .delete(conversations::delete_conversation),
         )
         .route(
             "/v1/cloud-accounts",
@@ -126,24 +153,22 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
                 .put(cloud_accounts::update_account)
                 .delete(cloud_accounts::delete_account),
         )
-        .route(
+.route(
             "/v1/connections",
             axum::routing::get(connections::list_connections)
                 .post(connections::create_connection),
         )
         .route(
             "/v1/connections/{id}",
-            axum::routing::delete(connections::delete_connection),
+            axum::routing::get(connections::get_connection)
+                .put(connections::update_connection)
+                .delete(connections::delete_connection),
         )
         .route(
             "/v1/connections/{id}/files",
             axum::routing::get(connections::list_connection_files),
         )
-        .route(
-            "/v1/connections/{id}/files/download",
-            axum::routing::get(connections::download_file),
-        )
-        .layer(middleware::from_fn_with_state(
+.layer(middleware::from_fn_with_state(
             state.clone(),
             api_key_auth,
         ))

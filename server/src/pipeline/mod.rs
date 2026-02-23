@@ -61,11 +61,15 @@ impl<'a> ProgramQuery<'a> {
         let record_fields = match &ty.kind {
             TypeKind::Record(rf) => rf,
             _ => {
-                return info.field_names.iter().map(|s| Field {
-                    name: self.interner().resolve(*s).to_string(),
-                    field_type: "String".to_string(),
-                    uri: None,
-                }).collect();
+                return info
+                    .field_names
+                    .iter()
+                    .map(|s| Field {
+                        name: self.interner().resolve(*s).to_string(),
+                        field_type: "String".to_string(),
+                        uri: None,
+                    })
+                    .collect();
             }
         };
 
@@ -77,16 +81,23 @@ impl<'a> ProgramQuery<'a> {
         rf: &fossil_lang::ir::RecordFields,
         def_id: Option<DefId>,
     ) -> Vec<Field> {
-        rf.fields.iter().map(|(field_sym, field_type_id)| {
-            let field_name = self.interner().resolve(*field_sym).to_string();
-            let type_str = self.type_label(*field_type_id);
-            let uri = def_id
-                .and_then(|id| self.program.gcx.type_metadata.get(&id))
-                .and_then(|tm| tm.field_metadata.get(field_sym))
-                .map(|fm| RdfFieldAttrs::from_field_metadata(fm, self.interner()))
-                .and_then(|attrs| attrs.uri);
-            Field { name: field_name, field_type: type_str, uri }
-        }).collect()
+        rf.fields
+            .iter()
+            .map(|(field_sym, field_type_id)| {
+                let field_name = self.interner().resolve(*field_sym).to_string();
+                let type_str = self.type_label(*field_type_id);
+                let uri = def_id
+                    .and_then(|id| self.program.gcx.type_metadata.get(&id))
+                    .and_then(|tm| tm.field_metadata.get(field_sym))
+                    .map(|fm| RdfFieldAttrs::from_field_metadata(fm, self.interner()))
+                    .and_then(|attrs| attrs.uri);
+                Field {
+                    name: field_name,
+                    field_type: type_str,
+                    uri,
+                }
+            })
+            .collect()
     }
 
     fn type_label(&self, type_id: fossil_lang::ir::TypeId) -> String {
@@ -101,7 +112,6 @@ impl<'a> ProgramQuery<'a> {
                 self.interner().resolve(def.name).to_string()
             }
             TypeKind::Optional(inner) => format!("{}?", self.type_label(*inner)),
-            TypeKind::Unresolved(path) => path.display(self.interner()),
             TypeKind::Function(_, _) => "Function".to_string(),
             TypeKind::Unit => "Unit".to_string(),
             TypeKind::Record(_) => "Record".to_string(),
@@ -110,7 +120,11 @@ impl<'a> ProgramQuery<'a> {
     }
 
     pub fn lookup_fields(&self, name: Symbol) -> Vec<Field> {
-        let def = self.program.gcx.definitions.find_by_symbol(name, |k| matches!(k, DefKind::Type));
+        let def = self
+            .program
+            .gcx
+            .definitions
+            .find_by_symbol(name, |k| matches!(k, DefKind::Type));
         match def {
             Some(d) => self.lookup_fields_by_def(d.id()),
             None => Vec::new(),
@@ -118,7 +132,11 @@ impl<'a> ProgramQuery<'a> {
     }
 
     pub fn extract_rdf_type(&self, name: Symbol) -> Option<String> {
-        let def = self.program.gcx.definitions.find_by_symbol(name, |k| matches!(k, DefKind::Type));
+        let def = self
+            .program
+            .gcx
+            .definitions
+            .find_by_symbol(name, |k| matches!(k, DefKind::Type));
         def.and_then(|d| RdfTypeAttrs::from_def_id(d.id(), &self.program.gcx))
             .and_then(|attrs| attrs.rdf_type)
     }
@@ -127,13 +145,23 @@ impl<'a> ProgramQuery<'a> {
         let syms: Vec<Symbol> = type_name.clone().into();
         syms.last()
             .and_then(|&s| self.lookup_type_info(s))
-            .map(|info| info.ctor_param_names.iter().map(|s| self.interner().resolve(*s).to_string()).collect())
+            .map(|info| {
+                info.ctor_param_names
+                    .iter()
+                    .map(|s| self.interner().resolve(*s).to_string())
+                    .collect()
+            })
             .unwrap_or_default()
     }
 
     pub fn resolve_expr_display(&self, expr_id: ExprId) -> String {
-        let expr_id = self.program.resolutions.expr_rewrites
-            .get(&expr_id).copied().unwrap_or(expr_id);
+        let expr_id = self
+            .program
+            .resolutions
+            .expr_rewrites
+            .get(&expr_id)
+            .copied()
+            .unwrap_or(expr_id);
         let expr = self.ir().exprs.get(expr_id);
         match &expr.kind {
             ExprKind::FieldAccess { expr: inner, field } => {
@@ -177,7 +205,11 @@ impl<'a> ProgramQuery<'a> {
     }
 
     fn lookup_type_info(&self, name: Symbol) -> Option<&fossil_lang::ir::TypeDeclInfo> {
-        let def = self.program.gcx.definitions.find_by_symbol(name, |k| matches!(k, DefKind::Type));
+        let def = self
+            .program
+            .gcx
+            .definitions
+            .find_by_symbol(name, |k| matches!(k, DefKind::Type));
         def.and_then(|d| self.program.type_index.get(d.id()))
     }
 }

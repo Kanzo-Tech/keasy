@@ -648,9 +648,9 @@ checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
 name = "chrono"
-version = "0.4.43"
+version = "0.4.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fac4744fb15ae8337dc853fee7fb3f4e48c0fbaa23d0afe49c447b4fab126118"
+checksum = "c673075a2e0e5f4a1dde27ce9dee1ea4558c7ffe648f576438a20ca1d2acc4b0"
 dependencies = [
  "iana-time-zone",
  "num-traits",
@@ -1164,7 +1164,7 @@ dependencies = [
 [[package]]
 name = "fossil-ifc"
 version = "0.0.1"
-source = "git+https://github.com/angelip2303/fossil-lang.git#97f14a05a35e1c02ab1cd9a63a6f14beae86882d"
+source = "git+https://github.com/angelip2303/fossil-lang.git#d82bb1174cee096f4ce2ab36c7e0ac87eb64b089"
 dependencies = [
  "fossil-lang",
  "fossil-providers",
@@ -1174,7 +1174,7 @@ dependencies = [
 [[package]]
 name = "fossil-lang"
 version = "0.0.1"
-source = "git+https://github.com/angelip2303/fossil-lang.git#97f14a05a35e1c02ab1cd9a63a6f14beae86882d"
+source = "git+https://github.com/angelip2303/fossil-lang.git#d82bb1174cee096f4ce2ab36c7e0ac87eb64b089"
 dependencies = [
  "chumsky",
  "logos",
@@ -1187,7 +1187,7 @@ dependencies = [
 [[package]]
 name = "fossil-macros"
 version = "0.0.1"
-source = "git+https://github.com/angelip2303/fossil-lang.git#97f14a05a35e1c02ab1cd9a63a6f14beae86882d"
+source = "git+https://github.com/angelip2303/fossil-lang.git#d82bb1174cee096f4ce2ab36c7e0ac87eb64b089"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1197,7 +1197,7 @@ dependencies = [
 [[package]]
 name = "fossil-providers"
 version = "0.0.1"
-source = "git+https://github.com/angelip2303/fossil-lang.git#97f14a05a35e1c02ab1cd9a63a6f14beae86882d"
+source = "git+https://github.com/angelip2303/fossil-lang.git#d82bb1174cee096f4ce2ab36c7e0ac87eb64b089"
 dependencies = [
  "fossil-lang",
  "iri_s",
@@ -1208,7 +1208,7 @@ dependencies = [
 [[package]]
 name = "fossil-stdlib"
 version = "0.0.1"
-source = "git+https://github.com/angelip2303/fossil-lang.git#97f14a05a35e1c02ab1cd9a63a6f14beae86882d"
+source = "git+https://github.com/angelip2303/fossil-lang.git#d82bb1174cee096f4ce2ab36c7e0ac87eb64b089"
 dependencies = [
  "fossil-lang",
  "fossil-macros",

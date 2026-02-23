@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import { toast } from "sonner";
-import { CircleCheck, CircleX, Loader2 } from "lucide-react";
 import { SiAnthropic, SiOpenai } from "react-icons/si";
 import useSWR from "swr";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
@@ -36,7 +35,6 @@ export function AiTab() {
   const [model, setModel] = useState("");
   const [maxTokens, setMaxTokens] = useState("");
   const [saving, setSaving] = useState(false);
-  const [testStatus, setTestStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
 
   const [hasStoredKey, setHasStoredKey] = useState(false);
 
@@ -72,37 +70,6 @@ export function AiTab() {
     }
   }, [provider, apiKey, model, maxTokens, mutate]);
 
-  const handleTest = useCallback(async () => {
-    setTestStatus("testing");
-    try {
-      await saveAiSettings({
-        provider,
-        api_key: apiKey,
-        model: model.trim() || undefined,
-        max_tokens: maxTokens.trim() ? parseInt(maxTokens.trim(), 10) : undefined,
-      });
-      mutate();
-      const res = await fetch("/api/jobs/test-ai/discover/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: "Return a simple SPARQL query: SELECT ?s WHERE { ?s ?p ?o } LIMIT 1" }),
-      });
-      if (res.ok) {
-        setTestStatus("success");
-      } else {
-        const body = await res.json().catch(() => null);
-        const msg = body?.error?.message;
-        if (msg?.includes("not loaded") || msg?.includes("NOT_LOADED")) {
-          setTestStatus("success");
-        } else {
-          setTestStatus("error");
-        }
-      }
-    } catch {
-      setTestStatus("error");
-    }
-  }, [provider, apiKey, model, maxTokens, mutate]);
-
   if (isLoading) {
     return showSkeleton ? (
       <div className="space-y-6 max-w-2xl">
@@ -127,7 +94,6 @@ export function AiTab() {
           onValueChange={(v) => {
             setProvider(v);
             setModel("");
-            setTestStatus("idle");
           }}
           className="grid grid-cols-2 gap-3"
         >
@@ -159,7 +125,7 @@ export function AiTab() {
             <SecretInput
               hasStoredValue={hasStoredKey}
               value={apiKey}
-              onChange={(e) => { setApiKey(e.target.value); setTestStatus("idle"); }}
+              onChange={(e) => setApiKey(e.target.value)}
               placeholder={`Enter your ${selectedProvider.label} API key`}
             />
           </FormField>
@@ -198,30 +164,7 @@ export function AiTab() {
       </SettingsSection>
 
       <FormActions sticky>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleTest}
-            disabled={(!apiKey.trim() && !hasStoredKey) || testStatus === "testing"}
-          >
-            {testStatus === "testing" && <Loader2 size={14} className="animate-spin" />}
-            Test connection
-          </Button>
-          {testStatus === "success" && (
-            <span className="flex items-center gap-1 text-xs text-green-600">
-              <CircleCheck size={14} />
-              Connected
-            </span>
-          )}
-          {testStatus === "error" && (
-            <span className="flex items-center gap-1 text-xs text-destructive">
-              <CircleX size={14} />
-              Connection failed
-            </span>
-          )}
-        </div>
-        <Button onClick={handleSave} disabled={(!apiKey.trim() && !hasStoredKey) || saving}>
+        <Button className="ml-auto" onClick={handleSave} disabled={(!apiKey.trim() && !hasStoredKey) || saving}>
           {saving ? "Saving..." : "Save"}
         </Button>
       </FormActions>

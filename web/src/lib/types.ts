@@ -184,6 +184,7 @@ export interface FileEntry {
 export interface ShapeValidationResult {
   valid: boolean;
   errors: ShapeValidationError[];
+  valid_nodes: string[];
 }
 
 export interface ShapeValidationError {

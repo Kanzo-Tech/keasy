@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { isShapeFile, detectShapeFormat, localName, cleanValidationMessage } from "@/lib/formatters";
 import type {
   FileEntry,
@@ -41,6 +42,7 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
   const [filesLoading, setFilesLoading] = useState(false);
   const [validating, setValidating] = useState(false);
   const [result, setResult] = useState<ShapeValidationResult | null>(null);
+  const [view, setView] = useState<"errors" | "valid">("errors");
 
   const { data: vocabConnections } = useSWR("vocab-connections", () => fetchConnections("vocab"));
 
@@ -169,26 +171,35 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
       {/* Results */}
       {result && (
         <div className="space-y-3 pt-6">
-          <div className="flex items-center gap-4">
-            {result.valid ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5 text-sm text-green-500">
                 <CheckCircle2 size={16} />
+                {result.valid_nodes.length} valid
+              </div>
+              {result.errors.length > 0 && (
+                <div className="flex items-center gap-1.5 text-sm text-destructive">
+                  <XCircle size={16} />
+                  {result.errors.length} {result.errors.length === 1 ? "error" : "errors"}
+                </div>
+              )}
+            </div>
+            <ToggleGroup
+              type="single"
+              size="sm"
+              value={view}
+              onValueChange={(v) => { if (v) setView(v as "errors" | "valid"); }}
+            >
+              <ToggleGroupItem value="errors" className="text-[11px] h-6 px-2">
+                Errors
+              </ToggleGroupItem>
+              <ToggleGroupItem value="valid" className="text-[11px] h-6 px-2">
                 Valid
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 text-sm text-destructive">
-                <XCircle size={16} />
-                Invalid
-              </div>
-            )}
-            {result.errors.length > 0 && (
-              <span className="text-xs text-destructive">
-                {result.errors.length} {result.errors.length === 1 ? "error" : "errors"}
-              </span>
-            )}
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
 
-          {result.errors.length > 0 && (
+          {view === "errors" && result.errors.length > 0 && (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -204,6 +215,25 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
                     </TableCell>
                     <TableCell className="text-sm">
                       {cleanValidationMessage(e.message, e.node)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+
+          {view === "valid" && result.valid_nodes.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Node</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {result.valid_nodes.map((node, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-mono text-xs" title={node}>
+                      {localName(node)}
                     </TableCell>
                   </TableRow>
                 ))}

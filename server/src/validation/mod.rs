@@ -84,9 +84,16 @@ impl ValidatableGraph {
             })
             .collect();
 
+        let valid_nodes: Vec<String> = result_map
+            .iter()
+            .filter(|(_, _, status)| status.is_conformant())
+            .map(|(node, _, _)| node.to_string())
+            .collect();
+
         Ok(ValidationResult {
             valid: errors.is_empty(),
             errors,
+            valid_nodes,
         })
     }
 
@@ -107,6 +114,19 @@ impl ValidatableGraph {
         let compiled = CompiledSchema::compile(&ast)
             .map_err(|e| format!("Failed to compile SHACL shapes: {e}"))?;
 
+        // Collect all subject IRIs before consuming the graph
+        let all_subjects: HashSet<String> = self
+            .0
+            .triples()
+            .map_err(|e| format!("Failed to read graph: {e}"))?
+            .filter_map(|t| {
+                let term = InMemoryGraph::subject_as_term(&t.subject);
+                InMemoryGraph::term_as_iris(&term)
+                    .ok()
+                    .map(|iri| iri.to_string())
+            })
+            .collect();
+
         let mut validator = GraphValidation::from_graph(
             Graph::from_graph(self.0).map_err(|e| format!("Failed to create graph: {e}"))?,
             ShaclValidationMode::Native,
@@ -116,6 +136,11 @@ impl ValidatableGraph {
             .map_err(|e| format!("SHACL validation failed: {e}"))?;
 
         let results = report.results();
+        let error_nodes: HashSet<String> = results
+            .iter()
+            .map(|r| format!("{}", r.focus_node()))
+            .collect();
+
         let errors: Vec<ValidationError> = results
             .iter()
             .map(|r| ValidationError {
@@ -127,9 +152,15 @@ impl ValidatableGraph {
             })
             .collect();
 
+        let valid_nodes: Vec<String> = all_subjects
+            .into_iter()
+            .filter(|s| !error_nodes.contains(s))
+            .collect();
+
         Ok(ValidationResult {
             valid: report.conforms(),
             errors,
+            valid_nodes,
         })
     }
 }

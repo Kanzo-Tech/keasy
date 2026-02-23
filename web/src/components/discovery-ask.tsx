@@ -22,6 +22,7 @@ import { EditableText } from "@/components/ui/editable-text";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CodeView } from "@/components/code-view";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { Markdown } from "@/components/ui/markdown";
@@ -81,28 +82,19 @@ function MessageEntry({ msg }: { msg: ConversationMessage }) {
       {(hasData || msg.sparql) && (
         <div className="space-y-1.5">
           {hasData && msg.sparql && (
-            <div className="flex gap-1">
-              <button
-                onClick={() => setShowSparql(false)}
-                className={`text-[11px] px-2 py-0.5 rounded-md transition-colors ${
-                  !showSparql
-                    ? "bg-muted font-medium text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
+            <ToggleGroup
+              type="single"
+              size="sm"
+              value={showSparql ? "sparql" : "results"}
+              onValueChange={(v) => { if (v) setShowSparql(v === "sparql"); }}
+            >
+              <ToggleGroupItem value="results" className="text-[11px] h-6 px-2">
                 Results
-              </button>
-              <button
-                onClick={() => setShowSparql(true)}
-                className={`text-[11px] px-2 py-0.5 rounded-md transition-colors ${
-                  showSparql
-                    ? "bg-muted font-medium text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
+              </ToggleGroupItem>
+              <ToggleGroupItem value="sparql" className="text-[11px] h-6 px-2">
                 SPARQL
-              </button>
-            </div>
+              </ToggleGroupItem>
+            </ToggleGroup>
           )}
 
           {!showSparql && hasData && (

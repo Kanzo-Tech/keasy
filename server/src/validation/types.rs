@@ -17,6 +17,7 @@ pub struct ValidationRequest {
 pub struct ValidationResult {
     pub valid: bool,
     pub errors: Vec<ValidationError>,
+    pub valid_nodes: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

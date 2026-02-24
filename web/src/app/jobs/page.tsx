@@ -10,6 +10,7 @@ import { JobTable } from "@/components/job-table";
 import { KnowledgeGraph } from "@/components/knowledge-graph";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { JobStatus } from "@/lib/types";
@@ -22,7 +23,7 @@ export default function JobsPage() {
   });
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <ScrollArea className="flex-1 min-h-0">
       <PageHeader
         title="Jobs"
         subtitle="Monitor and manage transformation jobs."
@@ -68,6 +69,6 @@ export default function JobsPage() {
           <KnowledgeGraph />
         </TabsContent>
       </Tabs>
-    </div>
+    </ScrollArea>
   );
 }

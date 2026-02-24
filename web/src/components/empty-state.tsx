@@ -4,9 +4,10 @@ interface EmptyStateProps {
   icon: LucideIcon;
   title: string;
   description: string;
+  action?: React.ReactNode;
 }
 
-export function EmptyState({ icon: Icon, title, description }: EmptyStateProps) {
+export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center gap-3 py-10 text-center">
       <div className="rounded-full bg-muted p-3">
@@ -16,6 +17,7 @@ export function EmptyState({ icon: Icon, title, description }: EmptyStateProps) 
         <p className="text-sm font-medium">{title}</p>
         <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
       </div>
+      {action}
     </div>
   );
 }

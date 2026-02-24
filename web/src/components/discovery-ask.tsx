@@ -8,15 +8,18 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
+import Link from "next/link";
 import useSWR from "swr";
 import {
   ApiError,
   askDiscover,
+  fetchAiSettings,
   listConversations,
   getMessages,
   renameConversation,
   deleteConversation,
 } from "@/lib/api";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { EditableText } from "@/components/ui/editable-text";
 import { Input } from "@/components/ui/input";
@@ -144,6 +147,9 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const { data: aiSettings, isLoading: loadingAiSettings } = useSWR("ai-settings", fetchAiSettings);
+  const aiConfigured = !!aiSettings?.api_key;
+
   const { data: initialConversations, isLoading: loadingConversations, mutate: mutateConversations } = useSWR(
     `conversations-${jobId}`,
     () => listConversations(jobId),
@@ -267,6 +273,21 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (!loadingAiSettings && !aiConfigured) {
+    return (
+      <EmptyState
+        icon={AlertCircle}
+        title="AI not configured"
+        description="An API key is required to use the Ask feature."
+        action={
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/settings/ai">Configure AI settings</Link>
+          </Button>
+        }
+      />
+    );
   }
 
   return (

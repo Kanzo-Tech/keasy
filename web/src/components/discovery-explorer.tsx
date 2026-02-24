@@ -254,7 +254,8 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
           data={graph.graphData}
           selectedId={selectedNode?.id}
           onNodeClick={handleNodeClick}
-          legendExtra={<>{graph.nodeCount} nodes, {graph.linkCount} edges</>}
+
+
         />
       ) : (
         <div className="flex-1 min-h-0 rounded-md border border-border overflow-hidden bg-background flex items-center justify-center">

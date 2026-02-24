@@ -11,7 +11,6 @@ import {
   buildNodeTooltip,
 } from "@/lib/graph-rendering";
 import { usePreferences } from "@/components/preferences-provider";
-import { GraphLegend } from "@/components/graph-legend";
 import type { GraphData, GraphNode } from "@/lib/types";
 
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
@@ -22,14 +21,12 @@ interface ForceGraphProps {
   data: GraphData;
   selectedId?: string;
   onNodeClick?: (node: GraphNode) => void;
-  legendExtra?: React.ReactNode;
 }
 
 export function ForceGraph({
   data,
   selectedId,
   onNodeClick,
-  legendExtra,
 }: ForceGraphProps) {
   const { preferences } = usePreferences();
   const scale = useMemo(
@@ -85,18 +82,54 @@ export function ForceGraph({
     [],
   );
 
+  const canvasHeight = Math.max(height, 200);
+
+  const drawDotGrid = useCallback(
+    (ctx: CanvasRenderingContext2D) => {
+      const GAP = 16;
+      const DOT_RADIUS = 0.5;
+
+      const { a, d, e, f } = ctx.getTransform();
+      const left = -e / a;
+      const top = -f / d;
+      const right = (width - e) / a;
+      const bottom = (canvasHeight - f) / d;
+
+      // Skip if zoomed out too far (performance guard)
+      const cols = (right - left) / GAP;
+      const rows = (bottom - top) / GAP;
+      if (cols * rows > 10000) return;
+
+      const startX = Math.floor(left / GAP) * GAP;
+      const startY = Math.floor(top / GAP) * GAP;
+
+      const isDark = document.documentElement.classList.contains("dark");
+      ctx.fillStyle = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
+
+      ctx.beginPath();
+      for (let x = startX; x <= right; x += GAP) {
+        for (let y = startY; y <= bottom; y += GAP) {
+          ctx.moveTo(x + DOT_RADIUS, y);
+          ctx.arc(x, y, DOT_RADIUS, 0, 2 * Math.PI);
+        }
+      }
+      ctx.fill();
+    },
+    [width, canvasHeight],
+  );
+
   return (
     <div
       ref={containerRef}
       className="flex-1 min-h-0 rounded-md border border-border overflow-hidden bg-background flex flex-col"
     >
-      <GraphLegend extra={legendExtra} />
       <ForceGraph2D
         ref={graphRef}
         graphData={data}
         width={width}
-        height={Math.max(height - 36, 200)}
+        height={canvasHeight}
         backgroundColor="transparent"
+        onRenderFramePre={drawDotGrid}
         nodeCanvasObject={nodeCanvasObject}
         nodePointerAreaPaint={(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any

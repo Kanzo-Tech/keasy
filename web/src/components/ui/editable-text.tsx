@@ -53,7 +53,7 @@ function EditableText({
         onKeyDown?.(e)
       }}
       className={cn(
-        "bg-transparent border-transparent rounded-none shadow-none h-auto p-0 focus-visible:ring-0 focus-visible:border-border",
+        "bg-transparent border-transparent rounded-none shadow-none h-auto p-0 focus-visible:outline-0 focus-visible:border-border",
         className,
       )}
       {...props}

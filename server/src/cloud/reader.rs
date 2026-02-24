@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 
 use fossil_lang::traits::provider::FileReader;
 use futures::StreamExt;
@@ -90,33 +89,3 @@ impl FileReader for CloudReader {
     }
 }
 
-pub struct CachedCloudReader {
-    inner: Arc<dyn FileReader>,
-    cache: Mutex<HashMap<String, String>>,
-}
-
-impl CachedCloudReader {
-    pub fn new(inner: Arc<dyn FileReader>) -> Self {
-        Self {
-            inner,
-            cache: Mutex::new(HashMap::new()),
-        }
-    }
-}
-
-impl std::fmt::Debug for CachedCloudReader {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("CachedCloudReader").finish()
-    }
-}
-
-impl FileReader for CachedCloudReader {
-    fn read_to_string(&self, url: &str) -> Result<String, String> {
-        if let Some(cached) = self.cache.lock().unwrap().get(url) {
-            return Ok(cached.clone());
-        }
-        let content = self.inner.read_to_string(url)?;
-        self.cache.lock().unwrap().insert(url.to_string(), content.clone());
-        Ok(content)
-    }
-}

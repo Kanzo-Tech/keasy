@@ -8,7 +8,7 @@ use fossil_lang::runtime::executor::{ExecutionConfig, IrExecutor};
 use fossil_lang::runtime::storage::StorageConfig;
 use fossil_lang::traits::provider::LocalFileReader;
 
-use crate::cloud::reader::{CachedCloudReader, CloudReader};
+use crate::cloud::reader::CloudReader;
 
 pub fn compile(name: &str, source: &str, storage: StorageConfig) -> Result<CompileResult, Vec<String>> {
     let gcx = init_context(storage);
@@ -32,8 +32,7 @@ pub fn init_context(storage: StorageConfig) -> GlobalContext {
         Box::new(LocalFileReader),
         storage.as_map().clone(),
     ));
-    let cached = Arc::new(CachedCloudReader::new(reader));
-    let mut gcx = GlobalContext { storage, file_reader: cached, ..Default::default() };
+    let mut gcx = GlobalContext { storage, file_reader: reader, ..Default::default() };
     fossil_providers::init(&mut gcx);
     fossil_ifc::init(&mut gcx);
     fossil_stdlib::init(&mut gcx);

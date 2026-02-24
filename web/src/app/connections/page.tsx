@@ -28,6 +28,7 @@ import {
 } from "@/lib/api";
 import { DeleteButton } from "@/components/delete-button";
 import { EmptyState } from "@/components/empty-state";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { getProviderIcon } from "@/lib/provider-icons";
 import type { ConnectionKind } from "@/lib/types";
 
@@ -63,7 +64,7 @@ function ConnectionsContent() {
 
   if (isLoading) {
     return showSkeleton ? (
-      <div className="flex flex-col h-full">
+      <ScrollArea className="flex-1 min-h-0">
         <PageHeader
           title="Connections"
           subtitle="Manage data connections and vocabulary hubs."
@@ -73,12 +74,12 @@ function ConnectionsContent() {
             <Skeleton key={i} className="h-10 w-full" />
           ))}
         </div>
-      </div>
+      </ScrollArea>
     ) : null;
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <ScrollArea className="flex-1 min-h-0">
       <PageHeader
         title="Connections"
         subtitle="Manage data connections and vocabulary hubs."
@@ -168,6 +169,6 @@ function ConnectionsContent() {
             </TableBody>
           </Table>
       )}
-    </div>
+    </ScrollArea>
   );
 }

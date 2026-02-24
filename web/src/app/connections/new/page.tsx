@@ -19,6 +19,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ComingSoon } from "@/components/coming-soon";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { ConnectionKind, LocationType } from "@/lib/types";
 
@@ -100,7 +101,7 @@ function NewConnectionContent() {
   }
 
   return (
-    <>
+    <ScrollArea className="flex-1 min-h-0">
       <PageHeader title="New Connection" backHref={`/connections?type=${connectionKind}`} backLabel="Connections" />
       <div className="flex flex-col gap-4">
         <FormField label="Name" description="Used as identifier in @references (e.g. @my-connection/file.csv)" required>
@@ -243,6 +244,6 @@ function NewConnectionContent() {
           </Button>
         </FormActions>
       </div>
-    </>
+    </ScrollArea>
   );
 }

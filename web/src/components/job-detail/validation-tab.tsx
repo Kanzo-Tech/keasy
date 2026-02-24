@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -90,7 +91,7 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
     !!selectedDest && !!selectedConnection && !!selectedFile && !validating;
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col flex-1 min-h-0 space-y-4">
       {/* Step 1 — Output data */}
       <div className="flex gap-4">
         <div className="flex flex-col items-center">
@@ -170,7 +171,7 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
 
       {/* Results */}
       {result && (
-        <div className="space-y-3 pt-6">
+        <div className="flex-1 min-h-0 flex flex-col space-y-3 pt-6">
           <div className="flex items-center justify-between">
             <ToggleGroup
               type="single"
@@ -200,47 +201,49 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
             </div>
           </div>
 
-          {view === "errors" && result.errors.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Node</TableHead>
-                  <TableHead>Message</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {result.errors.map((e, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-mono text-xs" title={e.node}>
-                      {localName(e.node)}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {cleanValidationMessage(e.message, e.node)}
-                    </TableCell>
+          <ScrollArea className="flex-1 min-h-0">
+            {view === "errors" && result.errors.length > 0 && (
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow>
+                    <TableHead>Node</TableHead>
+                    <TableHead>Message</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                </TableHeader>
+                <TableBody>
+                  {result.errors.map((e, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-mono text-xs" title={e.node}>
+                        {localName(e.node)}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {cleanValidationMessage(e.message, e.node)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
 
-          {view === "valid" && result.valid_nodes.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Node</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {result.valid_nodes.map((node, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-mono text-xs" title={node}>
-                      {localName(node)}
-                    </TableCell>
+            {view === "valid" && result.valid_nodes.length > 0 && (
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow>
+                    <TableHead>Node</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                </TableHeader>
+                <TableBody>
+                  {result.valid_nodes.map((node, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-mono text-xs" title={node}>
+                        {localName(node)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </ScrollArea>
         </div>
       )}
     </div>

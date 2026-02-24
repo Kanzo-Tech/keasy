@@ -16,6 +16,7 @@ import useSWR from "swr";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
@@ -178,65 +179,67 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
         : "lg:grid-cols-2";
 
   return (
-    <div className="space-y-4 overflow-y-auto">
-      <div className="flex items-center gap-2">
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          size="sm"
-          value={String(effectiveColumns)}
-          onValueChange={handleColumnsChange}
-        >
-          <ToggleGroupItem value="1" aria-label="1 column">
-            <Square size={14} />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="2" aria-label="2 columns">
-            <Columns2 size={14} />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="3" aria-label="3 columns">
-            <Columns3 size={14} />
-          </ToggleGroupItem>
-        </ToggleGroup>
-        <span className="flex-1 text-right text-xs text-muted-foreground">
-          {summaryText}
-        </span>
-      </div>
+    <ScrollArea className="flex-1 min-h-0">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={String(effectiveColumns)}
+            onValueChange={handleColumnsChange}
+          >
+            <ToggleGroupItem value="1" aria-label="1 column">
+              <Square size={14} />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="2" aria-label="2 columns">
+              <Columns2 size={14} />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="3" aria-label="3 columns">
+              <Columns3 size={14} />
+            </ToggleGroupItem>
+          </ToggleGroup>
+          <span className="flex-1 text-right text-xs text-muted-foreground">
+            {summaryText}
+          </span>
+        </div>
 
-      <div className={`grid gap-4 auto-rows-[minmax(340px,auto)] ${gridColsClass}`}>
-        {effectiveWidgets.map((w) => (
-          <ChartWidget
-            key={w.id}
-            widget={w}
-            jobId={jobId}
-            schema={schema}
-            onChange={(updated) => updateWidget(w.id, updated)}
-            onRemove={() => removeWidget(w.id)}
-          />
-        ))}
+        <div className={`grid gap-4 auto-rows-[minmax(340px,auto)] ${gridColsClass}`}>
+          {effectiveWidgets.map((w) => (
+            <ChartWidget
+              key={w.id}
+              widget={w}
+              jobId={jobId}
+              schema={schema}
+              onChange={(updated) => updateWidget(w.id, updated)}
+              onRemove={() => removeWidget(w.id)}
+            />
+          ))}
 
-        <Card
-          className={`border-dashed shadow-none min-h-[340px] flex items-center justify-center ${
-            effectiveWidgets.length === 0 ? "col-span-full" : ""
-          }`}
-        >
-          <CardContent className="flex flex-col items-center gap-4 py-6">
-            <p className="text-sm text-muted-foreground font-medium">Add a chart</p>
-            <div className="flex flex-wrap gap-3 justify-center">
-              {availableChartTypes.map((t) => (
-                <Button
-                  key={t.value}
-                  variant="outline"
-                  onClick={() => addChart(t.value)}
-                  className="flex flex-col items-center gap-1.5 h-auto w-20 px-4 py-3 text-muted-foreground"
-                >
-                  <t.icon size={20} />
-                  <span className="text-xs">{CHART_RULES[t.value].label}</span>
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+          <Card
+            className={`border-dashed shadow-none min-h-[340px] flex items-center justify-center ${
+              effectiveWidgets.length === 0 ? "col-span-full" : ""
+            }`}
+          >
+            <CardContent className="flex flex-col items-center gap-4 py-6">
+              <p className="text-sm text-muted-foreground font-medium">Add a chart</p>
+              <div className="flex flex-wrap gap-3 justify-center">
+                {availableChartTypes.map((t) => (
+                  <Button
+                    key={t.value}
+                    variant="outline"
+                    onClick={() => addChart(t.value)}
+                    className="flex flex-col items-center gap-1.5 h-auto w-20 px-4 py-3 text-muted-foreground"
+                  >
+                    <t.icon size={20} />
+                    <span className="text-xs">{CHART_RULES[t.value].label}</span>
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </ScrollArea>
   );
 }

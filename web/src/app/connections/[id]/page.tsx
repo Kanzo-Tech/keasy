@@ -24,6 +24,7 @@ import {
   fetchProviders,
 } from "@/lib/api";
 import { MetaItem } from "@/components/meta-item";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { getProviderIcon } from "@/lib/provider-icons";
 
 
@@ -79,7 +80,7 @@ export default function ConnectionDetailPage({
   }
 
   return (
-    <div>
+    <ScrollArea className="flex-1 min-h-0">
       <PageHeader
         title={connection.name}
         badge={
@@ -160,6 +161,6 @@ export default function ConnectionDetailPage({
           })()}
         </div>
       )}
-    </div>
+    </ScrollArea>
   );
 }

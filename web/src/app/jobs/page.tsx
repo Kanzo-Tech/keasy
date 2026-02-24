@@ -22,7 +22,7 @@ export default function JobsPage() {
   });
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0">
       <PageHeader
         title="Jobs"
         subtitle="Monitor and manage transformation jobs."
@@ -36,7 +36,7 @@ export default function JobsPage() {
         }
       />
 
-      <Tabs value={tab} onValueChange={setTab} className="flex-1 min-h-0 flex flex-col">
+      <Tabs value={tab} onValueChange={setTab} className="flex-1 min-h-0">
         <TabsList className="mb-4">
           <TabsTrigger value="jobs" className="gap-1.5">
             <Briefcase size={14} />
@@ -64,7 +64,7 @@ export default function JobsPage() {
             />
           )}
         </TabsContent>
-        <TabsContent value="graph" className="flex-1 min-h-0 flex flex-col">
+        <TabsContent value="graph">
           <KnowledgeGraph />
         </TabsContent>
       </Tabs>

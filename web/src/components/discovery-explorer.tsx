@@ -126,7 +126,7 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
 
   if (isLoading) {
     return showSkeleton ? (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col flex-1 min-h-0">
         <Skeleton className="h-4 w-48 mb-3" />
         <Skeleton className="h-9 w-full mb-4" />
         <Skeleton className="flex-1 min-h-[300px] rounded-md" />
@@ -143,7 +143,7 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Stats */}
       <p className="text-xs text-muted-foreground mb-3">
         {tripleCount.toLocaleString()} triples &middot; {subjectCount.toLocaleString()} subjects

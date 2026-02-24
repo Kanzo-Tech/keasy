@@ -173,7 +173,7 @@ function NewJobContent() {
 
   if (loadingDraft) {
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col flex-1 min-h-0">
         <PageHeader title="New Job" backHref="/jobs" backLabel="Jobs" />
         <div className="flex flex-col gap-4 flex-1 min-h-0">
           <Skeleton className="h-9 w-full" />
@@ -186,7 +186,7 @@ function NewJobContent() {
 
   if (showSummary && validation) {
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col flex-1 min-h-0">
         <PageHeader title="New Job" backHref="/jobs" backLabel="Jobs" />
         <JobSummaryPanel
           onConfirm={handleConfirm}
@@ -205,7 +205,7 @@ function NewJobContent() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0">
       <PageHeader title="New Job" backHref="/jobs" backLabel="Jobs" />
       <div className="flex flex-col gap-4 flex-1 min-h-0">
         <div className="flex flex-col gap-4 shrink-0">
@@ -249,7 +249,7 @@ function NewJobContent() {
           </FormField>
         </div>
 
-        <Tabs defaultValue="script" className="flex-1 min-h-0 flex flex-col">
+        <Tabs defaultValue="script" className="flex-1 min-h-0">
           <div className="flex items-center justify-between mb-1">
             <TabsList>
               <TabsTrigger value="script">Script</TabsTrigger>
@@ -263,7 +263,7 @@ function NewJobContent() {
               </span>
             )}
           </div>
-          <TabsContent value="script" className="flex-1 min-h-0 flex flex-col mt-0">
+          <TabsContent value="script" className="mt-0">
             <CodeEditor
               value={script}
               onChange={setScript}

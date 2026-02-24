@@ -92,76 +92,72 @@ export default function JobDetailPage({
   )];
   const dests = rawDests.map((d) => reverseMapUrl(d, connections ?? []));
 
-  return (
-    <div className="flex flex-col h-full">
-      {hasTabs ? (
-        <Tabs defaultValue="overview" className="flex-1 min-h-0 flex flex-col">
-          <PageHeader
-            title={job.name ?? job.id.slice(0, 8)}
-            badge={<JobStatusBadge status={job.status} />}
-            backHref="/jobs"
-            backLabel="Jobs"
-            action={
-              <TabsList>
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                {hasCatalog && <TabsTrigger value="catalog">Catalog</TabsTrigger>}
-                {hasDestinations && <TabsTrigger value="validation">Quality</TabsTrigger>}
-                {hasDestinations && <TabsTrigger value="discover">Discovery</TabsTrigger>}
-              </TabsList>
-            }
-          />
+  return hasTabs ? (
+    <Tabs defaultValue="overview" className="flex-1 min-h-0">
+      <PageHeader
+        title={job.name ?? job.id.slice(0, 8)}
+        badge={<JobStatusBadge status={job.status} />}
+        backHref="/jobs"
+        backLabel="Jobs"
+        action={
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            {hasCatalog && <TabsTrigger value="catalog">Catalog</TabsTrigger>}
+            {hasDestinations && <TabsTrigger value="validation">Quality</TabsTrigger>}
+            {hasDestinations && <TabsTrigger value="discover">Discovery</TabsTrigger>}
+          </TabsList>
+        }
+      />
 
-          <TabsContent value="overview" className="flex flex-col flex-1 min-h-0">
-            <OverviewContent
-              job={job}
-              dests={dests}
-              hasPipeline={hasPipeline}
-              isTerminal={isTerminal(job.status)}
-              onCancel={handleCancel}
-            />
-          </TabsContent>
+      <TabsContent value="overview">
+        <OverviewContent
+          job={job}
+          dests={dests}
+          hasPipeline={hasPipeline}
+          isTerminal={isTerminal(job.status)}
+          onCancel={handleCancel}
+        />
+      </TabsContent>
 
-          <TabsContent value="catalog" className="flex flex-col min-h-0 flex-1">
-            <CatalogView
-              id={id}
-              catalog={job.catalog!}
-              dcatFormat={dcatFormat}
-              setDcatFormat={setDcatFormat}
-              catalogContent={catalogContent}
-              catalogLoading={catalogLoading}
-            />
-          </TabsContent>
+      <TabsContent value="catalog">
+        <CatalogView
+          id={id}
+          catalog={job.catalog!}
+          dcatFormat={dcatFormat}
+          setDcatFormat={setDcatFormat}
+          catalogContent={catalogContent}
+          catalogLoading={catalogLoading}
+        />
+      </TabsContent>
 
-          <TabsContent value="validation" className="overflow-y-auto">
-            <ValidationTab
-              destinations={rawDests}
-            />
-          </TabsContent>
+      <TabsContent value="validation">
+        <ValidationTab
+          destinations={rawDests}
+        />
+      </TabsContent>
 
-          {hasDestinations && (
-            <TabsContent value="discover" className="flex flex-col min-h-0">
-              <DiscoveryView jobId={id} />
-            </TabsContent>
-          )}
-        </Tabs>
-      ) : (
-        <div className="flex flex-col flex-1 min-h-0">
-          <PageHeader
-            title={job.name ?? job.id.slice(0, 8)}
-            badge={<JobStatusBadge status={job.status} />}
-            backHref="/jobs"
-            backLabel="Jobs"
-            action={undefined}
-          />
-          <OverviewContent
-            job={job}
-            dests={dests}
-            hasPipeline={hasPipeline}
-            isTerminal={isTerminal(job.status)}
-            onCancel={handleCancel}
-          />
-        </div>
+      {hasDestinations && (
+        <TabsContent value="discover">
+          <DiscoveryView jobId={id} />
+        </TabsContent>
       )}
+    </Tabs>
+  ) : (
+    <div className="flex flex-col flex-1 min-h-0">
+      <PageHeader
+        title={job.name ?? job.id.slice(0, 8)}
+        badge={<JobStatusBadge status={job.status} />}
+        backHref="/jobs"
+        backLabel="Jobs"
+        action={undefined}
+      />
+      <OverviewContent
+        job={job}
+        dests={dests}
+        hasPipeline={hasPipeline}
+        isTerminal={isTerminal(job.status)}
+        onCancel={handleCancel}
+      />
     </div>
   );
 }

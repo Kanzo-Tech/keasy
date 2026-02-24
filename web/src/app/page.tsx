@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function DashboardPage() {
   const { data: jobs, isLoading: jobsLoading } = useSWR("jobs", fetchJobs, {
@@ -31,7 +32,7 @@ export default function DashboardPage() {
   const catalogCount = completedJobs.filter((j) => j.catalog).length;
 
   return (
-    <div>
+    <ScrollArea className="flex-1 min-h-0">
       <PageHeader title="Dashboard" />
 
       <div className="space-y-8">
@@ -94,7 +95,7 @@ export default function DashboardPage() {
           </div>
         </section>
       </div>
-    </div>
+    </ScrollArea>
   );
 }
 

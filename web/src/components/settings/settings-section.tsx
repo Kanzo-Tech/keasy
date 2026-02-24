@@ -1,5 +1,5 @@
 interface SettingsSectionProps {
-  title: string;
+  title: React.ReactNode;
   description?: string;
   children: React.ReactNode;
   action?: React.ReactNode;

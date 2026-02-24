@@ -13,17 +13,25 @@ import useSWR from "swr";
 import {
   ApiError,
   askDiscover,
-  fetchAiSettings,
+  fetchAiProviders,
   listConversations,
   getMessages,
   renameConversation,
   deleteConversation,
 } from "@/lib/api";
+import { AI_PROVIDERS } from "@/lib/ai-providers";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { EditableText } from "@/components/ui/editable-text";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CodeView } from "@/components/code-view";
@@ -145,10 +153,20 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { data: aiSettings, isLoading: loadingAiSettings } = useSWR("ai-settings", fetchAiSettings);
-  const aiConfigured = !!aiSettings?.api_key;
+  const { data: aiProviders, isLoading: loadingAiProviders } = useSWR("ai-providers", fetchAiProviders);
+  const connectedProviders = AI_PROVIDERS.filter((p) =>
+    aiProviders?.some((s) => s.provider === p.id && s.api_key),
+  );
+  const aiConfigured = connectedProviders.length > 0;
+
+  useEffect(() => {
+    if (connectedProviders.length > 0 && !selectedProvider) {
+      setSelectedProvider(connectedProviders[0].id);
+    }
+  }, [connectedProviders, selectedProvider]);
 
   const { data: initialConversations, isLoading: loadingConversations, mutate: mutateConversations } = useSWR(
     `conversations-${jobId}`,
@@ -232,6 +250,7 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
         jobId,
         q,
         activeConversationId ?? undefined,
+        selectedProvider || undefined,
       );
       if (!activeConversationId && response.conversation_id) {
         setActiveConversationId(response.conversation_id);
@@ -275,7 +294,7 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
     }
   }
 
-  if (!loadingAiSettings && !aiConfigured) {
+  if (!loadingAiProviders && !aiConfigured) {
     return (
       <EmptyState
         icon={AlertCircle}
@@ -368,6 +387,26 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
             handleAsk();
           }}
         >
+          {connectedProviders.length > 0 && (
+            <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+              <SelectTrigger className="w-[160px] shrink-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {connectedProviders.map((p) => {
+                  const Icon = p.icon;
+                  return (
+                    <SelectItem key={p.id} value={p.id}>
+                      <span className="flex items-center gap-2">
+                        <Icon className="h-3.5 w-3.5" />
+                        {p.label}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          )}
           <Input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}

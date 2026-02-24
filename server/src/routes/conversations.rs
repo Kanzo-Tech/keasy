@@ -23,6 +23,7 @@ use super::error_response;
 pub struct AskRequest {
     pub question: String,
     pub conversation_id: Option<String>,
+    pub provider: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -45,7 +46,11 @@ pub async fn ask_discover(
         None => return not_loaded_error(),
     };
 
-    let ai_settings = state.db.get_ai_settings().await;
+    let ai_settings = if let Some(pid) = &req.provider {
+        state.db.get_ai_provider(pid).await
+    } else {
+        state.db.list_ai_providers().await.into_iter().next()
+    };
     let ai_settings = match ai_settings {
         Some(s) if !s.api_key.expose_secret().is_empty() => s,
         _ => {

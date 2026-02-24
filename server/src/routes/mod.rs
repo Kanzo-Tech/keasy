@@ -87,9 +87,13 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
                 .put(settings::save_preferences),
         )
         .route(
-            "/v1/settings/ai",
-            axum::routing::get(settings::get_ai_settings)
-                .put(settings::save_ai_settings),
+            "/v1/settings/ai/providers",
+            axum::routing::get(settings::list_ai_providers),
+        )
+        .route(
+            "/v1/settings/ai/providers/{provider_id}",
+            axum::routing::put(settings::save_ai_provider)
+                .delete(settings::delete_ai_provider),
         )
         .route(
             "/v1/validate",

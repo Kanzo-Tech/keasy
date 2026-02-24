@@ -118,8 +118,10 @@ export const chartJobData = (
   }
 ) => post<TabularData>(`/api/jobs/${jobId}/discover/chart`, request);
 
-export const askDiscover = (jobId: string, question: string, conversationId?: string) =>
-  post<AskResponse>(`/api/jobs/${jobId}/discover/ask`, { question, conversation_id: conversationId });
+export const askDiscover = (jobId: string, question: string, conversationId?: string, provider?: string) =>
+  post<AskResponse>(`/api/jobs/${jobId}/discover/ask`, {
+    question, conversation_id: conversationId, ...(provider ? { provider } : {}),
+  });
 
 
 export const createConversation = (jobId: string, title?: string) =>
@@ -134,8 +136,11 @@ export const deleteConversation = (conversationId: string) =>
   del(`/api/conversations/${conversationId}`);
 
 
-export const fetchAiSettings = () => get<AiSettings | null>("/api/settings/ai");
-export const saveAiSettings = (settings: AiSettings) => put<AiSettings>("/api/settings/ai", settings);
+export const fetchAiProviders = () => get<AiSettings[]>("/api/settings/ai/providers");
+export const saveAiProvider = (providerId: string, config: { api_key: string; model?: string; max_tokens?: number }) =>
+  put<AiSettings>(`/api/settings/ai/providers/${providerId}`, { ...config, provider: providerId });
+export const deleteAiProvider = (providerId: string) =>
+  del(`/api/settings/ai/providers/${providerId}`);
 
 
 export const fetchSchema = () => get<ProviderSchema[]>("/api/settings/schema");

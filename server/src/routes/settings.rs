@@ -1,6 +1,6 @@
 use axum::{
     Json,
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
 };
@@ -13,6 +13,8 @@ use crate::settings::preferences::Preferences;
 use crate::settings::schema::PROVIDER_REGISTRY;
 
 use super::error_response;
+
+const KNOWN_PROVIDERS: &[&str] = &["anthropic", "openai"];
 
 pub async fn get_schema() -> impl IntoResponse {
     Json(PROVIDER_REGISTRY)
@@ -59,23 +61,23 @@ pub async fn save_preferences(
     (StatusCode::OK, Json(payload)).into_response()
 }
 
-pub async fn get_ai_settings(State(state): State<AppState>) -> Response {
-    match state.db.get_ai_settings().await {
-        Some(s) => (StatusCode::OK, Json(to_payload(&s))).into_response(),
-        None => StatusCode::NO_CONTENT.into_response(),
-    }
+pub async fn list_ai_providers(State(state): State<AppState>) -> Response {
+    let providers = state.db.list_ai_providers().await;
+    let payloads: Vec<AiSettingsPayload> = providers.iter().map(to_payload).collect();
+    Json(payloads).into_response()
 }
 
-pub async fn save_ai_settings(
+pub async fn save_ai_provider(
     State(state): State<AppState>,
+    Path(provider_id): Path<String>,
     Json(payload): Json<AiSettingsPayload>,
 ) -> Response {
-    if payload.provider.trim().is_empty() {
-        return error_response(StatusCode::BAD_REQUEST, "validation_error", "provider is required");
+    if !KNOWN_PROVIDERS.contains(&provider_id.as_str()) {
+        return error_response(StatusCode::BAD_REQUEST, "validation_error", "Unknown provider");
     }
 
     let api_key = if payload.api_key.is_empty() {
-        state.db.get_ai_settings().await
+        state.db.get_ai_provider(&provider_id).await
             .map(|c| c.api_key.expose_secret().to_string())
             .unwrap_or_default()
     } else {
@@ -83,14 +85,25 @@ pub async fn save_ai_settings(
     };
 
     let settings = AiSettings {
-        provider: payload.provider,
+        provider: provider_id.clone(),
         api_key: SecretString::from(api_key),
         model: payload.model.filter(|m| !m.trim().is_empty()),
         max_tokens: payload.max_tokens,
     };
-    state.db.set_ai_settings(&settings).await;
+    state.db.set_ai_provider(&provider_id, &settings).await;
 
     (StatusCode::OK, Json(to_payload(&settings))).into_response()
+}
+
+pub async fn delete_ai_provider(
+    State(state): State<AppState>,
+    Path(provider_id): Path<String>,
+) -> Response {
+    if !KNOWN_PROVIDERS.contains(&provider_id.as_str()) {
+        return error_response(StatusCode::BAD_REQUEST, "validation_error", "Unknown provider");
+    }
+    state.db.delete_ai_provider(&provider_id).await;
+    StatusCode::NO_CONTENT.into_response()
 }
 
 fn to_payload(s: &AiSettings) -> AiSettingsPayload {

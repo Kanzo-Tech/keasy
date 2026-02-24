@@ -7,6 +7,8 @@ use crate::settings::preferences::Preferences;
 
 use super::Database;
 
+const KNOWN_AI_PROVIDERS: &[&str] = &["anthropic", "openai"];
+
 impl Database {
     pub async fn get_setting<T: DeserializeOwned>(&self, key: &str) -> Option<T> {
         let conn = self.conn.lock().await;
@@ -30,6 +32,11 @@ impl Database {
         );
     }
 
+    pub async fn delete_setting(&self, key: &str) {
+        let conn = self.conn.lock().await;
+        let _ = conn.execute("DELETE FROM settings WHERE key = ?1", [key]);
+    }
+
     pub async fn get_org_settings(&self) -> Option<OrgSettings> {
         self.get_setting("org_settings").await
     }
@@ -46,9 +53,10 @@ impl Database {
         self.set_setting("preferences", prefs).await;
     }
 
-    pub async fn get_ai_settings(&self) -> Option<AiSettings> {
-        let public: serde_json::Value = self.get_setting("ai_settings").await?;
-        let api_key_bytes = self.get_secret("ai_settings").await?;
+    pub async fn get_ai_provider(&self, provider_id: &str) -> Option<AiSettings> {
+        let key = format!("ai_provider:{provider_id}");
+        let public: serde_json::Value = self.get_setting(&key).await?;
+        let api_key_bytes = self.get_secret(&key).await?;
         let api_key = SecretString::from(String::from_utf8(api_key_bytes).ok()?);
         Some(AiSettings {
             provider: public["provider"].as_str()?.to_string(),
@@ -58,10 +66,11 @@ impl Database {
         })
     }
 
-    pub async fn set_ai_settings(&self, s: &AiSettings) {
+    pub async fn set_ai_provider(&self, provider_id: &str, s: &AiSettings) {
         use secrecy::ExposeSecret;
+        let key = format!("ai_provider:{provider_id}");
         self.set_setting(
-            "ai_settings",
+            &key,
             &serde_json::json!({
                 "provider": s.provider,
                 "model": s.model,
@@ -69,8 +78,24 @@ impl Database {
             }),
         )
         .await;
-        self.set_secret("ai_settings", s.api_key.expose_secret().as_bytes())
+        self.set_secret(&key, s.api_key.expose_secret().as_bytes())
             .await;
+    }
+
+    pub async fn delete_ai_provider(&self, provider_id: &str) {
+        let key = format!("ai_provider:{provider_id}");
+        self.delete_setting(&key).await;
+        self.delete_secret(&key).await;
+    }
+
+    pub async fn list_ai_providers(&self) -> Vec<AiSettings> {
+        let mut result = Vec::new();
+        for id in KNOWN_AI_PROVIDERS {
+            if let Some(s) = self.get_ai_provider(id).await {
+                result.push(s);
+            }
+        }
+        result
     }
 
     pub async fn get_dashboard_layout(&self, job_id: &str) -> Option<serde_json::Value> {

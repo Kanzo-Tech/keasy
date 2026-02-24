@@ -28,7 +28,7 @@ export default function JobsPage() {
         subtitle="Monitor and manage transformation jobs."
         action={
           <Button asChild size="sm">
-            <Link href="/new" className="flex items-center gap-1.5">
+            <Link href="/jobs/new" className="flex items-center gap-1.5">
               <Plus size={16} />
               New Job
             </Link>

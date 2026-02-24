@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 interface PageHeaderProps {
   title: string;
@@ -22,8 +23,9 @@ export function PageHeader({
       {backHref && (
         <Link
           href={backHref}
-          className="text-sm text-muted-foreground hover:text-foreground mb-2 inline-block"
+          className="text-sm text-muted-foreground hover:text-foreground mb-2 inline-flex items-center gap-1"
         >
+          <ArrowLeft size={14} />
           {backLabel ?? "Back"}
         </Link>
       )}

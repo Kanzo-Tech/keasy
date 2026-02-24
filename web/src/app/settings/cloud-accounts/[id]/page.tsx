@@ -63,7 +63,6 @@ export default function EditCloudAccountPage({
             throw err;
           }
         }}
-        onCancel={() => router.push("/settings/cloud-accounts")}
       />
     </>
   );

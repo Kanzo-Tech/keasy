@@ -81,7 +81,7 @@ export function JobTable({ jobs, statusFilter, onStatusFilterChange, onDelete }:
           <TableRow
             key={job.id}
             className="cursor-pointer"
-            onClick={() => router.push(job.status === "draft" ? `/new?draft=${job.id}` : `/jobs/${job.id}`)}
+            onClick={() => router.push(job.status === "draft" ? `/jobs/new?draft=${job.id}` : `/jobs/${job.id}`)}
           >
             <TableCell className="font-medium">
               {job.name ?? job.id.slice(0, 8)}

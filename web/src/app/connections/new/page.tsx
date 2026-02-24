@@ -2,7 +2,6 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
 import useSWR, { useSWRConfig } from "swr";
@@ -235,10 +234,7 @@ function NewConnectionContent() {
         )}
 
         <FormActions>
-          <Button variant="ghost" size="sm" onClick={() => router.push(`/connections?type=${connectionKind}`)}>
-            <ArrowLeft size={14} />
-            Back
-          </Button>
+          <div />
           <Button size="sm" disabled={!canSave || saving} onClick={handleSubmit}>
             {saving ? "Creating..." : "Create"}
           </Button>

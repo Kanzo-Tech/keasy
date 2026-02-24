@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SecretInput } from "@/components/ui/secret-input";
@@ -23,10 +22,9 @@ interface CloudAccountFormProps {
     auth_method?: string;
     fields: Record<string, string>;
   }) => Promise<void>;
-  onCancel: () => void;
 }
 
-export function CloudAccountForm({ schema, account, onSubmit, onCancel }: CloudAccountFormProps) {
+export function CloudAccountForm({ schema, account, onSubmit }: CloudAccountFormProps) {
   const isEdit = !!account;
   const [name, setName] = useState(account?.name ?? "");
   const [selectedId, setSelectedId] = useState(account?.provider_id ?? "");
@@ -185,10 +183,7 @@ export function CloudAccountForm({ schema, account, onSubmit, onCancel }: CloudA
       )}
 
       <FormActions>
-        <Button variant="ghost" size="sm" onClick={onCancel}>
-          <ArrowLeft size={14} />
-          Back
-        </Button>
+        <div />
         <Button
           size="sm"
           disabled={!selectedId || !name.trim() || !fieldsValid || saving}

@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { useSWRConfig } from "swr";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
@@ -276,10 +275,7 @@ function NewJobContent() {
         </Tabs>
 
         <FormActions>
-          <Button variant="ghost" size="sm" onClick={() => router.push("/jobs")}>
-            <ArrowLeft size={14} />
-            Back
-          </Button>
+          <div />
           <div className="flex gap-2">
             <Button
               variant="outline"

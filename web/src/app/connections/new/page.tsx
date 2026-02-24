@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
@@ -15,6 +15,13 @@ import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ComingSoon } from "@/components/coming-soon";
@@ -22,10 +29,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { ConnectionKind, LocationType } from "@/lib/types";
 
+/** URL schemes per provider. First entry is the default. */
+const PROVIDER_SCHEMES: Record<string, string[]> = {
+  azure: ["az://", "azure://", "abfss://", "abfs://", "adl://"],
+  gcp: ["gs://"],
+  s3: ["s3://"],
+};
+
 const PROVIDER_PLACEHOLDERS: Record<string, string> = {
-  azure: "az://my-container",
-  s3: "s3://my-bucket/prefix/",
-  gcs: "gs://my-bucket/prefix/",
+  azure: "my-container",
+  s3: "my-bucket/prefix/",
+  gcp: "my-bucket/prefix/",
 };
 
 export default function NewConnectionPage() {
@@ -54,9 +68,20 @@ function NewConnectionContent() {
   const [locationType, setLocationType] = useState<LocationType>("cloud");
   const [selectedAccount, setSelectedAccount] = useState("");
   const [url, setUrl] = useState("");
+  const [selectedScheme, setSelectedScheme] = useState("");
   const [saving, setSaving] = useState(false);
 
   const selectedAccountObj = accounts.find((a) => a.id === selectedAccount);
+  const schemes = selectedAccountObj
+    ? PROVIDER_SCHEMES[selectedAccountObj.provider_id] ?? []
+    : [];
+
+  useEffect(() => {
+    const acct = accounts.find((a) => a.id === selectedAccount);
+    const providerSchemes = acct ? PROVIDER_SCHEMES[acct.provider_id] ?? [] : [];
+    setSelectedScheme(providerSchemes[0] ?? "");
+  }, [selectedAccount, accounts]);
+
   const urlPlaceholder =
     locationType === "local"
       ? "/data/uploads/project/"
@@ -73,12 +98,15 @@ function NewConnectionContent() {
     if (!canSave) return;
     setSaving(true);
     try {
+      const fullUrl = locationType === "cloud" && selectedScheme
+        ? `${selectedScheme}${url.trim()}`
+        : url.trim();
       await createConnection({
         name: name.trim(),
         kind: connectionKind,
         location_type: locationType,
         cloud_account_id: locationType === "cloud" ? selectedAccount : undefined,
-        url: url.trim(),
+        url: fullUrl,
       });
       toast.success("Connection created");
       globalMutate((key: string) => typeof key === "string" && key.startsWith("connections-init"));
@@ -214,12 +242,36 @@ function NewConnectionContent() {
               )}
             </FormField>
             <FormField label="URL" required>
-              <Input
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder={urlPlaceholder}
-                className="h-8 text-sm font-mono"
-              />
+              <div className="flex">
+                {selectedAccountObj && schemes.length === 1 && (
+                  <span className="inline-flex items-center rounded-l-md border border-r-0 bg-muted px-2.5 text-sm text-muted-foreground font-mono h-8">
+                    {schemes[0]}
+                  </span>
+                )}
+                {selectedAccountObj && schemes.length > 1 && (
+                  <Select value={selectedScheme} onValueChange={setSelectedScheme}>
+                    <SelectTrigger size="sm" className="rounded-r-none border-r-0 font-mono w-auto shrink-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {schemes.map((s) => (
+                        <SelectItem key={s} value={s} className="font-mono">
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <Input
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder={urlPlaceholder}
+                  className={cn(
+                    "h-8 text-sm font-mono flex-1",
+                    selectedAccountObj && schemes.length > 0 && "rounded-l-none",
+                  )}
+                />
+              </div>
             </FormField>
           </div>
         ) : (

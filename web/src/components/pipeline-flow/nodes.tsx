@@ -127,7 +127,7 @@ function FieldNode({ data }: NodeProps<Node<FieldNodeData>>) {
               variant="ghost"
               size="sm"
               onClick={() => setExpanded(true)}
-              className="h-auto rounded-none px-3 py-1.5 text-xs text-muted-foreground justify-start"
+              className="h-auto rounded-none last:rounded-b-md px-3 py-1.5 text-xs text-muted-foreground justify-start"
             >
               + {hiddenCount} more fields
             </Button>
@@ -137,7 +137,7 @@ function FieldNode({ data }: NodeProps<Node<FieldNodeData>>) {
               variant="ghost"
               size="sm"
               onClick={() => setExpanded(false)}
-              className="h-auto rounded-none px-3 py-1.5 text-xs text-muted-foreground justify-start"
+              className="h-auto rounded-none last:rounded-b-md px-3 py-1.5 text-xs text-muted-foreground justify-start"
             >
               Show less
             </Button>

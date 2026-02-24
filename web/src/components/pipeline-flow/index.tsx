@@ -53,12 +53,12 @@ export function PipelineFlow({ pipeline, className }: PipelineFlowProps) {
 
   if (nodes.length === 0) {
     return (
-      <div className={cn("rounded-lg border bg-background", className)} />
+      <div className={cn("rounded-lg border bg-background overflow-hidden", className)} />
     );
   }
 
   return (
-    <div className={cn("rounded-lg border bg-background", className)}>
+    <div className={cn("rounded-lg border bg-background overflow-hidden", className)}>
       <ReactFlow
         nodes={nodes}
         edges={edges}

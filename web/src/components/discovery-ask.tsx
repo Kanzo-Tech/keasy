@@ -67,12 +67,7 @@ function MessageEntry({ msg }: { msg: ConversationMessage }) {
   const hasEmptyData = msg.data && msg.data.rows.length === 0;
 
   if (hasError) {
-    return (
-      <div className="space-y-2 min-w-0">
-        <ErrorAlert code={msg.code!} />
-        {msg.sparql && <CodeView code={msg.sparql} lang="sparql" />}
-      </div>
-    );
+    return <ErrorAlert code={msg.code!} />;
   }
 
   if (hasEmptyData) {

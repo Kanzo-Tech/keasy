@@ -23,7 +23,7 @@ export default function JobsPage() {
   });
 
   return (
-    <ScrollArea className="flex-1 min-h-0">
+    <div className="flex flex-col flex-1 min-h-0">
       <PageHeader
         title="Jobs"
         subtitle="Monitor and manage transformation jobs."
@@ -50,25 +50,27 @@ export default function JobsPage() {
         </TabsList>
 
         <TabsContent value="jobs">
-          {isLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
-              ))}
-            </div>
-          ) : (
-            <JobTable
-              jobs={jobs ?? []}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-              onDelete={() => mutate()}
-            />
-          )}
+          <ScrollArea className="flex-1 min-h-0">
+            {isLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : (
+              <JobTable
+                jobs={jobs ?? []}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                onDelete={() => mutate()}
+              />
+            )}
+          </ScrollArea>
         </TabsContent>
         <TabsContent value="graph">
           <KnowledgeGraph />
         </TabsContent>
       </Tabs>
-    </ScrollArea>
+    </div>
   );
 }

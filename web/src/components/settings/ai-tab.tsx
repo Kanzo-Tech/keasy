@@ -151,7 +151,7 @@ export function AiTab() {
   return (
     <SettingsPage>
       <Tabs defaultValue={AI_PROVIDERS[0].id}>
-        <TabsList>
+        <TabsList className="w-full">
           {AI_PROVIDERS.map((p) => {
             const Icon = p.icon;
             const isConnected = !!providers?.find((s) => s.provider === p.id)?.api_key;

@@ -12,6 +12,10 @@ const registry: Record<string, ErrorInfo> = {
     message: "AI settings are not configured.",
     link: { label: "Go to AI Settings", href: "/settings/ai" },
   },
+  INSUFFICIENT_CREDITS: {
+    message: "Your AI provider account has insufficient credits.",
+    link: { label: "Go to AI Settings", href: "/settings/ai" },
+  },
   LLM_FAILED: {
     message: "Something went wrong generating the query. Please try again.",
   },

@@ -12,7 +12,7 @@ use std::fmt::Write as FmtWrite;
 use tracing::warn;
 
 use crate::AppState;
-use crate::ai::client::ask_llm;
+use crate::ai::client::{AiError, ask_llm};
 use crate::db::conversations::{Conversation, ConversationMessage};
 use crate::graph::rdf_graph::RdfGraph;
 use crate::pipeline::PipelineSummary;
@@ -89,15 +89,24 @@ pub async fn ask_discover(
     let raw = match ask_llm(&ai_settings, &sparql_system, &req.question).await {
         Ok(s) => s.trim().to_string(),
         Err(e) => {
+            let (code, answer) = match &e {
+                AiError::InsufficientCredits(_) => (
+                    "INSUFFICIENT_CREDITS",
+                    "Your AI provider account has insufficient credits. Please check your billing settings.",
+                ),
+                AiError::Failed(_) => (
+                    "LLM_FAILED",
+                    "Something went wrong while generating a query. Please try again.",
+                ),
+            };
             warn!("LLM call failed: {e}");
-            let answer = "Something went wrong while generating a query. Please try again.".to_string();
-            state.db.add_message(&conversation_id, "assistant", &answer, None, None, Some("LLM_FAILED")).await;
+            state.db.add_message(&conversation_id, "assistant", answer, None, None, Some(code)).await;
             return Json(AskResponse {
-                answer,
+                answer: answer.to_string(),
                 sparql: None,
                 data: None,
                 conversation_id: Some(conversation_id),
-                code: "LLM_FAILED".to_string(),
+                code: code.to_string(),
             }).into_response();
         }
     };

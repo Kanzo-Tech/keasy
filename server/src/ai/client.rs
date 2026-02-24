@@ -1,7 +1,22 @@
+use std::fmt;
+
 use secrecy::ExposeSecret;
 use serde::{Deserialize, Serialize};
 
 use crate::settings::ai::AiSettings;
+
+pub enum AiError {
+    InsufficientCredits(String),
+    Failed(String),
+}
+
+impl fmt::Display for AiError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AiError::InsufficientCredits(msg) | AiError::Failed(msg) => f.write_str(msg),
+        }
+    }
+}
 
 #[derive(Serialize)]
 struct AnthropicRequest {
@@ -49,7 +64,7 @@ struct OpenAiMessage {
     content: Option<String>,
 }
 
-pub async fn ask_llm(settings: &AiSettings, system: &str, user: &str) -> Result<String, String> {
+pub async fn ask_llm(settings: &AiSettings, system: &str, user: &str) -> Result<String, AiError> {
     let client = reqwest::Client::new();
 
     match settings.provider.as_str() {
@@ -63,7 +78,7 @@ async fn ask_anthropic(
     settings: &AiSettings,
     system: &str,
     user: &str,
-) -> Result<String, String> {
+) -> Result<String, AiError> {
     let model = settings
         .model
         .as_deref()
@@ -87,7 +102,7 @@ async fn ask_anthropic(
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Anthropic request failed: {e}"))?;
+        .map_err(|e| AiError::Failed(format!("Anthropic request failed: {e}")))?;
 
     if !res.status().is_success() {
         let status = res.status();
@@ -95,18 +110,26 @@ async fn ask_anthropic(
         let message = body["error"]["message"]
             .as_str()
             .unwrap_or("Unknown API error");
-        return Err(format!("{message} (anthropic, {status})"));
+        let formatted = format!("{message} (anthropic, {status})");
+
+        if status.as_u16() == 402
+            || (status.as_u16() == 429
+                && message.to_lowercase().contains("credit"))
+        {
+            return Err(AiError::InsufficientCredits(formatted));
+        }
+        return Err(AiError::Failed(formatted));
     }
 
     let resp: AnthropicResponse = res
         .json()
         .await
-        .map_err(|e| format!("Failed to parse Anthropic response: {e}"))?;
+        .map_err(|e| AiError::Failed(format!("Failed to parse Anthropic response: {e}")))?;
 
     resp.content
         .into_iter()
         .find_map(|b| b.text)
-        .ok_or_else(|| "Empty response from Anthropic".to_string())
+        .ok_or_else(|| AiError::Failed("Empty response from Anthropic".to_string()))
 }
 
 async fn ask_openai(
@@ -114,7 +137,7 @@ async fn ask_openai(
     settings: &AiSettings,
     system: &str,
     user: &str,
-) -> Result<String, String> {
+) -> Result<String, AiError> {
     let model = settings
         .model
         .as_deref()
@@ -142,7 +165,7 @@ async fn ask_openai(
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("OpenAI request failed: {e}"))?;
+        .map_err(|e| AiError::Failed(format!("OpenAI request failed: {e}")))?;
 
     if !res.status().is_success() {
         let status = res.status();
@@ -150,17 +173,23 @@ async fn ask_openai(
         let message = body["error"]["message"]
             .as_str()
             .unwrap_or("Unknown API error");
-        return Err(format!("{message} (openai, {status})"));
+        let code = body["error"]["code"].as_str().unwrap_or("");
+        let formatted = format!("{message} (openai, {status})");
+
+        if status.as_u16() == 402 || code == "insufficient_quota" {
+            return Err(AiError::InsufficientCredits(formatted));
+        }
+        return Err(AiError::Failed(formatted));
     }
 
     let resp: OpenAiResponse = res
         .json()
         .await
-        .map_err(|e| format!("Failed to parse OpenAI response: {e}"))?;
+        .map_err(|e| AiError::Failed(format!("Failed to parse OpenAI response: {e}")))?;
 
     resp.choices
         .into_iter()
         .next()
         .and_then(|c| c.message.content)
-        .ok_or_else(|| "Empty response from OpenAI".to_string())
+        .ok_or_else(|| AiError::Failed("Empty response from OpenAI".to_string()))
 }

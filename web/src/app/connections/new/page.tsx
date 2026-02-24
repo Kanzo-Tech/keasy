@@ -149,7 +149,7 @@ function NewConnectionContent() {
             <Label
               htmlFor="type-data"
               className={cn(
-                "flex flex-col items-center justify-center text-center gap-1 rounded-md border p-3 transition-colors cursor-pointer",
+                "flex flex-col items-start gap-1 rounded-md border p-3 transition-colors cursor-pointer",
                 connectionKind === "data"
                   ? "border-primary bg-accent"
                   : "border-border hover:bg-accent/50",
@@ -164,7 +164,7 @@ function NewConnectionContent() {
             <Label
               htmlFor="type-vocab"
               className={cn(
-                "flex flex-col items-center justify-center text-center gap-1 rounded-md border p-3 transition-colors cursor-pointer",
+                "flex flex-col items-start gap-1 rounded-md border p-3 transition-colors cursor-pointer",
                 connectionKind === "vocab"
                   ? "border-primary bg-accent"
                   : "border-border hover:bg-accent/50",
@@ -188,7 +188,7 @@ function NewConnectionContent() {
             <Label
               htmlFor="loc-cloud"
               className={cn(
-                "flex flex-col items-center justify-center text-center gap-1 rounded-md border p-3 transition-colors cursor-pointer",
+                "flex flex-col items-start gap-1 rounded-md border p-3 transition-colors cursor-pointer",
                 locationType === "cloud"
                   ? "border-primary bg-accent"
                   : "border-border hover:bg-accent/50",
@@ -203,7 +203,7 @@ function NewConnectionContent() {
             <ComingSoon placement="inline">
               <Label
                 htmlFor="loc-local"
-                className="flex flex-col items-center justify-center text-center gap-1 rounded-md border border-border p-3"
+                className="flex flex-col items-start gap-1 rounded-md border border-border p-3"
               >
                 <RadioGroupItem value="local" id="loc-local" disabled className="sr-only" />
                 <p className="text-sm font-medium leading-none">Local</p>

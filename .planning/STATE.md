@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 07 of 9 (Frontend Architecture Cleanup) — In Progress
-Plan: 2 of 4 complete (07-02 DataTable list view migrations)
-Status: Phase 07 In Progress — Plans 07-01 and 07-02 done, Plans 03–04 remaining
-Last activity: 2026-02-27 — Completed Plan 07-02: Migrated jobs, connections, cloud accounts list views to DataTable + TanStack Table column definitions; deleted job-table.tsx; added page headers with Create buttons (ARCH-05); EmptyState CTAs on all three list pages
+Plan: 3 of 4 complete (07-01 infrastructure, 07-02 jobs/connections/cloud-accounts, 07-03 org users/organizations)
+Status: Phase 07 In Progress — Plans 07-01, 07-02, 07-03 done; Plan 07-04 remaining
+Last activity: 2026-02-27 — Completed Plan 07-03: OrgUser/OrgEntry types in lib/types.ts, 5 API functions in lib/api.ts, useOrgUsers SWR hook, org-user-columns.tsx, organization-columns.tsx, org/users and admin/organizations pages migrated to DataTable with zero raw fetch()
 
 Progress: [████████████████] ~80%
 

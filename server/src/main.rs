@@ -1,4 +1,5 @@
 mod ai;
+mod auth;
 mod cloud;
 mod config;
 mod connections;

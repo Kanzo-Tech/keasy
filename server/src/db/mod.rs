@@ -1,9 +1,10 @@
 pub mod dataspaces;
+pub mod invite_tokens;
 pub mod organizations;
 mod schema;
 pub mod secrets;
-pub mod users;
 pub mod seed;
+pub mod users;
 
 use std::path::Path;
 use std::sync::Arc;

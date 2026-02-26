@@ -6,6 +6,7 @@ pub const SEED_ADMIN_ID: &str = "00000000-0000-0000-0000-000000000003";
 pub const SEED_ORG_DATASPACE_MEMBERSHIP_ID: &str = "00000000-0000-0000-0000-000000000004";
 pub const SEED_USER_ORG_MEMBERSHIP_ID: &str = "00000000-0000-0000-0000-000000000005";
 pub const SEED_ADMIN_EMAIL: &str = "admin@keasy.local";
+pub const SEED_INVITE_TOKEN: &str = "00000000000000000000000000000001";
 
 /// Ensure seed data exists. Runs once at startup; idempotent via INSERT OR IGNORE with fixed IDs.
 pub fn ensure_seed_data(conn: &Connection) -> Result<(), String> {
@@ -66,6 +67,16 @@ pub fn ensure_seed_data(conn: &Connection) -> Result<(), String> {
         ],
     )
     .map_err(|e| format!("seed user-org membership: {e}"))?;
+
+    // Bootstrap invite token — allows first additional user to register during development.
+    // Expires 2099-12-31 (effectively never for dev). Role 'admin' so first invite can set up the org.
+    conn.execute(
+        "INSERT OR IGNORE INTO invite_tokens
+         (token, email, org_id, role, created_by, used_at, expires_at, created_at)
+         VALUES (?1, NULL, ?2, 'admin', ?3, NULL, '2099-12-31T00:00:00Z', ?4)",
+        rusqlite::params![SEED_INVITE_TOKEN, SEED_ORG_ID, SEED_ADMIN_ID, now],
+    )
+    .map_err(|e| format!("seed invite token: {e}"))?;
 
     Ok(())
 }

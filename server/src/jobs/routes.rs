@@ -8,9 +8,9 @@ use serde::Deserialize;
 
 use crate::AppState;
 use crate::error::data_response;
-use crate::rdf::format::RdfExportFormat;
+use crate::discovery::rdf_format::RdfExportFormat;
 use crate::jobs::models::{CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601};
-use crate::script::rewrite;
+use super::rewrite;
 use crate::tenant::{placeholder_ctx, placeholder_scoped};
 
 use super::errors::JobApiError;

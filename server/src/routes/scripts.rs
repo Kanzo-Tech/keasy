@@ -2,9 +2,9 @@ use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use serde::Deserialize;
 
 use crate::AppState;
-use crate::pipeline::{PipelineSummary, ValidationResult, extract_summary};
-use crate::script;
-use crate::script::rewrite;
+use crate::jobs::{PipelineSummary, ValidationResult, extract_summary};
+use crate::jobs::script;
+use crate::jobs::rewrite;
 
 #[derive(Deserialize)]
 pub struct ValidateRequest {

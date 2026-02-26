@@ -6,7 +6,7 @@ use crate::tenant::{TenantContext, TenantScoped};
 
 use super::errors::JobRuntimeError;
 use super::models::{Job, JobStatus, RunMode};
-use crate::pipeline::PipelineSummary;
+use super::pipeline_types::PipelineSummary;
 
 impl Database {
     pub async fn insert_job(&self, ctx: &TenantContext, job: &Job) {

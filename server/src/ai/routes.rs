@@ -15,8 +15,8 @@ use crate::AppState;
 use super::client::{AiError, ask_llm};
 use super::models::{Conversation, ConversationMessage};
 use crate::error::data_response;
-use crate::graph::rdf_graph::RdfGraph;
-use crate::pipeline::PipelineSummary;
+use crate::discovery::rdf_graph::RdfGraph;
+use crate::jobs::PipelineSummary;
 use crate::tenant::{placeholder_ctx, placeholder_scoped};
 
 pub async fn ask_discover(
@@ -263,7 +263,7 @@ pub struct AskRequest {
 pub struct AskResponse {
     pub answer: String,
     pub sparql: Option<String>,
-    pub data: Option<crate::graph::rdf_graph::TabularData>,
+    pub data: Option<crate::discovery::rdf_graph::TabularData>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conversation_id: Option<String>,
     pub code: String,
@@ -359,7 +359,7 @@ fn build_schema_context(pipeline: &PipelineSummary) -> String {
     schema
 }
 
-fn summarize_results_for_llm(data: &crate::graph::rdf_graph::TabularData) -> String {
+fn summarize_results_for_llm(data: &crate::discovery::rdf_graph::TabularData) -> String {
     let total = data.rows.len();
     let preview_rows = &data.rows[..total.min(20)];
     let mut out = String::new();

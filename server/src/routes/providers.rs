@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use fossil_lang::runtime::storage::StorageConfig;
 
-use crate::script::init_context;
+use crate::jobs::script::init_context;
 
 #[derive(Serialize)]
 struct ProviderEntry {

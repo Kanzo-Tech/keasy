@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::dcat::types::DcatInput;
-use crate::pipeline::PipelineSummary;
+use crate::discovery::dcat_types::DcatInput;
+use super::pipeline_types::PipelineSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]

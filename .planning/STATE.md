@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T14:09:01.708Z"
+last_updated: "2026-02-26T15:56:00.000Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 03 of 9 (Auth Routes & Session Middleware) — IN PROGRESS
-Plan: 1 of 2 in current phase (03-01 complete)
-Status: Plan 03-01 complete — ready for Plan 03-02 (route handlers + session middleware + route wiring)
-Last activity: 2026-02-26 — Completed Plan 03-01: Auth module foundation (auth/ module, AuthError, Argon2id password utils, invite token DAL, schema tables, AppError extension, session_secret config)
+Phase: 03 of 9 (Auth Routes & Session Middleware) — COMPLETE
+Plan: 2 of 2 in current phase (03-02 complete)
+Status: Phase 03 complete — register/login/logout handlers wired, session middleware active, all api_routes session-protected
+Last activity: 2026-02-26 — Completed Plan 03-02: Auth route handlers, session middleware, rate limiter, router wiring with signed session cookies
 
-Progress: [██████░░░░] ~33%
+Progress: [████████░░] ~45%
 
 ## Performance Metrics
 
@@ -43,10 +43,10 @@ Progress: [██████░░░░] ~33%
 | 01-db-schema-dal-foundation | 2 | 11 min | 5.5 min |
 | 02-api-architecture-refactor | 2 | 13 min | 6.5 min |
 | 02.1-domain-consolidation | 2 | ~20 min | ~10 min |
-| 03-auth-routes-session-middleware | 1 | 8 min | 8 min |
+| 03-auth-routes-session-middleware | 2 | 15 min | 7.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (7 min), 02-01 (3 min), 02.1-01 (~5 min), 02.1-02 (15 min), 03-01 (8 min)
+- Last 5 plans: 02.1-01 (~5 min), 02.1-02 (15 min), 03-01 (8 min), 03-02 (~7 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -84,6 +84,9 @@ Recent decisions affecting current work:
 - [Phase 02.1]: 6 legacy modules (graph, dcat, rdf, validation, pipeline, script) dissolved into discovery/ (12 files) and jobs/ (10 files) — server now has 13 top-level modules
 - [Phase 03-auth-routes-session-middleware]: Upgraded rusqlite from 0.32 to 0.37 to resolve libsqlite3-sys links conflict with tower-sessions-rusqlite-store
 - [Phase 03-auth-routes-session-middleware]: All auth functions/types annotated with #[allow(dead_code)] — Plan 02 route handlers will be first consumers
+- [Phase 03-02]: tower-sessions signed feature added; session cookies are signed via PBKDF2-derived 64-byte key from KEASY_SESSION_SECRET
+- [Phase 03-02]: tokio_rusqlite accessed via tower_sessions_rusqlite_store::tokio_rusqlite re-export (no direct dep)
+- [Phase 03-02]: api_key_auth kept with dead_code allow — reserved for future M2M API access, not applied to any routes
 
 ### Pending Todos
 
@@ -101,5 +104,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Plan 03-01 (Auth module foundation) — auth/ module, AuthError, Argon2id password utils, invite token DAL, user_sessions+invite_tokens schema tables, AppError Unauthorized/Forbidden/Auth variants, session_secret in ServerConfig. cargo clippy -- -D warnings passes clean.
-Resume with: /gsd:execute-phase (Plan 03-02: route handlers + session middleware + route wiring)
+Stopped at: Completed Plan 03-02 (Auth route handlers + session middleware + router wiring) — register/login/logout, rate limiter, session_required middleware, signed session cookies, api_key_auth replaced by session auth. cargo clippy -- -D warnings passes clean. Phase 03 complete.
+Resume with: /gsd:execute-phase (Phase 04 — next phase)

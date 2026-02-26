@@ -8,7 +8,7 @@ use fossil_lang::runtime::executor::{ExecutionConfig, IrExecutor};
 use fossil_lang::runtime::storage::StorageConfig;
 use fossil_lang::traits::provider::LocalFileReader;
 
-use crate::cloud::reader::CloudReader;
+use crate::cloud_accounts::reader::CloudReader;
 
 pub fn compile(name: &str, source: &str, storage: StorageConfig) -> Result<CompileResult, Vec<String>> {
     let gcx = init_context(storage);

@@ -109,21 +109,21 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
         )
         .route(
             "/v1/jobs/{id}/discover/ask",
-            axum::routing::post(crate::conversations::routes::ask_discover),
+            axum::routing::post(crate::ai::routes::ask_discover),
         )
         .route(
             "/v1/jobs/{id}/conversations",
-            axum::routing::get(crate::conversations::routes::list_conversations)
-                .post(crate::conversations::routes::create_conversation),
+            axum::routing::get(crate::ai::routes::list_conversations)
+                .post(crate::ai::routes::create_conversation),
         )
         .route(
             "/v1/conversations/{id}/messages",
-            axum::routing::get(crate::conversations::routes::get_conversation_messages),
+            axum::routing::get(crate::ai::routes::get_conversation_messages),
         )
         .route(
             "/v1/conversations/{id}",
-            axum::routing::put(crate::conversations::routes::rename_conversation)
-                .delete(crate::conversations::routes::delete_conversation),
+            axum::routing::put(crate::ai::routes::rename_conversation)
+                .delete(crate::ai::routes::delete_conversation),
         )
         .route(
             "/v1/cloud-accounts",

@@ -4,7 +4,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 use serde::Deserialize;
 
-use crate::cloud::reader;
+use crate::cloud_accounts::reader;
 use crate::connections::models::{CreateConnectionRequest, LocationType, UpdateConnectionRequest};
 use crate::error::data_response;
 use crate::tenant::{placeholder_ctx, placeholder_scoped};

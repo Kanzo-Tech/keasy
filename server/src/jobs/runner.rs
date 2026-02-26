@@ -10,7 +10,7 @@ use fossil_lang::runtime::storage::StorageConfig;
 
 use super::errors::{JobRuntimeError, classify_error};
 use super::models::{JobStatus, now_iso8601};
-use crate::cloud::resolver::CloudOutputResolver;
+use crate::cloud_accounts::resolver::CloudOutputResolver;
 use crate::db::Database;
 use crate::dcat::extract::extract_dcat_input;
 use crate::dcat::generator::{build_catalog_triples, generate_dcat_catalog};

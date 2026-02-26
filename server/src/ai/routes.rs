@@ -12,8 +12,8 @@ use std::fmt::Write as FmtWrite;
 use tracing::warn;
 
 use crate::AppState;
-use crate::ai::client::{AiError, ask_llm};
-use crate::conversations::models::{Conversation, ConversationMessage};
+use super::client::{AiError, ask_llm};
+use super::models::{Conversation, ConversationMessage};
 use crate::error::data_response;
 use crate::graph::rdf_graph::RdfGraph;
 use crate::pipeline::PipelineSummary;

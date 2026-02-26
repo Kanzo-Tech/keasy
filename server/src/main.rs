@@ -1,9 +1,7 @@
 mod ai;
-mod cloud;
 mod cloud_accounts;
 mod config;
 mod connections;
-mod conversations;
 mod crypto;
 mod db;
 mod dcat;

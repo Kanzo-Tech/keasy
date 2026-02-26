@@ -114,7 +114,7 @@ fn rewrite(
 fn validate_no_direct_paths(script: &str) -> Result<(), String> {
     for m in STRING_LITERAL.find_iter(script) {
         let content = &m.as_str()[1..m.as_str().len() - 1];
-        if crate::cloud::is_data_path(content) {
+        if crate::cloud_accounts::is_data_path(content) {
             return Err(format!(
                 "Direct file paths are not supported. Use @connection/path syntax instead: {}",
                 m.as_str()

@@ -260,3 +260,20 @@ export interface GraphData {
   nodes: GraphNode[];
   links: GraphLink[];
 }
+
+export interface OrgUser {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  status: string;
+  created_at: string;
+  role: string;
+}
+
+export interface OrgEntry {
+  id: string;
+  name: string;
+  role: string;
+  created_at: string;
+}

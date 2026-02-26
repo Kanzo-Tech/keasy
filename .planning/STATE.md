@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T21:34:31.638Z"
+last_updated: "2026-02-26T23:33:55.236Z"
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 8
-  total_plans: 19
-  completed_plans: 19
+  total_plans: 23
+  completed_plans: 20
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 06.1 of 9 (Middleware Route Guard Fix) — Complete
-Plan: 1 of 1 complete (06.1-01 proxy.ts two-list guard + redirect-after-login)
-Status: Phase 06.1 Complete — All 1 plan done
-Last activity: 2026-02-26 — Completed Plan 06.1-01: Route guard fix (ALWAYS_PUBLIC_PATHS for /invite, redirect-after-login on login page)
+Phase: 07 of 9 (Frontend Architecture Cleanup) — In Progress
+Plan: 1 of 4 complete (07-01 DataTable infrastructure + EmptyState upgrade)
+Status: Phase 07 In Progress — Plan 07-01 done, Plans 02–04 remaining
+Last activity: 2026-02-27 — Completed Plan 07-01: Installed @tanstack/react-table + @icons-pack/react-simple-icons, added Checkbox primitive, created DataTable component, upgraded EmptyState with actionHref+actionLabel CTA
 
-Progress: [████████████████] ~75%
+Progress: [████████████████] ~80%
 
 ## Performance Metrics
 
@@ -125,6 +125,7 @@ Recent decisions affecting current work:
 - [Phase 06.1-01]: Do NOT rename proxy.ts to middleware.ts — Next.js 16.1.6 requires proxy.ts with export function proxy()
 - [Phase 06.1-01]: Two-list route guard: ALWAYS_PUBLIC_PATHS for /invite (auth-agnostic), AUTH_REDIRECT_PATHS for /login and /register
 - [Phase 06.1-01]: Open redirect prevention via startsWith('/') on login page, not in proxy middleware
+- [Phase 07-01]: Used radix-ui unified package for Checkbox (not @radix-ui/react-checkbox) to match existing project pattern
 
 ### Pending Todos
 
@@ -141,6 +142,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-26
-Stopped at: Completed Plan 06.1-01 — Middleware route guard fix: two-list proxy.ts (ALWAYS_PUBLIC_PATHS for /invite) + redirect-after-login on login page. Phase 06.1 complete.
-Resume with: /gsd:execute-phase (Phase 07 — Architecture Cleanup)
+Last session: 2026-02-27
+Stopped at: Completed Plan 07-01 — DataTable infrastructure + EmptyState upgrade: @tanstack/react-table installed, Checkbox primitive added, generic DataTable<TData,TValue> with toolbar/pagination/row-selection created, EmptyState upgraded with actionHref+actionLabel CTA props.
+Resume with: /gsd:execute-phase (Phase 07 Plan 02 — list view migrations)

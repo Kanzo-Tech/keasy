@@ -199,6 +199,6 @@ Each phase runs on its own git branch and merges into main via pull request befo
 | 5. Frontend Auth Pages & Session Management | 3/3 | Complete   | 2026-02-26 |
 | 6. Dataspace Switcher & Organization Management | 3/3 | Complete    | 2026-02-26 |
 | 6.1. Middleware Route Guard Fix | 1/1 | Complete | 2026-02-26 |
-| 7. Frontend Architecture Cleanup | 0/4 | Not started | - |
+| 7. Frontend Architecture Cleanup | 1/4 | In Progress|  |
 | 8. Walt.id Integration & VC Auth Path | 0/TBD | Not started | - |
 | 9. Gaia-X Compliance Wizard | 0/TBD | Not started | - |

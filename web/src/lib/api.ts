@@ -22,6 +22,8 @@ import type {
   Connection,
   CreateConnectionRequest,
   UpdateConnectionRequest,
+  OrgUser,
+  OrgEntry,
 } from "./types";
 
 export class ApiError extends Error {
@@ -174,3 +176,16 @@ export const createConnection = (req: CreateConnectionRequest) => post<Connectio
 export const updateConnection = (id: string, req: UpdateConnectionRequest) => put<Connection>(`/api/connections/${id}`, req);
 export const deleteConnection = (id: string) => del(`/api/connections/${id}`);
 export const fetchConnectionFiles = (id: string) => get<FileEntry[]>(`/api/connections/${id}/files`);
+
+
+// Org user management
+export const fetchOrgUsers = () => get<OrgUser[]>("/api/org/users");
+export const updateOrgUserRole = (userId: string, role: string) =>
+  put<OrgUser>(`/api/org/users/${userId}`, { role });
+export const removeOrgUser = (userId: string) => del(`/api/org/users/${userId}`);
+
+// Admin organization management
+export const fetchDataspaceOrganizations = () =>
+  get<OrgEntry[]>("/api/admin/dataspace-organizations");
+export const addOrganization = (data: { name: string; admin_email: string }) =>
+  post<OrgEntry>("/api/admin/organizations", data);

@@ -44,6 +44,7 @@ sha2 = "0.10"
 getrandom = "0.2"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 secrecy = { version = "0.10", features = ["serde"] }
+argon2 = { version = "0.5", features = ["std"] }
 subtle = "2"
 fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git" }
 fossil-stdlib = { git = "https://github.com/angelip2303/fossil-lang.git" }

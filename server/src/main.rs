@@ -12,6 +12,7 @@ mod rdf;
 mod routes;
 mod script;
 mod settings;
+mod tenant;
 mod validation;
 
 use std::num::NonZeroUsize;

@@ -48,3 +48,15 @@ impl<T: Clone> TenantScoped<T> {
         Self::new(OrgId(crate::db::seed::SEED_ORG_ID.to_string()), inner)
     }
 }
+
+/// Convenience: create a placeholder TenantContext for route handlers.
+/// Phase 4 replaces all call sites with real session context.
+pub fn placeholder_ctx() -> TenantContext {
+    TenantScoped::placeholder()
+}
+
+/// Convenience: create a placeholder TenantScoped<T> for route handlers.
+/// Phase 4 replaces all call sites with real session context.
+pub fn placeholder_scoped<T: Clone>(inner: T) -> TenantScoped<T> {
+    TenantScoped::placeholder_with(inner)
+}

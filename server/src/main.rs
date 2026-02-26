@@ -4,6 +4,7 @@ mod config;
 mod crypto;
 mod db;
 mod dcat;
+mod error;
 mod graph;
 mod job;
 mod middleware;

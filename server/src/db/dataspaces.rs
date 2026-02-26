@@ -34,6 +34,7 @@ impl DataspaceRole {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         match s {
             "participant" => DataspaceRole::Participant,
@@ -65,6 +66,7 @@ impl OrgRole {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         match s {
             "user" => OrgRole::User,

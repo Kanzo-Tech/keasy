@@ -11,16 +11,20 @@ use crate::error::data_response;
 use crate::discovery::rdf_format::RdfExportFormat;
 use crate::jobs::models::{CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601};
 use super::rewrite;
-use crate::tenant::{placeholder_ctx, placeholder_scoped};
+use crate::middleware::tenant::RequireRole;
 
 use super::errors::JobApiError;
 
-pub async fn list_jobs(State(state): State<AppState>) -> Result<impl IntoResponse, JobApiError> {
-    let jobs = state.db.list_jobs(&placeholder_ctx()).await;
+pub async fn list_jobs(
+    RequireRole(ctx): RequireRole,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, JobApiError> {
+    let jobs = state.db.list_jobs(&ctx.as_ctx()).await;
     Ok(data_response(jobs))
 }
 
 pub async fn create_job(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -42,13 +46,13 @@ pub async fn create_job(
             connection_ids: payload.connection_ids.clone(),
             script: Some(payload.script),
         };
-        state.db.insert_job(&placeholder_ctx(), &job).await;
+        state.db.insert_job(&ctx.as_ctx(), &job).await;
         return Ok((StatusCode::CREATED, data_response(job)).into_response());
     }
 
     let dcat_enabled = payload.dcat_enabled.unwrap_or(false);
 
-    let resolved = rewrite::resolve(&payload.script, &state.db).await
+    let resolved = rewrite::resolve(&payload.script, &ctx.org_id.0, &state.db).await
         .map_err(JobApiError::RewriteFailed)?;
 
     let job = Job {
@@ -67,7 +71,7 @@ pub async fn create_job(
         script: None,
     };
 
-    state.db.insert_job(&placeholder_ctx(), &job).await;
+    state.db.insert_job(&ctx.as_ctx(), &job).await;
 
     let org_settings = if dcat_enabled {
         state.db.get_org_settings().await
@@ -75,11 +79,9 @@ pub async fn create_job(
         None
     };
 
-    // Phase 1 placeholder org_id passed to runner — Phase 4 passes real session org_id
-    use crate::db::seed::SEED_ORG_ID;
     use crate::jobs::runner::SpawnParams;
     state.runner.spawn(SpawnParams {
-        org_id: SEED_ORG_ID.to_string(),
+        org_id: ctx.org_id.0.clone(),
         job_id: id,
         script: resolved.script,
         storage: resolved.storage,
@@ -92,21 +94,23 @@ pub async fn create_job(
 }
 
 pub async fn get_job(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    match state.db.get_job(&placeholder_scoped(id.as_str())).await {
+    match state.db.get_job(&ctx.scoped(id.as_str())).await {
         Some(job) => Ok(data_response(job).into_response()),
         None => Err(JobApiError::NotFound),
     }
 }
 
 pub async fn update_job(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    match state.db.update_job(&placeholder_scoped(id.as_str()), |job| {
+    match state.db.update_job(&ctx.scoped(id.as_str()), |job| {
         if job.status != JobStatus::Draft {
             return;
         }
@@ -124,10 +128,11 @@ pub async fn update_job(
 }
 
 pub async fn cancel_job(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    match state.db.update_job(&placeholder_scoped(id.as_str()), |job| {
+    match state.db.update_job(&ctx.scoped(id.as_str()), |job| {
         job.status = JobStatus::Cancelled;
         job.completed_at = Some(now_iso8601());
     }).await {
@@ -137,10 +142,11 @@ pub async fn cancel_job(
 }
 
 pub async fn delete_job(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    if state.db.get_job(&placeholder_scoped(id.as_str())).await.is_none() {
+    if state.db.get_job(&ctx.scoped(id.as_str())).await.is_none() {
         return Err(JobApiError::NotFound);
     }
 
@@ -152,7 +158,7 @@ pub async fn delete_job(
         cache.remove(&id);
     }
 
-    state.db.remove_job(&placeholder_scoped(id.as_str())).await;
+    state.db.remove_job(&ctx.scoped(id.as_str())).await;
 
     Ok(StatusCode::NO_CONTENT.into_response())
 }
@@ -163,11 +169,12 @@ pub struct CatalogQuery {
 }
 
 pub async fn get_job_catalog(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Query(query): Query<CatalogQuery>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    if state.db.get_job(&placeholder_scoped(id.as_str())).await.is_none() {
+    if state.db.get_job(&ctx.scoped(id.as_str())).await.is_none() {
         return Err(JobApiError::NotFound);
     }
 
@@ -190,10 +197,11 @@ pub async fn get_job_catalog(
 }
 
 pub async fn get_job_graph(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    match state.db.get_job(&placeholder_scoped(id.as_str())).await {
+    match state.db.get_job(&ctx.scoped(id.as_str())).await {
         Some(_) => {
             let graph_name = format!("urn:keasy:job:{id}");
             let graph_data = state.catalog.get_graph(Some(&graph_name));
@@ -204,6 +212,7 @@ pub async fn get_job_graph(
 }
 
 pub async fn get_unified_graph(
+    RequireRole(_ctx): RequireRole,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     let graph_data = state.catalog.get_graph(None);
@@ -211,10 +220,11 @@ pub async fn get_unified_graph(
 }
 
 pub async fn get_dashboard_layout(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    if state.db.get_job(&placeholder_scoped(id.as_str())).await.is_none() {
+    if state.db.get_job(&ctx.scoped(id.as_str())).await.is_none() {
         return Err(JobApiError::NotFound);
     }
     match state.db.get_dashboard_layout(&id).await {
@@ -224,11 +234,12 @@ pub async fn get_dashboard_layout(
 }
 
 pub async fn save_dashboard_layout(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    if state.db.get_job(&placeholder_scoped(id.as_str())).await.is_none() {
+    if state.db.get_job(&ctx.scoped(id.as_str())).await.is_none() {
         return Err(JobApiError::NotFound);
     }
     state.db.set_dashboard_layout(&id, &body).await;

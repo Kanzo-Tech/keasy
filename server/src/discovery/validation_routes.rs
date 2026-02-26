@@ -7,16 +7,17 @@ use rudof_rdf::rdf_core::RDFFormat;
 use crate::cloud::reader;
 use crate::connections::models::LocationType;
 use crate::error::error_body;
-use crate::tenant::{placeholder_ctx, placeholder_scoped};
+use crate::middleware::tenant::RequireRole;
 use super::validation_types::{ShapeFormat, ValidationRequest};
 use super::validation::ValidatableGraph;
 use crate::AppState;
 
 pub async fn validate_job(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Json(req): Json<ValidationRequest>,
 ) -> Response {
-    let connection = match state.db.get_connection(&placeholder_scoped(req.connection_id.as_str())).await {
+    let connection = match state.db.get_connection(&ctx.scoped(req.connection_id.as_str())).await {
         Some(s) => s,
         None => {
             return (
@@ -43,7 +44,7 @@ pub async fn validate_job(
         }
     };
 
-    let creds = state.db.env_snapshot(&placeholder_ctx(), std::slice::from_ref(&account_id)).await;
+    let creds = state.db.env_snapshot(&ctx.as_ctx(), std::slice::from_ref(&account_id)).await;
 
     let data_bytes = match reader::download(&req.data_url, &creds).await {
         Ok(bytes) => bytes,

@@ -5,6 +5,7 @@ use crate::AppState;
 use crate::jobs::{PipelineSummary, ValidationResult, extract_summary};
 use crate::jobs::script;
 use crate::jobs::rewrite;
+use crate::middleware::tenant::RequireRole;
 
 #[derive(Deserialize)]
 pub struct ValidateRequest {
@@ -12,10 +13,11 @@ pub struct ValidateRequest {
 }
 
 pub async fn validate_script(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Json(payload): Json<ValidateRequest>,
 ) -> impl IntoResponse {
-    let resolved = match rewrite::resolve(&payload.script, &state.db).await {
+    let resolved = match rewrite::resolve(&payload.script, &ctx.org_id.0, &state.db).await {
         Ok(r) => r,
         Err(err) => {
             return (

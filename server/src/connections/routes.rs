@@ -7,7 +7,7 @@ use serde::Deserialize;
 use crate::cloud::reader;
 use crate::connections::models::{CreateConnectionRequest, LocationType, UpdateConnectionRequest};
 use crate::error::data_response;
-use crate::tenant::{placeholder_ctx, placeholder_scoped};
+use crate::middleware::tenant::RequireRole;
 use crate::AppState;
 
 use super::errors::ConnectionError;
@@ -19,21 +19,23 @@ pub struct ListConnectionsQuery {
 }
 
 pub async fn list_connections(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Query(query): Query<ListConnectionsQuery>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    let connections = state.db.list_connections(&placeholder_ctx(), query.connection_type.as_deref()).await;
+    let connections = state.db.list_connections(&ctx.as_ctx(), query.connection_type.as_deref()).await;
     Ok(data_response(connections))
 }
 
 pub async fn create_connection(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Json(req): Json<CreateConnectionRequest>,
 ) -> Result<impl IntoResponse, ConnectionError> {
     if req.location_type == LocationType::Cloud
         && let Some(ref account_id) = req.cloud_account_id
     {
-        let creds = state.db.env_snapshot(&placeholder_ctx(), std::slice::from_ref(account_id)).await;
+        let creds = state.db.env_snapshot(&ctx.as_ctx(), std::slice::from_ref(account_id)).await;
         if let Err(msg) = reader::list_files(&req.url, &creds).await {
             return Err(ConnectionError::ContainerNotFound(
                 format!("Cannot access container '{}': {msg}", req.url),
@@ -41,46 +43,50 @@ pub async fn create_connection(
         }
     }
 
-    match state.db.create_connection(&placeholder_ctx(), req).await {
+    match state.db.create_connection(&ctx.as_ctx(), req).await {
         Ok(connection) => Ok((StatusCode::CREATED, data_response(connection)).into_response()),
         Err(msg) => Err(ConnectionError::InvalidConnection(msg)),
     }
 }
 
 pub async fn get_connection(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    match state.db.get_connection(&placeholder_scoped(id.as_str())).await {
+    match state.db.get_connection(&ctx.scoped(id.as_str())).await {
         Some(connection) => Ok(data_response(connection).into_response()),
         None => Err(ConnectionError::NotFound),
     }
 }
 
 pub async fn update_connection(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<UpdateConnectionRequest>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    match state.db.update_connection(&placeholder_scoped(id.as_str()), req).await {
+    match state.db.update_connection(&ctx.scoped(id.as_str()), req).await {
         Ok(connection) => Ok(data_response(connection).into_response()),
         Err(msg) => Err(ConnectionError::InvalidConnection(msg)),
     }
 }
 
 pub async fn delete_connection(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    state.db.remove_connection(&placeholder_scoped(id.as_str())).await;
+    state.db.remove_connection(&ctx.scoped(id.as_str())).await;
     Ok(StatusCode::NO_CONTENT.into_response())
 }
 
 pub async fn list_connection_files(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    let connection = match state.db.get_connection(&placeholder_scoped(id.as_str())).await {
+    let connection = match state.db.get_connection(&ctx.scoped(id.as_str())).await {
         Some(s) => s,
         None => return Err(ConnectionError::NotFound),
     };
@@ -100,7 +106,7 @@ pub async fn list_connection_files(
         }
     };
 
-    let creds = state.db.env_snapshot(&placeholder_ctx(), std::slice::from_ref(&account_id)).await;
+    let creds = state.db.env_snapshot(&ctx.as_ctx(), std::slice::from_ref(&account_id)).await;
     match reader::list_files(&connection.url, &creds).await {
         Ok(files) => Ok(data_response(files).into_response()),
         Err(msg) => Err(ConnectionError::ListFilesFailed(msg)),

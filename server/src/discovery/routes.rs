@@ -13,7 +13,7 @@ use super::loader;
 use super::rdf_graph::RdfGraph;
 use crate::jobs::models::JobStatus;
 use super::rdf_format::RdfExportFormat;
-use crate::tenant::{placeholder_ctx, placeholder_scoped};
+use crate::middleware::tenant::RequireRole;
 
 #[derive(Deserialize)]
 pub struct SearchRequest {
@@ -29,6 +29,7 @@ pub struct ExpandRequest {
 }
 
 pub async fn search_nodes(
+    RequireRole(_ctx): RequireRole,
     State(state): State<AppState>,
     Json(req): Json<SearchRequest>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -47,6 +48,7 @@ pub async fn search_nodes(
 }
 
 pub async fn expand_node(
+    RequireRole(_ctx): RequireRole,
     State(state): State<AppState>,
     Json(req): Json<ExpandRequest>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -74,6 +76,7 @@ pub struct QueryRequest {
 }
 
 pub async fn query_discover(
+    RequireRole(_ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<QueryRequest>,
@@ -105,6 +108,7 @@ fn default_aggregation() -> String {
 }
 
 pub async fn chart_discover(
+    RequireRole(_ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<ChartRequest>,
@@ -162,10 +166,11 @@ fn build_chart_sparql(req: &ChartRequest) -> String {
 }
 
 pub async fn load_discover(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    let job = match state.db.get_job(&placeholder_scoped(id.as_str())).await {
+    let job = match state.db.get_job(&ctx.scoped(id.as_str())).await {
         Some(j) => j,
         None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
     };
@@ -188,7 +193,7 @@ pub async fn load_discover(
         return (StatusCode::BAD_REQUEST, Json(error_body("no_destinations", "Job has no output destinations"))).into_response();
     }
 
-    let creds = state.db.env_snapshot_all(&placeholder_ctx()).await;
+    let creds = state.db.env_snapshot_all(&ctx.as_ctx()).await;
     let mut all_triples = Vec::new();
 
     for dest_url in &destinations {
@@ -234,6 +239,7 @@ pub struct ExportQuery {
 }
 
 pub async fn export_discover(
+    RequireRole(_ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
     axum::extract::Query(query): axum::extract::Query<ExportQuery>,

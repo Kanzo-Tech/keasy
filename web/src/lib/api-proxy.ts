@@ -1,5 +1,4 @@
 const API_URL = process.env.KEASY_API_URL ?? "http://localhost:8080";
-const API_KEY = process.env.KEASY_API_KEY ?? "";
 
 type RouteCtx = { params: Promise<Record<string, string>> };
 
@@ -16,7 +15,9 @@ export function createHandler(
       res = await fetch(`${API_URL}/v1${path}${url.search}`, {
         method: req.method,
         headers: {
-          "X-Api-Key": API_KEY,
+          ...(req.headers.has("Cookie")
+            ? { Cookie: req.headers.get("Cookie")! }
+            : {}),
           ...(req.headers.has("Content-Type")
             ? { "Content-Type": req.headers.get("Content-Type")! }
             : {}),
@@ -32,15 +33,20 @@ export function createHandler(
       );
     }
 
-    return new Response(res.body, {
-      status: res.status,
-      headers: {
-        "Content-Type":
-          res.headers.get("Content-Type") ?? "application/json",
-        ...(res.headers.has("Content-Disposition")
-          ? { "Content-Disposition": res.headers.get("Content-Disposition")! }
-          : {}),
-      },
+    const responseHeaders = new Headers({
+      "Content-Type": res.headers.get("Content-Type") ?? "application/json",
     });
+    if (res.headers.has("Content-Disposition")) {
+      responseHeaders.set(
+        "Content-Disposition",
+        res.headers.get("Content-Disposition")!
+      );
+    }
+    // Forward all Set-Cookie headers (login/register set keasy.sid)
+    const setCookies = res.headers.getSetCookie?.() ?? [];
+    for (const cookie of setCookies) {
+      responseHeaders.append("Set-Cookie", cookie);
+    }
+    return new Response(res.body, { status: res.status, headers: responseHeaders });
   };
 }

@@ -20,6 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Tenant Context Middleware & RBAC** - Inject TenantContext on all requests, retrofit all queries with org scoping, enforce three-role RBAC (completed 2026-02-26)
 - [x] **Phase 5: Frontend Auth Pages & Session Management** - Login/register pages, Next.js route guards, session cookie flow, SWR 401 redirect (completed 2026-02-26)
 - [x] **Phase 6: Dataspace Switcher & Organization Management** - Connect sidebar to real user/org data, promotor control plane, invite token onboarding (completed 2026-02-26)
+- [ ] **Phase 6.1: Middleware Route Guard Fix** - Rename proxy.ts to middleware.ts, add /invite to PUBLIC_PATHS (gap closure)
 - [ ] **Phase 7: Frontend Architecture Cleanup** - TanStack Table for all list views, SWR standardization, EmptyState, route group layout, graph component unification
 - [ ] **Phase 8: Walt.id Integration & VC Auth Path** - Docker sidecar setup, OID4VP auth path, VC session creation, wallet connect flow
 - [ ] **Phase 9: Gaia-X Compliance Wizard** - Multi-step guided wizard: LRN → Participant → T&C → GXDCH submission; replace org settings with VC compliance management
@@ -126,6 +127,19 @@ Plans:
   - [ ] 06-02-PLAN.md — Sidebar data binding (SWR-fed AppSidebar, TeamSwitcher with role badges, NavUser with initials), dataspace switching, password change settings page
   - [ ] 06-03-PLAN.md — Promotor admin pages (create dataspace, org management), org admin user management, invite registration page
 
+### Phase 6.1: Middleware Route Guard Fix (INSERTED)
+
+**Goal:** Next.js middleware correctly intercepts unauthenticated requests and redirects to /login; the /invite page is accessible to unauthenticated users receiving invite tokens
+**Requirements**: USER-12, USER-06, USER-11
+**Depends on:** Phase 6
+**Gap Closure:** Closes integration breaks from v1.0 milestone audit
+**Success Criteria** (what must be TRUE):
+  1. `web/src/proxy.ts` exports `proxy` function with two-list path guard (AUTH_REDIRECT_PATHS + ALWAYS_PUBLIC_PATHS) — unauthenticated browser navigation to any protected route redirects to `/login?redirect=<path>`
+  2. `/invite` is in ALWAYS_PUBLIC_PATHS — an unauthenticated user visiting `/invite?token=...` sees the invite registration page, not a redirect to `/login`
+  3. After login, user is navigated to the `?redirect=` destination (validated as relative path) instead of always going to `/`
+**Plans:** 1 plan
+  - [ ] 06.1-01-PLAN.md — Two-list path guard in proxy.ts, redirect-after-login in login page
+
 ### Phase 7: Frontend Architecture Cleanup
 **Goal**: All list views use TanStack Table, all client data fetching uses SWR consistently, the component tree is organized with page-specific logic in route files, and discovery/job detail views are dedicated pages
 **Depends on**: Phase 5 (route group layout requires auth route groups from Phase 5, but most work is independent)
@@ -179,7 +193,8 @@ Each phase runs on its own git branch and merges into main via pull request befo
 | 3. Auth Routes & Session Middleware | 2/2 | Complete   | 2026-02-26 |
 | 4. Tenant Context Middleware & RBAC | 3/3 | Complete   | 2026-02-26 |
 | 5. Frontend Auth Pages & Session Management | 3/3 | Complete   | 2026-02-26 |
-| 6. Dataspace Switcher & Organization Management | 3/3 | Complete   | 2026-02-26 |
+| 6. Dataspace Switcher & Organization Management | 3/3 | Complete    | 2026-02-26 |
+| 6.1. Middleware Route Guard Fix | 0/TBD | Not started | - |
 | 7. Frontend Architecture Cleanup | 0/TBD | Not started | - |
 | 8. Walt.id Integration & VC Auth Path | 0/TBD | Not started | - |
 | 9. Gaia-X Compliance Wizard | 0/TBD | Not started | - |

@@ -35,8 +35,10 @@ async function throwResponseError(
   fallback: string
 ): Promise<never> {
   const body = await res.json().catch(() => null);
-  const code = body?.error?.code ?? "UNKNOWN";
-  const message = body?.error?.message ?? `${fallback} (${res.status})`;
+  // New flat format: { "error": "code", "message": "msg" }
+  // Old nested format: { "error": { "code": "...", "message": "..." } }
+  const code = (typeof body?.error === "string" ? body.error : body?.error?.code) ?? "unknown";
+  const message = (typeof body?.error === "string" ? body?.message : body?.error?.message) ?? `${fallback} (${res.status})`;
   throw new ApiError(code, message);
 }
 
@@ -47,7 +49,9 @@ async function request<T>(path: string, method: string, body?: unknown): Promise
   });
   if (!res.ok) await throwResponseError(res, "Request failed");
   if (res.status === 204) return undefined as T;
-  return res.json();
+  const json = await res.json();
+  // Unwrap { "data": ... } envelope if present
+  return json?.data !== undefined ? json.data : json;
 }
 
 const get = <T>(path: string) => request<T>(path, "GET");

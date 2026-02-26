@@ -88,15 +88,16 @@ pub async fn create_job(
 
     // Phase 1 placeholder org_id passed to runner — Phase 4 passes real session org_id
     use crate::db::seed::SEED_ORG_ID;
-    state.runner.spawn(
-        SEED_ORG_ID.to_string(),
-        id,
-        resolved.script,
-        resolved.storage,
+    use crate::job::runner::SpawnParams;
+    state.runner.spawn(SpawnParams {
+        org_id: SEED_ORG_ID.to_string(),
+        job_id: id,
+        script: resolved.script,
+        storage: resolved.storage,
         org_settings,
         dcat_enabled,
-        payload.dcat_format,
-    );
+        dcat_format: payload.dcat_format,
+    });
 
     (StatusCode::ACCEPTED, Json(job)).into_response()
 }

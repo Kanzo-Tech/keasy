@@ -22,6 +22,18 @@ use crate::script;
 use crate::settings::org::OrgSettings;
 use crate::tenant::{OrgId, TenantScoped};
 
+/// Parameters for spawning a job execution task.
+/// Introduced to fix clippy::too_many_arguments on JobRunner::spawn().
+pub struct SpawnParams {
+    pub org_id: String,
+    pub job_id: String,
+    pub script: String,
+    pub storage: StorageConfig,
+    pub org_settings: Option<OrgSettings>,
+    pub dcat_enabled: bool,
+    pub dcat_format: Option<String>,
+}
+
 pub struct JobRunner {
     db: Database,
     catalog: Arc<RdfGraph>,
@@ -51,18 +63,10 @@ impl JobRunner {
     }
 
     /// Spawn a job execution task.
-    /// `org_id` is the organization that owns this job. Phase 1 passes SEED_ORG_ID;
+    /// `params.org_id` is the organization that owns this job. Phase 1 passes SEED_ORG_ID;
     /// Phase 4 will pass the real session org_id from the request context.
-    pub fn spawn(
-        &self,
-        org_id: String,
-        job_id: String,
-        script: String,
-        storage: StorageConfig,
-        org_settings: Option<OrgSettings>,
-        dcat_enabled: bool,
-        dcat_format: Option<String>,
-    ) {
+    pub fn spawn(&self, params: SpawnParams) {
+        let SpawnParams { org_id, job_id, script, storage, org_settings, dcat_enabled, dcat_format } = params;
         let db = self.db.clone();
         let semaphore = self.semaphore.clone();
         let catalog = self.catalog.clone();

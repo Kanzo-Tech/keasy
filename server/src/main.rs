@@ -1,61 +1,16 @@
-mod ai;
-mod auth;
-mod cloud;
-mod config;
-mod connections;
-mod crypto;
-mod db;
-mod discovery;
-mod error;
-mod jobs;
-mod middleware;
-mod routes;
-mod settings;
-mod tenant;
+use keasy_server::{AppState, OutputCache, Database, JobRunner, RdfGraph, RateLimiter};
+use keasy_server::config::ServerConfig;
+use keasy_server::routes::build_router;
+use keasy_server::tenant::TenantScoped;
 
 use std::net::SocketAddr;
-use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::time::Duration;
 
-use secrecy::SecretString;
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 
-use config::ServerConfig;
-use db::Database;
-use discovery::rdf_graph::RdfGraph;
-use jobs::runner::JobRunner;
 use tower_sessions::ExpiredDeletion;
-
-pub struct OutputCache(lru::LruCache<String, Arc<RdfGraph>>);
-
-impl OutputCache {
-    pub fn new(cap: usize) -> Self {
-        Self(lru::LruCache::new(NonZeroUsize::new(cap).unwrap()))
-    }
-    pub fn get(&mut self, key: &str) -> Option<Arc<RdfGraph>> {
-        self.0.get(key).cloned()
-    }
-    pub fn insert(&mut self, key: String, graph: RdfGraph) -> Arc<RdfGraph> {
-        let arc = Arc::new(graph);
-        self.0.put(key, arc.clone());
-        arc
-    }
-    pub fn remove(&mut self, key: &str) {
-        self.0.pop(key);
-    }
-}
-
-#[derive(Clone)]
-pub struct AppState {
-    pub db: Database,
-    pub runner: Arc<JobRunner>,
-    pub catalog: Arc<RdfGraph>,
-    pub output_cache: Arc<Mutex<OutputCache>>,
-    pub api_key: SecretString,
-    pub rate_limiter: crate::auth::rate_limit::RateLimiter,
-}
 
 #[tokio::main]
 async fn main() {
@@ -100,9 +55,9 @@ async fn main() {
 
     let mut restored = 0usize;
     // Phase 1 placeholder — Phase 4 middleware will pass real session context
-    let catalog_ctx = tenant::TenantScoped::placeholder();
+    let catalog_ctx = TenantScoped::placeholder();
     for (job_id, turtle) in &db.completed_catalogs(&catalog_ctx).await {
-        match discovery::loader::parse_rdf_to_triples(turtle.as_bytes(), "catalog.ttl") {
+        match keasy_server::discovery::loader::parse_rdf_to_triples(turtle.as_bytes(), "catalog.ttl") {
             Ok(triples) => {
                 catalog.insert_triples(Some(&format!("urn:keasy:job:{job_id}")), &triples);
                 restored += 1;
@@ -136,7 +91,7 @@ async fn main() {
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
     );
 
-    let rate_limiter = crate::auth::rate_limit::RateLimiter::new();
+    let rate_limiter = RateLimiter::new();
 
     let output_cache = Arc::new(Mutex::new(OutputCache::new(config.cache_capacity)));
     let runner = Arc::new(JobRunner::new(
@@ -155,7 +110,7 @@ async fn main() {
         api_key: config.api_key,
         rate_limiter,
     };
-    let app = routes::build_router(state, config.cors_origins, session_store, config.session_secret);
+    let app = build_router(state, config.cors_origins, session_store, config.session_secret);
 
     let listener = match tokio::net::TcpListener::bind(config.bind_addr).await {
         Ok(l) => l,

@@ -55,6 +55,11 @@ fossil-stdlib = { git = "https://github.com/angelip2303/fossil-lang.git" }
 fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git" }
 fossil-ifc = { git = "https://github.com/angelip2303/fossil-lang.git" }
 
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+tempfile = "3"
+
 [profile.release]
 lto = "thin"
 panic = "abort"

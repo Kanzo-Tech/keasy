@@ -4,23 +4,25 @@ use tracing::error;
 use crate::job::errors::JobError;
 use crate::job::types::{Job, JobStatus, RunMode};
 use crate::pipeline::PipelineSummary;
+use crate::tenant::{TenantContext, TenantScoped};
 
 use super::Database;
 
 impl Database {
-    pub async fn insert_job(&self, job: &Job) {
+    pub async fn insert_job(&self, ctx: &TenantContext, job: &Job) {
         let status = serialize_status(&job.status);
         let mode = serialize_mode(&job.mode);
         let error_json = job.error.as_ref().map(|e| serde_json::to_string(e).unwrap());
         let pipeline_json = serde_json::to_string(&job.pipeline).unwrap();
         let account_ids_json = serde_json::to_string(&job.connection_ids).unwrap();
 
-        let conn = self.conn.lock().await;
+        let conn = self.write().await;
         if let Err(e) = conn.execute(
-            "INSERT INTO jobs (id, name, status, mode, created_at, started_at, completed_at, error, pipeline, catalog, connection_ids, script)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+            "INSERT INTO jobs (id, organization_id, name, status, mode, created_at, started_at, completed_at, error, pipeline, catalog, connection_ids, script)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
             params![
                 job.id,
+                ctx.org_id().as_str(),
                 job.name,
                 status,
                 mode,
@@ -38,19 +40,19 @@ impl Database {
         }
     }
 
-    pub async fn get_job(&self, id: &str) -> Option<Job> {
-        let conn = self.conn.lock().await;
+    pub async fn get_job(&self, ctx: &TenantScoped<&str>) -> Option<Job> {
+        let (_permit, conn) = self.read().await;
         conn.query_row(
             "SELECT id, name, status, mode, created_at, started_at, completed_at, error, pipeline, catalog, connection_ids, script
-             FROM jobs WHERE id = ?1",
-            [id],
+             FROM jobs WHERE id = ?1 AND organization_id = ?2",
+            params![ctx.inner(), ctx.org_id().as_str()],
             |row| Ok(row_to_job(row)),
         )
         .ok()
     }
 
-    pub async fn update_job(&self, id: &str, f: impl FnOnce(&mut Job)) -> Option<Job> {
-        let mut job = self.get_job(id).await?;
+    pub async fn update_job(&self, ctx: &TenantScoped<&str>, f: impl FnOnce(&mut Job)) -> Option<Job> {
+        let mut job = self.get_job(ctx).await?;
         f(&mut job);
 
         let status = serialize_status(&job.status);
@@ -58,10 +60,10 @@ impl Database {
         let pipeline_json = serde_json::to_string(&job.pipeline).unwrap();
         let account_ids_json = serde_json::to_string(&job.connection_ids).unwrap();
 
-        let conn = self.conn.lock().await;
+        let conn = self.write().await;
         if let Err(e) = conn.execute(
             "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, error = ?5, pipeline = ?6, catalog = ?7, connection_ids = ?8, script = ?9
-             WHERE id = ?10",
+             WHERE id = ?10 AND organization_id = ?11",
             params![
                 job.name,
                 status,
@@ -72,46 +74,50 @@ impl Database {
                 job.catalog,
                 account_ids_json,
                 job.script,
-                id,
+                ctx.inner(),
+                ctx.org_id().as_str(),
             ],
         ) {
-            error!(job_id = %id, error = %e, "failed to update job");
+            error!(job_id = %ctx.inner(), error = %e, "failed to update job");
         }
 
         Some(job)
     }
 
-    pub async fn list_jobs(&self) -> Vec<Job> {
-        let conn = self.conn.lock().await;
+    pub async fn list_jobs(&self, ctx: &TenantContext) -> Vec<Job> {
+        let (_permit, conn) = self.read().await;
         let mut stmt = conn
             .prepare(
                 "SELECT id, name, status, mode, created_at, started_at, completed_at, error, pipeline, catalog, connection_ids, script
-                 FROM jobs ORDER BY created_at DESC",
+                 FROM jobs WHERE organization_id = ?1 ORDER BY created_at DESC",
             )
             .expect("prepare list jobs");
-        stmt.query_map([], |row| Ok(row_to_job(row)))
+        stmt.query_map([ctx.org_id().as_str()], |row| Ok(row_to_job(row)))
             .expect("query jobs")
             .filter_map(|r| r.ok())
             .collect()
     }
 
-    pub async fn completed_catalogs(&self) -> Vec<(String, String)> {
-        let conn = self.conn.lock().await;
+    pub async fn completed_catalogs(&self, ctx: &TenantContext) -> Vec<(String, String)> {
+        let (_permit, conn) = self.read().await;
         let mut stmt = conn
             .prepare(
-                "SELECT id, catalog FROM jobs WHERE status = 'completed' AND catalog IS NOT NULL",
+                "SELECT id, catalog FROM jobs WHERE status = 'completed' AND catalog IS NOT NULL AND organization_id = ?1",
             )
             .expect("prepare completed_catalogs");
-        stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+        stmt.query_map([ctx.org_id().as_str()], |row| Ok((row.get(0)?, row.get(1)?)))
             .expect("query completed_catalogs")
             .filter_map(|r| r.ok())
             .collect()
     }
 
-    pub async fn remove_job(&self, id: &str) {
-        let conn = self.conn.lock().await;
-        if let Err(e) = conn.execute("DELETE FROM jobs WHERE id = ?1", [id]) {
-            error!(job_id = %id, error = %e, "failed to delete job");
+    pub async fn remove_job(&self, ctx: &TenantScoped<&str>) {
+        let conn = self.write().await;
+        if let Err(e) = conn.execute(
+            "DELETE FROM jobs WHERE id = ?1 AND organization_id = ?2",
+            params![ctx.inner(), ctx.org_id().as_str()],
+        ) {
+            error!(job_id = %ctx.inner(), error = %e, "failed to delete job");
         }
     }
 }

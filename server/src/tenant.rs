@@ -34,3 +34,17 @@ impl<T> TenantScoped<T> {
 
 /// Convenience: scoped unit — used when only org_id is needed (list queries).
 pub type TenantContext = TenantScoped<()>;
+
+impl TenantScoped<()> {
+    /// Temporary placeholder using seed org. Phase 4 replaces this with real session context.
+    pub fn placeholder() -> Self {
+        Self::new(OrgId(crate::db::seed::SEED_ORG_ID.to_string()), ())
+    }
+}
+
+impl<T: Clone> TenantScoped<T> {
+    /// Temporary placeholder scoped with seed org around a value. Phase 4 replaces this.
+    pub fn placeholder_with(inner: T) -> Self {
+        Self::new(OrgId(crate::db::seed::SEED_ORG_ID.to_string()), inner)
+    }
+}

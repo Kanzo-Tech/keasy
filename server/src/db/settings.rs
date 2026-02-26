@@ -11,7 +11,7 @@ const KNOWN_AI_PROVIDERS: &[&str] = &["anthropic", "openai"];
 
 impl Database {
     pub async fn get_setting<T: DeserializeOwned>(&self, key: &str) -> Option<T> {
-        let conn = self.conn.lock().await;
+        let (_permit, conn) = self.read().await;
         let json = conn
             .query_row(
                 "SELECT value FROM settings WHERE key = ?1",
@@ -24,7 +24,7 @@ impl Database {
 
     pub async fn set_setting<T: Serialize>(&self, key: &str, value: &T) {
         let json = serde_json::to_string(value).expect("serialize setting");
-        let conn = self.conn.lock().await;
+        let conn = self.write().await;
         let _ = conn.execute(
             "INSERT INTO settings (key, value) VALUES (?1, ?2)
              ON CONFLICT(key) DO UPDATE SET value = excluded.value",
@@ -33,7 +33,7 @@ impl Database {
     }
 
     pub async fn delete_setting(&self, key: &str) {
-        let conn = self.conn.lock().await;
+        let conn = self.write().await;
         let _ = conn.execute("DELETE FROM settings WHERE key = ?1", [key]);
     }
 

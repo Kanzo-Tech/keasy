@@ -7,12 +7,14 @@ use tracing::{info, warn};
 
 use crate::settings::schema::find_provider;
 use crate::settings::types::*;
+use crate::tenant::{TenantContext, TenantScoped};
 
 use super::Database;
 
 impl Database {
     pub async fn create_cloud_account(
         &self,
+        ctx: &TenantContext,
         request: CreateCloudAccountRequest,
     ) -> Result<CloudAccountSummary, String> {
         let schema = find_provider(&request.provider_id)
@@ -50,11 +52,11 @@ impl Database {
         let id = uuid::Uuid::new_v4().to_string();
         let fields_json = serde_json::to_string(&fields).unwrap();
 
-        let conn = self.conn.lock().await;
+        let conn = self.write().await;
         conn.execute(
-            "INSERT INTO cloud_accounts (id, name, provider_id, auth_method, fields)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![id, request.name, request.provider_id, request.auth_method, fields_json],
+            "INSERT INTO cloud_accounts (id, organization_id, name, provider_id, auth_method, fields)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![id, ctx.org_id().as_str(), request.name, request.provider_id, request.auth_method, fields_json],
         )
         .map_err(|e| format!("failed to insert cloud account: {e}"))?;
         drop(conn);
@@ -70,9 +72,9 @@ impl Database {
         })
     }
 
-    pub async fn get_cloud_account(&self, id: &str) -> Option<CloudAccount> {
-        let summary = self.get_cloud_account_summary(id).await?;
-        let secrets = self.decrypt_secrets_for_account(id).await;
+    pub async fn get_cloud_account(&self, ctx: &TenantScoped<&str>) -> Option<CloudAccount> {
+        let summary = self.get_cloud_account_summary(ctx).await?;
+        let secrets = self.decrypt_secrets_for_account(ctx.inner()).await;
         Some(CloudAccount {
             id: summary.id,
             name: summary.name,
@@ -83,11 +85,11 @@ impl Database {
         })
     }
 
-    pub async fn get_cloud_account_summary(&self, id: &str) -> Option<CloudAccountSummary> {
-        let conn = self.conn.lock().await;
+    pub async fn get_cloud_account_summary(&self, ctx: &TenantScoped<&str>) -> Option<CloudAccountSummary> {
+        let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, provider_id, auth_method, fields FROM cloud_accounts WHERE id = ?1",
-            [id],
+            "SELECT id, name, provider_id, auth_method, fields FROM cloud_accounts WHERE id = ?1 AND organization_id = ?2",
+            params![ctx.inner(), ctx.org_id().as_str()],
             |row| {
                 Ok(CloudAccountSummary {
                     id: row.get(0)?,
@@ -103,13 +105,13 @@ impl Database {
 
     pub async fn update_cloud_account(
         &self,
-        id: &str,
+        ctx: &TenantScoped<&str>,
         request: UpdateCloudAccountRequest,
     ) -> Result<CloudAccountSummary, String> {
         let account = self
-            .get_cloud_account(id)
+            .get_cloud_account(ctx)
             .await
-            .ok_or_else(|| format!("cloud account not found: {id}"))?;
+            .ok_or_else(|| format!("cloud account not found: {}", ctx.inner()))?;
 
         let name = request.name.unwrap_or(account.name);
         let auth_method = request.auth_method.or(account.auth_method);
@@ -138,18 +140,18 @@ impl Database {
             .map(|(k, v)| (k.as_str(), v.expose_secret()))
             .collect();
 
-        let conn = self.conn.lock().await;
+        let conn = self.write().await;
         conn.execute(
-            "UPDATE cloud_accounts SET name = ?1, auth_method = ?2, fields = ?3 WHERE id = ?4",
-            params![name, auth_method, fields_json, id],
+            "UPDATE cloud_accounts SET name = ?1, auth_method = ?2, fields = ?3 WHERE id = ?4 AND organization_id = ?5",
+            params![name, auth_method, fields_json, ctx.inner(), ctx.org_id().as_str()],
         )
         .map_err(|e| format!("failed to update cloud account: {e}"))?;
         drop(conn);
 
-        self.set_secret_json(&format!("cloud_account:{id}"), &secrets_plain).await;
+        self.set_secret_json(&format!("cloud_account:{}", ctx.inner()), &secrets_plain).await;
 
         Ok(CloudAccountSummary {
-            id: id.to_string(),
+            id: ctx.inner().to_string(),
             name,
             provider_id: account.provider_id,
             auth_method,
@@ -157,19 +159,23 @@ impl Database {
         })
     }
 
-    pub async fn remove_cloud_account(&self, id: &str) {
-        let conn = self.conn.lock().await;
-        let _ = conn.execute("DELETE FROM cloud_accounts WHERE id = ?1", [id]);
+    pub async fn remove_cloud_account(&self, ctx: &TenantScoped<&str>) {
+        let id = ctx.inner();
+        let conn = self.write().await;
+        let _ = conn.execute(
+            "DELETE FROM cloud_accounts WHERE id = ?1 AND organization_id = ?2",
+            params![id, ctx.org_id().as_str()],
+        );
         drop(conn);
         self.delete_secret(&format!("cloud_account:{id}")).await;
     }
 
-    pub async fn list_cloud_accounts(&self) -> Vec<CloudAccountSummary> {
-        let conn = self.conn.lock().await;
+    pub async fn list_cloud_accounts(&self, ctx: &TenantContext) -> Vec<CloudAccountSummary> {
+        let (_permit, conn) = self.read().await;
         let mut stmt = conn
-            .prepare("SELECT id, name, provider_id, auth_method, fields FROM cloud_accounts")
+            .prepare("SELECT id, name, provider_id, auth_method, fields FROM cloud_accounts WHERE organization_id = ?1")
             .expect("prepare list accounts");
-        stmt.query_map([], |row| {
+        stmt.query_map([ctx.org_id().as_str()], |row| {
             Ok(CloudAccountSummary {
                 id: row.get(0)?,
                 name: row.get(1)?,
@@ -183,10 +189,11 @@ impl Database {
         .collect()
     }
 
-    pub async fn build_storage_config(&self, account_ids: &[String]) -> StorageConfig {
+    pub async fn build_storage_config(&self, ctx: &TenantContext, account_ids: &[String]) -> StorageConfig {
         let mut env = HashMap::new();
         for id in account_ids {
-            if let Some(account) = self.get_cloud_account(id).await
+            let scoped = TenantScoped::placeholder_with(id.as_str());
+            if let Some(account) = self.get_cloud_account(&scoped).await
                 && let Some(schema) = find_provider(&account.provider_id)
             {
                 for field in schema.active_fields(account.auth_method.as_deref()) {
@@ -202,6 +209,7 @@ impl Database {
                 }
             }
         }
+        let _ = ctx; // org_id carried via placeholder_with; real session ctx used in Phase 4
         if !env.is_empty() {
             let keys: Vec<&str> = env.keys().map(|k| k.as_str()).collect();
             info!(count = env.len(), ?keys, "built storage config from cloud accounts");
@@ -209,13 +217,13 @@ impl Database {
         StorageConfig::new(env)
     }
 
-    pub async fn env_snapshot(&self, account_ids: &[String]) -> HashMap<String, String> {
-        self.build_storage_config(account_ids).await.as_map().clone()
+    pub async fn env_snapshot(&self, ctx: &TenantContext, account_ids: &[String]) -> HashMap<String, String> {
+        self.build_storage_config(ctx, account_ids).await.as_map().clone()
     }
 
-    pub async fn env_snapshot_all(&self) -> HashMap<String, String> {
-        let ids: Vec<_> = self.list_cloud_accounts().await.iter().map(|a| a.id.clone()).collect();
-        self.env_snapshot(&ids).await
+    pub async fn env_snapshot_all(&self, ctx: &TenantContext) -> HashMap<String, String> {
+        let ids: Vec<_> = self.list_cloud_accounts(ctx).await.iter().map(|a| a.id.clone()).collect();
+        self.env_snapshot(ctx, &ids).await
     }
 
     async fn decrypt_secrets_for_account(&self, id: &str) -> HashMap<String, SecretString> {

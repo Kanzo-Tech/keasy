@@ -8,7 +8,7 @@ pub mod secrets;
 pub mod settings;
 pub mod connections;
 pub mod users;
-mod seed;
+pub mod seed;
 
 use std::path::Path;
 use std::sync::Arc;

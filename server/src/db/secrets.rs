@@ -8,7 +8,7 @@ use super::Database;
 
 impl Database {
     pub async fn get_secret(&self, key: &str) -> Option<Vec<u8>> {
-        let conn = self.conn.lock().await;
+        let (_permit, conn) = self.read().await;
         let blob: Vec<u8> = conn
             .query_row(
                 "SELECT value FROM secrets WHERE key = ?1",
@@ -41,7 +41,7 @@ impl Database {
             None => plaintext.to_vec(),
         };
 
-        let conn = self.conn.lock().await;
+        let conn = self.write().await;
         if let Err(e) = conn.execute(
             "INSERT INTO secrets (key, value) VALUES (?1, ?2)
              ON CONFLICT(key) DO UPDATE SET value = excluded.value",
@@ -52,7 +52,7 @@ impl Database {
     }
 
     pub async fn delete_secret(&self, key: &str) {
-        let conn = self.conn.lock().await;
+        let conn = self.write().await;
         let _ = conn.execute("DELETE FROM secrets WHERE key = ?1", [key]);
     }
 
@@ -62,7 +62,7 @@ impl Database {
         if self.secret_key.is_none() {
             return true;
         }
-        let conn = self.conn.lock().await;
+        let (_permit, conn) = self.read().await;
         let key: Option<String> = conn
             .query_row("SELECT key FROM secrets LIMIT 1", [], |row| row.get(0))
             .ok();

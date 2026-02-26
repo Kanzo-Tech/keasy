@@ -15,7 +15,7 @@ Keasy is being upgraded from a single-tenant, single API-key system to a product
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: DB Schema & DAL Foundation** - Extend SQLite schema with users, organizations, dataspaces; add organization_id FK to all resource tables (completed 2026-02-26)
-- [ ] **Phase 2: API Architecture Refactor** - Data-driven design, module reorganization, dead code removal, structured error handling, split connection pools
+- [x] **Phase 2: API Architecture Refactor** - Data-driven design, module reorganization, dead code removal, structured error handling, split connection pools (completed 2026-02-26)
 - [ ] **Phase 3: Auth Routes & Session Middleware** - Argon2id password auth, register/login/logout endpoints, session middleware covering all routes
 - [ ] **Phase 4: Tenant Context Middleware & RBAC** - Inject TenantContext on all requests, retrofit all queries with org scoping, enforce three-role RBAC
 - [ ] **Phase 5: Frontend Auth Pages & Session Management** - Login/register pages, Next.js route guards, session cookie flow, SWR 401 redirect
@@ -150,7 +150,7 @@ Each phase runs on its own git branch and merges into main via pull request befo
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. DB Schema & DAL Foundation | 2/2 | Complete    | 2026-02-26 |
-| 2. API Architecture Refactor | 1/2 | In Progress|  |
+| 2. API Architecture Refactor | 2/2 | Complete   | 2026-02-26 |
 | 3. Auth Routes & Session Middleware | 0/TBD | Not started | - |
 | 4. Tenant Context Middleware & RBAC | 0/TBD | Not started | - |
 | 5. Frontend Auth Pages & Session Management | 0/TBD | Not started | - |

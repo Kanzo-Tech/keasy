@@ -30,7 +30,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **API-04**: All API routes (except /health, /login, /register) require authentication via session middleware at the top-level router
 - [ ] **API-05**: API returns 401 for unauthenticated requests and 403 for unauthorized requests, with consistent error shapes
 - [ ] **API-06**: Role-based access control enforced at API layer: promotor, org_admin, org_user roles checked per endpoint
-- [ ] **API-07**: All existing API routes reviewed: duplicates removed, dead code eliminated, legacy patterns replaced
+- [x] **API-07**: All existing API routes reviewed: duplicates removed, dead code eliminated, legacy patterns replaced
 - [x] **API-08**: Structured error handling with thiserror domain error types mapped to consistent HTTP status codes
 - [x] **API-09**: SQLite write pool split from read pool (max_connections=1 for writes) to prevent lock starvation
 - [x] **API-10**: API follows Rust best practices: data-driven design, favor impl over traits, clean module organization
@@ -120,7 +120,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | API-04 | Phase 3 | Pending |
 | API-05 | Phase 3 | Pending |
 | API-06 | Phase 4 | Pending |
-| API-07 | Phase 2 | Pending |
+| API-07 | Phase 2 | Complete |
 | API-08 | Phase 2 | Complete |
 | API-09 | Phase 2 | Complete |
 | API-10 | Phase 2 | Complete |

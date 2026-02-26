@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-02-26T11:16:22Z"
+last_updated: "2026-02-26T12:30:00Z"
 progress:
   total_phases: 9
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 2 of 9 (API Architecture Refactor)
-Plan: 1 of 2 in current phase (02-01 complete)
+Plan: 2 of 2 in current phase (02-02 complete — phase complete)
 Status: In progress
-Last activity: 2026-02-26 — Completed Plan 02-01: Error Foundation & Cross-Cutting Infrastructure — AppError enum, data_response helper, SpawnParams struct, frontend envelope-aware fetcher
+Last activity: 2026-02-26 — Completed Plan 02-02: API Domain Reorganization — domain-colocated folders (jobs, connections, cloud_accounts, conversations, graph, settings, validation), typed thiserror domain errors, data_response() envelope on all handlers, 204 DELETE, error_response() removed
 
-Progress: [███░░░░░░░] ~15%
+Progress: [████░░░░░░] ~20%
 
 ## Performance Metrics
 
@@ -41,7 +41,7 @@ Progress: [███░░░░░░░] ~15%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-db-schema-dal-foundation | 2 | 11 min | 5.5 min |
-| 02-api-architecture-refactor | 1 | 3 min | 3 min |
+| 02-api-architecture-refactor | 2 | 13 min | 6.5 min |
 
 **Recent Trend:**
 - Last 5 plans: 01-01 (4 min), 01-02 (7 min), 02-01 (3 min)
@@ -73,6 +73,9 @@ Recent decisions affecting current work:
 - Plan 02-01: data_response() helper wraps all successful payloads in { "data": ... } envelope
 - Plan 02-01: SpawnParams struct replaces 7-arg JobRunner::spawn() — eliminates clippy::too_many_arguments
 - Plan 02-01: Frontend request() backward-compatible — unwraps .data when present, falls through otherwise
+- Plan 02-02: Old JobError struct renamed to JobRuntimeError to avoid collision with new JobApiError thiserror enum
+- Plan 02-02: Domain errors (JobApiError, ConnectionError, CloudAccountError) each have IntoResponse — no generic AppError wrapping in route handlers
+- Plan 02-02: Route audit: GET /v1/graph and get_connection_by_name confirmed active and kept
 
 ### Pending Todos
 
@@ -86,5 +89,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Plan 02-01 (Error Foundation & Cross-Cutting Infrastructure) — AppError enum with IntoResponse, data_response helper, placeholder_ctx/scoped centralized in tenant.rs, SpawnParams struct, frontend envelope-aware fetcher; cargo check + tsc pass.
-Resume with: /gsd:execute-phase (next plan: 02-02 in phase 02-api-architecture-refactor)
+Stopped at: Completed Plan 02-02 (API Domain Reorganization) — domain-colocated folders for all resource domains, typed thiserror domain errors with IntoResponse, data_response() envelope on all handlers, 204 DELETE pattern, error_response() removed, cargo build + clippy pass.
+Resume with: /gsd:execute-phase (next phase: 03-auth-routes-session-middleware)

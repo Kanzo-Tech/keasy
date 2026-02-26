@@ -2,7 +2,7 @@ use rusqlite::params;
 
 use super::Database;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct Dataspace {
     pub id: String,
     pub name: String,
@@ -175,6 +175,20 @@ impl Database {
             row_to_user_org_membership,
         )
         .ok()
+    }
+
+    pub async fn remove_org_from_dataspace(
+        &self,
+        org_id: &str,
+        dataspace_id: &str,
+    ) -> Result<(), String> {
+        let conn = self.write().await;
+        conn.execute(
+            "DELETE FROM org_dataspace_memberships WHERE org_id = ?1 AND dataspace_id = ?2",
+            rusqlite::params![org_id, dataspace_id],
+        )
+        .map_err(|e| format!("failed to remove org-dataspace membership: {e}"))?;
+        Ok(())
     }
 
     pub async fn add_user_to_org(&self, membership: &UserOrgMembership) -> Result<(), String> {

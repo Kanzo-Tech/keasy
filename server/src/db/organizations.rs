@@ -2,7 +2,7 @@ use rusqlite::params;
 
 use super::Database;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct Organization {
     pub id: String,
     pub name: String,

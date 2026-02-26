@@ -1,11 +1,12 @@
 import type { ComponentType } from "react";
-import { SiGooglecloudstorage, SiAmazons3 } from "react-icons/si";
+import { SiAmazons3 } from "react-icons/si";
+import { SiGooglecloud } from "@icons-pack/react-simple-icons";
 import { Cloud } from "lucide-react";
 import { AzureIcon } from "@/components/icons/azure";
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   azure: AzureIcon,
-  gcp: SiGooglecloudstorage,
+  gcp: SiGooglecloud,
   s3: SiAmazons3,
 };
 

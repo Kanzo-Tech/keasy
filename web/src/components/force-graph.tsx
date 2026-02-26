@@ -86,8 +86,8 @@ export function ForceGraph({
 
   const drawDotGrid = useCallback(
     (ctx: CanvasRenderingContext2D) => {
-      const GAP = 16;
-      const DOT_RADIUS = 0.5;
+      const GAP = 24;
+      const DOT_RADIUS = 0.35;
 
       const { a, d, e, f } = ctx.getTransform();
       const left = -e / a;
@@ -98,13 +98,13 @@ export function ForceGraph({
       // Skip if zoomed out too far (performance guard)
       const cols = (right - left) / GAP;
       const rows = (bottom - top) / GAP;
-      if (cols * rows > 10000) return;
+      if (cols * rows > 15000) return;
 
       const startX = Math.floor(left / GAP) * GAP;
       const startY = Math.floor(top / GAP) * GAP;
 
       const isDark = document.documentElement.classList.contains("dark");
-      ctx.fillStyle = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
+      ctx.fillStyle = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
 
       ctx.beginPath();
       for (let x = startX; x <= right; x += GAP) {

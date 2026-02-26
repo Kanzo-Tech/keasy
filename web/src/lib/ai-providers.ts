@@ -1,5 +1,4 @@
-import { SiOpenai } from "react-icons/si";
-import { SiAnthropic } from "@icons-pack/react-simple-icons";
+import { SiOpenai, SiAnthropic } from "react-icons/si";
 import type { ComponentType } from "react";
 
 export interface AiProviderOption {

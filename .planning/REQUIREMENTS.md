@@ -29,7 +29,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **API-03**: User can log out, immediately invalidating their session
 - [x] **API-04**: All API routes (except /health, /login, /register) require authentication via session middleware at the top-level router
 - [x] **API-05**: API returns 401 for unauthenticated requests and 403 for unauthorized requests, with consistent error shapes
-- [ ] **API-06**: Role-based access control enforced at API layer: promotor, org_admin, org_user roles checked per endpoint
+- [x] **API-06**: Role-based access control enforced at API layer: promotor, org_admin, org_user roles checked per endpoint
 - [x] **API-07**: All existing API routes reviewed: duplicates removed, dead code eliminated, legacy patterns replaced
 - [x] **API-08**: Structured error handling with thiserror domain error types mapped to consistent HTTP status codes
 - [x] **API-09**: SQLite write pool split from read pool (max_connections=1 for writes) to prevent lock starvation
@@ -45,7 +45,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **USER-06**: Each participant organization has 1 admin user who manages their org's users
 - [ ] **USER-07**: Org admin can add users with read-only or read-write roles within their organization
 - [ ] **USER-08**: Org admin can remove users from their organization
-- [ ] **USER-09**: All resource queries (jobs, connections, cloud accounts, conversations) are tenant-scoped by organization_id
+- [x] **USER-09**: All resource queries (jobs, connections, cloud accounts, conversations) are tenant-scoped by organization_id
 - [ ] **USER-10**: User can change their own password (current + new + confirmation)
 - [ ] **USER-11**: Promotor can send email invite tokens to onboard org admins
 - [ ] **USER-12**: Frontend login page with email/password form and route guards (redirect unauthenticated users)
@@ -119,7 +119,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | API-03 | Phase 3 | Complete |
 | API-04 | Phase 3 | Complete |
 | API-05 | Phase 3 | Complete |
-| API-06 | Phase 4 | Pending |
+| API-06 | Phase 4 | Complete |
 | API-07 | Phase 2 | Complete |
 | API-08 | Phase 2 | Complete |
 | API-09 | Phase 2 | Complete |
@@ -132,7 +132,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | USER-06 | Phase 6 | Pending |
 | USER-07 | Phase 6 | Pending |
 | USER-08 | Phase 6 | Pending |
-| USER-09 | Phase 4 | Pending |
+| USER-09 | Phase 4 | Complete |
 | USER-10 | Phase 6 | Pending |
 | USER-11 | Phase 6 | Pending |
 | USER-12 | Phase 5 | Pending |

@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T14:37:29.205Z"
+last_updated: "2026-02-26T15:17:52.341Z"
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 4
-  total_plans: 9
-  completed_plans: 9
+  total_plans: 12
+  completed_plans: 10
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 03 of 9 (Auth Routes & Session Middleware) — FULLY COMPLETE (including gap closure)
-Plan: 3 of 3 in current phase (03-03 complete)
-Status: Phase 03 fully complete — security smoke test added (03-03 gap closure), all 44 protected routes assert 401, all 6 public routes assert non-401
-Last activity: 2026-02-26 — Completed Plan 03-03: Security smoke test (gap closure) — lib.rs re-exports, auth_smoke integration test
+Phase: 04 of 9 (Tenant Context Middleware & RBAC) — In Progress
+Plan: 1 of 3 complete (04-01 complete)
+Status: Phase 04 Plan 01 complete — TenantContext, TenantRole, RbacError, RBAC extractors, tenant middleware, set-dataspace endpoint wired
+Last activity: 2026-02-26 — Completed Plan 04-01: TenantContext foundation + set-active-dataspace endpoint
 
-Progress: [████████░░] ~45%
+Progress: [█████████░] ~50%
 
 ## Performance Metrics
 
@@ -50,6 +50,10 @@ Progress: [████████░░] ~45%
 - Trend: stable
 
 *Updated after each plan completion*
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| 04-tenant-context-middleware-rbac P01 | 1 | 15 min | 15 min |
 
 ## Accumulated Context
 
@@ -89,6 +93,8 @@ Recent decisions affecting current work:
 - [Phase 03-02]: api_key_auth kept with dead_code allow — reserved for future M2M API access, not applied to any routes
 - [Phase 03]: lib.rs uses pub mod for all modules; integration tests access keasy_server:: crate; main.rs imports from lib
 - [Phase 03]: auth_smoke test uses tower::ServiceExt::oneshot — no HTTP listener, pure in-process integration testing
+- [Phase 04-01]: DAL files updated to use TenantScoped<()> explicitly instead of old TenantContext alias to avoid name collision with new TenantContext struct
+- [Phase 04-01]: tenant.rs re-exports new TenantContext via pub use; placeholder_ctx/placeholder_scoped return TenantScoped<()> for backward compat until Plan 03 migration
 
 ### Pending Todos
 
@@ -106,5 +112,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Plan 03-03 (Security smoke test gap closure) — lib.rs re-exports, auth_smoke integration test covering 44 protected routes + 6 public routes. cargo test --test auth_smoke: 2 passed. cargo clippy -- -D warnings: clean. Phase 03 fully complete.
-Resume with: /gsd:execute-phase (Phase 04 — next phase)
+Stopped at: Completed Plan 04-01 — TenantContext foundation (TenantRole, RbacError, RequireRole/RequirePromotor/RequireOrgAdmin extractors, tenant_context_required middleware, set-active-dataspace + get_me endpoints). cargo test: 2 passed. cargo clippy -- -D warnings: clean.
+Resume with: /gsd:execute-phase (Phase 04 Plan 02 — wire router + route groups)

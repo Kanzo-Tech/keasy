@@ -14,6 +14,12 @@ use crate::auth::password;
 use crate::db::users::{User, UserStatus};
 use crate::error::data_response;
 
+/// POST /v1/auth/set-dataspace request body
+#[derive(serde::Deserialize)]
+pub struct SetDataspaceRequest {
+    pub dataspace_id: String,
+}
+
 /// POST /v1/auth/register
 ///
 /// Invite-only registration flow:
@@ -218,6 +224,86 @@ pub async fn login(
 
     // 8. Return 200 with user_id
     Ok(data_response(json!({ "user_id": user.id })))
+}
+
+/// POST /v1/auth/set-dataspace
+///
+/// Sets the active dataspace for the current session. Called after login
+/// before any resource access. Validates that the user's org is a member
+/// of the requested dataspace.
+///
+/// Protected by session_required but NOT tenant_context_required
+/// (chicken-and-egg: you need to set a dataspace before tenant context can resolve).
+pub async fn set_active_dataspace(
+    session: Session,
+    State(state): State<AppState>,
+    axum::Extension(auth_user): axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
+    Json(payload): Json<SetDataspaceRequest>,
+) -> Result<impl IntoResponse, AuthError> {
+    // 1. Get user's org membership
+    let membership = state
+        .db
+        .get_user_org_membership(&auth_user.user_id)
+        .await
+        .ok_or(AuthError::Forbidden)?;
+
+    // 2. Verify org is member of requested dataspace
+    let dataspaces = state.db.list_dataspaces_for_org(&membership.org_id).await;
+    if !dataspaces.iter().any(|ds| ds.id == payload.dataspace_id) {
+        return Err(AuthError::Forbidden);
+    }
+
+    // 3. Store in session
+    session
+        .insert("active_dataspace_id", &payload.dataspace_id)
+        .await
+        .map_err(|e| AuthError::Internal(format!("session insert: {e}")))?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// GET /v1/auth/me
+///
+/// Returns the authenticated user's profile, org, and available dataspaces.
+/// Protected by session_required but NOT tenant_context_required.
+pub async fn get_me(
+    session: Session,
+    State(state): State<AppState>,
+    axum::Extension(auth_user): axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
+) -> Result<impl IntoResponse, AuthError> {
+    let user = state
+        .db
+        .get_user(&auth_user.user_id)
+        .await
+        .ok_or(AuthError::Forbidden)?;
+
+    let membership = state.db.get_user_org_membership(&auth_user.user_id).await;
+    let (org, dataspaces) = match &membership {
+        Some(m) => {
+            let org = state.db.get_organization(&m.org_id).await;
+            let ds = state.db.list_dataspaces_for_org(&m.org_id).await;
+            (org, ds)
+        }
+        None => (None, vec![]),
+    };
+    let active_dataspace_id: Option<String> =
+        session.get::<String>("active_dataspace_id").await.ok().flatten();
+
+    Ok(data_response(json!({
+        "user_id": user.id,
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "org": org.map(|o| json!({
+            "id": o.id,
+            "name": o.name,
+        })),
+        "dataspaces": dataspaces.iter().map(|ds| json!({
+            "id": ds.id,
+            "name": ds.name,
+        })).collect::<Vec<_>>(),
+        "active_dataspace_id": active_dataspace_id,
+    })))
 }
 
 /// POST /v1/auth/logout

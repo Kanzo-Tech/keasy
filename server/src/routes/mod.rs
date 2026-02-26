@@ -11,6 +11,7 @@ use tower_sessions::{cookie::{Key, SameSite}, SessionManagerLayer};
 
 use crate::AppState;
 use crate::middleware::session_auth::session_required;
+use crate::middleware::tenant::tenant_context_required;
 
 pub fn build_router(
     state: AppState,
@@ -61,11 +62,20 @@ pub fn build_router(
         )
         .with_state(state.clone());
 
-    // Logout requires a valid session
-    let logout_route = Router::new()
+    // Session-authenticated routes (session required, NO tenant context required)
+    // These routes need the user to be logged in but do not need an active dataspace.
+    let session_auth_routes = Router::new()
         .route(
             "/v1/auth/logout",
             axum::routing::post(crate::auth::routes::logout),
+        )
+        .route(
+            "/v1/auth/set-dataspace",
+            axum::routing::post(crate::auth::routes::set_active_dataspace),
+        )
+        .route(
+            "/v1/auth/me",
+            axum::routing::get(crate::auth::routes::get_me),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),
@@ -204,7 +214,11 @@ pub fn build_router(
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),
-            session_required,
+            tenant_context_required, // runs second (inner), after session_required
+        ))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            session_required, // runs first (outer)
         ))
         .with_state(state);
 
@@ -230,7 +244,7 @@ pub fn build_router(
         .merge(health_routes)
         .merge(public_api_routes)
         .merge(auth_routes)
-        .merge(logout_route)
+        .merge(session_auth_routes)
         .merge(api_routes)
         .layer(session_layer)
         .layer(cors)

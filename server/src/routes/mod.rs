@@ -2,15 +2,37 @@ pub mod health;
 pub mod providers;
 pub mod scripts;
 
-use axum::{Router, middleware};
+use axum::{middleware, Router};
 use axum::extract::DefaultBodyLimit;
+use secrecy::ExposeSecret;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
+use tower_sessions::{cookie::{Key, SameSite}, SessionManagerLayer};
 
 use crate::AppState;
-use crate::middleware::auth::api_key_auth;
+use crate::middleware::session_auth::session_required;
 
-pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Router {
+pub fn build_router(
+    state: AppState,
+    cors_origins: Option<Vec<String>>,
+    session_store: tower_sessions_rusqlite_store::RusqliteStore,
+    session_secret: secrecy::SecretString,
+) -> Router {
+    // Build the session layer with signed cookies
+    // Key::from requires at least 64 bytes — derive from the session secret
+    let key_bytes = derive_session_key(session_secret.expose_secret().as_bytes());
+    let key = Key::from(&key_bytes);
+
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_name("keasy.sid")
+        .with_http_only(true)
+        .with_same_site(SameSite::Lax)
+        .with_secure(false) // TODO: make configurable via env var; false for local dev
+        .with_expiry(tower_sessions::Expiry::OnInactivity(
+            time::Duration::hours(24),
+        ))
+        .with_signed(key);
+
     let health_routes = Router::new()
         .route("/healthz/live", axum::routing::get(health::liveness))
         .route("/healthz/ready", axum::routing::get(health::readiness))
@@ -27,10 +49,36 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
         )
         .with_state(state.clone());
 
+    // Public auth routes (no session middleware)
+    let auth_routes = Router::new()
+        .route(
+            "/v1/auth/register",
+            axum::routing::post(crate::auth::routes::register),
+        )
+        .route(
+            "/v1/auth/login",
+            axum::routing::post(crate::auth::routes::login),
+        )
+        .with_state(state.clone());
+
+    // Logout requires a valid session
+    let logout_route = Router::new()
+        .route(
+            "/v1/auth/logout",
+            axum::routing::post(crate::auth::routes::logout),
+        )
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            session_required,
+        ))
+        .with_state(state.clone());
+
+    // All existing API routes now protected by session_required
     let api_routes = Router::new()
         .route(
             "/v1/jobs",
-            axum::routing::get(crate::jobs::routes::list_jobs).post(crate::jobs::routes::create_job),
+            axum::routing::get(crate::jobs::routes::list_jobs)
+                .post(crate::jobs::routes::create_job),
         )
         .route(
             "/v1/jobs/{id}",
@@ -50,7 +98,10 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
             "/v1/jobs/{id}/graph",
             axum::routing::get(crate::jobs::routes::get_job_graph),
         )
-        .route("/v1/graph", axum::routing::get(crate::jobs::routes::get_unified_graph))
+        .route(
+            "/v1/graph",
+            axum::routing::get(crate::jobs::routes::get_unified_graph),
+        )
         .route(
             "/v1/scripts/validate",
             axum::routing::post(scripts::validate_script),
@@ -153,16 +204,13 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),
-            api_key_auth,
+            session_required,
         ))
         .with_state(state);
 
     let cors = match cors_origins {
         Some(origins) => {
-            let origins: Vec<_> = origins
-                .iter()
-                .filter_map(|o| o.parse().ok())
-                .collect();
+            let origins: Vec<_> = origins.iter().filter_map(|o| o.parse().ok()).collect();
             CorsLayer::new()
                 .allow_origin(origins)
                 .allow_methods(Any)
@@ -174,11 +222,32 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
             .allow_headers(Any),
     };
 
+    // IMPORTANT: session_layer MUST be outermost (applied after all merges).
+    // In axum, layers applied last wrap outermost. session_required middleware
+    // (applied inside api_routes) can access Session because session_layer
+    // processes the request first.
     Router::new()
         .merge(health_routes)
         .merge(public_api_routes)
+        .merge(auth_routes)
+        .merge(logout_route)
         .merge(api_routes)
+        .layer(session_layer)
         .layer(cors)
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024))
         .layer(TraceLayer::new_for_http())
+}
+
+/// Derive a 64-byte key from an arbitrary-length session secret using PBKDF2-SHA256.
+/// Key::from() requires at least 64 bytes; this ensures we always provide exactly 64.
+fn derive_session_key(secret: &[u8]) -> [u8; 64] {
+    use sha2::Sha256;
+    use pbkdf2::hmac::Hmac;
+
+    let mut key = [0u8; 64];
+    // Use a fixed salt — the secret itself provides uniqueness.
+    // This is a deterministic KDF, not password hashing, so a fixed salt is acceptable.
+    pbkdf2::pbkdf2::<Hmac<Sha256>>(secret, b"keasy-session-key-derivation", 1, &mut key)
+        .expect("PBKDF2 key derivation must not fail for 64-byte output");
+    key
 }

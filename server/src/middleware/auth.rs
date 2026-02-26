@@ -11,6 +11,7 @@ use subtle::ConstantTimeEq;
 use crate::AppState;
 use crate::error::error_body;
 
+#[allow(dead_code)]
 pub async fn api_key_auth(
     State(state): State<AppState>,
     request: Request,
@@ -30,10 +31,12 @@ pub async fn api_key_auth(
     }
 }
 
+#[allow(dead_code)]
 fn constant_time_eq(a: &str, b: &str) -> bool {
     a.as_bytes().ct_eq(b.as_bytes()).into()
 }
 
+#[allow(dead_code)]
 fn extract_key(headers: &axum::http::HeaderMap) -> Option<&str> {
     if let Some(val) = headers.get("x-api-key") {
         return val.to_str().ok();

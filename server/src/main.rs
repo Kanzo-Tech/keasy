@@ -13,6 +13,7 @@ mod routes;
 mod settings;
 mod tenant;
 
+use std::net::SocketAddr;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::time::Duration;
@@ -25,6 +26,7 @@ use config::ServerConfig;
 use db::Database;
 use discovery::rdf_graph::RdfGraph;
 use jobs::runner::JobRunner;
+use tower_sessions::ExpiredDeletion;
 
 pub struct OutputCache(lru::LruCache<String, Arc<RdfGraph>>);
 
@@ -52,6 +54,7 @@ pub struct AppState {
     pub catalog: Arc<RdfGraph>,
     pub output_cache: Arc<Mutex<OutputCache>>,
     pub api_key: SecretString,
+    pub rate_limiter: crate::auth::rate_limit::RateLimiter,
 }
 
 #[tokio::main]
@@ -111,6 +114,30 @@ async fn main() {
         info!(count = restored, "Restored catalogs into graph store");
     }
 
+    // Session store — separate tokio-rusqlite connection (safe in WAL mode).
+    // tower-sessions-rusqlite-store manages its own schema via migrate().
+    // Access tokio_rusqlite through the re-export from tower-sessions-rusqlite-store.
+    let session_conn = tower_sessions_rusqlite_store::tokio_rusqlite::Connection::open(&db_path)
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!("FATAL: Failed to open session store connection: {e}");
+            std::process::exit(1);
+        });
+    let session_store = tower_sessions_rusqlite_store::RusqliteStore::new(session_conn);
+    session_store.migrate().await.unwrap_or_else(|e| {
+        eprintln!("FATAL: Failed to migrate session store: {e}");
+        std::process::exit(1);
+    });
+
+    // Background task: continuously delete expired sessions (every 60 seconds)
+    let deletion_task = tokio::task::spawn(
+        session_store
+            .clone()
+            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
+    );
+
+    let rate_limiter = crate::auth::rate_limit::RateLimiter::new();
+
     let output_cache = Arc::new(Mutex::new(OutputCache::new(config.cache_capacity)));
     let runner = Arc::new(JobRunner::new(
         db.clone(),
@@ -126,8 +153,9 @@ async fn main() {
         catalog,
         output_cache,
         api_key: config.api_key,
+        rate_limiter,
     };
-    let app = routes::build_router(state, config.cors_origins);
+    let app = routes::build_router(state, config.cors_origins, session_store, config.session_secret);
 
     let listener = match tokio::net::TcpListener::bind(config.bind_addr).await {
         Ok(l) => l,
@@ -139,15 +167,19 @@ async fn main() {
 
     info!(addr = %config.bind_addr, "Keasy server listening");
 
-    if let Err(e) = axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
+    if let Err(e) = axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
     {
         eprintln!("FATAL: Server error: {e}");
         std::process::exit(1);
     }
 
     runner.shutdown(shutdown_grace).await;
+    deletion_task.abort();
 }
 
 async fn shutdown_signal() {

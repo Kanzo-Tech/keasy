@@ -8,23 +8,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::AppState;
 use crate::cloud::reader;
+use crate::error::{AppError, data_response, error_body};
 use crate::graph::loader;
 use crate::graph::rdf_graph::RdfGraph;
-use crate::job::types::JobStatus;
+use crate::jobs::models::JobStatus;
 use crate::rdf::format::RdfExportFormat;
-use crate::tenant::TenantScoped;
-
-use super::error_response;
-
-/// Phase 1 placeholder — Phase 4 middleware replaces this with real session context.
-fn placeholder_ctx() -> crate::tenant::TenantContext {
-    TenantScoped::placeholder()
-}
-
-/// Phase 1 placeholder scoped around a value — Phase 4 middleware replaces this.
-fn placeholder_scoped<T: Clone>(inner: T) -> TenantScoped<T> {
-    TenantScoped::placeholder_with(inner)
-}
+use crate::tenant::{placeholder_ctx, placeholder_scoped};
 
 #[derive(Deserialize)]
 pub struct SearchRequest {
@@ -42,33 +31,33 @@ pub struct ExpandRequest {
 pub async fn search_nodes(
     State(state): State<AppState>,
     Json(req): Json<SearchRequest>,
-) -> Response {
+) -> Result<impl IntoResponse, AppError> {
     let limit = req.limit.unwrap_or(50).min(200);
     let query = req.query.unwrap_or_default();
 
     if let Some(job_id) = &req.job_id {
         let graph = get_cached_graph(&state, job_id).await;
         match graph {
-            Some(g) => Json(g.search_nodes(&query, limit)).into_response(),
-            None => not_loaded_error(),
+            Some(g) => Ok(data_response(g.search_nodes(&query, limit)).into_response()),
+            None => Err(AppError::BadRequest("not_loaded: Output data for this job is not loaded. Call /discover/load first.".to_string())),
         }
     } else {
-        Json(state.catalog.search_nodes(&query, limit)).into_response()
+        Ok(data_response(state.catalog.search_nodes(&query, limit)).into_response())
     }
 }
 
 pub async fn expand_node(
     State(state): State<AppState>,
     Json(req): Json<ExpandRequest>,
-) -> Response {
+) -> Result<impl IntoResponse, AppError> {
     if let Some(job_id) = &req.job_id {
         let graph = get_cached_graph(&state, job_id).await;
         match graph {
-            Some(g) => Json(g.expand_node(&req.node_id)).into_response(),
-            None => not_loaded_error(),
+            Some(g) => Ok(data_response(g.expand_node(&req.node_id)).into_response()),
+            None => Err(AppError::BadRequest("not_loaded: Output data for this job is not loaded. Call /discover/load first.".to_string())),
         }
     } else {
-        Json(state.catalog.expand_node(&req.node_id)).into_response()
+        Ok(data_response(state.catalog.expand_node(&req.node_id)).into_response())
     }
 }
 
@@ -94,8 +83,11 @@ pub async fn query_discover(
         None => return not_loaded_error(),
     };
     match graph.sparql_select(&req.sparql) {
-        Ok(data) => Json(data).into_response(),
-        Err(msg) => error_response(StatusCode::BAD_REQUEST, "SPARQL_ERROR", msg),
+        Ok(data) => data_response(data).into_response(),
+        Err(msg) => (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("sparql_error", msg)),
+        ).into_response(),
     }
 }
 
@@ -123,8 +115,11 @@ pub async fn chart_discover(
     };
     let sparql = build_chart_sparql(&req);
     match graph.sparql_select(&sparql) {
-        Ok(data) => Json(data).into_response(),
-        Err(msg) => error_response(StatusCode::BAD_REQUEST, "SPARQL_ERROR", msg),
+        Ok(data) => data_response(data).into_response(),
+        Err(msg) => (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("sparql_error", msg)),
+        ).into_response(),
     }
 }
 
@@ -172,25 +167,25 @@ pub async fn load_discover(
 ) -> Response {
     let job = match state.db.get_job(&placeholder_scoped(id.as_str())).await {
         Some(j) => j,
-        None => return error_response(StatusCode::NOT_FOUND, "NOT_FOUND", "Job not found"),
+        None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
     };
 
     if job.status != JobStatus::Completed {
-        return error_response(StatusCode::BAD_REQUEST, "NOT_COMPLETED", "Job is not completed yet");
+        return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
     }
 
     if let Some(graph) = get_cached_graph(&state, &id).await {
         let count = graph.triple_count(None);
         if count > 0 {
             let subjects = graph.subject_count();
-            return Json(LoadDiscoverResponse { loaded: true, triple_count: count, subject_count: subjects }).into_response();
+            return data_response(LoadDiscoverResponse { loaded: true, triple_count: count, subject_count: subjects }).into_response();
         }
     }
 
     let destinations: Vec<String> = job.pipeline.outputs.iter().filter_map(|o| o.destination.clone()).collect();
 
     if destinations.is_empty() {
-        return error_response(StatusCode::BAD_REQUEST, "NO_DESTINATIONS", "Job has no output destinations");
+        return (StatusCode::BAD_REQUEST, Json(error_body("no_destinations", "Job has no output destinations"))).into_response();
     }
 
     let creds = state.db.env_snapshot_all(&placeholder_ctx()).await;
@@ -200,20 +195,20 @@ pub async fn load_discover(
         let bytes = match reader::download(dest_url, &creds).await {
             Ok(b) => b,
             Err(msg) => {
-                return error_response(
-                    StatusCode::BAD_GATEWAY, "CLOUD_ERROR",
-                    format!("Failed to download {dest_url}: {msg}"),
-                );
+                return (
+                    StatusCode::BAD_GATEWAY,
+                    Json(error_body("cloud_error", format!("Failed to download {dest_url}: {msg}"))),
+                ).into_response();
             }
         };
 
         let triples = match loader::parse_rdf_to_triples(&bytes, dest_url) {
             Ok(t) => t,
             Err(msg) => {
-                return error_response(
-                    StatusCode::UNPROCESSABLE_ENTITY, "PARSE_ERROR",
-                    format!("Failed to parse {dest_url}: {msg}"),
-                );
+                return (
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    Json(error_body("parse_error", format!("Failed to parse {dest_url}: {msg}"))),
+                ).into_response();
             }
         };
 
@@ -230,7 +225,7 @@ pub async fn load_discover(
         cache.insert(id, graph);
     }
 
-    Json(LoadDiscoverResponse { loaded: true, triple_count: total, subject_count: subjects }).into_response()
+    data_response(LoadDiscoverResponse { loaded: true, triple_count: total, subject_count: subjects }).into_response()
 }
 
 #[derive(Deserialize)]
@@ -255,7 +250,7 @@ pub async fn export_discover(
         .transpose()
     {
         Ok(f) => f.unwrap_or(RdfExportFormat::Turtle),
-        Err(err) => return error_response(StatusCode::BAD_REQUEST, "INVALID_FORMAT", err),
+        Err(err) => return (StatusCode::BAD_REQUEST, Json(error_body("invalid_format", err))).into_response(),
     };
 
     match graph.serialize_to_format(format) {
@@ -271,7 +266,7 @@ pub async fn export_discover(
             )
                 .into_response()
         }
-        Err(err) => error_response(StatusCode::INTERNAL_SERVER_ERROR, "SERIALIZATION_ERROR", err),
+        Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("serialization_error", err))).into_response(),
     }
 }
 
@@ -281,9 +276,9 @@ async fn get_cached_graph(state: &AppState, job_id: &str) -> Option<Arc<RdfGraph
 }
 
 fn not_loaded_error() -> Response {
-    error_response(
+    (
         StatusCode::BAD_REQUEST,
-        "NOT_LOADED",
-        "Output data for this job is not loaded. Call /discover/load first.",
+        Json(error_body("not_loaded", "Output data for this job is not loaded. Call /discover/load first.")),
     )
+        .into_response()
 }

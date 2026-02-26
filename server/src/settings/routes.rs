@@ -7,22 +7,21 @@ use axum::{
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::AppState;
+use crate::error::{data_response, error_body};
 use crate::settings::ai::{AiSettings, AiSettingsPayload};
 use crate::settings::org::OrgSettings;
 use crate::settings::preferences::Preferences;
 use crate::settings::schema::PROVIDER_REGISTRY;
 
-use super::error_response;
-
 const KNOWN_PROVIDERS: &[&str] = &["anthropic", "openai"];
 
 pub async fn get_schema() -> impl IntoResponse {
-    Json(PROVIDER_REGISTRY)
+    data_response(PROVIDER_REGISTRY)
 }
 
 pub async fn get_org_settings(State(state): State<AppState>) -> Response {
     match state.db.get_org_settings().await {
-        Some(settings) => (StatusCode::OK, Json(settings)).into_response(),
+        Some(settings) => data_response(settings).into_response(),
         None => StatusCode::NO_CONTENT.into_response(),
     }
 }
@@ -32,14 +31,17 @@ pub async fn save_org_settings(
     Json(payload): Json<OrgSettings>,
 ) -> Response {
     if payload.publisher_name.trim().is_empty() {
-        return error_response(StatusCode::BAD_REQUEST, "validation_error", "publisher_name is required");
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("validation_error", "publisher_name is required")),
+        ).into_response();
     }
     state.db.set_org_settings(&payload).await;
-    (StatusCode::OK, Json(payload)).into_response()
+    data_response(payload).into_response()
 }
 
 pub async fn get_preferences(State(state): State<AppState>) -> impl IntoResponse {
-    Json(state.db.get_preferences().await)
+    data_response(state.db.get_preferences().await)
 }
 
 pub async fn save_preferences(
@@ -54,17 +56,20 @@ pub async fn save_preferences(
         (&payload.mono_font_size, "mono_font_size"),
     ] {
         if val.trim().is_empty() {
-            return error_response(StatusCode::BAD_REQUEST, "validation_error", format!("{name} is required"));
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(error_body("validation_error", format!("{name} is required"))),
+            ).into_response();
         }
     }
     state.db.set_preferences(&payload).await;
-    (StatusCode::OK, Json(payload)).into_response()
+    data_response(payload).into_response()
 }
 
-pub async fn list_ai_providers(State(state): State<AppState>) -> Response {
+pub async fn list_ai_providers(State(state): State<AppState>) -> impl IntoResponse {
     let providers = state.db.list_ai_providers().await;
     let payloads: Vec<AiSettingsPayload> = providers.iter().map(to_payload).collect();
-    Json(payloads).into_response()
+    data_response(payloads)
 }
 
 pub async fn save_ai_provider(
@@ -73,7 +78,10 @@ pub async fn save_ai_provider(
     Json(payload): Json<AiSettingsPayload>,
 ) -> Response {
     if !KNOWN_PROVIDERS.contains(&provider_id.as_str()) {
-        return error_response(StatusCode::BAD_REQUEST, "validation_error", "Unknown provider");
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("validation_error", "Unknown provider")),
+        ).into_response();
     }
 
     let api_key = if payload.api_key.is_empty() {
@@ -92,7 +100,7 @@ pub async fn save_ai_provider(
     };
     state.db.set_ai_provider(&provider_id, &settings).await;
 
-    (StatusCode::OK, Json(to_payload(&settings))).into_response()
+    data_response(to_payload(&settings)).into_response()
 }
 
 pub async fn delete_ai_provider(
@@ -100,7 +108,10 @@ pub async fn delete_ai_provider(
     Path(provider_id): Path<String>,
 ) -> Response {
     if !KNOWN_PROVIDERS.contains(&provider_id.as_str()) {
-        return error_response(StatusCode::BAD_REQUEST, "validation_error", "Unknown provider");
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("validation_error", "Unknown provider")),
+        ).into_response();
     }
     state.db.delete_ai_provider(&provider_id).await;
     StatusCode::NO_CONTENT.into_response()

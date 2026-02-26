@@ -5,23 +5,12 @@ use axum::Json;
 use rudof_rdf::rdf_core::RDFFormat;
 
 use crate::cloud::reader;
-use crate::settings::types::LocationType;
-use crate::tenant::TenantScoped;
+use crate::connections::models::LocationType;
+use crate::error::error_body;
+use crate::tenant::{placeholder_ctx, placeholder_scoped};
 use crate::validation::types::{ShapeFormat, ValidationRequest};
 use crate::validation::ValidatableGraph;
 use crate::AppState;
-
-use super::error_response;
-
-/// Phase 1 placeholder — Phase 4 middleware replaces this with real session context.
-fn placeholder_ctx() -> crate::tenant::TenantContext {
-    TenantScoped::placeholder()
-}
-
-/// Phase 1 placeholder scoped around a value — Phase 4 middleware replaces this.
-fn placeholder_scoped<T: Clone>(inner: T) -> TenantScoped<T> {
-    TenantScoped::placeholder_with(inner)
-}
 
 pub async fn validate_job(
     State(state): State<AppState>,
@@ -30,30 +19,27 @@ pub async fn validate_job(
     let connection = match state.db.get_connection(&placeholder_scoped(req.connection_id.as_str())).await {
         Some(s) => s,
         None => {
-            return error_response(
+            return (
                 StatusCode::NOT_FOUND,
-                "NOT_FOUND",
-                "Connection not found",
-            )
+                Json(error_body("not_found", "Connection not found")),
+            ).into_response()
         }
     };
 
     if connection.location_type == LocationType::Local {
-        return error_response(
+        return (
             StatusCode::BAD_REQUEST,
-            "UNSUPPORTED",
-            "Validation from local connections is not yet supported",
-        );
+            Json(error_body("unsupported", "Validation from local connections is not yet supported")),
+        ).into_response();
     }
 
     let account_id = match &connection.cloud_account_id {
         Some(id) => id.clone(),
         None => {
-            return error_response(
+            return (
                 StatusCode::BAD_REQUEST,
-                "NO_ACCOUNT",
-                "Connection has no cloud account",
-            )
+                Json(error_body("no_account", "Connection has no cloud account")),
+            ).into_response()
         }
     };
 
@@ -62,11 +48,10 @@ pub async fn validate_job(
     let data_bytes = match reader::download(&req.data_url, &creds).await {
         Ok(bytes) => bytes,
         Err(msg) => {
-            return error_response(
+            return (
                 StatusCode::BAD_GATEWAY,
-                "CLOUD_ERROR",
-                format!("Failed to download output data: {msg}"),
-            )
+                Json(error_body("cloud_error", format!("Failed to download output data: {msg}"))),
+            ).into_response()
         }
     };
 
@@ -78,22 +63,20 @@ pub async fn validate_job(
     let shape_bytes = match reader::download(&shape_url, &creds).await {
         Ok(bytes) => bytes,
         Err(msg) => {
-            return error_response(
+            return (
                 StatusCode::BAD_GATEWAY,
-                "CLOUD_ERROR",
-                format!("Failed to download shape file: {msg}"),
-            )
+                Json(error_body("cloud_error", format!("Failed to download shape file: {msg}"))),
+            ).into_response()
         }
     };
 
     let shape_content = match String::from_utf8(shape_bytes) {
         Ok(s) => s,
         Err(_) => {
-            return error_response(
+            return (
                 StatusCode::BAD_REQUEST,
-                "INVALID_FILE",
-                "Shape file is not valid UTF-8",
-            )
+                Json(error_body("invalid_file", "Shape file is not valid UTF-8")),
+            ).into_response()
         }
     };
 
@@ -103,11 +86,10 @@ pub async fn validate_job(
     } else if path_lower.ends_with(".ttl") {
         ShapeFormat::Shacl
     } else {
-        return error_response(
+        return (
             StatusCode::BAD_REQUEST,
-            "UNSUPPORTED_FORMAT",
-            "Unsupported shape file extension. Use .shex for ShEx or .ttl for SHACL.",
-        );
+            Json(error_body("unsupported_format", "Unsupported shape file extension. Use .shex for ShEx or .ttl for SHACL.")),
+        ).into_response();
     };
 
     let data_format = rdf_format_from_url(&req.data_url);
@@ -123,16 +105,14 @@ pub async fn validate_job(
 
     match result {
         Ok(Ok(validation_result)) => Json(validation_result).into_response(),
-        Ok(Err(msg)) => error_response(
+        Ok(Err(msg)) => (
             StatusCode::UNPROCESSABLE_ENTITY,
-            "VALIDATION_ERROR",
-            msg,
-        ),
-        Err(e) => error_response(
+            Json(error_body("validation_error", msg)),
+        ).into_response(),
+        Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-            "INTERNAL_ERROR",
-            format!("Validation task panicked: {e}"),
-        ),
+            Json(error_body("internal_error", format!("Validation task panicked: {e}"))),
+        ).into_response(),
     }
 }
 

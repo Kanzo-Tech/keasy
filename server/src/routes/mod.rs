@@ -1,35 +1,14 @@
-pub mod cloud_accounts;
-pub mod conversations;
-pub mod graph;
 pub mod health;
-pub mod jobs;
 pub mod providers;
 pub mod scripts;
-pub mod settings;
-pub mod connections;
-pub mod validation;
 
-use axum::{Json, Router, http::StatusCode, middleware, response::{IntoResponse, Response}};
+use axum::{Router, middleware};
 use axum::extract::DefaultBodyLimit;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 
 use crate::AppState;
-use crate::job::types::{ErrorDetail, ErrorEnvelope};
 use crate::middleware::auth::api_key_auth;
-
-pub(crate) fn error_response(status: StatusCode, code: &str, message: impl Into<String>) -> Response {
-    (
-        status,
-        Json(ErrorEnvelope {
-            error: ErrorDetail {
-                code: code.into(),
-                message: message.into(),
-            },
-        }),
-    )
-        .into_response()
-}
 
 pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Router {
     let health_routes = Router::new()
@@ -40,7 +19,7 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
     let public_api_routes = Router::new()
         .route(
             "/v1/settings/schema",
-            axum::routing::get(settings::get_schema),
+            axum::routing::get(crate::settings::routes::get_schema),
         )
         .route(
             "/v1/providers",
@@ -51,128 +30,128 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
     let api_routes = Router::new()
         .route(
             "/v1/jobs",
-            axum::routing::get(jobs::list_jobs).post(jobs::create_job),
+            axum::routing::get(crate::jobs::routes::list_jobs).post(crate::jobs::routes::create_job),
         )
         .route(
             "/v1/jobs/{id}",
-            axum::routing::get(jobs::get_job)
-                .put(jobs::update_job)
-                .delete(jobs::delete_job),
+            axum::routing::get(crate::jobs::routes::get_job)
+                .put(crate::jobs::routes::update_job)
+                .delete(crate::jobs::routes::delete_job),
         )
         .route(
             "/v1/jobs/{id}/cancel",
-            axum::routing::post(jobs::cancel_job),
+            axum::routing::post(crate::jobs::routes::cancel_job),
         )
         .route(
             "/v1/jobs/{id}/catalog",
-            axum::routing::get(jobs::get_job_catalog),
+            axum::routing::get(crate::jobs::routes::get_job_catalog),
         )
         .route(
             "/v1/jobs/{id}/graph",
-            axum::routing::get(jobs::get_job_graph),
+            axum::routing::get(crate::jobs::routes::get_job_graph),
         )
-        .route("/v1/graph", axum::routing::get(jobs::get_unified_graph))
+        .route("/v1/graph", axum::routing::get(crate::jobs::routes::get_unified_graph))
         .route(
             "/v1/scripts/validate",
             axum::routing::post(scripts::validate_script),
         )
         .route(
             "/v1/settings/organization",
-            axum::routing::get(settings::get_org_settings)
-                .put(settings::save_org_settings),
+            axum::routing::get(crate::settings::routes::get_org_settings)
+                .put(crate::settings::routes::save_org_settings),
         )
         .route(
             "/v1/settings/preferences",
-            axum::routing::get(settings::get_preferences)
-                .put(settings::save_preferences),
+            axum::routing::get(crate::settings::routes::get_preferences)
+                .put(crate::settings::routes::save_preferences),
         )
         .route(
             "/v1/settings/ai/providers",
-            axum::routing::get(settings::list_ai_providers),
+            axum::routing::get(crate::settings::routes::list_ai_providers),
         )
         .route(
             "/v1/settings/ai/providers/{provider_id}",
-            axum::routing::put(settings::save_ai_provider)
-                .delete(settings::delete_ai_provider),
+            axum::routing::put(crate::settings::routes::save_ai_provider)
+                .delete(crate::settings::routes::delete_ai_provider),
         )
         .route(
             "/v1/validate",
-            axum::routing::post(validation::validate_job),
+            axum::routing::post(crate::validation::routes::validate_job),
         )
         .route(
             "/v1/graph/search",
-            axum::routing::post(graph::search_nodes),
+            axum::routing::post(crate::graph::routes::search_nodes),
         )
         .route(
             "/v1/graph/expand",
-            axum::routing::post(graph::expand_node),
+            axum::routing::post(crate::graph::routes::expand_node),
         )
         .route(
             "/v1/jobs/{id}/dashboard-layout",
-            axum::routing::get(jobs::get_dashboard_layout)
-                .put(jobs::save_dashboard_layout),
+            axum::routing::get(crate::jobs::routes::get_dashboard_layout)
+                .put(crate::jobs::routes::save_dashboard_layout),
         )
         .route(
             "/v1/jobs/{id}/discover/load",
-            axum::routing::post(graph::load_discover),
+            axum::routing::post(crate::graph::routes::load_discover),
         )
         .route(
             "/v1/jobs/{id}/discover/query",
-            axum::routing::post(graph::query_discover),
+            axum::routing::post(crate::graph::routes::query_discover),
         )
         .route(
             "/v1/jobs/{id}/discover/chart",
-            axum::routing::post(graph::chart_discover),
+            axum::routing::post(crate::graph::routes::chart_discover),
         )
         .route(
             "/v1/jobs/{id}/discover/export",
-            axum::routing::get(graph::export_discover),
+            axum::routing::get(crate::graph::routes::export_discover),
         )
         .route(
             "/v1/jobs/{id}/discover/ask",
-            axum::routing::post(conversations::ask_discover),
+            axum::routing::post(crate::conversations::routes::ask_discover),
         )
         .route(
             "/v1/jobs/{id}/conversations",
-            axum::routing::get(conversations::list_conversations)
-                .post(conversations::create_conversation),
+            axum::routing::get(crate::conversations::routes::list_conversations)
+                .post(crate::conversations::routes::create_conversation),
         )
         .route(
             "/v1/conversations/{id}/messages",
-            axum::routing::get(conversations::get_conversation_messages),
+            axum::routing::get(crate::conversations::routes::get_conversation_messages),
         )
         .route(
             "/v1/conversations/{id}",
-            axum::routing::put(conversations::rename_conversation)
-                .delete(conversations::delete_conversation),
+            axum::routing::put(crate::conversations::routes::rename_conversation)
+                .delete(crate::conversations::routes::delete_conversation),
         )
         .route(
             "/v1/cloud-accounts",
-            axum::routing::get(cloud_accounts::list_accounts)
-                .post(cloud_accounts::create_account),
+            axum::routing::get(crate::cloud_accounts::routes::list_accounts)
+                .post(crate::cloud_accounts::routes::create_account),
         )
         .route(
             "/v1/cloud-accounts/{id}",
-            axum::routing::get(cloud_accounts::get_account)
-                .put(cloud_accounts::update_account)
-                .delete(cloud_accounts::delete_account),
+            axum::routing::get(crate::cloud_accounts::routes::get_account)
+                .put(crate::cloud_accounts::routes::update_account)
+                .delete(crate::cloud_accounts::routes::delete_account),
         )
-.route(
+        .route(
             "/v1/connections",
-            axum::routing::get(connections::list_connections)
-                .post(connections::create_connection),
+            axum::routing::get(crate::connections::routes::list_connections)
+                .post(crate::connections::routes::create_connection),
         )
         .route(
             "/v1/connections/{id}",
-            axum::routing::get(connections::get_connection)
-                .put(connections::update_connection)
-                .delete(connections::delete_connection),
+            axum::routing::get(crate::connections::routes::get_connection)
+                .put(crate::connections::routes::update_connection)
+                .delete(crate::connections::routes::delete_connection),
         )
         .route(
             "/v1/connections/{id}/files",
-            axum::routing::get(connections::list_connection_files),
+            axum::routing::get(crate::connections::routes::list_connection_files),
         )
-.layer(middleware::from_fn_with_state(
+        .layer(middleware::from_fn_with_state(
             state.clone(),
             api_key_auth,
         ))

@@ -1,3 +1,4 @@
+pub mod routes;
 pub mod types;
 
 use std::collections::HashSet;

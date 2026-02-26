@@ -14,13 +14,13 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **ARCH-03**: Discovery views are dedicated pages under the route tree, not embedded components
 - [x] **ARCH-04**: Job detail views are dedicated pages (not embedded components)
 - [x] **ARCH-05**: (data) route group layout has header / main (full height) / footer slots with "Create new" buttons on list pages
-- [ ] **ARCH-06**: Shared sidebar primitives (SidebarGroup, SidebarButton) extracted and reused between main sidebar and settings sidebar
-- [ ] **ARCH-07**: Settings main content occupies full available width
+- [x] **ARCH-06**: Shared sidebar primitives (SidebarGroup, SidebarButton) extracted and reused between main sidebar and settings sidebar
+- [x] **ARCH-07**: Settings main content occupies full available width
 - [x] **ARCH-08**: EmptyState component shows contextual "Create new X" link for each entity type (job, connection, cloud account, etc.)
-- [ ] **ARCH-09**: Single reusable graph component handles both RDF data graphs and catalog graphs with configurable data adapters
-- [ ] **ARCH-10**: Brand logos (Azure, Google Cloud, Amazon, Anthropic) use an icon library instead of custom components
-- [ ] **ARCH-11**: Graph background dot scale is smaller by default
-- [ ] **ARCH-12**: Save draft button repositioned within the writable editor context
+- [x] **ARCH-09**: Single reusable graph component handles both RDF data graphs and catalog graphs with configurable data adapters
+- [x] **ARCH-10**: Brand logos (Azure, Google Cloud, Amazon, Anthropic) use an icon library instead of custom components
+- [x] **ARCH-11**: Graph background dot scale is smaller by default
+- [x] **ARCH-12**: Save draft button repositioned within the writable editor context
 
 ### API Security & Quality
 
@@ -107,13 +107,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ARCH-03 | Phase 7 | Complete |
 | ARCH-04 | Phase 7 | Complete |
 | ARCH-05 | Phase 7 | Complete |
-| ARCH-06 | Phase 7 | Pending |
-| ARCH-07 | Phase 7 | Pending |
+| ARCH-06 | Phase 7 | Complete |
+| ARCH-07 | Phase 7 | Complete |
 | ARCH-08 | Phase 7 | Complete |
-| ARCH-09 | Phase 7 | Pending |
-| ARCH-10 | Phase 7 | Pending |
-| ARCH-11 | Phase 7 | Pending |
-| ARCH-12 | Phase 7 | Pending |
+| ARCH-09 | Phase 7 | Complete |
+| ARCH-10 | Phase 7 | Complete |
+| ARCH-11 | Phase 7 | Complete |
+| ARCH-12 | Phase 7 | Complete |
 | API-01 | Phase 3 | Complete |
 | API-02 | Phase 3 | Complete |
 | API-03 | Phase 3 | Complete |

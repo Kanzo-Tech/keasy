@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Frontend Auth Pages & Session Management** - Login/register pages, Next.js route guards, session cookie flow, SWR 401 redirect (completed 2026-02-26)
 - [x] **Phase 6: Dataspace Switcher & Organization Management** - Connect sidebar to real user/org data, promotor control plane, invite token onboarding (completed 2026-02-26)
 - [x] **Phase 6.1: Middleware Route Guard Fix** - Two-list path guard in proxy.ts, /invite in ALWAYS_PUBLIC_PATHS, redirect-after-login (completed 2026-02-26)
-- [ ] **Phase 7: Frontend Architecture Cleanup** - TanStack Table for all list views, SWR standardization, EmptyState, route group layout, graph component unification
+- [x] **Phase 7: Frontend Architecture Cleanup** - TanStack Table for all list views, SWR standardization, EmptyState, route group layout, graph component unification (completed 2026-02-26)
 - [ ] **Phase 8: Walt.id Integration & VC Auth Path** - Docker sidecar setup, OID4VP auth path, VC session creation, wallet connect flow
 - [ ] **Phase 9: Gaia-X Compliance Wizard** - Multi-step guided wizard: LRN → Participant → T&C → GXDCH submission; replace org settings with VC compliance management
 
@@ -199,6 +199,6 @@ Each phase runs on its own git branch and merges into main via pull request befo
 | 5. Frontend Auth Pages & Session Management | 3/3 | Complete   | 2026-02-26 |
 | 6. Dataspace Switcher & Organization Management | 3/3 | Complete    | 2026-02-26 |
 | 6.1. Middleware Route Guard Fix | 1/1 | Complete | 2026-02-26 |
-| 7. Frontend Architecture Cleanup | 3/4 | In Progress|  |
+| 7. Frontend Architecture Cleanup | 4/4 | Complete   | 2026-02-26 |
 | 8. Walt.id Integration & VC Auth Path | 0/TBD | Not started | - |
 | 9. Gaia-X Compliance Wizard | 0/TBD | Not started | - |

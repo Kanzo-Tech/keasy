@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T23:39:17.128Z"
+last_updated: "2026-02-26T23:40:50.283Z"
 progress:
   total_phases: 9
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 23
-  completed_plans: 22
+  completed_plans: 23
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 07 of 9 (Frontend Architecture Cleanup) — In Progress
-Plan: 3 of 4 complete (07-01 infrastructure, 07-02 jobs/connections/cloud-accounts, 07-03 org users/organizations)
-Status: Phase 07 In Progress — Plans 07-01, 07-02, 07-03 done; Plan 07-04 remaining
-Last activity: 2026-02-27 — Completed Plan 07-03: OrgUser/OrgEntry types in lib/types.ts, 5 API functions in lib/api.ts, useOrgUsers SWR hook, org-user-columns.tsx, organization-columns.tsx, org/users and admin/organizations pages migrated to DataTable with zero raw fetch()
+Phase: 07 of 9 (Frontend Architecture Cleanup) — Complete
+Plan: 4 of 4 complete (07-01 infrastructure, 07-02 list views, 07-03 org pages, 07-04 sidebar/icons/graph/save-draft)
+Status: Phase 07 Complete — All 4 plans done
+Last activity: 2026-02-27 — Completed Plan 07-04: SettingsNav sidebar primitives (ARCH-06), settings max-w-3xl (ARCH-07), icon migration (ARCH-10), subtler force graph dot grid (ARCH-11), Save Draft repositioned to editor toolbar (ARCH-12), ARCH-09 verified already satisfied
 
-Progress: [████████████████] ~80%
+Progress: [█████████████████] ~87%
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Progress: [████████████████] ~80%
 | Phase 06 P03 | 8 | 3 tasks | 12 files |
 | Phase 06.1-middleware-route-guard-fix P01 | 1 | 2 tasks | 2 files |
 | Phase 07 P03 | 2 | 2 tasks | 7 files |
+| Phase 07 P04 | 3 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -132,6 +133,8 @@ Recent decisions affecting current work:
 - [Phase 07-02]: EmptyState shown when !jobs?.length before DataTable — TanStack Table handles filtered-to-zero with its own "No results" row
 - [Phase 07]: OrgUser interface named OrgUser (not UserEntry) for domain clarity — represents a user within an organization context
 - [Phase 07]: Organization empty state uses action ReactNode prop (Dialog trigger) instead of actionHref — Add Organization is a dialog, not navigation
+- [Phase 07-04]: SiOpenai/SiMicrosoftazure/SiAmazons3 not in @icons-pack/react-simple-icons v13 — react-icons kept for those icons; SiAnthropic and SiGooglecloud migrated successfully
+- [Phase 07-04]: ARCH-09 already satisfied — KnowledgeGraph serves both catalog (jobId) and unified graph (no jobId)
 
 ### Pending Todos
 
@@ -149,5 +152,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Plan 07-02 — DataTable list view migrations: jobs/connections/cloud-accounts pages migrated to DataTable, column factory functions created, job-table.tsx deleted, ARCH-05 Create buttons in page headers.
-Resume with: /gsd:execute-phase (Phase 07 Plan 03 — if remaining)
+Stopped at: Completed Plan 07-04 — SettingsNav migrated to sidebar primitives, settings content max-w-3xl mx-auto, SiAnthropic/SiGooglecloud migrated to @icons-pack/react-simple-icons, force graph dot grid subtler (GAP=24 DOT_RADIUS=0.35 opacity=0.07), Save Draft repositioned to editor toolbar. Phase 07 complete.
+Resume with: Phase 08 (Walt.id VC integration) or Phase 09 (GXDCH integration) — verify research/staging access first

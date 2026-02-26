@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T15:56:00.000Z"
+last_updated: "2026-02-26T14:37:29.205Z"
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
+  completed_phases: 4
+  total_plans: 9
+  completed_plans: 9
 ---
 
 # Project State
@@ -22,19 +22,19 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 03 of 9 (Auth Routes & Session Middleware) — COMPLETE
-Plan: 2 of 2 in current phase (03-02 complete)
-Status: Phase 03 complete — register/login/logout handlers wired, session middleware active, all api_routes session-protected
-Last activity: 2026-02-26 — Completed Plan 03-02: Auth route handlers, session middleware, rate limiter, router wiring with signed session cookies
+Phase: 03 of 9 (Auth Routes & Session Middleware) — FULLY COMPLETE (including gap closure)
+Plan: 3 of 3 in current phase (03-03 complete)
+Status: Phase 03 fully complete — security smoke test added (03-03 gap closure), all 44 protected routes assert 401, all 6 public routes assert non-401
+Last activity: 2026-02-26 — Completed Plan 03-03: Security smoke test (gap closure) — lib.rs re-exports, auth_smoke integration test
 
 Progress: [████████░░] ~45%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 4.7 min
-- Total execution time: 14 min
+- Total plans completed: 10
+- Average duration: ~5 min
+- Total execution time: ~17 min
 
 **By Phase:**
 
@@ -43,10 +43,10 @@ Progress: [████████░░] ~45%
 | 01-db-schema-dal-foundation | 2 | 11 min | 5.5 min |
 | 02-api-architecture-refactor | 2 | 13 min | 6.5 min |
 | 02.1-domain-consolidation | 2 | ~20 min | ~10 min |
-| 03-auth-routes-session-middleware | 2 | 15 min | 7.5 min |
+| 03-auth-routes-session-middleware | 3 | ~18 min | ~6 min |
 
 **Recent Trend:**
-- Last 5 plans: 02.1-01 (~5 min), 02.1-02 (15 min), 03-01 (8 min), 03-02 (~7 min)
+- Last 5 plans: 02.1-02 (15 min), 03-01 (8 min), 03-02 (~7 min), 03-03 (~3 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -87,6 +87,8 @@ Recent decisions affecting current work:
 - [Phase 03-02]: tower-sessions signed feature added; session cookies are signed via PBKDF2-derived 64-byte key from KEASY_SESSION_SECRET
 - [Phase 03-02]: tokio_rusqlite accessed via tower_sessions_rusqlite_store::tokio_rusqlite re-export (no direct dep)
 - [Phase 03-02]: api_key_auth kept with dead_code allow — reserved for future M2M API access, not applied to any routes
+- [Phase 03]: lib.rs uses pub mod for all modules; integration tests access keasy_server:: crate; main.rs imports from lib
+- [Phase 03]: auth_smoke test uses tower::ServiceExt::oneshot — no HTTP listener, pure in-process integration testing
 
 ### Pending Todos
 
@@ -104,5 +106,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Plan 03-02 (Auth route handlers + session middleware + router wiring) — register/login/logout, rate limiter, session_required middleware, signed session cookies, api_key_auth replaced by session auth. cargo clippy -- -D warnings passes clean. Phase 03 complete.
+Stopped at: Completed Plan 03-03 (Security smoke test gap closure) — lib.rs re-exports, auth_smoke integration test covering 44 protected routes + 6 public routes. cargo test --test auth_smoke: 2 passed. cargo clippy -- -D warnings: clean. Phase 03 fully complete.
 Resume with: /gsd:execute-phase (Phase 04 — next phase)

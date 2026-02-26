@@ -82,7 +82,10 @@ Plans:
   3. A logged-in user can POST to `/v1/auth/logout` and immediately lose access — subsequent authenticated requests with the old cookie return 401
   4. Every non-public API endpoint returns 401 for requests with no valid session cookie; a security smoke test asserts this for all routes
   5. The API returns consistent error shapes: 401 for unauthenticated, 403 for unauthorized, mapped from the typed domain errors introduced in Phase 2
-**Plans**: TBD
+**Plans**: 3 plans
+  - [x] 03-01-PLAN.md — Auth module foundation (Argon2id, AuthError, password utils, invite token DAL, schema)
+  - [x] 03-02-PLAN.md — Route handlers, session middleware, rate limiter, router wiring
+  - [ ] 03-03-PLAN.md — Security smoke test (gap closure: assert all protected routes return 401 without session)
 
 ### Phase 4: Tenant Context Middleware & RBAC
 **Goal**: Every authenticated request carries an injected TenantContext, all existing resource queries are filtered by organization_id, and role-based access is enforced at the API layer — not scattered in handler bodies

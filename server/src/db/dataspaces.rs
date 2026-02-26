@@ -150,6 +150,21 @@ impl Database {
             .collect()
     }
 
+    /// Returns the org's role in a specific dataspace (promotor or participant).
+    /// Returns None if the org is not a member of the dataspace.
+    pub async fn get_org_dataspace_role(&self, org_id: &str, dataspace_id: &str) -> Option<DataspaceRole> {
+        let (_permit, conn) = self.read().await;
+        conn.query_row(
+            "SELECT role FROM org_dataspace_memberships WHERE org_id = ?1 AND dataspace_id = ?2",
+            rusqlite::params![org_id, dataspace_id],
+            |row| {
+                let s: String = row.get(0)?;
+                Ok(DataspaceRole::from_str(&s))
+            },
+        )
+        .ok()
+    }
+
     /// Returns the org membership for a user. One user belongs to exactly one org.
     pub async fn get_user_org_membership(&self, user_id: &str) -> Option<UserOrgMembership> {
         let (_permit, conn) = self.read().await;

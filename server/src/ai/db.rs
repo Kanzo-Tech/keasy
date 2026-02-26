@@ -3,12 +3,12 @@ use rusqlite::params;
 use crate::db::Database;
 use crate::jobs::models::now_iso8601;
 use crate::discovery::rdf_graph::TabularData;
-use crate::tenant::TenantContext;
+use crate::tenant::TenantScoped;
 
 use super::models::{Conversation, ConversationMessage};
 
 impl Database {
-    pub async fn create_conversation(&self, ctx: &TenantContext, job_id: &str, title: Option<String>) -> Conversation {
+    pub async fn create_conversation(&self, ctx: &TenantScoped<()>, job_id: &str, title: Option<String>) -> Conversation {
         let conv = Conversation {
             id: uuid::Uuid::new_v4().to_string(),
             job_id: job_id.to_string(),
@@ -23,7 +23,7 @@ impl Database {
         conv
     }
 
-    pub async fn list_conversations(&self, ctx: &TenantContext, job_id: &str) -> Vec<Conversation> {
+    pub async fn list_conversations(&self, ctx: &TenantScoped<()>, job_id: &str) -> Vec<Conversation> {
         let (_permit, conn) = self.read().await;
         let mut stmt = conn
             .prepare(

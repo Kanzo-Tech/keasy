@@ -2,12 +2,18 @@ use rusqlite::params;
 use tracing::error;
 
 use crate::db::Database;
-use crate::tenant::{TenantContext, TenantScoped};
+use crate::tenant::TenantScoped;
 
-use super::models::{Connection, ConnectionKind, CreateConnectionRequest, LocationType, UpdateConnectionRequest};
+use super::models::{
+    Connection, ConnectionKind, CreateConnectionRequest, LocationType, UpdateConnectionRequest,
+};
 
 impl Database {
-    pub async fn create_connection(&self, ctx: &TenantContext, req: CreateConnectionRequest) -> Result<Connection, String> {
+    pub async fn create_connection(
+        &self,
+        ctx: &TenantScoped<()>,
+        req: CreateConnectionRequest,
+    ) -> Result<Connection, String> {
         if req.name.trim().is_empty() {
             return Err("name is required".into());
         }
@@ -19,9 +25,13 @@ impl Database {
         }
 
         if let Some(ref account_id) = req.cloud_account_id
-            && self.get_cloud_account_summary(&TenantScoped::placeholder_with(account_id.as_str())).await.is_none() {
-                return Err(format!("cloud account not found: {account_id}"));
-            }
+            && self
+                .get_cloud_account_summary(&TenantScoped::placeholder_with(account_id.as_str()))
+                .await
+                .is_none()
+        {
+            return Err(format!("cloud account not found: {account_id}"));
+        }
 
         let connection = Connection {
             id: uuid::Uuid::new_v4().to_string(),
@@ -62,7 +72,11 @@ impl Database {
         .ok()
     }
 
-    pub async fn list_connections(&self, ctx: &TenantContext, type_filter: Option<&str>) -> Vec<Connection> {
+    pub async fn list_connections(
+        &self,
+        ctx: &TenantScoped<()>,
+        type_filter: Option<&str>,
+    ) -> Vec<Connection> {
         let (_permit, conn) = self.read().await;
         let (sql, param): (&str, Option<&str>) = match type_filter {
             Some(t) => (
@@ -90,8 +104,15 @@ impl Database {
         }
     }
 
-    pub async fn update_connection(&self, ctx: &TenantScoped<&str>, req: UpdateConnectionRequest) -> Result<Connection, String> {
-        let existing = self.get_connection(ctx).await.ok_or_else(|| format!("connection not found: {}", ctx.inner()))?;
+    pub async fn update_connection(
+        &self,
+        ctx: &TenantScoped<&str>,
+        req: UpdateConnectionRequest,
+    ) -> Result<Connection, String> {
+        let existing = self
+            .get_connection(ctx)
+            .await
+            .ok_or_else(|| format!("connection not found: {}", ctx.inner()))?;
 
         let name = req.name.unwrap_or(existing.name);
         let kind = req.kind.unwrap_or(existing.kind);
@@ -134,15 +155,20 @@ impl Database {
         }
     }
 
-    pub async fn resolve_cloud_account_ids(&self, ctx: &TenantContext, connection_ids: &[String]) -> Vec<String> {
+    pub async fn resolve_cloud_account_ids(
+        &self,
+        ctx: &TenantScoped<()>,
+        connection_ids: &[String],
+    ) -> Vec<String> {
         let mut account_ids = Vec::new();
         for connection_id in connection_ids {
             let scoped = TenantScoped::placeholder_with(connection_id.as_str());
             if let Some(connection) = self.get_connection(&scoped).await
                 && let Some(account_id) = &connection.cloud_account_id
-                    && !account_ids.contains(account_id) {
-                        account_ids.push(account_id.clone());
-                    }
+                && !account_ids.contains(account_id)
+            {
+                account_ids.push(account_id.clone());
+            }
         }
         let _ = ctx; // org_id carried via placeholder_with above; real session ctx used in Phase 4
         account_ids
@@ -150,7 +176,7 @@ impl Database {
 
     pub async fn build_storage_config_from_connections(
         &self,
-        ctx: &TenantContext,
+        ctx: &TenantScoped<()>,
         connection_ids: &[String],
     ) -> fossil_lang::runtime::storage::StorageConfig {
         let account_ids = self.resolve_cloud_account_ids(ctx, connection_ids).await;

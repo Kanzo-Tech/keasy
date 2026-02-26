@@ -32,8 +32,10 @@ impl<T> TenantScoped<T> {
     }
 }
 
-/// Convenience: scoped unit — used when only org_id is needed (list queries).
-pub type TenantContext = TenantScoped<()>;
+/// Re-export the real TenantContext from middleware::tenant.
+/// Phase 3 route handlers still use placeholder_ctx() which returns TenantScoped<()>.
+/// Phase 4 (Plan 03) will migrate all handlers to extract TenantContext directly.
+pub use crate::middleware::tenant::TenantContext;
 
 impl TenantScoped<()> {
     /// Temporary placeholder using seed org. Phase 4 replaces this with real session context.
@@ -49,14 +51,14 @@ impl<T: Clone> TenantScoped<T> {
     }
 }
 
-/// Convenience: create a placeholder TenantContext for route handlers.
-/// Phase 4 replaces all call sites with real session context.
-pub fn placeholder_ctx() -> TenantContext {
+/// Convenience: create a placeholder TenantScoped<()> for route handlers.
+/// Phase 4 Plan 03 replaces all call sites with real session context.
+pub fn placeholder_ctx() -> TenantScoped<()> {
     TenantScoped::placeholder()
 }
 
 /// Convenience: create a placeholder TenantScoped<T> for route handlers.
-/// Phase 4 replaces all call sites with real session context.
+/// Phase 4 Plan 03 replaces all call sites with real session context.
 pub fn placeholder_scoped<T: Clone>(inner: T) -> TenantScoped<T> {
     TenantScoped::placeholder_with(inner)
 }

@@ -7,14 +7,14 @@ use tracing::{info, warn};
 
 use crate::settings::schema::find_provider;
 use crate::db::Database;
-use crate::tenant::{TenantContext, TenantScoped};
+use crate::tenant::TenantScoped;
 
 use super::models::{CloudAccount, CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest};
 
 impl Database {
     pub async fn create_cloud_account(
         &self,
-        ctx: &TenantContext,
+        ctx: &TenantScoped<()>,
         request: CreateCloudAccountRequest,
     ) -> Result<CloudAccountSummary, String> {
         let schema = find_provider(&request.provider_id)
@@ -170,7 +170,7 @@ impl Database {
         self.delete_secret(&format!("cloud_account:{id}")).await;
     }
 
-    pub async fn list_cloud_accounts(&self, ctx: &TenantContext) -> Vec<CloudAccountSummary> {
+    pub async fn list_cloud_accounts(&self, ctx: &TenantScoped<()>) -> Vec<CloudAccountSummary> {
         let (_permit, conn) = self.read().await;
         let mut stmt = conn
             .prepare("SELECT id, name, provider_id, auth_method, fields FROM cloud_accounts WHERE organization_id = ?1")
@@ -189,7 +189,7 @@ impl Database {
         .collect()
     }
 
-    pub async fn build_storage_config(&self, ctx: &TenantContext, account_ids: &[String]) -> StorageConfig {
+    pub async fn build_storage_config(&self, ctx: &TenantScoped<()>, account_ids: &[String]) -> StorageConfig {
         let mut env = HashMap::new();
         for id in account_ids {
             let scoped = TenantScoped::placeholder_with(id.as_str());
@@ -217,11 +217,11 @@ impl Database {
         StorageConfig::new(env)
     }
 
-    pub async fn env_snapshot(&self, ctx: &TenantContext, account_ids: &[String]) -> HashMap<String, String> {
+    pub async fn env_snapshot(&self, ctx: &TenantScoped<()>, account_ids: &[String]) -> HashMap<String, String> {
         self.build_storage_config(ctx, account_ids).await.as_map().clone()
     }
 
-    pub async fn env_snapshot_all(&self, ctx: &TenantContext) -> HashMap<String, String> {
+    pub async fn env_snapshot_all(&self, ctx: &TenantScoped<()>) -> HashMap<String, String> {
         let ids: Vec<_> = self.list_cloud_accounts(ctx).await.iter().map(|a| a.id.clone()).collect();
         self.env_snapshot(ctx, &ids).await
     }

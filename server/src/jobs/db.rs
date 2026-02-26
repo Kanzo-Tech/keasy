@@ -2,14 +2,14 @@ use rusqlite::params;
 use tracing::error;
 
 use crate::db::Database;
-use crate::tenant::{TenantContext, TenantScoped};
+use crate::tenant::TenantScoped;
 
 use super::errors::JobRuntimeError;
 use super::models::{Job, JobStatus, RunMode};
 use super::pipeline_types::PipelineSummary;
 
 impl Database {
-    pub async fn insert_job(&self, ctx: &TenantContext, job: &Job) {
+    pub async fn insert_job(&self, ctx: &TenantScoped<()>, job: &Job) {
         let status = serialize_status(&job.status);
         let mode = serialize_mode(&job.mode);
         let error_json = job.error.as_ref().map(|e| serde_json::to_string(e).unwrap());
@@ -84,7 +84,7 @@ impl Database {
         Some(job)
     }
 
-    pub async fn list_jobs(&self, ctx: &TenantContext) -> Vec<Job> {
+    pub async fn list_jobs(&self, ctx: &TenantScoped<()>) -> Vec<Job> {
         let (_permit, conn) = self.read().await;
         let mut stmt = conn
             .prepare(
@@ -98,7 +98,7 @@ impl Database {
             .collect()
     }
 
-    pub async fn completed_catalogs(&self, ctx: &TenantContext) -> Vec<(String, String)> {
+    pub async fn completed_catalogs(&self, ctx: &TenantScoped<()>) -> Vec<(String, String)> {
         let (_permit, conn) = self.read().await;
         let mut stmt = conn
             .prepare(

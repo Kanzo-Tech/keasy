@@ -170,7 +170,7 @@ Each phase runs on its own git branch and merges into main via pull request befo
 | 1. DB Schema & DAL Foundation | 2/2 | Complete    | 2026-02-26 |
 | 2. API Architecture Refactor | 2/2 | Complete    | 2026-02-26 |
 | 02.1. Domain Consolidation | 2/2 | Complete    | 2026-02-26 |
-| 3. Auth Routes & Session Middleware | 0/TBD | Not started | - |
+| 3. Auth Routes & Session Middleware | 1/2 | In Progress|  |
 | 4. Tenant Context Middleware & RBAC | 0/TBD | Not started | - |
 | 5. Frontend Auth Pages & Session Management | 0/TBD | Not started | - |
 | 6. Dataspace Switcher & Organization Management | 0/TBD | Not started | - |

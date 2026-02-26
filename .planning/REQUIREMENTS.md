@@ -24,11 +24,11 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### API Security & Quality
 
-- [ ] **API-01**: User can register with email and password (Argon2id hashing, spawn_blocking)
-- [ ] **API-02**: User can log in with email and password, receiving a server-side session cookie
+- [x] **API-01**: User can register with email and password (Argon2id hashing, spawn_blocking)
+- [x] **API-02**: User can log in with email and password, receiving a server-side session cookie
 - [ ] **API-03**: User can log out, immediately invalidating their session
 - [ ] **API-04**: All API routes (except /health, /login, /register) require authentication via session middleware at the top-level router
-- [ ] **API-05**: API returns 401 for unauthenticated requests and 403 for unauthorized requests, with consistent error shapes
+- [x] **API-05**: API returns 401 for unauthenticated requests and 403 for unauthorized requests, with consistent error shapes
 - [ ] **API-06**: Role-based access control enforced at API layer: promotor, org_admin, org_user roles checked per endpoint
 - [x] **API-07**: All existing API routes reviewed: duplicates removed, dead code eliminated, legacy patterns replaced
 - [x] **API-08**: Structured error handling with thiserror domain error types mapped to consistent HTTP status codes
@@ -114,11 +114,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ARCH-10 | Phase 7 | Pending |
 | ARCH-11 | Phase 7 | Pending |
 | ARCH-12 | Phase 7 | Pending |
-| API-01 | Phase 3 | Pending |
-| API-02 | Phase 3 | Pending |
+| API-01 | Phase 3 | Complete |
+| API-02 | Phase 3 | Complete |
 | API-03 | Phase 3 | Pending |
 | API-04 | Phase 3 | Pending |
-| API-05 | Phase 3 | Pending |
+| API-05 | Phase 3 | Complete |
 | API-06 | Phase 4 | Pending |
 | API-07 | Phase 2 | Complete |
 | API-08 | Phase 2 | Complete |

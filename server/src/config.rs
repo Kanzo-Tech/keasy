@@ -12,6 +12,10 @@ pub struct ServerConfig {
     pub cors_origins: Option<Vec<String>>,
     pub data_dir: PathBuf,
     pub secret_key: Option<SecretString>,
+    /// Session cookie signing key — required. Read from KEASY_SESSION_SECRET.
+    /// Plan 03 wires this into the tower-sessions middleware.
+    #[allow(dead_code)]
+    pub session_secret: SecretString,
     pub cache_capacity: usize,
 }
 
@@ -69,6 +73,15 @@ impl ServerConfig {
 
         let secret_key = resolve_secret("KEASY_SECRET_KEY");
 
+        let session_secret = match resolve_secret("KEASY_SESSION_SECRET") {
+            Some(s) => s,
+            None => {
+                eprintln!("FATAL: KEASY_SESSION_SECRET is required for session cookie signing");
+                eprintln!("       Generate one with: openssl rand -base64 64");
+                std::process::exit(1);
+            }
+        };
+
         let cache_capacity = std::env::var("KEASY_CACHE_CAPACITY")
             .ok()
             .and_then(|v| v.parse().ok())
@@ -83,6 +96,7 @@ impl ServerConfig {
             cors_origins,
             data_dir,
             secret_key,
+            session_secret,
             cache_capacity,
         }
     }

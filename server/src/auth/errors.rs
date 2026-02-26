@@ -3,6 +3,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use crate::error::error_body;
 
+#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum AuthError {
     #[error("auth/invalid_credentials")]

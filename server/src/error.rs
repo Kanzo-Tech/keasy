@@ -26,7 +26,6 @@ pub fn data_response<T: Serialize>(value: T) -> Json<Value> {
 
 /// Typed application error enum.
 /// `impl IntoResponse` maps each variant to the correct HTTP status and error body.
-/// Variants not yet used directly — Phase 4 auth middleware will construct these.
 #[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
@@ -54,6 +53,14 @@ pub enum AppError {
     #[error("internal: {0}")]
     Internal(String),
 
+    /// 401 Unauthenticated
+    #[error("unauthorized")]
+    Unauthorized,
+
+    /// 403 Forbidden
+    #[error("forbidden")]
+    Forbidden,
+
     /// Bridging variants for domain errors
     #[error(transparent)]
     JobApi(#[from] crate::jobs::errors::JobApiError),
@@ -61,6 +68,8 @@ pub enum AppError {
     Connection(#[from] crate::connections::errors::ConnectionError),
     #[error(transparent)]
     CloudAccount(#[from] crate::cloud::errors::CloudAccountError),
+    #[error(transparent)]
+    Auth(#[from] crate::auth::errors::AuthError),
 }
 
 impl IntoResponse for AppError {
@@ -99,9 +108,20 @@ impl IntoResponse for AppError {
                     .into_response()
             }
 
+            AppError::Unauthorized => (
+                StatusCode::UNAUTHORIZED,
+                Json(error_body("auth/session_required", "Authentication required")),
+            ).into_response(),
+
+            AppError::Forbidden => (
+                StatusCode::FORBIDDEN,
+                Json(error_body("auth/forbidden", "Access denied")),
+            ).into_response(),
+
             AppError::JobApi(e) => e.into_response(),
             AppError::Connection(e) => e.into_response(),
             AppError::CloudAccount(e) => e.into_response(),
+            AppError::Auth(e) => e.into_response(),
         }
     }
 }

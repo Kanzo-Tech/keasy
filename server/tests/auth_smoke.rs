@@ -53,6 +53,8 @@ async fn test_router() -> axum::Router {
         output_cache,
         api_key,
         rate_limiter,
+        email_service: keasy_server::email::EmailService::from_env(),
+        base_url: "http://localhost:3000".to_string(),
     };
 
     // 6. Session secret (must be at least 32 chars for PBKDF2 key derivation)

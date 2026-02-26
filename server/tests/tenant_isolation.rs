@@ -59,6 +59,8 @@ async fn test_router_with_state() -> (axum::Router, AppState) {
         output_cache,
         api_key,
         rate_limiter,
+        email_service: keasy_server::email::EmailService::from_env(),
+        base_url: "http://localhost:3000".to_string(),
     };
 
     // Wrap with MockConnectInfo so ConnectInfo<SocketAddr> extraction works in tests

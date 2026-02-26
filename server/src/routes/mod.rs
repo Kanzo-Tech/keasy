@@ -1,7 +1,8 @@
+pub mod admin;
 pub mod health;
+pub mod org;
 pub mod providers;
 pub mod scripts;
-pub mod admin;
 
 use axum::{middleware, Router};
 use axum::extract::DefaultBodyLimit;
@@ -224,7 +225,7 @@ pub fn build_router(
         // Admin routes — promotor only
         .route(
             "/v1/admin/organizations",
-            axum::routing::get(admin::list_all_orgs),
+            axum::routing::get(admin::list_all_orgs).post(admin::create_org_and_invite),
         )
         .route(
             "/v1/admin/dataspaces",
@@ -237,6 +238,19 @@ pub fn build_router(
         .route(
             "/v1/admin/organizations/{org_id}/dataspaces/{ds_id}",
             axum::routing::delete(admin::remove_org_from_dataspace),
+        )
+        .route(
+            "/v1/admin/dataspace/organizations",
+            axum::routing::get(admin::list_orgs_in_active_dataspace),
+        )
+        // Org admin routes — org admins and promotors
+        .route(
+            "/v1/org/users",
+            axum::routing::get(org::list_users).post(org::add_user),
+        )
+        .route(
+            "/v1/org/users/{id}",
+            axum::routing::put(org::update_user_role).delete(org::remove_user),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),

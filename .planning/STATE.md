@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 04 of 9 (Tenant Context Middleware & RBAC) — In Progress
-Plan: 2 of 3 complete (04-02 complete)
-Status: Phase 04 Plan 02 complete — All route handlers migrated to RequireRole; conversation DAL hardened with org_id filters; placeholder functions removed from tenant.rs
-Last activity: 2026-02-26 — Completed Plan 04-02: Route handler migration + DAL hardening
+Phase: 04 of 9 (Tenant Context Middleware & RBAC) — Complete
+Plan: 3 of 3 complete (04-03 complete)
+Status: Phase 04 COMPLETE — Admin endpoints, tenant isolation tests, RBAC integration tests all green
+Last activity: 2026-02-26 — Completed Plan 04-03: Promotor admin endpoints + integration tests
 
-Progress: [█████████░] ~55%
+Progress: [██████████] ~60%
 
 ## Performance Metrics
 
@@ -99,6 +99,8 @@ Recent decisions affecting current work:
 - [Phase 04-02]: placeholder_ctx(), placeholder_scoped(), placeholder_with() removed from tenant.rs; placeholder() renamed to startup_ctx() — sole permitted startup use
 - [Phase 04-02]: rewrite::resolve() takes org_id: &str as second param; build_storage_config takes org_id: &str explicitly
 - [Phase 04-02]: ai/db.rs rename_conversation/delete_conversation now filter by AND organization_id = ? — cross-org mutation impossible
+- [Phase 04-03]: session.save() must be called before session.id() after cycle_id() — tower-sessions sets id to None after cycle_id; save() triggers store.create() which assigns the real ID
+- [Phase 04-03]: MockConnectInfo(SocketAddr) layer required on test router for ConnectInfo<SocketAddr> extraction in oneshot integration tests
 
 ### Pending Todos
 
@@ -116,5 +118,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Plan 04-02 — All route handlers migrated from placeholder_ctx/placeholder_scoped to RequireRole(ctx). AI DAL hardened with org_id filters. Placeholder functions removed from tenant.rs. cargo test: 2 passed. cargo clippy -- -D warnings: clean.
-Resume with: /gsd:execute-phase (Phase 04 Plan 03 — if remaining, otherwise Phase 04 complete)
+Stopped at: Completed Plan 04-03 — Promotor-only admin endpoints, tenant isolation integration tests (9 tests), fixed session.id() bug in auth routes. cargo test: 11 passed. cargo clippy -- -D warnings: clean.
+Resume with: /gsd:execute-phase (Phase 05 — next phase)

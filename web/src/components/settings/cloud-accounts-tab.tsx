@@ -1,26 +1,20 @@
 "use client";
 
+import { useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Cloud, Plus } from "lucide-react";
 import { toast } from "sonner";
 import useSWR from "swr";
+
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { fetchSchema, fetchCloudAccounts, deleteCloudAccount } from "@/lib/api";
-import { getProviderIcon } from "@/lib/provider-icons";
-import { DeleteButton } from "@/components/delete-button";
+import { getCloudAccountColumns } from "@/components/columns/cloud-account-columns";
+import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/empty-state";
 import { SettingsSection, SettingsPage } from "@/components/settings/settings-section";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 export function CloudAccountsTab() {
   const router = useRouter();
@@ -31,6 +25,20 @@ export function CloudAccountsTab() {
   const showSkeleton = useDelayedLoading(isLoading);
 
   const [schema, accounts] = data ?? [[], []];
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      await deleteCloudAccount(id);
+      toast.success("Cloud account deleted");
+      mutate();
+    },
+    [mutate],
+  );
+
+  const columns = useMemo(
+    () => getCloudAccountColumns({ onDelete: handleDelete, schema }),
+    [handleDelete, schema],
+  );
 
   if (isLoading) {
     return showSkeleton ? (
@@ -60,59 +68,20 @@ export function CloudAccountsTab() {
           <EmptyState
             icon={Cloud}
             title="No cloud accounts"
-            description="Add a cloud account to start creating sources."
+            description="Add a cloud account to start creating data connections."
+            actionHref="/settings/cloud-accounts/new"
+            actionLabel="Add cloud account"
           />
         ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead>Auth method</TableHead>
-                  <TableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {accounts.map((account) => {
-                  const provider = schema.find((s) => s.id === account.provider_id);
-                  const Icon = provider ? getProviderIcon(provider.icon) : null;
-                  const authLabel = provider?.auth_methods.find(
-                    (a) => a.name === account.auth_method
-                  )?.label;
-
-                  return (
-                    <TableRow
-                      key={account.id}
-                      className="cursor-pointer"
-                      onClick={() => router.push(`/settings/cloud-accounts/${account.id}`)}
-                    >
-                      <TableCell className="font-medium">{account.name}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          {Icon && <Icon className="h-4 w-4 shrink-0" />}
-                          <span>{provider?.label ?? account.provider_id}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {authLabel ?? "\u2014"}
-                      </TableCell>
-                      <TableCell>
-                        <DeleteButton
-                          iconOnly
-                          title="Delete cloud account"
-                          description={`This will permanently delete "${account.name}". Sources using this account will stop working.`}
-                          onConfirm={async () => {
-                            await deleteCloudAccount(account.id);
-                            toast.success("Cloud account deleted");
-                            mutate();
-                          }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+          <DataTable
+            columns={columns}
+            data={accounts}
+            searchKey="name"
+            searchPlaceholder="Search accounts..."
+            onRowClick={(account) =>
+              router.push(`/settings/cloud-accounts/${account.id}`)
+            }
+          />
         )}
       </SettingsSection>
     </SettingsPage>

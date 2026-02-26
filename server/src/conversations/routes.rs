@@ -13,39 +13,11 @@ use tracing::warn;
 
 use crate::AppState;
 use crate::ai::client::{AiError, ask_llm};
-use crate::db::conversations::{Conversation, ConversationMessage};
+use crate::conversations::models::{Conversation, ConversationMessage};
+use crate::error::data_response;
 use crate::graph::rdf_graph::RdfGraph;
 use crate::pipeline::PipelineSummary;
-use crate::tenant::TenantScoped;
-
-use super::error_response;
-
-/// Phase 1 placeholder — Phase 4 middleware replaces this with real session context.
-fn placeholder_ctx() -> crate::tenant::TenantContext {
-    TenantScoped::placeholder()
-}
-
-/// Phase 1 placeholder scoped around a value — Phase 4 middleware replaces this.
-fn placeholder_scoped<T: Clone>(inner: T) -> TenantScoped<T> {
-    TenantScoped::placeholder_with(inner)
-}
-
-#[derive(Deserialize)]
-pub struct AskRequest {
-    pub question: String,
-    pub conversation_id: Option<String>,
-    pub provider: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct AskResponse {
-    pub answer: String,
-    pub sparql: Option<String>,
-    pub data: Option<crate::graph::rdf_graph::TabularData>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub conversation_id: Option<String>,
-    pub code: String,
-}
+use crate::tenant::{placeholder_ctx, placeholder_scoped};
 
 pub async fn ask_discover(
     State(state): State<AppState>,
@@ -65,17 +37,26 @@ pub async fn ask_discover(
     let ai_settings = match ai_settings {
         Some(s) if !s.api_key.expose_secret().is_empty() => s,
         _ => {
-            return error_response(
+            return (
                 StatusCode::BAD_REQUEST,
-                "AI_NOT_CONFIGURED",
-                "AI settings are not configured. Go to Settings > AI to add an API key.",
+                Json(crate::error::error_body(
+                    "ai_not_configured",
+                    "AI settings are not configured. Go to Settings > AI to add an API key.",
+                )),
             )
+                .into_response();
         }
     };
 
     let job = match state.db.get_job(&placeholder_scoped(id.as_str())).await {
         Some(j) => j,
-        None => return error_response(StatusCode::NOT_FOUND, "NOT_FOUND", "Job not found"),
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(crate::error::error_body("not_found", "Job not found")),
+            )
+                .into_response();
+        }
     };
 
     let schema = build_schema_context(&job.pipeline);
@@ -107,17 +88,17 @@ pub async fn ask_discover(
         Err(e) => {
             let (code, answer) = match &e {
                 AiError::InsufficientCredits(_) => (
-                    "INSUFFICIENT_CREDITS",
+                    "insufficient_credits",
                     "Your AI provider account has insufficient credits. Please check your billing settings.",
                 ),
                 AiError::Failed(_) => (
-                    "LLM_FAILED",
+                    "llm_failed",
                     "Something went wrong while generating a query. Please try again.",
                 ),
             };
             warn!("LLM call failed: {e}");
             state.db.add_message(&conversation_id, "assistant", answer, None, None, Some(code)).await;
-            return Json(AskResponse {
+            return data_response(AskResponse {
                 answer: answer.to_string(),
                 sparql: None,
                 data: None,
@@ -140,13 +121,13 @@ pub async fn ask_discover(
         Ok(p) => p,
         Err(_) => {
             let answer = "I wasn't able to understand the data well enough to generate a query. Could you rephrase your question?".to_string();
-            state.db.add_message(&conversation_id, "assistant", &answer, None, None, Some("PARSE_FAILED")).await;
-            return Json(AskResponse {
+            state.db.add_message(&conversation_id, "assistant", &answer, None, None, Some("parse_failed")).await;
+            return data_response(AskResponse {
                 answer,
                 sparql: None,
                 data: None,
                 conversation_id: Some(conversation_id),
-                code: "PARSE_FAILED".to_string(),
+                code: "parse_failed".to_string(),
             }).into_response();
         }
     };
@@ -158,13 +139,13 @@ pub async fn ask_discover(
         Err(err) => {
             warn!("SPARQL execution failed: {err}");
             let answer = "I generated a query but it didn't work against your data. Try rephrasing your question.".to_string();
-            state.db.add_message(&conversation_id, "assistant", &answer, Some(&sparql), None, Some("SPARQL_FAILED")).await;
-            return Json(AskResponse {
+            state.db.add_message(&conversation_id, "assistant", &answer, Some(&sparql), None, Some("sparql_failed")).await;
+            return data_response(AskResponse {
                 answer,
                 sparql: Some(sparql),
                 data: None,
                 conversation_id: Some(conversation_id),
-                code: "SPARQL_FAILED".to_string(),
+                code: "sparql_failed".to_string(),
             }).into_response();
         }
     };
@@ -194,16 +175,15 @@ pub async fn ask_discover(
         "No data matched your query. Try rephrasing your question.".to_string()
     };
 
-    state.db.add_message(&conversation_id, "assistant", &answer, Some(&sparql), data.as_ref(), Some("SUCCESS")).await;
+    state.db.add_message(&conversation_id, "assistant", &answer, Some(&sparql), data.as_ref(), Some("success")).await;
 
-    Json(AskResponse {
+    data_response(AskResponse {
         answer,
         sparql: Some(sparql),
         data,
         conversation_id: Some(conversation_id),
-        code: "SUCCESS".to_string(),
-    })
-    .into_response()
+        code: "success".to_string(),
+    }).into_response()
 }
 
 #[derive(Deserialize)]
@@ -217,26 +197,30 @@ pub async fn create_conversation(
     Json(req): Json<CreateConversationRequest>,
 ) -> Response {
     if state.db.get_job(&placeholder_scoped(job_id.as_str())).await.is_none() {
-        return error_response(StatusCode::NOT_FOUND, "NOT_FOUND", "Job not found");
+        return (
+            StatusCode::NOT_FOUND,
+            Json(crate::error::error_body("not_found", "Job not found")),
+        )
+            .into_response();
     }
     let conv = state.db.create_conversation(&placeholder_ctx(), &job_id, req.title).await;
-    (StatusCode::CREATED, Json(conv)).into_response()
+    (StatusCode::CREATED, data_response(conv)).into_response()
 }
 
 pub async fn list_conversations(
     State(state): State<AppState>,
     Path(job_id): Path<String>,
-) -> Response {
+) -> impl IntoResponse {
     let convs: Vec<Conversation> = state.db.list_conversations(&placeholder_ctx(), &job_id).await;
-    Json(convs).into_response()
+    data_response(convs)
 }
 
 pub async fn get_conversation_messages(
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
-) -> Response {
+) -> impl IntoResponse {
     let messages: Vec<ConversationMessage> = state.db.get_messages(&conversation_id).await;
-    Json(messages).into_response()
+    data_response(messages)
 }
 
 #[derive(Deserialize)]
@@ -250,7 +234,11 @@ pub async fn rename_conversation(
     Json(req): Json<RenameConversationRequest>,
 ) -> Response {
     if req.title.trim().is_empty() {
-        return error_response(StatusCode::BAD_REQUEST, "validation_error", "title is required");
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(crate::error::error_body("validation_error", "title is required")),
+        )
+            .into_response();
     }
     state.db.rename_conversation(&conversation_id, req.title.trim()).await;
     StatusCode::NO_CONTENT.into_response()
@@ -259,9 +247,26 @@ pub async fn rename_conversation(
 pub async fn delete_conversation(
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
-) -> Response {
+) -> impl IntoResponse {
     state.db.delete_conversation(&conversation_id).await;
-    StatusCode::NO_CONTENT.into_response()
+    StatusCode::NO_CONTENT
+}
+
+#[derive(Deserialize)]
+pub struct AskRequest {
+    pub question: String,
+    pub conversation_id: Option<String>,
+    pub provider: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct AskResponse {
+    pub answer: String,
+    pub sparql: Option<String>,
+    pub data: Option<crate::graph::rdf_graph::TabularData>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub conversation_id: Option<String>,
+    pub code: String,
 }
 
 fn strip_markdown_fences(raw: &str) -> &str {
@@ -382,9 +387,12 @@ async fn get_cached_graph(state: &AppState, job_id: &str) -> Option<Arc<RdfGraph
 }
 
 fn not_loaded_error() -> Response {
-    error_response(
+    (
         StatusCode::BAD_REQUEST,
-        "NOT_LOADED",
-        "Output data for this job is not loaded. Call /discover/load first.",
+        Json(crate::error::error_body(
+            "not_loaded",
+            "Output data for this job is not loaded. Call /discover/load first.",
+        )),
     )
+        .into_response()
 }

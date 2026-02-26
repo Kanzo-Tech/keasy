@@ -51,6 +51,14 @@ pub enum AppError {
     /// The inner string is logged via `tracing::error!` but NOT returned to the caller.
     #[error("internal: {0}")]
     Internal(String),
+
+    /// Bridging variants for domain errors
+    #[error(transparent)]
+    JobApi(#[from] crate::jobs::errors::JobApiError),
+    #[error(transparent)]
+    Connection(#[from] crate::connections::errors::ConnectionError),
+    #[error(transparent)]
+    CloudAccount(#[from] crate::cloud_accounts::errors::CloudAccountError),
 }
 
 impl IntoResponse for AppError {
@@ -88,6 +96,10 @@ impl IntoResponse for AppError {
                 )
                     .into_response()
             }
+
+            AppError::JobApi(e) => e.into_response(),
+            AppError::Connection(e) => e.into_response(),
+            AppError::CloudAccount(e) => e.into_response(),
         }
     }
 }

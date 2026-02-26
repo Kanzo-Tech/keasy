@@ -1,12 +1,12 @@
 use rusqlite::params;
 use tracing::error;
 
-use crate::job::errors::JobError;
-use crate::job::types::{Job, JobStatus, RunMode};
-use crate::pipeline::PipelineSummary;
+use crate::db::Database;
 use crate::tenant::{TenantContext, TenantScoped};
 
-use super::Database;
+use super::errors::JobRuntimeError;
+use super::models::{Job, JobStatus, RunMode};
+use crate::pipeline::PipelineSummary;
 
 impl Database {
     pub async fn insert_job(&self, ctx: &TenantContext, job: &Job) {
@@ -180,7 +180,7 @@ fn row_to_job(row: &rusqlite::Row) -> Job {
         created_at: row.get(4).unwrap_or_default(),
         started_at: row.get(5).unwrap_or(None),
         completed_at: row.get(6).unwrap_or(None),
-        error: error_json.and_then(|j| serde_json::from_str::<JobError>(&j).ok()),
+        error: error_json.and_then(|j| serde_json::from_str::<JobRuntimeError>(&j).ok()),
         pipeline: serde_json::from_str::<PipelineSummary>(&pipeline_json).unwrap_or_default(),
         catalog: row.get(9).unwrap_or(None),
         dcat_input: None,

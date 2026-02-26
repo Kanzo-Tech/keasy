@@ -33,7 +33,7 @@ pub struct Job {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub completed_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<super::errors::JobError>,
+    pub error: Option<super::errors::JobRuntimeError>,
     pub mode: RunMode,
     pub pipeline: PipelineSummary,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -64,17 +64,6 @@ pub struct CreateJobRequest {
 pub struct UpdateJobRequest {
     pub script: Option<String>,
     pub name: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ErrorEnvelope {
-    pub error: ErrorDetail,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ErrorDetail {
-    pub code: String,
-    pub message: String,
 }
 
 pub fn now_iso8601() -> String {

@@ -8,8 +8,8 @@ use tracing::{error, info, warn};
 use fossil_lang::runtime::executor::ExecutionConfig;
 use fossil_lang::runtime::storage::StorageConfig;
 
-use super::errors::{JobError, classify_error};
-use super::types::{JobStatus, now_iso8601};
+use super::errors::{JobRuntimeError, classify_error};
+use super::models::{JobStatus, now_iso8601};
 use crate::cloud::resolver::CloudOutputResolver;
 use crate::db::Database;
 use crate::dcat::extract::extract_dcat_input;
@@ -84,7 +84,7 @@ impl JobRunner {
                     let ctx_ref = TenantScoped::new(OrgId(org_id.clone()), ctx.inner().as_str());
                     db.update_job(&ctx_ref, |job| {
                         job.status = JobStatus::Failed;
-                        job.error = Some(JobError::new("INTERNAL_ERROR", "Failed to acquire execution permit"));
+                        job.error = Some(JobRuntimeError::new("INTERNAL_ERROR", "Failed to acquire execution permit"));
                         job.completed_at = Some(now_iso8601());
                     }).await;
                     return;
@@ -154,7 +154,7 @@ impl JobRunner {
                     error!(job_id = %job_id, error = %join_err, "Job panicked");
                     db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Failed;
-                        job.error = Some(JobError::with_detail("INTERNAL_ERROR", "An internal error occurred", join_err.to_string()));
+                        job.error = Some(JobRuntimeError::with_detail("INTERNAL_ERROR", "An internal error occurred", join_err.to_string()));
                         job.completed_at = Some(now_iso8601());
                     }).await;
                 }
@@ -162,7 +162,7 @@ impl JobRunner {
                     error!(job_id = %job_id, "Job execution timed out");
                     db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Failed;
-                        job.error = Some(JobError::new("TIMEOUT", "Job execution timed out"));
+                        job.error = Some(JobRuntimeError::new("TIMEOUT", "Job execution timed out"));
                         job.completed_at = Some(now_iso8601());
                     }).await;
                 }

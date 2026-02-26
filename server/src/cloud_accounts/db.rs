@@ -6,10 +6,10 @@ use secrecy::{ExposeSecret, SecretString};
 use tracing::{info, warn};
 
 use crate::settings::schema::find_provider;
-use crate::settings::types::*;
+use crate::db::Database;
 use crate::tenant::{TenantContext, TenantScoped};
 
-use super::Database;
+use super::models::{CloudAccount, CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest};
 
 impl Database {
     pub async fn create_cloud_account(

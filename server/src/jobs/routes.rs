@@ -2,37 +2,28 @@ use axum::{
     Json,
     extract::{Path, Query, State},
     http::StatusCode,
-    response::{IntoResponse, Response},
+    response::IntoResponse,
 };
 use serde::Deserialize;
 
 use crate::AppState;
+use crate::error::data_response;
 use crate::rdf::format::RdfExportFormat;
-use crate::job::types::{CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601};
+use crate::jobs::models::{CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601};
 use crate::script::rewrite;
-use crate::tenant::TenantScoped;
+use crate::tenant::{placeholder_ctx, placeholder_scoped};
 
-use super::error_response;
+use super::errors::JobApiError;
 
-/// Phase 1 placeholder — Phase 4 middleware replaces this with real session context.
-fn placeholder_ctx() -> crate::tenant::TenantContext {
-    TenantScoped::placeholder()
-}
-
-/// Phase 1 placeholder scoped around a value — Phase 4 middleware replaces this.
-fn placeholder_scoped<T: Clone>(inner: T) -> TenantScoped<T> {
-    TenantScoped::placeholder_with(inner)
-}
-
-pub async fn list_jobs(State(state): State<AppState>) -> impl IntoResponse {
+pub async fn list_jobs(State(state): State<AppState>) -> Result<impl IntoResponse, JobApiError> {
     let jobs = state.db.list_jobs(&placeholder_ctx()).await;
-    Json(jobs)
+    Ok(data_response(jobs))
 }
 
 pub async fn create_job(
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
-) -> Response {
+) -> Result<impl IntoResponse, JobApiError> {
     let id = uuid::Uuid::new_v4().to_string();
 
     if payload.draft {
@@ -52,15 +43,13 @@ pub async fn create_job(
             script: Some(payload.script),
         };
         state.db.insert_job(&placeholder_ctx(), &job).await;
-        return (StatusCode::CREATED, Json(job)).into_response();
+        return Ok((StatusCode::CREATED, data_response(job)).into_response());
     }
 
     let dcat_enabled = payload.dcat_enabled.unwrap_or(false);
 
-    let resolved = match rewrite::resolve(&payload.script, &state.db).await {
-        Ok(r) => r,
-        Err(err) => return error_response(StatusCode::BAD_REQUEST, "REWRITE_ERROR", err),
-    };
+    let resolved = rewrite::resolve(&payload.script, &state.db).await
+        .map_err(JobApiError::RewriteFailed)?;
 
     let job = Job {
         id: id.clone(),
@@ -88,7 +77,7 @@ pub async fn create_job(
 
     // Phase 1 placeholder org_id passed to runner — Phase 4 passes real session org_id
     use crate::db::seed::SEED_ORG_ID;
-    use crate::job::runner::SpawnParams;
+    use crate::jobs::runner::SpawnParams;
     state.runner.spawn(SpawnParams {
         org_id: SEED_ORG_ID.to_string(),
         job_id: id,
@@ -99,16 +88,16 @@ pub async fn create_job(
         dcat_format: payload.dcat_format,
     });
 
-    (StatusCode::ACCEPTED, Json(job)).into_response()
+    Ok((StatusCode::ACCEPTED, data_response(job)).into_response())
 }
 
 pub async fn get_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> Response {
+) -> Result<impl IntoResponse, JobApiError> {
     match state.db.get_job(&placeholder_scoped(id.as_str())).await {
-        Some(job) => (StatusCode::OK, Json(job)).into_response(),
-        None => not_found(&id),
+        Some(job) => Ok(data_response(job).into_response()),
+        None => Err(JobApiError::NotFound),
     }
 }
 
@@ -116,7 +105,7 @@ pub async fn update_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateJobRequest>,
-) -> Response {
+) -> Result<impl IntoResponse, JobApiError> {
     match state.db.update_job(&placeholder_scoped(id.as_str()), |job| {
         if job.status != JobStatus::Draft {
             return;
@@ -128,31 +117,31 @@ pub async fn update_job(
             job.name = Some(name);
         }
     }).await {
-        Some(job) if job.status == JobStatus::Draft => (StatusCode::OK, Json(job)).into_response(),
-        Some(_) => error_response(StatusCode::BAD_REQUEST, "NOT_DRAFT", "Only draft jobs can be updated"),
-        None => not_found(&id),
+        Some(job) if job.status == JobStatus::Draft => Ok(data_response(job).into_response()),
+        Some(_) => Err(JobApiError::NotDraft),
+        None => Err(JobApiError::NotFound),
     }
 }
 
 pub async fn cancel_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> Response {
+) -> Result<impl IntoResponse, JobApiError> {
     match state.db.update_job(&placeholder_scoped(id.as_str()), |job| {
         job.status = JobStatus::Cancelled;
         job.completed_at = Some(now_iso8601());
     }).await {
-        Some(job) => (StatusCode::OK, Json(job)).into_response(),
-        None => not_found(&id),
+        Some(job) => Ok(data_response(job).into_response()),
+        None => Err(JobApiError::NotFound),
     }
 }
 
 pub async fn delete_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> Response {
+) -> Result<impl IntoResponse, JobApiError> {
     if state.db.get_job(&placeholder_scoped(id.as_str())).await.is_none() {
-        return not_found(&id);
+        return Err(JobApiError::NotFound);
     }
 
     let graph_name = format!("urn:keasy:job:{id}");
@@ -165,7 +154,7 @@ pub async fn delete_job(
 
     state.db.remove_job(&placeholder_scoped(id.as_str())).await;
 
-    StatusCode::NO_CONTENT.into_response()
+    Ok(StatusCode::NO_CONTENT.into_response())
 }
 
 #[derive(Deserialize)]
@@ -177,44 +166,40 @@ pub async fn get_job_catalog(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Query(query): Query<CatalogQuery>,
-) -> Response {
+) -> Result<impl IntoResponse, JobApiError> {
     if state.db.get_job(&placeholder_scoped(id.as_str())).await.is_none() {
-        return not_found(&id);
+        return Err(JobApiError::NotFound);
     }
 
-    let format = match query
+    let format = query
         .format
         .as_deref()
         .map(RdfExportFormat::from_name)
         .transpose()
-    {
-        Ok(f) => f.unwrap_or(RdfExportFormat::Turtle),
-        Err(err) => {
-            return error_response(StatusCode::BAD_REQUEST, "invalid_format", err)
-        }
-    };
+        .map_err(JobApiError::InvalidFormat)?
+        .unwrap_or(RdfExportFormat::Turtle);
 
     let graph_name = format!("urn:keasy:job:{id}");
     match state.catalog.serialize_graph(Some(&graph_name), format) {
         Ok(catalog) if !catalog.trim().is_empty() => {
-            (StatusCode::OK, Json(serde_json::json!({ "catalog": catalog }))).into_response()
+            Ok(data_response(serde_json::json!({ "catalog": catalog })).into_response())
         }
-        Ok(_) => error_response(StatusCode::NOT_FOUND, "no_catalog", "No DCAT catalog available for this job"),
-        Err(err) => error_response(StatusCode::INTERNAL_SERVER_ERROR, "serialization_error", err),
+        Ok(_) => Err(JobApiError::NoCatalog),
+        Err(err) => Err(JobApiError::Serialization(err)),
     }
 }
 
 pub async fn get_job_graph(
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> Response {
+) -> Result<impl IntoResponse, JobApiError> {
     match state.db.get_job(&placeholder_scoped(id.as_str())).await {
         Some(_) => {
             let graph_name = format!("urn:keasy:job:{id}");
             let graph_data = state.catalog.get_graph(Some(&graph_name));
-            (StatusCode::OK, Json(graph_data)).into_response()
+            Ok(data_response(graph_data).into_response())
         }
-        None => not_found(&id),
+        None => Err(JobApiError::NotFound),
     }
 }
 
@@ -222,19 +207,19 @@ pub async fn get_unified_graph(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     let graph_data = state.catalog.get_graph(None);
-    Json(graph_data)
+    data_response(graph_data)
 }
 
 pub async fn get_dashboard_layout(
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> Response {
+) -> Result<impl IntoResponse, JobApiError> {
     if state.db.get_job(&placeholder_scoped(id.as_str())).await.is_none() {
-        return not_found(&id);
+        return Err(JobApiError::NotFound);
     }
     match state.db.get_dashboard_layout(&id).await {
-        Some(layout) => (StatusCode::OK, Json(layout)).into_response(),
-        None => StatusCode::NO_CONTENT.into_response(),
+        Some(layout) => Ok(data_response(layout).into_response()),
+        None => Ok(StatusCode::NO_CONTENT.into_response()),
     }
 }
 
@@ -242,18 +227,10 @@ pub async fn save_dashboard_layout(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(body): Json<serde_json::Value>,
-) -> Response {
+) -> Result<impl IntoResponse, JobApiError> {
     if state.db.get_job(&placeholder_scoped(id.as_str())).await.is_none() {
-        return not_found(&id);
+        return Err(JobApiError::NotFound);
     }
     state.db.set_dashboard_layout(&id, &body).await;
-    StatusCode::OK.into_response()
-}
-
-fn not_found(id: &str) -> Response {
-    error_response(
-        StatusCode::NOT_FOUND,
-        "not_found",
-        format!("Job '{}' not found", id),
-    )
+    Ok(StatusCode::OK.into_response())
 }

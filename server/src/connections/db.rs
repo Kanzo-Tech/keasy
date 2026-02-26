@@ -1,10 +1,10 @@
 use rusqlite::params;
 use tracing::error;
 
-use crate::settings::types::{Connection, ConnectionKind, CreateConnectionRequest, LocationType, UpdateConnectionRequest};
+use crate::db::Database;
 use crate::tenant::{TenantContext, TenantScoped};
 
-use super::Database;
+use super::models::{Connection, ConnectionKind, CreateConnectionRequest, LocationType, UpdateConnectionRequest};
 
 impl Database {
     pub async fn create_connection(&self, ctx: &TenantContext, req: CreateConnectionRequest) -> Result<Connection, String> {

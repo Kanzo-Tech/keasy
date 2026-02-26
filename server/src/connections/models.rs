@@ -1,40 +1,4 @@
-use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-
-pub struct CloudAccount {
-    pub id: String,
-    pub name: String,
-    pub provider_id: String,
-    pub auth_method: Option<String>,
-    pub fields: HashMap<String, String>,
-    pub secrets: HashMap<String, SecretString>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct CreateCloudAccountRequest {
-    pub name: String,
-    pub provider_id: String,
-    pub auth_method: Option<String>,
-    pub fields: HashMap<String, String>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct UpdateCloudAccountRequest {
-    pub name: Option<String>,
-    pub auth_method: Option<String>,
-    pub fields: Option<HashMap<String, String>>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct CloudAccountSummary {
-    pub id: String,
-    pub name: String,
-    pub provider_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub auth_method: Option<String>,
-    pub fields: HashMap<String, String>,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]

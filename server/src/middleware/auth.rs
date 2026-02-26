@@ -1,14 +1,15 @@
 use axum::{
+    Json,
     extract::{Request, State},
     http::StatusCode,
     middleware::Next,
-    response::Response,
+    response::{IntoResponse, Response},
 };
 use secrecy::ExposeSecret;
 use subtle::ConstantTimeEq;
 
 use crate::AppState;
-use crate::routes::error_response;
+use crate::error::error_body;
 
 pub async fn api_key_auth(
     State(state): State<AppState>,
@@ -21,11 +22,11 @@ pub async fn api_key_auth(
         Some(key) if constant_time_eq(key, state.api_key.expose_secret()) => {
             next.run(request).await
         }
-        _ => error_response(
+        _ => (
             StatusCode::UNAUTHORIZED,
-            "unauthorized",
-            "Invalid or missing API key",
-        ),
+            Json(error_body("unauthorized", "Invalid or missing API key")),
+        )
+            .into_response(),
     }
 }
 

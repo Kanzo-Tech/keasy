@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::LazyLock;
 
 use crate::db::Database;
-use crate::settings::types::Connection;
+use crate::connections::models::Connection;
 use crate::tenant::TenantScoped;
 
 pub struct ResolvedScript {

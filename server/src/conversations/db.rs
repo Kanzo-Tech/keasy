@@ -1,34 +1,11 @@
 use rusqlite::params;
-use serde::{Deserialize, Serialize};
 
+use crate::db::Database;
+use crate::jobs::models::now_iso8601;
 use crate::graph::rdf_graph::TabularData;
-use crate::job::types::now_iso8601;
 use crate::tenant::TenantContext;
 
-use super::Database;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Conversation {
-    pub id: String,
-    pub job_id: String,
-    pub created_at: String,
-    pub title: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConversationMessage {
-    pub id: String,
-    pub conversation_id: String,
-    pub role: String,
-    pub content: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sparql: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<TabularData>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub code: Option<String>,
-    pub created_at: String,
-}
+use super::models::{Conversation, ConversationMessage};
 
 impl Database {
     pub async fn create_conversation(&self, ctx: &TenantContext, job_id: &str, title: Option<String>) -> Conversation {
@@ -143,4 +120,3 @@ impl Database {
         let _ = conn.execute("DELETE FROM conversations WHERE id = ?1", [id]);
     }
 }
-

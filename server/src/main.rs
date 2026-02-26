@@ -1,12 +1,15 @@
 mod ai;
 mod cloud;
+mod cloud_accounts;
 mod config;
+mod connections;
+mod conversations;
 mod crypto;
 mod db;
 mod dcat;
 mod error;
 mod graph;
-mod job;
+mod jobs;
 mod middleware;
 mod pipeline;
 mod rdf;
@@ -27,7 +30,7 @@ use tracing::{info, warn};
 use config::ServerConfig;
 use db::Database;
 use graph::rdf_graph::RdfGraph;
-use job::runner::JobRunner;
+use jobs::runner::JobRunner;
 
 pub struct OutputCache(lru::LruCache<String, Arc<RdfGraph>>);
 

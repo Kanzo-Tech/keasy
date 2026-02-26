@@ -179,7 +179,7 @@ Each phase runs on its own git branch and merges into main via pull request befo
 | 3. Auth Routes & Session Middleware | 2/2 | Complete   | 2026-02-26 |
 | 4. Tenant Context Middleware & RBAC | 3/3 | Complete   | 2026-02-26 |
 | 5. Frontend Auth Pages & Session Management | 3/3 | Complete   | 2026-02-26 |
-| 6. Dataspace Switcher & Organization Management | 1/3 | In Progress|  |
+| 6. Dataspace Switcher & Organization Management | 2/3 | In Progress|  |
 | 7. Frontend Architecture Cleanup | 0/TBD | Not started | - |
 | 8. Walt.id Integration & VC Auth Path | 0/TBD | Not started | - |
 | 9. Gaia-X Compliance Wizard | 0/TBD | Not started | - |

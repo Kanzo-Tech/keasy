@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T19:10:33.358Z"
+last_updated: "2026-02-26T19:16:10.876Z"
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 18
-  completed_plans: 16
+  completed_plans: 17
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 06 of 9 (Dataspace Switcher & Organization Management) — In Progress
-Plan: 1 of 3 complete (06-01 complete — backend API)
-Status: Phase 06 In Progress — Backend API done; Plans 02 (UI) and 03 (settings) remaining
-Last activity: 2026-02-26 — Completed Plan 06-01: Email service, org invite, org user CRUD, password change, invite-info, roles in get_me
+Plan: 2 of 3 complete (06-01 backend API, 06-02 Dataspace Switcher UI)
+Status: Phase 06 In Progress — Plans 01 and 02 done; Plan 03 (org management pages) remaining
+Last activity: 2026-02-26 — Completed Plan 06-02: SWR-fed sidebar, TeamSwitcher with role badges, NavUser initials avatar, password change form
 
-Progress: [████████████] ~70%
+Progress: [████████████████] ~75%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [████████████] ~70%
 | Phase 04 P02 | 20 min | 2 tasks | 13 files |
 | Phase 05 P03 | 1 | 1 tasks | 1 files |
 | Phase 06 P01 | 6 | 2 tasks | 16 files |
+| Phase 06 P02 | 3 | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -114,6 +115,9 @@ Recent decisions affecting current work:
 - [Phase 06-01]: EmailService dev fallback: tracing::warn logs invite URL when SMTP not configured — no email server needed for development
 - [Phase 06-01]: fire-and-forget email via tokio::spawn: HTTP response returns immediately; email errors logged but don't fail the request
 - [Phase 06-01]: create_dataspace now auto-assigns promotor org to new dataspace with promotor role
+- [Phase 06-02]: invite-info proxy already existed from Plan 01 — skipped creation
+- [Phase 06-02]: KEASY_API_URL used (not NEXT_PUBLIC_API_URL) for consistency with existing proxy pattern
+- [Phase 06-02]: NavUser AvatarImage fully removed — initials-only avatar (no profile photo)
 
 ### Pending Todos
 
@@ -131,5 +135,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Plan 06-01 — Backend API for Phase 6: email service (SMTP + dev fallback), org invite flow, org admin user CRUD, password change, invite-info endpoint, role-per-dataspace in GET /v1/auth/me. All 12 tests pass.
-Resume with: /gsd:execute-phase (Phase 06 Plan 02 — Dataspace Switcher UI)
+Stopped at: Completed Plan 06-02 — Dataspace Switcher UI: SWR-fed sidebar with real user/dataspace data, TeamSwitcher with role badges and cache-invalidating switch, NavUser initials avatar, password change form at /settings/security.
+Resume with: /gsd:execute-phase (Phase 06 Plan 03 — Organization Management Pages)

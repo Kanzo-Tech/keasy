@@ -120,10 +120,17 @@ pub async fn register(
         OffsetDateTime::now_utc() + time::Duration::hours(24),
     )));
 
+    // Save the session to the store now so cycle_id assigns a new session ID.
+    // cycle_id() sets session_id to None; save() calls store.create() which assigns a real ID.
+    session
+        .save()
+        .await
+        .map_err(|e| AuthError::Internal(format!("session save failed: {e}")))?;
+
     // Store in user_sessions for single-session enforcement
     let session_id = session
         .id()
-        .ok_or_else(|| AuthError::Internal("session has no ID after cycle_id".to_string()))?
+        .ok_or_else(|| AuthError::Internal("session has no ID after save".to_string()))?
         .to_string();
 
     state
@@ -206,14 +213,21 @@ pub async fn login(
         OffsetDateTime::now_utc() + time::Duration::hours(24),
     )));
 
-    // 7. Enforce single session — AFTER cycle_id so we store the new session_id
+    // Save the session to the store now so cycle_id assigns a new session ID.
+    // cycle_id() sets session_id to None; save() calls store.create() which assigns a real ID.
+    session
+        .save()
+        .await
+        .map_err(|e| AuthError::Internal(format!("session save failed: {e}")))?;
+
+    // 7. Enforce single session — AFTER cycle_id and save so we store the new session_id.
     // The old session_id in user_sessions is atomically replaced. The old session
     // data remains in the tower-sessions store until it expires naturally (24h),
     // but session_required middleware will reject it immediately since its session_id
     // no longer matches the active entry in user_sessions.
     let session_id = session
         .id()
-        .ok_or_else(|| AuthError::Internal("session has no ID after cycle_id".to_string()))?
+        .ok_or_else(|| AuthError::Internal("session has no ID after save".to_string()))?
         .to_string();
 
     state

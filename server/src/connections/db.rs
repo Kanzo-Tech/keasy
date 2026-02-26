@@ -2,7 +2,7 @@ use rusqlite::params;
 use tracing::error;
 
 use crate::db::Database;
-use crate::tenant::TenantScoped;
+use crate::tenant::{OrgId, TenantScoped};
 
 use super::models::{
     Connection, ConnectionKind, CreateConnectionRequest, LocationType, UpdateConnectionRequest,
@@ -26,7 +26,7 @@ impl Database {
 
         if let Some(ref account_id) = req.cloud_account_id
             && self
-                .get_cloud_account_summary(&TenantScoped::placeholder_with(account_id.as_str()))
+                .get_cloud_account_summary(&TenantScoped::new(ctx.org_id.clone(), account_id.as_str()))
                 .await
                 .is_none()
         {
@@ -162,7 +162,7 @@ impl Database {
     ) -> Vec<String> {
         let mut account_ids = Vec::new();
         for connection_id in connection_ids {
-            let scoped = TenantScoped::placeholder_with(connection_id.as_str());
+            let scoped = TenantScoped::new(OrgId(ctx.org_id().as_str().to_string()), connection_id.as_str());
             if let Some(connection) = self.get_connection(&scoped).await
                 && let Some(account_id) = &connection.cloud_account_id
                 && !account_ids.contains(account_id)
@@ -170,7 +170,6 @@ impl Database {
                 account_ids.push(account_id.clone());
             }
         }
-        let _ = ctx; // org_id carried via placeholder_with above; real session ctx used in Phase 4
         account_ids
     }
 
@@ -180,7 +179,7 @@ impl Database {
         connection_ids: &[String],
     ) -> fossil_lang::runtime::storage::StorageConfig {
         let account_ids = self.resolve_cloud_account_ids(ctx, connection_ids).await;
-        self.build_storage_config(ctx, &account_ids).await
+        self.build_storage_config(ctx, ctx.org_id().as_str(), &account_ids).await
     }
 }
 

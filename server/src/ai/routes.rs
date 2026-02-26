@@ -17,9 +17,10 @@ use super::models::{Conversation, ConversationMessage};
 use crate::error::data_response;
 use crate::discovery::rdf_graph::RdfGraph;
 use crate::jobs::PipelineSummary;
-use crate::tenant::{placeholder_ctx, placeholder_scoped};
+use crate::middleware::tenant::RequireRole;
 
 pub async fn ask_discover(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<AskRequest>,
@@ -48,7 +49,7 @@ pub async fn ask_discover(
         }
     };
 
-    let job = match state.db.get_job(&placeholder_scoped(id.as_str())).await {
+    let job = match state.db.get_job(&ctx.scoped(id.as_str())).await {
         Some(j) => j,
         None => {
             return (
@@ -64,7 +65,7 @@ pub async fn ask_discover(
     let conversation_id = match req.conversation_id {
         Some(cid) => cid,
         None => {
-            let conv = state.db.create_conversation(&placeholder_ctx(), &id, None).await;
+            let conv = state.db.create_conversation(&ctx.as_ctx(), &id, None).await;
             conv.id
         }
     };
@@ -192,35 +193,45 @@ pub struct CreateConversationRequest {
 }
 
 pub async fn create_conversation(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(job_id): Path<String>,
     Json(req): Json<CreateConversationRequest>,
 ) -> Response {
-    if state.db.get_job(&placeholder_scoped(job_id.as_str())).await.is_none() {
+    if state.db.get_job(&ctx.scoped(job_id.as_str())).await.is_none() {
         return (
             StatusCode::NOT_FOUND,
             Json(crate::error::error_body("not_found", "Job not found")),
         )
             .into_response();
     }
-    let conv = state.db.create_conversation(&placeholder_ctx(), &job_id, req.title).await;
+    let conv = state.db.create_conversation(&ctx.as_ctx(), &job_id, req.title).await;
     (StatusCode::CREATED, data_response(conv)).into_response()
 }
 
 pub async fn list_conversations(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(job_id): Path<String>,
 ) -> impl IntoResponse {
-    let convs: Vec<Conversation> = state.db.list_conversations(&placeholder_ctx(), &job_id).await;
+    let convs: Vec<Conversation> = state.db.list_conversations(&ctx.as_ctx(), &job_id).await;
     data_response(convs)
 }
 
 pub async fn get_conversation_messages(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
-) -> impl IntoResponse {
+) -> Response {
+    // Verify the conversation belongs to this org before returning messages
+    if state.db.get_conversation(&conversation_id, ctx.org_id.as_str()).await.is_none() {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(crate::error::error_body("not_found", "Conversation not found")),
+        ).into_response();
+    }
     let messages: Vec<ConversationMessage> = state.db.get_messages(&conversation_id).await;
-    data_response(messages)
+    data_response(messages).into_response()
 }
 
 #[derive(Deserialize)]
@@ -229,6 +240,7 @@ pub struct RenameConversationRequest {
 }
 
 pub async fn rename_conversation(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
     Json(req): Json<RenameConversationRequest>,
@@ -240,15 +252,16 @@ pub async fn rename_conversation(
         )
             .into_response();
     }
-    state.db.rename_conversation(&conversation_id, req.title.trim()).await;
+    state.db.rename_conversation(&conversation_id, ctx.org_id.as_str(), req.title.trim()).await;
     StatusCode::NO_CONTENT.into_response()
 }
 
 pub async fn delete_conversation(
+    RequireRole(ctx): RequireRole,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
 ) -> impl IntoResponse {
-    state.db.delete_conversation(&conversation_id).await;
+    state.db.delete_conversation(&conversation_id, ctx.org_id.as_str()).await;
     StatusCode::NO_CONTENT
 }
 

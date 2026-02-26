@@ -43,6 +43,23 @@ impl Database {
         .collect()
     }
 
+    pub async fn get_conversation(&self, id: &str, org_id: &str) -> Option<Conversation> {
+        let (_permit, conn) = self.read().await;
+        conn.query_row(
+            "SELECT id, job_id, created_at, title FROM conversations WHERE id = ?1 AND organization_id = ?2",
+            params![id, org_id],
+            |row| {
+                Ok(Conversation {
+                    id: row.get(0)?,
+                    job_id: row.get(1)?,
+                    created_at: row.get(2)?,
+                    title: row.get(3)?,
+                })
+            },
+        )
+        .ok()
+    }
+
     pub async fn add_message(
         &self,
         conversation_id: &str,
@@ -107,16 +124,19 @@ impl Database {
         .collect()
     }
 
-    pub async fn rename_conversation(&self, id: &str, title: &str) {
+    pub async fn rename_conversation(&self, id: &str, org_id: &str, title: &str) {
         let conn = self.write().await;
         let _ = conn.execute(
-            "UPDATE conversations SET title = ?1 WHERE id = ?2",
-            params![title, id],
+            "UPDATE conversations SET title = ?1 WHERE id = ?2 AND organization_id = ?3",
+            params![title, id, org_id],
         );
     }
 
-    pub async fn delete_conversation(&self, id: &str) {
+    pub async fn delete_conversation(&self, id: &str, org_id: &str) {
         let conn = self.write().await;
-        let _ = conn.execute("DELETE FROM conversations WHERE id = ?1", [id]);
+        let _ = conn.execute(
+            "DELETE FROM conversations WHERE id = ?1 AND organization_id = ?2",
+            params![id, org_id],
+        );
     }
 }

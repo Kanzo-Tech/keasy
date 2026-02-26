@@ -5,7 +5,7 @@ use std::sync::LazyLock;
 
 use crate::db::Database;
 use crate::connections::models::Connection;
-use crate::tenant::TenantScoped;
+use crate::tenant::{OrgId, TenantScoped};
 
 pub struct ResolvedScript {
     pub script: String,
@@ -24,15 +24,14 @@ static STRING_LITERAL: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#""([^"\\]|\\.)*""#).unwrap()
 });
 
-pub async fn resolve(script: &str, db: &Database) -> Result<ResolvedScript, String> {
+pub async fn resolve(script: &str, org_id: &str, db: &Database) -> Result<ResolvedScript, String> {
     validate_no_direct_paths(script)?;
 
     let refs = parse_refs(script);
     let mut connection_map = HashMap::new();
     for r in &refs {
         if !connection_map.contains_key(&r.connection_name) {
-            // Phase 1 placeholder — Phase 4 will pass real org_id from session
-            let ctx = TenantScoped::placeholder_with(r.connection_name.as_str());
+            let ctx = TenantScoped::new(OrgId(org_id.to_string()), r.connection_name.as_str());
             if let Some(connection) = db.get_connection_by_name(&ctx).await {
                 connection_map.insert(connection.name.clone(), connection);
             }
@@ -52,9 +51,8 @@ pub async fn resolve(script: &str, db: &Database) -> Result<ResolvedScript, Stri
         .into_iter()
         .collect();
 
-    // Phase 1 placeholder — Phase 4 will pass real org_id from session
-    let ctx = TenantScoped::placeholder();
-    let storage = db.build_storage_config(&ctx, &account_ids).await;
+    let ctx = TenantScoped::new(OrgId(org_id.to_string()), ());
+    let storage = db.build_storage_config(&ctx, org_id, &account_ids).await;
 
     Ok(ResolvedScript {
         script: resolved,

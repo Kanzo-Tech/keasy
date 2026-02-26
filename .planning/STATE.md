@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T18:08:59.272Z"
+last_updated: "2026-02-26T19:10:33.358Z"
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 15
-  completed_plans: 14
+  total_phases: 7
+  completed_phases: 6
+  total_plans: 18
+  completed_plans: 16
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 05 of 9 (Frontend Auth Pages & Session Management) — In Progress
-Plan: 3 of 3 complete (05-01, 05-02, 05-03 complete)
-Status: Phase 05 COMPLETE — All plans done: auth infrastructure, login/register pages, logout confirmation
-Last activity: 2026-02-26 — Completed Plan 05-03: NavUser logout with AlertDialog confirmation and POST /api/auth/logout
+Phase: 06 of 9 (Dataspace Switcher & Organization Management) — In Progress
+Plan: 1 of 3 complete (06-01 complete — backend API)
+Status: Phase 06 In Progress — Backend API done; Plans 02 (UI) and 03 (settings) remaining
+Last activity: 2026-02-26 — Completed Plan 06-01: Email service, org invite, org user CRUD, password change, invite-info, roles in get_me
 
-Progress: [███████████] ~65%
+Progress: [████████████] ~70%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Progress: [███████████] ~65%
 | 04-tenant-context-middleware-rbac P01 | 1 | 15 min | 15 min |
 | Phase 04 P02 | 20 min | 2 tasks | 13 files |
 | Phase 05 P03 | 1 | 1 tasks | 1 files |
+| Phase 06 P01 | 6 | 2 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,9 @@ Recent decisions affecting current work:
 - [Phase 05-02]: register() spread used for Input (not Controller) — Input is a standard forwardRef input; post-auth auto-dataspace is non-fatal try/catch, proceeds to dashboard regardless
 - [Phase 05-03]: onSelect={(e) => e.preventDefault()} on DropdownMenuItem prevents Radix from closing dropdown when AlertDialog trigger fires — required pattern for nested dialog-in-menu
 - [Phase 05-03]: handleLogout swallows fetch errors and always redirects to /login — logout is best-effort; router.push('/login') used without ?reason= param to avoid showing session expired banner on intentional logout
+- [Phase 06-01]: EmailService dev fallback: tracing::warn logs invite URL when SMTP not configured — no email server needed for development
+- [Phase 06-01]: fire-and-forget email via tokio::spawn: HTTP response returns immediately; email errors logged but don't fail the request
+- [Phase 06-01]: create_dataspace now auto-assigns promotor org to new dataspace with promotor role
 
 ### Pending Todos
 
@@ -127,5 +131,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Plan 05-02 SUMMARY — Login/register pages with split-screen layout, react-hook-form + zod, session expiry banner, post-login auto-dataspace selection. TypeScript clean.
-Resume with: /gsd:execute-phase (Phase 06 or next phase)
+Stopped at: Completed Plan 06-01 — Backend API for Phase 6: email service (SMTP + dev fallback), org invite flow, org admin user CRUD, password change, invite-info endpoint, role-per-dataspace in GET /v1/auth/me. All 12 tests pass.
+Resume with: /gsd:execute-phase (Phase 06 Plan 02 — Dataspace Switcher UI)

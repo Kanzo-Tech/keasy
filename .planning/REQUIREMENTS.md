@@ -39,15 +39,15 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 - [x] **USER-01**: User accounts with email, hashed password, and profile (name)
 - [x] **USER-02**: Database schema supports: Account → N Dataspaces → Organizations (promotor or participant) → Users
-- [ ] **USER-03**: Promotor can create a dataspace and is automatically assigned the promotor role
-- [ ] **USER-04**: Promotor can register participant organizations manually within a dataspace
-- [ ] **USER-05**: Promotor can assign privileges to participant organizations (role-based or manual)
-- [ ] **USER-06**: Each participant organization has 1 admin user who manages their org's users
-- [ ] **USER-07**: Org admin can add users with read-only or read-write roles within their organization
-- [ ] **USER-08**: Org admin can remove users from their organization
+- [x] **USER-03**: Promotor can create a dataspace and is automatically assigned the promotor role
+- [x] **USER-04**: Promotor can register participant organizations manually within a dataspace
+- [x] **USER-05**: Promotor can assign privileges to participant organizations (role-based or manual)
+- [x] **USER-06**: Each participant organization has 1 admin user who manages their org's users
+- [x] **USER-07**: Org admin can add users with read-only or read-write roles within their organization
+- [x] **USER-08**: Org admin can remove users from their organization
 - [x] **USER-09**: All resource queries (jobs, connections, cloud accounts, conversations) are tenant-scoped by organization_id
-- [ ] **USER-10**: User can change their own password (current + new + confirmation)
-- [ ] **USER-11**: Promotor can send email invite tokens to onboard org admins
+- [x] **USER-10**: User can change their own password (current + new + confirmation)
+- [x] **USER-11**: Promotor can send email invite tokens to onboard org admins
 - [x] **USER-12**: Frontend login page with email/password form and route guards (redirect unauthenticated users)
 - [ ] **USER-13**: Frontend shows real user data in sidebar (name, email, avatar) and real team/org in team switcher
 - [ ] **USER-14**: Dataspace switcher in sidebar for users belonging to multiple dataspaces
@@ -126,15 +126,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | API-10 | Phase 2 | Complete |
 | USER-01 | Phase 1 | Complete |
 | USER-02 | Phase 1 | Complete |
-| USER-03 | Phase 6 | Pending |
-| USER-04 | Phase 6 | Pending |
-| USER-05 | Phase 6 | Pending |
-| USER-06 | Phase 6 | Pending |
-| USER-07 | Phase 6 | Pending |
-| USER-08 | Phase 6 | Pending |
+| USER-03 | Phase 6 | Complete |
+| USER-04 | Phase 6 | Complete |
+| USER-05 | Phase 6 | Complete |
+| USER-06 | Phase 6 | Complete |
+| USER-07 | Phase 6 | Complete |
+| USER-08 | Phase 6 | Complete |
 | USER-09 | Phase 4 | Complete |
-| USER-10 | Phase 6 | Pending |
-| USER-11 | Phase 6 | Pending |
+| USER-10 | Phase 6 | Complete |
+| USER-11 | Phase 6 | Complete |
 | USER-12 | Phase 5 | Complete |
 | USER-13 | Phase 6 | Pending |
 | USER-14 | Phase 6 | Pending |

@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T23:33:55.236Z"
+last_updated: "2026-02-26T23:39:17.128Z"
 progress:
   total_phases: 9
   completed_phases: 8
   total_plans: 23
-  completed_plans: 20
+  completed_plans: 22
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 07 of 9 (Frontend Architecture Cleanup) — In Progress
-Plan: 1 of 4 complete (07-01 DataTable infrastructure + EmptyState upgrade)
-Status: Phase 07 In Progress — Plan 07-01 done, Plans 02–04 remaining
-Last activity: 2026-02-27 — Completed Plan 07-01: Installed @tanstack/react-table + @icons-pack/react-simple-icons, added Checkbox primitive, created DataTable component, upgraded EmptyState with actionHref+actionLabel CTA
+Plan: 2 of 4 complete (07-02 DataTable list view migrations)
+Status: Phase 07 In Progress — Plans 07-01 and 07-02 done, Plans 03–04 remaining
+Last activity: 2026-02-27 — Completed Plan 07-02: Migrated jobs, connections, cloud accounts list views to DataTable + TanStack Table column definitions; deleted job-table.tsx; added page headers with Create buttons (ARCH-05); EmptyState CTAs on all three list pages
 
 Progress: [████████████████] ~80%
 
@@ -60,6 +60,7 @@ Progress: [████████████████] ~80%
 | Phase 06 P02 | 3 | 3 tasks | 8 files |
 | Phase 06 P03 | 8 | 3 tasks | 12 files |
 | Phase 06.1-middleware-route-guard-fix P01 | 1 | 2 tasks | 2 files |
+| Phase 07 P03 | 2 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -126,6 +127,11 @@ Recent decisions affecting current work:
 - [Phase 06.1-01]: Two-list route guard: ALWAYS_PUBLIC_PATHS for /invite (auth-agnostic), AUTH_REDIRECT_PATHS for /login and /register
 - [Phase 06.1-01]: Open redirect prevention via startsWith('/') on login page, not in proxy middleware
 - [Phase 07-01]: Used radix-ui unified package for Checkbox (not @radix-ui/react-checkbox) to match existing project pattern
+- [Phase 07-02]: Factory function pattern for columns with callbacks (getJobColumns, getConnectionColumns, getCloudAccountColumns) — avoids module-level re-creation while allowing onDelete callbacks and external data
+- [Phase 07-02]: Deleted job-table.tsx entirely (no deprecation comment) — cleaner codebase, no dead code
+- [Phase 07-02]: EmptyState shown when !jobs?.length before DataTable — TanStack Table handles filtered-to-zero with its own "No results" row
+- [Phase 07]: OrgUser interface named OrgUser (not UserEntry) for domain clarity — represents a user within an organization context
+- [Phase 07]: Organization empty state uses action ReactNode prop (Dialog trigger) instead of actionHref — Add Organization is a dialog, not navigation
 
 ### Pending Todos
 
@@ -143,5 +149,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Plan 07-01 — DataTable infrastructure + EmptyState upgrade: @tanstack/react-table installed, Checkbox primitive added, generic DataTable<TData,TValue> with toolbar/pagination/row-selection created, EmptyState upgraded with actionHref+actionLabel CTA props.
-Resume with: /gsd:execute-phase (Phase 07 Plan 02 — list view migrations)
+Stopped at: Completed Plan 07-02 — DataTable list view migrations: jobs/connections/cloud-accounts pages migrated to DataTable, column factory functions created, job-table.tsx deleted, ARCH-05 Create buttons in page headers.
+Resume with: /gsd:execute-phase (Phase 07 Plan 03 — if remaining)

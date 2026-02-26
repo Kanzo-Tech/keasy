@@ -9,14 +9,14 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Frontend Architecture
 
-- [ ] **ARCH-01**: All list views (jobs, connections, cloud accounts, users, orgs) use TanStack Table + shadcn data-table with sorting, filtering, and column selection
-- [ ] **ARCH-02**: Data loading uses SWR consistently across all client components with a standardized pattern (no raw fetch, no mixed approaches)
-- [ ] **ARCH-03**: Discovery views are dedicated pages under the route tree, not embedded components
-- [ ] **ARCH-04**: Job detail views are dedicated pages (not embedded components)
-- [ ] **ARCH-05**: (data) route group layout has header / main (full height) / footer slots with "Create new" buttons on list pages
+- [x] **ARCH-01**: All list views (jobs, connections, cloud accounts, users, orgs) use TanStack Table + shadcn data-table with sorting, filtering, and column selection
+- [x] **ARCH-02**: Data loading uses SWR consistently across all client components with a standardized pattern (no raw fetch, no mixed approaches)
+- [x] **ARCH-03**: Discovery views are dedicated pages under the route tree, not embedded components
+- [x] **ARCH-04**: Job detail views are dedicated pages (not embedded components)
+- [x] **ARCH-05**: (data) route group layout has header / main (full height) / footer slots with "Create new" buttons on list pages
 - [ ] **ARCH-06**: Shared sidebar primitives (SidebarGroup, SidebarButton) extracted and reused between main sidebar and settings sidebar
 - [ ] **ARCH-07**: Settings main content occupies full available width
-- [ ] **ARCH-08**: EmptyState component shows contextual "Create new X" link for each entity type (job, connection, cloud account, etc.)
+- [x] **ARCH-08**: EmptyState component shows contextual "Create new X" link for each entity type (job, connection, cloud account, etc.)
 - [ ] **ARCH-09**: Single reusable graph component handles both RDF data graphs and catalog graphs with configurable data adapters
 - [ ] **ARCH-10**: Brand logos (Azure, Google Cloud, Amazon, Anthropic) use an icon library instead of custom components
 - [ ] **ARCH-11**: Graph background dot scale is smaller by default
@@ -102,14 +102,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ARCH-01 | Phase 7 | Pending |
-| ARCH-02 | Phase 7 | Pending |
-| ARCH-03 | Phase 7 | Pending |
-| ARCH-04 | Phase 7 | Pending |
-| ARCH-05 | Phase 7 | Pending |
+| ARCH-01 | Phase 7 | Complete |
+| ARCH-02 | Phase 7 | Complete |
+| ARCH-03 | Phase 7 | Complete |
+| ARCH-04 | Phase 7 | Complete |
+| ARCH-05 | Phase 7 | Complete |
 | ARCH-06 | Phase 7 | Pending |
 | ARCH-07 | Phase 7 | Pending |
-| ARCH-08 | Phase 7 | Pending |
+| ARCH-08 | Phase 7 | Complete |
 | ARCH-09 | Phase 7 | Pending |
 | ARCH-10 | Phase 7 | Pending |
 | ARCH-11 | Phase 7 | Pending |

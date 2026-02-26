@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T15:39:46.243Z"
+last_updated: "2026-02-26T18:08:59.272Z"
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 5
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 15
+  completed_plans: 14
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 05 of 9 (Frontend Auth Pages & Session Management) — In Progress
-Plan: 1 of 3 complete (05-01 complete)
-Status: Phase 05 IN PROGRESS — Auth infrastructure layer complete (cookie forwarding, route guard, SWR 401 handler, auth API routes)
-Last activity: 2026-02-26 — Completed Plan 05-01: Auth infrastructure (proxy.ts, api-proxy.ts, 5 auth routes, SWR provider)
+Plan: 3 of 3 complete (05-01, 05-02, 05-03 complete)
+Status: Phase 05 COMPLETE — All plans done: auth infrastructure, login/register pages, logout confirmation
+Last activity: 2026-02-26 — Completed Plan 05-03: NavUser logout with AlertDialog confirmation and POST /api/auth/logout
 
 Progress: [███████████] ~65%
 
@@ -55,6 +55,7 @@ Progress: [███████████] ~65%
 |-------|-------|-------|----------|
 | 04-tenant-context-middleware-rbac P01 | 1 | 15 min | 15 min |
 | Phase 04 P02 | 20 min | 2 tasks | 13 files |
+| Phase 05 P03 | 1 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,8 @@ Recent decisions affecting current work:
 - [Phase 05-01]: proxy.ts excludes /api/ from config.matcher — route guard is a UX gate, not a security gate; auth routes must be reachable unauthenticated
 - [Phase 05-01]: SWR 401 deduplication uses useRef(false) — first redirect wins, parallel SWR hooks firing 401 simultaneously are suppressed
 - [Phase 05-01]: X-Api-Key header removed from api-proxy.ts — api_key_auth was dead code, backend never consumed it
+- [Phase 05-03]: onSelect={(e) => e.preventDefault()} on DropdownMenuItem prevents Radix from closing dropdown when AlertDialog trigger fires — required pattern for nested dialog-in-menu
+- [Phase 05-03]: handleLogout swallows fetch errors and always redirects to /login — logout is best-effort; router.push('/login') used without ?reason= param to avoid showing session expired banner on intentional logout
 
 ### Pending Todos
 
@@ -122,5 +125,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Plan 05-01 — Auth infrastructure: cookie forwarding in api-proxy.ts, Next.js 16 proxy.ts route guard, 5 auth API routes (login/register/logout/me/set-dataspace), SWR 401 session expiry redirect. TypeScript clean.
-Resume with: /gsd:execute-phase (Phase 05, Plan 02 — auth pages)
+Stopped at: Completed Plan 05-03 — NavUser logout AlertDialog confirmation: POST /api/auth/logout + router.push('/login'), onSelect preventDefault pattern, loading state. TypeScript clean.
+Resume with: /gsd:execute-phase (Phase 06 or next phase)

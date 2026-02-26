@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Tenant Context Middleware & RBAC** - Inject TenantContext on all requests, retrofit all queries with org scoping, enforce three-role RBAC (completed 2026-02-26)
 - [x] **Phase 5: Frontend Auth Pages & Session Management** - Login/register pages, Next.js route guards, session cookie flow, SWR 401 redirect (completed 2026-02-26)
 - [x] **Phase 6: Dataspace Switcher & Organization Management** - Connect sidebar to real user/org data, promotor control plane, invite token onboarding (completed 2026-02-26)
-- [ ] **Phase 6.1: Middleware Route Guard Fix** - Rename proxy.ts to middleware.ts, add /invite to PUBLIC_PATHS (gap closure)
+- [x] **Phase 6.1: Middleware Route Guard Fix** - Two-list path guard in proxy.ts, /invite in ALWAYS_PUBLIC_PATHS, redirect-after-login (completed 2026-02-26)
 - [ ] **Phase 7: Frontend Architecture Cleanup** - TanStack Table for all list views, SWR standardization, EmptyState, route group layout, graph component unification
 - [ ] **Phase 8: Walt.id Integration & VC Auth Path** - Docker sidecar setup, OID4VP auth path, VC session creation, wallet connect flow
 - [ ] **Phase 9: Gaia-X Compliance Wizard** - Multi-step guided wizard: LRN → Participant → T&C → GXDCH submission; replace org settings with VC compliance management
@@ -151,7 +151,11 @@ Plans:
   4. Job detail views open as dedicated pages (e.g. `/jobs/[id]`) rather than rendering inside a list or modal; the writable editor's save draft button is positioned within the editor context
   5. A single reusable graph component handles both RDF data graphs and catalog graphs via configurable data adapters; brand logos (Azure, Google Cloud, Amazon, Anthropic) use an icon library
   6. Empty list views show a contextual "Create new X" link that navigates to the creation flow for that entity type
-**Plans**: TBD
+**Plans**: 4 plans
+  - [ ] 07-01-PLAN.md — Foundation: install packages, create DataTable component, add Checkbox, upgrade EmptyState with CTA props
+  - [ ] 07-02-PLAN.md — Migrate jobs, connections, cloud accounts list views to DataTable + column definitions + page headers with Create buttons
+  - [ ] 07-03-PLAN.md — Migrate org users + organizations to DataTable, eliminate raw fetch() with lib/api.ts functions + SWR hook
+  - [ ] 07-04-PLAN.md — SettingsNav sidebar primitives, settings max-width, brand icon library migration, dot grid refinement, save draft reposition
 
 ### Phase 8: Walt.id Integration & VC Auth Path
 **Goal**: Walt.id Community Stack runs alongside Keasy as a Docker sidecar; users can authenticate via Verifiable Credentials (OID4VP) as an alternative to email/password, producing the same session type
@@ -194,7 +198,7 @@ Each phase runs on its own git branch and merges into main via pull request befo
 | 4. Tenant Context Middleware & RBAC | 3/3 | Complete   | 2026-02-26 |
 | 5. Frontend Auth Pages & Session Management | 3/3 | Complete   | 2026-02-26 |
 | 6. Dataspace Switcher & Organization Management | 3/3 | Complete    | 2026-02-26 |
-| 6.1. Middleware Route Guard Fix | 0/TBD | Not started | - |
-| 7. Frontend Architecture Cleanup | 0/TBD | Not started | - |
+| 6.1. Middleware Route Guard Fix | 1/1 | Complete | 2026-02-26 |
+| 7. Frontend Architecture Cleanup | 0/4 | Not started | - |
 | 8. Walt.id Integration & VC Auth Path | 0/TBD | Not started | - |
 | 9. Gaia-X Compliance Wizard | 0/TBD | Not started | - |

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Paintbrush, Building2, Cloud, Sparkles } from "lucide-react";
+import { Paintbrush, Building2, Cloud, Sparkles, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
@@ -18,6 +18,7 @@ const sections: { heading: string; items: NavItem[] }[] = [
     items: [
       { href: "/settings/preferences", label: "Preferences", icon: Paintbrush },
       { href: "/settings/organization", label: "Organization", icon: Building2 },
+      { href: "/settings/security", label: "Security", icon: Shield },
     ],
   },
   {
@@ -33,7 +34,7 @@ export function SettingsNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="w-48 shrink-0 space-y-6">
+    <nav className="w-full space-y-6">
       {sections.map((section) => (
         <div key={section.heading}>
           <h4 className="text-xs font-medium text-muted-foreground mb-1 px-2">

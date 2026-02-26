@@ -84,6 +84,12 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: false,
   },
   {
+    path: "/settings/security",
+    name: "Security",
+    icon: Settings2,
+    showInSidebar: false,
+  },
+  {
     path: "/admin/dataspaces/new",
     name: "Create Dataspace",
     showInSidebar: false,

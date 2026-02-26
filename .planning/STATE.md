@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T15:17:52.341Z"
+last_updated: "2026-02-26T15:27:43.570Z"
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 12
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 04 of 9 (Tenant Context Middleware & RBAC) — In Progress
-Plan: 1 of 3 complete (04-01 complete)
-Status: Phase 04 Plan 01 complete — TenantContext, TenantRole, RbacError, RBAC extractors, tenant middleware, set-dataspace endpoint wired
-Last activity: 2026-02-26 — Completed Plan 04-01: TenantContext foundation + set-active-dataspace endpoint
+Plan: 2 of 3 complete (04-02 complete)
+Status: Phase 04 Plan 02 complete — All route handlers migrated to RequireRole; conversation DAL hardened with org_id filters; placeholder functions removed from tenant.rs
+Last activity: 2026-02-26 — Completed Plan 04-02: Route handler migration + DAL hardening
 
-Progress: [█████████░] ~50%
+Progress: [█████████░] ~55%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [█████████░] ~50%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 04-tenant-context-middleware-rbac P01 | 1 | 15 min | 15 min |
+| Phase 04 P02 | 20 min | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,9 @@ Recent decisions affecting current work:
 - [Phase 03]: auth_smoke test uses tower::ServiceExt::oneshot — no HTTP listener, pure in-process integration testing
 - [Phase 04-01]: DAL files updated to use TenantScoped<()> explicitly instead of old TenantContext alias to avoid name collision with new TenantContext struct
 - [Phase 04-01]: tenant.rs re-exports new TenantContext via pub use; placeholder_ctx/placeholder_scoped return TenantScoped<()> for backward compat until Plan 03 migration
+- [Phase 04-02]: placeholder_ctx(), placeholder_scoped(), placeholder_with() removed from tenant.rs; placeholder() renamed to startup_ctx() — sole permitted startup use
+- [Phase 04-02]: rewrite::resolve() takes org_id: &str as second param; build_storage_config takes org_id: &str explicitly
+- [Phase 04-02]: ai/db.rs rename_conversation/delete_conversation now filter by AND organization_id = ? — cross-org mutation impossible
 
 ### Pending Todos
 
@@ -112,5 +116,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Plan 04-01 — TenantContext foundation (TenantRole, RbacError, RequireRole/RequirePromotor/RequireOrgAdmin extractors, tenant_context_required middleware, set-active-dataspace + get_me endpoints). cargo test: 2 passed. cargo clippy -- -D warnings: clean.
-Resume with: /gsd:execute-phase (Phase 04 Plan 02 — wire router + route groups)
+Stopped at: Completed Plan 04-02 — All route handlers migrated from placeholder_ctx/placeholder_scoped to RequireRole(ctx). AI DAL hardened with org_id filters. Placeholder functions removed from tenant.rs. cargo test: 2 passed. cargo clippy -- -D warnings: clean.
+Resume with: /gsd:execute-phase (Phase 04 Plan 03 — if remaining, otherwise Phase 04 complete)

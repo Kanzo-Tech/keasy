@@ -4,18 +4,13 @@ mod config;
 mod connections;
 mod crypto;
 mod db;
-mod dcat;
+mod discovery;
 mod error;
-mod graph;
 mod jobs;
 mod middleware;
-mod pipeline;
-mod rdf;
 mod routes;
-mod script;
 mod settings;
 mod tenant;
-mod validation;
 
 use std::num::NonZeroUsize;
 use std::sync::Arc;
@@ -27,7 +22,7 @@ use tracing::{info, warn};
 
 use config::ServerConfig;
 use db::Database;
-use graph::rdf_graph::RdfGraph;
+use discovery::rdf_graph::RdfGraph;
 use jobs::runner::JobRunner;
 
 pub struct OutputCache(lru::LruCache<String, Arc<RdfGraph>>);
@@ -103,7 +98,7 @@ async fn main() {
     // Phase 1 placeholder — Phase 4 middleware will pass real session context
     let catalog_ctx = tenant::TenantScoped::placeholder();
     for (job_id, turtle) in &db.completed_catalogs(&catalog_ctx).await {
-        match graph::loader::parse_rdf_to_triples(turtle.as_bytes(), "catalog.ttl") {
+        match discovery::loader::parse_rdf_to_triples(turtle.as_bytes(), "catalog.ttl") {
             Ok(triples) => {
                 catalog.insert_triples(Some(&format!("urn:keasy:job:{job_id}")), &triples);
                 restored += 1;

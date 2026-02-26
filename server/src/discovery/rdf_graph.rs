@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use oxrdfio::RdfSerializer;
 
 use super::convert::{self, GraphData};
-use crate::rdf::format::RdfExportFormat;
+use super::rdf_format::RdfExportFormat;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TabularData {

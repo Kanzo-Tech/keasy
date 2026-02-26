@@ -2,11 +2,11 @@ use fossil_lang::context::DefKind;
 use fossil_lang::passes::IrProgram;
 use fossil_stdlib::rdf::metadata::RdfTypeAttrs;
 
-use crate::pipeline::PipelineOutput;
+use crate::jobs::pipeline_types::PipelineOutput;
 use crate::settings::org::OrgSettings;
 
-use super::generator::media_type_from_extension;
-use super::types::{DatasetInfo, DcatInput, DistributionInfo, FieldInfo};
+use super::dcat_generator::media_type_from_extension;
+use super::dcat_types::{DatasetInfo, DcatInput, DistributionInfo, FieldInfo};
 
 pub fn extract_dcat_input(
     program: &IrProgram,

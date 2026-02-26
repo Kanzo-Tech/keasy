@@ -1,8 +1,8 @@
 use oxrdf::{Literal, NamedNode, Triple, vocab::rdf};
 use oxrdfio::RdfSerializer;
 
-use super::types::{DatasetInfo, DcatInput, DistributionInfo};
-use crate::rdf::format::RdfExportFormat;
+use super::dcat_types::{DatasetInfo, DcatInput, DistributionInfo};
+use super::rdf_format::RdfExportFormat;
 
 const DCAT_CATALOG: &str = "http://www.w3.org/ns/dcat#Catalog";
 const DCAT_DATASET: &str = "http://www.w3.org/ns/dcat#Dataset";

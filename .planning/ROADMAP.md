@@ -54,6 +54,24 @@ Decimal phases appear between their surrounding integers in numeric order.
   - [ ] 02-01-PLAN.md — Error handling foundation, cross-cutting infrastructure (thiserror, AppError, data_response, SpawnParams, frontend envelope)
   - [ ] 02-02-PLAN.md — Domain module reorganization, handler refactor, route audit, final cleanup
 
+### Phase 02.1: Domain consolidation — merge scattered modules into cohesive domain folders (INSERTED)
+
+**Goal:** Every server source file lives in the domain folder it belongs to, following the domain-colocated structure established in Phase 2 — scattered top-level modules (graph, dcat, rdf, validation, pipeline, script, conversations, cloud) are dissolved into their parent domains (discovery, jobs, ai, cloud_accounts), reducing the module count from 20 to 13-14
+**Requirements**: API-10
+**Depends on:** Phase 2
+**Success Criteria** (what must be TRUE):
+  1. `conversations/` is absorbed into `ai/`; `cloud/` is absorbed into `cloud_accounts/`
+  2. `graph/` is renamed to `discovery/` and absorbs `dcat/`, `rdf/`, and `validation/`
+  3. `pipeline/` and `script/` are absorbed into `jobs/`
+  4. `main.rs` declares only the consolidated top-level modules — no dissolved module declarations remain
+  5. `cargo build && cargo clippy -- -D warnings` passes with zero errors and zero warnings
+  6. All API endpoints are unchanged — no behavior changes, no new endpoints, no removed endpoints
+**Plans:** 2 plans
+
+Plans:
+  - [x] 02.1-01-PLAN.md — Absorb conversations/ into ai/, absorb cloud/ into cloud_accounts/ (completed 2026-02-26)
+  - [ ] 02.1-02-PLAN.md — Create discovery/ domain (rename graph/, absorb dcat/+rdf/+validation/), absorb pipeline/+script/ into jobs/, final cleanup
+
 ### Phase 3: Auth Routes & Session Middleware
 **Goal**: Users can register and log in with email and password via server-side sessions, and all API routes except public health/auth endpoints require authentication
 **Depends on**: Phase 2
@@ -150,7 +168,8 @@ Each phase runs on its own git branch and merges into main via pull request befo
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. DB Schema & DAL Foundation | 2/2 | Complete    | 2026-02-26 |
-| 2. API Architecture Refactor | 2/2 | Complete   | 2026-02-26 |
+| 2. API Architecture Refactor | 2/2 | Complete    | 2026-02-26 |
+| 02.1. Domain Consolidation | 1/2 | In progress | - |
 | 3. Auth Routes & Session Middleware | 0/TBD | Not started | - |
 | 4. Tenant Context Middleware & RBAC | 0/TBD | Not started | - |
 | 5. Frontend Auth Pages & Session Management | 0/TBD | Not started | - |

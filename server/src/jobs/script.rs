@@ -1,5 +1,3 @@
-pub mod rewrite;
-
 use std::sync::Arc;
 
 use fossil_lang::compiler::{CompileResult, Compiler, CompilerInput};

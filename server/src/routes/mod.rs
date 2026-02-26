@@ -76,15 +76,15 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
         )
         .route(
             "/v1/validate",
-            axum::routing::post(crate::validation::routes::validate_job),
+            axum::routing::post(crate::discovery::validation_routes::validate_job),
         )
         .route(
             "/v1/graph/search",
-            axum::routing::post(crate::graph::routes::search_nodes),
+            axum::routing::post(crate::discovery::routes::search_nodes),
         )
         .route(
             "/v1/graph/expand",
-            axum::routing::post(crate::graph::routes::expand_node),
+            axum::routing::post(crate::discovery::routes::expand_node),
         )
         .route(
             "/v1/jobs/{id}/dashboard-layout",
@@ -93,19 +93,19 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
         )
         .route(
             "/v1/jobs/{id}/discover/load",
-            axum::routing::post(crate::graph::routes::load_discover),
+            axum::routing::post(crate::discovery::routes::load_discover),
         )
         .route(
             "/v1/jobs/{id}/discover/query",
-            axum::routing::post(crate::graph::routes::query_discover),
+            axum::routing::post(crate::discovery::routes::query_discover),
         )
         .route(
             "/v1/jobs/{id}/discover/chart",
-            axum::routing::post(crate::graph::routes::chart_discover),
+            axum::routing::post(crate::discovery::routes::chart_discover),
         )
         .route(
             "/v1/jobs/{id}/discover/export",
-            axum::routing::get(crate::graph::routes::export_discover),
+            axum::routing::get(crate::discovery::routes::export_discover),
         )
         .route(
             "/v1/jobs/{id}/discover/ask",

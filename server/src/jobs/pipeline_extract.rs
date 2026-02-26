@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use fossil_lang::context::Symbol;
 use fossil_lang::ir::{ExprId, ExprKind, StmtKind};
 
-use super::types::*;
+use super::pipeline_types::*;
 use super::ProgramQuery;
 
 fn extract_source_name(pq: &ProgramQuery, expr_id: ExprId) -> String {

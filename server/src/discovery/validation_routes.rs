@@ -8,8 +8,8 @@ use crate::cloud_accounts::reader;
 use crate::connections::models::LocationType;
 use crate::error::error_body;
 use crate::tenant::{placeholder_ctx, placeholder_scoped};
-use crate::validation::types::{ShapeFormat, ValidationRequest};
-use crate::validation::ValidatableGraph;
+use super::validation_types::{ShapeFormat, ValidationRequest};
+use super::validation::ValidatableGraph;
 use crate::AppState;
 
 pub async fn validate_job(

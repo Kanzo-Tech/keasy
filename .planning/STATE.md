@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-last_updated: "2026-02-26T12:30:00Z"
+status: unknown
+last_updated: "2026-02-26T11:37:56.084Z"
 progress:
-  total_phases: 9
-  completed_phases: 1
+  total_phases: 2
+  completed_phases: 2
   total_plans: 4
   completed_plans: 4
 ---
@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 2 of 9 (API Architecture Refactor)
-Plan: 2 of 2 in current phase (02-02 complete — phase complete)
+Phase: 02.1 of 9 (Domain Consolidation — merge scattered modules)
+Plan: 1 of 2 in current phase (02.1-01 complete)
 Status: In progress
-Last activity: 2026-02-26 — Completed Plan 02-02: API Domain Reorganization — domain-colocated folders (jobs, connections, cloud_accounts, conversations, graph, settings, validation), typed thiserror domain errors, data_response() envelope on all handlers, 204 DELETE, error_response() removed
+Last activity: 2026-02-26 — Completed Plan 02.1-01: Absorbed conversations/ into ai/, cloud/ into cloud_accounts/; fixed all stale import paths; cargo build passes with zero errors
 
 Progress: [████░░░░░░] ~20%
 
@@ -76,10 +76,16 @@ Recent decisions affecting current work:
 - Plan 02-02: Old JobError struct renamed to JobRuntimeError to avoid collision with new JobApiError thiserror enum
 - Plan 02-02: Domain errors (JobApiError, ConnectionError, CloudAccountError) each have IntoResponse — no generic AppError wrapping in route handlers
 - Plan 02-02: Route audit: GET /v1/graph and get_connection_by_name confirmed active and kept
+- Plan 02.1-01: ProgramQuery struct moved from pipeline/mod.rs into jobs/mod.rs to serve jobs/pipeline_extract.rs via super:: (no dedicated file needed)
+- Plan 02.1-01: All crate::conversations:: paths replaced with crate::ai::; all crate::cloud:: paths replaced with crate::cloud_accounts::
 
 ### Pending Todos
 
 None yet.
+
+### Roadmap Evolution
+
+- Phase 02.1 inserted after Phase 2: Domain consolidation — merge scattered modules (graph+dcat+rdf+validation, pipeline+script→jobs, conversations→ai, cloud→cloud_accounts) (URGENT)
 
 ### Blockers/Concerns
 
@@ -89,5 +95,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Plan 02-02 (API Domain Reorganization) — domain-colocated folders for all resource domains, typed thiserror domain errors with IntoResponse, data_response() envelope on all handlers, 204 DELETE pattern, error_response() removed, cargo build + clippy pass.
-Resume with: /gsd:execute-phase (next phase: 03-auth-routes-session-middleware)
+Stopped at: Completed Plan 02.1-01 (Domain Consolidation — conversations/cloud absorption) — conversations/ absorbed into ai/, cloud/ absorbed into cloud_accounts/, all import paths updated, cargo build passes clean.
+Resume with: /gsd:execute-phase (next plan: 02.1-02 — graph/discovery/jobs consolidation)

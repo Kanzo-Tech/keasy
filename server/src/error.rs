@@ -26,6 +26,8 @@ pub fn data_response<T: Serialize>(value: T) -> Json<Value> {
 
 /// Typed application error enum.
 /// `impl IntoResponse` maps each variant to the correct HTTP status and error body.
+/// Variants not yet used directly — Phase 4 auth middleware will construct these.
+#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
     /// 404 Not Found

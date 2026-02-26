@@ -9,10 +9,10 @@ use serde::{Deserialize, Serialize};
 use crate::AppState;
 use crate::cloud_accounts::reader;
 use crate::error::{AppError, data_response, error_body};
-use crate::graph::loader;
-use crate::graph::rdf_graph::RdfGraph;
+use super::loader;
+use super::rdf_graph::RdfGraph;
 use crate::jobs::models::JobStatus;
-use crate::rdf::format::RdfExportFormat;
+use super::rdf_format::RdfExportFormat;
 use crate::tenant::{placeholder_ctx, placeholder_scoped};
 
 #[derive(Deserialize)]

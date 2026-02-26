@@ -1,6 +1,3 @@
-pub mod routes;
-pub mod types;
-
 use std::collections::HashSet;
 use std::io::Cursor;
 
@@ -16,7 +13,7 @@ use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::shapemap::{NodeSelector, QueryShapeMap, ShapeSelector};
 use shex_validation::{Validator, ValidatorConfig};
 
-use types::{ValidationError, ValidationResult};
+use super::validation_types::{ValidationError, ValidationResult};
 
 pub struct ValidatableGraph(InMemoryGraph);
 

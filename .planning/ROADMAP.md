@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: API Architecture Refactor** - Data-driven design, module reorganization, dead code removal, structured error handling, split connection pools (completed 2026-02-26)
 - [x] **Phase 3: Auth Routes & Session Middleware** - Argon2id password auth, register/login/logout endpoints, session middleware covering all routes (completed 2026-02-26)
 - [x] **Phase 4: Tenant Context Middleware & RBAC** - Inject TenantContext on all requests, retrofit all queries with org scoping, enforce three-role RBAC (completed 2026-02-26)
-- [ ] **Phase 5: Frontend Auth Pages & Session Management** - Login/register pages, Next.js route guards, session cookie flow, SWR 401 redirect
+- [x] **Phase 5: Frontend Auth Pages & Session Management** - Login/register pages, Next.js route guards, session cookie flow, SWR 401 redirect (completed 2026-02-26)
 - [ ] **Phase 6: Dataspace Switcher & Organization Management** - Connect sidebar to real user/org data, promotor control plane, invite token onboarding
 - [ ] **Phase 7: Frontend Architecture Cleanup** - TanStack Table for all list views, SWR standardization, EmptyState, route group layout, graph component unification
 - [ ] **Phase 8: Walt.id Integration & VC Auth Path** - Docker sidecar setup, OID4VP auth path, VC session creation, wallet connect flow
@@ -175,7 +175,7 @@ Each phase runs on its own git branch and merges into main via pull request befo
 | 02.1. Domain Consolidation | 2/2 | Complete    | 2026-02-26 |
 | 3. Auth Routes & Session Middleware | 2/2 | Complete   | 2026-02-26 |
 | 4. Tenant Context Middleware & RBAC | 3/3 | Complete   | 2026-02-26 |
-| 5. Frontend Auth Pages & Session Management | 2/3 | In Progress|  |
+| 5. Frontend Auth Pages & Session Management | 3/3 | Complete   | 2026-02-26 |
 | 6. Dataspace Switcher & Organization Management | 0/TBD | Not started | - |
 | 7. Frontend Architecture Cleanup | 0/TBD | Not started | - |
 | 8. Walt.id Integration & VC Auth Path | 0/TBD | Not started | - |

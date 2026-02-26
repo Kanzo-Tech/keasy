@@ -106,6 +106,8 @@ Recent decisions affecting current work:
 - [Phase 05-01]: proxy.ts excludes /api/ from config.matcher — route guard is a UX gate, not a security gate; auth routes must be reachable unauthenticated
 - [Phase 05-01]: SWR 401 deduplication uses useRef(false) — first redirect wins, parallel SWR hooks firing 401 simultaneously are suppressed
 - [Phase 05-01]: X-Api-Key header removed from api-proxy.ts — api_key_auth was dead code, backend never consumed it
+- [Phase 05-02]: reValidateMode not revalidateMode — react-hook-form uses capital V (reValidateMode); plan spec had lowercase which is incorrect
+- [Phase 05-02]: register() spread used for Input (not Controller) — Input is a standard forwardRef input; post-auth auto-dataspace is non-fatal try/catch, proceeds to dashboard regardless
 - [Phase 05-03]: onSelect={(e) => e.preventDefault()} on DropdownMenuItem prevents Radix from closing dropdown when AlertDialog trigger fires — required pattern for nested dialog-in-menu
 - [Phase 05-03]: handleLogout swallows fetch errors and always redirects to /login — logout is best-effort; router.push('/login') used without ?reason= param to avoid showing session expired banner on intentional logout
 
@@ -125,5 +127,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Plan 05-03 — NavUser logout AlertDialog confirmation: POST /api/auth/logout + router.push('/login'), onSelect preventDefault pattern, loading state. TypeScript clean.
+Stopped at: Completed Plan 05-02 SUMMARY — Login/register pages with split-screen layout, react-hook-form + zod, session expiry banner, post-login auto-dataspace selection. TypeScript clean.
 Resume with: /gsd:execute-phase (Phase 06 or next phase)

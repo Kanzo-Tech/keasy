@@ -59,7 +59,10 @@ function LoginContent() {
       // Non-fatal — proceed to dashboard even if auto-select fails
     }
 
-    router.push("/");
+    const redirectTo = searchParams.get("redirect");
+    const destination =
+      redirectTo && redirectTo.startsWith("/") ? redirectTo : "/";
+    router.push(destination);
   }
 
   return (

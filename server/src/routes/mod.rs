@@ -127,14 +127,14 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
         )
         .route(
             "/v1/cloud-accounts",
-            axum::routing::get(crate::cloud_accounts::routes::list_accounts)
-                .post(crate::cloud_accounts::routes::create_account),
+            axum::routing::get(crate::cloud::routes::list_accounts)
+                .post(crate::cloud::routes::create_account),
         )
         .route(
             "/v1/cloud-accounts/{id}",
-            axum::routing::get(crate::cloud_accounts::routes::get_account)
-                .put(crate::cloud_accounts::routes::update_account)
-                .delete(crate::cloud_accounts::routes::delete_account),
+            axum::routing::get(crate::cloud::routes::get_account)
+                .put(crate::cloud::routes::update_account)
+                .delete(crate::cloud::routes::delete_account),
         )
         .route(
             "/v1/connections",

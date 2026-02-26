@@ -60,7 +60,7 @@ pub enum AppError {
     #[error(transparent)]
     Connection(#[from] crate::connections::errors::ConnectionError),
     #[error(transparent)]
-    CloudAccount(#[from] crate::cloud_accounts::errors::CloudAccountError),
+    CloudAccount(#[from] crate::cloud::errors::CloudAccountError),
 }
 
 impl IntoResponse for AppError {

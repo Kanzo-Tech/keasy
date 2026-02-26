@@ -1,5 +1,5 @@
 mod ai;
-mod cloud_accounts;
+mod cloud;
 mod config;
 mod connections;
 mod crypto;

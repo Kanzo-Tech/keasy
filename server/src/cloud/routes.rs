@@ -4,7 +4,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 
 use crate::AppState;
-use crate::cloud_accounts::models::{CreateCloudAccountRequest, UpdateCloudAccountRequest};
+use crate::cloud::models::{CreateCloudAccountRequest, UpdateCloudAccountRequest};
 use crate::error::data_response;
 use crate::tenant::{placeholder_ctx, placeholder_scoped};
 

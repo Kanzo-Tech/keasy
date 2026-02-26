@@ -7,7 +7,7 @@ use axum::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::AppState;
-use crate::cloud_accounts::reader;
+use crate::cloud::reader;
 use crate::error::{AppError, data_response, error_body};
 use super::loader;
 use super::rdf_graph::RdfGraph;

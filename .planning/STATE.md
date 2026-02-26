@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T11:37:56.084Z"
+last_updated: "2026-02-26T13:17:59.444Z"
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 6
+  completed_plans: 6
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 02.1 of 9 (Domain Consolidation — merge scattered modules)
-Plan: 1 of 2 in current phase (02.1-01 complete)
-Status: In progress
-Last activity: 2026-02-26 — Completed Plan 02.1-01: Absorbed conversations/ into ai/, cloud/ into cloud_accounts/; fixed all stale import paths; cargo build passes with zero errors
+Phase: 02.1 of 9 (Domain Consolidation — merge scattered modules) — COMPLETE
+Plan: 2 of 2 in current phase (02.1-02 complete)
+Status: Phase complete — next phase TBD
+Last activity: 2026-02-26 — Completed Plan 02.1-02: Dissolved 6 legacy modules into discovery/ (12 files) and jobs/ (10 files); all old directories deleted; cargo build and cargo clippy -- -D warnings pass clean
 
-Progress: [████░░░░░░] ~20%
+Progress: [█████░░░░░] ~25%
 
 ## Performance Metrics
 
@@ -42,10 +42,11 @@ Progress: [████░░░░░░] ~20%
 |-------|-------|-------|----------|
 | 01-db-schema-dal-foundation | 2 | 11 min | 5.5 min |
 | 02-api-architecture-refactor | 2 | 13 min | 6.5 min |
+| 02.1-domain-consolidation | 2 | ~20 min | ~10 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4 min), 01-02 (7 min), 02-01 (3 min)
-- Trend: improving
+- Last 5 plans: 01-01 (4 min), 01-02 (7 min), 02-01 (3 min), 02.1-01 (~5 min), 02.1-02 (15 min)
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -78,6 +79,8 @@ Recent decisions affecting current work:
 - Plan 02-02: Route audit: GET /v1/graph and get_connection_by_name confirmed active and kept
 - Plan 02.1-01: ProgramQuery struct moved from pipeline/mod.rs into jobs/mod.rs to serve jobs/pipeline_extract.rs via super:: (no dedicated file needed)
 - Plan 02.1-01: All crate::conversations:: paths replaced with crate::ai::; all crate::cloud:: paths replaced with crate::cloud_accounts::
+- [Phase 02.1]: #[allow(dead_code)] added to AppError variants — reserved for Phase 4 auth middleware, not yet constructed at call sites
+- [Phase 02.1]: 6 legacy modules (graph, dcat, rdf, validation, pipeline, script) dissolved into discovery/ (12 files) and jobs/ (10 files) — server now has 13 top-level modules
 
 ### Pending Todos
 
@@ -95,5 +98,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Plan 02.1-01 (Domain Consolidation — conversations/cloud absorption) — conversations/ absorbed into ai/, cloud/ absorbed into cloud_accounts/, all import paths updated, cargo build passes clean.
-Resume with: /gsd:execute-phase (next plan: 02.1-02 — graph/discovery/jobs consolidation)
+Stopped at: Completed Plan 02.1-02 (Domain Consolidation — discovery/jobs consolidation) — discovery/ (12 files) and jobs/ (10 files) complete, all legacy modules deleted, cargo clippy passes clean. Phase 02.1 fully complete.
+Resume with: /gsd:execute-phase (next phase after 02.1)

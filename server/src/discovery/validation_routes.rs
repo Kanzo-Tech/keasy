@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use rudof_rdf::rdf_core::RDFFormat;
 
-use crate::cloud_accounts::reader;
+use crate::cloud::reader;
 use crate::connections::models::LocationType;
 use crate::error::error_body;
 use crate::tenant::{placeholder_ctx, placeholder_scoped};

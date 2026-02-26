@@ -66,7 +66,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. `main.rs` declares only the consolidated top-level modules — no dissolved module declarations remain
   5. `cargo build && cargo clippy -- -D warnings` passes with zero errors and zero warnings
   6. All API endpoints are unchanged — no behavior changes, no new endpoints, no removed endpoints
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
   - [x] 02.1-01-PLAN.md — Absorb conversations/ into ai/, absorb cloud/ into cloud_accounts/ (completed 2026-02-26)
@@ -169,7 +169,7 @@ Each phase runs on its own git branch and merges into main via pull request befo
 |-------|----------------|--------|-----------|
 | 1. DB Schema & DAL Foundation | 2/2 | Complete    | 2026-02-26 |
 | 2. API Architecture Refactor | 2/2 | Complete    | 2026-02-26 |
-| 02.1. Domain Consolidation | 1/2 | In progress | - |
+| 02.1. Domain Consolidation | 2/2 | Complete   | 2026-02-26 |
 | 3. Auth Routes & Session Middleware | 0/TBD | Not started | - |
 | 4. Tenant Context Middleware & RBAC | 0/TBD | Not started | - |
 | 5. Frontend Auth Pages & Session Management | 0/TBD | Not started | - |

@@ -61,6 +61,10 @@ pub fn build_router(
             "/v1/auth/login",
             axum::routing::post(crate::auth::routes::login),
         )
+        .route(
+            "/v1/auth/invite-info",
+            axum::routing::get(crate::auth::routes::get_invite_info),
+        )
         .with_state(state.clone());
 
     // Session-authenticated routes (session required, NO tenant context required)
@@ -77,6 +81,10 @@ pub fn build_router(
         .route(
             "/v1/auth/me",
             axum::routing::get(crate::auth::routes::get_me),
+        )
+        .route(
+            "/v1/auth/password",
+            axum::routing::put(crate::auth::routes::change_password),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),

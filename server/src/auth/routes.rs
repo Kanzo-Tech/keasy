@@ -2,6 +2,7 @@ use axum::extract::{ConnectInfo, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
+use serde::Deserialize;
 use serde_json::json;
 use std::net::SocketAddr;
 use time::OffsetDateTime;
@@ -11,6 +12,7 @@ use crate::AppState;
 use crate::auth::errors::AuthError;
 use crate::auth::models::{LoginRequest, RegisterRequest};
 use crate::auth::password;
+use crate::db::dataspaces::{DataspaceRole, OrgRole};
 use crate::db::users::{User, UserStatus};
 use crate::error::data_response;
 
@@ -278,7 +280,8 @@ pub async fn set_active_dataspace(
 
 /// GET /v1/auth/me
 ///
-/// Returns the authenticated user's profile, org, and available dataspaces.
+/// Returns the authenticated user's profile, org, and available dataspaces
+/// with the effective role per dataspace ("promotor", "org_admin", or "org_user").
 /// Protected by session_required but NOT tenant_context_required.
 pub async fn get_me(
     session: Session,
@@ -303,21 +306,111 @@ pub async fn get_me(
     let active_dataspace_id: Option<String> =
         session.get::<String>("active_dataspace_id").await.ok().flatten();
 
+    // Compute effective role per dataspace
+    let membership_role = membership.as_ref().map(|m| m.role.as_str());
+    let mut dataspaces_with_role = Vec::with_capacity(dataspaces.len());
+    for ds in &dataspaces {
+        let effective_role = if let Some(m) = &membership {
+            match state.db.get_org_dataspace_role(&m.org_id, &ds.id).await {
+                Some(DataspaceRole::Promotor) => "promotor",
+                Some(DataspaceRole::Participant) => match m.role {
+                    OrgRole::Admin => "org_admin",
+                    OrgRole::User => "org_user",
+                },
+                None => "org_user",
+            }
+        } else {
+            "org_user"
+        };
+        dataspaces_with_role.push(json!({
+            "id": ds.id,
+            "name": ds.name,
+            "role": effective_role,
+        }));
+    }
+
     Ok(data_response(json!({
         "user_id": user.id,
         "email": user.email,
         "first_name": user.first_name,
         "last_name": user.last_name,
+        "membership_role": membership_role,
         "org": org.map(|o| json!({
             "id": o.id,
             "name": o.name,
         })),
-        "dataspaces": dataspaces.iter().map(|ds| json!({
-            "id": ds.id,
-            "name": ds.name,
-        })).collect::<Vec<_>>(),
+        "dataspaces": dataspaces_with_role,
         "active_dataspace_id": active_dataspace_id,
     })))
+}
+
+/// PUT /v1/auth/password — change authenticated user's password.
+///
+/// Validates current password before allowing the change.
+/// Protected by session_required.
+#[derive(Deserialize)]
+pub struct ChangePasswordRequest {
+    pub current_password: String,
+    pub new_password: String,
+}
+
+pub async fn change_password(
+    State(state): State<AppState>,
+    axum::Extension(auth_user): axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
+    Json(payload): Json<ChangePasswordRequest>,
+) -> Result<impl IntoResponse, AuthError> {
+    // 1. Load user
+    let user = state
+        .db
+        .get_user(&auth_user.user_id)
+        .await
+        .ok_or(AuthError::Forbidden)?;
+
+    // 2. Verify current password
+    let ok = password::verify_password(
+        payload.current_password.clone(),
+        user.password_hash.clone(),
+    )
+    .await;
+    if !ok {
+        return Err(AuthError::InvalidCredentials);
+    }
+
+    // 3. Validate new password complexity
+    password::validate_password(&payload.new_password)
+        .map_err(|e| AuthError::ValidationFailed(e.to_string()))?;
+
+    // 4. Hash new password
+    let new_hash = password::hash_password(payload.new_password.clone()).await?;
+
+    // 5. Update in DB
+    state
+        .db
+        .update_user_password(&auth_user.user_id, &new_hash)
+        .await
+        .map_err(|e| AuthError::Internal(format!("update password: {e}")))?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// GET /v1/auth/invite-info?token=<token> — return pre-filled email for a valid unused token.
+///
+/// Public endpoint (no session required) — used by the invite registration page to
+/// pre-fill the email field.
+#[derive(Deserialize)]
+pub struct InviteInfoQuery {
+    pub token: String,
+}
+
+pub async fn get_invite_info(
+    State(state): State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<InviteInfoQuery>,
+) -> impl IntoResponse {
+    let token = state.db.get_invite_token(&params.token).await;
+    match token {
+        Some(t) if t.used_at.is_none() => data_response(json!({ "email": t.email })),
+        _ => data_response(json!({ "email": null })),
+    }
 }
 
 /// POST /v1/auth/logout

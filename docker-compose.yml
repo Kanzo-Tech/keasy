@@ -10,7 +10,15 @@ services:
       KEASY_MAX_CONCURRENT_JOBS: "4"
       KEASY_DATA_DIR: /var/lib/keasy
       KEASY_SECRET_KEY: ${KEASY_SECRET_KEY:-change-me-in-production}
+      KEASY_SESSION_SECRET: "8VVnhO7zkhlc+oelkbjrKnlpkz4S2+HCQLOnz9/gnR/Rwlc2/8gZe+W7EURQDUa53j8oP+miZ5MpMuL4ZLvjoA=="
       RUST_LOG: debug
+      # SMTP config (optional — if not set, invite links are logged to console)
+      # KEASY_SMTP_HOST: smtp.example.com
+      # KEASY_SMTP_PORT: "587"
+      # KEASY_SMTP_USER: user
+      # KEASY_SMTP_PASS: pass
+      # KEASY_SMTP_FROM: noreply@keasy.local
+      KEASY_BASE_URL: http://localhost:3000
     volumes:
       - keasy-data:/var/lib/keasy
 

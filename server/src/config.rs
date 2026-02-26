@@ -17,6 +17,9 @@ pub struct ServerConfig {
     #[allow(dead_code)]
     pub session_secret: SecretString,
     pub cache_capacity: usize,
+    /// Base URL for the frontend — used to construct invite links.
+    /// Read from KEASY_BASE_URL, default "http://localhost:3000".
+    pub base_url: String,
 }
 
 impl ServerConfig {
@@ -87,6 +90,9 @@ impl ServerConfig {
             .and_then(|v| v.parse().ok())
             .unwrap_or(1);
 
+        let base_url = std::env::var("KEASY_BASE_URL")
+            .unwrap_or_else(|_| "http://localhost:3000".to_string());
+
         Self {
             bind_addr,
             api_key: SecretString::from(api_key),
@@ -98,6 +104,7 @@ impl ServerConfig {
             secret_key,
             session_secret,
             cache_capacity,
+            base_url,
         }
     }
 }

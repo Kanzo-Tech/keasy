@@ -2,6 +2,15 @@ use rusqlite::params;
 
 use super::Database;
 
+/// An organization's membership entry in a dataspace, including its role.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct OrgInDataspace {
+    pub id: String,
+    pub name: String,
+    pub role: String,
+    pub created_at: String,
+}
+
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Dataspace {
     pub id: String,
@@ -207,6 +216,31 @@ impl Database {
         )
         .map_err(|e| format!("failed to insert user-org membership: {e}"))?;
         Ok(())
+    }
+
+    /// List organizations in a dataspace with their membership role.
+    pub async fn list_orgs_in_dataspace(&self, dataspace_id: &str) -> Vec<OrgInDataspace> {
+        let (_permit, conn) = self.read().await;
+        let mut stmt = conn
+            .prepare(
+                "SELECT o.id, o.name, m.role, o.created_at
+                 FROM organizations o
+                 JOIN org_dataspace_memberships m ON m.org_id = o.id
+                 WHERE m.dataspace_id = ?1
+                 ORDER BY o.name",
+            )
+            .expect("prepare list orgs in dataspace");
+        stmt.query_map([dataspace_id], |row| {
+            Ok(OrgInDataspace {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                role: row.get(2)?,
+                created_at: row.get(3)?,
+            })
+        })
+        .expect("query orgs in dataspace")
+        .filter_map(|r| r.ok())
+        .collect()
     }
 }
 

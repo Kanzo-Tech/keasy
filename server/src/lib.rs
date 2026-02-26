@@ -10,6 +10,7 @@ pub mod connections;
 pub mod crypto;
 pub mod db;
 pub mod discovery;
+pub mod email;
 pub mod error;
 pub mod jobs;
 pub mod middleware;
@@ -55,4 +56,6 @@ pub struct AppState {
     pub output_cache: Arc<Mutex<OutputCache>>,
     pub api_key: SecretString,
     pub rate_limiter: RateLimiter,
+    pub email_service: crate::email::EmailService,
+    pub base_url: String,
 }

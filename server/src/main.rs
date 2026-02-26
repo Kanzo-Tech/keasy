@@ -1,5 +1,6 @@
 use keasy_server::{AppState, OutputCache, Database, JobRunner, RdfGraph, RateLimiter};
 use keasy_server::config::ServerConfig;
+use keasy_server::email::EmailService;
 use keasy_server::routes::build_router;
 use keasy_server::tenant::TenantScoped;
 
@@ -92,6 +93,7 @@ async fn main() {
     );
 
     let rate_limiter = RateLimiter::new();
+    let email_service = EmailService::from_env();
 
     let output_cache = Arc::new(Mutex::new(OutputCache::new(config.cache_capacity)));
     let runner = Arc::new(JobRunner::new(
@@ -109,6 +111,8 @@ async fn main() {
         output_cache,
         api_key: config.api_key,
         rate_limiter,
+        email_service,
+        base_url: config.base_url,
     };
     let app = build_router(state, config.cors_origins, session_store, config.session_secret);
 

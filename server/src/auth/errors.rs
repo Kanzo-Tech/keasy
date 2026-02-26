@@ -24,6 +24,9 @@ pub enum AuthError {
     #[error("auth/forbidden")]
     Forbidden,
 
+    #[error("auth/validation_failed")]
+    ValidationFailed(String),
+
     #[error("internal")]
     Internal(String),
 }
@@ -61,6 +64,11 @@ impl IntoResponse for AuthError {
             AuthError::Forbidden => (
                 StatusCode::FORBIDDEN,
                 Json(error_body("auth/forbidden", "Access denied")),
+            ).into_response(),
+
+            AuthError::ValidationFailed(_detail) => (
+                StatusCode::BAD_REQUEST,
+                Json(error_body("auth/validation_failed", "Validation failed")),
             ).into_response(),
 
             AuthError::Internal(detail) => {

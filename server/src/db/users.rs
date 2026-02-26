@@ -82,6 +82,26 @@ impl Database {
         .map_err(|e| format!("failed to activate user: {e}"))?;
         Ok(())
     }
+
+    /// Create a user_org_membership entry to assign a user to an organization.
+    /// Called during registration to attach the new user to the org from the invite token.
+    pub async fn create_user_org_membership(
+        &self,
+        id: &str,
+        user_id: &str,
+        org_id: &str,
+        role: &str,
+    ) -> Result<(), String> {
+        let now = jiff::Timestamp::now().to_string();
+        let conn = self.write().await;
+        conn.execute(
+            "INSERT INTO user_org_memberships (id, user_id, org_id, role, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![id, user_id, org_id, role, now],
+        )
+        .map_err(|e| format!("failed to insert user_org_membership: {e}"))?;
+        Ok(())
+    }
 }
 
 fn row_to_user(row: &rusqlite::Row<'_>) -> rusqlite::Result<User> {

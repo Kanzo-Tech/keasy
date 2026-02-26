@@ -48,7 +48,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **USER-09**: All resource queries (jobs, connections, cloud accounts, conversations) are tenant-scoped by organization_id
 - [ ] **USER-10**: User can change their own password (current + new + confirmation)
 - [ ] **USER-11**: Promotor can send email invite tokens to onboard org admins
-- [ ] **USER-12**: Frontend login page with email/password form and route guards (redirect unauthenticated users)
+- [x] **USER-12**: Frontend login page with email/password form and route guards (redirect unauthenticated users)
 - [ ] **USER-13**: Frontend shows real user data in sidebar (name, email, avatar) and real team/org in team switcher
 - [ ] **USER-14**: Dataspace switcher in sidebar for users belonging to multiple dataspaces
 
@@ -135,7 +135,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | USER-09 | Phase 4 | Complete |
 | USER-10 | Phase 6 | Pending |
 | USER-11 | Phase 6 | Pending |
-| USER-12 | Phase 5 | Pending |
+| USER-12 | Phase 5 | Complete |
 | USER-13 | Phase 6 | Pending |
 | USER-14 | Phase 6 | Pending |
 | VC-01 | Phase 8 | Pending |

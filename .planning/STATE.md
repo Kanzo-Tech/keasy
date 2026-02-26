@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T15:27:43.570Z"
+last_updated: "2026-02-26T15:39:46.243Z"
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 12
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 04 of 9 (Tenant Context Middleware & RBAC) — Complete
-Plan: 3 of 3 complete (04-03 complete)
-Status: Phase 04 COMPLETE — Admin endpoints, tenant isolation tests, RBAC integration tests all green
-Last activity: 2026-02-26 — Completed Plan 04-03: Promotor admin endpoints + integration tests
+Phase: 05 of 9 (Frontend Auth Pages & Session Management) — In Progress
+Plan: 1 of 3 complete (05-01 complete)
+Status: Phase 05 IN PROGRESS — Auth infrastructure layer complete (cookie forwarding, route guard, SWR 401 handler, auth API routes)
+Last activity: 2026-02-26 — Completed Plan 05-01: Auth infrastructure (proxy.ts, api-proxy.ts, 5 auth routes, SWR provider)
 
-Progress: [██████████] ~60%
+Progress: [███████████] ~65%
 
 ## Performance Metrics
 
@@ -101,6 +101,10 @@ Recent decisions affecting current work:
 - [Phase 04-02]: ai/db.rs rename_conversation/delete_conversation now filter by AND organization_id = ? — cross-org mutation impossible
 - [Phase 04-03]: session.save() must be called before session.id() after cycle_id() — tower-sessions sets id to None after cycle_id; save() triggers store.create() which assigns the real ID
 - [Phase 04-03]: MockConnectInfo(SocketAddr) layer required on test router for ConnectInfo<SocketAddr> extraction in oneshot integration tests
+- [Phase 05-01]: Auth API routes are standalone one-off proxies (not using createHandler) per plan spec — each handles cookie forwarding independently
+- [Phase 05-01]: proxy.ts excludes /api/ from config.matcher — route guard is a UX gate, not a security gate; auth routes must be reachable unauthenticated
+- [Phase 05-01]: SWR 401 deduplication uses useRef(false) — first redirect wins, parallel SWR hooks firing 401 simultaneously are suppressed
+- [Phase 05-01]: X-Api-Key header removed from api-proxy.ts — api_key_auth was dead code, backend never consumed it
 
 ### Pending Todos
 
@@ -118,5 +122,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Plan 04-03 — Promotor-only admin endpoints, tenant isolation integration tests (9 tests), fixed session.id() bug in auth routes. cargo test: 11 passed. cargo clippy -- -D warnings: clean.
-Resume with: /gsd:execute-phase (Phase 05 — next phase)
+Stopped at: Completed Plan 05-01 — Auth infrastructure: cookie forwarding in api-proxy.ts, Next.js 16 proxy.ts route guard, 5 auth API routes (login/register/logout/me/set-dataspace), SWR 401 session expiry redirect. TypeScript clean.
+Resume with: /gsd:execute-phase (Phase 05, Plan 02 — auth pages)

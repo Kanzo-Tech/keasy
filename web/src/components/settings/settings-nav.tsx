@@ -3,8 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Paintbrush, Building2, Cloud, Sparkles, Shield } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
+import {
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+} from "@/components/ui/sidebar";
 
 interface NavItem {
   href: string;
@@ -34,35 +40,27 @@ export function SettingsNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="w-full space-y-6">
+    <nav className="space-y-2">
       {sections.map((section) => (
-        <div key={section.heading}>
-          <h4 className="text-xs font-medium text-muted-foreground mb-1 px-2">
-            {section.heading}
-          </h4>
-          <ul className="space-y-0.5">
+        <SidebarGroup key={section.heading}>
+          <SidebarGroupLabel>{section.heading}</SidebarGroupLabel>
+          <SidebarMenu>
             {section.items.map((item) => {
-              const active =
+              const isActive =
                 pathname === item.href || pathname.startsWith(item.href + "/");
               return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                      active
-                        ? "bg-accent text-accent-foreground font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                    )}
-                  >
-                    <item.icon size={15} />
-                    {item.label}
-                  </Link>
-                </li>
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton asChild isActive={isActive}>
+                    <Link href={item.href}>
+                      <item.icon size={15} />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               );
             })}
-          </ul>
-        </div>
+          </SidebarMenu>
+        </SidebarGroup>
       ))}
     </nav>
   );

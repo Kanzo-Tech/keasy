@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T19:17:18.827Z"
+last_updated: "2026-02-26T21:34:31.638Z"
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 18
-  completed_plans: 18
+  total_phases: 8
+  completed_phases: 8
+  total_plans: 19
+  completed_plans: 19
 ---
 
 # Project State
@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 06 of 9 (Dataspace Switcher & Organization Management) — Complete
-Plan: 3 of 3 complete (06-01 backend API, 06-02 Dataspace Switcher UI, 06-03 Admin/Org pages)
-Status: Phase 06 Complete — All 3 plans done
-Last activity: 2026-02-26 — Completed Plan 06-03: Admin/org frontend pages (create dataspace, org management, user CRUD, invite registration) + 6 API proxy routes
+Phase: 06.1 of 9 (Middleware Route Guard Fix) — Complete
+Plan: 1 of 1 complete (06.1-01 proxy.ts two-list guard + redirect-after-login)
+Status: Phase 06.1 Complete — All 1 plan done
+Last activity: 2026-02-26 — Completed Plan 06.1-01: Route guard fix (ALWAYS_PUBLIC_PATHS for /invite, redirect-after-login on login page)
 
 Progress: [████████████████] ~75%
 
@@ -59,6 +59,7 @@ Progress: [████████████████] ~75%
 | Phase 06 P01 | 6 | 2 tasks | 16 files |
 | Phase 06 P02 | 3 | 3 tasks | 8 files |
 | Phase 06 P03 | 8 | 3 tasks | 12 files |
+| Phase 06.1-middleware-route-guard-fix P01 | 1 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,9 @@ Recent decisions affecting current work:
 - [Phase 06-02]: NavUser AvatarImage fully removed — initials-only avatar (no profile photo)
 - [Phase 06-03]: invite-info proxy route added (not in plan file list) — required for invite page to call backend without CORS issues
 - [Phase 06-03]: z.enum() required_error param removed — not valid in zod v4; defaultValues ensures role always has a value
+- [Phase 06.1-01]: Do NOT rename proxy.ts to middleware.ts — Next.js 16.1.6 requires proxy.ts with export function proxy()
+- [Phase 06.1-01]: Two-list route guard: ALWAYS_PUBLIC_PATHS for /invite (auth-agnostic), AUTH_REDIRECT_PATHS for /login and /register
+- [Phase 06.1-01]: Open redirect prevention via startsWith('/') on login page, not in proxy middleware
 
 ### Pending Todos
 
@@ -138,5 +142,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed Plan 06-03 — Admin/Org Management Frontend: 5 pages (create dataspace, org management, user table, add user, invite registration) + 6 API proxy routes. Phase 06 complete.
+Stopped at: Completed Plan 06.1-01 — Middleware route guard fix: two-list proxy.ts (ALWAYS_PUBLIC_PATHS for /invite) + redirect-after-login on login page. Phase 06.1 complete.
 Resume with: /gsd:execute-phase (Phase 07 — Architecture Cleanup)

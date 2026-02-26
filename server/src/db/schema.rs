@@ -119,6 +119,25 @@ CREATE TABLE IF NOT EXISTS secrets (
     key   TEXT PRIMARY KEY,
     value BLOB NOT NULL
 );
+
+-- Session-auth lookup: enforces single active session per user
+CREATE TABLE IF NOT EXISTS user_sessions (
+    user_id    TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    session_id TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+-- Invite tokens for invite-only registration
+CREATE TABLE IF NOT EXISTS invite_tokens (
+    token      TEXT PRIMARY KEY,
+    email      TEXT,
+    org_id     TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    role       TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('admin', 'user')),
+    created_by TEXT NOT NULL REFERENCES users(id),
+    used_at    TEXT,
+    expires_at TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
 ";
 
 pub fn apply(conn: &rusqlite::Connection) -> Result<(), String> {

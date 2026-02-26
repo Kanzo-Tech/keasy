@@ -20,7 +20,7 @@ axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["v4"] }
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.37", features = ["bundled"] }
 tower-http = { version = "0.6", features = ["trace", "cors"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
@@ -47,6 +47,9 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 secrecy = { version = "0.10", features = ["serde"] }
 argon2 = { version = "0.5", features = ["std"] }
 subtle = "2"
+tower-sessions = "0.14"
+tower-sessions-rusqlite-store = "0.14.1"
+time = "0.3"
 fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git" }
 fossil-stdlib = { git = "https://github.com/angelip2303/fossil-lang.git" }
 fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git" }

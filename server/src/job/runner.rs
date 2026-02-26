@@ -20,6 +20,7 @@ use crate::graph::rdf_graph::RdfGraph;
 use crate::pipeline::PipelineOutput;
 use crate::script;
 use crate::settings::org::OrgSettings;
+use crate::tenant::{OrgId, TenantScoped};
 
 pub struct JobRunner {
     db: Database,
@@ -49,8 +50,12 @@ impl JobRunner {
         self.semaphore.available_permits()
     }
 
+    /// Spawn a job execution task.
+    /// `org_id` is the organization that owns this job. Phase 1 passes SEED_ORG_ID;
+    /// Phase 4 will pass the real session org_id from the request context.
     pub fn spawn(
         &self,
+        org_id: String,
         job_id: String,
         script: String,
         storage: StorageConfig,
@@ -64,10 +69,16 @@ impl JobRunner {
         let job_timeout = self.job_timeout;
 
         self.tasks.lock().expect("tasks lock poisoned").spawn(async move {
+            // Construct a tenant-scoped context for all DAL calls within this task
+            let make_ctx = || TenantScoped::new(OrgId(org_id.clone()), ());
+            let make_scoped = |id: &str| TenantScoped::new(OrgId(org_id.clone()), id.to_string());
+
             let _permit = match semaphore.acquire_owned().await {
                 Ok(permit) => permit,
                 Err(_) => {
-                    db.update_job(&job_id, |job| {
+                    let ctx = make_scoped(&job_id);
+                    let ctx_ref = TenantScoped::new(OrgId(org_id.clone()), ctx.inner().as_str());
+                    db.update_job(&ctx_ref, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(JobError::new("INTERNAL_ERROR", "Failed to acquire execution permit"));
                         job.completed_at = Some(now_iso8601());
@@ -76,13 +87,15 @@ impl JobRunner {
                 }
             };
 
+            let job_ctx = TenantScoped::new(OrgId(org_id.clone()), job_id.as_str());
+
             let (job_name, pipeline_outputs) = db
-                .get_job(&job_id)
+                .get_job(&job_ctx)
                 .await
                 .map(|j| (j.name.clone(), j.pipeline.outputs.clone()))
                 .unwrap_or_default();
 
-            db.update_job(&job_id, |job| {
+            db.update_job(&job_ctx, |job| {
                 job.status = JobStatus::Running;
                 job.started_at = Some(now_iso8601());
             }).await;
@@ -106,6 +119,10 @@ impl JobRunner {
             )
             .await;
 
+            let _ = make_ctx; // used above; suppress warning
+
+            let job_ctx = TenantScoped::new(OrgId(org_id.clone()), job_id.as_str());
+
             match result {
                 Ok(Ok(Ok((catalog_str, dcat_input)))) => {
                     info!(job_id = %job_id, "Job completed");
@@ -114,7 +131,7 @@ impl JobRunner {
                         let triples = build_catalog_triples(input);
                         catalog.insert_triples(Some(&graph_name), &triples);
                     }
-                    db.update_job(&job_id, |job| {
+                    db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Completed;
                         job.completed_at = Some(now_iso8601());
                         job.catalog = catalog_str;
@@ -123,7 +140,7 @@ impl JobRunner {
                 }
                 Ok(Ok(Err(err))) => {
                     error!(job_id = %job_id, error = %err, "Job failed");
-                    db.update_job(&job_id, |job| {
+                    db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(classify_error(&err));
                         job.completed_at = Some(now_iso8601());
@@ -131,7 +148,7 @@ impl JobRunner {
                 }
                 Ok(Err(join_err)) => {
                     error!(job_id = %job_id, error = %join_err, "Job panicked");
-                    db.update_job(&job_id, |job| {
+                    db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(JobError::with_detail("INTERNAL_ERROR", "An internal error occurred", join_err.to_string()));
                         job.completed_at = Some(now_iso8601());
@@ -139,7 +156,7 @@ impl JobRunner {
                 }
                 Err(_elapsed) => {
                     error!(job_id = %job_id, "Job execution timed out");
-                    db.update_job(&job_id, |job| {
+                    db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(JobError::new("TIMEOUT", "Job execution timed out"));
                         job.completed_at = Some(now_iso8601());

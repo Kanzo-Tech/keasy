@@ -12,8 +12,19 @@ use crate::graph::loader;
 use crate::graph::rdf_graph::RdfGraph;
 use crate::job::types::JobStatus;
 use crate::rdf::format::RdfExportFormat;
+use crate::tenant::TenantScoped;
 
 use super::error_response;
+
+/// Phase 1 placeholder — Phase 4 middleware replaces this with real session context.
+fn placeholder_ctx() -> crate::tenant::TenantContext {
+    TenantScoped::placeholder()
+}
+
+/// Phase 1 placeholder scoped around a value — Phase 4 middleware replaces this.
+fn placeholder_scoped<T: Clone>(inner: T) -> TenantScoped<T> {
+    TenantScoped::placeholder_with(inner)
+}
 
 #[derive(Deserialize)]
 pub struct SearchRequest {
@@ -159,7 +170,7 @@ pub async fn load_discover(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    let job = match state.db.get_job(&id).await {
+    let job = match state.db.get_job(&placeholder_scoped(id.as_str())).await {
         Some(j) => j,
         None => return error_response(StatusCode::NOT_FOUND, "NOT_FOUND", "Job not found"),
     };
@@ -182,7 +193,7 @@ pub async fn load_discover(
         return error_response(StatusCode::BAD_REQUEST, "NO_DESTINATIONS", "Job has no output destinations");
     }
 
-    let creds = state.db.env_snapshot_all().await;
+    let creds = state.db.env_snapshot_all(&placeholder_ctx()).await;
     let mut all_triples = Vec::new();
 
     for dest_url in &destinations {

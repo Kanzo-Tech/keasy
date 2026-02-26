@@ -6,17 +6,28 @@ use rudof_rdf::rdf_core::RDFFormat;
 
 use crate::cloud::reader;
 use crate::settings::types::LocationType;
+use crate::tenant::TenantScoped;
 use crate::validation::types::{ShapeFormat, ValidationRequest};
 use crate::validation::ValidatableGraph;
 use crate::AppState;
 
 use super::error_response;
 
+/// Phase 1 placeholder — Phase 4 middleware replaces this with real session context.
+fn placeholder_ctx() -> crate::tenant::TenantContext {
+    TenantScoped::placeholder()
+}
+
+/// Phase 1 placeholder scoped around a value — Phase 4 middleware replaces this.
+fn placeholder_scoped<T: Clone>(inner: T) -> TenantScoped<T> {
+    TenantScoped::placeholder_with(inner)
+}
+
 pub async fn validate_job(
     State(state): State<AppState>,
     Json(req): Json<ValidationRequest>,
 ) -> Response {
-    let connection = match state.db.get_connection(&req.connection_id).await {
+    let connection = match state.db.get_connection(&placeholder_scoped(req.connection_id.as_str())).await {
         Some(s) => s,
         None => {
             return error_response(
@@ -46,7 +57,7 @@ pub async fn validate_job(
         }
     };
 
-    let creds = state.db.env_snapshot(std::slice::from_ref(&account_id)).await;
+    let creds = state.db.env_snapshot(&placeholder_ctx(), std::slice::from_ref(&account_id)).await;
 
     let data_bytes = match reader::download(&req.data_url, &creds).await {
         Ok(bytes) => bytes,

@@ -6,9 +6,20 @@ use serde::Deserialize;
 
 use crate::cloud::reader;
 use crate::settings::types::{CreateConnectionRequest, LocationType, UpdateConnectionRequest};
+use crate::tenant::TenantScoped;
 use crate::AppState;
 
 use super::error_response;
+
+/// Phase 1 placeholder — Phase 4 middleware replaces this with real session context.
+fn placeholder_ctx() -> crate::tenant::TenantContext {
+    TenantScoped::placeholder()
+}
+
+/// Phase 1 placeholder scoped around a value — Phase 4 middleware replaces this.
+fn placeholder_scoped<T: Clone>(inner: T) -> TenantScoped<T> {
+    TenantScoped::placeholder_with(inner)
+}
 
 #[derive(Deserialize)]
 pub struct ListConnectionsQuery {
@@ -20,7 +31,7 @@ pub async fn list_connections(
     State(state): State<AppState>,
     Query(query): Query<ListConnectionsQuery>,
 ) -> Response {
-    let connections = state.db.list_connections(query.connection_type.as_deref()).await;
+    let connections = state.db.list_connections(&placeholder_ctx(), query.connection_type.as_deref()).await;
     Json(connections).into_response()
 }
 
@@ -31,7 +42,7 @@ pub async fn create_connection(
     if req.location_type == LocationType::Cloud
         && let Some(ref account_id) = req.cloud_account_id
     {
-        let creds = state.db.env_snapshot(std::slice::from_ref(account_id)).await;
+        let creds = state.db.env_snapshot(&placeholder_ctx(), std::slice::from_ref(account_id)).await;
         if let Err(msg) = reader::list_files(&req.url, &creds).await {
             return error_response(
                 StatusCode::BAD_REQUEST,
@@ -41,7 +52,7 @@ pub async fn create_connection(
         }
     }
 
-    match state.db.create_connection(req).await {
+    match state.db.create_connection(&placeholder_ctx(), req).await {
         Ok(connection) => (StatusCode::CREATED, Json(connection)).into_response(),
         Err(msg) => error_response(StatusCode::BAD_REQUEST, "INVALID_CONNECTION", msg),
     }
@@ -51,7 +62,7 @@ pub async fn get_connection(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    match state.db.get_connection(&id).await {
+    match state.db.get_connection(&placeholder_scoped(id.as_str())).await {
         Some(connection) => Json(connection).into_response(),
         None => error_response(StatusCode::NOT_FOUND, "NOT_FOUND", "Connection not found"),
     }
@@ -62,7 +73,7 @@ pub async fn update_connection(
     Path(id): Path<String>,
     Json(req): Json<UpdateConnectionRequest>,
 ) -> Response {
-    match state.db.update_connection(&id, req).await {
+    match state.db.update_connection(&placeholder_scoped(id.as_str()), req).await {
         Ok(connection) => Json(connection).into_response(),
         Err(msg) => error_response(StatusCode::BAD_REQUEST, "INVALID_CONNECTION", msg),
     }
@@ -72,7 +83,7 @@ pub async fn delete_connection(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    state.db.remove_connection(&id).await;
+    state.db.remove_connection(&placeholder_scoped(id.as_str())).await;
     StatusCode::NO_CONTENT.into_response()
 }
 
@@ -80,7 +91,7 @@ pub async fn list_connection_files(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    let connection = match state.db.get_connection(&id).await {
+    let connection = match state.db.get_connection(&placeholder_scoped(id.as_str())).await {
         Some(s) => s,
         None => return error_response(StatusCode::NOT_FOUND, "NOT_FOUND", "Connection not found"),
     };
@@ -104,7 +115,7 @@ pub async fn list_connection_files(
         }
     };
 
-    let creds = state.db.env_snapshot(std::slice::from_ref(&account_id)).await;
+    let creds = state.db.env_snapshot(&placeholder_ctx(), std::slice::from_ref(&account_id)).await;
     match reader::list_files(&connection.url, &creds).await {
         Ok(files) => Json(files).into_response(),
         Err(msg) => error_response(StatusCode::BAD_GATEWAY, "CLOUD_ERROR", msg),

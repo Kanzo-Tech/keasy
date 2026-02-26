@@ -5,6 +5,7 @@ use std::sync::LazyLock;
 
 use crate::db::Database;
 use crate::settings::types::Connection;
+use crate::tenant::TenantScoped;
 
 pub struct ResolvedScript {
     pub script: String,
@@ -29,10 +30,12 @@ pub async fn resolve(script: &str, db: &Database) -> Result<ResolvedScript, Stri
     let refs = parse_refs(script);
     let mut connection_map = HashMap::new();
     for r in &refs {
-        if !connection_map.contains_key(&r.connection_name)
-            && let Some(connection) = db.get_connection_by_name(&r.connection_name).await
-        {
-            connection_map.insert(connection.name.clone(), connection);
+        if !connection_map.contains_key(&r.connection_name) {
+            // Phase 1 placeholder — Phase 4 will pass real org_id from session
+            let ctx = TenantScoped::placeholder_with(r.connection_name.as_str());
+            if let Some(connection) = db.get_connection_by_name(&ctx).await {
+                connection_map.insert(connection.name.clone(), connection);
+            }
         }
     }
 
@@ -49,7 +52,9 @@ pub async fn resolve(script: &str, db: &Database) -> Result<ResolvedScript, Stri
         .into_iter()
         .collect();
 
-    let storage = db.build_storage_config(&account_ids).await;
+    // Phase 1 placeholder — Phase 4 will pass real org_id from session
+    let ctx = TenantScoped::placeholder();
+    let storage = db.build_storage_config(&ctx, &account_ids).await;
 
     Ok(ResolvedScript {
         script: resolved,

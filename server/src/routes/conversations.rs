@@ -16,8 +16,19 @@ use crate::ai::client::{AiError, ask_llm};
 use crate::db::conversations::{Conversation, ConversationMessage};
 use crate::graph::rdf_graph::RdfGraph;
 use crate::pipeline::PipelineSummary;
+use crate::tenant::TenantScoped;
 
 use super::error_response;
+
+/// Phase 1 placeholder — Phase 4 middleware replaces this with real session context.
+fn placeholder_ctx() -> crate::tenant::TenantContext {
+    TenantScoped::placeholder()
+}
+
+/// Phase 1 placeholder scoped around a value — Phase 4 middleware replaces this.
+fn placeholder_scoped<T: Clone>(inner: T) -> TenantScoped<T> {
+    TenantScoped::placeholder_with(inner)
+}
 
 #[derive(Deserialize)]
 pub struct AskRequest {
@@ -62,7 +73,7 @@ pub async fn ask_discover(
         }
     };
 
-    let job = match state.db.get_job(&id).await {
+    let job = match state.db.get_job(&placeholder_scoped(id.as_str())).await {
         Some(j) => j,
         None => return error_response(StatusCode::NOT_FOUND, "NOT_FOUND", "Job not found"),
     };
@@ -72,7 +83,7 @@ pub async fn ask_discover(
     let conversation_id = match req.conversation_id {
         Some(cid) => cid,
         None => {
-            let conv = state.db.create_conversation(&id, None).await;
+            let conv = state.db.create_conversation(&placeholder_ctx(), &id, None).await;
             conv.id
         }
     };
@@ -205,10 +216,10 @@ pub async fn create_conversation(
     Path(job_id): Path<String>,
     Json(req): Json<CreateConversationRequest>,
 ) -> Response {
-    if state.db.get_job(&job_id).await.is_none() {
+    if state.db.get_job(&placeholder_scoped(job_id.as_str())).await.is_none() {
         return error_response(StatusCode::NOT_FOUND, "NOT_FOUND", "Job not found");
     }
-    let conv = state.db.create_conversation(&job_id, req.title).await;
+    let conv = state.db.create_conversation(&placeholder_ctx(), &job_id, req.title).await;
     (StatusCode::CREATED, Json(conv)).into_response()
 }
 
@@ -216,7 +227,7 @@ pub async fn list_conversations(
     State(state): State<AppState>,
     Path(job_id): Path<String>,
 ) -> Response {
-    let convs: Vec<Conversation> = state.db.list_conversations(&job_id).await;
+    let convs: Vec<Conversation> = state.db.list_conversations(&placeholder_ctx(), &job_id).await;
     Json(convs).into_response()
 }
 

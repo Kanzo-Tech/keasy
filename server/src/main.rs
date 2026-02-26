@@ -98,7 +98,9 @@ async fn main() {
     let catalog = Arc::new(RdfGraph::new());
 
     let mut restored = 0usize;
-    for (job_id, turtle) in &db.completed_catalogs().await {
+    // Phase 1 placeholder — Phase 4 middleware will pass real session context
+    let catalog_ctx = tenant::TenantScoped::placeholder();
+    for (job_id, turtle) in &db.completed_catalogs(&catalog_ctx).await {
         match graph::loader::parse_rdf_to_triples(turtle.as_bytes(), "catalog.ttl") {
             Ok(triples) => {
                 catalog.insert_triples(Some(&format!("urn:keasy:job:{job_id}")), &triples);

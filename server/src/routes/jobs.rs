@@ -10,11 +10,22 @@ use crate::AppState;
 use crate::rdf::format::RdfExportFormat;
 use crate::job::types::{CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601};
 use crate::script::rewrite;
+use crate::tenant::TenantScoped;
 
 use super::error_response;
 
+/// Phase 1 placeholder — Phase 4 middleware replaces this with real session context.
+fn placeholder_ctx() -> crate::tenant::TenantContext {
+    TenantScoped::placeholder()
+}
+
+/// Phase 1 placeholder scoped around a value — Phase 4 middleware replaces this.
+fn placeholder_scoped<T: Clone>(inner: T) -> TenantScoped<T> {
+    TenantScoped::placeholder_with(inner)
+}
+
 pub async fn list_jobs(State(state): State<AppState>) -> impl IntoResponse {
-    let jobs = state.db.list_jobs().await;
+    let jobs = state.db.list_jobs(&placeholder_ctx()).await;
     Json(jobs)
 }
 
@@ -40,7 +51,7 @@ pub async fn create_job(
             connection_ids: payload.connection_ids.clone(),
             script: Some(payload.script),
         };
-        state.db.insert_job(&job).await;
+        state.db.insert_job(&placeholder_ctx(), &job).await;
         return (StatusCode::CREATED, Json(job)).into_response();
     }
 
@@ -67,7 +78,7 @@ pub async fn create_job(
         script: None,
     };
 
-    state.db.insert_job(&job).await;
+    state.db.insert_job(&placeholder_ctx(), &job).await;
 
     let org_settings = if dcat_enabled {
         state.db.get_org_settings().await
@@ -75,7 +86,10 @@ pub async fn create_job(
         None
     };
 
+    // Phase 1 placeholder org_id passed to runner — Phase 4 passes real session org_id
+    use crate::db::seed::SEED_ORG_ID;
     state.runner.spawn(
+        SEED_ORG_ID.to_string(),
         id,
         resolved.script,
         resolved.storage,
@@ -91,7 +105,7 @@ pub async fn get_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    match state.db.get_job(&id).await {
+    match state.db.get_job(&placeholder_scoped(id.as_str())).await {
         Some(job) => (StatusCode::OK, Json(job)).into_response(),
         None => not_found(&id),
     }
@@ -102,7 +116,7 @@ pub async fn update_job(
     Path(id): Path<String>,
     Json(payload): Json<UpdateJobRequest>,
 ) -> Response {
-    match state.db.update_job(&id, |job| {
+    match state.db.update_job(&placeholder_scoped(id.as_str()), |job| {
         if job.status != JobStatus::Draft {
             return;
         }
@@ -123,7 +137,7 @@ pub async fn cancel_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    match state.db.update_job(&id, |job| {
+    match state.db.update_job(&placeholder_scoped(id.as_str()), |job| {
         job.status = JobStatus::Cancelled;
         job.completed_at = Some(now_iso8601());
     }).await {
@@ -136,7 +150,7 @@ pub async fn delete_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    if state.db.get_job(&id).await.is_none() {
+    if state.db.get_job(&placeholder_scoped(id.as_str())).await.is_none() {
         return not_found(&id);
     }
 
@@ -148,7 +162,7 @@ pub async fn delete_job(
         cache.remove(&id);
     }
 
-    state.db.remove_job(&id).await;
+    state.db.remove_job(&placeholder_scoped(id.as_str())).await;
 
     StatusCode::NO_CONTENT.into_response()
 }
@@ -163,7 +177,7 @@ pub async fn get_job_catalog(
     Path(id): Path<String>,
     Query(query): Query<CatalogQuery>,
 ) -> Response {
-    if state.db.get_job(&id).await.is_none() {
+    if state.db.get_job(&placeholder_scoped(id.as_str())).await.is_none() {
         return not_found(&id);
     }
 
@@ -193,7 +207,7 @@ pub async fn get_job_graph(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    match state.db.get_job(&id).await {
+    match state.db.get_job(&placeholder_scoped(id.as_str())).await {
         Some(_) => {
             let graph_name = format!("urn:keasy:job:{id}");
             let graph_data = state.catalog.get_graph(Some(&graph_name));
@@ -214,7 +228,7 @@ pub async fn get_dashboard_layout(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    if state.db.get_job(&id).await.is_none() {
+    if state.db.get_job(&placeholder_scoped(id.as_str())).await.is_none() {
         return not_found(&id);
     }
     match state.db.get_dashboard_layout(&id).await {
@@ -228,7 +242,7 @@ pub async fn save_dashboard_layout(
     Path(id): Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Response {
-    if state.db.get_job(&id).await.is_none() {
+    if state.db.get_job(&placeholder_scoped(id.as_str())).await.is_none() {
         return not_found(&id);
     }
     state.db.set_dashboard_layout(&id, &body).await;

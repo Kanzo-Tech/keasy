@@ -121,7 +121,10 @@ Plans:
   4. An org admin who accepts an invite token can log in and see their organization's users; they can add users with read-only or read-write roles and remove existing users
   5. A user belonging to multiple dataspaces can switch between them in the sidebar; switching updates the active tenant context for all subsequent actions
   6. A user can change their own password from the settings page using a form that requires current password, new password, and confirmation
-**Plans**: TBD
+**Plans**: 3 plans
+  - [ ] 06-01-PLAN.md — Backend API foundation: email service, org creation with invite, user CRUD, password change, get_me extension with role-per-dataspace
+  - [ ] 06-02-PLAN.md — Sidebar data binding (SWR-fed AppSidebar, TeamSwitcher with role badges, NavUser with initials), dataspace switching, password change settings page
+  - [ ] 06-03-PLAN.md — Promotor admin pages (create dataspace, org management), org admin user management, invite registration page
 
 ### Phase 7: Frontend Architecture Cleanup
 **Goal**: All list views use TanStack Table, all client data fetching uses SWR consistently, the component tree is organized with page-specific logic in route files, and discovery/job detail views are dedicated pages

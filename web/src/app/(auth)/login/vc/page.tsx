@@ -167,7 +167,7 @@ export default function VcLoginPage() {
             <p className="text-center text-sm text-muted-foreground">
               Don&apos;t have credentials?{" "}
               <Link
-                href="/login/vc/coming-soon"
+                href="/compliance/wizard"
                 className="text-primary underline-offset-4 hover:underline"
               >
                 Get Gaia-X credentials

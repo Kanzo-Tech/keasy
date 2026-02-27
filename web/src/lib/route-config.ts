@@ -1,10 +1,10 @@
 import {
   Bot,
   Database,
-  Frame,
   GalleryVerticalEnd,
   Home,
   Settings2,
+  ShieldCheck,
   Workflow,
   type LucideIcon,
 } from "lucide-react";
@@ -37,10 +37,22 @@ export const mainRouteConfig: RouteConfig[] = [
     icon: Workflow,
     showInSidebar: true,
   },
+  {
+    path: "/compliance",
+    name: "Compliance",
+    icon: ShieldCheck,
+    showInSidebar: true,
+  },
 ];
 
 export const routeConfig: RouteConfig[] = [
   ...mainRouteConfig,
+  {
+    path: "/compliance/wizard",
+    name: "Compliance Wizard",
+    icon: ShieldCheck,
+    showInSidebar: false,
+  },
   {
     path: "/settings",
     name: "Settings",
@@ -70,12 +82,6 @@ export const routeConfig: RouteConfig[] = [
         showInSidebar: false,
       },
     ],
-  },
-  {
-    path: "/settings/organization",
-    name: "Organization",
-    icon: Frame,
-    showInSidebar: false,
   },
   {
     path: "/settings/preferences",

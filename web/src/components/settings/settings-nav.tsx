@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Paintbrush, Building2, Cloud, Sparkles, Shield } from "lucide-react";
+import { Paintbrush, Cloud, Sparkles, Shield } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
   SidebarGroup,
@@ -23,7 +23,6 @@ const sections: { heading: string; items: NavItem[] }[] = [
     heading: "General",
     items: [
       { href: "/settings/preferences", label: "Preferences", icon: Paintbrush },
-      { href: "/settings/organization", label: "Organization", icon: Building2 },
       { href: "/settings/security", label: "Security", icon: Shield },
     ],
   },

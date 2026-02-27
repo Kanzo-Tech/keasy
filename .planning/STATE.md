@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-27T01:43:31.438Z"
+last_updated: "2026-02-27T10:13:00.000Z"
 progress:
   total_phases: 11
   completed_phases: 11
-  total_plans: 29
-  completed_plans: 29
+  total_plans: 30
+  completed_plans: 30
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 09 of 10 (Gaia-X Compliance Wizard) — COMPLETE
-Plan: 3 of 3 complete (09-03 compliance management view complete)
-Status: Phase 09 Complete — /compliance entry page routing wizard/dashboard, ComplianceView with status card + credentials, org settings removed, Coming Soon redirected, Compliance in sidebar. VC-10 complete.
-Last activity: 2026-02-27 — Completed Plan 09-03: compliance entry page, ComplianceView, org settings removal, Coming Soon redirect, sidebar Compliance nav entry. npx next build passes (60 pages).
+Plan: 4 of 4 complete (09-04 gap closure: field name fix + compliance date)
+Status: Phase 09 Complete — wizard steps 3-5 functional (lp_credential/tc_credential field names aligned), compliance status card shows actual verified_at date from DB.
+Last activity: 2026-02-27 — Completed Plan 09-04: fixed frontend field name mismatches (legal_participant_credential->lp_credential, terms_credential->tc_credential), fixed get_compliance_status to query vc_verified_at from DB, added verified_at to rerun_compliance response. Both next build and cargo build pass.
 
 Progress: [████████████████████] ~100%
 
@@ -66,6 +66,7 @@ Progress: [████████████████████] ~100%
 | Phase 09-gaia-x-compliance-wizard P01 | 12 | 2 tasks | 15 files |
 | Phase 09 P02 | 5 | 2 tasks | 18 files |
 | Phase 09 P03 | 5 | 2 tasks | 10 files |
+| Phase 09 P04 | 2 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -163,6 +164,9 @@ Recent decisions affecting current work:
 - [Phase 09-03]: useEffect for redirect in compliance/page.tsx avoids Next.js hydration mismatch (not router.push during render)
 - [Phase 09-03]: route-config.ts showInSidebar:true is the correct pattern for main sidebar nav items (AppSidebar uses getSidebarRoutes)
 - [Phase 09-03]: Dashboard readiness card updated from /settings/organization to /compliance — dead link fix when org page deleted
+- [Phase 09-04]: Frontend WizardState interfaces use lp_credential and tc_credential matching Rust struct serialization — not legal_participant_credential/terms_credential
+- [Phase 09-04]: get_compliance_status queries organizations.vc_verified_at before building response — DB read for verified_at done alongside wizard state fetch using same connection permit
+- [Phase 09-04]: rerun_compliance response includes verified_at: now using the same variable written to DB — consistent date between stored value and API response
 
 ### Pending Todos
 
@@ -180,5 +184,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Plan 09-03 — Compliance management view: entry page, ComplianceView, org settings removed, Coming Soon redirected to wizard, Compliance in sidebar. Phase 09 complete. VC-10 done.
+Stopped at: Completed Plan 09-04 — Gap closure: fixed lp_credential/tc_credential field name mismatches in 4 frontend files, fixed get_compliance_status to query vc_verified_at from DB, added verified_at to rerun_compliance response. Both next build and cargo build pass.
 Resume with: Phase 10 (next phase)

@@ -102,7 +102,9 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
   2. User can switch between dataspace instances via the sidebar switcher without re-entering credentials
   3. Switching instances triggers a redirect through the identity service for fresh token issuance to the destination instance
   4. SWR cache (including `/api/auth/me`) is invalidated on instance switch — the sidebar reflects the correct role for the new instance immediately
-**Plans**: TBD
+**Plans**: 2 (14-01 Backend workspaces endpoint + picker page, 14-02 Sidebar instance switcher + SWR cache invalidation)
+- [ ] 14-01-PLAN.md -- Backend GET /v1/auth/workspaces handler, oidc_callback conditional redirect, Next.js proxy route, /workspaces picker page with card grid
+- [ ] 14-02-PLAN.md -- Sidebar DropdownMenu instance switcher, SWR cache invalidation on switch, loading screen, error toast
 
 ### Phase 15: UX Polish & Code Quality
 **Goal**: UX friction points are resolved; dead code is removed; the codebase follows SOLID principles with improved shadcn/ui usage throughout
@@ -134,6 +136,6 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 10. Keycloak Identity Service Deployment | 3/3 | Complete    | 2026-02-27 | - |
 | 11. OIDC Auth Conversion | 3/3 | Complete    | 2026-02-27 | - |
 | 12. Walt.id Service Reduction & External Wallet UI | 2/2 | Complete    | 2026-02-27 | - |
-| 13. Promotor/Participant Route Separation | 2/2 | Complete   | 2026-02-27 | - |
-| 14. Federated Instance Switcher | v1.1 | 0/TBD | Not started | - |
+| 13. Promotor/Participant Route Separation | 2/2 | Complete    | 2026-02-27 | - |
+| 14. Federated Instance Switcher | 1/2 | In Progress|  | - |
 | 15. UX Polish & Code Quality | v1.1 | 0/TBD | Not started | - |

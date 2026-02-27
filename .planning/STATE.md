@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Platform
 status: unknown
-last_updated: "2026-02-27T21:48:00.000Z"
+last_updated: "2026-02-27T22:19:49.225Z"
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 9
-  completed_plans: 9
+  total_phases: 5
+  completed_phases: 4
+  total_plans: 12
+  completed_plans: 11
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Reliable end-to-end data asset generation — a user can take heterogeneous data, transform it through Fossil pipelines, and produce a standards-compliant data asset ready for a data space
-**Current focus:** Phase 13 — Promotor/Participant Route Separation
+**Current focus:** Phase 14 — Federated Instance Switcher
 
 ## Current Position
 
-Phase: 13 of 15 (Promotor/Participant Route Separation) — COMPLETE
-Plan: 13-02 (complete — 2/2 plans done)
-Status: Phase 13 Complete — role-split dashboards, invite management UI, proxy routes, role-filtered settings nav
-Last activity: 2026-02-27 — 13-02 complete: role-split home dashboard, invite management UI, invites proxy routes, settings nav role filtering
+Phase: 14 of 15 (Federated Instance Switcher) — IN PROGRESS
+Plan: 14-01 (complete — 1/2 plans done)
+Status: 14-01 Complete — backend workspaces endpoint, oidc_callback redirect branching, workspace picker page
+Last activity: 2026-02-27 — 14-01 complete: GET /v1/auth/workspaces, oidc_callback redirect branching, /workspaces picker page
 
-Progress: [███████░░░] 60%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -46,6 +46,7 @@ Progress: [███████░░░] 60%
 | 13 | 2/2 | 6 min | 3 min |
 
 *Updated after each plan completion*
+| 14 (P01) | 1/2 | 2 min | 2 min |
 
 ## Accumulated Context
 
@@ -81,6 +82,9 @@ Progress: [███████░░░] 60%
 - [13-01]: Settings stays at (main) level, NOT inside any role group — both roles access /settings/*
 - [13-02]: page.tsx is a minimal RSC orchestrator — all data fetching and UI in typed client components (PromotorDashboard / ParticipantDashboard)
 - [13-02]: Settings nav removes Security from both roles per CONTEXT.md spec (Promotor=Preferences only; Participant=Preferences+AI+Cloud Accounts+Wallet)
+- [Phase 14-01]: Workspace picker placed in (auth) route group — not (main) — to avoid AppSidebar trying to fetch auth/me before workspace is chosen
+- [Phase 14-01]: Hash-based deterministic color from client_id string for workspace cards — consistent across sessions, no storage needed
+- [Phase 14-01]: useEffect + setSwitchTarget pattern for cross-instance navigation via window.location.assign — required for react-hooks/immutability lint compliance
 
 ### Pending Todos
 
@@ -96,5 +100,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 13-02-PLAN.md — role-split dashboards, invite management UI, proxy routes, role-filtered settings nav
-Resume with: `/gsd:execute-phase 14` to continue with Phase 14
+Stopped at: Completed 14-01-PLAN.md — backend workspaces endpoint, oidc_callback redirect branching, workspace picker page
+Resume with: `/gsd:execute-phase 14` to continue with Phase 14 Plan 02

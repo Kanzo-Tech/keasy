@@ -19,7 +19,7 @@ Requirements for the Platform milestone. Each maps to roadmap phases.
 
 ### Federation
 
-- [ ] **FED-01**: Promotor can register a dataspace instance as an OIDC client in the identity service
+- [x] **FED-01**: Promotor can register a dataspace instance as an OIDC client in the identity service
 - [ ] **FED-02**: User sees workspace picker listing their dataspaces after authenticating at the identity service
 - [ ] **FED-03**: User can switch between dataspace instances via sidebar switcher without re-entering credentials
 - [ ] **FED-04**: Instance switching redirects through identity service for fresh token issuance per destination instance
@@ -104,7 +104,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | IDENT-01 | Phase 10 | Complete |
 | IDENT-02 | Phase 10 | Complete |
-| FED-01 | Phase 10 | Pending |
+| FED-01 | Phase 10 | Complete |
 | IDENT-03 | Phase 11 | Pending |
 | IDENT-04 | Phase 11 | Pending |
 | IDENT-05 | Phase 11 | Pending |

@@ -127,6 +127,31 @@ impl Database {
         Ok(())
     }
 
+    /// Look up a user by their VC holder DID. Returns only active users.
+    /// Used by the VC auth flow after a successful OID4VP verification.
+    pub async fn get_user_by_did(&self, did: &str) -> Option<User> {
+        let (_permit, conn) = self.read().await;
+        conn.query_row(
+            "SELECT id, email, first_name, last_name, password_hash, status, created_at, updated_at
+             FROM users WHERE vc_holder_did = ?1 AND status = 'active'",
+            [did],
+            row_to_user,
+        )
+        .ok()
+    }
+
+    /// Link a DID to a user account. Called when a user first links their
+    /// Verifiable Credential identity from account settings.
+    pub async fn link_did_to_user(&self, user_id: &str, did: &str) -> Result<(), rusqlite::Error> {
+        let now = jiff::Timestamp::now().to_string();
+        let conn = self.write().await;
+        conn.execute(
+            "UPDATE users SET vc_holder_did = ?1, updated_at = ?2 WHERE id = ?3",
+            params![did, now, user_id],
+        )?;
+        Ok(())
+    }
+
     /// List all users in a given organization with their org role.
     pub async fn list_users_in_org(&self, org_id: &str) -> Vec<UserWithRole> {
         let (_permit, conn) = self.read().await;

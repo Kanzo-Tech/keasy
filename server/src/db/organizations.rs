@@ -47,6 +47,17 @@ impl Database {
         .ok()
     }
 
+    /// Update an organization's vc_verified_at timestamp to now.
+    /// Called after a successful OID4VP verification by a member of the org.
+    pub async fn update_org_vc_verified_at(&self, org_id: &str) -> Result<(), rusqlite::Error> {
+        let conn = self.write().await;
+        conn.execute(
+            "UPDATE organizations SET vc_verified_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1",
+            [org_id],
+        )?;
+        Ok(())
+    }
+
     pub async fn list_organizations(&self) -> Vec<Organization> {
         let (_permit, conn) = self.read().await;
         let mut stmt = conn

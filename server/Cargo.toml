@@ -56,6 +56,7 @@ fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git" }
 fossil-ifc = { git = "https://github.com/angelip2303/fossil-lang.git" }
 lettre = { version = "0.11", features = ["tokio1", "tokio1-native-tls"] }
 rand = "0.9"
+base64 = "0.22"
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

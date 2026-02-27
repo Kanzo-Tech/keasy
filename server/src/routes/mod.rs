@@ -66,6 +66,20 @@ pub fn build_router(
             "/v1/auth/invite-info",
             axum::routing::get(crate::auth::routes::get_invite_info),
         )
+        // VC auth routes — public (no session required beforehand)
+        .route(
+            "/v1/auth/vc-init",
+            axum::routing::post(crate::auth::vc_routes::vc_init),
+        )
+        .route(
+            "/v1/auth/vc-health",
+            axum::routing::get(crate::auth::vc_routes::vc_health),
+        )
+        // vc-status is public — session is created inside the handler on success
+        .route(
+            "/v1/auth/vc-status/{session_id}",
+            axum::routing::get(crate::auth::vc_routes::vc_status),
+        )
         .with_state(state.clone());
 
     // Session-authenticated routes (session required, NO tenant context required)

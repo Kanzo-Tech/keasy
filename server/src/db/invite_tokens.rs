@@ -49,6 +49,44 @@ impl Database {
         Ok(())
     }
 
+    /// List all invite tokens ordered by created_at DESC.
+    pub async fn list_invite_tokens(&self) -> Vec<InviteToken> {
+        let (_permit, conn) = self.read().await;
+        let mut stmt = conn
+            .prepare(
+                "SELECT token, email, org_id, role, created_by, used_at, expires_at, created_at
+                 FROM invite_tokens ORDER BY created_at DESC",
+            )
+            .expect("prepare list invite tokens");
+        stmt.query_map([], |row| {
+            Ok(InviteToken {
+                token: row.get(0)?,
+                email: row.get(1)?,
+                org_id: row.get(2)?,
+                role: row.get(3)?,
+                created_by: row.get(4)?,
+                used_at: row.get(5)?,
+                expires_at: row.get(6)?,
+                created_at: row.get(7)?,
+            })
+        })
+        .expect("query invite tokens")
+        .filter_map(|r| r.ok())
+        .collect()
+    }
+
+    /// Delete an invite token by value.
+    pub async fn delete_invite_token(&self, token: &str) -> Result<(), String> {
+        let conn = self.write().await;
+        let affected = conn
+            .execute("DELETE FROM invite_tokens WHERE token = ?1", [token])
+            .map_err(|e| format!("failed to delete invite token: {e}"))?;
+        if affected == 0 {
+            return Err("invite token not found".to_string());
+        }
+        Ok(())
+    }
+
     /// Create a new invite token.
     pub async fn create_invite_token(&self, token: &InviteToken) -> Result<(), String> {
         let conn = self.write().await;

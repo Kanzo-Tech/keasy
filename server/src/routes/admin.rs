@@ -4,6 +4,8 @@
 //! `rbac/insufficient_role`. These routes live inside `api_routes` and are
 //! therefore also protected by `session_required` and `tenant_context_required`.
 
+use std::collections::HashMap;
+
 use axum::{
     Json,
     extract::State,
@@ -216,4 +218,137 @@ pub async fn list_oidc_clients(
 ) -> Result<impl IntoResponse, RbacError> {
     let clients = state.db.list_oidc_clients().await;
     Ok(data_response(clients))
+}
+
+// ---------------------------------------------------------------------------
+// GET /v1/admin/invites — List all invite tokens
+// ---------------------------------------------------------------------------
+
+/// GET /v1/admin/invites — List all invite tokens with org names and status.
+pub async fn list_invites(
+    RequirePromotor(_ctx): RequirePromotor,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, RbacError> {
+    let tokens = state.db.list_invite_tokens().await;
+    let orgs = state.db.list_organizations().await;
+    let org_map: HashMap<String, String> = orgs
+        .into_iter()
+        .map(|o| (o.id.clone(), o.name.clone()))
+        .collect();
+    let now = jiff::Timestamp::now().to_string();
+    let result: Vec<serde_json::Value> = tokens
+        .into_iter()
+        .map(|t| {
+            let status = if t.used_at.is_some() {
+                "used"
+            } else if now > t.expires_at {
+                "expired"
+            } else {
+                "pending"
+            };
+            serde_json::json!({
+                "token": t.token,
+                "org_id": t.org_id,
+                "org_name": org_map.get(&t.org_id).cloned().unwrap_or_default(),
+                "status": status,
+                "created_at": t.created_at,
+                "expires_at": t.expires_at,
+                "used_at": t.used_at,
+            })
+        })
+        .collect();
+    Ok(data_response(result))
+}
+
+// ---------------------------------------------------------------------------
+// POST /v1/admin/invites — Create invite link (no email sent)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+pub struct CreateInviteRequest {
+    pub org_name: String,
+}
+
+/// POST /v1/admin/invites — Create a new participant org and invite link.
+///
+/// Returns the invite URL directly — no email is sent.
+pub async fn create_invite(
+    RequirePromotor(_ctx): RequirePromotor,
+    axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
+    State(state): State<AppState>,
+    Json(payload): Json<CreateInviteRequest>,
+) -> Result<impl IntoResponse, RbacError> {
+    let now = jiff::Timestamp::now().to_string();
+
+    // 1. Create participant org
+    let org = Organization {
+        id: uuid::Uuid::new_v4().to_string(),
+        name: payload.org_name.clone(),
+        legal_name: payload.org_name.clone(),
+        registration_number: None,
+        country: "EU".to_string(),
+        role: "participant".to_string(),
+        vc_verified_at: None,
+        created_at: now.clone(),
+        updated_at: now.clone(),
+    };
+    state
+        .db
+        .create_organization(&org)
+        .await
+        .map_err(RbacError::Internal)?;
+
+    // 2. Create invite token (7-day expiry)
+    let token_value = uuid::Uuid::new_v4().to_string();
+    let expires_at = {
+        let ts = jiff::Timestamp::now();
+        ts.checked_add(jiff::SignedDuration::from_hours(7 * 24))
+            .unwrap_or(ts)
+            .to_string()
+    };
+    let invite = InviteToken {
+        token: token_value.clone(),
+        email: None, // link-based — no email
+        org_id: org.id.clone(),
+        role: "admin".to_string(),
+        created_by: auth_user.user_id.clone(),
+        used_at: None,
+        expires_at,
+        created_at: now,
+    };
+    state
+        .db
+        .create_invite_token(&invite)
+        .await
+        .map_err(RbacError::Internal)?;
+
+    // 3. Build invite URL
+    let invite_url = format!("{}/invite?token={}", state.base_url, token_value);
+    Ok((
+        StatusCode::CREATED,
+        data_response(serde_json::json!({
+            "token": token_value,
+            "org_id": org.id,
+            "org_name": org.name,
+            "invite_url": invite_url,
+        })),
+    ))
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /v1/admin/invites/{token} — Revoke an invite token
+// ---------------------------------------------------------------------------
+
+/// DELETE /v1/admin/invites/{token} — Revoke (delete) an invite token.
+pub async fn revoke_invite(
+    RequirePromotor(_ctx): RequirePromotor,
+    axum::extract::Path(token): axum::extract::Path<String>,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, RbacError> {
+    state
+        .db
+        .delete_invite_token(&token)
+        .await
+        .map_err(RbacError::Internal)?;
+    Ok(StatusCode::NO_CONTENT)
 }

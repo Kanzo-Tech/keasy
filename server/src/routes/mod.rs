@@ -251,6 +251,15 @@ pub fn build_router(
             "/v1/admin/organizations",
             axum::routing::get(admin::list_all_orgs).post(admin::create_org_and_invite),
         )
+        // Invite link management — promotor only
+        .route(
+            "/v1/admin/invites",
+            axum::routing::get(admin::list_invites).post(admin::create_invite),
+        )
+        .route(
+            "/v1/admin/invites/{token}",
+            axum::routing::delete(admin::revoke_invite),
+        )
         // OIDC instance registration — promotor only
         .route(
             "/v1/admin/oidc-clients",

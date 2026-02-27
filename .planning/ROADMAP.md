@@ -61,7 +61,10 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
   4. The login page shows a single "Sign in" button (plus optional VC auth button) with no email/password fields; clicking it redirects to Keycloak and returns the user with a valid session
   5. The register page no longer exists at any route — Keycloak handles user registration
   6. All old Argon2id login/register endpoint code, password route handlers, and related password auth modules are deleted from the codebase (not deprecated, not returning 410 — removed entirely)
-**Plans**: TBD
+**Plans**: 3 (11-01 Backend OIDC RP foundation, 11-02 Old auth deletion + protocol mapper, 11-03 Frontend OIDC migration)
+- [ ] 11-01-PLAN.md — Backend OIDC RP foundation: types, state, schema, DB, handlers, route wiring, logout/get_me updates
+- [ ] 11-02-PLAN.md — Delete old password auth code + register Keycloak keasy:dataspaces protocol mapper
+- [ ] 11-03-PLAN.md — Frontend OIDC migration: login page, invite page, proxy routes, logout, cleanup
 
 ### Phase 12: Walt.id Service Reduction & External Wallet UI
 **Goal**: Hosted wallet services are removed from Docker Compose; users can connect an external wallet via OID4VP; the Verifier sidecar operates standalone and VC verification is unbroken
@@ -125,7 +128,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 8. Walt.id Integration & VC Auth Path | v1.0 | 3/3 | Complete | 2026-02-27 |
 | 9. Gaia-X Compliance Wizard | v1.0 | 4/4 | Complete | 2026-02-27 |
 | 10. Keycloak Identity Service Deployment | 3/3 | Complete    | 2026-02-27 | - |
-| 11. OIDC Auth Conversion | v1.1 | 0/TBD | Not started | - |
+| 11. OIDC Auth Conversion | v1.1 | 0/3 | Not started | - |
 | 12. Walt.id Service Reduction & External Wallet UI | v1.1 | 0/TBD | Not started | - |
 | 13. Promotor/Participant Route Separation | v1.1 | 0/TBD | Not started | - |
 | 14. Federated Instance Switcher | v1.1 | 0/TBD | Not started | - |

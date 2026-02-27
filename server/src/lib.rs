@@ -80,4 +80,7 @@ pub struct AppState {
     pub oidc_client_secret: Option<SecretString>,
     /// Keycloak admin API client. None when OIDC is not configured.
     pub keycloak_admin: Option<keycloak::admin::KeycloakAdmin>,
+    /// OIDC relying party state (client, JWKS cache, HTTP client).
+    /// None when OIDC is not fully configured or when Keycloak was unreachable at startup.
+    pub oidc_state: Option<Arc<crate::auth::oidc::OidcState>>,
 }

@@ -1,5 +1,5 @@
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum::Json;
 use crate::error::error_body;
 
@@ -32,6 +32,23 @@ pub enum AuthError {
 
     #[error("internal")]
     Internal(String),
+
+    // ── OIDC errors ──────────────────────────────────────────────────────────
+
+    #[error("auth/oidc_not_configured")]
+    OidcNotConfigured,
+
+    #[error("auth/oidc_state_mismatch")]
+    OidcStateMismatch,
+
+    #[error("auth/oidc_token_exchange")]
+    OidcTokenExchange,
+
+    #[error("auth/oidc_no_id_token")]
+    OidcNoIdToken,
+
+    #[error("auth/oidc_token_invalid")]
+    OidcTokenInvalid,
 }
 
 impl IntoResponse for AuthError {
@@ -85,6 +102,31 @@ impl IntoResponse for AuthError {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(error_body("internal_error", "An internal error occurred")),
                 ).into_response()
+            }
+
+            // OIDC errors — browser-facing, so redirect (not JSON) where appropriate.
+
+            AuthError::OidcNotConfigured => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(error_body("auth/oidc_not_configured", "OIDC authentication is not configured")),
+            ).into_response(),
+
+            // The following OIDC errors occur during browser redirects — return a
+            // 302 redirect to /login?error=auth_failed so the user sees an error banner.
+            AuthError::OidcStateMismatch => {
+                Redirect::to("/login?error=auth_failed").into_response()
+            }
+
+            AuthError::OidcTokenExchange => {
+                Redirect::to("/login?error=auth_failed").into_response()
+            }
+
+            AuthError::OidcNoIdToken => {
+                Redirect::to("/login?error=auth_failed").into_response()
+            }
+
+            AuthError::OidcTokenInvalid => {
+                Redirect::to("/login?error=auth_failed").into_response()
             }
         }
     }

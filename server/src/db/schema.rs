@@ -160,5 +160,12 @@ CREATE TABLE IF NOT EXISTS oidc_clients (
 
 pub fn apply(conn: &rusqlite::Connection) -> Result<(), String> {
     conn.execute_batch(SCHEMA)
-        .map_err(|e| format!("schema creation failed: {e}"))
+        .map_err(|e| format!("schema creation failed: {e}"))?;
+
+    // Migration: add `subject` column to `users` for OIDC user lookup.
+    // OIDC users are identified by their Keycloak subject (sub) claim.
+    // ALTER TABLE ADD COLUMN fails if the column already exists — that's fine, ignore the error.
+    let _ = conn.execute("ALTER TABLE users ADD COLUMN subject TEXT UNIQUE", []);
+
+    Ok(())
 }

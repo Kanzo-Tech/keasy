@@ -19,7 +19,9 @@ type MeResponse = {
   email: string;
   first_name: string;
   last_name: string;
-  org: { id: string; name: string } | null;
+  auth_method: string;
+  vc_available: boolean;
+  org: { id: string; name: string; vc_verified_at?: string | null } | null;
   dataspaces: { id: string; name: string; role: string }[];
   active_dataspace_id: string | null;
   membership_role: string | null;
@@ -39,6 +41,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         email: me.email,
         firstName: me.first_name,
         lastName: me.last_name,
+        authMethod: me.auth_method,
       }
     : { name: "", email: "", firstName: "", lastName: "" };
 

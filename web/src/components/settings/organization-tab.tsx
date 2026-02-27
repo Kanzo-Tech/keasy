@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
+import { ShieldCheck } from "lucide-react";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { useMutation } from "@/hooks/use-mutation";
 import { fetchOrgSettings, saveOrgSettings } from "@/lib/api";
@@ -14,8 +15,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import type { OrgSettings } from "@/lib/types";
 
+type MeResponse = {
+  org: { vc_verified_at?: string | null } | null;
+};
+
 export function OrganizationTab() {
   const { data: settings, isLoading, mutate } = useSWR("org-settings", fetchOrgSettings);
+  const { data: meData } = useSWR<MeResponse>("auth-me", () =>
+    fetch("/api/auth/me").then((r) => r.json()).then((r) => r.data ?? r)
+  );
   const showSkeleton = useDelayedLoading(isLoading);
 
   if (isLoading) {
@@ -34,6 +42,7 @@ export function OrganizationTab() {
   return (
     <OrgForm
       settings={settings ?? { publisher_name: "" }}
+      vcVerifiedAt={meData?.org?.vc_verified_at ?? null}
       onSaved={() => mutate()}
     />
   );
@@ -41,9 +50,11 @@ export function OrganizationTab() {
 
 function OrgForm({
   settings,
+  vcVerifiedAt,
   onSaved,
 }: {
   settings: OrgSettings;
+  vcVerifiedAt?: string | null;
   onSaved: () => void;
 }) {
   const [publisherName, setPublisherName] = useState(settings.publisher_name || "");
@@ -71,6 +82,28 @@ function OrgForm({
 
   return (
     <SettingsPage>
+      {vcVerifiedAt && (
+        <SettingsSection
+          title="VC Compliance"
+          description="Verifiable Credential verification status for this organization."
+        >
+          <div className="flex items-center gap-2 text-sm">
+            <ShieldCheck className="h-4 w-4 text-emerald-600" />
+            <span>
+              Verified on{" "}
+              <time dateTime={vcVerifiedAt}>
+                {new Date(vcVerifiedAt).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </time>
+            </span>
+          </div>
+        </SettingsSection>
+      )}
       <SettingsSection
         title="Publisher"
         description="Identity of the organization that publishes data. Used in generated DCAT catalogs."

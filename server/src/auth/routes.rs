@@ -306,6 +306,17 @@ pub async fn get_me(
     let active_dataspace_id: Option<String> =
         session.get::<String>("active_dataspace_id").await.ok().flatten();
 
+    // Read auth_method from session — "vc" if authenticated via OID4VP, "password" otherwise
+    let auth_method: String = session
+        .get::<String>("auth_method")
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or_else(|| "password".to_string());
+
+    // Read whether the walt.id Verifier sidecar is currently reachable
+    let vc_available = state.vc_available.load(std::sync::atomic::Ordering::Relaxed);
+
     // Compute effective role per dataspace
     let membership_role = membership.as_ref().map(|m| m.role.as_str());
     let mut dataspaces_with_role = Vec::with_capacity(dataspaces.len());
@@ -335,9 +346,12 @@ pub async fn get_me(
         "first_name": user.first_name,
         "last_name": user.last_name,
         "membership_role": membership_role,
+        "auth_method": auth_method,
+        "vc_available": vc_available,
         "org": org.map(|o| json!({
             "id": o.id,
             "name": o.name,
+            "vc_verified_at": o.vc_verified_at,
         })),
         "dataspaces": dataspaces_with_role,
         "active_dataspace_id": active_dataspace_id,

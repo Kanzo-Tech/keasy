@@ -5,6 +5,7 @@ import {
   ChevronsUpDown,
   LogOut,
   Settings,
+  ShieldCheck,
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -53,6 +54,7 @@ export function NavUser({
     email: string
     firstName: string
     lastName: string
+    authMethod?: string
   }
 }) {
   const { isMobile } = useSidebar()
@@ -85,7 +87,12 @@ export function NavUser({
                 <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate font-medium inline-flex items-center gap-1">
+                  {user.name}
+                  {user.authMethod === "vc" && (
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  )}
+                </span>
                 <span className="truncate text-xs">{user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
@@ -103,7 +110,12 @@ export function NavUser({
                   <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate font-medium inline-flex items-center gap-1">
+                    {user.name}
+                    {user.authMethod === "vc" && (
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                    )}
+                  </span>
                   <span className="truncate text-xs">{user.email}</span>
                 </div>
               </div>

@@ -9,8 +9,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 
 interface WizardState {
   lrn_credential?: object;
-  legal_participant_credential?: object;
-  terms_credential?: object;
+  lp_credential?: object;
+  tc_credential?: object;
   compliance_vc?: object;
   current_step?: number;
   [key: string]: unknown;
@@ -80,8 +80,8 @@ export function StepGxdchSubmit({ onComplete, completed, wizardState }: StepGxdc
 
   const hasAllCredentials =
     wizardState.lrn_credential &&
-    wizardState.legal_participant_credential &&
-    wizardState.terms_credential;
+    wizardState.lp_credential &&
+    wizardState.tc_credential;
 
   async function handleSubmit() {
     setPhase("assembling");
@@ -123,16 +123,16 @@ export function StepGxdchSubmit({ onComplete, completed, wizardState }: StepGxdc
       {wizardState.lrn_credential && (
         <CredentialPreview title="LRN Credential" credential={wizardState.lrn_credential} />
       )}
-      {wizardState.legal_participant_credential && (
+      {wizardState.lp_credential && (
         <CredentialPreview
           title="Legal Participant Credential"
-          credential={wizardState.legal_participant_credential}
+          credential={wizardState.lp_credential}
         />
       )}
-      {wizardState.terms_credential && (
+      {wizardState.tc_credential && (
         <CredentialPreview
           title="Terms & Conditions Credential"
-          credential={wizardState.terms_credential}
+          credential={wizardState.tc_credential}
         />
       )}
 

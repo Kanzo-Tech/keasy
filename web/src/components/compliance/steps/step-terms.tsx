@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface WizardState {
-  terms_credential?: object;
+  tc_credential?: object;
   current_step?: number;
   [key: string]: unknown;
 }
@@ -142,7 +142,7 @@ export function StepTerms({ onComplete, completed, wizardState }: StepTermsProps
       </form>
 
       {/* Existing credential */}
-      {completed && wizardState.terms_credential && (
+      {completed && wizardState.tc_credential && (
         <Collapsible open={credentialOpen} onOpenChange={setCredentialOpen}>
           <CollapsibleTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2">
@@ -152,7 +152,7 @@ export function StepTerms({ onComplete, completed, wizardState }: StepTermsProps
           </CollapsibleTrigger>
           <CollapsibleContent>
             <pre className="mt-2 bg-muted rounded-md p-3 text-xs overflow-auto max-h-64 font-mono">
-              {JSON.stringify(wizardState.terms_credential, null, 2)}
+              {JSON.stringify(wizardState.tc_credential, null, 2)}
             </pre>
           </CollapsibleContent>
         </Collapsible>

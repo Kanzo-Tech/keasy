@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface WizardState {
-  legal_participant_credential?: object;
+  lp_credential?: object;
   legal_name?: string;
   country_code?: string;
   current_step?: number;
@@ -145,7 +145,7 @@ export function StepLegalParticipant({ onComplete, completed, wizardState }: Ste
       </form>
 
       {/* Existing credential */}
-      {completed && wizardState.legal_participant_credential && (
+      {completed && wizardState.lp_credential && (
         <Collapsible open={credentialOpen} onOpenChange={setCredentialOpen}>
           <CollapsibleTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2">
@@ -155,7 +155,7 @@ export function StepLegalParticipant({ onComplete, completed, wizardState }: Ste
           </CollapsibleTrigger>
           <CollapsibleContent>
             <pre className="mt-2 bg-muted rounded-md p-3 text-xs overflow-auto max-h-64 font-mono">
-              {JSON.stringify(wizardState.legal_participant_credential, null, 2)}
+              {JSON.stringify(wizardState.lp_credential, null, 2)}
             </pre>
           </CollapsibleContent>
         </Collapsible>

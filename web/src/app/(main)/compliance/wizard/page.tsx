@@ -24,8 +24,8 @@ interface WizardState {
   lrn_credential?: object;
   legal_name?: string;
   country_code?: string;
-  legal_participant_credential?: object;
-  terms_credential?: object;
+  lp_credential?: object;
+  tc_credential?: object;
   compliance_vc?: object;
   [key: string]: unknown;
 }
@@ -44,8 +44,8 @@ function isStepCompleted(step: number, state: WizardState): boolean {
     case 0: return !!state.public_key_jwk;
     case 1: return !!state.did_document;
     case 2: return !!state.lrn_credential;
-    case 3: return !!state.legal_participant_credential;
-    case 4: return !!state.terms_credential;
+    case 3: return !!state.lp_credential;
+    case 4: return !!state.tc_credential;
     case 5: return !!state.compliance_vc;
     default: return false;
   }

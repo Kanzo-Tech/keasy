@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-27T01:34:42.138Z"
+last_updated: "2026-02-27T01:43:31.438Z"
 progress:
   total_phases: 11
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 29
-  completed_plans: 28
+  completed_plans: 29
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 09 of 10 (Gaia-X Compliance Wizard) — In Progress
-Plan: 2 of 3 complete (09-02 frontend wizard complete)
-Status: Phase 09 Plan 02 Complete — Frontend compliance wizard: 9 proxy routes, vertical stepper, 6 step components, /compliance/wizard page with SWR state load + free navigation + auto-save
-Last activity: 2026-02-27 — Completed Plan 09-02: 9 Next.js proxy routes, WizardLayout+Stepper components, all 6 step components (key generation, cert upload, LRN, LP, T&C, GXDCH submit), wizard page. npx next build passes.
+Phase: 09 of 10 (Gaia-X Compliance Wizard) — COMPLETE
+Plan: 3 of 3 complete (09-03 compliance management view complete)
+Status: Phase 09 Complete — /compliance entry page routing wizard/dashboard, ComplianceView with status card + credentials, org settings removed, Coming Soon redirected, Compliance in sidebar. VC-10 complete.
+Last activity: 2026-02-27 — Completed Plan 09-03: compliance entry page, ComplianceView, org settings removal, Coming Soon redirect, sidebar Compliance nav entry. npx next build passes (60 pages).
 
-Progress: [████████████████████] ~96%
+Progress: [████████████████████] ~100%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Progress: [████████████████████] ~96%
 | Phase 08 P01 | 4 | 2 tasks | 11 files |
 | Phase 09-gaia-x-compliance-wizard P01 | 12 | 2 tasks | 15 files |
 | Phase 09 P02 | 5 | 2 tasks | 18 files |
+| Phase 09 P03 | 5 | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -159,6 +160,9 @@ Recent decisions affecting current work:
 - [Phase 09-02]: effectiveStep pattern uses null local state resolving to wizardState.current_step to avoid flicker on first mount
 - [Phase 09-02]: Free navigation guards onStepChange with isStepCompleted() per-step checks on wizardState fields
 - [Phase 09-02]: StepGxdchSubmit shows Retry Submission button when phase === error — single POST with 4 UI-only timing stages
+- [Phase 09-03]: useEffect for redirect in compliance/page.tsx avoids Next.js hydration mismatch (not router.push during render)
+- [Phase 09-03]: route-config.ts showInSidebar:true is the correct pattern for main sidebar nav items (AppSidebar uses getSidebarRoutes)
+- [Phase 09-03]: Dashboard readiness card updated from /settings/organization to /compliance — dead link fix when org page deleted
 
 ### Pending Todos
 
@@ -176,5 +180,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Plan 09-02 — Gaia-X compliance wizard frontend: 9 proxy routes, WizardLayout+Stepper, 6 step components, /compliance/wizard page. npx next build passes.
-Resume with: Phase 09 Plan 03 (compliance management view)
+Stopped at: Completed Plan 09-03 — Compliance management view: entry page, ComplianceView, org settings removed, Coming Soon redirected to wizard, Compliance in sidebar. Phase 09 complete. VC-10 done.
+Resume with: Phase 10 (next phase)

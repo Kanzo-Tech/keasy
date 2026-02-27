@@ -63,7 +63,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **VC-07**: All credentials in Verifiable Presentations are included inline (not URL references)
 - [x] **VC-08**: Two auth paths available at login: "Traditional" (email/password) and "Verifiable Credentials"
 - [x] **VC-09**: Within VC path, two sub-options: "I have my own credentials" (load from wallet) and "Wizard" (guided Gaia-X compliance)
-- [ ] **VC-10**: VC/compliance management replaces current organization settings view (accessible by org admin)
+- [x] **VC-10**: VC/compliance management replaces current organization settings view (accessible by org admin)
 
 ## v2 Requirements
 
@@ -147,7 +147,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VC-07 | Phase 9 | Complete |
 | VC-08 | Phase 8 | Complete |
 | VC-09 | Phase 8 | Complete |
-| VC-10 | Phase 9 | Pending |
+| VC-10 | Phase 9 | Complete |
 
 **Coverage:**
 - v1 requirements: 46 total

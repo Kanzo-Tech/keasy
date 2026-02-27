@@ -140,4 +140,4 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 12. Walt.id Service Reduction & External Wallet UI | 2/2 | Complete    | 2026-02-27 | - |
 | 13. Promotor/Participant Route Separation | 2/2 | Complete    | 2026-02-27 | - |
 | 14. Federated Instance Switcher | v1.1 | Complete    | 2026-02-27 | 2026-02-27 |
-| 15. UX Polish & Code Quality | v1.1 | 0/2 | Planned | - |
+| 15. UX Polish & Code Quality | 1/2 | In Progress|  | - |

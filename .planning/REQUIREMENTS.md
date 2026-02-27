@@ -11,10 +11,10 @@ Requirements for the Platform milestone. Each maps to roadmap phases.
 
 - [x] **IDENT-01**: Keycloak OIDC provider deployed as Docker sidecar with discovery document reachable from Keasy server
 - [x] **IDENT-02**: Keasy registered as OIDC client in Keycloak with client_id, client_secret, and redirect URIs configured
-- [ ] **IDENT-03**: User can authenticate via OIDC authorization code flow with PKCE (S256) through Keycloak
-- [ ] **IDENT-04**: ID tokens include `keasy:dataspaces` custom claim with user's dataspace membership list
-- [ ] **IDENT-05**: Keasy server validates ID token signature via cached JWKS with TTL and refresh-on-failure
-- [ ] **IDENT-06**: Each dataspace instance validates `aud` claim matches its own registered client_id
+- [x] **IDENT-03**: User can authenticate via OIDC authorization code flow with PKCE (S256) through Keycloak
+- [x] **IDENT-04**: ID tokens include `keasy:dataspaces` custom claim with user's dataspace membership list
+- [x] **IDENT-05**: Keasy server validates ID token signature via cached JWKS with TTL and refresh-on-failure
+- [x] **IDENT-06**: Each dataspace instance validates `aud` claim matches its own registered client_id
 - [ ] **IDENT-07**: Old password auth code deleted entirely (Argon2id login/register endpoints, password routes, related handlers)
 
 ### Federation
@@ -105,10 +105,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | IDENT-01 | Phase 10 | Complete |
 | IDENT-02 | Phase 10 | Complete |
 | FED-01 | Phase 10 | Complete |
-| IDENT-03 | Phase 11 | Pending |
-| IDENT-04 | Phase 11 | Pending |
-| IDENT-05 | Phase 11 | Pending |
-| IDENT-06 | Phase 11 | Pending |
+| IDENT-03 | Phase 11 | Complete |
+| IDENT-04 | Phase 11 | Complete |
+| IDENT-05 | Phase 11 | Complete |
+| IDENT-06 | Phase 11 | Complete |
 | IDENT-07 | Phase 11 | Pending |
 | AUTH-01 | Phase 11 | Pending |
 | AUTH-02 | Phase 11 | Pending |

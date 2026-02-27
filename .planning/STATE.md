@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Platform
 status: unknown
-last_updated: "2026-02-27T15:26:33.842Z"
+last_updated: "2026-02-27T16:08:07.587Z"
 progress:
-  total_phases: 1
+  total_phases: 2
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 6
+  completed_plans: 4
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Reliable end-to-end data asset generation — a user can take heterogeneous data, transform it through Fossil pipelines, and produce a standards-compliant data asset ready for a data space
-**Current focus:** Phase 10 — Keycloak Identity Service Deployment
+**Current focus:** Phase 11 — OIDC Auth Conversion
 
 ## Current Position
 
-Phase: 10 of 15 (Keycloak Identity Service Deployment)
-Plan: 10-03 (complete — Phase 10 done)
-Status: Phase 10 Complete — all 3 plans done. Next: Phase 11 OIDC Cutover
-Last activity: 2026-02-27 — 10-03 complete: Keycloak admin API client + POST/GET /v1/admin/oidc-clients endpoint
+Phase: 11 of 15 (OIDC Auth Conversion)
+Plan: 11-01 (complete — 1/3 plans done)
+Status: Phase 11 In Progress — backend OIDC RP core done (plan 1/3). Next: 11-02 (old auth deletion + invite flow) or 11-03 (frontend migration).
+Last activity: 2026-02-27 — 11-01 complete: OIDC RP handlers, types, schema migration, DB user methods, route wiring
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 27%
 
 ## Performance Metrics
 
@@ -41,6 +41,7 @@ Progress: [██░░░░░░░░] 20%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 10 | 3/3 | 9 min | 3 min |
+| 11 | 1/3 | 9 min | 9 min |
 
 *Updated after each plan completion*
 
@@ -63,6 +64,8 @@ Progress: [██░░░░░░░░] 20%
 - [Phase 10-03]: Fresh admin token per create_client call — no caching; simplicity correct at Phase 10 registration volume
 - [Phase 10-03]: client_secret NOT stored in SQLite — returned once in POST response; secrets stay in Keycloak only
 - [Phase 10-03]: keycloak_admin: Option<KeycloakAdmin> in AppState — server starts without Keycloak, endpoint returns clear error when unconfigured
+- [Phase 11]: openidconnect 4.x requires two KeyasyClient type aliases: KeyasyClientDiscovered (EndpointMaybeSet token URL from discover) and KeyasyClient (EndpointSet after set_token_uri()) — single alias approach from plan is incompatible with the 4.x type system
+- [Phase 11]: OIDC errors during browser-facing flows (callback, state mismatch) return 302 redirects to /login?error=auth_failed instead of JSON — users see error banner, not raw JSON error body
 
 ### Pending Todos
 
@@ -71,12 +74,12 @@ None yet.
 ### Blockers/Concerns
 
 - [Phase 11]: User migration path from Argon2id password hashes to Keycloak user store needs a concrete plan before Phase 11 planning begins (export/import strategy or one-time password reset emails).
-- [Phase 11]: Confirm `axum-oidc` 0.6.0 version at `cargo check` time — version was inferred from JS-rendered page. Fall back to `openidconnect` crate directly if middleware model conflicts with existing tower-sessions layer.
+- [Phase 11 - RESOLVED]: axum-oidc not used — openidconnect 4.0 used directly. axum-oidc 0.6 confirmed to pin reqwest 0.11 which conflicts with project's reqwest 0.12. Resolution: use openidconnect directly as planned in research.
 - [Phase 12]: Audit `gaia_x/routes.rs` for Issuer API calls before removing `waltid-issuer-api` — if it calls the Issuer, removal is a separate explicitly scoped concern.
 - [Phase 14]: Confirm Keycloak supports `prompt=none` silent re-authentication before Phase 14 is planned.
 
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 10-03-PLAN.md — Phase 10 complete: Keycloak admin API + OIDC client registration endpoint
-Resume with: `/gsd:execute-phase 11` to execute Phase 11 (OIDC Cutover — backend RP + frontend migration)
+Stopped at: Completed 11-01-PLAN.md — Phase 11 plan 1/3: OIDC RP core (types, handlers, DB methods, route wiring)
+Resume with: `/gsd:execute-phase 11` to execute Phase 11 plans 11-02 and 11-03

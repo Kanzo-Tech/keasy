@@ -35,6 +35,7 @@ import {
   RefreshCw,
   CircleCheck,
 } from "lucide-react";
+import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
 
 type WalletStatus = {
   connected: boolean;
@@ -214,14 +215,11 @@ export default function WalletSettingsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-medium">Wallet</h2>
-        <p className="text-sm text-muted-foreground">
-          Connect an external wallet to use Verifiable Credentials.
-        </p>
-      </div>
-
+    <SettingsPage>
+      <SettingsSection
+        title="Wallet"
+        description="Connect an external wallet to use Verifiable Credentials."
+      >
       {walletLoading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -386,6 +384,7 @@ export default function WalletSettingsPage() {
           </CardFooter>
         </Card>
       )}
-    </div>
+      </SettingsSection>
+    </SettingsPage>
   );
 }

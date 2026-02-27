@@ -31,7 +31,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 **Milestone Goal:** Evolve Keasy from a single multi-tenant instance to a federated platform with central identity (Keycloak), 1 instance = 1 dataspace architecture, role-separated views, and external wallet connection.
 
 - [x] **Phase 10: Keycloak Identity Service Deployment** - Deploy Keycloak Docker sidecar, register Keasy as OIDC client, and register first dataspace instance (completed 2026-02-27)
-- [ ] **Phase 11: OIDC Auth Conversion** - Full-stack OIDC cutover: Axum becomes OIDC RP, login page replaced, register page deleted, old auth code removed entirely
+- [x] **Phase 11: OIDC Auth Conversion** - Full-stack OIDC cutover: Axum becomes OIDC RP, login page replaced, register page deleted, old auth code removed entirely (completed 2026-02-27)
 - [ ] **Phase 12: Walt.id Service Reduction & External Wallet UI** - Remove hosted wallet services; add external wallet connect via OID4VP
 - [ ] **Phase 13: Promotor/Participant Route Separation** - Enforce role-separated route groups with server-side RSC checks and role-scoped sidebars
 - [ ] **Phase 14: Federated Instance Switcher** - Workspace picker and cross-instance switching backed by identity service membership claims
@@ -75,7 +75,9 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
   2. The walt.id Verifier sidecar operates standalone — existing `/v1/vc/*` verification routes respond correctly after the other services are removed
   3. User can connect an external wallet via QR code (cross-device) or deep link (same-device) using the `openid4vp://authorize` scheme
   4. Wallet connection status is visible in the sidebar or settings/security page
-**Plans**: TBD
+**Plans**: 2 (12-01 Docker cleanup + backend wallet endpoints, 12-02 Frontend wallet page + sidebar indicator)
+- [ ] 12-01-PLAN.md — Docker Compose cleanup (remove 4 hosted walt.id services), DB migration for wallet_connected_at, backend wallet endpoints (GET/POST/DELETE), extend /auth/me response
+- [ ] 12-02-PLAN.md — Wallet settings page with OID4VP QR connect flow, proxy routes, sidebar wallet indicator, role-filtered settings nav
 
 ### Phase 13: Promotor/Participant Route Separation
 **Goal**: Promotor and participant users see strictly separated route groups with server-side role enforcement; URL structure is unchanged; each role sees only their relevant sidebar items
@@ -128,7 +130,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 8. Walt.id Integration & VC Auth Path | v1.0 | 3/3 | Complete | 2026-02-27 |
 | 9. Gaia-X Compliance Wizard | v1.0 | 4/4 | Complete | 2026-02-27 |
 | 10. Keycloak Identity Service Deployment | 3/3 | Complete    | 2026-02-27 | - |
-| 11. OIDC Auth Conversion | 1/3 | In Progress|  | - |
+| 11. OIDC Auth Conversion | 3/3 | Complete    | 2026-02-27 | - |
 | 12. Walt.id Service Reduction & External Wallet UI | v1.1 | 0/TBD | Not started | - |
 | 13. Promotor/Participant Route Separation | v1.1 | 0/TBD | Not started | - |
 | 14. Federated Instance Switcher | v1.1 | 0/TBD | Not started | - |

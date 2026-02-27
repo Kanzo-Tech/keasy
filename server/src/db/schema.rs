@@ -167,5 +167,8 @@ pub fn apply(conn: &rusqlite::Connection) -> Result<(), String> {
     // ALTER TABLE ADD COLUMN fails if the column already exists — that's fine, ignore the error.
     let _ = conn.execute("ALTER TABLE users ADD COLUMN subject TEXT UNIQUE", []);
 
+    // Migration: add wallet_connected_at to users for wallet settings page display.
+    let _ = conn.execute("ALTER TABLE users ADD COLUMN wallet_connected_at TEXT", []);
+
     Ok(())
 }

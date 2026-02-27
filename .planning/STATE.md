@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Platform
 status: unknown
-last_updated: "2026-02-27T16:08:07.587Z"
+last_updated: "2026-02-27T16:14:22Z"
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 6
 ---
 
 # Project State
@@ -23,25 +23,25 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 11 of 15 (OIDC Auth Conversion)
-Plan: 11-01 (complete — 1/3 plans done)
-Status: Phase 11 In Progress — backend OIDC RP core done (plan 1/3). Next: 11-02 (old auth deletion + invite flow) or 11-03 (frontend migration).
-Last activity: 2026-02-27 — 11-01 complete: OIDC RP handlers, types, schema migration, DB user methods, route wiring
+Plan: 11-03 (complete — 3/3 plans done — Phase 11 COMPLETE)
+Status: Phase 11 Complete — full OIDC cutover done: backend RP core, old auth deletion, frontend migration.
+Last activity: 2026-02-27 — 11-03 complete: OIDC proxy routes, button-only login, invite/logout OIDC bridge, old auth UI deleted
 
-Progress: [███░░░░░░░] 27%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3 (v1.1)
-- Average duration: ~4 min (v1.1)
-- Total execution time: ~9 min
+- Total plans completed: 6 (v1.1)
+- Average duration: ~5 min (v1.1)
+- Total execution time: ~23 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 10 | 3/3 | 9 min | 3 min |
-| 11 | 1/3 | 9 min | 9 min |
+| 11 | 3/3 | 14 min | ~5 min |
 
 *Updated after each plan completion*
 
@@ -66,6 +66,11 @@ Progress: [███░░░░░░░] 27%
 - [Phase 10-03]: keycloak_admin: Option<KeycloakAdmin> in AppState — server starts without Keycloak, endpoint returns clear error when unconfigured
 - [Phase 11]: openidconnect 4.x requires two KeyasyClient type aliases: KeyasyClientDiscovered (EndpointMaybeSet token URL from discover) and KeyasyClient (EndpointSet after set_token_uri()) — single alias approach from plan is incompatible with the 4.x type system
 - [Phase 11]: OIDC errors during browser-facing flows (callback, state mismatch) return 302 redirects to /login?error=auth_failed instead of JSON — users see error banner, not raw JSON error body
+- [11-02]: subtle crate removed from Cargo.toml; middleware/auth.rs uses p256::elliptic_curve::subtle re-export (p256 already a dependency, avoids extra crate)
+- [11-02]: org.rs add_user no longer generates temporary passwords; OIDC users created with empty password_hash, consistent with oidc_callback user creation
+- [11-02]: seed.rs admin user seeded with empty password_hash; authentication goes through Keycloak in OIDC mode
+- [11-03]: Invite page no-token guard uses useState default values instead of useEffect synchronous setState — avoids react-hooks/set-state-in-effect lint error with identical runtime behavior
+- [11-03]: Task 2 frontend changes were already committed in Plan 11-02 branch execution — content confirmed identical to plan spec, no duplicate commit needed
 
 ### Pending Todos
 
@@ -81,5 +86,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 11-01-PLAN.md — Phase 11 plan 1/3: OIDC RP core (types, handlers, DB methods, route wiring)
-Resume with: `/gsd:execute-phase 11` to execute Phase 11 plans 11-02 and 11-03
+Stopped at: Completed 11-03-PLAN.md — Phase 11 plan 3/3: Frontend OIDC migration (OIDC proxy routes, button-only login, invite/logout/security OIDC bridge)
+Resume with: `/gsd:execute-phase 12` to execute Phase 12 (wallet/issuer removal)

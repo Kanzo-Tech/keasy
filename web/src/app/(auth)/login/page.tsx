@@ -6,16 +6,26 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
+import useSWR from "swr";
 
 import { loginSchema, type LoginValues } from "@/lib/auth-schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionExpired = searchParams.get("reason") === "session_expired";
+
+  const { data: vcHealth } = useSWR("/api/auth/vc-health", fetcher, {
+    refreshInterval: 30000,
+    fallbackData: { data: { vc_available: false } },
+  });
+
+  const vcAvailable = vcHealth?.data?.vc_available === true;
 
   const {
     register,
@@ -122,6 +132,28 @@ function LoginContent() {
           )}
         </Button>
       </form>
+
+      <div className="relative my-1">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">Or</span>
+        </div>
+      </div>
+
+      {vcAvailable ? (
+        <Link
+          href="/login/vc"
+          className="text-sm text-muted-foreground hover:text-primary text-center block"
+        >
+          Sign in with Verifiable Credentials
+        </Link>
+      ) : (
+        <p className="text-sm text-muted-foreground text-center opacity-60 cursor-not-allowed">
+          VC login temporarily unavailable
+        </p>
+      )}
 
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}

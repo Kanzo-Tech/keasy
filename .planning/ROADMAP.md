@@ -167,7 +167,10 @@ Plans:
   3. A user with existing Verifiable Credentials can connect their walt.id wallet and load credentials into the app
   4. A user who completes the OID4VP flow receives the same server-side session cookie as a user who logs in with email/password — the rest of the app behaves identically
   5. VC compliance status is cached in the `organizations` table with a `vc_verified_at` timestamp; walt.id sidecar unavailability does not break email/password login
-**Plans**: TBD
+**Plans**: 3 plans
+  - [ ] 08-01-PLAN.md — Docker sidecar (walt.id walt-id profile), DB schema (vc_holder_did), config, sidecar health monitor, VC auth routes (vc-init, vc-status, vc-health), Verifier client, user-by-DID DAL
+  - [ ] 08-02-PLAN.md — Frontend login/register page redesign (shadcn login-02/signup-02), /login/vc page (login-03 + QR code + step indicator + polling), Coming Soon stub, proxy routes
+  - [ ] 08-03-PLAN.md — VC badge in sidebar (ShieldCheck icon), auth_method + vc_available in /auth/me response, vc_verified_at display in organization settings
 
 ### Phase 9: Gaia-X Compliance Wizard
 **Goal**: Org admins can complete a guided multi-step wizard that generates Gaia-X Verifiable Credentials, submits them to GXDCH for compliance verification, and replaces the current organization settings view with VC compliance management
@@ -200,5 +203,5 @@ Each phase runs on its own git branch and merges into main via pull request befo
 | 6. Dataspace Switcher & Organization Management | 3/3 | Complete    | 2026-02-26 |
 | 6.1. Middleware Route Guard Fix | 1/1 | Complete | 2026-02-26 |
 | 7. Frontend Architecture Cleanup | 4/4 | Complete   | 2026-02-26 |
-| 8. Walt.id Integration & VC Auth Path | 0/TBD | Not started | - |
+| 8. Walt.id Integration & VC Auth Path | 0/3 | Not started | - |
 | 9. Gaia-X Compliance Wizard | 0/TBD | Not started | - |

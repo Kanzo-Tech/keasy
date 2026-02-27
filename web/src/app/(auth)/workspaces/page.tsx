@@ -10,6 +10,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 type Workspace = {
   client_id: string;
@@ -95,12 +96,13 @@ export default function WorkspacesPage() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {workspaces.map((ws) => (
-            <button
+            <Button
               key={ws.client_id}
+              variant="ghost"
               onClick={() => handleSelect(ws)}
-              className="text-left"
+              className="h-auto w-full p-0 text-left"
             >
-              <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+              <Card className="hover:border-primary transition-colors cursor-pointer h-full w-full">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <span
@@ -114,7 +116,7 @@ export default function WorkspacesPage() {
                   </CardDescription>
                 </CardHeader>
               </Card>
-            </button>
+            </Button>
           ))}
         </div>
       </div>

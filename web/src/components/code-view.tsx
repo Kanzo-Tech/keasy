@@ -8,6 +8,7 @@ import { json } from "@codemirror/lang-json";
 import { xml } from "@codemirror/lang-xml";
 import { Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   lightHighlight, darkHighlight,
   lightTheme, darkTheme,
@@ -168,13 +169,15 @@ export function CodeView({
   return (
     <div className={cn("relative rounded-md flex flex-col flex-1 min-h-0 overflow-hidden", className)}>
       {showCopy && code && (
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={handleCopy}
-          className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground transition-colors"
           title="Copy to clipboard"
+          className="absolute top-2 right-2 z-10 h-7 w-7 bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground"
         >
           {copied ? <Check size={14} /> : <Copy size={14} />}
-        </button>
+        </Button>
       )}
       <div ref={containerRef} className="flex-1 min-h-0 overflow-auto" />
     </div>

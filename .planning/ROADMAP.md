@@ -30,7 +30,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 
 **Milestone Goal:** Evolve Keasy from a single multi-tenant instance to a federated platform with central identity (Keycloak), 1 instance = 1 dataspace architecture, role-separated views, and external wallet connection.
 
-- [ ] **Phase 10: Keycloak Identity Service Deployment** - Deploy Keycloak Docker sidecar, register Keasy as OIDC client, and register first dataspace instance
+- [x] **Phase 10: Keycloak Identity Service Deployment** - Deploy Keycloak Docker sidecar, register Keasy as OIDC client, and register first dataspace instance (completed 2026-02-27)
 - [ ] **Phase 11: OIDC Auth Conversion** - Full-stack OIDC cutover: Axum becomes OIDC RP, login page replaced, register page deleted, old auth code removed entirely
 - [ ] **Phase 12: Walt.id Service Reduction & External Wallet UI** - Remove hosted wallet services; add external wallet connect via OID4VP
 - [ ] **Phase 13: Promotor/Participant Route Separation** - Enforce role-separated route groups with server-side RSC checks and role-scoped sidebars
@@ -124,7 +124,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 7. Frontend Architecture Cleanup | v1.0 | 4/4 | Complete | 2026-02-26 |
 | 8. Walt.id Integration & VC Auth Path | v1.0 | 3/3 | Complete | 2026-02-27 |
 | 9. Gaia-X Compliance Wizard | v1.0 | 4/4 | Complete | 2026-02-27 |
-| 10. Keycloak Identity Service Deployment | 2/3 | In Progress|  | - |
+| 10. Keycloak Identity Service Deployment | 3/3 | Complete   | 2026-02-27 | - |
 | 11. OIDC Auth Conversion | v1.1 | 0/TBD | Not started | - |
 | 12. Walt.id Service Reduction & External Wallet UI | v1.1 | 0/TBD | Not started | - |
 | 13. Promotor/Participant Route Separation | v1.1 | 0/TBD | Not started | - |

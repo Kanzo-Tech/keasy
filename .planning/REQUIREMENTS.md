@@ -31,7 +31,7 @@ Requirements for the Platform milestone. Each maps to roadmap phases.
 - [x] **VIEW-02**: Participant route group with server-side RSC role check that redirects non-participants
 - [x] **VIEW-03**: Promotor sidebar shows: Participants, Catalog, Compliance, Settings
 - [x] **VIEW-04**: Participant sidebar shows: Connections, Jobs, Compliance, Settings
-- [ ] **VIEW-05**: Promotor can invite participant organizations from a dedicated view
+- [x] **VIEW-05**: Promotor can invite participant organizations from a dedicated view
 - [x] **VIEW-06**: URL structure unchanged after route group restructuring (route groups don't affect paths)
 
 ### Wallet
@@ -121,7 +121,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VIEW-02 | Phase 13 | Complete |
 | VIEW-03 | Phase 13 | Complete |
 | VIEW-04 | Phase 13 | Complete |
-| VIEW-05 | Phase 13 | Pending |
+| VIEW-05 | Phase 13 | Complete |
 | VIEW-06 | Phase 13 | Complete |
 | FED-02 | Phase 14 | Pending |
 | FED-03 | Phase 14 | Pending |

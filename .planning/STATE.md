@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Platform
 status: unknown
-last_updated: "2026-02-27T16:57:21.965Z"
+last_updated: "2026-02-27T21:48:00.000Z"
 progress:
   total_phases: 3
   completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 9
+  completed_plans: 9
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Position
 
-Phase: 13 of 15 (Promotor/Participant Route Separation)
-Plan: 13-01 (complete — 1/2 plans done)
-Status: Phase 13 In Progress — RSC role-gate layouts, restructured route groups, invite link API endpoints, role-split sidebar, redirect toast.
-Last activity: 2026-02-27 — 13-01 complete: (promotor)/(participant) route groups with RSC layouts, invite API, role-split sidebar, redirect toast
+Phase: 13 of 15 (Promotor/Participant Route Separation) — COMPLETE
+Plan: 13-02 (complete — 2/2 plans done)
+Status: Phase 13 Complete — role-split dashboards, invite management UI, proxy routes, role-filtered settings nav
+Last activity: 2026-02-27 — 13-02 complete: role-split home dashboard, invite management UI, invites proxy routes, settings nav role filtering
 
-Progress: [██████░░░░] 53%
+Progress: [███████░░░] 60%
 
 ## Performance Metrics
 
@@ -43,7 +43,7 @@ Progress: [██████░░░░] 53%
 | 10 | 3/3 | 9 min | 3 min |
 | 11 | 3/3 | 14 min | ~5 min |
 | 12 | 2/2 | 5 min | ~3 min |
-| 13 | 1/2 | 3 min | 3 min |
+| 13 | 2/2 | 6 min | 3 min |
 
 *Updated after each plan completion*
 
@@ -79,6 +79,8 @@ Progress: [██████░░░░] 53%
 - [13-01]: RSC role-gate: promotor redirects non-promotors to /connections?redirected=1; participant redirects promotors to /participants?redirected=1; both redirect unauthenticated to /login
 - [13-01]: getSidebarRoutes returns strictly role-split sets — promotor: 3 items (Participants, Catalog, Settings); participant: 4 items (Connections, Jobs, Compliance, Settings)
 - [13-01]: Settings stays at (main) level, NOT inside any role group — both roles access /settings/*
+- [13-02]: page.tsx is a minimal RSC orchestrator — all data fetching and UI in typed client components (PromotorDashboard / ParticipantDashboard)
+- [13-02]: Settings nav removes Security from both roles per CONTEXT.md spec (Promotor=Preferences only; Participant=Preferences+AI+Cloud Accounts+Wallet)
 
 ### Pending Todos
 
@@ -94,5 +96,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 13-01-PLAN.md — RSC role-gate layouts, (promotor)/(participant) route groups, invite link API, role-split sidebar, redirect toast
-Resume with: `/gsd:execute-phase 13` to continue Phase 13 (plan 13-02 remaining)
+Stopped at: Completed 13-02-PLAN.md — role-split dashboards, invite management UI, proxy routes, role-filtered settings nav
+Resume with: `/gsd:execute-phase 14` to continue with Phase 14

@@ -3,6 +3,7 @@ use keasy_server::config::ServerConfig;
 use keasy_server::email::EmailService;
 use keasy_server::routes::build_router;
 use keasy_server::tenant::TenantScoped;
+use secrecy::ExposeSecret;
 
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -142,6 +143,40 @@ async fn main() {
         }
     };
 
+    // Build OIDC relying party client — only when all three config fields are present.
+    let oidc_state = match (&config.oidc_issuer_url, &config.oidc_client_id, &config.oidc_client_secret) {
+        (Some(issuer), Some(client_id), Some(secret)) => {
+            let redirect_uri = format!(
+                "{}/api/auth/oidc-callback",
+                config.base_url.trim_end_matches('/')
+            );
+            match keasy_server::auth::oidc::build_oidc_client(
+                issuer,
+                client_id,
+                secret.expose_secret(),
+                &redirect_uri,
+            )
+            .await
+            {
+                Ok(state) => {
+                    tracing::info!(issuer = %issuer, "OIDC relying party client initialized");
+                    Some(Arc::new(state))
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        error = %e,
+                        "Failed to initialize OIDC client — OIDC auth will be unavailable"
+                    );
+                    None
+                }
+            }
+        }
+        _ => {
+            tracing::info!("OIDC not fully configured — OIDC auth disabled");
+            None
+        }
+    };
+
     let shutdown_grace = Duration::from_secs(config.shutdown_grace_secs);
     let state = AppState {
         db,
@@ -160,6 +195,7 @@ async fn main() {
         oidc_client_id: config.oidc_client_id,
         oidc_client_secret: config.oidc_client_secret,
         keycloak_admin,
+        oidc_state,
     };
     let app = build_router(state, config.cors_origins, session_store, config.session_secret);
 

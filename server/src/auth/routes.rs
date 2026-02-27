@@ -12,15 +12,9 @@ use crate::AppState;
 use crate::auth::errors::AuthError;
 use crate::auth::models::{LoginRequest, RegisterRequest};
 use crate::auth::password;
-use crate::db::dataspaces::{DataspaceRole, OrgRole};
+use crate::db::organizations::OrgRole;
 use crate::db::users::{User, UserStatus};
 use crate::error::data_response;
-
-/// POST /v1/auth/set-dataspace request body
-#[derive(serde::Deserialize)]
-pub struct SetDataspaceRequest {
-    pub dataspace_id: String,
-}
 
 /// POST /v1/auth/register
 ///
@@ -223,10 +217,6 @@ pub async fn login(
         .map_err(|e| AuthError::Internal(format!("session save failed: {e}")))?;
 
     // 7. Enforce single session — AFTER cycle_id and save so we store the new session_id.
-    // The old session_id in user_sessions is atomically replaced. The old session
-    // data remains in the tower-sessions store until it expires naturally (24h),
-    // but session_required middleware will reject it immediately since its session_id
-    // no longer matches the active entry in user_sessions.
     let session_id = session
         .id()
         .ok_or_else(|| AuthError::Internal("session has no ID after save".to_string()))?
@@ -242,46 +232,9 @@ pub async fn login(
     Ok(data_response(json!({ "user_id": user.id })))
 }
 
-/// POST /v1/auth/set-dataspace
-///
-/// Sets the active dataspace for the current session. Called after login
-/// before any resource access. Validates that the user's org is a member
-/// of the requested dataspace.
-///
-/// Protected by session_required but NOT tenant_context_required
-/// (chicken-and-egg: you need to set a dataspace before tenant context can resolve).
-pub async fn set_active_dataspace(
-    session: Session,
-    State(state): State<AppState>,
-    axum::Extension(auth_user): axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
-    Json(payload): Json<SetDataspaceRequest>,
-) -> Result<impl IntoResponse, AuthError> {
-    // 1. Get user's org membership
-    let membership = state
-        .db
-        .get_user_org_membership(&auth_user.user_id)
-        .await
-        .ok_or(AuthError::Forbidden)?;
-
-    // 2. Verify org is member of requested dataspace
-    let dataspaces = state.db.list_dataspaces_for_org(&membership.org_id).await;
-    if !dataspaces.iter().any(|ds| ds.id == payload.dataspace_id) {
-        return Err(AuthError::Forbidden);
-    }
-
-    // 3. Store in session
-    session
-        .insert("active_dataspace_id", &payload.dataspace_id)
-        .await
-        .map_err(|e| AuthError::Internal(format!("session insert: {e}")))?;
-
-    Ok(StatusCode::NO_CONTENT)
-}
-
 /// GET /v1/auth/me
 ///
-/// Returns the authenticated user's profile, org, and available dataspaces
-/// with the effective role per dataspace ("promotor", "org_admin", or "org_user").
+/// Returns the authenticated user's profile, org, and effective role.
 /// Protected by session_required but NOT tenant_context_required.
 pub async fn get_me(
     session: Session,
@@ -295,50 +248,34 @@ pub async fn get_me(
         .ok_or(AuthError::Forbidden)?;
 
     let membership = state.db.get_user_org_membership(&auth_user.user_id).await;
-    let (org, dataspaces) = match &membership {
-        Some(m) => {
-            let org = state.db.get_organization(&m.org_id).await;
-            let ds = state.db.list_dataspaces_for_org(&m.org_id).await;
-            (org, ds)
-        }
-        None => (None, vec![]),
+    let org = match &membership {
+        Some(m) => state.db.get_organization(&m.org_id).await,
+        None => None,
     };
-    let active_dataspace_id: Option<String> =
-        session.get::<String>("active_dataspace_id").await.ok().flatten();
 
-    // Read auth_method from session — "vc" if authenticated via OID4VP, "password" otherwise
+    // Read auth_method from session — "vc" if authenticated via OID4VP, "oidc" otherwise.
+    // OIDC is now the primary auth method; the "password" fallback is removed since
+    // password auth is being deleted in Phase 11 (IDENT-07).
     let auth_method: String = session
         .get::<String>("auth_method")
         .await
         .ok()
         .flatten()
-        .unwrap_or_else(|| "password".to_string());
+        .unwrap_or_else(|| "oidc".to_string());
 
     // Read whether the walt.id Verifier sidecar is currently reachable
     let vc_available = state.vc_available.load(std::sync::atomic::Ordering::Relaxed);
 
-    // Compute effective role per dataspace
+    // Compute effective role
     let membership_role = membership.as_ref().map(|m| m.role.as_str());
-    let mut dataspaces_with_role = Vec::with_capacity(dataspaces.len());
-    for ds in &dataspaces {
-        let effective_role = if let Some(m) = &membership {
-            match state.db.get_org_dataspace_role(&m.org_id, &ds.id).await {
-                Some(DataspaceRole::Promotor) => "promotor",
-                Some(DataspaceRole::Participant) => match m.role {
-                    OrgRole::Admin => "org_admin",
-                    OrgRole::User => "org_user",
-                },
-                None => "org_user",
-            }
-        } else {
-            "org_user"
-        };
-        dataspaces_with_role.push(json!({
-            "id": ds.id,
-            "name": ds.name,
-            "role": effective_role,
-        }));
-    }
+    let effective_role = match (&org, &membership) {
+        (Some(o), Some(_)) if o.role == "promotor" => "promotor",
+        (_, Some(m)) => match m.role {
+            OrgRole::Admin => "org_admin",
+            OrgRole::User => "org_user",
+        },
+        _ => "org_user",
+    };
 
     Ok(data_response(json!({
         "user_id": user.id,
@@ -346,15 +283,15 @@ pub async fn get_me(
         "first_name": user.first_name,
         "last_name": user.last_name,
         "membership_role": membership_role,
+        "effective_role": effective_role,
         "auth_method": auth_method,
         "vc_available": vc_available,
         "org": org.map(|o| json!({
             "id": o.id,
             "name": o.name,
+            "role": o.role,
             "vc_verified_at": o.vc_verified_at,
         })),
-        "dataspaces": dataspaces_with_role,
-        "active_dataspace_id": active_dataspace_id,
     })))
 }
 
@@ -430,7 +367,12 @@ pub async fn get_invite_info(
 /// POST /v1/auth/logout
 ///
 /// Destroys the session cookie and removes the user_sessions DB entry.
-/// Returns 204 No Content regardless of whether the user was authenticated.
+/// Returns 200 with `end_session_url` — the Keycloak end-session URL for full
+/// single logout. The frontend redirects the browser to this URL to complete
+/// the OIDC RP-Initiated Logout flow.
+///
+/// If OIDC is not configured, `end_session_url` is null and the caller only
+/// needs to clear the local session (existing password/VC behavior is preserved).
 pub async fn logout(
     session: Session,
     State(state): State<AppState>,
@@ -446,5 +388,20 @@ pub async fn logout(
         .await
         .map_err(|e| AuthError::Internal(format!("session flush failed: {e}")))?;
 
-    Ok(StatusCode::NO_CONTENT)
+    // Build Keycloak end-session URL for OIDC RP-Initiated Logout.
+    // Format: {issuer}/protocol/openid-connect/logout?client_id={id}&post_logout_redirect_uri={url}
+    let end_session_url = if let (Some(oidc), Some(client_id)) =
+        (&state.oidc_state, &state.oidc_client_id)
+    {
+        let post_logout_uri = format!("{}/login", state.base_url.trim_end_matches('/'));
+        let encoded_redirect = urlencoding::encode(&post_logout_uri);
+        Some(format!(
+            "{}/protocol/openid-connect/logout?client_id={}&post_logout_redirect_uri={}",
+            oidc.issuer_url, client_id, encoded_redirect
+        ))
+    } else {
+        None
+    };
+
+    Ok(data_response(json!({ "end_session_url": end_session_url })))
 }

@@ -75,6 +75,15 @@ pub fn build_router(
             "/v1/auth/invite-info",
             axum::routing::get(crate::auth::routes::get_invite_info),
         )
+        // OIDC authorization code flow — public (session is created inside oidc_callback)
+        .route(
+            "/v1/auth/oidc-start",
+            axum::routing::get(crate::auth::oidc::oidc_start),
+        )
+        .route(
+            "/v1/auth/oidc-callback",
+            axum::routing::get(crate::auth::oidc::oidc_callback),
+        )
         // VC auth routes — public (no session required beforehand)
         .route(
             "/v1/auth/vc-init",

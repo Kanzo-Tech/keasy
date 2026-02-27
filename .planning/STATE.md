@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 08 of 9 (Walt.id VC Integration) — In Progress
-Plan: 2 of 3 complete (08-01 sidecar/schema/health, 08-02 VC auth frontend)
-Status: Phase 08 Plan 02 Complete — VC auth frontend done (login page, /login/vc, Coming Soon stub, proxy routes)
-Last activity: 2026-02-27 — Completed Plan 08-02: Login page VC health check + VC link, /login/vc QR OID4VP flow with polling/step indicator, /login/vc/coming-soon stub, proxy routes for vc-health/vc-init/vc-status (Set-Cookie forwarding)
+Phase: 08 of 9 (Walt.id VC Integration) — Complete
+Plan: 3 of 3 complete (08-01 sidecar/schema/health, 08-02 VC auth frontend, 08-03 VC UI indicators)
+Status: Phase 08 Complete — All 3 plans done: backend VC infrastructure, VC login frontend, VC auth UI indicators
+Last activity: 2026-02-27 — Completed Plan 08-03: Extended /auth/me with auth_method + vc_available + vc_verified_at; NavUser ShieldCheck badge for VC sessions; org settings VC Compliance section
 
-Progress: [██████████████████] ~91%
+Progress: [████████████████████] ~96%
 
 ## Performance Metrics
 
@@ -144,6 +144,10 @@ Recent decisions affecting current work:
 - [Phase 08-01]: Walt.id services pinned to 0.17.1 (not latest) to prevent breaking changes from image drift
 - [Phase 08-01]: vc-status route is public (no session required) because browser polls before auth completes
 - [Phase 08-01]: No DID auto-creation on first VC login — invite-only model enforced; must link DID from settings
+- [Phase 08-03]: auth_method defaults to "password" when absent from session — backward-compatible for all existing email/password sessions
+- [Phase 08-03]: organization-tab reuses auth-me SWR key shared with app-sidebar — no duplicate fetch, vc_verified_at already in /auth/me org sub-object
+- [Phase 08-03]: VC badge placed in both SidebarMenuButton trigger and DropdownMenuLabel repeat for visual consistency
+- [Phase 08-03]: vcVerifiedAt threaded as prop to OrgForm rather than fetching inside OrgForm — keeps data fetching at OrganizationTab level
 
 ### Pending Todos
 
@@ -161,5 +165,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Plan 08-02 — Login page VC health check (SWR) + VC link, /login/vc QR OID4VP flow with react-qr-code, polling, step indicator (scan/verifying/authenticated), /login/vc/coming-soon static stub, proxy routes vc-health/vc-init/vc-status (Set-Cookie forwarding).
-Resume with: Phase 08 Plan 03 if exists, or Phase 09 (GXDCH integration)
+Stopped at: Completed Plan 08-03 — Extended /auth/me with auth_method + vc_available + vc_verified_at; NavUser ShieldCheck badge for VC-authenticated sessions; org settings VC Compliance section with formatted timestamp. Phase 08 complete.
+Resume with: Phase 09 (GXDCH integration)

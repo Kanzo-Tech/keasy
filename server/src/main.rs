@@ -134,6 +134,8 @@ async fn main() {
         base_url: config.base_url,
         vc_available,
         vc_client,
+        gxdch_notary_url: config.gxdch_notary_url,
+        gxdch_compliance_url: config.gxdch_compliance_url,
     };
     let app = build_router(state, config.cors_origins, session_store, config.session_secret);
 

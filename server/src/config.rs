@@ -23,6 +23,12 @@ pub struct ServerConfig {
     /// Walt.id Verifier API base URL. When set, VC authentication is enabled.
     /// Read from KEASY_WALT_ID_VERIFIER_URL. Default None — VC auth disabled.
     pub walt_id_verifier_url: Option<String>,
+    /// GXDCH Notary API base URL for LRN credential requests.
+    /// Read from KEASY_GXDCH_NOTARY_URL. Default: staging Notary endpoint.
+    pub gxdch_notary_url: String,
+    /// GXDCH Compliance Service URL for VP submission.
+    /// Read from KEASY_GXDCH_COMPLIANCE_URL. Default: main/stable Compliance endpoint.
+    pub gxdch_compliance_url: String,
 }
 
 impl ServerConfig {
@@ -100,6 +106,14 @@ impl ServerConfig {
             .ok()
             .filter(|s| !s.trim().is_empty());
 
+        let gxdch_notary_url = std::env::var("KEASY_GXDCH_NOTARY_URL").unwrap_or_else(|_| {
+            "https://registrationnumber.notary.lab.gaia-x.eu/v1/registrationNumberVC".to_string()
+        });
+        let gxdch_compliance_url =
+            std::env::var("KEASY_GXDCH_COMPLIANCE_URL").unwrap_or_else(|_| {
+                "https://compliance.lab.gaia-x.eu/main/api/credential-offers".to_string()
+            });
+
         Self {
             bind_addr,
             api_key: SecretString::from(api_key),
@@ -113,6 +127,8 @@ impl ServerConfig {
             cache_capacity,
             base_url,
             walt_id_verifier_url,
+            gxdch_notary_url,
+            gxdch_compliance_url,
         }
     }
 }

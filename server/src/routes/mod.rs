@@ -50,6 +50,15 @@ pub fn build_router(
             "/v1/providers",
             axum::routing::get(providers::list_providers),
         )
+        // Gaia-X .well-known public endpoints (no auth required — GXDCH must resolve these)
+        .route(
+            "/.well-known/did.json",
+            axum::routing::get(crate::gaia_x::routes::get_did_document),
+        )
+        .route(
+            "/.well-known/x509CertificateChain.pem",
+            axum::routing::get(crate::gaia_x::routes::get_cert_chain),
+        )
         .with_state(state.clone());
 
     // Public auth routes (no session middleware)
@@ -265,6 +274,43 @@ pub fn build_router(
         .route(
             "/v1/org/users/{id}",
             axum::routing::put(org::update_user_role).delete(org::remove_user),
+        )
+        // Gaia-X compliance wizard routes (session + tenant protected)
+        .route(
+            "/v1/gaia-x/wizard",
+            axum::routing::get(crate::gaia_x::routes::get_wizard_state),
+        )
+        .route(
+            "/v1/gaia-x/wizard/keys",
+            axum::routing::post(crate::gaia_x::routes::generate_keys),
+        )
+        .route(
+            "/v1/gaia-x/wizard/certificate",
+            axum::routing::post(crate::gaia_x::routes::validate_certificate),
+        )
+        .route(
+            "/v1/gaia-x/wizard/lrn",
+            axum::routing::post(crate::gaia_x::routes::request_lrn),
+        )
+        .route(
+            "/v1/gaia-x/wizard/legal-participant",
+            axum::routing::post(crate::gaia_x::routes::sign_legal_participant),
+        )
+        .route(
+            "/v1/gaia-x/wizard/terms",
+            axum::routing::post(crate::gaia_x::routes::sign_terms_conditions),
+        )
+        .route(
+            "/v1/gaia-x/wizard/submit",
+            axum::routing::post(crate::gaia_x::routes::submit_gxdch),
+        )
+        .route(
+            "/v1/gaia-x/compliance",
+            axum::routing::get(crate::gaia_x::routes::get_compliance_status),
+        )
+        .route(
+            "/v1/gaia-x/compliance/rerun",
+            axum::routing::post(crate::gaia_x::routes::rerun_compliance),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),

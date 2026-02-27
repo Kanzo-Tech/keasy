@@ -21,6 +21,10 @@ services:
       KEASY_BASE_URL: http://localhost:3000
       # Walt.id Verifier sidecar URL — only relevant when running with --profile walt-id
       KEASY_WALT_ID_VERIFIER_URL: http://waltid-verifier-api:7003
+      # Keycloak OIDC config (activate with --profile keycloak)
+      # KEASY_OIDC_ISSUER_URL: http://keycloak:8080/auth/realms/keasy
+      # KEASY_OIDC_CLIENT_ID: keasy-server
+      # KEASY_OIDC_CLIENT_SECRET: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
     volumes:
       - keasy-data:/var/lib/keasy
 
@@ -32,9 +36,55 @@ services:
     environment:
       KEASY_API_URL: http://server:8080
       KEASY_API_KEY: dev-key
+      KEYCLOAK_INTERNAL_URL: http://keycloak:8080
     depends_on:
       server:
         condition: service_healthy
+
+  keycloak-postgres:
+    image: postgres:15
+    profiles: [keycloak]
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD:-changeme}
+    volumes:
+      - keycloak-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    profiles: [keycloak]
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-changeme}
+      KC_HOSTNAME: http://localhost:3000/auth
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-changeme}
+      KC_PROXY_HEADERS: xforwarded
+      KEASY_OIDC_CLIENT_SECRET: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
+    volumes:
+      - ./keycloak/realm-import:/opt/keycloak/data/import
+    depends_on:
+      keycloak-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nhost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   waltid-wallet-api:
     image: waltid/wallet-api:0.17.1
@@ -74,6 +124,7 @@ services:
 
 volumes:
   keasy-data:
+  keycloak-postgres-data:
   waltid-wallet-data:
   waltid-issuer-data:
   waltid-verifier-data:

@@ -57,10 +57,10 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **VC-01**: walt.id Community Stack runs as Docker sidecar services (Issuer, Verifier, Wallet) alongside Keasy
 - [x] **VC-02**: User can connect a wallet via walt.id and load existing Verifiable Credentials
 - [x] **VC-03**: User can log in via Verifiable Credentials (OID4VP) as an alternative to email/password, producing the same session type
-- [ ] **VC-04**: Gaia-X compliance wizard guides user through: key pair generation, DID document hosting, LRN credential, Legal Participant credential, T&C credential, and GXDCH compliance submission
-- [ ] **VC-05**: Wizard validates certificate chain (including root CA) at each step, not only at final submission
-- [ ] **VC-06**: Credentials are linked via credential subject ID (not top-level credential ID) per Gaia-X specification
-- [ ] **VC-07**: All credentials in Verifiable Presentations are included inline (not URL references)
+- [x] **VC-04**: Gaia-X compliance wizard guides user through: key pair generation, DID document hosting, LRN credential, Legal Participant credential, T&C credential, and GXDCH compliance submission
+- [x] **VC-05**: Wizard validates certificate chain (including root CA) at each step, not only at final submission
+- [x] **VC-06**: Credentials are linked via credential subject ID (not top-level credential ID) per Gaia-X specification
+- [x] **VC-07**: All credentials in Verifiable Presentations are included inline (not URL references)
 - [x] **VC-08**: Two auth paths available at login: "Traditional" (email/password) and "Verifiable Credentials"
 - [x] **VC-09**: Within VC path, two sub-options: "I have my own credentials" (load from wallet) and "Wizard" (guided Gaia-X compliance)
 - [ ] **VC-10**: VC/compliance management replaces current organization settings view (accessible by org admin)
@@ -141,10 +141,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VC-01 | Phase 8 | Complete |
 | VC-02 | Phase 8 | Complete |
 | VC-03 | Phase 8 | Complete |
-| VC-04 | Phase 9 | Pending |
-| VC-05 | Phase 9 | Pending |
-| VC-06 | Phase 9 | Pending |
-| VC-07 | Phase 9 | Pending |
+| VC-04 | Phase 9 | Complete |
+| VC-05 | Phase 9 | Complete |
+| VC-06 | Phase 9 | Complete |
+| VC-07 | Phase 9 | Complete |
 | VC-08 | Phase 8 | Complete |
 | VC-09 | Phase 8 | Complete |
 | VC-10 | Phase 9 | Pending |

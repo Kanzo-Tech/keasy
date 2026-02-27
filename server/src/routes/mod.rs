@@ -103,6 +103,10 @@ pub fn build_router(
             axum::routing::get(crate::auth::routes::get_me),
         )
         .route(
+            "/v1/auth/workspaces",
+            axum::routing::get(crate::auth::routes::list_workspaces),
+        )
+        .route(
             "/v1/auth/wallet",
             axum::routing::get(crate::auth::wallet_routes::get_wallet)
                 .delete(crate::auth::wallet_routes::disconnect_wallet),

@@ -93,6 +93,44 @@ pub async fn get_invite_info(
     }
 }
 
+/// GET /v1/auth/workspaces
+///
+/// Returns the list of dataspaces the authenticated user has access to,
+/// resolved from the `dataspaces` session value to display info via
+/// the oidc_clients table. Protected by session_required, NOT tenant_context_required.
+pub async fn list_workspaces(
+    session: Session,
+    State(state): State<AppState>,
+    _auth_user: axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
+) -> Result<impl IntoResponse, AuthError> {
+    let dataspaces: Vec<String> = session
+        .get("dataspaces")
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or_default();
+
+    let current_client_id = state.oidc_client_id.clone().unwrap_or_default();
+
+    let mut workspaces = Vec::new();
+    for client_id in &dataspaces {
+        if let Some(client) = state.db.get_oidc_client_by_client_id(client_id).await {
+            workspaces.push(json!({
+                "client_id": client.client_id,
+                "name": client.name,
+                "url": client.url,
+            }));
+        }
+        // Silently skip client_ids not found in local oidc_clients table
+        // (may be instances registered elsewhere)
+    }
+
+    Ok(data_response(json!({
+        "workspaces": workspaces,
+        "current_client_id": current_client_id,
+    })))
+}
+
 /// POST /v1/auth/logout
 ///
 /// Destroys the session cookie and removes the user_sessions DB entry.

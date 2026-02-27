@@ -506,8 +506,13 @@ pub async fn oidc_callback(
         let _ = session.save().await;
     }
 
-    // 20. Always redirect to dashboard (connections page) — no return-URL logic.
-    Ok(Redirect::to("/connections").into_response())
+    // 20. Redirect to workspace picker if multiple dataspaces, else dashboard.
+    let redirect_target = if dataspaces.len() > 1 {
+        "/workspaces"
+    } else {
+        "/connections"
+    };
+    Ok(Redirect::to(redirect_target).into_response())
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

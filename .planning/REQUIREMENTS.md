@@ -15,7 +15,7 @@ Requirements for the Platform milestone. Each maps to roadmap phases.
 - [x] **IDENT-04**: ID tokens include `keasy:dataspaces` custom claim with user's dataspace membership list
 - [x] **IDENT-05**: Keasy server validates ID token signature via cached JWKS with TTL and refresh-on-failure
 - [x] **IDENT-06**: Each dataspace instance validates `aud` claim matches its own registered client_id
-- [ ] **IDENT-07**: Old password auth code deleted entirely (Argon2id login/register endpoints, password routes, related handlers)
+- [x] **IDENT-07**: Old password auth code deleted entirely (Argon2id login/register endpoints, password routes, related handlers)
 
 ### Federation
 
@@ -36,11 +36,11 @@ Requirements for the Platform milestone. Each maps to roadmap phases.
 
 ### Wallet
 
-- [ ] **WALL-01**: Hosted walt.id Wallet, Issuer, web-wallet, and web-portal services removed from Docker Compose
-- [ ] **WALL-02**: Walt.id Verifier sidecar confirmed operational standalone after other services removed
+- [x] **WALL-01**: Hosted walt.id Wallet, Issuer, web-wallet, and web-portal services removed from Docker Compose
+- [x] **WALL-02**: Walt.id Verifier sidecar confirmed operational standalone after other services removed
 - [ ] **WALL-03**: User can connect external wallet via QR code (cross-device) or deep link (same-device) using OID4VP
 - [ ] **WALL-04**: Wallet connection status visible in sidebar or settings/security page
-- [ ] **WALL-05**: Existing VC verification path (`vc_client.rs`, `vc_routes.rs`) unchanged after wallet removal
+- [x] **WALL-05**: Existing VC verification path (`vc_client.rs`, `vc_routes.rs`) unchanged after wallet removal
 
 ### UX
 
@@ -53,8 +53,8 @@ Requirements for the Platform milestone. Each maps to roadmap phases.
 
 ### Auth Migration (Frontend)
 
-- [ ] **AUTH-01**: Login page replaced with single OIDC redirect button + optional VC auth button
-- [ ] **AUTH-02**: Register page deleted entirely (Keycloak handles user registration)
+- [x] **AUTH-01**: Login page replaced with single OIDC redirect button + optional VC auth button
+- [x] **AUTH-02**: Register page deleted entirely (Keycloak handles user registration)
 
 ### Code Quality
 
@@ -109,14 +109,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | IDENT-04 | Phase 11 | Complete |
 | IDENT-05 | Phase 11 | Complete |
 | IDENT-06 | Phase 11 | Complete |
-| IDENT-07 | Phase 11 | Pending |
-| AUTH-01 | Phase 11 | Pending |
-| AUTH-02 | Phase 11 | Pending |
-| WALL-01 | Phase 12 | Pending |
-| WALL-02 | Phase 12 | Pending |
+| IDENT-07 | Phase 11 | Complete |
+| AUTH-01 | Phase 11 | Complete |
+| AUTH-02 | Phase 11 | Complete |
+| WALL-01 | Phase 12 | Complete |
+| WALL-02 | Phase 12 | Complete |
 | WALL-03 | Phase 12 | Pending |
 | WALL-04 | Phase 12 | Pending |
-| WALL-05 | Phase 12 | Pending |
+| WALL-05 | Phase 12 | Complete |
 | VIEW-01 | Phase 13 | Pending |
 | VIEW-02 | Phase 13 | Pending |
 | VIEW-03 | Phase 13 | Pending |

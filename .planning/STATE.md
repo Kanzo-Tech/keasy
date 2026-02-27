@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Platform
 status: unknown
-last_updated: "2026-02-27T16:14:22Z"
+last_updated: "2026-02-27T16:48:00Z"
 progress:
   total_phases: 2
-  completed_phases: 1
-  total_plans: 6
-  completed_plans: 6
+  completed_phases: 2
+  total_plans: 7
+  completed_plans: 7
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Reliable end-to-end data asset generation — a user can take heterogeneous data, transform it through Fossil pipelines, and produce a standards-compliant data asset ready for a data space
-**Current focus:** Phase 11 — OIDC Auth Conversion
+**Current focus:** Phase 12 — Walt.ID Service Reduction / External Wallet UI
 
 ## Current Position
 
-Phase: 11 of 15 (OIDC Auth Conversion)
-Plan: 11-03 (complete — 3/3 plans done — Phase 11 COMPLETE)
-Status: Phase 11 Complete — full OIDC cutover done: backend RP core, old auth deletion, frontend migration.
-Last activity: 2026-02-27 — 11-03 complete: OIDC proxy routes, button-only login, invite/logout OIDC bridge, old auth UI deleted
+Phase: 12 of 15 (Walt.ID Service Reduction / External Wallet UI)
+Plan: 12-01 (complete — 1/? plans done)
+Status: Phase 12 In Progress — backend wallet API complete: Docker cleanup, DB migration, wallet connection endpoints, /auth/me extended.
+Last activity: 2026-02-27 — 12-01 complete: removed walt.id hosted services, added wallet_connected_at migration, wallet connection endpoints
 
-Progress: [████░░░░░░] 40%
+Progress: [█████░░░░░] 47%
 
 ## Performance Metrics
 
@@ -42,6 +42,7 @@ Progress: [████░░░░░░] 40%
 |-------|-------|-------|----------|
 | 10 | 3/3 | 9 min | 3 min |
 | 11 | 3/3 | 14 min | ~5 min |
+| 12 | 1/? | 2 min | 2 min |
 
 *Updated after each plan completion*
 
@@ -71,6 +72,8 @@ Progress: [████░░░░░░] 40%
 - [11-02]: seed.rs admin user seeded with empty password_hash; authentication goes through Keycloak in OIDC mode
 - [11-03]: Invite page no-token guard uses useState default values instead of useEffect synchronous setState — avoids react-hooks/set-state-in-effect lint error with identical runtime behavior
 - [11-03]: Task 2 frontend changes were already committed in Plan 11-02 branch execution — content confirmed identical to plan spec, no duplicate commit needed
+- [12-01]: wallet_routes.rs placed in session_auth_routes (not api_routes) — needs session auth but NOT tenant context, parallel to /auth/me
+- [12-01]: unlink_did_from_user returns Result<(), String> for consistency with other DB methods; link_did_to_user retains Result<(), rusqlite::Error>
 
 ### Pending Todos
 
@@ -86,5 +89,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 11-03-PLAN.md — Phase 11 plan 3/3: Frontend OIDC migration (OIDC proxy routes, button-only login, invite/logout/security OIDC bridge)
-Resume with: `/gsd:execute-phase 12` to execute Phase 12 (wallet/issuer removal)
+Stopped at: Completed 12-01-PLAN.md — Phase 12 plan 1: Docker cleanup, wallet_connected_at migration, backend wallet connection endpoints
+Resume with: `/gsd:execute-phase 12` to continue Phase 12 (frontend wallet UI)

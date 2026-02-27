@@ -54,9 +54,9 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Verifiable Credentials & Gaia-X
 
-- [ ] **VC-01**: walt.id Community Stack runs as Docker sidecar services (Issuer, Verifier, Wallet) alongside Keasy
-- [ ] **VC-02**: User can connect a wallet via walt.id and load existing Verifiable Credentials
-- [ ] **VC-03**: User can log in via Verifiable Credentials (OID4VP) as an alternative to email/password, producing the same session type
+- [x] **VC-01**: walt.id Community Stack runs as Docker sidecar services (Issuer, Verifier, Wallet) alongside Keasy
+- [x] **VC-02**: User can connect a wallet via walt.id and load existing Verifiable Credentials
+- [x] **VC-03**: User can log in via Verifiable Credentials (OID4VP) as an alternative to email/password, producing the same session type
 - [ ] **VC-04**: Gaia-X compliance wizard guides user through: key pair generation, DID document hosting, LRN credential, Legal Participant credential, T&C credential, and GXDCH compliance submission
 - [ ] **VC-05**: Wizard validates certificate chain (including root CA) at each step, not only at final submission
 - [ ] **VC-06**: Credentials are linked via credential subject ID (not top-level credential ID) per Gaia-X specification
@@ -138,9 +138,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | USER-12 | Phase 5 | Complete |
 | USER-13 | Phase 6 | Complete |
 | USER-14 | Phase 6 | Complete |
-| VC-01 | Phase 8 | Pending |
-| VC-02 | Phase 8 | Pending |
-| VC-03 | Phase 8 | Pending |
+| VC-01 | Phase 8 | Complete |
+| VC-02 | Phase 8 | Complete |
+| VC-03 | Phase 8 | Complete |
 | VC-04 | Phase 9 | Pending |
 | VC-05 | Phase 9 | Pending |
 | VC-06 | Phase 9 | Pending |

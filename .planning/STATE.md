@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T23:50:15.327Z"
+last_updated: "2026-02-27T00:31:52.556Z"
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 9
-  total_plans: 23
-  completed_plans: 23
+  total_plans: 26
+  completed_plans: 25
 ---
 
 # Project State
@@ -62,6 +62,7 @@ Progress: [██████████████████] ~91%
 | Phase 06.1-middleware-route-guard-fix P01 | 1 | 2 tasks | 2 files |
 | Phase 07 P03 | 2 | 2 tasks | 7 files |
 | Phase 07 P04 | 3 | 2 tasks | 6 files |
+| Phase 08 P01 | 4 | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -140,6 +141,9 @@ Recent decisions affecting current work:
 - [Phase 08-02]: Verifier only returns pending/authenticated/expired — step indicator maps to scan/verifying/done (no real wallet-connected intermediate)
 - [Phase 08-02]: Coming Soon page has no interactions per deferred decisions — static description only
 - [Phase 08-02]: proxy.ts unchanged — AUTH_REDIRECT_PATHS ['/login'] covers /login/vc via startsWith check
+- [Phase 08-01]: Walt.id services pinned to 0.17.1 (not latest) to prevent breaking changes from image drift
+- [Phase 08-01]: vc-status route is public (no session required) because browser polls before auth completes
+- [Phase 08-01]: No DID auto-creation on first VC login — invite-only model enforced; must link DID from settings
 
 ### Pending Todos
 

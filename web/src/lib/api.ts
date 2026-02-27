@@ -23,7 +23,6 @@ import type {
   CreateConnectionRequest,
   UpdateConnectionRequest,
   OrgUser,
-  OrgEntry,
 } from "./types";
 
 export class ApiError extends Error {
@@ -184,8 +183,3 @@ export const updateOrgUserRole = (userId: string, role: string) =>
   put<OrgUser>(`/api/org/users/${userId}`, { role });
 export const removeOrgUser = (userId: string) => del(`/api/org/users/${userId}`);
 
-// Admin organization management
-export const fetchDataspaceOrganizations = () =>
-  get<OrgEntry[]>("/api/admin/dataspace-organizations");
-export const addOrganization = (data: { name: string; admin_email: string }) =>
-  post<OrgEntry>("/api/admin/organizations", data);

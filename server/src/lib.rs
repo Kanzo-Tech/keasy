@@ -26,6 +26,7 @@ pub use jobs::runner::JobRunner;
 
 use std::num::NonZeroUsize;
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use secrecy::SecretString;
 use tokio::sync::Mutex;
 
@@ -58,4 +59,10 @@ pub struct AppState {
     pub rate_limiter: RateLimiter,
     pub email_service: crate::email::EmailService,
     pub base_url: String,
+    /// Whether the walt.id Verifier sidecar is currently reachable.
+    /// Updated every 30 s by the background health monitor.
+    pub vc_available: Arc<AtomicBool>,
+    /// HTTP client pre-configured for calls to the walt.id Verifier API.
+    /// None when KEASY_WALT_ID_VERIFIER_URL is not set.
+    pub vc_client: Option<reqwest::Client>,
 }

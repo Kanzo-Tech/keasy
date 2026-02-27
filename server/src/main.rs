@@ -6,6 +6,7 @@ use keasy_server::tenant::TenantScoped;
 
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 
 use tokio::sync::Mutex;
@@ -103,6 +104,24 @@ async fn main() {
         config.job_timeout_secs,
     ));
 
+    // VC sidecar setup — only active when KEASY_WALT_ID_VERIFIER_URL is configured
+    let vc_available = Arc::new(AtomicBool::new(false));
+    let vc_client = if let Some(verifier_url) = config.walt_id_verifier_url {
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(5))
+            .build()
+            .unwrap_or_default();
+        keasy_server::auth::sidecar_health::spawn_health_monitor(
+            verifier_url,
+            client.clone(),
+            vc_available.clone(),
+        );
+        Some(client)
+    } else {
+        info!("Walt.id Verifier URL not configured — VC auth disabled");
+        None
+    };
+
     let shutdown_grace = Duration::from_secs(config.shutdown_grace_secs);
     let state = AppState {
         db,
@@ -113,6 +132,8 @@ async fn main() {
         rate_limiter,
         email_service,
         base_url: config.base_url,
+        vc_available,
+        vc_client,
     };
     let app = build_router(state, config.cors_origins, session_store, config.session_secret);
 

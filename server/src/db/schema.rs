@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
     first_name    TEXT NOT NULL,
     last_name     TEXT NOT NULL,
     password_hash TEXT NOT NULL,
+    vc_holder_did TEXT UNIQUE,
     status        TEXT NOT NULL DEFAULT 'inactive' CHECK(status IN ('active', 'inactive')),
     created_at    TEXT NOT NULL,
     updated_at    TEXT NOT NULL

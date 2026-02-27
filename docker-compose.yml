@@ -19,6 +19,8 @@ services:
       # KEASY_SMTP_PASS: pass
       # KEASY_SMTP_FROM: noreply@keasy.local
       KEASY_BASE_URL: http://localhost:3000
+      # Walt.id Verifier sidecar URL — only relevant when running with --profile walt-id
+      KEASY_WALT_ID_VERIFIER_URL: http://waltid-verifier-api:7003
     volumes:
       - keasy-data:/var/lib/keasy
 
@@ -34,5 +36,44 @@ services:
       server:
         condition: service_healthy
 
+  waltid-wallet-api:
+    image: waltid/wallet-api:0.17.1
+    profiles: [walt-id]
+    ports:
+      - "7001:7001"
+    volumes:
+      - waltid-wallet-data:/waltid-wallet-api/data
+
+  waltid-issuer-api:
+    image: waltid/issuer-api:0.17.1
+    profiles: [walt-id]
+    ports:
+      - "7002:7002"
+    volumes:
+      - waltid-issuer-data:/waltid-issuer-api/data
+
+  waltid-verifier-api:
+    image: waltid/verifier-api:0.17.1
+    profiles: [walt-id]
+    ports:
+      - "7003:7003"
+    volumes:
+      - waltid-verifier-data:/waltid-verifier-api/config
+
+  waltid-web-wallet:
+    image: waltid/waltid-web-wallet:0.17.1
+    profiles: [walt-id]
+    ports:
+      - "7101:7101"
+
+  waltid-web-portal:
+    image: waltid/web-portal:0.17.1
+    profiles: [walt-id]
+    ports:
+      - "7102:7102"
+
 volumes:
   keasy-data:
+  waltid-wallet-data:
+  waltid-issuer-data:
+  waltid-verifier-data:

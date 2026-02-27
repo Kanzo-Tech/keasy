@@ -20,6 +20,9 @@ pub struct ServerConfig {
     /// Base URL for the frontend — used to construct invite links.
     /// Read from KEASY_BASE_URL, default "http://localhost:3000".
     pub base_url: String,
+    /// Walt.id Verifier API base URL. When set, VC authentication is enabled.
+    /// Read from KEASY_WALT_ID_VERIFIER_URL. Default None — VC auth disabled.
+    pub walt_id_verifier_url: Option<String>,
 }
 
 impl ServerConfig {
@@ -93,6 +96,10 @@ impl ServerConfig {
         let base_url = std::env::var("KEASY_BASE_URL")
             .unwrap_or_else(|_| "http://localhost:3000".to_string());
 
+        let walt_id_verifier_url = std::env::var("KEASY_WALT_ID_VERIFIER_URL")
+            .ok()
+            .filter(|s| !s.trim().is_empty());
+
         Self {
             bind_addr,
             api_key: SecretString::from(api_key),
@@ -105,6 +112,7 @@ impl ServerConfig {
             session_secret,
             cache_capacity,
             base_url,
+            walt_id_verifier_url,
         }
     }
 }

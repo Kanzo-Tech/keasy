@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Platform
 status: unknown
-last_updated: "2026-02-27T16:48:00Z"
+last_updated: "2026-02-27T16:53:12.073Z"
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 8
+  completed_plans: 8
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 12 of 15 (Walt.ID Service Reduction / External Wallet UI)
-Plan: 12-01 (complete — 1/? plans done)
-Status: Phase 12 In Progress — backend wallet API complete: Docker cleanup, DB migration, wallet connection endpoints, /auth/me extended.
-Last activity: 2026-02-27 — 12-01 complete: removed walt.id hosted services, added wallet_connected_at migration, wallet connection endpoints
+Plan: 12-02 (complete — 2/2 plans done)
+Status: Phase 12 Complete — backend wallet API + frontend wallet UI with QR connect flow, sidebar indicator, role-filtered settings nav.
+Last activity: 2026-02-27 — 12-02 complete: wallet proxy routes, Settings > Wallet page, sidebar wallet indicator, role-filtered settings nav
 
 Progress: [█████░░░░░] 47%
 
@@ -42,7 +42,7 @@ Progress: [█████░░░░░] 47%
 |-------|-------|-------|----------|
 | 10 | 3/3 | 9 min | 3 min |
 | 11 | 3/3 | 14 min | ~5 min |
-| 12 | 1/? | 2 min | 2 min |
+| 12 | 2/2 | 5 min | ~3 min |
 
 *Updated after each plan completion*
 
@@ -74,6 +74,7 @@ Progress: [█████░░░░░] 47%
 - [11-03]: Task 2 frontend changes were already committed in Plan 11-02 branch execution — content confirmed identical to plan spec, no duplicate commit needed
 - [12-01]: wallet_routes.rs placed in session_auth_routes (not api_routes) — needs session auth but NOT tenant context, parallel to /auth/me
 - [12-01]: unlink_did_from_user returns Result<(), String> for consistency with other DB methods; link_did_to_user retains Result<(), rusqlite::Error>
+- [Phase 12]: wallet-settings-ui sections array moved inside SettingsNav — required for dynamic role-based filtering via isPromotor state
 
 ### Pending Todos
 
@@ -89,5 +90,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 12-01-PLAN.md — Phase 12 plan 1: Docker cleanup, wallet_connected_at migration, backend wallet connection endpoints
-Resume with: `/gsd:execute-phase 12` to continue Phase 12 (frontend wallet UI)
+Stopped at: Completed 12-02-PLAN.md — Phase 12 plan 2: wallet proxy routes, Settings > Wallet page with OID4VP QR connect flow, sidebar wallet indicator, role-filtered settings nav
+Resume with: `/gsd:execute-phase 13` to start Phase 13

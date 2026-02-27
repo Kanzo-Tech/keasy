@@ -32,7 +32,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 
 - [x] **Phase 10: Keycloak Identity Service Deployment** - Deploy Keycloak Docker sidecar, register Keasy as OIDC client, and register first dataspace instance (completed 2026-02-27)
 - [x] **Phase 11: OIDC Auth Conversion** - Full-stack OIDC cutover: Axum becomes OIDC RP, login page replaced, register page deleted, old auth code removed entirely (completed 2026-02-27)
-- [ ] **Phase 12: Walt.id Service Reduction & External Wallet UI** - Remove hosted wallet services; add external wallet connect via OID4VP
+- [x] **Phase 12: Walt.id Service Reduction & External Wallet UI** - Remove hosted wallet services; add external wallet connect via OID4VP (completed 2026-02-27)
 - [ ] **Phase 13: Promotor/Participant Route Separation** - Enforce role-separated route groups with server-side RSC checks and role-scoped sidebars
 - [ ] **Phase 14: Federated Instance Switcher** - Workspace picker and cross-instance switching backed by identity service membership claims
 - [ ] **Phase 15: UX Polish & Code Quality** - Editor height, save icon, sidebar collapse, EmptyState links, responsive forms, dead code removal
@@ -89,7 +89,9 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
   3. Promotor sidebar shows exactly: Participants, Catalog, Compliance, Settings — participant sidebar shows exactly: Connections, Jobs, Compliance, Settings
   4. A promotor can invite participant organizations from a dedicated view
   5. All v1.0 URLs resolve identically after route group restructuring (parenthesis folder names do not appear in URLs)
-**Plans**: TBD
+**Plans**: 2 (13-01 Route groups + RSC role gates + sidebar + backend invite API, 13-02 Dashboards + invite UI + settings filter)
+- [ ] 13-01-PLAN.md — Backend invite API endpoints, RSC role-gate layouts for (promotor) and (participant) route groups, move pages into role groups, role-split sidebar, redirect toast
+- [ ] 13-02-PLAN.md — Role-split dashboard page, invite management UI in Participants page, Next.js proxy routes for invites, settings nav role filtering
 
 ### Phase 14: Federated Instance Switcher
 **Goal**: Users see a workspace picker listing their dataspaces after authenticating; they can switch between instances via the sidebar without re-entering credentials; SWR cache is invalidated on switch to prevent stale state
@@ -131,7 +133,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 9. Gaia-X Compliance Wizard | v1.0 | 4/4 | Complete | 2026-02-27 |
 | 10. Keycloak Identity Service Deployment | 3/3 | Complete    | 2026-02-27 | - |
 | 11. OIDC Auth Conversion | 3/3 | Complete    | 2026-02-27 | - |
-| 12. Walt.id Service Reduction & External Wallet UI | 1/2 | In Progress|  | - |
+| 12. Walt.id Service Reduction & External Wallet UI | 2/2 | Complete    | 2026-02-27 | - |
 | 13. Promotor/Participant Route Separation | v1.1 | 0/TBD | Not started | - |
 | 14. Federated Instance Switcher | v1.1 | 0/TBD | Not started | - |
 | 15. UX Polish & Code Quality | v1.1 | 0/TBD | Not started | - |

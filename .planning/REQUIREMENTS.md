@@ -38,8 +38,8 @@ Requirements for the Platform milestone. Each maps to roadmap phases.
 
 - [x] **WALL-01**: Hosted walt.id Wallet, Issuer, web-wallet, and web-portal services removed from Docker Compose
 - [x] **WALL-02**: Walt.id Verifier sidecar confirmed operational standalone after other services removed
-- [ ] **WALL-03**: User can connect external wallet via QR code (cross-device) or deep link (same-device) using OID4VP
-- [ ] **WALL-04**: Wallet connection status visible in sidebar or settings/security page
+- [x] **WALL-03**: User can connect external wallet via QR code (cross-device) or deep link (same-device) using OID4VP
+- [x] **WALL-04**: Wallet connection status visible in sidebar or settings/security page
 - [x] **WALL-05**: Existing VC verification path (`vc_client.rs`, `vc_routes.rs`) unchanged after wallet removal
 
 ### UX
@@ -114,8 +114,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-02 | Phase 11 | Complete |
 | WALL-01 | Phase 12 | Complete |
 | WALL-02 | Phase 12 | Complete |
-| WALL-03 | Phase 12 | Pending |
-| WALL-04 | Phase 12 | Pending |
+| WALL-03 | Phase 12 | Complete |
+| WALL-04 | Phase 12 | Complete |
 | WALL-05 | Phase 12 | Complete |
 | VIEW-01 | Phase 13 | Pending |
 | VIEW-02 | Phase 13 | Pending |

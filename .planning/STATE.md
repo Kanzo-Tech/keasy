@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-26T23:40:50.283Z"
+last_updated: "2026-02-26T23:50:15.327Z"
 progress:
   total_phases: 9
   completed_phases: 9
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 07 of 9 (Frontend Architecture Cleanup) — Complete
-Plan: 4 of 4 complete (07-01 infrastructure, 07-02 list views, 07-03 org pages, 07-04 sidebar/icons/graph/save-draft)
-Status: Phase 07 Complete — All 4 plans done
-Last activity: 2026-02-27 — Completed Plan 07-04: SettingsNav sidebar primitives (ARCH-06), settings max-w-3xl (ARCH-07), icon migration (ARCH-10), subtler force graph dot grid (ARCH-11), Save Draft repositioned to editor toolbar (ARCH-12), ARCH-09 verified already satisfied
+Phase: 08 of 9 (Walt.id VC Integration) — In Progress
+Plan: 2 of 3 complete (08-01 sidecar/schema/health, 08-02 VC auth frontend)
+Status: Phase 08 Plan 02 Complete — VC auth frontend done (login page, /login/vc, Coming Soon stub, proxy routes)
+Last activity: 2026-02-27 — Completed Plan 08-02: Login page VC health check + VC link, /login/vc QR OID4VP flow with polling/step indicator, /login/vc/coming-soon stub, proxy routes for vc-health/vc-init/vc-status (Set-Cookie forwarding)
 
-Progress: [█████████████████] ~87%
+Progress: [██████████████████] ~91%
 
 ## Performance Metrics
 
@@ -135,6 +135,11 @@ Recent decisions affecting current work:
 - [Phase 07]: Organization empty state uses action ReactNode prop (Dialog trigger) instead of actionHref — Add Organization is a dialog, not navigation
 - [Phase 07-04]: SiOpenai/SiMicrosoftazure/SiAmazons3 not in @icons-pack/react-simple-icons v13 — react-icons kept for those icons; SiAnthropic and SiGooglecloud migrated successfully
 - [Phase 07-04]: ARCH-09 already satisfied — KnowledgeGraph serves both catalog (jobId) and unified graph (no jobId)
+- [Phase 08-02]: VC link on login page shows as disabled muted text (not a Link) when sidecar unavailable — prevents broken navigation to /login/vc
+- [Phase 08-02]: Layout.tsx kept as two-column wrapper; VC pages use centered flex layout (min-h-screen) to escape the grid without modifying layout file
+- [Phase 08-02]: Verifier only returns pending/authenticated/expired — step indicator maps to scan/verifying/done (no real wallet-connected intermediate)
+- [Phase 08-02]: Coming Soon page has no interactions per deferred decisions — static description only
+- [Phase 08-02]: proxy.ts unchanged — AUTH_REDIRECT_PATHS ['/login'] covers /login/vc via startsWith check
 
 ### Pending Todos
 
@@ -152,5 +157,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Plan 07-04 — SettingsNav migrated to sidebar primitives, settings content max-w-3xl mx-auto, SiAnthropic/SiGooglecloud migrated to @icons-pack/react-simple-icons, force graph dot grid subtler (GAP=24 DOT_RADIUS=0.35 opacity=0.07), Save Draft repositioned to editor toolbar. Phase 07 complete.
-Resume with: Phase 08 (Walt.id VC integration) or Phase 09 (GXDCH integration) — verify research/staging access first
+Stopped at: Completed Plan 08-02 — Login page VC health check (SWR) + VC link, /login/vc QR OID4VP flow with react-qr-code, polling, step indicator (scan/verifying/authenticated), /login/vc/coming-soon static stub, proxy routes vc-health/vc-init/vc-status (Set-Cookie forwarding).
+Resume with: Phase 08 Plan 03 if exists, or Phase 09 (GXDCH integration)

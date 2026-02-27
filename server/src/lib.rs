@@ -70,4 +70,11 @@ pub struct AppState {
     pub gxdch_notary_url: String,
     /// GXDCH Compliance Service endpoint URL for VP submission.
     pub gxdch_compliance_url: String,
+    /// Keycloak OIDC issuer URL (internal Docker network).
+    /// None when Keycloak is not configured.
+    pub oidc_issuer_url: Option<String>,
+    /// OIDC client_id for this Keasy instance.
+    pub oidc_client_id: Option<String>,
+    /// OIDC client_secret for admin API calls.
+    pub oidc_client_secret: Option<SecretString>,
 }

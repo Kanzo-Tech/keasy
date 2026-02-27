@@ -136,6 +136,9 @@ async fn main() {
         vc_client,
         gxdch_notary_url: config.gxdch_notary_url,
         gxdch_compliance_url: config.gxdch_compliance_url,
+        oidc_issuer_url: config.oidc_issuer_url,
+        oidc_client_id: config.oidc_client_id,
+        oidc_client_secret: config.oidc_client_secret,
     };
     let app = build_router(state, config.cors_origins, session_store, config.session_secret);
 

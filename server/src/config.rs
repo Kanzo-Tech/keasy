@@ -29,6 +29,16 @@ pub struct ServerConfig {
     /// GXDCH Compliance Service URL for VP submission.
     /// Read from KEASY_GXDCH_COMPLIANCE_URL. Default: main/stable Compliance endpoint.
     pub gxdch_compliance_url: String,
+    /// OIDC issuer URL. Discovery doc at {issuer}/.well-known/openid-configuration.
+    /// Read from KEASY_OIDC_ISSUER_URL. Example: http://keycloak:8080/auth/realms/keasy
+    pub oidc_issuer_url: Option<String>,
+    /// OIDC client_id registered in Keycloak for this Keasy instance.
+    /// Read from KEASY_OIDC_CLIENT_ID. Example: keasy-server
+    pub oidc_client_id: Option<String>,
+    /// OIDC client_secret for the keasy-server client. Used for admin API calls
+    /// (client credentials flow) and the authorization code exchange.
+    /// Read from KEASY_OIDC_CLIENT_SECRET.
+    pub oidc_client_secret: Option<SecretString>,
 }
 
 impl ServerConfig {
@@ -114,6 +124,16 @@ impl ServerConfig {
                 "https://compliance.lab.gaia-x.eu/main/api/credential-offers".to_string()
             });
 
+        let oidc_issuer_url = std::env::var("KEASY_OIDC_ISSUER_URL")
+            .ok()
+            .filter(|s| !s.trim().is_empty());
+
+        let oidc_client_id = std::env::var("KEASY_OIDC_CLIENT_ID")
+            .ok()
+            .filter(|s| !s.trim().is_empty());
+
+        let oidc_client_secret = resolve_secret("KEASY_OIDC_CLIENT_SECRET");
+
         Self {
             bind_addr,
             api_key: SecretString::from(api_key),
@@ -129,6 +149,9 @@ impl ServerConfig {
             walt_id_verifier_url,
             gxdch_notary_url,
             gxdch_compliance_url,
+            oidc_issuer_url,
+            oidc_client_id,
+            oidc_client_secret,
         }
     }
 }

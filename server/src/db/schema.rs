@@ -139,6 +139,27 @@ CREATE TABLE IF NOT EXISTS invite_tokens (
     expires_at TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
+
+-- Gaia-X compliance wizard state (per-org, auto-saved)
+-- Private key is NEVER stored — only public_key_jwk is persisted (locked decision)
+CREATE TABLE IF NOT EXISTS gaia_x_wizard_state (
+    org_id          TEXT PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
+    current_step    INTEGER NOT NULL DEFAULT 0,
+    public_key_jwk  TEXT,
+    cert_chain_pem  TEXT,
+    root_ca_pem     TEXT,
+    did_document    TEXT,
+    lrn_credential  TEXT,
+    lp_credential   TEXT,
+    tc_credential   TEXT,
+    compliance_vc   TEXT,
+    lrn_type        TEXT,
+    lrn_value       TEXT,
+    legal_name      TEXT,
+    country_code    TEXT,
+    domain          TEXT,
+    updated_at      TEXT NOT NULL
+);
 ";
 
 pub fn apply(conn: &rusqlite::Connection) -> Result<(), String> {

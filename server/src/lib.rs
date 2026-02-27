@@ -12,6 +12,7 @@ pub mod db;
 pub mod discovery;
 pub mod email;
 pub mod error;
+pub mod gaia_x;
 pub mod jobs;
 pub mod middleware;
 pub mod routes;
@@ -65,4 +66,8 @@ pub struct AppState {
     /// HTTP client pre-configured for calls to the walt.id Verifier API.
     /// None when KEASY_WALT_ID_VERIFIER_URL is not set.
     pub vc_client: Option<reqwest::Client>,
+    /// GXDCH Notary endpoint URL for LRN credential requests.
+    pub gxdch_notary_url: String,
+    /// GXDCH Compliance Service endpoint URL for VP submission.
+    pub gxdch_compliance_url: String,
 }

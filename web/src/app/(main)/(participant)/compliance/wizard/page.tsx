@@ -93,7 +93,8 @@ export default function ComplianceWizardPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto space-y-4 p-4">
+      <div className="flex-1 overflow-auto p-4">
+      <div className="max-w-5xl mx-auto space-y-4">
         <Skeleton className="h-8 w-64" />
         <div className="flex gap-6">
           <div className="w-64 space-y-3">
@@ -106,6 +107,7 @@ export default function ComplianceWizardPage() {
             <Skeleton className="h-10 w-32" />
           </div>
         </div>
+      </div>
       </div>
     );
   }
@@ -171,27 +173,29 @@ export default function ComplianceWizardPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-4">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Gaia-X Compliance Wizard</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Complete all 6 steps to obtain your Gaia-X compliance credential.
-        </p>
-      </div>
+    <div className="flex-1 overflow-auto p-4">
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Gaia-X Compliance Wizard</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Complete all 6 steps to obtain your Gaia-X compliance credential.
+          </p>
+        </div>
 
-      <WizardLayout
-        steps={STEP_DEFS}
-        currentStep={effectiveStep}
-        onStepChange={handleStepChange}
-        onBack={!isFirstStep ? handleBack : undefined}
-        onNext={canNext ? handleNext : undefined}
-        nextDisabled={!canNext}
-        isFirstStep={isFirstStep}
-        isLastStep={isLastStep}
-        nextLabel={isLastStep ? "Submit" : "Next"}
-      >
-        {renderStep()}
-      </WizardLayout>
+        <WizardLayout
+          steps={STEP_DEFS}
+          currentStep={effectiveStep}
+          onStepChange={handleStepChange}
+          onBack={!isFirstStep ? handleBack : undefined}
+          onNext={canNext ? handleNext : undefined}
+          nextDisabled={!canNext}
+          isFirstStep={isFirstStep}
+          isLastStep={isLastStep}
+          nextLabel={isLastStep ? "Submit" : "Next"}
+        >
+          {renderStep()}
+        </WizardLayout>
+      </div>
     </div>
   );
 }

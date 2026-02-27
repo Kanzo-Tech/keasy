@@ -176,6 +176,7 @@ export default function ParticipantsPage() {
   };
 
   return (
+    <div className="flex-1 overflow-auto p-4">
     <div className="space-y-8">
       {/* Organizations table */}
       {!orgs?.length ? (
@@ -333,6 +334,7 @@ export default function ParticipantsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
     </div>
   );
 }

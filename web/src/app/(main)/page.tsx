@@ -11,8 +11,16 @@ export default async function HomePage() {
   }
 
   if (role === "promotor") {
-    return <PromotorDashboard />;
+    return (
+      <div className="flex-1 overflow-auto p-4">
+        <PromotorDashboard />
+      </div>
+    );
   }
 
-  return <ParticipantDashboard />;
+  return (
+    <div className="flex-1 overflow-auto p-4">
+      <ParticipantDashboard />
+    </div>
+  );
 }

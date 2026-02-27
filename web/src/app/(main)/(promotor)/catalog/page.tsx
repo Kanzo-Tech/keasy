@@ -5,10 +5,12 @@ import { EmptyState } from "@/components/empty-state";
 
 export default function CatalogPage() {
   return (
-    <EmptyState
-      icon={BookOpenCheck}
-      title="Catalog of Catalogs"
-      description="Aggregate view of DCAT catalogs across all participant organizations. Coming soon."
-    />
+    <div className="flex-1 overflow-auto p-4">
+      <EmptyState
+        icon={BookOpenCheck}
+        title="Catalog of Catalogs"
+        description="Aggregate view of DCAT catalogs across all participant organizations. Coming soon."
+      />
+    </div>
   );
 }

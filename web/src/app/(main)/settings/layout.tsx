@@ -6,7 +6,7 @@ export default function SettingsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-full w-full gap-4">
+    <div className="flex h-full w-full gap-4 overflow-auto p-4">
       <aside className="w-1/5 min-w-50 max-w-62.5">
         <SettingsNav />
       </aside>

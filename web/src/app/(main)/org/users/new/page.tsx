@@ -95,6 +95,7 @@ export default function AddUserPage() {
   }
 
   return (
+    <div className="flex-1 overflow-auto p-4">
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
         <h2 className="text-lg font-medium">Add User</h2>
@@ -226,6 +227,7 @@ export default function AddUserPage() {
           </Button>
         </DialogContent>
       </Dialog>
+    </div>
     </div>
   );
 }

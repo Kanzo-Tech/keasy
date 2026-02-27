@@ -22,6 +22,7 @@ export default function OrgUsersPage() {
   );
 
   return (
+    <div className="flex-1 overflow-auto p-4">
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -54,6 +55,7 @@ export default function OrgUsersPage() {
           searchPlaceholder="Search users..."
         />
       )}
+    </div>
     </div>
   );
 }

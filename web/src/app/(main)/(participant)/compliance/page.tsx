@@ -35,13 +35,15 @@ export default function CompliancePage() {
 
   if (isLoading || !data) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6 p-4">
-        <Skeleton className="h-36 w-full" />
-        <Skeleton className="h-8 w-48" />
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full" />
-          ))}
+      <div className="flex-1 overflow-auto p-4">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <Skeleton className="h-36 w-full" />
+          <Skeleton className="h-8 w-48" />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 w-full" />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -50,11 +52,17 @@ export default function CompliancePage() {
   if (!data.compliant) {
     // Redirect is happening via useEffect — show skeleton while navigating
     return (
-      <div className="max-w-4xl mx-auto space-y-6 p-4">
-        <Skeleton className="h-36 w-full" />
+      <div className="flex-1 overflow-auto p-4">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <Skeleton className="h-36 w-full" />
+        </div>
       </div>
     );
   }
 
-  return <ComplianceView status={data} />;
+  return (
+    <div className="flex-1 overflow-auto p-4">
+      <ComplianceView status={data} />
+    </div>
+  );
 }

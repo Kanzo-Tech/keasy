@@ -34,7 +34,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 - [x] **Phase 11: OIDC Auth Conversion** - Full-stack OIDC cutover: Axum becomes OIDC RP, login page replaced, register page deleted, old auth code removed entirely (completed 2026-02-27)
 - [x] **Phase 12: Walt.id Service Reduction & External Wallet UI** - Remove hosted wallet services; add external wallet connect via OID4VP (completed 2026-02-27)
 - [x] **Phase 13: Promotor/Participant Route Separation** - Enforce role-separated route groups with server-side RSC checks and role-scoped sidebars (completed 2026-02-27)
-- [ ] **Phase 14: Federated Instance Switcher** - Workspace picker and cross-instance switching backed by identity service membership claims
+- [x] **Phase 14: Federated Instance Switcher** - Workspace picker and cross-instance switching backed by identity service membership claims (completed 2026-02-27)
 - [ ] **Phase 15: UX Polish & Code Quality** - Editor height, save icon, sidebar collapse, EmptyState links, responsive forms, dead code removal
 
 ## Phase Details
@@ -137,5 +137,5 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 11. OIDC Auth Conversion | 3/3 | Complete    | 2026-02-27 | - |
 | 12. Walt.id Service Reduction & External Wallet UI | 2/2 | Complete    | 2026-02-27 | - |
 | 13. Promotor/Participant Route Separation | 2/2 | Complete    | 2026-02-27 | - |
-| 14. Federated Instance Switcher | 1/2 | In Progress|  | - |
+| 14. Federated Instance Switcher | v1.1 | 2/2 | Complete | 2026-02-27 |
 | 15. UX Polish & Code Quality | v1.1 | 0/TBD | Not started | - |

@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Platform
 status: unknown
-last_updated: "2026-02-27T22:19:49.225Z"
+last_updated: "2026-02-27T22:23:00.000Z"
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 12
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Position
 
-Phase: 14 of 15 (Federated Instance Switcher) — IN PROGRESS
-Plan: 14-01 (complete — 1/2 plans done)
-Status: 14-01 Complete — backend workspaces endpoint, oidc_callback redirect branching, workspace picker page
-Last activity: 2026-02-27 — 14-01 complete: GET /v1/auth/workspaces, oidc_callback redirect branching, /workspaces picker page
+Phase: 14 of 15 (Federated Instance Switcher) — COMPLETE
+Plan: 14-02 (complete — 2/2 plans done)
+Status: 14-02 Complete — sidebar instance switcher DropdownMenu with SWR cache clear and error toast
+Last activity: 2026-02-27 — 14-02 complete: sidebar instance switcher, SWR cache invalidation, cross-instance navigation
 
-Progress: [████████░░] 75%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
@@ -46,7 +46,7 @@ Progress: [████████░░] 75%
 | 13 | 2/2 | 6 min | 3 min |
 
 *Updated after each plan completion*
-| 14 (P01) | 1/2 | 2 min | 2 min |
+| 14 | 2/2 | 5 min | ~3 min |
 
 ## Accumulated Context
 
@@ -85,6 +85,8 @@ Progress: [████████░░] 75%
 - [Phase 14-01]: Workspace picker placed in (auth) route group — not (main) — to avoid AppSidebar trying to fetch auth/me before workspace is chosen
 - [Phase 14-01]: Hash-based deterministic color from client_id string for workspace cards — consistent across sessions, no storage needed
 - [Phase 14-01]: useEffect + setSwitchTarget pattern for cross-instance navigation via window.location.assign — required for react-hooks/immutability lint compliance
+- [Phase 14-02]: Sidebar switcher uses same useEffect + switchTarget pattern as workspaces picker — canonical cross-instance navigation pattern in this project
+- [Phase 14-02]: clientIdToColor placed at module level outside component, identical to workspaces/page.tsx — consistent colors with no coordination needed
 
 ### Pending Todos
 
@@ -100,5 +102,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 14-01-PLAN.md — backend workspaces endpoint, oidc_callback redirect branching, workspace picker page
-Resume with: `/gsd:execute-phase 14` to continue with Phase 14 Plan 02
+Stopped at: Completed 14-02-PLAN.md — sidebar instance switcher DropdownMenu with SWR cache clear and error toast
+Resume with: `/gsd:execute-phase 15` to continue with Phase 15

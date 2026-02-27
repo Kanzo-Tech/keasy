@@ -236,7 +236,7 @@ function NewJobContent() {
         </FormField>
       </div>
 
-      <Tabs defaultValue="script" className="flex-1 min-h-0">
+      <Tabs defaultValue="script" className="flex-1 min-h-0 flex flex-col">
         <div className="flex items-center justify-between mb-1">
           <TabsList>
             <TabsTrigger value="script">Script</TabsTrigger>
@@ -266,7 +266,7 @@ function NewJobContent() {
             </Button>
           </div>
         </div>
-        <TabsContent value="script" className="mt-0">
+        <TabsContent value="script" className="mt-0 flex-1 min-h-0 flex flex-col">
           <CodeEditor
             value={script}
             onChange={setScript}

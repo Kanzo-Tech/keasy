@@ -50,18 +50,8 @@ export default function JobsPage() {
   );
 
   return (
-    <>
+    <Tabs defaultValue="jobs">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-medium">Jobs</h2>
-        <Button asChild size="sm">
-          <Link href="/jobs/new">
-            <Plus size={14} className="mr-1" />
-            Create job
-          </Link>
-        </Button>
-      </div>
-
-      <Tabs defaultValue="jobs">
         <TabsList>
           <TabsTrigger value="jobs" className="gap-1.5">
             <Briefcase size={14} />
@@ -73,6 +63,13 @@ export default function JobsPage() {
             Graph
           </TabsTrigger>
         </TabsList>
+        <Button asChild size="sm">
+          <Link href="/jobs/new">
+            <Plus size={14} className="mr-1" />
+            Create job
+          </Link>
+        </Button>
+      </div>
 
         <TabsContent value="jobs">
           {!jobs?.length ? (
@@ -97,7 +94,6 @@ export default function JobsPage() {
         <TabsContent value="graph">
           <KnowledgeGraph />
         </TabsContent>
-      </Tabs>
-    </>
+    </Tabs>
   );
 }

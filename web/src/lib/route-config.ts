@@ -26,7 +26,7 @@ export const mainRouteConfig: RouteConfig[] = [
     path: "/",
     name: "Home",
     icon: Home,
-    showInSidebar: true,
+    showInSidebar: false,
   },
   {
     path: "/connections",
@@ -51,14 +51,12 @@ export const mainRouteConfig: RouteConfig[] = [
     name: "Participants",
     icon: Users,
     showInSidebar: true,
-    requiredRole: "promotor",
   },
   {
     path: "/catalog",
     name: "Catalog",
     icon: BookOpenCheck,
     showInSidebar: true,
-    requiredRole: "promotor",
   },
 ];
 
@@ -187,9 +185,18 @@ export function generateBreadcrumbs(path: string): RouteConfig[] {
 }
 
 export function getSidebarRoutes(effectiveRole?: string): RouteConfig[] {
-  return routeConfig.filter((route) => {
-    if (!route.showInSidebar) return false;
-    if (route.requiredRole === "promotor" && effectiveRole !== "promotor") return false;
-    return true;
-  });
+  if (effectiveRole === 'promotor') {
+    return [
+      { path: '/participants', name: 'Participants', icon: Users, showInSidebar: true },
+      { path: '/catalog', name: 'Catalog', icon: BookOpenCheck, showInSidebar: true },
+      { path: '/settings', name: 'Settings', icon: Settings2, showInSidebar: true },
+    ];
+  }
+  // participant / org_admin / org_user
+  return [
+    { path: '/connections', name: 'Connections', icon: Database, showInSidebar: true },
+    { path: '/jobs', name: 'Jobs', icon: Workflow, showInSidebar: true },
+    { path: '/compliance', name: 'Compliance', icon: ShieldCheck, showInSidebar: true },
+    { path: '/settings', name: 'Settings', icon: Settings2, showInSidebar: true },
+  ];
 }

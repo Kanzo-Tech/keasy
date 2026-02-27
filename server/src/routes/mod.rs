@@ -64,14 +64,6 @@ pub fn build_router(
     // Public auth routes (no session middleware)
     let auth_routes = Router::new()
         .route(
-            "/v1/auth/register",
-            axum::routing::post(crate::auth::routes::register),
-        )
-        .route(
-            "/v1/auth/login",
-            axum::routing::post(crate::auth::routes::login),
-        )
-        .route(
             "/v1/auth/invite-info",
             axum::routing::get(crate::auth::routes::get_invite_info),
         )
@@ -109,10 +101,6 @@ pub fn build_router(
         .route(
             "/v1/auth/me",
             axum::routing::get(crate::auth::routes::get_me),
-        )
-        .route(
-            "/v1/auth/password",
-            axum::routing::put(crate::auth::routes::change_password),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),

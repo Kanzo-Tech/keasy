@@ -5,8 +5,8 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
+use p256::elliptic_curve::subtle::ConstantTimeEq;
 use secrecy::ExposeSecret;
-use subtle::ConstantTimeEq;
 
 use crate::AppState;
 use crate::error::error_body;

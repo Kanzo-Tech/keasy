@@ -17,10 +17,13 @@ export async function POST(req: Request) {
       { status: 502 }
     );
   }
-  const responseHeaders = new Headers();
+
+  const responseHeaders = new Headers({
+    "Content-Type": res.headers.get("Content-Type") ?? "application/json",
+  });
   // Forward Set-Cookie so backend can clear keasy.sid
   for (const cookie of res.headers.getSetCookie?.() ?? []) {
     responseHeaders.append("Set-Cookie", cookie);
   }
-  return new Response(null, { status: res.status, headers: responseHeaders });
+  return new Response(res.body, { status: res.status, headers: responseHeaders });
 }

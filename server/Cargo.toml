@@ -46,8 +46,6 @@ getrandom = "0.2"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 openidconnect = { version = "4.0", features = ["reqwest"] }
 secrecy = { version = "0.10", features = ["serde"] }
-argon2 = { version = "0.5", features = ["std"] }
-subtle = "2"
 tower-sessions = { version = "0.14", features = ["signed"] }
 tower-sessions-rusqlite-store = "0.14.1"
 time = "0.3"

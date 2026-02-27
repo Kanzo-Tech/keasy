@@ -8,7 +8,6 @@ import {
   ShieldCheck,
 } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 
 import {
   AlertDialog,
@@ -58,7 +57,6 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
-  const router = useRouter()
   const [loggingOut, setLoggingOut] = useState(false)
 
   const initials = getInitials(user.firstName, user.lastName, user.email)
@@ -66,12 +64,21 @@ export function NavUser({
   async function handleLogout() {
     setLoggingOut(true)
     try {
-      await fetch("/api/auth/logout", { method: "POST" })
+      const res = await fetch("/api/auth/logout", { method: "POST" })
+      if (res.ok) {
+        const data = await res.json().catch(() => null)
+        const endSessionUrl = data?.data?.end_session_url
+        if (endSessionUrl) {
+          // Redirect to Keycloak end-session for full single logout
+          window.location.href = endSessionUrl
+          return
+        }
+      }
     } catch {
       // Ignore errors — redirect to login regardless
     }
-    // Redirect to /login WITHOUT ?reason= param (intentional logout, not session expiry)
-    router.push("/login")
+    // Fallback: redirect to login (no Keycloak end-session URL available)
+    window.location.href = "/login"
   }
 
   return (

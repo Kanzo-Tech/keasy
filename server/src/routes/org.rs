@@ -11,7 +11,6 @@ use axum::{
 use serde::Deserialize;
 
 use crate::AppState;
-use crate::auth::password;
 use crate::db::users::{User, UserStatus};
 use crate::error::data_response;
 use crate::middleware::tenant::{RbacError, RequireOrgAdmin};
@@ -33,11 +32,11 @@ pub struct AddUserRequest {
     pub role: String, // "admin" or "user"
 }
 
-/// POST /v1/org/users — create user with temporary password, assign to org.
+/// POST /v1/org/users — create a placeholder user record and assign to org.
 ///
-/// Returns the created user's info and the temporary password (shown once).
-/// The org admin must communicate the temp password out-of-band.
-/// The user changes it via PUT /v1/auth/password.
+/// With OIDC auth, users authenticate via Keycloak. The user record is created
+/// with an empty password_hash — the user will log in via OIDC (Keycloak will
+/// provision their credentials). An invite token should be sent separately.
 pub async fn add_user(
     RequireOrgAdmin(ctx): RequireOrgAdmin,
     State(state): State<AppState>,
@@ -56,22 +55,7 @@ pub async fn add_user(
         )));
     }
 
-    // 3. Generate temporary password (16 chars alphanumeric + prefix ensuring complexity)
-    use rand::Rng;
-    let temp_suffix: String = rand::rng()
-        .sample_iter(&rand::distr::Alphanumeric)
-        .take(16)
-        .map(char::from)
-        .collect();
-    // Prefix ensures complexity: uppercase (K), lowercase (x), digit (1), special chars omitted
-    let temp_password = format!("Kx{temp_suffix}1a");
-
-    // 4. Hash password
-    let password_hash = password::hash_password(temp_password.clone())
-        .await
-        .map_err(|e| RbacError::Internal(format!("hash password: {e}")))?;
-
-    // 5. Create user
+    // 3. Create user — OIDC users have no local password (empty password_hash)
     let user_id = uuid::Uuid::new_v4().to_string();
     let now = jiff::Timestamp::now().to_string();
     let user = User {
@@ -79,14 +63,14 @@ pub async fn add_user(
         email: payload.email.clone(),
         first_name: payload.first_name.clone(),
         last_name: payload.last_name.clone(),
-        password_hash,
+        password_hash: String::new(), // OIDC users have no local password
         status: UserStatus::Active,
         created_at: now.clone(),
         updated_at: now,
     };
     state.db.create_user(&user).await.map_err(RbacError::Internal)?;
 
-    // 6. Create org membership
+    // 4. Create org membership
     let membership_id = uuid::Uuid::new_v4().to_string();
     state
         .db
@@ -94,13 +78,12 @@ pub async fn add_user(
         .await
         .map_err(RbacError::Internal)?;
 
-    // 7. Return user info + temp password (shown once)
+    // 5. Return user info
     Ok((
         StatusCode::CREATED,
         data_response(serde_json::json!({
             "user_id": user_id,
             "email": payload.email,
-            "temporary_password": temp_password,
         })),
     ))
 }

@@ -27,12 +27,12 @@ Requirements for the Platform milestone. Each maps to roadmap phases.
 
 ### Views
 
-- [ ] **VIEW-01**: Promotor route group with server-side RSC role check that redirects non-promotors
-- [ ] **VIEW-02**: Participant route group with server-side RSC role check that redirects non-participants
-- [ ] **VIEW-03**: Promotor sidebar shows: Participants, Catalog, Compliance, Settings
-- [ ] **VIEW-04**: Participant sidebar shows: Connections, Jobs, Compliance, Settings
+- [x] **VIEW-01**: Promotor route group with server-side RSC role check that redirects non-promotors
+- [x] **VIEW-02**: Participant route group with server-side RSC role check that redirects non-participants
+- [x] **VIEW-03**: Promotor sidebar shows: Participants, Catalog, Compliance, Settings
+- [x] **VIEW-04**: Participant sidebar shows: Connections, Jobs, Compliance, Settings
 - [ ] **VIEW-05**: Promotor can invite participant organizations from a dedicated view
-- [ ] **VIEW-06**: URL structure unchanged after route group restructuring (route groups don't affect paths)
+- [x] **VIEW-06**: URL structure unchanged after route group restructuring (route groups don't affect paths)
 
 ### Wallet
 
@@ -117,12 +117,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WALL-03 | Phase 12 | Complete |
 | WALL-04 | Phase 12 | Complete |
 | WALL-05 | Phase 12 | Complete |
-| VIEW-01 | Phase 13 | Pending |
-| VIEW-02 | Phase 13 | Pending |
-| VIEW-03 | Phase 13 | Pending |
-| VIEW-04 | Phase 13 | Pending |
+| VIEW-01 | Phase 13 | Complete |
+| VIEW-02 | Phase 13 | Complete |
+| VIEW-03 | Phase 13 | Complete |
+| VIEW-04 | Phase 13 | Complete |
 | VIEW-05 | Phase 13 | Pending |
-| VIEW-06 | Phase 13 | Pending |
+| VIEW-06 | Phase 13 | Complete |
 | FED-02 | Phase 14 | Pending |
 | FED-03 | Phase 14 | Pending |
 | FED-04 | Phase 14 | Pending |

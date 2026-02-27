@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Platform
 status: unknown
-last_updated: "2026-02-27T16:53:12.073Z"
+last_updated: "2026-02-27T16:57:21.965Z"
 progress:
   total_phases: 3
   completed_phases: 3
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Reliable end-to-end data asset generation — a user can take heterogeneous data, transform it through Fossil pipelines, and produce a standards-compliant data asset ready for a data space
-**Current focus:** Phase 12 — Walt.ID Service Reduction / External Wallet UI
+**Current focus:** Phase 13 — Promotor/Participant Route Separation
 
 ## Current Position
 
-Phase: 12 of 15 (Walt.ID Service Reduction / External Wallet UI)
-Plan: 12-02 (complete — 2/2 plans done)
-Status: Phase 12 Complete — backend wallet API + frontend wallet UI with QR connect flow, sidebar indicator, role-filtered settings nav.
-Last activity: 2026-02-27 — 12-02 complete: wallet proxy routes, Settings > Wallet page, sidebar wallet indicator, role-filtered settings nav
+Phase: 13 of 15 (Promotor/Participant Route Separation)
+Plan: 13-01 (complete — 1/2 plans done)
+Status: Phase 13 In Progress — RSC role-gate layouts, restructured route groups, invite link API endpoints, role-split sidebar, redirect toast.
+Last activity: 2026-02-27 — 13-01 complete: (promotor)/(participant) route groups with RSC layouts, invite API, role-split sidebar, redirect toast
 
-Progress: [█████░░░░░] 47%
+Progress: [██████░░░░] 53%
 
 ## Performance Metrics
 
@@ -43,6 +43,7 @@ Progress: [█████░░░░░] 47%
 | 10 | 3/3 | 9 min | 3 min |
 | 11 | 3/3 | 14 min | ~5 min |
 | 12 | 2/2 | 5 min | ~3 min |
+| 13 | 1/2 | 3 min | 3 min |
 
 *Updated after each plan completion*
 
@@ -75,6 +76,9 @@ Progress: [█████░░░░░] 47%
 - [12-01]: wallet_routes.rs placed in session_auth_routes (not api_routes) — needs session auth but NOT tenant context, parallel to /auth/me
 - [12-01]: unlink_did_from_user returns Result<(), String> for consistency with other DB methods; link_did_to_user retains Result<(), rusqlite::Error>
 - [Phase 12]: wallet-settings-ui sections array moved inside SettingsNav — required for dynamic role-based filtering via isPromotor state
+- [13-01]: RSC role-gate: promotor redirects non-promotors to /connections?redirected=1; participant redirects promotors to /participants?redirected=1; both redirect unauthenticated to /login
+- [13-01]: getSidebarRoutes returns strictly role-split sets — promotor: 3 items (Participants, Catalog, Settings); participant: 4 items (Connections, Jobs, Compliance, Settings)
+- [13-01]: Settings stays at (main) level, NOT inside any role group — both roles access /settings/*
 
 ### Pending Todos
 
@@ -90,5 +94,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 12-02-PLAN.md — Phase 12 plan 2: wallet proxy routes, Settings > Wallet page with OID4VP QR connect flow, sidebar wallet indicator, role-filtered settings nav
-Resume with: `/gsd:execute-phase 13` to start Phase 13
+Stopped at: Completed 13-01-PLAN.md — RSC role-gate layouts, (promotor)/(participant) route groups, invite link API, role-split sidebar, redirect toast
+Resume with: `/gsd:execute-phase 13` to continue Phase 13 (plan 13-02 remaining)

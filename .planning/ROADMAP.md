@@ -134,6 +134,6 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 10. Keycloak Identity Service Deployment | 3/3 | Complete    | 2026-02-27 | - |
 | 11. OIDC Auth Conversion | 3/3 | Complete    | 2026-02-27 | - |
 | 12. Walt.id Service Reduction & External Wallet UI | 2/2 | Complete    | 2026-02-27 | - |
-| 13. Promotor/Participant Route Separation | v1.1 | 0/TBD | Not started | - |
+| 13. Promotor/Participant Route Separation | 1/2 | In Progress|  | - |
 | 14. Federated Instance Switcher | v1.1 | 0/TBD | Not started | - |
 | 15. UX Polish & Code Quality | v1.1 | 0/TBD | Not started | - |

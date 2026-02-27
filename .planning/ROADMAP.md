@@ -116,7 +116,9 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
   3. EmptyState components use inline links instead of buttons; the password change form is responsive to available width
   4. Dead code (unused endpoints, orphaned components, stale imports) is removed and the project compiles without warnings
   5. shadcn/ui component usage is consistent and idiomatic across the application
-**Plans**: TBD
+**Plans**: 2 (15-01 UX fixes, 15-02 Dead code removal + code quality)
+- [ ] 15-01-PLAN.md -- Editor full-height layout, icon-only save button, sidebar collapse on settings, EmptyState inline links, settings layout homogenization
+- [ ] 15-02-PLAN.md -- Dead code removal (organization-columns, dead API functions, empty directory, dead POST handler), OrgEntry type consolidation
 
 ## Progress
 
@@ -137,5 +139,5 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 11. OIDC Auth Conversion | 3/3 | Complete    | 2026-02-27 | - |
 | 12. Walt.id Service Reduction & External Wallet UI | 2/2 | Complete    | 2026-02-27 | - |
 | 13. Promotor/Participant Route Separation | 2/2 | Complete    | 2026-02-27 | - |
-| 14. Federated Instance Switcher | v1.1 | 2/2 | Complete | 2026-02-27 |
-| 15. UX Polish & Code Quality | v1.1 | 0/TBD | Not started | - |
+| 14. Federated Instance Switcher | v1.1 | Complete    | 2026-02-27 | 2026-02-27 |
+| 15. UX Polish & Code Quality | v1.1 | 0/2 | Planned | - |

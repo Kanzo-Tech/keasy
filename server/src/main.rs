@@ -122,6 +122,26 @@ async fn main() {
         None
     };
 
+    // Keycloak admin client — only active when all three OIDC config fields are present
+    let keycloak_admin = match (&config.oidc_issuer_url, &config.oidc_client_id, &config.oidc_client_secret) {
+        (Some(issuer), Some(client_id), Some(secret)) => {
+            match keasy_server::keycloak::admin::KeycloakAdmin::new(issuer, client_id, secret.clone()) {
+                Ok(admin) => {
+                    tracing::info!(issuer = %issuer, "Keycloak admin client configured");
+                    Some(admin)
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "Failed to configure Keycloak admin client — instance registration will be unavailable");
+                    None
+                }
+            }
+        }
+        _ => {
+            tracing::info!("OIDC not configured — Keycloak admin client disabled");
+            None
+        }
+    };
+
     let shutdown_grace = Duration::from_secs(config.shutdown_grace_secs);
     let state = AppState {
         db,
@@ -139,6 +159,7 @@ async fn main() {
         oidc_issuer_url: config.oidc_issuer_url,
         oidc_client_id: config.oidc_client_id,
         oidc_client_secret: config.oidc_client_secret,
+        keycloak_admin,
     };
     let app = build_router(state, config.cors_origins, session_store, config.session_secret);
 

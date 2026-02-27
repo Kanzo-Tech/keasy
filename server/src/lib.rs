@@ -14,6 +14,7 @@ pub mod email;
 pub mod error;
 pub mod gaia_x;
 pub mod jobs;
+pub mod keycloak;
 pub mod middleware;
 pub mod routes;
 pub mod settings;
@@ -77,4 +78,6 @@ pub struct AppState {
     pub oidc_client_id: Option<String>,
     /// OIDC client_secret for admin API calls.
     pub oidc_client_secret: Option<SecretString>,
+    /// Keycloak admin API client. None when OIDC is not configured.
+    pub keycloak_admin: Option<keycloak::admin::KeycloakAdmin>,
 }

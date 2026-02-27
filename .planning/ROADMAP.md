@@ -124,7 +124,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 7. Frontend Architecture Cleanup | v1.0 | 4/4 | Complete | 2026-02-26 |
 | 8. Walt.id Integration & VC Auth Path | v1.0 | 3/3 | Complete | 2026-02-27 |
 | 9. Gaia-X Compliance Wizard | v1.0 | 4/4 | Complete | 2026-02-27 |
-| 10. Keycloak Identity Service Deployment | 3/3 | Complete   | 2026-02-27 | - |
+| 10. Keycloak Identity Service Deployment | 3/3 | Complete    | 2026-02-27 | - |
 | 11. OIDC Auth Conversion | v1.1 | 0/TBD | Not started | - |
 | 12. Walt.id Service Reduction & External Wallet UI | v1.1 | 0/TBD | Not started | - |
 | 13. Promotor/Participant Route Separation | v1.1 | 0/TBD | Not started | - |

@@ -55,7 +55,17 @@ Reliable end-to-end data asset generation — a user can take heterogeneous data
 
 ### Active
 
-(No active requirements — next milestone not yet defined)
+#### Current Milestone: v1.1 Platform
+
+**Goal:** Evolve Keasy from a single multi-tenant instance to a federated platform with central identity, 1 instance = 1 dataspace architecture, and role-separated views.
+
+**Target features:**
+- Central identity service (OIDC provider, user registration, dataspace membership)
+- Federated dataspace architecture (each instance = one dataspace, Slack-like switching)
+- Promotor/participant view separation (strict route groups, role-scoped UI)
+- Remove hosted walt.id wallet (connect to user's external wallet via OID4VP)
+- UX refinements (editor full height, save icon, sidebar collapse, EmptyState links, responsive forms)
+- Code quality improvements (dead code removal, SOLID principles, better shadcn usage)
 
 ### Out of Scope
 
@@ -103,6 +113,7 @@ Reliable end-to-end data asset generation — a user can take heterogeneous data
 | Next.js proxy.ts (not middleware.ts) | Next.js 16.1.6 requires proxy.ts export | ✓ Good — two-list path guard works correctly |
 | walt.id services pinned to 0.17.1 | Prevent breaking changes from image drift | ✓ Good — stable sidecar |
 | JsonWebSignature2020 with sorted-key JSON | No Rust URDNA2015 library; GXDCH accepts this | ⚠️ Revisit — may need URDNA2015 for production GXDCH |
+| Keycloak for central identity service | Industry standard, battle-tested, massive community, future-proof (SAML/LDAP/social if needed). Rauthy evaluated but rejected (pre-1.0, smaller community for security-critical service) | — Pending |
 
 ---
-*Last updated: 2026-02-27 after v1.0 milestone*
+*Last updated: 2026-02-27 after v1.1 Platform milestone started*

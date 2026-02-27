@@ -11,7 +11,7 @@ This is a full-stack data pipeline application split into two main systems:
 - **Web (Next.js)**: React dashboard with real-time job monitoring, pipeline visualization, and RDF graph exploration
 
 **Key Characteristics:**
-- Event-driven job execution with semaphore-based concurrency control
+- Event-driven job execution with semaphore-based concurrency control (I think this could be improved with a more sophisticated concurrency control mechanism)
 - RDF graph as central data abstraction for catalog generation and data discovery
 - Bidirectional API communication: server serves REST endpoints, web calls via `fetch()`
 - Fossil language as domain-specific language for pipeline scripts
@@ -22,7 +22,7 @@ This is a full-stack data pipeline application split into two main systems:
 **Presentation Layer:**
 - Purpose: Render UI components and manage user interactions
 - Location: `web/src/app/`, `web/src/components/`
-- Contains: Next.js page components, React UI components (shadcn/ui), hooks
+- Contains: Next.js page components, React UI components (shadcn/ui when available, always favor), hooks
 - Depends on: API client layer, utility functions, state management
 - Used by: End users accessing the web dashboard
 

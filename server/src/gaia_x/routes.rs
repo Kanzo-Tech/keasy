@@ -640,12 +640,22 @@ pub async fn get_compliance_status(
 ) -> Response {
     let org_id = ctx.org_id.0.clone();
     let (_permit, conn) = state.db.read().await;
+
+    let verified_at: Option<String> = conn
+        .query_row(
+            "SELECT vc_verified_at FROM organizations WHERE id = ?1",
+            rusqlite::params![&org_id],
+            |row| row.get(0),
+        )
+        .ok()
+        .flatten();
+
     let wizard = match db::get_wizard_state(&conn, &org_id) {
         Ok(Some(w)) => w,
         Ok(None) => {
             return data_response(serde_json::json!({
                 "compliant": false,
-                "verified_at": null,
+                "verified_at": verified_at,
                 "credentials": [],
                 "wizard_state": null
             }))
@@ -683,7 +693,7 @@ pub async fn get_compliance_status(
 
     data_response(serde_json::json!({
         "compliant": compliant,
-        "verified_at": null,
+        "verified_at": verified_at,
         "credentials": creds,
         "wizard_state": wizard
     }))
@@ -778,7 +788,8 @@ pub async fn rerun_compliance(
 
     data_response(serde_json::json!({
         "compliant": true,
-        "compliance_vc": compliance_vc
+        "compliance_vc": compliance_vc,
+        "verified_at": now
     }))
     .into_response()
 }

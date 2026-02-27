@@ -1,10 +1,12 @@
 import {
+  BookOpenCheck,
   Bot,
   Database,
   GalleryVerticalEnd,
   Home,
   Settings2,
   ShieldCheck,
+  Users,
   Workflow,
   type LucideIcon,
 } from "lucide-react";
@@ -16,6 +18,7 @@ export type RouteConfig = {
   children?: RouteConfig[];
   showInSidebar?: boolean;
   isGroupTitle?: boolean;
+  requiredRole?: "promotor";
 };
 
 export const mainRouteConfig: RouteConfig[] = [
@@ -42,6 +45,20 @@ export const mainRouteConfig: RouteConfig[] = [
     name: "Compliance",
     icon: ShieldCheck,
     showInSidebar: true,
+  },
+  {
+    path: "/participants",
+    name: "Participants",
+    icon: Users,
+    showInSidebar: true,
+    requiredRole: "promotor",
+  },
+  {
+    path: "/catalog",
+    name: "Catalog",
+    icon: BookOpenCheck,
+    showInSidebar: true,
+    requiredRole: "promotor",
   },
 ];
 
@@ -96,8 +113,9 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: false,
   },
   {
-    path: "/admin/dataspaces/new",
-    name: "Create Dataspace",
+    path: "/settings/wallet",
+    name: "Wallet",
+    icon: Settings2,
     showInSidebar: false,
   },
   {
@@ -168,6 +186,10 @@ export function generateBreadcrumbs(path: string): RouteConfig[] {
   return breadcrumbs;
 }
 
-export function getSidebarRoutes(): RouteConfig[] {
-  return routeConfig.filter((route) => route.showInSidebar);
+export function getSidebarRoutes(effectiveRole?: string): RouteConfig[] {
+  return routeConfig.filter((route) => {
+    if (!route.showInSidebar) return false;
+    if (route.requiredRole === "promotor" && effectiveRole !== "promotor") return false;
+    return true;
+  });
 }

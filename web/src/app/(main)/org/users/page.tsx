@@ -43,9 +43,14 @@ export default function OrgUsersPage() {
         <EmptyState
           icon={UserCircle}
           title="No users yet"
-          description="Add users to your organization to collaborate on data assets."
-          actionHref="/org/users/new"
-          actionLabel="Add User"
+          description={
+            <>
+              <Link href="/org/users/new" className="underline underline-offset-4 hover:text-foreground">
+                Add a user
+              </Link>{" "}
+              to collaborate on data assets.
+            </>
+          }
         />
       ) : (
         <DataTable

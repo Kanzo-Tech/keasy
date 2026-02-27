@@ -68,9 +68,14 @@ export function CloudAccountsTab() {
           <EmptyState
             icon={Cloud}
             title="No cloud accounts"
-            description="Add a cloud account to start creating data connections."
-            actionHref="/settings/cloud-accounts/new"
-            actionLabel="Add cloud account"
+            description={
+              <>
+                <Link href="/settings/cloud-accounts/new" className="underline underline-offset-4 hover:text-foreground">
+                  Add a cloud account
+                </Link>{" "}
+                to start creating data connections.
+              </>
+            }
           />
         ) : (
           <DataTable

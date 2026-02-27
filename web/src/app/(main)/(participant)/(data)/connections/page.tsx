@@ -82,9 +82,14 @@ function ConnectionsContent() {
           <EmptyState
             icon={tab === "data" ? Database : BookOpen}
             title={`No ${tab === "data" ? "data" : "vocabulary"} connections`}
-            description={`Create a ${tab === "data" ? "data" : "vocabulary"} connection to get started.`}
-            actionHref="/connections/new"
-            actionLabel="Create connection"
+            description={
+              <>
+                <Link href="/connections/new" className="underline underline-offset-4 hover:text-foreground">
+                  Create a {tab === "data" ? "data" : "vocabulary"} connection
+                </Link>{" "}
+                to get started.
+              </>
+            }
           />
         ) : (
           <DataTable

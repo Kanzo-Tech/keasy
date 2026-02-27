@@ -76,9 +76,14 @@ export default function JobsPage() {
             <EmptyState
               icon={Briefcase}
               title="No jobs yet"
-              description="Jobs let you process and transform your data assets."
-              actionHref="/jobs/new"
-              actionLabel="Create job"
+              description={
+                <>
+                  <Link href="/jobs/new" className="underline underline-offset-4 hover:text-foreground">
+                    Create a job
+                  </Link>{" "}
+                  to process and transform your data assets.
+                </>
+              }
             />
           ) : (
             <DataTable

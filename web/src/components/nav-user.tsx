@@ -56,7 +56,7 @@ export function NavUser({
     authMethod?: string
   }
 }) {
-  const { isMobile } = useSidebar()
+  const { isMobile, setOpen, setOpenMobile } = useSidebar()
   const [loggingOut, setLoggingOut] = useState(false)
 
   const initials = getInitials(user.firstName, user.lastName, user.email)
@@ -129,7 +129,16 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/settings">
+              <Link
+                href="/settings"
+                onClick={() => {
+                  if (isMobile) {
+                    setOpenMobile(false)
+                  } else {
+                    setOpen(false)
+                  }
+                }}
+              >
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
               </Link>

@@ -6,15 +6,15 @@
 
 use axum::{
     Json,
-    extract::{Path, State},
+    extract::State,
     http::StatusCode,
     response::IntoResponse,
 };
 use serde::Deserialize;
 
 use crate::AppState;
-use crate::db::dataspaces::{Dataspace, DataspaceRole, OrgDataspaceMembership};
 use crate::db::invite_tokens::InviteToken;
+use crate::db::oidc_clients::OidcClient;
 use crate::db::organizations::Organization;
 use crate::error::data_response;
 use crate::middleware::session_auth::AuthenticatedUser;
@@ -33,18 +33,6 @@ pub async fn list_all_orgs(
 }
 
 // ---------------------------------------------------------------------------
-// GET /v1/admin/dataspaces
-// ---------------------------------------------------------------------------
-
-pub async fn list_all_dataspaces(
-    RequirePromotor(_ctx): RequirePromotor,
-    State(state): State<AppState>,
-) -> Result<impl IntoResponse, RbacError> {
-    let dataspaces = state.db.list_dataspaces().await;
-    Ok(data_response(dataspaces))
-}
-
-// ---------------------------------------------------------------------------
 // POST /v1/admin/organizations — create org + invite token + send email
 // ---------------------------------------------------------------------------
 
@@ -56,20 +44,21 @@ pub struct CreateOrgAndInviteRequest {
 
 /// POST /v1/admin/organizations — create org, generate invite token, send invite email.
 pub async fn create_org_and_invite(
-    RequirePromotor(ctx): RequirePromotor,
+    RequirePromotor(_ctx): RequirePromotor,
     axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
     State(state): State<AppState>,
     Json(payload): Json<CreateOrgAndInviteRequest>,
 ) -> Result<impl IntoResponse, RbacError> {
     let now = jiff::Timestamp::now().to_string();
 
-    // 1. Create organization — use name as legal_name, "EU" as country placeholder
+    // 1. Create organization as participant
     let org = Organization {
         id: uuid::Uuid::new_v4().to_string(),
         name: payload.name.clone(),
         legal_name: payload.name.clone(),
         registration_number: None,
         country: "EU".to_string(),
+        role: "participant".to_string(),
         vc_verified_at: None,
         created_at: now.clone(),
         updated_at: now.clone(),
@@ -80,21 +69,7 @@ pub async fn create_org_and_invite(
         .await
         .map_err(RbacError::Internal)?;
 
-    // 2. Add org to active dataspace as participant
-    let membership = OrgDataspaceMembership {
-        id: uuid::Uuid::new_v4().to_string(),
-        org_id: org.id.clone(),
-        dataspace_id: ctx.dataspace_id.clone(),
-        role: DataspaceRole::Participant,
-        created_at: now.clone(),
-    };
-    state
-        .db
-        .add_org_to_dataspace(&membership)
-        .await
-        .map_err(RbacError::Internal)?;
-
-    // 3. Create invite token (7-day expiry)
+    // 2. Create invite token (7-day expiry)
     let token_value = uuid::Uuid::new_v4().to_string();
     let expires_at = {
         let ts = jiff::Timestamp::now();
@@ -118,7 +93,7 @@ pub async fn create_org_and_invite(
         .await
         .map_err(RbacError::Internal)?;
 
-    // 4. Send invite email — fire-and-forget via tokio::spawn to not block response
+    // 3. Send invite email — fire-and-forget via tokio::spawn to not block response
     let email_service = state.email_service.clone();
     let to = payload.admin_email.clone();
     let base_url = state.base_url.clone();
@@ -132,7 +107,7 @@ pub async fn create_org_and_invite(
         }
     });
 
-    // 5. Return created org
+    // 4. Return created org
     Ok((
         StatusCode::CREATED,
         data_response(serde_json::json!({
@@ -144,109 +119,101 @@ pub async fn create_org_and_invite(
 }
 
 // ---------------------------------------------------------------------------
-// POST /v1/admin/dataspaces
+// POST /v1/admin/oidc-clients — Register a dataspace instance as an OIDC client
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Deserialize)]
-pub struct CreateDataspaceRequest {
+pub struct RegisterOidcClientRequest {
     pub name: String,
+    pub url: String,
     pub description: Option<String>,
+    pub logo: Option<String>,
 }
 
-pub async fn create_dataspace(
-    RequirePromotor(ctx): RequirePromotor,
+/// POST /v1/admin/oidc-clients — Register a new dataspace instance as an OIDC client.
+///
+/// Creates the OIDC client in Keycloak, stores display metadata in SQLite,
+/// and returns the registered instance record including client_id and client_secret.
+/// The client_secret is returned once and NOT stored — the caller must save it.
+pub async fn register_oidc_client(
+    RequirePromotor(_ctx): RequirePromotor,
     State(state): State<AppState>,
-    Json(payload): Json<CreateDataspaceRequest>,
+    Json(payload): Json<RegisterOidcClientRequest>,
 ) -> Result<impl IntoResponse, RbacError> {
+    // 1. Verify Keycloak admin is configured
+    let kc_admin = state.keycloak_admin.as_ref().ok_or_else(|| {
+        RbacError::Internal(
+            "Identity service not configured — set KEASY_OIDC_* environment variables"
+                .to_string(),
+        )
+    })?;
+
     let now = jiff::Timestamp::now().to_string();
-    let ds = Dataspace {
-        id: uuid::Uuid::new_v4().to_string(),
-        name: payload.name,
-        description: payload.description,
+    let id = uuid::Uuid::new_v4().to_string();
+    let client_id = format!("keasy-instance-{}", uuid::Uuid::new_v4());
+
+    // 2. Build redirect URI and web origin from the instance URL
+    let redirect_uri = format!(
+        "{}/v1/auth/oidc-callback",
+        payload.url.trim_end_matches('/')
+    );
+    let web_origin = payload.url.trim_end_matches('/').to_string();
+
+    // 3. Create OIDC client in Keycloak
+    let registered = kc_admin
+        .create_client(
+            &client_id,
+            &payload.name,
+            payload.description.as_deref(),
+            &redirect_uri,
+            &web_origin,
+        )
+        .await
+        .map_err(RbacError::Internal)?;
+
+    // 4. Store display metadata in SQLite (NO secret stored)
+    let oidc_client = OidcClient {
+        id: id.clone(),
+        client_id: client_id.clone(),
+        name: payload.name.clone(),
+        url: payload.url.clone(),
+        description: payload.description.clone(),
+        logo: payload.logo.clone(),
         created_at: now.clone(),
-        updated_at: now.clone(),
+        updated_at: now,
     };
     state
         .db
-        .create_dataspace(&ds)
+        .create_oidc_client(&oidc_client)
         .await
         .map_err(RbacError::Internal)?;
 
-    // Auto-assign the promotor's org as promotor of the new dataspace
-    let promotor_membership = OrgDataspaceMembership {
-        id: uuid::Uuid::new_v4().to_string(),
-        org_id: ctx.org_id.0.clone(),
-        dataspace_id: ds.id.clone(),
-        role: DataspaceRole::Promotor,
-        created_at: now,
-    };
-    state
-        .db
-        .add_org_to_dataspace(&promotor_membership)
-        .await
-        .map_err(RbacError::Internal)?;
-
-    Ok((StatusCode::CREATED, data_response(ds)))
+    // 5. Return the record WITH client_secret (one-time display — not stored)
+    Ok((
+        StatusCode::CREATED,
+        data_response(serde_json::json!({
+            "id": id,
+            "client_id": client_id,
+            "client_secret": registered.client_secret,
+            "name": payload.name,
+            "url": payload.url,
+            "description": payload.description,
+            "logo": payload.logo,
+        })),
+    ))
 }
 
 // ---------------------------------------------------------------------------
-// POST /v1/admin/organizations/{org_id}/dataspaces
+// GET /v1/admin/oidc-clients — List all registered dataspace instances
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Deserialize)]
-pub struct AddOrgToDataspaceRequest {
-    pub dataspace_id: String,
-    pub role: String,
-}
-
-pub async fn add_org_to_dataspace(
+/// GET /v1/admin/oidc-clients — List all registered dataspace instances.
+///
+/// Returns display metadata only — no secrets.
+pub async fn list_oidc_clients(
     RequirePromotor(_ctx): RequirePromotor,
     State(state): State<AppState>,
-    Path(org_id): Path<String>,
-    Json(payload): Json<AddOrgToDataspaceRequest>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let role = DataspaceRole::from_str(&payload.role);
-    let membership = OrgDataspaceMembership {
-        id: uuid::Uuid::new_v4().to_string(),
-        org_id,
-        dataspace_id: payload.dataspace_id,
-        role,
-        created_at: jiff::Timestamp::now().to_string(),
-    };
-    state
-        .db
-        .add_org_to_dataspace(&membership)
-        .await
-        .map_err(RbacError::Internal)?;
-    Ok(StatusCode::CREATED)
-}
-
-// ---------------------------------------------------------------------------
-// DELETE /v1/admin/organizations/{org_id}/dataspaces/{ds_id}
-// ---------------------------------------------------------------------------
-
-pub async fn remove_org_from_dataspace(
-    RequirePromotor(_ctx): RequirePromotor,
-    State(state): State<AppState>,
-    Path((org_id, ds_id)): Path<(String, String)>,
-) -> Result<impl IntoResponse, RbacError> {
-    state
-        .db
-        .remove_org_from_dataspace(&org_id, &ds_id)
-        .await
-        .map_err(RbacError::Internal)?;
-    Ok(StatusCode::NO_CONTENT)
-}
-
-// ---------------------------------------------------------------------------
-// GET /v1/admin/dataspace/organizations
-// ---------------------------------------------------------------------------
-
-/// GET /v1/admin/dataspace/organizations — list orgs in the caller's active dataspace.
-pub async fn list_orgs_in_active_dataspace(
-    RequirePromotor(ctx): RequirePromotor,
-    State(state): State<AppState>,
-) -> Result<impl IntoResponse, RbacError> {
-    let orgs = state.db.list_orgs_in_dataspace(&ctx.dataspace_id).await;
-    Ok(data_response(orgs))
+    let clients = state.db.list_oidc_clients().await;
+    Ok(data_response(clients))
 }

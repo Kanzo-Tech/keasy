@@ -92,15 +92,10 @@ pub fn build_router(
         .with_state(state.clone());
 
     // Session-authenticated routes (session required, NO tenant context required)
-    // These routes need the user to be logged in but do not need an active dataspace.
     let session_auth_routes = Router::new()
         .route(
             "/v1/auth/logout",
             axum::routing::post(crate::auth::routes::logout),
-        )
-        .route(
-            "/v1/auth/set-dataspace",
-            axum::routing::post(crate::auth::routes::set_active_dataspace),
         )
         .route(
             "/v1/auth/me",
@@ -250,21 +245,11 @@ pub fn build_router(
             "/v1/admin/organizations",
             axum::routing::get(admin::list_all_orgs).post(admin::create_org_and_invite),
         )
+        // OIDC instance registration — promotor only
         .route(
-            "/v1/admin/dataspaces",
-            axum::routing::get(admin::list_all_dataspaces).post(admin::create_dataspace),
-        )
-        .route(
-            "/v1/admin/organizations/{org_id}/dataspaces",
-            axum::routing::post(admin::add_org_to_dataspace),
-        )
-        .route(
-            "/v1/admin/organizations/{org_id}/dataspaces/{ds_id}",
-            axum::routing::delete(admin::remove_org_from_dataspace),
-        )
-        .route(
-            "/v1/admin/dataspace/organizations",
-            axum::routing::get(admin::list_orgs_in_active_dataspace),
+            "/v1/admin/oidc-clients",
+            axum::routing::get(admin::list_oidc_clients)
+                .post(admin::register_oidc_client),
         )
         // Org admin routes — org admins and promotors
         .route(

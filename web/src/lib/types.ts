@@ -274,6 +274,9 @@ export interface OrgUser {
 export interface OrgEntry {
   id: string;
   name: string;
+  legal_name: string;
   role: string;
+  country: string;
+  vc_verified_at: string | null;
   created_at: string;
 }

@@ -19,16 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-type OrgEntry = {
-  id: string;
-  name: string;
-  legal_name: string;
-  role: string;
-  country: string;
-  vc_verified_at: string | null;
-  created_at: string;
-};
+import type { OrgEntry } from "@/lib/types";
 
 type InviteEntry = {
   token: string;

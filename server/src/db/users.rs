@@ -24,6 +24,8 @@ pub struct User {
     pub status: UserStatus,
     pub created_at: String,
     pub updated_at: String,
+    pub vc_holder_did: Option<String>,
+    pub wallet_connected_at: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -65,7 +67,7 @@ impl Database {
     pub async fn get_user_by_email(&self, email: &str) -> Option<User> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, email, first_name, last_name, password_hash, status, created_at, updated_at
+            "SELECT id, email, first_name, last_name, password_hash, status, created_at, updated_at, vc_holder_did, wallet_connected_at
              FROM users WHERE email = ?1",
             [email],
             row_to_user,
@@ -76,7 +78,7 @@ impl Database {
     pub async fn get_user(&self, id: &str) -> Option<User> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, email, first_name, last_name, password_hash, status, created_at, updated_at
+            "SELECT id, email, first_name, last_name, password_hash, status, created_at, updated_at, vc_holder_did, wallet_connected_at
              FROM users WHERE id = ?1",
             [id],
             row_to_user,
@@ -132,7 +134,7 @@ impl Database {
     pub async fn get_user_by_did(&self, did: &str) -> Option<User> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, email, first_name, last_name, password_hash, status, created_at, updated_at
+            "SELECT id, email, first_name, last_name, password_hash, status, created_at, updated_at, vc_holder_did, wallet_connected_at
              FROM users WHERE vc_holder_did = ?1 AND status = 'active'",
             [did],
             row_to_user,
@@ -149,6 +151,30 @@ impl Database {
             "UPDATE users SET vc_holder_did = ?1, updated_at = ?2 WHERE id = ?3",
             params![did, now, user_id],
         )?;
+        Ok(())
+    }
+
+    /// Update wallet_connected_at timestamp for a user.
+    pub async fn update_wallet_connected_at(&self, user_id: &str) -> Result<(), String> {
+        let now = jiff::Timestamp::now().to_string();
+        let conn = self.write().await;
+        conn.execute(
+            "UPDATE users SET wallet_connected_at = ?1, updated_at = ?2 WHERE id = ?3",
+            params![now, now, user_id],
+        )
+        .map_err(|e| format!("failed to update wallet_connected_at: {e}"))?;
+        Ok(())
+    }
+
+    /// Disconnect wallet — clear vc_holder_did and wallet_connected_at.
+    pub async fn unlink_did_from_user(&self, user_id: &str) -> Result<(), String> {
+        let now = jiff::Timestamp::now().to_string();
+        let conn = self.write().await;
+        conn.execute(
+            "UPDATE users SET vc_holder_did = NULL, wallet_connected_at = NULL, updated_at = ?1 WHERE id = ?2",
+            params![now, user_id],
+        )
+        .map_err(|e| format!("failed to unlink DID: {e}"))?;
         Ok(())
     }
 
@@ -213,7 +239,7 @@ impl Database {
     pub async fn get_user_by_subject(&self, subject: &str) -> Option<User> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, email, first_name, last_name, password_hash, status, created_at, updated_at
+            "SELECT id, email, first_name, last_name, password_hash, status, created_at, updated_at, vc_holder_did, wallet_connected_at
              FROM users WHERE subject = ?1 AND status = 'active'",
             [subject],
             row_to_user,
@@ -290,5 +316,7 @@ fn row_to_user(row: &rusqlite::Row<'_>) -> rusqlite::Result<User> {
         },
         created_at: row.get(6)?,
         updated_at: row.get(7)?,
+        vc_holder_did: row.get(8)?,
+        wallet_connected_at: row.get(9)?,
     })
 }

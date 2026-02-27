@@ -62,6 +62,8 @@ pub async fn get_me(
         "effective_role": effective_role,
         "auth_method": auth_method,
         "vc_available": vc_available,
+        "vc_holder_did": user.vc_holder_did,
+        "wallet_connected_at": user.wallet_connected_at,
         "org": org.map(|o| json!({
             "id": o.id,
             "name": o.name,

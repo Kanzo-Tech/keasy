@@ -102,6 +102,15 @@ pub fn build_router(
             "/v1/auth/me",
             axum::routing::get(crate::auth::routes::get_me),
         )
+        .route(
+            "/v1/auth/wallet",
+            axum::routing::get(crate::auth::wallet_routes::get_wallet)
+                .delete(crate::auth::wallet_routes::disconnect_wallet),
+        )
+        .route(
+            "/v1/auth/vc-connect",
+            axum::routing::post(crate::auth::wallet_routes::save_wallet_connection),
+        )
         .layer(middleware::from_fn_with_state(
             state.clone(),
             session_required,

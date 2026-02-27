@@ -67,6 +67,8 @@ pub async fn add_user(
         status: UserStatus::Active,
         created_at: now.clone(),
         updated_at: now,
+        vc_holder_did: None,
+        wallet_connected_at: None,
     };
     state.db.create_user(&user).await.map_err(RbacError::Internal)?;
 

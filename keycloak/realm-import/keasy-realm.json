@@ -1,0 +1,35 @@
+{
+  "realm": "keasy",
+  "enabled": true,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": true,
+  "verifyEmail": false,
+  "accessTokenLifespan": 3600,
+  "ssoSessionMaxLifespan": 86400,
+  "clients": [
+    {
+      "clientId": "keasy-server",
+      "name": "Keasy Server",
+      "description": "Keasy application server — OIDC relying party and admin API client",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${KEASY_OIDC_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [
+        "http://localhost:8080/v1/auth/oidc-callback",
+        "http://localhost:3000/v1/auth/oidc-callback"
+      ],
+      "webOrigins": ["+"],
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email"
+      ]
+    }
+  ]
+}

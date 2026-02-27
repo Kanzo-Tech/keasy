@@ -204,4 +204,4 @@ Each phase runs on its own git branch and merges into main via pull request befo
 | 6.1. Middleware Route Guard Fix | 1/1 | Complete | 2026-02-26 |
 | 7. Frontend Architecture Cleanup | 4/4 | Complete   | 2026-02-26 |
 | 8. Walt.id Integration & VC Auth Path | 3/3 | Complete   | 2026-02-27 |
-| 9. Gaia-X Compliance Wizard | 1/3 | In Progress|  |
+| 9. Gaia-X Compliance Wizard | 2/3 | In Progress|  |

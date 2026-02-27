@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-27T01:26:28.935Z"
+last_updated: "2026-02-27T01:34:42.138Z"
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 29
-  completed_plans: 27
+  completed_plans: 28
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 09 of 10 (Gaia-X Compliance Wizard) — In Progress
-Plan: 1 of 3 complete (09-01 backend module complete)
-Status: Phase 09 Plan 01 Complete — Gaia-X backend module with P-256 keys, X.509 validation, JSON-LD credentials, JWS signing, VP assembly, GXDCH API clients, wizard state persistence, 11 route handlers
-Last activity: 2026-02-27 — Completed Plan 09-01: Complete server/src/gaia_x/ module with 9 submodules, gaia_x_wizard_state table, VC-04/05/06/07 requirements implemented, cargo build passes
+Plan: 2 of 3 complete (09-02 frontend wizard complete)
+Status: Phase 09 Plan 02 Complete — Frontend compliance wizard: 9 proxy routes, vertical stepper, 6 step components, /compliance/wizard page with SWR state load + free navigation + auto-save
+Last activity: 2026-02-27 — Completed Plan 09-02: 9 Next.js proxy routes, WizardLayout+Stepper components, all 6 step components (key generation, cert upload, LRN, LP, T&C, GXDCH submit), wizard page. npx next build passes.
 
 Progress: [████████████████████] ~96%
 
@@ -64,6 +64,7 @@ Progress: [████████████████████] ~96%
 | Phase 07 P04 | 3 | 2 tasks | 6 files |
 | Phase 08 P01 | 4 | 2 tasks | 11 files |
 | Phase 09-gaia-x-compliance-wizard P01 | 12 | 2 tasks | 15 files |
+| Phase 09 P02 | 5 | 2 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -155,6 +156,9 @@ Recent decisions affecting current work:
 - [Phase 09-01]: rand_core06 alias added to resolve p256 0.13 vs rand 0.9 incompatibility — p256 uses rand_core 0.6
 - [Phase 09-01]: gaia_x routes use db.write()/.read() guard pattern (no closure API) — consistent with all other route files
 - [Phase 09-01]: JsonWebSignature2020 uses sorted-key JSON (not URDNA2015) — no Rust URDNA2015 library exists; GXDCH staging accepts this approach
+- [Phase 09-02]: effectiveStep pattern uses null local state resolving to wizardState.current_step to avoid flicker on first mount
+- [Phase 09-02]: Free navigation guards onStepChange with isStepCompleted() per-step checks on wizardState fields
+- [Phase 09-02]: StepGxdchSubmit shows Retry Submission button when phase === error — single POST with 4 UI-only timing stages
 
 ### Pending Todos
 
@@ -172,5 +176,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed Plan 09-01 — Gaia-X backend module complete: 9 submodules (keys, cert, credentials, signing, vp, gxdch, db, routes + mod), gaia_x_wizard_state table, 11 route handlers. VC-04/05/06/07 implemented. cargo build passes.
-Resume with: Phase 09 Plan 02 (Gaia-X compliance wizard frontend)
+Stopped at: Completed Plan 09-02 — Gaia-X compliance wizard frontend: 9 proxy routes, WizardLayout+Stepper, 6 step components, /compliance/wizard page. npx next build passes.
+Resume with: Phase 09 Plan 03 (compliance management view)

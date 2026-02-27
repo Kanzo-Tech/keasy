@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Paintbrush, Cloud, Sparkles, Shield } from "lucide-react";
+import { Paintbrush, Cloud, Sparkles, Shield, Wallet } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import useSWR from "swr";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -18,25 +19,35 @@ interface NavItem {
   icon: LucideIcon;
 }
 
-const sections: { heading: string; items: NavItem[] }[] = [
-  {
-    heading: "General",
-    items: [
-      { href: "/settings/preferences", label: "Preferences", icon: Paintbrush },
-      { href: "/settings/security", label: "Security", icon: Shield },
-    ],
-  },
-  {
-    heading: "Integrations",
-    items: [
-      { href: "/settings/cloud-accounts", label: "Cloud Accounts", icon: Cloud },
-      { href: "/settings/ai", label: "AI", icon: Sparkles },
-    ],
-  },
-];
-
 export function SettingsNav() {
   const pathname = usePathname();
+
+  const { data: me } = useSWR("auth-me", () =>
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((r) => r.data ?? r)
+  );
+  const isPromotor = me?.effective_role === "promotor";
+
+  const sections: { heading: string; items: NavItem[] }[] = [
+    {
+      heading: "General",
+      items: [
+        { href: "/settings/preferences", label: "Preferences", icon: Paintbrush },
+        { href: "/settings/security", label: "Security", icon: Shield },
+        ...(!isPromotor
+          ? [{ href: "/settings/wallet", label: "Wallet", icon: Wallet }]
+          : []),
+      ],
+    },
+    {
+      heading: "Integrations",
+      items: [
+        { href: "/settings/cloud-accounts", label: "Cloud Accounts", icon: Cloud },
+        { href: "/settings/ai", label: "AI", icon: Sparkles },
+      ],
+    },
+  ];
 
   return (
     <nav className="space-y-2">

@@ -1,100 +1,100 @@
 # Requirements: Keasy
 
-**Defined:** 2026-02-26
-**Core Value:** Reliable end-to-end data asset generation for IDSA/Gaia-X data spaces
+**Defined:** 2026-02-27
+**Core Value:** Reliable end-to-end data asset generation — a user can take heterogeneous data, transform it through Fossil pipelines, and produce a standards-compliant data asset ready for a data space
 
-## v1 Requirements
+## v1.1 Requirements
 
-Requirements for this milestone. Each maps to roadmap phases.
+Requirements for the Platform milestone. Each maps to roadmap phases.
 
-### Frontend Architecture
+### Identity Service
 
-- [x] **ARCH-01**: All list views (jobs, connections, cloud accounts, users, orgs) use TanStack Table + shadcn data-table with sorting, filtering, and column selection
-- [x] **ARCH-02**: Data loading uses SWR consistently across all client components with a standardized pattern (no raw fetch, no mixed approaches)
-- [x] **ARCH-03**: Discovery views are dedicated pages under the route tree, not embedded components
-- [x] **ARCH-04**: Job detail views are dedicated pages (not embedded components)
-- [x] **ARCH-05**: (data) route group layout has header / main (full height) / footer slots with "Create new" buttons on list pages
-- [x] **ARCH-06**: Shared sidebar primitives (SidebarGroup, SidebarButton) extracted and reused between main sidebar and settings sidebar
-- [x] **ARCH-07**: Settings main content occupies full available width
-- [x] **ARCH-08**: EmptyState component shows contextual "Create new X" link for each entity type (job, connection, cloud account, etc.)
-- [x] **ARCH-09**: Single reusable graph component handles both RDF data graphs and catalog graphs with configurable data adapters
-- [x] **ARCH-10**: Brand logos (Azure, Google Cloud, Amazon, Anthropic) use an icon library instead of custom components
-- [x] **ARCH-11**: Graph background dot scale is smaller by default
-- [x] **ARCH-12**: Save draft button repositioned within the writable editor context
+- [x] **IDENT-01**: Keycloak OIDC provider deployed as Docker sidecar with discovery document reachable from Keasy server
+- [x] **IDENT-02**: Keasy registered as OIDC client in Keycloak with client_id, client_secret, and redirect URIs configured
+- [ ] **IDENT-03**: User can authenticate via OIDC authorization code flow with PKCE (S256) through Keycloak
+- [ ] **IDENT-04**: ID tokens include `keasy:dataspaces` custom claim with user's dataspace membership list
+- [ ] **IDENT-05**: Keasy server validates ID token signature via cached JWKS with TTL and refresh-on-failure
+- [ ] **IDENT-06**: Each dataspace instance validates `aud` claim matches its own registered client_id
+- [ ] **IDENT-07**: Old password auth code deleted entirely (Argon2id login/register endpoints, password routes, related handlers)
 
-### API Security & Quality
+### Federation
 
-- [x] **API-01**: User can register with email and password (Argon2id hashing, spawn_blocking)
-- [x] **API-02**: User can log in with email and password, receiving a server-side session cookie
-- [x] **API-03**: User can log out, immediately invalidating their session
-- [x] **API-04**: All API routes (except /health, /login, /register) require authentication via session middleware at the top-level router
-- [x] **API-05**: API returns 401 for unauthenticated requests and 403 for unauthorized requests, with consistent error shapes
-- [x] **API-06**: Role-based access control enforced at API layer: promotor, org_admin, org_user roles checked per endpoint
-- [x] **API-07**: All existing API routes reviewed: duplicates removed, dead code eliminated, legacy patterns replaced
-- [x] **API-08**: Structured error handling with thiserror domain error types mapped to consistent HTTP status codes
-- [x] **API-09**: SQLite write pool split from read pool (max_connections=1 for writes) to prevent lock starvation
-- [x] **API-10**: API follows Rust best practices: data-driven design, favor impl over traits, clean module organization
+- [ ] **FED-01**: Promotor can register a dataspace instance as an OIDC client in the identity service
+- [ ] **FED-02**: User sees workspace picker listing their dataspaces after authenticating at the identity service
+- [ ] **FED-03**: User can switch between dataspace instances via sidebar switcher without re-entering credentials
+- [ ] **FED-04**: Instance switching redirects through identity service for fresh token issuance per destination instance
+- [ ] **FED-05**: SWR cache invalidated on instance switch to prevent stale role/data state
 
-### User & Organization Model
+### Views
 
-- [x] **USER-01**: User accounts with email, hashed password, and profile (name)
-- [x] **USER-02**: Database schema supports: Account → N Dataspaces → Organizations (promotor or participant) → Users
-- [x] **USER-03**: Promotor can create a dataspace and is automatically assigned the promotor role
-- [x] **USER-04**: Promotor can register participant organizations manually within a dataspace
-- [x] **USER-05**: Promotor can assign privileges to participant organizations (role-based or manual)
-- [x] **USER-06**: Each participant organization has 1 admin user who manages their org's users
-- [x] **USER-07**: Org admin can add users with read-only or read-write roles within their organization
-- [x] **USER-08**: Org admin can remove users from their organization
-- [x] **USER-09**: All resource queries (jobs, connections, cloud accounts, conversations) are tenant-scoped by organization_id
-- [x] **USER-10**: User can change their own password (current + new + confirmation)
-- [x] **USER-11**: Promotor can send email invite tokens to onboard org admins
-- [x] **USER-12**: Frontend login page with email/password form and route guards (redirect unauthenticated users)
-- [x] **USER-13**: Frontend shows real user data in sidebar (name, email, avatar) and real team/org in team switcher
-- [x] **USER-14**: Dataspace switcher in sidebar for users belonging to multiple dataspaces
+- [ ] **VIEW-01**: Promotor route group with server-side RSC role check that redirects non-promotors
+- [ ] **VIEW-02**: Participant route group with server-side RSC role check that redirects non-participants
+- [ ] **VIEW-03**: Promotor sidebar shows: Participants, Catalog, Compliance, Settings
+- [ ] **VIEW-04**: Participant sidebar shows: Connections, Jobs, Compliance, Settings
+- [ ] **VIEW-05**: Promotor can invite participant organizations from a dedicated view
+- [ ] **VIEW-06**: URL structure unchanged after route group restructuring (route groups don't affect paths)
 
-### Verifiable Credentials & Gaia-X
+### Wallet
 
-- [x] **VC-01**: walt.id Community Stack runs as Docker sidecar services (Issuer, Verifier, Wallet) alongside Keasy
-- [x] **VC-02**: User can connect a wallet via walt.id and load existing Verifiable Credentials
-- [x] **VC-03**: User can log in via Verifiable Credentials (OID4VP) as an alternative to email/password, producing the same session type
-- [x] **VC-04**: Gaia-X compliance wizard guides user through: key pair generation, DID document hosting, LRN credential, Legal Participant credential, T&C credential, and GXDCH compliance submission
-- [x] **VC-05**: Wizard validates certificate chain (including root CA) at each step, not only at final submission
-- [x] **VC-06**: Credentials are linked via credential subject ID (not top-level credential ID) per Gaia-X specification
-- [x] **VC-07**: All credentials in Verifiable Presentations are included inline (not URL references)
-- [x] **VC-08**: Two auth paths available at login: "Traditional" (email/password) and "Verifiable Credentials"
-- [x] **VC-09**: Within VC path, two sub-options: "I have my own credentials" (load from wallet) and "Wizard" (guided Gaia-X compliance)
-- [x] **VC-10**: VC/compliance management replaces current organization settings view (accessible by org admin)
+- [ ] **WALL-01**: Hosted walt.id Wallet, Issuer, web-wallet, and web-portal services removed from Docker Compose
+- [ ] **WALL-02**: Walt.id Verifier sidecar confirmed operational standalone after other services removed
+- [ ] **WALL-03**: User can connect external wallet via QR code (cross-device) or deep link (same-device) using OID4VP
+- [ ] **WALL-04**: Wallet connection status visible in sidebar or settings/security page
+- [ ] **WALL-05**: Existing VC verification path (`vc_client.rs`, `vc_routes.rs`) unchanged after wallet removal
+
+### UX
+
+- [ ] **UX-01**: Code editor occupies full available height
+- [ ] **UX-02**: Save button displayed as icon-only (no text label)
+- [ ] **UX-03**: Clicking settings from nav-user menu collapses the sidebar (especially on mobile)
+- [ ] **UX-04**: EmptyState components use inline Link instead of button
+- [ ] **UX-05**: Password change form adapts to available width (responsive)
+- [ ] **UX-06**: Improved shadcn/ui component usage across the application
+
+### Auth Migration (Frontend)
+
+- [ ] **AUTH-01**: Login page replaced with single OIDC redirect button + optional VC auth button
+- [ ] **AUTH-02**: Register page deleted entirely (Keycloak handles user registration)
+
+### Code Quality
+
+- [ ] **QUAL-01**: Dead code removed (unused endpoints, orphaned components, stale imports)
+- [ ] **QUAL-02**: Architecture improvements following SOLID principles
 
 ## v2 Requirements
 
-Deferred to future milestone. Tracked but not in current roadmap.
+Deferred to future release. Tracked but not in current roadmap.
 
-### Authentication Enhancements
+### Identity Enhancements
 
-- **AUTH-01**: OAuth/SSO providers (Google, GitHub) as additional login options
-- **AUTH-02**: Account lockout after N failed login attempts
-- **AUTH-03**: Email verification on registration
+- **IDENT-09**: UserInfo endpoint for fresh profile data without re-auth
+- **IDENT-10**: Refresh token support with short-lived access tokens
+- **IDENT-11**: Token revocation when user is removed from a dataspace mid-session
 
-### Advanced Features
+### Federation Enhancements
 
-- **ADV-01**: Audit log for all sensitive operations (user creation, role changes, credential issuance)
-- **ADV-02**: GPU-based graph rendering for large datasets
-- **ADV-03**: Credential revocation (Bitstring Status List) for issued VCs
-- **ADV-04**: VC credential management UI (view credentials, expiry, compliance status)
-- **ADV-05**: Self-service participant onboarding (future, when governance model evolves)
+- **FED-06**: Instance health indicator (green/red dot) in workspace switcher
+- **FED-07**: Polished instance registration wizard UI for promotors
+
+### External Integration
+
+- **EXT-01**: IDS DAPS integration for connecting to external IDSA ecosystems
+- **EXT-02**: SAML SP support (via Keycloak proxy if needed)
+- **EXT-03**: DID-based instance discovery
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Real-time collaboration (WebSocket cursors, CRDT) | Pipeline authoring is single-user; optimistic locking sufficient |
-| Stateless JWT for user sessions | Cannot guarantee logout/revocation; server-side sessions are correct for this use case |
-| Custom role definitions | Fixed role set (promotor, org_admin, org_user) covers all data space use cases; custom RBAC adds complexity without benefit |
-| Per-resource ACLs (per-job permissions) | Org-level scoping is the natural access unit; fine-grained ACLs are over-engineering |
-| Mobile native app | Desktop-first tool (code editing, graph viz); responsive web sufficient |
-| Email notifications (job completion) | Requires SMTP in self-hosted context; in-app status + SWR polling sufficient |
-| IdentityHub / federated identity | Promotor manages participants manually; no external identity federation |
-| PostgreSQL migration | SQLite sufficient for self-hosted single-instance; evaluate if multi-instance needed |
+| Token introspection endpoint | Local JWT verification with cached JWKS is sufficient; introspection adds unnecessary network round-trips |
+| Dynamic client registration (RFC 7591) | Security risk; promotor-managed registration is auditable and correct |
+| Per-instance user databases | Breaks the switcher concept; central identity is the shared identity layer |
+| Sliding window refresh token rotation | Over-engineering for a self-hosted tool with 24h sessions |
+| Universal wallet DID auto-discovery | Adds external network calls and failure modes at login; explicit "Connect Wallet" action is correct |
+| SAML alongside OIDC | Doubles identity surface area; defer to v2+ via Keycloak proxy if needed |
+| OAuth/SSO login providers (Google, GitHub) | OIDC via Keycloak + VC auth covers all current use cases |
+| Real-time collaboration | Single-user interactions per session |
+| Mobile app | Web-only, self-hosted |
 
 ## Traceability
 
@@ -102,58 +102,45 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ARCH-01 | Phase 7 | Complete |
-| ARCH-02 | Phase 7 | Complete |
-| ARCH-03 | Phase 7 | Complete |
-| ARCH-04 | Phase 7 | Complete |
-| ARCH-05 | Phase 7 | Complete |
-| ARCH-06 | Phase 7 | Complete |
-| ARCH-07 | Phase 7 | Complete |
-| ARCH-08 | Phase 7 | Complete |
-| ARCH-09 | Phase 7 | Complete |
-| ARCH-10 | Phase 7 | Complete |
-| ARCH-11 | Phase 7 | Complete |
-| ARCH-12 | Phase 7 | Complete |
-| API-01 | Phase 3 | Complete |
-| API-02 | Phase 3 | Complete |
-| API-03 | Phase 3 | Complete |
-| API-04 | Phase 3 | Complete |
-| API-05 | Phase 3 | Complete |
-| API-06 | Phase 4 | Complete |
-| API-07 | Phase 2 | Complete |
-| API-08 | Phase 2 | Complete |
-| API-09 | Phase 2 | Complete |
-| API-10 | Phase 2 | Complete |
-| USER-01 | Phase 1 | Complete |
-| USER-02 | Phase 1 | Complete |
-| USER-03 | Phase 6 | Complete |
-| USER-04 | Phase 6 | Complete |
-| USER-05 | Phase 6 | Complete |
-| USER-06 | Phase 6 | Complete |
-| USER-07 | Phase 6 | Complete |
-| USER-08 | Phase 6 | Complete |
-| USER-09 | Phase 4 | Complete |
-| USER-10 | Phase 6 | Complete |
-| USER-11 | Phase 6 | Complete |
-| USER-12 | Phase 5 | Complete |
-| USER-13 | Phase 6 | Complete |
-| USER-14 | Phase 6 | Complete |
-| VC-01 | Phase 8 | Complete |
-| VC-02 | Phase 8 | Complete |
-| VC-03 | Phase 8 | Complete |
-| VC-04 | Phase 9 | Complete |
-| VC-05 | Phase 9 | Complete |
-| VC-06 | Phase 9 | Complete |
-| VC-07 | Phase 9 | Complete |
-| VC-08 | Phase 8 | Complete |
-| VC-09 | Phase 8 | Complete |
-| VC-10 | Phase 9 | Complete |
+| IDENT-01 | Phase 10 | Complete |
+| IDENT-02 | Phase 10 | Complete |
+| FED-01 | Phase 10 | Pending |
+| IDENT-03 | Phase 11 | Pending |
+| IDENT-04 | Phase 11 | Pending |
+| IDENT-05 | Phase 11 | Pending |
+| IDENT-06 | Phase 11 | Pending |
+| IDENT-07 | Phase 11 | Pending |
+| AUTH-01 | Phase 11 | Pending |
+| AUTH-02 | Phase 11 | Pending |
+| WALL-01 | Phase 12 | Pending |
+| WALL-02 | Phase 12 | Pending |
+| WALL-03 | Phase 12 | Pending |
+| WALL-04 | Phase 12 | Pending |
+| WALL-05 | Phase 12 | Pending |
+| VIEW-01 | Phase 13 | Pending |
+| VIEW-02 | Phase 13 | Pending |
+| VIEW-03 | Phase 13 | Pending |
+| VIEW-04 | Phase 13 | Pending |
+| VIEW-05 | Phase 13 | Pending |
+| VIEW-06 | Phase 13 | Pending |
+| FED-02 | Phase 14 | Pending |
+| FED-03 | Phase 14 | Pending |
+| FED-04 | Phase 14 | Pending |
+| FED-05 | Phase 14 | Pending |
+| UX-01 | Phase 15 | Pending |
+| UX-02 | Phase 15 | Pending |
+| UX-03 | Phase 15 | Pending |
+| UX-04 | Phase 15 | Pending |
+| UX-05 | Phase 15 | Pending |
+| UX-06 | Phase 15 | Pending |
+| QUAL-01 | Phase 15 | Pending |
+| QUAL-02 | Phase 15 | Pending |
 
 **Coverage:**
-- v1 requirements: 46 total
-- Mapped to phases: 46
+- v1.1 requirements: 33 total
+- Mapped to phases: 33
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-02-26*
-*Last updated: 2026-02-26 after roadmap revision (Phase 2 split into Phase 2 + Phase 3; all subsequent phases shifted by 1)*
+*Requirements defined: 2026-02-27*
+*Last updated: 2026-02-27 — roadmap revised to 6 phases; IDENT-08 removed (clean-break deletion replaces session flush); QUAL-03/QUAL-04 removed and replaced by AUTH-01/AUTH-02 (now in Phase 11 alongside backend OIDC); old Phase 12 eliminated; Phases 13-16 renumbered to 12-15*

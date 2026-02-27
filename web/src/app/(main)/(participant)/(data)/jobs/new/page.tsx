@@ -10,11 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FormField, FormActions } from "@/components/form-layout";
 import { JobSummaryPanel } from "@/components/job-summary-dialog";
 import { CodeEditor } from "@/components/code-editor";
 import { cn } from "@/lib/utils";
 import { ComingSoon } from "@/components/coming-soon";
+import { Save, Loader2 } from "lucide-react";
 import {
   createJob,
   updateJob,
@@ -187,7 +189,7 @@ function NewJobContent() {
   }
 
   return (
-    <div className="flex flex-col gap-4 flex-1 min-h-0">
+    <div className="flex flex-col gap-4 flex-1 min-h-0 p-4">
       <div className="flex flex-col gap-4 shrink-0">
         <FormField label="Job Name">
           <Input
@@ -256,14 +258,24 @@ function NewJobContent() {
                 to reference connections
               </span>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSaveDraft}
-              disabled={!script.trim() || savingDraft}
-            >
-              {savingDraft ? "Saving..." : "Save Draft"}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleSaveDraft}
+                  disabled={!script.trim() || savingDraft}
+                  aria-label="Save draft"
+                >
+                  {savingDraft ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Save draft</TooltipContent>
+            </Tooltip>
           </div>
         </div>
         <TabsContent value="script" className="mt-0 flex-1 min-h-0 flex flex-col">

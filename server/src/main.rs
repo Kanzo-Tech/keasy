@@ -177,6 +177,18 @@ async fn main() {
         }
     };
 
+    // Ensure keasy:dataspaces protocol mapper exists in Keycloak (idempotent).
+    // Best-effort: if it fails, the server still starts but custom claims may be missing.
+    if let (Some(admin), Some(client_id)) = (&keycloak_admin, &config.oidc_client_id) {
+        match admin.ensure_protocol_mapper(client_id).await {
+            Ok(()) => tracing::debug!("Keycloak protocol mapper verified"),
+            Err(e) => tracing::warn!(
+                error = %e,
+                "Failed to ensure keasy:dataspaces protocol mapper — custom claims may not appear in ID tokens"
+            ),
+        }
+    }
+
     let shutdown_grace = Duration::from_secs(config.shutdown_grace_secs);
     let state = AppState {
         db,

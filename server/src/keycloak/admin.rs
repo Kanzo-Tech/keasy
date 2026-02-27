@@ -180,6 +180,83 @@ impl KeycloakAdmin {
         })
     }
 
+    /// Ensure the keasy:dataspaces protocol mapper exists on the specified client.
+    /// Idempotent: if the mapper already exists, Keycloak returns 409 which is ignored.
+    pub async fn ensure_protocol_mapper(&self, keycloak_client_id: &str) -> Result<(), String> {
+        let token = self.get_admin_token().await?;
+
+        // First, find the Keycloak-internal UUID for the clientId
+        let clients_url = format!(
+            "{}/admin/realms/{}/clients?clientId={}",
+            self.base_url, self.realm, keycloak_client_id
+        );
+        let resp = self
+            .http
+            .get(&clients_url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak client lookup failed: {e}"))?;
+
+        let clients: Vec<serde_json::Value> = resp
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse Keycloak clients response: {e}"))?;
+
+        let client_uuid = clients
+            .first()
+            .and_then(|c| c["id"].as_str())
+            .ok_or_else(|| format!("Client '{}' not found in Keycloak", keycloak_client_id))?
+            .to_string();
+
+        // Create the protocol mapper
+        let mapper_url = format!(
+            "{}/admin/realms/{}/clients/{}/protocol-mappers/models",
+            self.base_url, self.realm, client_uuid
+        );
+
+        let mapper_body = serde_json::json!({
+            "name": "keasy-dataspaces",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-attribute-mapper",
+            "config": {
+                "user.attribute": "keasy.dataspaces",
+                "claim.name": "keasy:dataspaces",
+                "jsonType.label": "String",
+                "multivalued": "true",
+                "id.token.claim": "true",
+                "access.token.claim": "false",
+                "userinfo.token.claim": "false"
+            }
+        });
+
+        let resp = self
+            .http
+            .post(&mapper_url)
+            .bearer_auth(&token)
+            .json(&mapper_body)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak protocol mapper creation failed: {e}"))?;
+
+        match resp.status().as_u16() {
+            201 => {
+                tracing::info!("Created keasy:dataspaces protocol mapper in Keycloak");
+                Ok(())
+            }
+            409 => {
+                tracing::debug!("keasy:dataspaces protocol mapper already exists");
+                Ok(())
+            }
+            status => {
+                let body = resp.text().await.unwrap_or_default();
+                Err(format!(
+                    "Keycloak protocol mapper creation returned {status}: {body}"
+                ))
+            }
+        }
+    }
+
     /// Retrieve the client secret for a given Keycloak-internal client UUID.
     async fn get_client_secret(
         &self,

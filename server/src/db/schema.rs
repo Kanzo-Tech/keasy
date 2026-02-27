@@ -9,17 +9,10 @@ CREATE TABLE IF NOT EXISTS organizations (
     legal_name          TEXT NOT NULL,
     registration_number TEXT,
     country             TEXT NOT NULL CHECK(length(country) = 2),
+    role                TEXT NOT NULL DEFAULT 'participant' CHECK(role IN ('promotor', 'participant')),
     vc_verified_at      TEXT,
     created_at          TEXT NOT NULL,
     updated_at          TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS dataspaces (
-    id          TEXT PRIMARY KEY,
-    name        TEXT NOT NULL,
-    description TEXT,
-    created_at  TEXT NOT NULL,
-    updated_at  TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -32,16 +25,6 @@ CREATE TABLE IF NOT EXISTS users (
     status        TEXT NOT NULL DEFAULT 'inactive' CHECK(status IN ('active', 'inactive')),
     created_at    TEXT NOT NULL,
     updated_at    TEXT NOT NULL
-);
-
--- Org-to-dataspace membership (role = promotor or participant)
-CREATE TABLE IF NOT EXISTS org_dataspace_memberships (
-    id           TEXT PRIMARY KEY,
-    org_id       TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    dataspace_id TEXT NOT NULL REFERENCES dataspaces(id) ON DELETE CASCADE,
-    role         TEXT NOT NULL CHECK(role IN ('promotor', 'participant')),
-    created_at   TEXT NOT NULL,
-    UNIQUE(org_id, dataspace_id)
 );
 
 -- User-to-org membership (role = admin or user)
@@ -159,6 +142,19 @@ CREATE TABLE IF NOT EXISTS gaia_x_wizard_state (
     country_code    TEXT,
     domain          TEXT,
     updated_at      TEXT NOT NULL
+);
+
+-- Registered dataspace instances (OIDC clients in Keycloak)
+-- Display metadata for workspace picker; OIDC credentials live in Keycloak only
+CREATE TABLE IF NOT EXISTS oidc_clients (
+    id          TEXT PRIMARY KEY,
+    client_id   TEXT NOT NULL UNIQUE,
+    name        TEXT NOT NULL,
+    url         TEXT NOT NULL,
+    description TEXT,
+    logo        TEXT,
+    created_at  TEXT NOT NULL,
+    updated_at  TEXT NOT NULL
 );
 ";
 

@@ -1,5 +1,5 @@
-pub mod dataspaces;
 pub mod invite_tokens;
+pub mod oidc_clients;
 pub mod organizations;
 mod schema;
 pub mod secrets;

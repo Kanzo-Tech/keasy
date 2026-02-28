@@ -18,7 +18,6 @@ import { hasRunningJobs } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function ParticipantDashboard() {
   const { data: jobs, isLoading: jobsLoading } = useSWR("jobs", fetchJobs, {
@@ -37,7 +36,7 @@ export function ParticipantDashboard() {
   }>(
     "gx-compliance-status",
     () =>
-      fetch("/v1/compliance/status")
+      fetch("/v1/gaia-x/compliance")
         .then((r) => r.json())
         .then((r) => r.data ?? r),
   );
@@ -56,7 +55,6 @@ export function ParticipantDashboard() {
   const catalogCount = completedJobs.filter((j) => j.catalog).length;
 
   return (
-    <ScrollArea className="flex-1 min-h-0">
       <div className="space-y-8">
         <section>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
@@ -88,7 +86,7 @@ export function ParticipantDashboard() {
               ok={loading ? undefined : connectionCount > 0}
             />
             <ReadinessCard
-              href="/compliance"
+              href="/organization/details"
               icon={ShieldCheck}
               title="Compliance"
               value={
@@ -137,7 +135,6 @@ export function ParticipantDashboard() {
           </div>
         </section>
       </div>
-    </ScrollArea>
   );
 }
 

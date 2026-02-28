@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { Network } from "lucide-react";
 import { GraphView } from "@/components/discovery/graph-view";
+import { PageContent, PageHeader } from "@/components/layout/page-content";
 import {
   Select,
   SelectContent,
@@ -23,32 +23,33 @@ export default function GraphPage() {
   const { data: orgs } = useSWR<OrgEntry[]>("admin-orgs-participants", orgFetcher);
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b">
-        <div className="flex items-center gap-2">
-          <Network size={16} className="text-muted-foreground" />
-          <h1 className="text-sm font-semibold">Graph</h1>
-        </div>
-        <Select
-          value={selectedOrg ?? "all"}
-          onValueChange={(v) => setSelectedOrg(v === "all" ? undefined : v)}
-        >
-          <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="All participants" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All participants</SelectItem>
-            {orgs?.map((org) => (
-              <SelectItem key={org.id} value={org.id}>
-                {org.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <PageContent className="flex flex-col p-0">
+      <div className="px-4 pt-4">
+        <PageHeader
+          title="Graph"
+          actions={
+            <Select
+              value={selectedOrg ?? "all"}
+              onValueChange={(v) => setSelectedOrg(v === "all" ? undefined : v)}
+            >
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="All participants" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All participants</SelectItem>
+                {orgs?.map((org) => (
+                  <SelectItem key={org.id} value={org.id}>
+                    {org.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
+        />
       </div>
       <div className="flex-1 overflow-auto">
         <GraphView source={{ type: "admin", orgId: selectedOrg }} />
       </div>
-    </div>
+    </PageContent>
   );
 }

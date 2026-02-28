@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/shared/form-layout";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { PageContent } from "@/components/layout/page-content";
 import type { OrgEntry } from "@/lib/types";
 
 type InviteEntry = {
@@ -176,7 +177,7 @@ export default function ParticipantsPage() {
   };
 
   return (
-    <div className="flex-1 overflow-auto p-4">
+    <PageContent>
     <div className="space-y-8">
       {/* Organizations table */}
       {!orgs?.length ? (
@@ -300,10 +301,8 @@ export default function ParticipantsPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="org-name">Organization Name</Label>
+              <FormField label="Organization Name">
                 <Input
-                  id="org-name"
                   placeholder="Acme Corp"
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
@@ -311,7 +310,7 @@ export default function ParticipantsPage() {
                     if (e.key === "Enter") handleCreateInvite();
                   }}
                 />
-              </div>
+              </FormField>
             </div>
           )}
 
@@ -335,6 +334,6 @@ export default function ParticipantsPage() {
         </DialogContent>
       </Dialog>
     </div>
-    </div>
+    </PageContent>
   );
 }

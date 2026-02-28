@@ -28,5 +28,5 @@ export function SettingsSection({
 }
 
 export function SettingsPage({ children }: { children: React.ReactNode }) {
-  return <div className="space-y-8 max-w-2xl">{children}</div>;
+  return <div className="space-y-8">{children}</div>;
 }

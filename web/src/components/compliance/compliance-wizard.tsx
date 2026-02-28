@@ -2,8 +2,9 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageContent, PageHeader } from "@/components/layout/page-content";
 import { WizardLayout } from "@/components/compliance/wizard-layout";
 import type { WizardStepDef } from "@/components/compliance/wizard-stepper";
 import { StepKeyPair } from "@/components/compliance/steps/step-key-pair";
@@ -55,7 +56,7 @@ export function ComplianceWizard() {
   const router = useRouter();
   const { data: wizardState, isLoading, mutate } = useSWR<WizardState>(
     "gx-wizard",
-    () => fetch("/v1/compliance/wizard").then((r) => r.json()).then((r) => r.data ?? r)
+    () => fetch("/v1/gaia-x/wizard").then((r) => r.json()).then((r) => r.data ?? r)
   );
 
   const [currentStep, setCurrentStep] = useState<number | null>(null);
@@ -74,8 +75,10 @@ export function ComplianceWizard() {
     await mutate();
     const nextStep = effectiveStep + 1;
     if (nextStep >= STEP_DEFS.length) {
-      // All steps complete — navigate to compliance page
-      router.push("/compliance");
+      // All steps complete — invalidate caches and navigate to details
+      await globalMutate("gx-compliance-status");
+      await globalMutate("org-identity");
+      router.push("/organization/details");
     } else {
       setCurrentStep(nextStep);
     }
@@ -93,22 +96,22 @@ export function ComplianceWizard() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 overflow-auto p-4">
-      <div className="max-w-5xl mx-auto space-y-4">
-        <Skeleton className="h-8 w-64" />
-        <div className="flex gap-6">
-          <div className="w-64 space-y-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
-          <div className="flex-1 space-y-4">
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-10 w-32" />
+      <PageContent>
+        <div className="max-w-5xl mx-auto space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <div className="flex gap-6">
+            <div className="w-64 space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+            <div className="flex-1 space-y-4">
+              <Skeleton className="h-48 w-full" />
+              <Skeleton className="h-10 w-32" />
+            </div>
           </div>
         </div>
-      </div>
-      </div>
+      </PageContent>
     );
   }
 
@@ -173,14 +176,12 @@ export function ComplianceWizard() {
   }
 
   return (
-    <div className="flex-1 overflow-auto p-4">
+    <PageContent>
       <div className="max-w-5xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">Gaia-X Compliance Wizard</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Complete all 6 steps to obtain your Gaia-X compliance credential.
-          </p>
-        </div>
+        <PageHeader
+          title="Gaia-X Compliance Wizard"
+          description="Complete all 6 steps to obtain your Gaia-X compliance credential."
+        />
 
         <WizardLayout
           steps={STEP_DEFS}
@@ -196,6 +197,6 @@ export function ComplianceWizard() {
           {renderStep()}
         </WizardLayout>
       </div>
-    </div>
+    </PageContent>
   );
 }

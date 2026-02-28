@@ -13,8 +13,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
 
-interface Credential {
+export interface Credential {
   name: string;
   issued_at: string;
   raw_json: object;
@@ -28,7 +29,7 @@ interface ComplianceViewProps {
   };
 }
 
-function formatDate(dateStr: string | null): string {
+export function formatDate(dateStr: string | null): string {
   if (!dateStr) return "Unknown";
   return new Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -39,7 +40,7 @@ function formatDate(dateStr: string | null): string {
   }).format(new Date(dateStr));
 }
 
-function CredentialCard({ credential }: { credential: Credential }) {
+export function CredentialCard({ credential }: { credential: Credential }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -88,7 +89,7 @@ export function ComplianceView({ status }: ComplianceViewProps) {
   async function handleRerun() {
     setRerunLoading(true);
     try {
-      const res = await fetch("/v1/compliance/rerun", { method: "POST" });
+      const res = await fetch("/v1/gaia-x/compliance/rerun", { method: "POST" });
       const json = await res.json();
       if (!res.ok) {
         const message =
@@ -107,8 +108,8 @@ export function ComplianceView({ status }: ComplianceViewProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 p-4">
-      {/* Compliance status card */}
+    <SettingsPage>
+      <SettingsSection title="Compliance Status">
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
@@ -147,34 +148,30 @@ export function ComplianceView({ status }: ComplianceViewProps) {
           </div>
         </CardHeader>
       </Card>
+      </SettingsSection>
 
-      {/* Credential list */}
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold">Credentials</h2>
-          <p className="text-sm text-muted-foreground">
-            All generated Gaia-X credentials for your organization.
-          </p>
-        </div>
+      <SettingsSection
+        title="Credentials"
+        description="All generated Gaia-X credentials for your organization."
+      >
         <div className="space-y-3">
           {status.credentials.map((credential) => (
             <CredentialCard key={credential.name} credential={credential} />
           ))}
         </div>
-      </div>
+      </SettingsSection>
 
-      {/* Start new wizard link */}
       <div className="text-center pt-4 border-t">
         <p className="text-sm text-muted-foreground">
           Need to update credentials?{" "}
           <Link
-            href="/compliance/wizard"
+            href="/organization/compliance/wizard"
             className="text-primary underline-offset-4 hover:underline"
           >
             Start the wizard again
           </Link>
         </p>
       </div>
-    </div>
+    </SettingsPage>
   );
 }

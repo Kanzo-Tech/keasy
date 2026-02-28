@@ -6,7 +6,7 @@ import useSWR from "swr";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { fetchAiProviders, saveAiProvider, deleteAiProvider } from "@/lib/api";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
-import { SettingsPage } from "@/components/settings/settings-section";
+import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
 import { FormField, FormActions } from "@/components/shared/form-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -150,6 +150,10 @@ export function AiTab() {
 
   return (
     <SettingsPage>
+      <SettingsSection
+        title="AI Providers"
+        description="Configure AI provider credentials for intelligent features."
+      >
       <Tabs defaultValue={AI_PROVIDERS[0].id}>
         <TabsList className="w-full">
           {AI_PROVIDERS.map((p) => {
@@ -178,6 +182,7 @@ export function AiTab() {
           </TabsContent>
         ))}
       </Tabs>
+      </SettingsSection>
     </SettingsPage>
   );
 }

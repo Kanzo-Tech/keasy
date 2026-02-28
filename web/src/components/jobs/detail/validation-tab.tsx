@@ -12,8 +12,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { FormField } from "@/components/shared/form-layout";
 import {
   Table,
   TableBody,
@@ -125,8 +125,7 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
             <p className="text-sm text-muted-foreground">No vocabulary connections configured.</p>
           ) : (
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Vocab Connection</Label>
+              <FormField label="Vocab Connection">
                 <Combobox
                   options={(vocabConnections ?? []).map((s) => ({ value: s.id, label: s.name }))}
                   value={selectedConnection}
@@ -135,9 +134,8 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
                   searchPlaceholder="Search connections..."
                   emptyMessage="No vocab connections found."
                 />
-              </div>
-              <div className="space-y-2">
-                <Label>Shape file</Label>
+              </FormField>
+              <FormField label="Shape file">
                 <Combobox
                   options={files.map((f) => {
                     const fmt = detectShapeFormat(f.path);
@@ -155,7 +153,7 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
                   disabled={!selectedConnection || filesLoading}
                   mono
                 />
-              </div>
+              </FormField>
             </div>
           )}
         </div>

@@ -4,8 +4,8 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { FormField } from "@/components/shared/form-layout";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
@@ -52,7 +52,7 @@ export function StepLrn({ onComplete, completed, wizardState }: StepLrnProps) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/v1/compliance/wizard/lrn", {
+      const res = await fetch("/v1/gaia-x/wizard/lrn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lrn_type: lrnType, lrn_value: lrnValue.trim() }),
@@ -85,10 +85,9 @@ export function StepLrn({ onComplete, completed, wizardState }: StepLrnProps) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="lrn-type">Registration Number Type</Label>
+        <FormField label="Registration Number Type">
           <Select value={lrnType} onValueChange={setLrnType}>
-            <SelectTrigger id="lrn-type" className="w-full">
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a registry type" />
             </SelectTrigger>
             <SelectContent>
@@ -99,17 +98,15 @@ export function StepLrn({ onComplete, completed, wizardState }: StepLrnProps) {
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </FormField>
 
-        <div className="space-y-2">
-          <Label htmlFor="lrn-value">Registration Number</Label>
+        <FormField label="Registration Number">
           <Input
-            id="lrn-value"
             value={lrnValue}
             onChange={(e) => setLrnValue(e.target.value)}
             placeholder="e.g. DE123456789"
           />
-        </div>
+        </FormField>
 
         {selectedType && (
           <p className="text-sm text-muted-foreground">

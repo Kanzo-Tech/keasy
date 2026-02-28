@@ -4,8 +4,8 @@ import { useState, useRef, ChangeEvent } from "react";
 import { ChevronDown, ChevronUp, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { FormField } from "@/components/shared/form-layout";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface WizardState {
@@ -47,7 +47,7 @@ export function StepLegalParticipant({ onComplete, completed, wizardState }: Ste
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/v1/compliance/wizard/legal-participant", {
+      const res = await fetch("/v1/gaia-x/wizard/legal-participant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -84,31 +84,29 @@ export function StepLegalParticipant({ onComplete, completed, wizardState }: Ste
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="legal-name">Legal Name</Label>
+        <FormField label="Legal Name">
           <Input
-            id="legal-name"
             value={legalName}
             onChange={(e) => setLegalName(e.target.value)}
             placeholder="e.g. Acme Corporation GmbH"
           />
-        </div>
+        </FormField>
 
-        <div className="space-y-2">
-          <Label htmlFor="country-code">Country Subdivision Code</Label>
+        <FormField
+          label="Country Subdivision Code"
+          description="ISO 3166-2 country subdivision code (country + region, e.g., DE-BY for Bavaria, Germany)."
+        >
           <Input
-            id="country-code"
             value={countryCode}
             onChange={(e) => setCountryCode(e.target.value)}
             placeholder="e.g. DE-BY"
           />
-          <p className="text-xs text-muted-foreground">
-            ISO 3166-2 country subdivision code (country + region, e.g., DE-BY for Bavaria, Germany).
-          </p>
-        </div>
+        </FormField>
 
-        <div className="space-y-2">
-          <Label htmlFor="private-key">Private Key (.pem)</Label>
+        <FormField
+          label="Private Key (.pem)"
+          description="The private key is used to sign the credential in-memory and is not stored on the server."
+        >
           <div className="flex items-center gap-2">
             <Button
               type="button"
@@ -131,10 +129,7 @@ export function StepLegalParticipant({ onComplete, completed, wizardState }: Ste
             className="hidden"
             onChange={handleKeyFileChange}
           />
-          <p className="text-xs text-muted-foreground">
-            The private key is used to sign the credential in-memory and is not stored on the server.
-          </p>
-        </div>
+        </FormField>
 
         <Button
           type="submit"

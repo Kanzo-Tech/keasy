@@ -4,8 +4,8 @@ import { useState, useRef, ChangeEvent } from "react";
 import { ChevronDown, ChevronUp, Upload, FileCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { FormField } from "@/components/shared/form-layout";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -54,7 +54,7 @@ export function StepTerms({ onComplete, completed, wizardState }: StepTermsProps
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/v1/compliance/wizard/terms", {
+      const res = await fetch("/v1/gaia-x/wizard/terms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ private_key_pem: privateKeyPem }),
@@ -101,8 +101,10 @@ export function StepTerms({ onComplete, completed, wizardState }: StepTermsProps
       </Card>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="tc-private-key">Private Key (.pem)</Label>
+        <FormField
+          label="Private Key (.pem)"
+          description="The private key is used to sign the credential in-memory and is not stored on the server."
+        >
           <div className="flex items-center gap-2">
             <Button
               type="button"
@@ -122,14 +124,10 @@ export function StepTerms({ onComplete, completed, wizardState }: StepTermsProps
             ref={fileInputRef}
             type="file"
             accept=".pem"
-            id="tc-private-key"
             className="hidden"
             onChange={handleKeyFileChange}
           />
-          <p className="text-xs text-muted-foreground">
-            The private key is used to sign the credential in-memory and is not stored on the server.
-          </p>
-        </div>
+        </FormField>
 
         <Button
           type="submit"

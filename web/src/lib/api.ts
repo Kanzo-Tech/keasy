@@ -23,6 +23,8 @@ import type {
   CreateConnectionRequest,
   UpdateConnectionRequest,
   OrgUser,
+  OrgIdentity,
+  OrgInvite,
 } from "./types";
 
 export class ApiError extends Error {
@@ -213,6 +215,9 @@ export const fetchOrgSettings = () =>
 export const saveOrgSettings = (settings: OrgSettings) =>
   put<OrgSettings>("/v1/settings/organization", settings);
 
+export const fetchOrgIdentity = () => get<OrgIdentity>("/v1/org/identity");
+export const saveOrgIdentity = (data: OrgIdentity) => put<OrgIdentity>("/v1/org/identity", data);
+
 export const fetchConnections = (type?: string) =>
   get<Connection[]>(
     type
@@ -234,3 +239,9 @@ export const fetchOrgUsers = () => get<OrgUser[]>("/v1/org/users");
 export const updateOrgUserRole = (userId: string, role: string) =>
   put<OrgUser>(`/v1/org/users/${userId}`, { role });
 export const removeOrgUser = (userId: string) => del(`/v1/org/users/${userId}`);
+
+// Org invite management
+export const createOrgInvite = (role: string) =>
+  post<{ token: string; invite_url: string }>("/v1/org/invites", { role });
+export const fetchOrgInvites = () => get<OrgInvite[]>("/v1/org/invites");
+export const revokeOrgInvite = (token: string) => del(`/v1/org/invites/${token}`);

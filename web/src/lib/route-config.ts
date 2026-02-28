@@ -1,6 +1,7 @@
 import {
   BookOpenCheck,
   Bot,
+  Building2,
   Database,
   GalleryVerticalEnd,
   Home,
@@ -17,7 +18,7 @@ type RouteDef = {
   name: string;
   icon?: LucideIcon;
   /** Which roles see this in the sidebar. Omit = not in sidebar. */
-  sidebar?: readonly ("promotor" | "participant")[];
+  sidebar?: readonly ("promotor" | "participant" | "org_admin")[];
 };
 
 export type RouteEntry = RouteDef & { path: string };
@@ -38,8 +39,11 @@ const ROUTES: Record<string, RouteDef> = {
   "/":                            { name: "Dashboard", icon: Home, sidebar: ["promotor", "participant"] },
   "/connections":                 { name: "Connections", icon: Database, sidebar: ["participant"] },
   "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: ["participant"] },
-  "/compliance":                  { name: "Compliance", icon: ShieldCheck, sidebar: ["participant"] },
-  "/compliance/wizard":           { name: "Compliance Wizard", icon: ShieldCheck },
+  "/organization":                    { name: "Organization", icon: Building2 },
+  "/organization/details":            { name: "Details" },
+  "/organization/compliance":         { name: "Compliance" },
+  "/organization/compliance/wizard":  { name: "Compliance Wizard", icon: ShieldCheck },
+  "/organization/users":              { name: "Users", icon: Users },
   "/participants":                { name: "Participants", icon: Users, sidebar: ["promotor"] },
   "/catalog":                     { name: "Catalog", icon: BookOpenCheck, sidebar: ["promotor"] },
   "/settings":                    { name: "Settings", icon: Settings2 },
@@ -48,8 +52,6 @@ const ROUTES: Record<string, RouteDef> = {
   "/settings/cloud-accounts/new": { name: "New Cloud Account" },
   "/settings/preferences":        { name: "Preferences" },
   "/settings/wallet":             { name: "Wallet" },
-  "/org/users":                   { name: "Users" },
-  "/org/users/new":               { name: "Add User" },
 };
 
 // ── Derived ──────────────────────────────────────────────────────────────────
@@ -85,8 +87,13 @@ export function generateBreadcrumbs(path: string): RouteEntry[] {
 }
 
 export function getSidebarRoutes(effectiveRole?: string): RouteEntry[] {
-  const key = effectiveRole === "promotor" ? "promotor" : "participant";
+  const keys: ("promotor" | "participant" | "org_admin")[] =
+    effectiveRole === "promotor"
+      ? ["promotor"]
+      : effectiveRole === "org_admin"
+        ? ["participant", "org_admin"]
+        : ["participant"];
   return Object.entries(ROUTES)
-    .filter(([, def]) => def.sidebar?.includes(key))
+    .filter(([, def]) => def.sidebar?.some((s) => keys.includes(s)))
     .map(([path, def]) => ({ ...def, path }));
 }

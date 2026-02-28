@@ -280,3 +280,18 @@ export interface OrgEntry {
   vc_verified_at: string | null;
   created_at: string;
 }
+
+export interface OrgIdentity {
+  legal_name: string;
+  country: string;
+  registration_number: string | null;
+}
+
+export interface OrgInvite {
+  token: string;
+  role: string;
+  status: "pending" | "used" | "expired";
+  created_at: string;
+  expires_at: string;
+  used_at: string | null;
+}

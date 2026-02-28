@@ -75,6 +75,33 @@ impl Database {
         .collect()
     }
 
+    /// List invite tokens for a specific org, ordered by created_at DESC.
+    pub async fn list_invite_tokens_for_org(&self, org_id: &str) -> Vec<InviteToken> {
+        let org_id = org_id.to_string();
+        let (_permit, conn) = self.read().await;
+        let mut stmt = conn
+            .prepare(
+                "SELECT token, email, org_id, role, created_by, used_at, expires_at, created_at
+                 FROM invite_tokens WHERE org_id = ?1 ORDER BY created_at DESC",
+            )
+            .expect("prepare list invite tokens for org");
+        stmt.query_map([&org_id], |row| {
+            Ok(InviteToken {
+                token: row.get(0)?,
+                email: row.get(1)?,
+                org_id: row.get(2)?,
+                role: row.get(3)?,
+                created_by: row.get(4)?,
+                used_at: row.get(5)?,
+                expires_at: row.get(6)?,
+                created_at: row.get(7)?,
+            })
+        })
+        .expect("query invite tokens for org")
+        .filter_map(|r| r.ok())
+        .collect()
+    }
+
     /// Delete an invite token by value.
     pub async fn delete_invite_token(&self, token: &str) -> Result<(), String> {
         let conn = self.write().await;

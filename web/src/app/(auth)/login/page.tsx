@@ -16,7 +16,7 @@ function LoginContent() {
   const authError = searchParams.get("error") === "auth_failed";
   const sessionExpired = searchParams.get("reason") === "session_expired";
 
-  const { data: vcHealth } = useSWR("/api/auth/vc-health", fetcher, {
+  const { data: vcHealth } = useSWR("/v1/auth/vc-health", fetcher, {
     refreshInterval: 30000,
     fallbackData: { data: { vc_available: false } },
   });
@@ -25,7 +25,7 @@ function LoginContent() {
   function handleOidcSignIn() {
     setLoading(true);
     // Full browser navigation -- spinner stays until Keycloak redirect
-    window.location.href = "/api/auth/oidc-start";
+    window.location.href = "/v1/auth/oidc-start";
   }
 
   return (

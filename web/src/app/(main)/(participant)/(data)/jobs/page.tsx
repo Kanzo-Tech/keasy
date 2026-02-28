@@ -6,16 +6,81 @@ import useSWR from "swr";
 import { Briefcase, Plus, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import type { ColumnDef } from "@tanstack/react-table";
 
 import { fetchJobs, deleteJob } from "@/lib/api";
 import { hasRunningJobs } from "@/lib/utils";
-import { getJobColumns } from "@/components/columns/job-columns";
-import { DataTable } from "@/components/ui/data-table";
+import {
+  DataTable,
+  ActionItem,
+  selectColumn,
+  sortableHeader,
+  actionsColumn,
+} from "@/components/ui/data-table";
 import { EmptyState } from "@/components/empty-state";
 import { KnowledgeGraph } from "@/components/knowledge-graph";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Job } from "@/lib/types";
+import { JobStatusBadge } from "@/components/job-status-badge";
+import { formatDate, formatJobDuration } from "@/lib/formatters";
+import type { Job, JobStatus } from "@/lib/types";
+
+const TERMINAL_STATUSES: JobStatus[] = ["draft", "completed", "failed", "cancelled"];
+
+function jobColumns(onDelete: (id: string) => void): ColumnDef<Job>[] {
+  return [
+    selectColumn<Job>(),
+    {
+      accessorKey: "name",
+      header: sortableHeader("Name"),
+      cell: ({ row }) => (
+        <span className="font-medium">
+          {row.original.name ?? row.original.id.slice(0, 8)}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ getValue }) => <JobStatusBadge status={getValue<JobStatus>()} />,
+      filterFn: (row, id, value: string[]) => value.includes(row.getValue(id)),
+    },
+    {
+      accessorKey: "mode",
+      header: "Mode",
+      cell: ({ getValue }) => (
+        <span className="capitalize text-muted-foreground">{getValue<string>()}</span>
+      ),
+    },
+    {
+      accessorKey: "created_at",
+      header: sortableHeader("Created"),
+      cell: ({ getValue }) => (
+        <span className="text-muted-foreground">{formatDate(getValue<string>())}</span>
+      ),
+    },
+    {
+      id: "duration",
+      header: "Duration",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">{formatJobDuration(row.original)}</span>
+      ),
+    },
+    actionsColumn<Job>((job) =>
+      TERMINAL_STATUSES.includes(job.status) ? (
+        <ActionItem
+          variant="destructive"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(job.id);
+          }}
+        >
+          Delete
+        </ActionItem>
+      ) : null,
+    ),
+  ];
+}
 
 export default function JobsPage() {
   const router = useRouter();
@@ -33,10 +98,7 @@ export default function JobsPage() {
     [mutate],
   );
 
-  const columns = useMemo(
-    () => getJobColumns({ onDelete: handleDelete }),
-    [handleDelete],
-  );
+  const columns = useMemo(() => jobColumns(handleDelete), [handleDelete]);
 
   const handleRowClick = useCallback(
     (job: Job) => {

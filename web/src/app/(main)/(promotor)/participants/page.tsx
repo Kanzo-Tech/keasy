@@ -32,12 +32,12 @@ type InviteEntry = {
 };
 
 const orgFetcher = () =>
-  fetch("/api/admin/organizations")
+  fetch("/v1/admin/organizations")
     .then((r) => r.json())
     .then((r) => r.data ?? []);
 
 const inviteFetcher = () =>
-  fetch("/api/admin/invites")
+  fetch("/v1/admin/invites")
     .then((r) => r.json())
     .then((r) => r.data ?? []);
 
@@ -107,7 +107,7 @@ export default function ParticipantsPage() {
     if (!orgName.trim()) return;
     setIsCreating(true);
     try {
-      const res = await fetch("/api/admin/invites", {
+      const res = await fetch("/v1/admin/invites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ org_name: orgName.trim() }),
@@ -133,7 +133,7 @@ export default function ParticipantsPage() {
 
   async function handleRevokeInvite(token: string) {
     try {
-      const res = await fetch(`/api/admin/invites/${encodeURIComponent(token)}`, {
+      const res = await fetch(`/v1/admin/invites/${encodeURIComponent(token)}`, {
         method: "DELETE",
       });
       if (!res.ok && res.status !== 204) {

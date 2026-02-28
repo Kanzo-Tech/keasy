@@ -53,7 +53,7 @@ export function StepDidHosting({ onComplete, completed, wizardState }: StepDidHo
     setValidationResult(null);
     try {
       const text = await file.text();
-      const res = await fetch("/api/compliance/wizard/certificate", {
+      const res = await fetch("/v1/compliance/wizard/certificate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cert_chain_pem: text, domain }),

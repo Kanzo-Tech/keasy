@@ -10,7 +10,7 @@ const iconMap: Record<string, ComponentType<{ className?: string }>> = {
 };
 
 export function getProviderIcon(
-  icon: string
+  icon: string,
 ): ComponentType<{ className?: string }> {
   return iconMap[icon] ?? Cloud;
 }

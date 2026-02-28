@@ -45,6 +45,8 @@ sha2 = "0.10"
 getrandom = "0.2"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 openidconnect = { version = "4.0", features = ["reqwest"] }
+oauth2 = "5.0"
+http = "1"
 secrecy = { version = "0.10", features = ["serde"] }
 tower-sessions = { version = "0.14", features = ["signed"] }
 tower-sessions-rusqlite-store = "0.14.1"
@@ -53,8 +55,6 @@ fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git" }
 fossil-stdlib = { git = "https://github.com/angelip2303/fossil-lang.git" }
 fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git" }
 fossil-ifc = { git = "https://github.com/angelip2303/fossil-lang.git" }
-lettre = { version = "0.11", features = ["tokio1", "tokio1-native-tls"] }
-rand = "0.9"
 base64 = "0.22"
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "jwk"] }
 x509-parser = { version = "0.16", features = ["verify"] }

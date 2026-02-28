@@ -64,7 +64,7 @@ export function NavUser({
   async function handleLogout() {
     setLoggingOut(true)
     try {
-      const res = await fetch("/api/auth/logout", { method: "POST" })
+      const res = await fetch("/v1/auth/logout", { method: "POST" })
       if (res.ok) {
         const data = await res.json().catch(() => null)
         const endSessionUrl = data?.data?.end_session_url

@@ -6,12 +6,7 @@
 
 use std::collections::HashMap;
 
-use axum::{
-    Json,
-    extract::State,
-    http::StatusCode,
-    response::IntoResponse,
-};
+use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use serde::Deserialize;
 
 use crate::AppState;
@@ -20,7 +15,7 @@ use crate::db::oidc_clients::OidcClient;
 use crate::db::organizations::Organization;
 use crate::error::data_response;
 use crate::middleware::session_auth::AuthenticatedUser;
-use crate::middleware::tenant::{RequirePromotor, RbacError};
+use crate::middleware::tenant::{RbacError, RequirePromotor};
 
 // ---------------------------------------------------------------------------
 // GET /v1/admin/organizations
@@ -95,21 +90,7 @@ pub async fn create_org_and_invite(
         .await
         .map_err(RbacError::Internal)?;
 
-    // 3. Send invite email — fire-and-forget via tokio::spawn to not block response
-    let email_service = state.email_service.clone();
-    let to = payload.admin_email.clone();
-    let base_url = state.base_url.clone();
-    let org_name = payload.name.clone();
-    tokio::spawn(async move {
-        if let Err(e) = email_service
-            .send_invite_email(&to, &token_value, &base_url, &org_name)
-            .await
-        {
-            tracing::error!(to = %to, error = %e, "failed to send invite email");
-        }
-    });
-
-    // 4. Return created org
+    // 3. Return created org
     Ok((
         StatusCode::CREATED,
         data_response(serde_json::json!({
@@ -145,8 +126,7 @@ pub async fn register_oidc_client(
     // 1. Verify Keycloak admin is configured
     let kc_admin = state.keycloak_admin.as_ref().ok_or_else(|| {
         RbacError::Internal(
-            "Identity service not configured — set KEASY_OIDC_* environment variables"
-                .to_string(),
+            "Identity service not configured — set KEASY_OIDC_* environment variables".to_string(),
         )
     })?;
 

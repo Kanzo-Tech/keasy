@@ -7,6 +7,8 @@
 //! - `build_oidc_client()` — async initialization from issuer URL / client credentials
 //! - `oidc_start` / `oidc_callback` — Axum handlers for the PKCE authorization code flow
 
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 
 use axum::extract::{Query, State};
@@ -103,6 +105,41 @@ pub type KeyasyClientDiscovered = keasy_client_base!(EndpointSet, EndpointMaybeS
 pub type KeyasyClient = keasy_client_base!(EndpointSet, EndpointSet, EndpointMaybeSet);
 
 // ──────────────────────────────────────────────────────────────────────────────
+// URL-rewriting HTTP client for internal Docker networking
+// ──────────────────────────────────────────────────────────────────────────────
+
+/// HTTP client that rewrites URL prefixes before forwarding to reqwest.
+///
+/// Used to reach Keycloak via internal Docker DNS (`keycloak:8080`) while OIDC
+/// discovery documents reference the public URL (`localhost:3000`). The issuer
+/// validation in `discover_async` still passes because it compares the issuer
+/// in the response JSON (which Keycloak sets to its public `KC_HOSTNAME`) with
+/// the `IssuerUrl` we provide — both use the public URL.
+pub(crate) struct RewritingClient {
+    inner: reqwest::Client,
+    from: String,
+    to: String,
+}
+
+impl<'c> oauth2::AsyncHttpClient<'c> for RewritingClient {
+    type Error = <reqwest::Client as oauth2::AsyncHttpClient<'c>>::Error;
+    type Future = Pin<Box<dyn Future<Output = Result<oauth2::HttpResponse, Self::Error>> + Send + 'c>>;
+
+    fn call(&'c self, request: oauth2::HttpRequest) -> Self::Future {
+        let (mut parts, body) = request.into_parts();
+        let url = parts.uri.to_string();
+        if url.starts_with(&self.from) {
+            let new_url = format!("{}{}", self.to, &url[self.from.len()..]);
+            if let Ok(uri) = new_url.parse() {
+                parts.uri = uri;
+            }
+        }
+        let rewritten = http::Request::from_parts(parts, body);
+        Box::pin(oauth2::AsyncHttpClient::call(&self.inner, rewritten))
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // OIDC state (stored in AppState, initialized at startup)
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -122,6 +159,9 @@ pub struct OidcState {
     pub provider_metadata: Arc<tokio::sync::RwLock<CachedProviderMetadata>>,
     pub http_client: reqwest::Client,
     pub issuer_url: String,
+    /// When set, HTTP requests rewrite URLs from the public issuer base to this
+    /// internal base (e.g. `http://localhost:3000` → `http://keycloak:8080`).
+    pub internal_base_url: Option<String>,
 }
 
 impl OidcState {
@@ -132,6 +172,19 @@ impl OidcState {
         // duration_since returns a SignedDuration; negative means fetched_at is in the future
         // (clock skew) — treat as stale to force refresh.
         age.as_secs() >= 900 // 15-minute TTL
+    }
+
+    /// Build a `RewritingClient` if `internal_base_url` is configured, or `None`
+    /// to use the plain `http_client` instead.
+    fn rewriting_client(&self) -> Option<RewritingClient> {
+        let internal = self.internal_base_url.as_ref()?;
+        let parsed = url::Url::parse(&self.issuer_url).ok()?;
+        let public_base = parsed.origin().ascii_serialization();
+        Some(RewritingClient {
+            inner: self.http_client.clone(),
+            from: public_base,
+            to: internal.trim_end_matches('/').to_string(),
+        })
     }
 
     /// Re-fetch the provider discovery document and update the in-memory cache.
@@ -147,7 +200,13 @@ impl OidcState {
             }
         };
 
-        match CoreProviderMetadata::discover_async(issuer, &self.http_client).await {
+        let result = if let Some(rw) = self.rewriting_client() {
+            CoreProviderMetadata::discover_async(issuer, &rw).await
+        } else {
+            CoreProviderMetadata::discover_async(issuer, &self.http_client).await
+        };
+
+        match result {
             Ok(new_meta) => {
                 let mut write = self.provider_metadata.write().await;
                 *write = CachedProviderMetadata {
@@ -172,11 +231,17 @@ impl OidcState {
 /// Called once at server startup. Returns `Err` if the discovery document cannot
 /// be fetched (e.g., Keycloak not reachable yet). The caller logs a warning and
 /// sets `oidc_state = None`, disabling OIDC auth until restart.
+///
+/// `internal_base_url` — when set (e.g. `http://keycloak:8080`), OIDC discovery
+/// and token-exchange HTTP requests rewrite the public issuer base URL to this
+/// internal URL. This allows the server to reach Keycloak via Docker networking
+/// while the public issuer URL remains unchanged for token validation.
 pub async fn build_oidc_client(
     issuer_url: &str,
     client_id: &str,
     client_secret: &str,
     redirect_uri: &str,
+    internal_base_url: Option<&str>,
 ) -> Result<OidcState, String> {
     // Build a reqwest client that does NOT follow redirects (required by OIDC spec
     // to detect and forward redirect responses correctly).
@@ -189,9 +254,24 @@ pub async fn build_oidc_client(
         .map_err(|e| format!("invalid OIDC issuer URL: {e}"))?;
 
     // Fetch and parse the provider discovery document (/.well-known/openid-configuration).
-    let metadata = CoreProviderMetadata::discover_async(issuer, &http_client)
-        .await
-        .map_err(|e| format!("OIDC discovery failed for {issuer_url}: {e}"))?;
+    // When internal_base_url is set, rewrite requests to reach Keycloak via Docker DNS.
+    let metadata = if let Some(internal) = internal_base_url {
+        let parsed = url::Url::parse(issuer_url)
+            .map_err(|e| format!("cannot parse issuer URL for base extraction: {e}"))?;
+        let public_base = parsed.origin().ascii_serialization();
+        let rw = RewritingClient {
+            inner: http_client.clone(),
+            from: public_base,
+            to: internal.trim_end_matches('/').to_string(),
+        };
+        CoreProviderMetadata::discover_async(issuer, &rw)
+            .await
+            .map_err(|e| format!("OIDC discovery failed for {issuer_url}: {e}"))?
+    } else {
+        CoreProviderMetadata::discover_async(issuer, &http_client)
+            .await
+            .map_err(|e| format!("OIDC discovery failed for {issuer_url}: {e}"))?
+    };
 
     // Extract the token endpoint URL from provider metadata.
     // Keycloak always provides a token endpoint; if missing, OIDC is broken.
@@ -225,6 +305,7 @@ pub async fn build_oidc_client(
         })),
         http_client,
         issuer_url: issuer_url.to_string(),
+        internal_base_url: internal_base_url.map(|s| s.to_string()),
     })
 }
 
@@ -386,16 +467,25 @@ pub async fn oidc_callback(
         .ok_or(AuthError::OidcNotConfigured)?;
 
     // 7. Exchange authorization code for tokens (with PKCE verifier).
-    let token_response = oidc
-        .client
-        .exchange_code(AuthorizationCode::new(code))
-        .set_pkce_verifier(pkce_verifier)
-        .request_async(&oidc.http_client)
-        .await
-        .map_err(|e| {
-            tracing::error!(error = %e, "OIDC token exchange failed");
-            AuthError::OidcTokenExchange
-        })?;
+    //    Use the rewriting client when internal_base_url is configured so the
+    //    token endpoint request reaches Keycloak via Docker DNS.
+    let token_response = if let Some(rw) = oidc.rewriting_client() {
+        oidc.client
+            .exchange_code(AuthorizationCode::new(code))
+            .set_pkce_verifier(pkce_verifier)
+            .request_async(&rw)
+            .await
+    } else {
+        oidc.client
+            .exchange_code(AuthorizationCode::new(code))
+            .set_pkce_verifier(pkce_verifier)
+            .request_async(&oidc.http_client)
+            .await
+    }
+    .map_err(|e| {
+        tracing::error!(error = %e, "OIDC token exchange failed");
+        AuthError::OidcTokenExchange
+    })?;
 
     // 8. Extract and verify the ID token.
     let id_token = token_response.id_token().ok_or(AuthError::OidcNoIdToken)?;

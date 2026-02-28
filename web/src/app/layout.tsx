@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, JetBrains_Mono } from "next/font/google";
-import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
-import { Nav } from "@/components/nav";
 import { PreferencesProvider } from "@/components/preferences-provider";
 import { SWRProvider } from "@/components/swr-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,19 +38,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`h-full ${geistSans.variable} ${geistMono.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
-      <body className="h-full overflow-hidden font-sans antialiased">
-        <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`h-full ${geistSans.variable} ${geistMono.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+    >
+      <body className="h-full font-sans antialiased">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          disableTransitionOnChange
+        >
           <TooltipProvider>
             <SWRProvider>
               <PreferencesProvider>
-            <div className="flex h-full">
-              <Nav />
-              <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
-                <div className="max-w-5xl mx-auto w-full flex-1 min-h-0 flex flex-col p-6">{children}</div>
-              </main>
-            </div>
-            <Toaster position="bottom-right" closeButton />
+                {children}
+                <Toaster position="bottom-right" closeButton />
               </PreferencesProvider>
             </SWRProvider>
           </TooltipProvider>

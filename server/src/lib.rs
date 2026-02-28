@@ -10,7 +10,6 @@ pub mod connections;
 pub mod crypto;
 pub mod db;
 pub mod discovery;
-pub mod email;
 pub mod error;
 pub mod gaia_x;
 pub mod jobs;
@@ -21,15 +20,14 @@ pub mod settings;
 pub mod tenant;
 
 // Re-export types integration tests need
-pub use auth::rate_limit::RateLimiter;
 pub use db::Database;
 pub use discovery::rdf_graph::RdfGraph;
 pub use jobs::runner::JobRunner;
 
+use secrecy::SecretString;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
-use secrecy::SecretString;
 use tokio::sync::Mutex;
 
 pub struct OutputCache(pub lru::LruCache<String, Arc<RdfGraph>>);
@@ -58,8 +56,6 @@ pub struct AppState {
     pub catalog: Arc<RdfGraph>,
     pub output_cache: Arc<Mutex<OutputCache>>,
     pub api_key: SecretString,
-    pub rate_limiter: RateLimiter,
-    pub email_service: crate::email::EmailService,
     pub base_url: String,
     /// Whether the walt.id Verifier sidecar is currently reachable.
     /// Updated every 30 s by the background health monitor.

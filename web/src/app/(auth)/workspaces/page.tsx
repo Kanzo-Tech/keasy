@@ -35,7 +35,7 @@ export default function WorkspacesPage() {
   const [switching, setSwitching] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/auth/workspaces")
+    fetch("/v1/auth/workspaces")
       .then((r) => r.json())
       .then((data) => {
         const ws: Workspace[] = data?.data?.workspaces ?? [];
@@ -65,7 +65,7 @@ export default function WorkspacesPage() {
     setSwitching(ws.name);
     // Clear all SWR cache before navigating to prevent stale data
     await mutate(() => true, undefined, { revalidate: false });
-    setSwitchTarget(`${ws.url}/api/auth/oidc-start`);
+    setSwitchTarget(`${ws.url}/v1/auth/oidc-start`);
   }
 
   if (loading || switching) {

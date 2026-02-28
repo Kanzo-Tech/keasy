@@ -33,6 +33,7 @@ tmp
 
 # CLAUDE-related files
 .claude
+.planning
 CLAUDE.md
 
 # RDF files

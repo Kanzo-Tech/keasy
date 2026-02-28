@@ -32,7 +32,7 @@ export default function VcLoginPage() {
     setStep("scan");
 
     try {
-      const res = await fetch("/api/auth/vc-init", { method: "POST" });
+      const res = await fetch("/v1/auth/vc-init", { method: "POST" });
       if (!res.ok) {
         setError("Could not start VC verification. Please try again.");
         setStep("idle");
@@ -60,7 +60,7 @@ export default function VcLoginPage() {
       // Start polling
       pollingRef.current = setInterval(async () => {
         try {
-          const statusRes = await fetch(`/api/auth/vc-status/${sessionId}`);
+          const statusRes = await fetch(`/v1/auth/vc-status/${sessionId}`);
           if (!statusRes.ok) {
             const errData = await statusRes.json().catch(() => null);
             const msg =

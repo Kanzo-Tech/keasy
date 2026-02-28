@@ -44,12 +44,12 @@ Requirements for the Platform milestone. Each maps to roadmap phases.
 
 ### UX
 
-- [ ] **UX-01**: Code editor occupies full available height
-- [ ] **UX-02**: Save button displayed as icon-only (no text label)
-- [ ] **UX-03**: Clicking settings from nav-user menu collapses the sidebar (especially on mobile)
-- [ ] **UX-04**: EmptyState components use inline Link instead of button
-- [ ] **UX-05**: Password change form adapts to available width (responsive)
-- [ ] **UX-06**: Improved shadcn/ui component usage across the application
+- [x] **UX-01**: Code editor occupies full available height
+- [x] **UX-02**: Save button displayed as icon-only (no text label)
+- [x] **UX-03**: Clicking settings from nav-user menu collapses the sidebar (especially on mobile)
+- [x] **UX-04**: EmptyState components use inline Link instead of button
+- [x] **UX-05**: Password change form adapts to available width (responsive)
+- [x] **UX-06**: Improved shadcn/ui component usage across the application
 
 ### Auth Migration (Frontend)
 
@@ -58,8 +58,8 @@ Requirements for the Platform milestone. Each maps to roadmap phases.
 
 ### Code Quality
 
-- [ ] **QUAL-01**: Dead code removed (unused endpoints, orphaned components, stale imports)
-- [ ] **QUAL-02**: Architecture improvements following SOLID principles
+- [x] **QUAL-01**: Dead code removed (unused endpoints, orphaned components, stale imports)
+- [x] **QUAL-02**: Architecture improvements following SOLID principles
 
 ## v2 Requirements
 
@@ -127,14 +127,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FED-03 | Phase 14 | Complete |
 | FED-04 | Phase 14 | Complete |
 | FED-05 | Phase 14 | Complete |
-| UX-01 | Phase 15 | Pending |
-| UX-02 | Phase 15 | Pending |
-| UX-03 | Phase 15 | Pending |
-| UX-04 | Phase 15 | Pending |
-| UX-05 | Phase 15 | Pending |
-| UX-06 | Phase 15 | Pending |
-| QUAL-01 | Phase 15 | Pending |
-| QUAL-02 | Phase 15 | Pending |
+| UX-01 | Phase 15 | Complete |
+| UX-02 | Phase 15 | Complete |
+| UX-03 | Phase 15 | Complete |
+| UX-04 | Phase 15 | Complete |
+| UX-05 | Phase 15 | Complete |
+| UX-06 | Phase 15 | Complete |
+| QUAL-01 | Phase 15 | Complete |
+| QUAL-02 | Phase 15 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 33 total

@@ -117,18 +117,6 @@ impl Database {
         Ok(())
     }
 
-    /// Update a user's password hash.
-    pub async fn update_user_password(&self, user_id: &str, password_hash: &str) -> Result<(), String> {
-        let now = jiff::Timestamp::now().to_string();
-        let conn = self.write().await;
-        conn.execute(
-            "UPDATE users SET password_hash = ?1, updated_at = ?2 WHERE id = ?3",
-            params![password_hash, now, user_id],
-        )
-        .map_err(|e| format!("failed to update password: {e}"))?;
-        Ok(())
-    }
-
     /// Look up a user by their VC holder DID. Returns only active users.
     /// Used by the VC auth flow after a successful OID4VP verification.
     pub async fn get_user_by_did(&self, did: &str) -> Option<User> {

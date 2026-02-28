@@ -47,7 +47,7 @@ export function StepLegalParticipant({ onComplete, completed, wizardState }: Ste
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/compliance/wizard/legal-participant", {
+      const res = await fetch("/v1/compliance/wizard/legal-participant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -1,4 +1,8 @@
 :3000 {
+	handle /v1/* {
+		reverse_proxy server:8080
+	}
+
 	handle /auth/* {
 		reverse_proxy keycloak:8080
 	}

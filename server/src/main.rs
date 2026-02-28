@@ -1,6 +1,5 @@
-use keasy_server::{AppState, OutputCache, Database, JobRunner, RdfGraph, RateLimiter};
+use keasy_server::{AppState, OutputCache, Database, JobRunner, RdfGraph};
 use keasy_server::config::ServerConfig;
-use keasy_server::email::EmailService;
 use keasy_server::routes::build_router;
 use keasy_server::tenant::TenantScoped;
 use secrecy::ExposeSecret;
@@ -94,9 +93,6 @@ async fn main() {
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
     );
 
-    let rate_limiter = RateLimiter::new();
-    let email_service = EmailService::from_env();
-
     let output_cache = Arc::new(Mutex::new(OutputCache::new(config.cache_capacity)));
     let runner = Arc::new(JobRunner::new(
         db.clone(),
@@ -147,7 +143,7 @@ async fn main() {
     let oidc_state = match (&config.oidc_issuer_url, &config.oidc_client_id, &config.oidc_client_secret) {
         (Some(issuer), Some(client_id), Some(secret)) => {
             let redirect_uri = format!(
-                "{}/api/auth/oidc-callback",
+                "{}/v1/auth/oidc-callback",
                 config.base_url.trim_end_matches('/')
             );
             match keasy_server::auth::oidc::build_oidc_client(
@@ -155,6 +151,7 @@ async fn main() {
                 client_id,
                 secret.expose_secret(),
                 &redirect_uri,
+                config.oidc_internal_base_url.as_deref(),
             )
             .await
             {
@@ -196,8 +193,6 @@ async fn main() {
         catalog,
         output_cache,
         api_key: config.api_key,
-        rate_limiter,
-        email_service,
         base_url: config.base_url,
         vc_available,
         vc_client,

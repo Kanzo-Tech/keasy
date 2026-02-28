@@ -28,18 +28,18 @@ function InviteForm() {
     if (!token) return;
 
     // Check if user is already logged in
-    fetch("/api/auth/me")
+    fetch("/v1/auth/me")
       .then((r) => {
         if (r.ok) {
           // Already logged in -- redirect to OIDC start with invite token
           // The backend will auto-accept the invite after callback
           setRedirecting(true);
-          window.location.href = `/api/auth/oidc-start?invite_token=${encodeURIComponent(token)}`;
+          window.location.href = `/v1/auth/oidc-start?invite_token=${encodeURIComponent(token)}`;
           return null;
         }
         // Not logged in -- validate the invite token
         return fetch(
-          `/api/auth/invite-info?token=${encodeURIComponent(token)}`
+          `/v1/auth/invite-info?token=${encodeURIComponent(token)}`
         ).then((r) => r.json());
       })
       .then((data) => {
@@ -65,7 +65,7 @@ function InviteForm() {
     setRedirecting(true);
     // Redirect to OIDC with prompt=create for new user registration
     // and invite_token to auto-accept after callback
-    window.location.href = `/api/auth/oidc-start?invite_token=${encodeURIComponent(token)}&prompt=create`;
+    window.location.href = `/v1/auth/oidc-start?invite_token=${encodeURIComponent(token)}&prompt=create`;
   }
 
   if (loading || redirecting) {

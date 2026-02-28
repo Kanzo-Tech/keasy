@@ -6,19 +6,77 @@ import { Database, BookOpen, Plus } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import useSWR from "swr";
+import type { ColumnDef } from "@tanstack/react-table";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   fetchConnections,
   fetchSchema,
   fetchCloudAccounts,
   deleteConnection,
 } from "@/lib/api";
-import { getConnectionColumns } from "@/components/columns/connection-columns";
-import { DataTable } from "@/components/ui/data-table";
+import {
+  DataTable,
+  ActionItem,
+  selectColumn,
+  sortableHeader,
+  actionsColumn,
+} from "@/components/ui/data-table";
 import { EmptyState } from "@/components/empty-state";
-import type { ConnectionKind } from "@/lib/types";
+import type { Connection, CloudAccountSummary, ProviderSchema, ConnectionKind } from "@/lib/types";
+
+function connectionColumns(
+  onDelete: (id: string) => void,
+  accounts: CloudAccountSummary[],
+  _schema: ProviderSchema[],
+): ColumnDef<Connection>[] {
+  return [
+    selectColumn<Connection>(),
+    {
+      accessorKey: "name",
+      header: sortableHeader("Name"),
+      cell: ({ getValue }) => (
+        <span className="font-medium">{getValue<string>()}</span>
+      ),
+    },
+    {
+      id: "location",
+      header: "Location",
+      cell: ({ row }) => {
+        const conn = row.original;
+        if (conn.location_type === "cloud" && conn.cloud_account_id) {
+          const account = accounts.find((a) => a.id === conn.cloud_account_id);
+          return (
+            <span className="text-muted-foreground">
+              {account?.name ?? conn.cloud_account_id}
+            </span>
+          );
+        }
+        return <Badge variant="outline">Local</Badge>;
+      },
+    },
+    {
+      accessorKey: "url",
+      header: "URL",
+      cell: ({ getValue }) => (
+        <span className="text-muted-foreground font-mono text-xs">{getValue<string>()}</span>
+      ),
+    },
+    actionsColumn<Connection>((conn) => (
+      <ActionItem
+        variant="destructive"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(conn.id);
+        }}
+      >
+        Delete
+      </ActionItem>
+    )),
+  ];
+}
 
 export default function ConnectionsPage() {
   return (
@@ -52,7 +110,7 @@ function ConnectionsContent() {
   );
 
   const columns = useMemo(
-    () => getConnectionColumns({ onDelete: handleDelete, accounts, schema }),
+    () => connectionColumns(handleDelete, accounts, schema),
     [handleDelete, accounts, schema],
   );
 

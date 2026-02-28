@@ -1,7 +1,7 @@
 import { getEffectiveRole } from "@/lib/auth-check";
 import { redirect } from "next/navigation";
-import { PromotorDashboard } from "./promotor-dashboard";
-import { ParticipantDashboard } from "./participant-dashboard";
+import { PromotorDashboard } from "./(promotor)/promotor-dashboard";
+import { ParticipantDashboard } from "./(participant)/participant-dashboard";
 
 export default async function HomePage() {
   const role = await getEffectiveRole();

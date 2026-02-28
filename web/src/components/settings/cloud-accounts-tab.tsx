@@ -6,15 +6,72 @@ import { useRouter } from "next/navigation";
 import { Cloud, Plus } from "lucide-react";
 import { toast } from "sonner";
 import useSWR from "swr";
+import type { ColumnDef } from "@tanstack/react-table";
 
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { fetchSchema, fetchCloudAccounts, deleteCloudAccount } from "@/lib/api";
-import { getCloudAccountColumns } from "@/components/columns/cloud-account-columns";
-import { DataTable } from "@/components/ui/data-table";
+import {
+  DataTable,
+  ActionItem,
+  selectColumn,
+  sortableHeader,
+  actionsColumn,
+} from "@/components/ui/data-table";
 import { EmptyState } from "@/components/empty-state";
 import { SettingsSection, SettingsPage } from "@/components/settings/settings-section";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { CloudAccountSummary, ProviderSchema } from "@/lib/types";
+
+function cloudAccountColumns(
+  onDelete: (id: string) => void,
+  schema: ProviderSchema[],
+): ColumnDef<CloudAccountSummary>[] {
+  return [
+    selectColumn<CloudAccountSummary>(),
+    {
+      accessorKey: "name",
+      header: sortableHeader("Name"),
+      cell: ({ getValue }) => (
+        <span className="font-medium">{getValue<string>()}</span>
+      ),
+    },
+    {
+      id: "provider",
+      header: "Provider",
+      cell: ({ row }) => {
+        const provider = schema.find((s) => s.id === row.original.provider_id);
+        return (
+          <span className="text-muted-foreground">
+            {provider?.label ?? row.original.provider_id}
+          </span>
+        );
+      },
+    },
+    {
+      id: "auth_method",
+      header: "Auth method",
+      cell: ({ row }) => {
+        const provider = schema.find((s) => s.id === row.original.provider_id);
+        const label = provider?.auth_methods.find(
+          (a) => a.name === row.original.auth_method,
+        )?.label;
+        return <span className="text-muted-foreground">{label ?? "\u2014"}</span>;
+      },
+    },
+    actionsColumn<CloudAccountSummary>((account) => (
+      <ActionItem
+        variant="destructive"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(account.id);
+        }}
+      >
+        Delete
+      </ActionItem>
+    )),
+  ];
+}
 
 export function CloudAccountsTab() {
   const router = useRouter();
@@ -36,7 +93,7 @@ export function CloudAccountsTab() {
   );
 
   const columns = useMemo(
-    () => getCloudAccountColumns({ onDelete: handleDelete, schema }),
+    () => cloudAccountColumns(handleDelete, schema),
     [handleDelete, schema],
   );
 

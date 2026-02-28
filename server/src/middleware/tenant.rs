@@ -6,21 +6,20 @@ use axum::Json;
 use axum::extract::State;
 use axum::middleware::Next;
 use axum::body::Body;
-use tower_sessions::Session;
 use thiserror::Error;
 
 use crate::AppState;
 use crate::error::error_body;
 use crate::middleware::session_auth::AuthenticatedUser;
-use crate::db::dataspaces::{DataspaceRole, OrgRole};
+use crate::db::organizations::OrgRole;
 use crate::tenant::OrgId;
 
 /// Flat role assigned to a tenant context. No hierarchy — each variant
-/// is distinct. Promotor is the org that manages a dataspace. OrgAdmin/OrgUser
+/// is distinct. Promotor is the org that manages the instance. OrgAdmin/OrgUser
 /// reflect the user's role within their org.
 #[derive(Clone, Debug, PartialEq)]
 pub enum TenantRole {
-    /// Org is promotor of the active dataspace
+    /// Org is promotor of the instance
     Promotor,
     /// User has admin role in their org
     OrgAdmin,
@@ -34,7 +33,6 @@ pub enum TenantRole {
 #[derive(Clone, Debug)]
 pub struct TenantContext {
     pub org_id: OrgId,
-    pub dataspace_id: String,
     pub role: TenantRole,
 }
 
@@ -56,10 +54,7 @@ pub enum RbacError {
     #[error("auth/session_required")]
     AuthRequired,
 
-    #[error("rbac/no_active_dataspace")]
-    NoActiveDataspace,
-
-    #[error("rbac/no_active_dataspace")]
+    #[error("rbac/no_membership")]
     NoMembership,
 
     #[error("rbac/insufficient_role")]
@@ -78,11 +73,11 @@ impl IntoResponse for RbacError {
             )
                 .into_response(),
 
-            RbacError::NoActiveDataspace | RbacError::NoMembership => (
+            RbacError::NoMembership => (
                 StatusCode::FORBIDDEN,
                 Json(error_body(
-                    "rbac/no_active_dataspace",
-                    "No active dataspace selected",
+                    "rbac/no_membership",
+                    "No organization membership found",
                 )),
             )
                 .into_response(),
@@ -105,9 +100,7 @@ impl IntoResponse for RbacError {
     }
 }
 
-/// Extractor: requires an active tenant context. Used for all authenticated
-/// resource endpoints. Extracts TenantContext from request extensions
-/// (inserted by tenant_context_required middleware).
+/// Extractor: requires an active tenant context.
 #[allow(dead_code)]
 pub struct RequireRole(pub TenantContext);
 
@@ -127,7 +120,7 @@ where
     }
 }
 
-/// Extractor: requires the org to be Promotor of the active dataspace.
+/// Extractor: requires the org to be Promotor of the instance.
 #[allow(dead_code)]
 pub struct RequirePromotor(pub TenantContext);
 
@@ -148,7 +141,6 @@ where
 }
 
 /// Extractor: requires the user to be OrgAdmin or Promotor.
-/// Promotor is included because managing a dataspace implies org-admin capabilities.
 #[allow(dead_code)]
 pub struct RequireOrgAdmin(pub TenantContext);
 
@@ -171,11 +163,10 @@ where
 /// Middleware: resolves TenantContext from session and DB, injects into extensions.
 ///
 /// Must run AFTER session_required (which inserts AuthenticatedUser).
-/// Reads active_dataspace_id from session, validates org membership, and
-/// determines the tenant role before passing to the next handler.
+/// Reads the user's org membership and determines tenant role from
+/// organizations.role and user_org_memberships.role.
 #[allow(dead_code)]
 pub async fn tenant_context_required(
-    session: Session,
     State(state): State<AppState>,
     mut request: axum::http::Request<Body>,
     next: Next,
@@ -187,55 +178,39 @@ pub async fn tenant_context_required(
         .cloned()
         .ok_or(RbacError::AuthRequired)?;
 
-    // 2. Read active_dataspace_id from session
-    let dataspace_id: String = session
-        .get::<String>("active_dataspace_id")
-        .await
-        .ok()
-        .flatten()
-        .ok_or(RbacError::NoActiveDataspace)?;
-
-    // 3. Get user's org membership
+    // 2. Get user's org membership
     let membership = state
         .db
         .get_user_org_membership(&user.user_id)
         .await
         .ok_or(RbacError::NoMembership)?;
 
-    // 4. Verify org is member of the requested dataspace
-    let dataspace_role = state
+    // 3. Get the org to read its role (promotor/participant)
+    let org = state
         .db
-        .get_org_dataspace_role(&membership.org_id, &dataspace_id)
+        .get_organization(&membership.org_id)
         .await
-        .ok_or_else(|| {
-            tracing::warn!(
-                user_id = %user.user_id,
-                dataspace_id = %dataspace_id,
-                org_id = %membership.org_id,
-                "tenant isolation: user attempted dataspace but org has no membership"
-            );
-            RbacError::NoMembership
-        })?;
+        .ok_or(RbacError::NoMembership)?;
 
-    // 5. Determine TenantRole
-    let role = match dataspace_role {
-        DataspaceRole::Promotor => TenantRole::Promotor,
-        DataspaceRole::Participant => match membership.role {
+    // 4. Determine TenantRole
+    let role = if org.role == "promotor" {
+        TenantRole::Promotor
+    } else {
+        match membership.role {
             OrgRole::Admin => TenantRole::OrgAdmin,
             OrgRole::User => TenantRole::OrgUser,
-        },
+        }
     };
 
-    // 6. Build TenantContext
+    // 5. Build TenantContext
     let ctx = TenantContext {
         org_id: OrgId(membership.org_id.clone()),
-        dataspace_id,
         role,
     };
 
-    // 7. Insert into extensions
+    // 6. Insert into extensions
     request.extensions_mut().insert(ctx);
 
-    // 8. Continue
+    // 7. Continue
     Ok(next.run(request).await)
 }

@@ -23,7 +23,7 @@ export function SettingsNav() {
   const pathname = usePathname();
 
   const { data: me } = useSWR("auth-me", () =>
-    fetch("/api/auth/me")
+    fetch("/v1/auth/me")
       .then((r) => r.json())
       .then((r) => r.data ?? r),
   );

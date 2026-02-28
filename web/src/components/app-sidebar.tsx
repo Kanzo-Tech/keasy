@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { getSidebarRoutes } from "@/lib/route-config";
+import { getSidebarRoutes, ROLE_LABEL } from "@/lib/route-config";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 import {
@@ -59,12 +59,6 @@ type WorkspacesResponse = {
   current_client_id: string;
 };
 
-const ROLE_LABEL: Record<string, string> = {
-  promotor: "Promotor",
-  org_admin: "Admin",
-  org_user: "User",
-};
-
 // Deterministic color from client_id string — matches workspace picker page
 function clientIdToColor(id: string): string {
   let hash = 0;
@@ -79,13 +73,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
 
   const { data: me } = useSWR<MeResponse>("auth-me", () =>
-    fetch("/api/auth/me").then((r) => r.json()).then((r) => r.data ?? r)
+    fetch("/v1/auth/me").then((r) => r.json()).then((r) => r.data ?? r)
   );
 
   const { data: workspacesData } = useSWR<WorkspacesResponse>(
     "workspaces",
     () =>
-      fetch("/api/auth/workspaces")
+      fetch("/v1/auth/workspaces")
         .then((r) => r.json())
         .then((r) => r.data ?? r)
   );
@@ -110,27 +104,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     : { name: "", email: "", firstName: "", lastName: "" };
 
   // Convert routes to NavMain format with active state
-  const navMainItems = sidebarRoutes
-    .filter((route) => !route.isGroupTitle && route.path)
-    .map((route) => ({
-      title: route.name,
-      url: route.path!,
-      icon: route.icon,
-      isActive:
-        route.path === "/"
-          ? pathname === "/"
-          : pathname.startsWith(route.path!),
-      ...(route.children?.length
-        ? {
-            items: route.children
-              ?.filter((child) => !child.isGroupTitle && child.path)
-              .map((child) => ({
-                title: child.name,
-                url: child.path!,
-              })),
-          }
-        : {}),
-    }));
+  const navMainItems = sidebarRoutes.map((route) => ({
+    title: route.name,
+    url: route.path,
+    icon: route.icon,
+    isActive:
+      route.path === "/"
+        ? pathname === "/"
+        : pathname.startsWith(route.path),
+  }));
 
   const orgName = me?.org?.name ?? "Keasy";
 
@@ -148,7 +130,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     // Clear all SWR cache to prevent stale role/data on return
     await mutate(() => true, undefined, { revalidate: false });
     try {
-      setSwitchTarget(`${ws.url}/api/auth/oidc-start`);
+      setSwitchTarget(`${ws.url}/v1/auth/oidc-start`);
     } catch {
       setSwitching(null);
       toast.error(`Could not switch to ${ws.name}. Please try again.`);

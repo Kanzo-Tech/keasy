@@ -54,7 +54,7 @@ export function StepTerms({ onComplete, completed, wizardState }: StepTermsProps
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/compliance/wizard/terms", {
+      const res = await fetch("/v1/compliance/wizard/terms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ private_key_pem: privateKeyPem }),

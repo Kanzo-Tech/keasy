@@ -11,169 +11,69 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export type RouteConfig = {
-  path: string;
+// ── Types ────────────────────────────────────────────────────────────────────
+
+type RouteDef = {
   name: string;
   icon?: LucideIcon;
-  children?: RouteConfig[];
-  showInSidebar?: boolean;
-  isGroupTitle?: boolean;
-  requiredRole?: "promotor";
+  /** Which roles see this in the sidebar. Omit = not in sidebar. */
+  sidebar?: readonly ("promotor" | "participant")[];
 };
 
-export const mainRouteConfig: RouteConfig[] = [
-  {
-    path: "/",
-    name: "Home",
-    icon: Home,
-    showInSidebar: false,
-  },
-  {
-    path: "/connections",
-    name: "Connections",
-    icon: Database,
-    showInSidebar: true,
-  },
-  {
-    path: "/jobs",
-    name: "Jobs",
-    icon: Workflow,
-    showInSidebar: true,
-  },
-  {
-    path: "/compliance",
-    name: "Compliance",
-    icon: ShieldCheck,
-    showInSidebar: true,
-  },
-  {
-    path: "/participants",
-    name: "Participants",
-    icon: Users,
-    showInSidebar: true,
-  },
-  {
-    path: "/catalog",
-    name: "Catalog",
-    icon: BookOpenCheck,
-    showInSidebar: true,
-  },
-];
+export type RouteEntry = RouteDef & { path: string };
 
-export const routeConfig: RouteConfig[] = [
-  ...mainRouteConfig,
-  {
-    path: "/compliance/wizard",
-    name: "Compliance Wizard",
-    icon: ShieldCheck,
-    showInSidebar: false,
-  },
-  {
-    path: "/settings",
-    name: "Settings",
-    icon: Settings2,
-    showInSidebar: false,
-  },
-  {
-    path: "/settings/ai",
-    name: "AI Settings",
-    icon: Bot,
-    showInSidebar: false,
-  },
-  {
-    path: "/settings/cloud-accounts",
-    name: "Cloud Accounts",
-    icon: GalleryVerticalEnd,
-    showInSidebar: false,
-    children: [
-      {
-        path: "/settings/cloud-accounts/new",
-        name: "New Cloud Account",
-        showInSidebar: false,
-      },
-      {
-        path: "/settings/cloud-accounts/[id]",
-        name: "Cloud Account Details",
-        showInSidebar: false,
-      },
-    ],
-  },
-  {
-    path: "/settings/preferences",
-    name: "Preferences",
-    icon: Settings2,
-    showInSidebar: false,
-  },
-  {
-    path: "/settings/security",
-    name: "Security",
-    icon: Settings2,
-    showInSidebar: false,
-  },
-  {
-    path: "/settings/wallet",
-    name: "Wallet",
-    icon: Settings2,
-    showInSidebar: false,
-  },
-  {
-    path: "/admin/organizations",
-    name: "Organizations",
-    showInSidebar: false,
-  },
-  {
-    path: "/org/users",
-    name: "Users",
-    showInSidebar: false,
-  },
-  {
-    path: "/org/users/new",
-    name: "Add User",
-    showInSidebar: false,
-  },
-];
+// ── Data ─────────────────────────────────────────────────────────────────────
 
-export function findRouteByPath(path: string): RouteConfig | undefined {
-  const checkRoute = (routes: RouteConfig[]): RouteConfig | undefined => {
-    for (const route of routes) {
-      if (route.path === path) {
-        return route;
-      }
-      if (route.children) {
-        const foundInChildren = checkRoute(route.children);
-        if (foundInChildren) {
-          return foundInChildren;
-        }
-      }
-    }
-    return undefined;
-  };
+export const ROLE_LABEL: Record<string, string> = {
+  promotor: "Promotor",
+  org_admin: "Admin",
+  org_user: "User",
+};
 
-  return checkRoute(routeConfig);
+/**
+ * Single source of truth — every known route in the app.
+ * Keyed by path, O(1) lookup, sidebar/breadcrumbs derive from this.
+ */
+const ROUTES: Record<string, RouteDef> = {
+  "/":                            { name: "Home", icon: Home },
+  "/connections":                 { name: "Connections", icon: Database, sidebar: ["participant"] },
+  "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: ["participant"] },
+  "/compliance":                  { name: "Compliance", icon: ShieldCheck, sidebar: ["participant"] },
+  "/compliance/wizard":           { name: "Compliance Wizard", icon: ShieldCheck },
+  "/participants":                { name: "Participants", icon: Users, sidebar: ["promotor"] },
+  "/catalog":                     { name: "Catalog", icon: BookOpenCheck, sidebar: ["promotor"] },
+  "/settings":                    { name: "Settings", icon: Settings2, sidebar: ["promotor", "participant"] },
+  "/settings/ai":                 { name: "AI Settings", icon: Bot },
+  "/settings/cloud-accounts":     { name: "Cloud Accounts", icon: GalleryVerticalEnd },
+  "/settings/cloud-accounts/new": { name: "New Cloud Account" },
+  "/settings/preferences":        { name: "Preferences" },
+  "/settings/wallet":             { name: "Wallet" },
+  "/org/users":                   { name: "Users" },
+  "/org/users/new":               { name: "Add User" },
+};
+
+// ── Derived ──────────────────────────────────────────────────────────────────
+
+export function findRoute(path: string): RouteEntry | undefined {
+  const def = ROUTES[path];
+  return def ? { ...def, path } : undefined;
 }
 
-export function generateBreadcrumbs(path: string): RouteConfig[] {
-  const breadcrumbs: RouteConfig[] = [];
-  const pathSegments = path.split("/").filter(Boolean);
-  let currentPath = "";
-
-  breadcrumbs.push({
-    path: "/",
-    name: "Home",
-  });
+export function generateBreadcrumbs(path: string): RouteEntry[] {
+  const crumbs: RouteEntry[] = [{ path: "/", name: "Home" }];
 
   if (path !== "/") {
-    for (let i = 0; i < pathSegments.length; i++) {
-      currentPath += `/${pathSegments[i]}`;
-
-      const route = findRouteByPath(currentPath);
-
+    const segments = path.split("/").filter(Boolean);
+    let current = "";
+    for (let i = 0; i < segments.length; i++) {
+      current += `/${segments[i]}`;
+      const route = findRoute(current);
       if (route) {
-        breadcrumbs.push(route);
-      } else if (i === pathSegments.length - 1) {
-        breadcrumbs.push({
-          path: currentPath,
-          name: pathSegments[i]
+        crumbs.push(route);
+      } else if (i === segments.length - 1) {
+        crumbs.push({
+          path: current,
+          name: segments[i]
             .replace(/-/g, " ")
             .replace(/\b\w/g, (l) => l.toUpperCase()),
         });
@@ -181,22 +81,12 @@ export function generateBreadcrumbs(path: string): RouteConfig[] {
     }
   }
 
-  return breadcrumbs;
+  return crumbs;
 }
 
-export function getSidebarRoutes(effectiveRole?: string): RouteConfig[] {
-  if (effectiveRole === 'promotor') {
-    return [
-      { path: '/participants', name: 'Participants', icon: Users, showInSidebar: true },
-      { path: '/catalog', name: 'Catalog', icon: BookOpenCheck, showInSidebar: true },
-      { path: '/settings', name: 'Settings', icon: Settings2, showInSidebar: true },
-    ];
-  }
-  // participant / org_admin / org_user
-  return [
-    { path: '/connections', name: 'Connections', icon: Database, showInSidebar: true },
-    { path: '/jobs', name: 'Jobs', icon: Workflow, showInSidebar: true },
-    { path: '/compliance', name: 'Compliance', icon: ShieldCheck, showInSidebar: true },
-    { path: '/settings', name: 'Settings', icon: Settings2, showInSidebar: true },
-  ];
+export function getSidebarRoutes(effectiveRole?: string): RouteEntry[] {
+  const key = effectiveRole === "promotor" ? "promotor" : "participant";
+  return Object.entries(ROUTES)
+    .filter(([, def]) => def.sidebar?.includes(key))
+    .map(([path, def]) => ({ ...def, path }));
 }

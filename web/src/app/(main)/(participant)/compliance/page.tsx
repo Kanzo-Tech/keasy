@@ -22,7 +22,7 @@ export default function CompliancePage() {
   const { data, isLoading } = useSWR<ComplianceStatus>(
     "gx-compliance-status",
     () =>
-      fetch("/api/compliance/status")
+      fetch("/v1/compliance/status")
         .then((r) => r.json())
         .then((r) => r.data ?? r)
   );

@@ -88,7 +88,7 @@ export function ComplianceView({ status }: ComplianceViewProps) {
   async function handleRerun() {
     setRerunLoading(true);
     try {
-      const res = await fetch("/api/compliance/rerun", { method: "POST" });
+      const res = await fetch("/v1/compliance/rerun", { method: "POST" });
       const json = await res.json();
       if (!res.ok) {
         const message =

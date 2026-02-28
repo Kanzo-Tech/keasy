@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import {
-  ColumnDef,
+  type ColumnDef,
   ColumnFiltersState,
   SortingState,
   VisibilityState,
@@ -13,13 +13,15 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { Settings2 } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, Settings2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
@@ -38,6 +40,89 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+
+// ── Column helpers ───────────────────────────────────────────────────────────
+
+/** Checkbox column for row selection. */
+export function selectColumn<T>(): ColumnDef<T> {
+  return {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+        onClick={(e) => e.stopPropagation()}
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+        onClick={(e) => e.stopPropagation()}
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  }
+}
+
+/** Sortable header button — use as `header: sortableHeader("Name")`. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function sortableHeader(label: string): ColumnDef<any, any>["header"] {
+  return ({ column }) => (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="-ml-3 h-8 gap-1"
+      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+    >
+      {label}
+      <ArrowUpDown className="h-4 w-4" />
+    </Button>
+  )
+}
+
+/**
+ * Row actions column with a "..." dropdown menu.
+ * Pass a render function that receives the row data and returns menu items.
+ */
+export function actionsColumn<T>(
+  renderItems: (row: T) => React.ReactNode,
+): ColumnDef<T> {
+  return {
+    id: "actions",
+    enableSorting: false,
+    enableHiding: false,
+    cell: ({ row }) => (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+            <span className="sr-only">Open menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {renderItems(row.original)}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ),
+  }
+}
+
+// Re-export DropdownMenuItem for use in actionsColumn render functions
+export { DropdownMenuItem as ActionItem }
+
+// ── DataTable component ──────────────────────────────────────────────────────
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]

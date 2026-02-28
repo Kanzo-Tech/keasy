@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Platform
 status: unknown
-last_updated: "2026-02-27T22:28:52.046Z"
+last_updated: "2026-02-27T23:10:36.177Z"
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 12
-  completed_plans: 12
+  total_phases: 6
+  completed_phases: 6
+  total_plans: 14
+  completed_plans: 14
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Reliable end-to-end data asset generation — a user can take heterogeneous data, transform it through Fossil pipelines, and produce a standards-compliant data asset ready for a data space
-**Current focus:** Phase 14 — Federated Instance Switcher
+**Current focus:** Phase 15 — UX Polish & Code Quality
 
 ## Current Position
 
-Phase: 15 of 15 (UX Polish & Code Quality) — IN PROGRESS
-Plan: 15-02 (complete — 2/? plans done)
-Status: 15-02 Complete — dead code removal, OrgEntry type consolidation
-Last activity: 2026-02-27 — 15-02 complete: organization-columns.tsx deleted, dead API functions removed, OrgEntry unified in lib/types.ts
+Phase: 15 of 15 (UX Polish & Code Quality) — COMPLETE
+Plan: 15-02 (complete — 2/2 plans done)
+Status: 15-01 Complete — UX polish: overflow layout, icon save button, sidebar collapse, EmptyState inline links, settings homogenization
+Last activity: 2026-02-28 — 15-01 complete: overflow-hidden layout, icon-only save button, sidebar collapse, EmptyState ReactNode, SettingsPage pattern
 
-Progress: [█████████░] 92%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -47,7 +47,7 @@ Progress: [█████████░] 92%
 
 *Updated after each plan completion*
 | 14 | 2/2 | 5 min | ~3 min |
-| 15 | 1/? | ~2 min | ~2 min |
+| 15 | 2/2 | ~7 min | ~4 min |
 
 ## Accumulated Context
 
@@ -90,6 +90,9 @@ Progress: [█████████░] 92%
 - [Phase 14-02]: clientIdToColor placed at module level outside component, identical to workspaces/page.tsx — consistent colors with no coordination needed
 - [15-02]: OrgEntry expanded in-place in lib/types.ts as superset — 4-field shape replaced with 7-field shape; all consumers still compile correctly
 - [15-02]: Shared types pattern: all API response types live in lib/types.ts, never defined locally in page components
+- [Phase 15-01]: overflow-hidden on main layout + per-page overflow-auto p-4: each page owns its scroll context
+- [Phase 15-01]: EmptyState description changed from string to ReactNode; actionHref/actionLabel removed — inline Link is cleaner
+- [Phase 15-01]: Sidebar stays collapsed after navigating away from settings (cookie-based persistence, standard shadcn/ui behavior)
 
 ### Pending Todos
 
@@ -104,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-27
-Stopped at: Completed 15-02-PLAN.md — dead code removal and OrgEntry type consolidation
-Resume with: `/gsd:execute-phase 15` to continue with Phase 15
+Last session: 2026-02-28
+Stopped at: Completed 15-01-PLAN.md — UX polish complete, all requirements UX-01 through UX-06 done
+Resume with: Phase 15 complete — all plans executed

@@ -52,7 +52,7 @@ export function StepLrn({ onComplete, completed, wizardState }: StepLrnProps) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/compliance/wizard/lrn", {
+      const res = await fetch("/v1/compliance/wizard/lrn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lrn_type: lrnType, lrn_value: lrnValue.trim() }),

@@ -29,7 +29,7 @@ pub enum TenantRole {
 
 /// Authenticated, tenant-scoped request context. Injected into request
 /// extensions by `tenant_context_required` middleware. Route handlers
-/// extract this via `RequireRole`, `RequirePromotor`, or `RequireOrgAdmin`.
+/// extract this via `RequireParticipant`, `RequirePromotor`, or `RequireOrgAdmin`.
 #[derive(Clone, Debug)]
 pub struct TenantContext {
     pub org_id: OrgId,
@@ -100,27 +100,8 @@ impl IntoResponse for RbacError {
     }
 }
 
-/// Extractor: requires an active tenant context.
-#[allow(dead_code)]
-pub struct RequireRole(pub TenantContext);
-
-impl<S> FromRequestParts<S> for RequireRole
-where
-    S: Send + Sync,
-{
-    type Rejection = RbacError;
-
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        parts
-            .extensions
-            .get::<TenantContext>()
-            .cloned()
-            .map(RequireRole)
-            .ok_or(RbacError::AuthRequired)
-    }
-}
-
 /// Extractor: requires the org to be Promotor of the instance.
+/// Rejects: OrgAdmin, OrgUser.
 #[allow(dead_code)]
 pub struct RequirePromotor(pub TenantContext);
 
@@ -130,17 +111,45 @@ where
 {
     type Rejection = RbacError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let RequireRole(ctx) = RequireRole::from_request_parts(parts, state).await?;
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let ctx = parts
+            .extensions
+            .get::<TenantContext>()
+            .cloned()
+            .ok_or(RbacError::AuthRequired)?;
         if ctx.role == TenantRole::Promotor {
-            Ok(RequirePromotor(ctx))
+            Ok(Self(ctx))
         } else {
             Err(RbacError::InsufficientRole)
         }
     }
 }
 
-/// Extractor: requires the user to be OrgAdmin or Promotor.
+/// Extractor: any participant user (admin or regular). Rejects promotor.
+#[allow(dead_code)]
+pub struct RequireParticipant(pub TenantContext);
+
+impl<S> FromRequestParts<S> for RequireParticipant
+where
+    S: Send + Sync,
+{
+    type Rejection = RbacError;
+
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let ctx = parts
+            .extensions
+            .get::<TenantContext>()
+            .cloned()
+            .ok_or(RbacError::AuthRequired)?;
+        if ctx.role == TenantRole::Promotor {
+            Err(RbacError::InsufficientRole)
+        } else {
+            Ok(Self(ctx))
+        }
+    }
+}
+
+/// Extractor: participant org admin only. Rejects promotor and OrgUser.
 #[allow(dead_code)]
 pub struct RequireOrgAdmin(pub TenantContext);
 
@@ -150,10 +159,14 @@ where
 {
     type Rejection = RbacError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let RequireRole(ctx) = RequireRole::from_request_parts(parts, state).await?;
-        if ctx.role == TenantRole::Promotor || ctx.role == TenantRole::OrgAdmin {
-            Ok(RequireOrgAdmin(ctx))
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let ctx = parts
+            .extensions
+            .get::<TenantContext>()
+            .cloned()
+            .ok_or(RbacError::AuthRequired)?;
+        if ctx.role == TenantRole::OrgAdmin {
+            Ok(Self(ctx))
         } else {
             Err(RbacError::InsufficientRole)
         }

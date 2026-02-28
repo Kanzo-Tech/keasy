@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import {
+  Building2,
   ChevronsUpDown,
   LogOut,
   Settings,
@@ -46,6 +47,7 @@ function getInitials(firstName: string, lastName: string, email: string): string
 
 export function NavUser({
   user,
+  effectiveRole,
 }: {
   user: {
     name: string
@@ -53,6 +55,7 @@ export function NavUser({
     firstName: string
     lastName: string
   }
+  effectiveRole?: string
 }) {
   const { isMobile, setOpenMobile } = useSidebar()
   const [loggingOut, setLoggingOut] = useState(false)
@@ -120,6 +123,14 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {effectiveRole !== "promotor" && (
+              <DropdownMenuItem asChild>
+                <Link href="/organization" onClick={() => setOpenMobile(false)}>
+                  <Building2 className="mr-2 h-4 w-4" />
+                  Organization
+                </Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem asChild>
               <Link
                 href="/settings"

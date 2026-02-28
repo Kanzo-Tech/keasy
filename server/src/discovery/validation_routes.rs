@@ -7,13 +7,13 @@ use rudof_rdf::rdf_core::RDFFormat;
 use crate::cloud::reader;
 use crate::connections::models::LocationType;
 use crate::error::error_body;
-use crate::middleware::tenant::RequireRole;
+use crate::middleware::tenant::RequireParticipant;
 use super::validation_types::{ShapeFormat, ValidationRequest};
 use super::validation::ValidatableGraph;
 use crate::AppState;
 
 pub async fn validate_job(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Json(req): Json<ValidationRequest>,
 ) -> Response {

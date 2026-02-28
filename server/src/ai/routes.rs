@@ -17,10 +17,10 @@ use super::models::{Conversation, ConversationMessage};
 use crate::error::data_response;
 use crate::discovery::graph_store::GraphStore;
 use crate::jobs::PipelineSummary;
-use crate::middleware::tenant::RequireRole;
+use crate::middleware::tenant::RequireParticipant;
 
 pub async fn ask_discover(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<AskRequest>,
@@ -193,7 +193,7 @@ pub struct CreateConversationRequest {
 }
 
 pub async fn create_conversation(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(job_id): Path<String>,
     Json(req): Json<CreateConversationRequest>,
@@ -210,7 +210,7 @@ pub async fn create_conversation(
 }
 
 pub async fn list_conversations(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(job_id): Path<String>,
 ) -> impl IntoResponse {
@@ -219,7 +219,7 @@ pub async fn list_conversations(
 }
 
 pub async fn get_conversation_messages(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
 ) -> Response {
@@ -240,7 +240,7 @@ pub struct RenameConversationRequest {
 }
 
 pub async fn rename_conversation(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
     Json(req): Json<RenameConversationRequest>,
@@ -257,7 +257,7 @@ pub async fn rename_conversation(
 }
 
 pub async fn delete_conversation(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
 ) -> impl IntoResponse {

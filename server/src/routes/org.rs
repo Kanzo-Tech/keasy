@@ -1,9 +1,9 @@
-//! Org admin user management endpoints.
-//! All handlers require `RequireOrgAdmin` — available to org admins and promotors.
+//! Org management endpoints — participant only.
+//! User/invite management requires `RequireOrgAdmin` (participant org admins).
+//! Identity read uses `RequireParticipant` (any participant user).
 //! These routes live inside `api_routes` (session + tenant context required).
 
 use axum::{
-    Extension,
     extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
@@ -15,7 +15,7 @@ use crate::AppState;
 use crate::db::invite_tokens::InviteToken;
 use crate::error::{data_response, error_body};
 use crate::middleware::session_auth::AuthenticatedUser;
-use crate::middleware::tenant::{RbacError, RequireOrgAdmin, TenantContext};
+use crate::middleware::tenant::{RbacError, RequireOrgAdmin, RequireParticipant};
 
 /// GET /v1/org/users — list all users in the caller's org.
 pub async fn list_users(
@@ -79,9 +79,9 @@ pub struct UpdateOrgIdentityPayload {
     pub registration_number: Option<String>,
 }
 
-/// GET /v1/org/identity — read the org's identity fields (any tenant user).
+/// GET /v1/org/identity — read the org's identity fields (any participant user).
 pub async fn get_org_identity(
-    Extension(ctx): Extension<TenantContext>,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     let org = state.db.get_organization(&ctx.org_id.0).await;

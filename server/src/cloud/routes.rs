@@ -6,19 +6,19 @@ use axum::Json;
 use crate::AppState;
 use crate::cloud::models::{CreateCloudAccountRequest, UpdateCloudAccountRequest};
 use crate::error::data_response;
-use crate::middleware::tenant::RequireRole;
+use crate::middleware::tenant::RequireParticipant;
 
 use super::errors::CloudAccountError;
 
 pub async fn list_accounts(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
     Ok(data_response(state.db.list_cloud_accounts(&ctx.as_ctx()).await))
 }
 
 pub async fn create_account(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Json(payload): Json<CreateCloudAccountRequest>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
@@ -29,7 +29,7 @@ pub async fn create_account(
 }
 
 pub async fn get_account(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
@@ -40,7 +40,7 @@ pub async fn get_account(
 }
 
 pub async fn update_account(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateCloudAccountRequest>,
@@ -52,7 +52,7 @@ pub async fn update_account(
 }
 
 pub async fn delete_account(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, CloudAccountError> {

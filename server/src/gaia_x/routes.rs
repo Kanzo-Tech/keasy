@@ -3,16 +3,18 @@
 /// All wizard endpoints are session + tenant protected.
 /// The .well-known endpoints are public (no auth required).
 use axum::response::IntoResponse;
-use axum::{Extension, Json, extract::State};
+use axum::{Json, extract::State};
 use jiff::Timestamp;
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
 
+use rusqlite::OptionalExtension;
+
 use crate::AppState;
 use crate::error::{data_response, error_body};
 use crate::gaia_x::{WizardState, cert, credentials, db, gxdch, keys, signing, vp};
-use crate::tenant::TenantContext;
+use crate::middleware::tenant::RequireParticipant;
 
 use axum::http::StatusCode;
 use axum::response::Response;
@@ -93,14 +95,32 @@ fn default_state(org_id: &str) -> WizardState {
 /// Return the current wizard state for the authenticated org.
 /// Returns a default (empty, step 0) state if no record exists yet.
 pub async fn get_wizard_state(
-    Extension(ctx): Extension<TenantContext>,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
 ) -> Response {
     let org_id = ctx.org_id.0.clone();
     let (_permit, conn) = state.db.read().await;
     match db::get_wizard_state(&conn, &org_id) {
         Ok(Some(wizard)) => data_response(wizard).into_response(),
-        Ok(None) => data_response(default_state(&org_id)).into_response(),
+        Ok(None) => {
+            let mut ws = default_state(&org_id);
+            // Pre-fill from organization identity if available
+            if let Ok(Some(org)) = conn.query_row(
+                "SELECT legal_name, country, registration_number FROM organizations WHERE id = ?1",
+                rusqlite::params![&org_id],
+                |row| Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, Option<String>>(2)?,
+                )),
+            ).optional() {
+                let (ln, c, rn) = org;
+                if !ln.is_empty() { ws.legal_name = Some(ln); }
+                if !c.is_empty() { ws.country_code = Some(c); }
+                if let Some(r) = rn { ws.lrn_value = Some(r); }
+            }
+            data_response(ws).into_response()
+        }
         Err(e) => internal_error(&format!("failed to load wizard state: {e}")),
     }
 }
@@ -111,7 +131,7 @@ pub async fn get_wizard_state(
 /// Returns { private_key_pem, public_key_jwk }.
 /// The private key is returned once for download — NEVER stored in DB.
 pub async fn generate_keys(
-    Extension(ctx): Extension<TenantContext>,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
 ) -> Response {
     let pair = match keys::generate_key_pair() {
@@ -153,7 +173,7 @@ pub async fn generate_keys(
 /// Validate uploaded certificate chain and assemble DID document.
 /// VC-05: cert chain is validated here (called at every step).
 pub async fn validate_certificate(
-    Extension(ctx): Extension<TenantContext>,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Json(payload): Json<CertUploadPayload>,
 ) -> Response {
@@ -260,7 +280,7 @@ pub async fn validate_certificate(
 /// Request a signed LRN Verifiable Credential from the GXDCH Notary.
 /// VC-05: cert chain re-validated before proceeding.
 pub async fn request_lrn(
-    Extension(ctx): Extension<TenantContext>,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Json(payload): Json<LrnPayload>,
 ) -> Response {
@@ -351,7 +371,7 @@ pub async fn request_lrn(
 /// The private key is accepted in-memory for signing and immediately dropped.
 /// VC-05: cert chain re-validated.
 pub async fn sign_legal_participant(
-    Extension(ctx): Extension<TenantContext>,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Json(payload): Json<LpPayload>,
 ) -> Response {
@@ -436,7 +456,7 @@ pub async fn sign_legal_participant(
 /// The private key is accepted in-memory for signing and immediately dropped.
 /// VC-05: cert chain re-validated.
 pub async fn sign_terms_conditions(
-    Extension(ctx): Extension<TenantContext>,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Json(payload): Json<TcPayload>,
 ) -> Response {
@@ -514,7 +534,7 @@ pub async fn sign_terms_conditions(
 /// VC-05: cert chain re-validated.
 /// VC-07: VP assembles all credentials as inline objects.
 pub async fn submit_gxdch(
-    Extension(ctx): Extension<TenantContext>,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
 ) -> Response {
     let org_id = ctx.org_id.0.clone();
@@ -624,6 +644,15 @@ pub async fn submit_gxdch(
         tracing::warn!("failed to update vc_verified_at: {e}");
     }
 
+    // Sync wizard identity fields back to organization
+    if let (Some(legal_name), Some(country_code)) = (&w.legal_name, &w.country_code) {
+        let country_2 = &country_code[..std::cmp::min(2, country_code.len())];
+        let _ = write_conn.execute(
+            "UPDATE organizations SET legal_name = ?1, country = ?2, registration_number = ?3, updated_at = ?4 WHERE id = ?5",
+            rusqlite::params![legal_name, country_2, &w.lrn_value, &now, &org_id],
+        );
+    }
+
     data_response(serde_json::json!({
         "compliant": true,
         "compliance_vc": compliance_vc
@@ -635,7 +664,7 @@ pub async fn submit_gxdch(
 
 /// Return compliance status and credential inventory for the authenticated org.
 pub async fn get_compliance_status(
-    Extension(ctx): Extension<TenantContext>,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
 ) -> Response {
     let org_id = ctx.org_id.0.clone();
@@ -704,7 +733,7 @@ pub async fn get_compliance_status(
 
 /// Re-assemble VP from stored credentials and re-submit to GXDCH.
 pub async fn rerun_compliance(
-    Extension(ctx): Extension<TenantContext>,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
 ) -> Response {
     let org_id = ctx.org_id.0.clone();
@@ -784,6 +813,15 @@ pub async fn rerun_compliance(
         rusqlite::params![now, org_id],
     ) {
         tracing::warn!("failed to update vc_verified_at: {e}");
+    }
+
+    // Sync wizard identity fields back to organization
+    if let (Some(legal_name), Some(country_code)) = (&w.legal_name, &w.country_code) {
+        let country_2 = &country_code[..std::cmp::min(2, country_code.len())];
+        let _ = write_conn.execute(
+            "UPDATE organizations SET legal_name = ?1, country = ?2, registration_number = ?3, updated_at = ?4 WHERE id = ?5",
+            rusqlite::params![legal_name, country_2, &w.lrn_value, &now, &org_id],
+        );
     }
 
     data_response(serde_json::json!({

@@ -4,10 +4,9 @@ import * as React from "react";
 import useSWR from "swr";
 import { mutate } from "swr";
 import { usePathname } from "next/navigation";
-import Link from "next/link";
-import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2, Wallet } from "lucide-react";
+
+import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { getSidebarRoutes, ROLE_LABEL } from "@/lib/route-config";
 import { NavMain } from "@/components/layout/nav-main";
 import { NavUser } from "@/components/layout/nav-user";
@@ -17,12 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+
 import {
   Sidebar,
   SidebarContent,
@@ -229,34 +223,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={navMainItems} />
       </SidebarContent>
       <SidebarFooter>
-        {effectiveRole !== "promotor" && (
-          <div className="flex items-center justify-center px-2 pb-1">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    href="/settings/wallet"
-                    className="relative inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                  >
-                    <Wallet className="h-4 w-4" />
-                    <span
-                      className={cn(
-                        "absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full border border-sidebar-background",
-                        me?.vc_holder_did
-                          ? "bg-green-500"
-                          : "bg-muted-foreground/30"
-                      )}
-                    />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  {me?.vc_holder_did ? "Wallet connected" : "No wallet connected"}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        )}
-        <NavUser user={user} />
+        <NavUser user={user} effectiveRole={effectiveRole} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

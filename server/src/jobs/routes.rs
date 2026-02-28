@@ -11,12 +11,12 @@ use crate::error::data_response;
 use crate::discovery::rdf_format::RdfExportFormat;
 use crate::jobs::models::{CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601};
 use super::rewrite;
-use crate::middleware::tenant::RequireRole;
+use crate::middleware::tenant::RequireParticipant;
 
 use super::errors::JobApiError;
 
 pub async fn list_jobs(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, JobApiError> {
     let jobs = state.db.list_jobs(&ctx.as_ctx()).await;
@@ -24,7 +24,7 @@ pub async fn list_jobs(
 }
 
 pub async fn create_job(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -94,7 +94,7 @@ pub async fn create_job(
 }
 
 pub async fn get_job(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -105,7 +105,7 @@ pub async fn get_job(
 }
 
 pub async fn update_job(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateJobRequest>,
@@ -128,7 +128,7 @@ pub async fn update_job(
 }
 
 pub async fn cancel_job(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -142,7 +142,7 @@ pub async fn cancel_job(
 }
 
 pub async fn delete_job(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -169,7 +169,7 @@ pub struct CatalogQuery {
 }
 
 pub async fn get_job_catalog(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Query(query): Query<CatalogQuery>,
@@ -197,7 +197,7 @@ pub async fn get_job_catalog(
 }
 
 pub async fn get_job_graph(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -211,16 +211,32 @@ pub async fn get_job_graph(
     }
 }
 
+#[derive(Deserialize)]
+pub struct UnifiedGraphQuery {
+    pub org_id: Option<String>,
+}
+
 pub async fn get_unified_graph(
-    RequireRole(_ctx): RequireRole,
+    RequireParticipant(_ctx): RequireParticipant,
     State(state): State<AppState>,
+    Query(query): Query<UnifiedGraphQuery>,
 ) -> impl IntoResponse {
-    let graph_data = state.catalog.get_graph(None);
+    let graph_data = match query.org_id {
+        Some(org_id) => {
+            let job_ids = state.db.completed_job_ids_for_org(&org_id).await;
+            let graph_names: Vec<String> = job_ids
+                .into_iter()
+                .map(|id| format!("urn:keasy:job:{id}"))
+                .collect();
+            state.catalog.get_merged_graphs(&graph_names)
+        }
+        None => state.catalog.get_graph(None),
+    };
     data_response(graph_data)
 }
 
 pub async fn get_dashboard_layout(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -234,7 +250,7 @@ pub async fn get_dashboard_layout(
 }
 
 pub async fn save_dashboard_layout(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(body): Json<serde_json::Value>,

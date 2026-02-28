@@ -14,7 +14,7 @@ use super::loader;
 use super::rdf_graph::RdfGraph;
 use crate::jobs::models::JobStatus;
 use super::rdf_format::RdfExportFormat;
-use crate::middleware::tenant::RequireRole;
+use crate::middleware::tenant::RequireParticipant;
 
 #[derive(Deserialize)]
 pub struct SearchRequest {
@@ -30,7 +30,7 @@ pub struct ExpandRequest {
 }
 
 pub async fn search_nodes(
-    RequireRole(_ctx): RequireRole,
+    RequireParticipant(_ctx): RequireParticipant,
     State(state): State<AppState>,
     Json(req): Json<SearchRequest>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -49,7 +49,7 @@ pub async fn search_nodes(
 }
 
 pub async fn expand_node(
-    RequireRole(_ctx): RequireRole,
+    RequireParticipant(_ctx): RequireParticipant,
     State(state): State<AppState>,
     Json(req): Json<ExpandRequest>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -77,7 +77,7 @@ pub struct QueryRequest {
 }
 
 pub async fn query_discover(
-    RequireRole(_ctx): RequireRole,
+    RequireParticipant(_ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<QueryRequest>,
@@ -109,7 +109,7 @@ fn default_aggregation() -> String {
 }
 
 pub async fn chart_discover(
-    RequireRole(_ctx): RequireRole,
+    RequireParticipant(_ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<ChartRequest>,
@@ -167,7 +167,7 @@ fn build_chart_sparql(req: &ChartRequest) -> String {
 }
 
 pub async fn load_discover(
-    RequireRole(ctx): RequireRole,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
@@ -240,7 +240,7 @@ pub struct ExportQuery {
 }
 
 pub async fn export_discover(
-    RequireRole(_ctx): RequireRole,
+    RequireParticipant(_ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
     axum::extract::Query(query): axum::extract::Query<ExportQuery>,

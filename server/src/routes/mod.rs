@@ -247,13 +247,13 @@ pub fn build_router(
             axum::routing::get(admin::list_oidc_clients)
                 .post(admin::register_oidc_client),
         )
-        // Org identity — read for any tenant user, write for org admins + promotors
+        // Org identity — read for any participant, write for participant org admins
         .route(
             "/v1/org/identity",
             axum::routing::get(org::get_org_identity)
                 .put(org::update_org_identity),
         )
-        // Org admin routes — org admins and promotors
+        // Org admin routes — participant org admins only
         .route(
             "/v1/org/users",
             axum::routing::get(org::list_users),
@@ -262,7 +262,7 @@ pub fn build_router(
             "/v1/org/users/{id}",
             axum::routing::put(org::update_user_role).delete(org::remove_user),
         )
-        // Org invite management — org admins and promotors
+        // Org invite management — participant org admins only
         .route(
             "/v1/org/invites",
             axum::routing::get(org::list_org_invites).post(org::create_org_invite),

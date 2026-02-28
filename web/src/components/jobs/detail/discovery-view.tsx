@@ -4,7 +4,7 @@ import { useState } from "react";
 import { BarChart3, MessageCircle, Search } from "lucide-react";
 import { DashboardBuilder } from "@/components/discovery/dashboard-builder";
 import { DiscoveryAsk } from "@/components/discovery/discovery-ask";
-import { DiscoveryExplorer } from "@/components/discovery/discovery-explorer";
+import { GraphView } from "@/components/discovery/graph-view";
 import { ExperimentalBadge } from "@/components/shared/experimental-badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
@@ -40,7 +40,7 @@ export function DiscoveryView({ jobId }: DiscoveryViewProps) {
         )}
       </div>
       {viewMode === "explorer" ? (
-        <DiscoveryExplorer jobId={jobId} />
+        <GraphView source={{ type: "discovery", jobId: jobId }} />
       ) : viewMode === "dashboard" ? (
         <DashboardBuilder jobId={jobId} />
       ) : (

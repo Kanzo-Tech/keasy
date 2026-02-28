@@ -21,6 +21,7 @@ pub mod tenant;
 
 // Re-export types integration tests need
 pub use db::Database;
+pub use discovery::graph_store::GraphStore;
 pub use discovery::rdf_graph::RdfGraph;
 pub use jobs::runner::JobRunner;
 
@@ -29,19 +30,18 @@ use std::num::NonZeroUsize;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-pub struct OutputCache(pub lru::LruCache<String, Arc<RdfGraph>>);
+pub struct OutputCache(pub lru::LruCache<String, Arc<dyn GraphStore>>);
 
 impl OutputCache {
     pub fn new(cap: usize) -> Self {
         Self(lru::LruCache::new(NonZeroUsize::new(cap).unwrap()))
     }
-    pub fn get(&mut self, key: &str) -> Option<Arc<RdfGraph>> {
+    pub fn get(&mut self, key: &str) -> Option<Arc<dyn GraphStore>> {
         self.0.get(key).cloned()
     }
-    pub fn insert(&mut self, key: String, graph: RdfGraph) -> Arc<RdfGraph> {
-        let arc = Arc::new(graph);
-        self.0.put(key, arc.clone());
-        arc
+    pub fn insert(&mut self, key: String, graph: Arc<dyn GraphStore>) -> Arc<dyn GraphStore> {
+        self.0.put(key, graph.clone());
+        graph
     }
     pub fn remove(&mut self, key: &str) {
         self.0.pop(key);
@@ -52,7 +52,7 @@ impl OutputCache {
 pub struct AppState {
     pub db: Database,
     pub runner: Arc<JobRunner>,
-    pub catalog: Arc<RdfGraph>,
+    pub catalog: Arc<dyn GraphStore>,
     pub output_cache: Arc<Mutex<OutputCache>>,
     pub api_key: SecretString,
     pub base_url: String,

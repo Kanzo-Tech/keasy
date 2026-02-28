@@ -1,4 +1,4 @@
-use keasy_server::{AppState, OutputCache, Database, JobRunner, RdfGraph};
+use keasy_server::{AppState, OutputCache, Database, GraphStore, JobRunner, RdfGraph};
 use keasy_server::config::ServerConfig;
 use keasy_server::routes::build_router;
 use keasy_server::tenant::TenantScoped;
@@ -62,7 +62,7 @@ async fn main() {
         std::process::exit(1);
     }
 
-    let catalog = Arc::new(RdfGraph::new());
+    let catalog: Arc<dyn GraphStore> = Arc::new(RdfGraph::new());
 
     let mut restored = 0usize;
     // Startup catalog restore — uses startup_ctx (seed org) since no session context exists at boot

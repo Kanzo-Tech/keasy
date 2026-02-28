@@ -3,30 +3,98 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { toast } from "sonner";
+import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { searchGraphNodes, expandGraphNode, loadJobDiscovery } from "@/lib/api";
+import {
+  fetchJobGraph,
+  fetchAdminGraph,
+  searchGraphNodes,
+  expandGraphNode,
+  loadJobDiscovery,
+} from "@/lib/api";
 import { ForceGraph } from "@/components/discovery/force-graph";
 import { useGraphModel } from "@/hooks/use-graph-model";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import useSWR from "swr";
-import type { GraphNode, SearchResult } from "@/lib/types";
+import type { GraphData, GraphNode, SearchResult } from "@/lib/types";
 
-interface DiscoveryExplorerProps {
-  jobId: string;
+type GraphSource =
+  | { type: "job"; jobId: string }
+  | { type: "admin"; orgId?: string }
+  | { type: "discovery"; jobId: string };
+
+interface GraphViewProps {
+  source: GraphSource;
+  interactive?: boolean;
 }
 
-export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
-  const { data: initial, isLoading, error: loadError } = useSWR(
-    `explorer-${jobId}`,
-    async () => {
-      const discovery = await loadJobDiscovery(jobId);
-      const nodes = await searchGraphNodes("", jobId);
-      return { discovery, nodes };
-    },
-  );
+export function GraphView({ source, interactive }: GraphViewProps) {
+  const isInteractive = interactive ?? source.type === "discovery";
+
+  if (isInteractive) {
+    return <InteractiveGraphView source={source} />;
+  }
+  return <StaticGraphView source={source} />;
+}
+
+// ── Static mode (job catalog + admin unified graph) ──────────────────────────
+
+function StaticGraphView({ source }: { source: GraphSource }) {
+  const fetcher = (): Promise<GraphData> => {
+    if (source.type === "job") return fetchJobGraph(source.jobId);
+    if (source.type === "admin") return fetchAdminGraph(source.orgId);
+    return fetchJobGraph((source as { type: "discovery"; jobId: string }).jobId);
+  };
+
+  const swrKey =
+    source.type === "job"
+      ? `graph-${source.jobId}`
+      : source.type === "admin"
+        ? source.orgId
+          ? `graph-org-${source.orgId}`
+          : "graph-unified"
+        : `graph-${(source as { type: "discovery"; jobId: string }).jobId}`;
+
+  const { data, isLoading } = useSWR(swrKey, fetcher);
+
+  if (isLoading) {
+    return (
+      <div className="text-sm text-muted-foreground p-4">Loading graph...</div>
+    );
+  }
+
+  if (!data || data.nodes.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground p-4">
+        No graph data available.
+      </div>
+    );
+  }
+
+  return <ForceGraph data={data} />;
+}
+
+// ── Interactive mode (discovery explorer) ────────────────────────────────────
+
+function InteractiveGraphView({ source }: { source: GraphSource }) {
+  const jobId =
+    source.type === "discovery"
+      ? source.jobId
+      : source.type === "job"
+        ? source.jobId
+        : "";
+
+  const {
+    data: initial,
+    isLoading,
+    error: loadError,
+  } = useSWR(`explorer-${jobId}`, async () => {
+    const discovery = await loadJobDiscovery(jobId);
+    const nodes = await searchGraphNodes("", jobId);
+    return { discovery, nodes };
+  });
   const showSkeleton = useDelayedLoading(isLoading);
 
   const tripleCount = initial?.discovery.triple_count ?? 0;
@@ -95,7 +163,10 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
       } else {
         graph.merge(data);
       }
-      if (data.links.length > 0 || (data.nodes.length === 0 && data.links.length === 0)) {
+      if (
+        data.links.length > 0 ||
+        (data.nodes.length === 0 && data.links.length === 0)
+      ) {
         graph.markExpanded(result);
       }
     } catch {
@@ -110,7 +181,11 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
       const data = await expandGraphNode(node.id, jobId);
       graph.merge(data);
       if (data.links.length > 0) {
-        graph.markExpanded({ id: node.id, label: node.label, group: node.group });
+        graph.markExpanded({
+          id: node.id,
+          label: node.label,
+          group: node.group,
+        });
       }
     } catch {
       toast.error("Failed to expand node");
@@ -146,7 +221,8 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
     <div className="flex flex-col flex-1 min-h-0">
       {/* Stats */}
       <p className="text-xs text-muted-foreground mb-3">
-        {tripleCount.toLocaleString()} triples &middot; {subjectCount.toLocaleString()} subjects
+        {tripleCount.toLocaleString()} triples &middot;{" "}
+        {subjectCount.toLocaleString()} subjects
       </p>
 
       {/* Search bar */}
@@ -196,7 +272,10 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
                 <span
                   className="w-2.5 h-2.5 rounded-full shrink-0"
                   style={{
-                    backgroundColor: r.group === "literal" ? "#64748b" : "var(--primary)",
+                    backgroundColor:
+                      r.group === "literal"
+                        ? "#64748b"
+                        : "var(--primary)",
                   }}
                 />
                 <div className="min-w-0 flex-1">
@@ -254,8 +333,6 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
           data={graph.graphData}
           selectedId={selectedNode?.id}
           onNodeClick={handleNodeClick}
-
-
         />
       ) : (
         <div className="flex-1 min-h-0 rounded-md border border-border overflow-hidden bg-background flex items-center justify-center">
@@ -266,7 +343,6 @@ export function DiscoveryExplorer({ jobId }: DiscoveryExplorerProps) {
           </p>
         </div>
       )}
-
     </div>
   );
 }

@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::AppState;
 use crate::cloud::reader;
 use crate::error::{AppError, data_response, error_body};
+use super::graph_store::GraphStore;
 use super::loader;
 use super::rdf_graph::RdfGraph;
 use crate::jobs::models::JobStatus;
@@ -227,7 +228,7 @@ pub async fn load_discover(
 
     {
         let mut cache = state.output_cache.lock().await;
-        cache.insert(id, graph);
+        cache.insert(id, Arc::new(graph) as Arc<dyn GraphStore>);
     }
 
     data_response(LoadDiscoverResponse { loaded: true, triple_count: total, subject_count: subjects }).into_response()
@@ -276,7 +277,7 @@ pub async fn export_discover(
     }
 }
 
-async fn get_cached_graph(state: &AppState, job_id: &str) -> Option<Arc<RdfGraph>> {
+async fn get_cached_graph(state: &AppState, job_id: &str) -> Option<Arc<dyn GraphStore>> {
     let mut cache = state.output_cache.lock().await;
     cache.get(job_id)
 }

@@ -1,4 +1,6 @@
 pub mod convert;
+pub mod graph_store;
+pub mod graph_types;
 pub mod loader;
 pub mod rdf_graph;
 pub mod routes;

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::discovery::rdf_graph::TabularData;
+use crate::discovery::graph_types::TabularData;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Conversation {

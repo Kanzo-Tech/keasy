@@ -3,27 +3,14 @@ use std::collections::BTreeMap;
 use oxigraph::model::{GraphNameRef, NamedNodeRef, QuadRef};
 use oxigraph::sparql::{QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
-use oxrdf::Triple;
-use serde::{Deserialize, Serialize};
+use oxrdf::{NamedNode, Triple};
 
 use oxrdfio::RdfSerializer;
 
 use super::convert::{self, GraphData};
+use super::graph_store::GraphStore;
+use super::graph_types::{KeasyTriple, SearchResult, TabularData, TermValue};
 use super::rdf_format::RdfExportFormat;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TabularData {
-    pub columns: Vec<String>,
-    pub rows: Vec<BTreeMap<String, serde_json::Value>>,
-    pub column_types: BTreeMap<String, String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct SearchResult {
-    pub id: String,
-    pub label: String,
-    pub group: String,
-}
 
 pub struct RdfGraph {
     store: Store,
@@ -37,12 +24,51 @@ impl Default for RdfGraph {
     }
 }
 
+fn to_oxrdf_triple(kt: &KeasyTriple) -> Triple {
+    let subject = match &kt.subject {
+        TermValue::Iri(iri) => oxrdf::NamedOrBlankNode::NamedNode(NamedNode::new_unchecked(iri)),
+        TermValue::BlankNode(id) => {
+            oxrdf::NamedOrBlankNode::BlankNode(oxrdf::BlankNode::new_unchecked(id))
+        }
+        TermValue::Literal { .. } => unreachable!("subject cannot be a literal"),
+    };
+
+    let predicate = NamedNode::new_unchecked(&kt.predicate);
+
+    let object = match &kt.object {
+        TermValue::Iri(iri) => oxrdf::Term::NamedNode(NamedNode::new_unchecked(iri)),
+        TermValue::BlankNode(id) => {
+            oxrdf::Term::BlankNode(oxrdf::BlankNode::new_unchecked(id))
+        }
+        TermValue::Literal {
+            value,
+            datatype,
+            language,
+        } => {
+            if let Some(lang) = language {
+                oxrdf::Term::Literal(oxrdf::Literal::new_language_tagged_literal_unchecked(
+                    value, lang,
+                ))
+            } else if let Some(dt) = datatype {
+                oxrdf::Term::Literal(oxrdf::Literal::new_typed_literal(
+                    value,
+                    NamedNode::new_unchecked(dt),
+                ))
+            } else {
+                oxrdf::Term::Literal(oxrdf::Literal::new_simple_literal(value))
+            }
+        }
+    };
+
+    Triple::new(subject, predicate, object)
+}
+
 impl RdfGraph {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn insert_triples(&self, graph_name: Option<&str>, triples: &[Triple]) {
+    pub(crate) fn insert_oxrdf_triples(&self, graph_name: Option<&str>, triples: &[Triple]) {
         let graph = graph_name.map(|n| GraphNameRef::NamedNode(NamedNodeRef::new_unchecked(n)));
         for triple in triples {
             let quad = QuadRef::new(
@@ -55,11 +81,27 @@ impl RdfGraph {
         }
     }
 
-    pub fn clear(&self) {
+    fn evaluate_query(&self, sparql: &str) -> Result<QueryResults<'_>, String> {
+        SparqlEvaluator::new()
+            .parse_query(sparql)
+            .map_err(|e| format!("SPARQL parse error: {e}"))?
+            .on_store(&self.store)
+            .execute()
+            .map_err(|e| format!("SPARQL evaluation error: {e}"))
+    }
+}
+
+impl GraphStore for RdfGraph {
+    fn insert_triples(&self, graph_name: Option<&str>, triples: &[KeasyTriple]) {
+        let oxrdf_triples: Vec<Triple> = triples.iter().map(to_oxrdf_triple).collect();
+        self.insert_oxrdf_triples(graph_name, &oxrdf_triples);
+    }
+
+    fn clear(&self) {
         let _ = self.store.clear();
     }
 
-    pub fn clear_named_graph(&self, graph_name: &str) {
+    fn clear_named_graph(&self, graph_name: &str) {
         let graph = GraphNameRef::NamedNode(NamedNodeRef::new_unchecked(graph_name));
         let quads: Vec<_> = self
             .store
@@ -76,14 +118,14 @@ impl RdfGraph {
         }
     }
 
-    pub fn triple_count(&self, graph_name: Option<&str>) -> usize {
+    fn triple_count(&self, graph_name: Option<&str>) -> usize {
         let graph = graph_name.map(|n| GraphNameRef::NamedNode(NamedNodeRef::new_unchecked(n)));
         self.store
             .quads_for_pattern(None, None, None, graph)
             .count()
     }
 
-    pub fn subject_count(&self) -> usize {
+    fn subject_count(&self) -> usize {
         let sparql = "SELECT (COUNT(DISTINCT ?s) AS ?count) WHERE { ?s ?p ?o }";
         if let Ok(QueryResults::Solutions(solutions)) = self.evaluate_query(sparql) {
             for solution in solutions.flatten() {
@@ -96,7 +138,7 @@ impl RdfGraph {
         0
     }
 
-    pub fn get_graph(&self, graph_name: Option<&str>) -> GraphData {
+    fn get_graph(&self, graph_name: Option<&str>) -> GraphData {
         let graph = graph_name.map(|n| GraphNameRef::NamedNode(NamedNodeRef::new_unchecked(n)));
         let triples: Vec<_> = self
             .store
@@ -107,7 +149,21 @@ impl RdfGraph {
         convert::triples_to_graph_data(&triples)
     }
 
-    pub fn search_nodes(&self, query: &str, limit: usize) -> Vec<SearchResult> {
+    fn get_merged_graphs(&self, graph_names: &[String]) -> GraphData {
+        let mut all_triples = Vec::new();
+        for name in graph_names {
+            let graph = GraphNameRef::NamedNode(NamedNodeRef::new_unchecked(name));
+            let triples = self
+                .store
+                .quads_for_pattern(None, None, None, Some(graph))
+                .filter_map(|q| q.ok())
+                .map(|q| Triple::new(q.subject, q.predicate, q.object));
+            all_triples.extend(triples);
+        }
+        convert::triples_to_graph_data(&all_triples)
+    }
+
+    fn search_nodes(&self, query: &str, limit: usize) -> Vec<SearchResult> {
         let filter_clause = if query.trim().is_empty() {
             String::new()
         } else {
@@ -160,7 +216,7 @@ impl RdfGraph {
         results
     }
 
-    pub fn expand_node(&self, node_iri: &str) -> GraphData {
+    fn expand_node(&self, node_iri: &str) -> GraphData {
         let escaped = node_iri.replace('\\', "\\\\").replace('"', "\\\"");
 
         let sparql = format!(
@@ -178,7 +234,7 @@ impl RdfGraph {
         convert::triples_to_graph_data(&triples)
     }
 
-    pub fn sparql_select(&self, sparql: &str) -> Result<TabularData, String> {
+    fn sparql_select(&self, sparql: &str) -> Result<TabularData, String> {
         match self.evaluate_query(sparql) {
             Ok(QueryResults::Solutions(solutions)) => {
                 let vars: Vec<String> = solutions
@@ -251,20 +307,11 @@ impl RdfGraph {
         }
     }
 
-    fn evaluate_query(&self, sparql: &str) -> Result<QueryResults<'_>, String> {
-        SparqlEvaluator::new()
-            .parse_query(sparql)
-            .map_err(|e| format!("SPARQL parse error: {e}"))?
-            .on_store(&self.store)
-            .execute()
-            .map_err(|e| format!("SPARQL evaluation error: {e}"))
-    }
-
-    pub fn serialize_to_format(&self, format: RdfExportFormat) -> Result<String, String> {
+    fn serialize_to_format(&self, format: RdfExportFormat) -> Result<String, String> {
         self.serialize_graph(None, format)
     }
 
-    pub fn serialize_graph(&self, graph_name: Option<&str>, format: RdfExportFormat) -> Result<String, String> {
+    fn serialize_graph(&self, graph_name: Option<&str>, format: RdfExportFormat) -> Result<String, String> {
         let graph = graph_name.map(|n| GraphNameRef::NamedNode(NamedNodeRef::new_unchecked(n)));
 
         const PREFIXES: &[(&str, &str)] = &[
@@ -304,5 +351,4 @@ impl RdfGraph {
             _ => Ok(raw),
         }
     }
-
 }

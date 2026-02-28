@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Code2, Network } from "lucide-react";
 import { CodeView } from "@/components/discovery/code-view";
-import { KnowledgeGraph } from "@/components/discovery/knowledge-graph";
+import { GraphView } from "@/components/discovery/graph-view";
 import {
   Select,
   SelectContent,
@@ -82,7 +82,7 @@ export function CatalogView({
           />
         )
       ) : (
-        <KnowledgeGraph jobId={id} />
+        <GraphView source={{ type: "job", jobId: id }} />
       )}
     </div>
   );

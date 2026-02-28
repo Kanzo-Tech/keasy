@@ -1,17 +1,14 @@
 COMPOSE_DEV  = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 
-.PHONY: help setup dev down prod build logs restart clean seed ps
+.PHONY: help dev down prod build logs restart clean seed ps
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-setup: ## First-time setup: create .env, build images, start dev
+dev: ## Start dev environment (creates .env files on first run)
 	@cp -n .env.example .env 2>/dev/null || true
 	@cp -n web/.env.local.example web/.env.local 2>/dev/null || true
-	$(COMPOSE_DEV) up --build -d
-
-dev: ## Start dev environment (hot reload + demo data)
 	$(COMPOSE_DEV) up --build -d
 
 down: ## Stop all services

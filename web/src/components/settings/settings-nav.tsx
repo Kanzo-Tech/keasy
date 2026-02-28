@@ -28,6 +28,7 @@ export function SettingsNav() {
       .then((r) => r.data ?? r),
   );
   const isPromotor = me?.effective_role === "promotor";
+  const isAdmin = me?.effective_role === "org_admin";
 
   const sections: { heading: string; items: NavItem[] }[] = isPromotor
     ? [
@@ -51,12 +52,14 @@ export function SettingsNav() {
               label: "Preferences",
               icon: Paintbrush,
             },
-            { href: "/settings/wallet", label: "Wallet", icon: Wallet },
           ],
         },
         {
           heading: "Integrations",
           items: [
+            ...(isAdmin
+              ? [{ href: "/settings/wallet", label: "Wallet", icon: Wallet }]
+              : []),
             {
               href: "/settings/cloud-accounts",
               label: "Cloud Accounts",

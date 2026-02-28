@@ -7,6 +7,7 @@ use serde_json::json;
 use crate::AppState;
 use crate::auth::errors::AuthError;
 use crate::error::data_response;
+use crate::middleware::tenant::RequireOrgAdmin;
 use super::vc_client;
 
 #[derive(Deserialize)]
@@ -18,10 +19,10 @@ pub struct ConnectPayload {
 ///
 /// Creates a verification session with the walt.id Verifier and returns
 /// { session_id, qr_url } for the frontend to render a QR code.
-/// Session-protected: only authenticated users can link a wallet.
+/// Org-admin only: only participant org admins can link a wallet.
 pub async fn init_wallet_session(
     State(state): State<AppState>,
-    _auth_user: axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
+    RequireOrgAdmin(_ctx): RequireOrgAdmin,
 ) -> Result<impl IntoResponse, AuthError> {
     let client = state.vc_client.as_ref()
         .ok_or(AuthError::VcUnavailable)?;
@@ -45,7 +46,7 @@ pub async fn init_wallet_session(
 /// The frontend polls this until it gets "authenticated", then calls vc-connect.
 pub async fn wallet_verify_status(
     State(state): State<AppState>,
-    _auth_user: axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
+    RequireOrgAdmin(_ctx): RequireOrgAdmin,
     axum::extract::Path(session_id): axum::extract::Path<String>,
 ) -> Result<impl IntoResponse, AuthError> {
     let client = state.vc_client.as_ref()
@@ -69,9 +70,10 @@ pub async fn wallet_verify_status(
     Ok(data_response(json!({ "status": "pending" })))
 }
 
-/// GET /v1/gaia-x/wallet — returns current wallet connection status
+/// GET /v1/gaia-x/wallet — returns current wallet connection status (org-admin only)
 pub async fn get_wallet(
     State(state): State<AppState>,
+    RequireOrgAdmin(_ctx): RequireOrgAdmin,
     axum::Extension(auth_user): axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
 ) -> Result<impl IntoResponse, AuthError> {
     let user = state.db.get_user(&auth_user.user_id).await
@@ -83,13 +85,14 @@ pub async fn get_wallet(
     })))
 }
 
-/// POST /v1/gaia-x/wallet/vc-connect — save wallet DID after successful OID4VP session
+/// POST /v1/gaia-x/wallet/vc-connect — save wallet DID after successful OID4VP session (org-admin only)
 ///
 /// The frontend already polled vc-status and knows the session succeeded.
 /// This endpoint re-polls the Verifier (defense-in-depth) to extract the holder DID,
 /// then stores it on the user's account.
 pub async fn save_wallet_connection(
     State(state): State<AppState>,
+    RequireOrgAdmin(_ctx): RequireOrgAdmin,
     axum::Extension(auth_user): axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
     Json(payload): Json<ConnectPayload>,
 ) -> Result<impl IntoResponse, AuthError> {
@@ -127,9 +130,10 @@ pub async fn save_wallet_connection(
     })))
 }
 
-/// DELETE /v1/gaia-x/wallet — disconnect wallet
+/// DELETE /v1/gaia-x/wallet — disconnect wallet (org-admin only)
 pub async fn disconnect_wallet(
     State(state): State<AppState>,
+    RequireOrgAdmin(_ctx): RequireOrgAdmin,
     axum::Extension(auth_user): axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
 ) -> Result<impl IntoResponse, AuthError> {
     state.db.unlink_did_from_user(&auth_user.user_id)

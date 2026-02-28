@@ -70,9 +70,9 @@ export function WalletSettings() {
       .then((r) => r.data ?? r)
   );
 
-  // Defense-in-depth: redirect promotors away from this page
+  // Defense-in-depth: redirect non-org_admin users away from this page
   useEffect(() => {
-    if (me?.effective_role === "promotor") {
+    if (me && me.effective_role !== "org_admin") {
       router.push("/settings");
     }
   }, [me, router]);

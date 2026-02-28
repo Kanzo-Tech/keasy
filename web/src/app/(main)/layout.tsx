@@ -15,7 +15,7 @@ export default function MainLayout({
 }>) {
   return (
     <SidebarProvider>
-      <div className="flex h-full w-full overflow-hidden">
+      <div className="flex h-dvh w-full overflow-hidden">
         <AppSidebar />
 
         <SidebarInset className="flex-1 flex flex-col overflow-hidden w-full">
@@ -29,7 +29,7 @@ export default function MainLayout({
           </header>
 
           <RedirectToast />
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden flex flex-col">
             {children}
           </div>
         </SidebarInset>

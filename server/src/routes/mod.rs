@@ -76,20 +76,6 @@ pub fn build_router(
             "/v1/auth/oidc-callback",
             axum::routing::get(crate::auth::oidc::oidc_callback),
         )
-        // VC auth routes — public (no session required beforehand)
-        .route(
-            "/v1/auth/vc-init",
-            axum::routing::post(crate::auth::vc_routes::vc_init),
-        )
-        .route(
-            "/v1/auth/vc-health",
-            axum::routing::get(crate::auth::vc_routes::vc_health),
-        )
-        // vc-status is public — session is created inside the handler on success
-        .route(
-            "/v1/auth/vc-status/{session_id}",
-            axum::routing::get(crate::auth::vc_routes::vc_status),
-        )
         .with_state(state.clone());
 
     // Session-authenticated routes (session required, NO tenant context required)
@@ -105,15 +91,6 @@ pub fn build_router(
         .route(
             "/v1/auth/workspaces",
             axum::routing::get(crate::auth::routes::list_workspaces),
-        )
-        .route(
-            "/v1/auth/wallet",
-            axum::routing::get(crate::auth::wallet_routes::get_wallet)
-                .delete(crate::auth::wallet_routes::disconnect_wallet),
-        )
-        .route(
-            "/v1/auth/vc-connect",
-            axum::routing::post(crate::auth::wallet_routes::save_wallet_connection),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),
@@ -278,6 +255,24 @@ pub fn build_router(
         .route(
             "/v1/org/users/{id}",
             axum::routing::put(org::update_user_role).delete(org::remove_user),
+        )
+        // Gaia-X wallet connection routes (session + tenant protected)
+        .route(
+            "/v1/gaia-x/wallet",
+            axum::routing::get(crate::gaia_x::wallet_routes::get_wallet)
+                .delete(crate::gaia_x::wallet_routes::disconnect_wallet),
+        )
+        .route(
+            "/v1/gaia-x/wallet/vc-init",
+            axum::routing::post(crate::gaia_x::wallet_routes::init_wallet_session),
+        )
+        .route(
+            "/v1/gaia-x/wallet/vc-status/{session_id}",
+            axum::routing::get(crate::gaia_x::wallet_routes::wallet_verify_status),
+        )
+        .route(
+            "/v1/gaia-x/wallet/vc-connect",
+            axum::routing::post(crate::gaia_x::wallet_routes::save_wallet_connection),
         )
         // Gaia-X compliance wizard routes (session + tenant protected)
         .route(

@@ -104,9 +104,8 @@ services:
     ports:
       - "7003:7003"
     volumes:
-      - waltid-verifier-data:/waltid-verifier-api/config
+      - ./waltid/config:/waltid-verifier-api/config:ro
 
 volumes:
   keasy-data:
   keycloak-postgres-data:
-  waltid-verifier-data:

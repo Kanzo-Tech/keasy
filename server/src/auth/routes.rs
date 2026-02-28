@@ -14,7 +14,7 @@ use crate::error::data_response;
 /// Returns the authenticated user's profile, org, and effective role.
 /// Protected by session_required but NOT tenant_context_required.
 pub async fn get_me(
-    session: Session,
+    _session: Session,
     State(state): State<AppState>,
     axum::Extension(auth_user): axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
 ) -> Result<impl IntoResponse, AuthError> {
@@ -29,18 +29,6 @@ pub async fn get_me(
         Some(m) => state.db.get_organization(&m.org_id).await,
         None => None,
     };
-
-    // Read auth_method from session — "vc" if authenticated via OID4VP, "oidc" otherwise.
-    // OIDC is the primary auth method; password auth has been removed (Phase 11, IDENT-07).
-    let auth_method: String = session
-        .get::<String>("auth_method")
-        .await
-        .ok()
-        .flatten()
-        .unwrap_or_else(|| "oidc".to_string());
-
-    // Read whether the walt.id Verifier sidecar is currently reachable
-    let vc_available = state.vc_available.load(std::sync::atomic::Ordering::Relaxed);
 
     // Compute effective role
     let membership_role = membership.as_ref().map(|m| m.role.as_str());
@@ -60,8 +48,6 @@ pub async fn get_me(
         "last_name": user.last_name,
         "membership_role": membership_role,
         "effective_role": effective_role,
-        "auth_method": auth_method,
-        "vc_available": vc_available,
         "vc_holder_did": user.vc_holder_did,
         "wallet_connected_at": user.wallet_connected_at,
         "org": org.map(|o| json!({
@@ -160,7 +146,7 @@ pub async fn logout(
     let end_session_url = if let (Some(oidc), Some(client_id)) =
         (&state.oidc_state, &state.oidc_client_id)
     {
-        let post_logout_uri = format!("{}/login", state.base_url.trim_end_matches('/'));
+        let post_logout_uri = format!("{}/v1/auth/oidc-start", state.base_url.trim_end_matches('/'));
         let encoded_redirect = urlencoding::encode(&post_logout_uri);
         Some(format!(
             "{}/protocol/openid-connect/logout?client_id={}&post_logout_redirect_uri={}",

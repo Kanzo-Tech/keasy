@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import Link from "next/link";
+
 
 function InviteForm() {
   const searchParams = useSearchParams();
@@ -85,7 +85,7 @@ function InviteForm() {
         </CardHeader>
         <CardContent>
           <Button variant="outline" asChild className="w-full">
-            <Link href="/login">Sign in</Link>
+            <a href="/v1/auth/oidc-start">Sign in</a>
           </Button>
         </CardContent>
       </Card>
@@ -110,7 +110,7 @@ function InviteForm() {
           )}
         </Button>
         <Button variant="outline" asChild className="w-full">
-          <Link href="/login">Already have an account? Sign in</Link>
+          <a href="/v1/auth/oidc-start">Already have an account? Sign in</a>
         </Button>
       </CardContent>
     </Card>

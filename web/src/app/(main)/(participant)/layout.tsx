@@ -13,7 +13,7 @@ export default async function ParticipantLayout({
   }
 
   if (!role) {
-    redirect('/login');
+    redirect('/v1/auth/oidc-start');
   }
 
   return <>{children}</>;

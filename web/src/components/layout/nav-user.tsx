@@ -5,7 +5,6 @@ import {
   ChevronsUpDown,
   LogOut,
   Settings,
-  ShieldCheck,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -53,7 +52,6 @@ export function NavUser({
     email: string
     firstName: string
     lastName: string
-    authMethod?: string
   }
 }) {
   const { isMobile, setOpen, setOpenMobile } = useSidebar()
@@ -77,8 +75,8 @@ export function NavUser({
     } catch {
       // Ignore errors — redirect to login regardless
     }
-    // Fallback: redirect to login (no Keycloak end-session URL available)
-    window.location.href = "/login"
+    // Fallback: redirect to OIDC start (no Keycloak end-session URL available)
+    window.location.href = "/v1/auth/oidc-start"
   }
 
   return (
@@ -94,11 +92,8 @@ export function NavUser({
                 <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium inline-flex items-center gap-1">
+                <span className="truncate font-medium">
                   {user.name}
-                  {user.authMethod === "vc" && (
-                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                  )}
                 </span>
                 <span className="truncate text-xs">{user.email}</span>
               </div>
@@ -117,11 +112,8 @@ export function NavUser({
                   <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium inline-flex items-center gap-1">
+                  <span className="truncate font-medium">
                     {user.name}
-                    {user.authMethod === "vc" && (
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    )}
                   </span>
                   <span className="truncate text-xs">{user.email}</span>
                 </div>

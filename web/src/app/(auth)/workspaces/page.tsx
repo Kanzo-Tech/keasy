@@ -48,7 +48,7 @@ export default function WorkspacesPage() {
         setLoading(false);
       })
       .catch(() => {
-        router.replace("/login");
+        window.location.replace("/v1/auth/oidc-start");
       });
   }, [router]);
 

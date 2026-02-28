@@ -9,7 +9,7 @@ export default async function PromotorLayout({
   const role = await getEffectiveRole();
 
   if (role !== 'promotor') {
-    redirect(role ? '/connections?redirected=1' : '/login');
+    redirect(role ? '/connections?redirected=1' : '/v1/auth/oidc-start');
   }
 
   return <>{children}</>;

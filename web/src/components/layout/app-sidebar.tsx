@@ -9,8 +9,8 @@ import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2, Wallet } from "luci
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getSidebarRoutes, ROLE_LABEL } from "@/lib/route-config";
-import { NavMain } from "@/components/nav-main";
-import { NavUser } from "@/components/nav-user";
+import { NavMain } from "@/components/layout/nav-main";
+import { NavUser } from "@/components/layout/nav-user";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,8 +39,6 @@ type MeResponse = {
   email: string;
   first_name: string;
   last_name: string;
-  auth_method: string;
-  vc_available: boolean;
   effective_role: string;
   vc_holder_did: string | null;
   wallet_connected_at: string | null;
@@ -99,7 +97,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         email: me.email,
         firstName: me.first_name,
         lastName: me.last_name,
-        authMethod: me.auth_method,
       }
     : { name: "", email: "", firstName: "", lastName: "" };
 

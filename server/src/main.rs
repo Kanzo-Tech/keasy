@@ -6,7 +6,6 @@ use secrecy::ExposeSecret;
 
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 
 use tokio::sync::Mutex;
@@ -101,21 +100,17 @@ async fn main() {
         config.job_timeout_secs,
     ));
 
-    // VC sidecar setup — only active when KEASY_WALT_ID_VERIFIER_URL is configured
-    let vc_available = Arc::new(AtomicBool::new(false));
-    let vc_client = if let Some(verifier_url) = config.walt_id_verifier_url {
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(5))
-            .build()
-            .unwrap_or_default();
-        keasy_server::auth::sidecar_health::spawn_health_monitor(
-            verifier_url,
-            client.clone(),
-            vc_available.clone(),
-        );
-        Some(client)
+    // Walt.id Verifier client — used for wallet connection (OID4VP).
+    // Only active when KEASY_WALT_ID_VERIFIER_URL is configured.
+    let vc_client = if config.walt_id_verifier_url.is_some() {
+        Some(
+            reqwest::Client::builder()
+                .timeout(Duration::from_secs(5))
+                .build()
+                .unwrap_or_default(),
+        )
     } else {
-        info!("Walt.id Verifier URL not configured — VC auth disabled");
+        info!("Walt.id Verifier URL not configured — wallet connection disabled");
         None
     };
 
@@ -194,7 +189,6 @@ async fn main() {
         output_cache,
         api_key: config.api_key,
         base_url: config.base_url,
-        vc_available,
         vc_client,
         gxdch_notary_url: config.gxdch_notary_url,
         gxdch_compliance_url: config.gxdch_compliance_url,

@@ -16,7 +16,9 @@ pub mod gxdch;
 pub mod keys;
 pub mod routes;
 pub mod signing;
+pub mod vc_client;
 pub mod vp;
+pub mod wallet_routes;
 
 use serde::{Deserialize, Serialize};
 

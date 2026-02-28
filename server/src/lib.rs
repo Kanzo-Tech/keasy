@@ -27,7 +27,6 @@ pub use jobs::runner::JobRunner;
 use secrecy::SecretString;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
 use tokio::sync::Mutex;
 
 pub struct OutputCache(pub lru::LruCache<String, Arc<RdfGraph>>);
@@ -57,10 +56,7 @@ pub struct AppState {
     pub output_cache: Arc<Mutex<OutputCache>>,
     pub api_key: SecretString,
     pub base_url: String,
-    /// Whether the walt.id Verifier sidecar is currently reachable.
-    /// Updated every 30 s by the background health monitor.
-    pub vc_available: Arc<AtomicBool>,
-    /// HTTP client pre-configured for calls to the walt.id Verifier API.
+    /// HTTP client for calls to the walt.id Verifier API (wallet connection).
     /// None when KEASY_WALT_ID_VERIFIER_URL is not set.
     pub vc_client: Option<reqwest::Client>,
     /// GXDCH Notary endpoint URL for LRN credential requests.

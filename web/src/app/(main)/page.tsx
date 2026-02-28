@@ -7,7 +7,7 @@ export default async function HomePage() {
   const role = await getEffectiveRole();
 
   if (!role) {
-    redirect("/login");
+    redirect("/v1/auth/oidc-start");
   }
 
   if (role === "promotor") {

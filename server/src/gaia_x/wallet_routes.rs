@@ -5,8 +5,8 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::AppState;
+use crate::auth::errors::AuthError;
 use crate::error::data_response;
-use super::errors::AuthError;
 use super::vc_client;
 
 #[derive(Deserialize)]
@@ -14,7 +14,62 @@ pub struct ConnectPayload {
     pub session_id: String,
 }
 
-/// GET /v1/auth/wallet — returns current wallet connection status
+/// POST /v1/gaia-x/wallet/vc-init — start an OID4VP session for wallet connection.
+///
+/// Creates a verification session with the walt.id Verifier and returns
+/// { session_id, qr_url } for the frontend to render a QR code.
+/// Session-protected: only authenticated users can link a wallet.
+pub async fn init_wallet_session(
+    State(state): State<AppState>,
+    _auth_user: axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
+) -> Result<impl IntoResponse, AuthError> {
+    let client = state.vc_client.as_ref()
+        .ok_or(AuthError::VcUnavailable)?;
+
+    let verifier_url = std::env::var("KEASY_WALT_ID_VERIFIER_URL")
+        .unwrap_or_else(|_| "http://localhost:7003".to_string());
+
+    let body = vc_client::create_verification_session(client, &verifier_url)
+        .await
+        .map_err(AuthError::Internal)?;
+
+    Ok(data_response(json!({
+        "session_id": body["id"],
+        "qr_url": body["url"],
+    })))
+}
+
+/// GET /v1/gaia-x/wallet/vc-status/{session_id} — poll OID4VP session for wallet connection.
+///
+/// Returns { status: "pending" | "authenticated" | "expired" }.
+/// The frontend polls this until it gets "authenticated", then calls vc-connect.
+pub async fn wallet_verify_status(
+    State(state): State<AppState>,
+    _auth_user: axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
+    axum::extract::Path(session_id): axum::extract::Path<String>,
+) -> Result<impl IntoResponse, AuthError> {
+    let client = state.vc_client.as_ref()
+        .ok_or(AuthError::VcUnavailable)?;
+
+    let verifier_url = std::env::var("KEASY_WALT_ID_VERIFIER_URL")
+        .unwrap_or_else(|_| "http://localhost:7003".to_string());
+
+    let body = vc_client::poll_session_status(client, &verifier_url, &session_id)
+        .await
+        .map_err(AuthError::Internal)?;
+
+    if body.get("status").and_then(|s| s.as_str()) == Some("expired") {
+        return Ok(data_response(json!({ "status": "expired" })));
+    }
+
+    if body.get("verificationResult").and_then(|v| v.as_bool()).unwrap_or(false) {
+        return Ok(data_response(json!({ "status": "authenticated" })));
+    }
+
+    Ok(data_response(json!({ "status": "pending" })))
+}
+
+/// GET /v1/gaia-x/wallet — returns current wallet connection status
 pub async fn get_wallet(
     State(state): State<AppState>,
     axum::Extension(auth_user): axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
@@ -28,7 +83,7 @@ pub async fn get_wallet(
     })))
 }
 
-/// POST /v1/auth/vc-connect — save wallet DID after successful OID4VP session
+/// POST /v1/gaia-x/wallet/vc-connect — save wallet DID after successful OID4VP session
 ///
 /// The frontend already polled vc-status and knows the session succeeded.
 /// This endpoint re-polls the Verifier (defense-in-depth) to extract the holder DID,
@@ -72,7 +127,7 @@ pub async fn save_wallet_connection(
     })))
 }
 
-/// DELETE /v1/auth/wallet — disconnect wallet
+/// DELETE /v1/gaia-x/wallet — disconnect wallet
 pub async fn disconnect_wallet(
     State(state): State<AppState>,
     axum::Extension(auth_user): axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,

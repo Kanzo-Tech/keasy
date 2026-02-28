@@ -1,11 +1,9 @@
 "use client";
 
 import { useRef } from "react";
-import { useRouter } from "next/navigation";
 import { SWRConfig } from "swr";
 
 export function SWRProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const redirected = useRef(false);
 
   return (
@@ -19,7 +17,7 @@ export function SWRProvider({ children }: { children: React.ReactNode }) {
               error?.code === "auth/session_expired")
           ) {
             redirected.current = true;
-            router.push("/login?reason=session_expired");
+            window.location.href = "/v1/auth/oidc-start";
           }
         },
       }}

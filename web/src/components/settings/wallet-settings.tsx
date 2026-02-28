@@ -59,7 +59,7 @@ export function WalletSettings() {
   const { data: wallet, isLoading: walletLoading } = useSWR<WalletStatus>(
     "wallet-status",
     () =>
-      fetch("/v1/auth/wallet")
+      fetch("/v1/gaia-x/wallet")
         .then((r) => r.json())
         .then((r) => r.data ?? r)
   );
@@ -101,7 +101,7 @@ export function WalletSettings() {
     setVcSession(null);
 
     try {
-      const res = await fetch("/v1/auth/vc-init", { method: "POST" });
+      const res = await fetch("/v1/gaia-x/wallet/vc-init", { method: "POST" });
       if (!res.ok) {
         setError("Could not start wallet connection. Please try again.");
         setStep("idle");
@@ -126,7 +126,7 @@ export function WalletSettings() {
       // Start polling
       pollingRef.current = setInterval(async () => {
         try {
-          const statusRes = await fetch(`/v1/auth/vc-status/${sessionId}`);
+          const statusRes = await fetch(`/v1/gaia-x/wallet/vc-status/${sessionId}`);
           if (!statusRes.ok) {
             setError("Verification failed. Please try again.");
             setStep("idle");
@@ -143,7 +143,7 @@ export function WalletSettings() {
             setStep("saving");
 
             // Save wallet DID to user account
-            const connectRes = await fetch("/v1/auth/vc-connect", {
+            const connectRes = await fetch("/v1/gaia-x/wallet/vc-connect", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ session_id: sessionId }),
@@ -193,7 +193,7 @@ export function WalletSettings() {
 
   const handleDisconnect = useCallback(async () => {
     try {
-      const res = await fetch("/v1/auth/wallet", { method: "DELETE" });
+      const res = await fetch("/v1/gaia-x/wallet", { method: "DELETE" });
       if (!res.ok) {
         toast.error("Failed to disconnect wallet. Please try again.");
         return;

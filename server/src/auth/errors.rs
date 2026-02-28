@@ -49,10 +49,10 @@ impl IntoResponse for AuthError {
                 Json(error_body("auth/session_required", "Authentication required")),
             ).into_response(),
 
-            // Session expired: 401 + Location header hint per CONTEXT.md
+            // Session expired: 401 + Location header hint
             AuthError::SessionExpired => (
                 StatusCode::UNAUTHORIZED,
-                [(axum::http::header::LOCATION, "/login")],
+                [(axum::http::header::LOCATION, "/v1/auth/oidc-start")],
                 Json(error_body("auth/session_expired", "Session expired")),
             ).into_response(),
 
@@ -63,7 +63,7 @@ impl IntoResponse for AuthError {
 
             AuthError::VcUnavailable => (
                 StatusCode::SERVICE_UNAVAILABLE,
-                Json(error_body("auth/vc_unavailable", "VC login temporarily unavailable")),
+                Json(error_body("auth/vc_unavailable", "Wallet verifier temporarily unavailable")),
             ).into_response(),
 
             AuthError::ValidationFailed(_detail) => (
@@ -86,22 +86,22 @@ impl IntoResponse for AuthError {
                 Json(error_body("auth/oidc_not_configured", "OIDC authentication is not configured")),
             ).into_response(),
 
-            // The following OIDC errors occur during browser redirects — return a
-            // 302 redirect to /login?error=auth_failed so the user sees an error banner.
+            // The following OIDC errors occur during browser redirects — restart the
+            // OIDC flow so the user can re-authenticate.
             AuthError::OidcStateMismatch => {
-                Redirect::to("/login?error=auth_failed").into_response()
+                Redirect::to("/v1/auth/oidc-start").into_response()
             }
 
             AuthError::OidcTokenExchange => {
-                Redirect::to("/login?error=auth_failed").into_response()
+                Redirect::to("/v1/auth/oidc-start").into_response()
             }
 
             AuthError::OidcNoIdToken => {
-                Redirect::to("/login?error=auth_failed").into_response()
+                Redirect::to("/v1/auth/oidc-start").into_response()
             }
 
             AuthError::OidcTokenInvalid => {
-                Redirect::to("/login?error=auth_failed").into_response()
+                Redirect::to("/v1/auth/oidc-start").into_response()
             }
         }
     }

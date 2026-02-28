@@ -9,7 +9,7 @@ export default async function OrgLayout({
   const role = await getEffectiveRole();
 
   if (!role) {
-    redirect("/login");
+    redirect("/v1/auth/oidc-start");
   }
 
   // Only org_admin and promotor can manage org users

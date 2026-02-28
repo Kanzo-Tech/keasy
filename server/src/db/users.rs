@@ -117,19 +117,6 @@ impl Database {
         Ok(())
     }
 
-    /// Look up a user by their VC holder DID. Returns only active users.
-    /// Used by the VC auth flow after a successful OID4VP verification.
-    pub async fn get_user_by_did(&self, did: &str) -> Option<User> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, email, first_name, last_name, password_hash, status, created_at, updated_at, vc_holder_did, wallet_connected_at
-             FROM users WHERE vc_holder_did = ?1 AND status = 'active'",
-            [did],
-            row_to_user,
-        )
-        .ok()
-    }
-
     /// Link a DID to a user account. Called when a user first links their
     /// Verifiable Credential identity from account settings.
     pub async fn link_did_to_user(&self, user_id: &str, did: &str) -> Result<(), rusqlite::Error> {

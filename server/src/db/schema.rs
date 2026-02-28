@@ -16,15 +16,17 @@ CREATE TABLE IF NOT EXISTS organizations (
 );
 
 CREATE TABLE IF NOT EXISTS users (
-    id            TEXT PRIMARY KEY,
-    email         TEXT NOT NULL UNIQUE,
-    first_name    TEXT NOT NULL,
-    last_name     TEXT NOT NULL,
-    password_hash TEXT NOT NULL,
-    vc_holder_did TEXT UNIQUE,
-    status        TEXT NOT NULL DEFAULT 'inactive' CHECK(status IN ('active', 'inactive')),
-    created_at    TEXT NOT NULL,
-    updated_at    TEXT NOT NULL
+    id                  TEXT PRIMARY KEY,
+    email               TEXT NOT NULL UNIQUE,
+    first_name          TEXT NOT NULL,
+    last_name           TEXT NOT NULL,
+    password_hash       TEXT NOT NULL,
+    vc_holder_did       TEXT UNIQUE,
+    subject             TEXT UNIQUE,
+    wallet_connected_at TEXT,
+    status              TEXT NOT NULL DEFAULT 'inactive' CHECK(status IN ('active', 'inactive')),
+    created_at          TEXT NOT NULL,
+    updated_at          TEXT NOT NULL
 );
 
 -- User-to-org membership (role = admin or user)
@@ -161,14 +163,5 @@ CREATE TABLE IF NOT EXISTS oidc_clients (
 pub fn apply(conn: &rusqlite::Connection) -> Result<(), String> {
     conn.execute_batch(SCHEMA)
         .map_err(|e| format!("schema creation failed: {e}"))?;
-
-    // Migration: add `subject` column to `users` for OIDC user lookup.
-    // OIDC users are identified by their Keycloak subject (sub) claim.
-    // ALTER TABLE ADD COLUMN fails if the column already exists — that's fine, ignore the error.
-    let _ = conn.execute("ALTER TABLE users ADD COLUMN subject TEXT UNIQUE", []);
-
-    // Migration: add wallet_connected_at to users for wallet settings page display.
-    let _ = conn.execute("ALTER TABLE users ADD COLUMN wallet_connected_at TEXT", []);
-
     Ok(())
 }

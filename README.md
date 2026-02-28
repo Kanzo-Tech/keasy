@@ -25,6 +25,46 @@ Open [http://localhost:3000](http://localhost:3000) — you'll be redirected to 
 | `admin@keasy.dev` | `admin` | Promotor admin | Keasy | Connections, jobs, catalog, cloud accounts |
 | `user@keasy.dev` | `user` | Participant admin | ACME Corp | Connections, jobs, cloud accounts |
 
+## Demo Data
+
+When running in dev mode (`make dev`), the server seeds the database with demo data linked to the Keycloak demo users. All IDs are fixed for idempotency — `make seed` resets everything cleanly.
+
+### Organizations
+
+| Name | Role | Country | Visible to |
+|------|------|---------|------------|
+| Keasy | Promotor | EU | `admin@keasy.dev` |
+| ACME Corp | Participant | DE | `user@keasy.dev` |
+
+### Cloud Accounts
+
+| Name | Provider | Organization | Config |
+|------|----------|-------------|--------|
+| AWS Production | S3 | Keasy | `region: eu-west-1` |
+| Google Cloud Dev | GCP | ACME Corp | `project: acme-dev` |
+
+### Connections
+
+| Name | Kind | Location | Organization | Details |
+|------|------|----------|-------------|---------|
+| Product Catalog | Data | Local | Keasy | `file:///sample/products.csv` |
+| Schema.org Vocab | Vocabulary | Local | Keasy | `https://schema.org` |
+| Customer Data | Data | Cloud (GCP) | ACME Corp | `gs://acme-dev/customers/` |
+
+### Jobs
+
+| Name | Status | Organization | Notes |
+|------|--------|-------------|-------|
+| Product ETL | Completed | Keasy | Has pipeline config with map operation |
+| Monthly Report | Draft | ACME Corp | Empty, ready to configure |
+| Failed Import | Failed | ACME Corp | Error: connection timeout to GCP bucket |
+
+### What each user sees after login
+
+**`admin@keasy.dev`** (promotor) — sees the Keasy org dashboard with Product Catalog and Schema.org connections, the AWS Production cloud account, the completed Product ETL job, and access to admin features (participant management, invite links).
+
+**`user@keasy.dev`** (participant) — sees the ACME Corp dashboard with the Customer Data connection, the Google Cloud Dev account, a draft Monthly Report job and the failed Failed Import job.
+
 ## Architecture
 
 ```

@@ -25,6 +25,9 @@
         "http://localhost:3000/v1/auth/oidc-callback"
       ],
       "webOrigins": ["+"],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:8080/*##http://localhost:3000/*"
+      },
       "defaultClientScopes": [
         "openid",
         "profile",

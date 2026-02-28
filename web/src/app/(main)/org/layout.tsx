@@ -14,7 +14,7 @@ export default async function OrgLayout({
 
   // Only org_admin and promotor can manage org users
   if (role === "org_user") {
-    redirect("/connections?redirected=1");
+    redirect("/?redirected=1");
   }
 
   return <>{children}</>;

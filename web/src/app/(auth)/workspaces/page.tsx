@@ -41,7 +41,7 @@ export default function WorkspacesPage() {
         const ws: Workspace[] = data?.data?.workspaces ?? [];
         if (ws.length <= 1) {
           // Auto-skip for single dataspace — redirect straight to dashboard
-          router.replace("/connections");
+          router.replace("/");
           return;
         }
         setWorkspaces(ws);

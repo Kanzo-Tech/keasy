@@ -135,6 +135,9 @@ pub async fn logout(
         let _ = state.db.delete_user_session(&user_id).await;
     }
 
+    // Read id_token BEFORE flushing the session (flush destroys all session data).
+    let id_token: Option<String> = session.get("id_token").await.ok().flatten();
+
     // Flush session — destroys data and removes from store, clears cookie
     session
         .flush()
@@ -142,16 +145,20 @@ pub async fn logout(
         .map_err(|e| AuthError::Internal(format!("session flush failed: {e}")))?;
 
     // Build Keycloak end-session URL for OIDC RP-Initiated Logout.
-    // Format: {issuer}/protocol/openid-connect/logout?client_id={id}&post_logout_redirect_uri={url}
+    // Format: {issuer}/protocol/openid-connect/logout?client_id={id}&id_token_hint={jwt}&post_logout_redirect_uri={url}
     let end_session_url = if let (Some(oidc), Some(client_id)) =
         (&state.oidc_state, &state.oidc_client_id)
     {
-        let post_logout_uri = format!("{}/v1/auth/oidc-start", state.base_url.trim_end_matches('/'));
+        let post_logout_uri = state.base_url.trim_end_matches('/').to_string();
         let encoded_redirect = urlencoding::encode(&post_logout_uri);
-        Some(format!(
+        let mut url = format!(
             "{}/protocol/openid-connect/logout?client_id={}&post_logout_redirect_uri={}",
             oidc.issuer_url, client_id, encoded_redirect
-        ))
+        );
+        if let Some(token) = &id_token {
+            url.push_str(&format!("&id_token_hint={}", urlencoding::encode(token)));
+        }
+        Some(url)
     } else {
         None
     };

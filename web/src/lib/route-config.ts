@@ -35,14 +35,14 @@ export const ROLE_LABEL: Record<string, string> = {
  * Keyed by path, O(1) lookup, sidebar/breadcrumbs derive from this.
  */
 const ROUTES: Record<string, RouteDef> = {
-  "/":                            { name: "Home", icon: Home },
+  "/":                            { name: "Dashboard", icon: Home, sidebar: ["promotor", "participant"] },
   "/connections":                 { name: "Connections", icon: Database, sidebar: ["participant"] },
   "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: ["participant"] },
   "/compliance":                  { name: "Compliance", icon: ShieldCheck, sidebar: ["participant"] },
   "/compliance/wizard":           { name: "Compliance Wizard", icon: ShieldCheck },
   "/participants":                { name: "Participants", icon: Users, sidebar: ["promotor"] },
   "/catalog":                     { name: "Catalog", icon: BookOpenCheck, sidebar: ["promotor"] },
-  "/settings":                    { name: "Settings", icon: Settings2, sidebar: ["promotor", "participant"] },
+  "/settings":                    { name: "Settings", icon: Settings2 },
   "/settings/ai":                 { name: "AI Settings", icon: Bot },
   "/settings/cloud-accounts":     { name: "Cloud Accounts", icon: GalleryVerticalEnd },
   "/settings/cloud-accounts/new": { name: "New Cloud Account" },
@@ -60,7 +60,7 @@ export function findRoute(path: string): RouteEntry | undefined {
 }
 
 export function generateBreadcrumbs(path: string): RouteEntry[] {
-  const crumbs: RouteEntry[] = [{ path: "/", name: "Home" }];
+  const crumbs: RouteEntry[] = [{ path: "/", name: "Dashboard" }];
 
   if (path !== "/") {
     const segments = path.split("/").filter(Boolean);

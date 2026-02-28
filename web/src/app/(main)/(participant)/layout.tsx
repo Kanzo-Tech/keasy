@@ -9,7 +9,7 @@ export default async function ParticipantLayout({
   const role = await getEffectiveRole();
 
   if (role === 'promotor') {
-    redirect('/participants?redirected=1');
+    redirect('/?redirected=1');
   }
 
   if (!role) {

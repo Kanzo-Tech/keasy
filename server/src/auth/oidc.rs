@@ -512,6 +512,16 @@ pub async fn oidc_callback(
         }
     };
 
+    // 8b. Store raw id_token JWT for use in OIDC RP-Initiated Logout (id_token_hint).
+    if let Ok(raw) = serde_json::to_value(id_token) {
+        if let Some(jwt_str) = raw.as_str() {
+            session
+                .insert("id_token", jwt_str)
+                .await
+                .map_err(|e| AuthError::Internal(format!("session insert id_token: {e}")))?;
+        }
+    }
+
     // 9. Extract subject (Keycloak user UUID) and custom claims.
     let subject = claims.subject().to_string();
     let dataspaces: Vec<String> = claims.additional_claims().dataspaces.clone();
@@ -600,7 +610,7 @@ pub async fn oidc_callback(
     let redirect_target = if dataspaces.len() > 1 {
         "/workspaces"
     } else {
-        "/connections"
+        "/"
     };
     Ok(Redirect::to(redirect_target).into_response())
 }

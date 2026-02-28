@@ -27,7 +27,7 @@ Open [http://localhost:3000](http://localhost:3000) — you'll be redirected to 
 
 ## Demo Data
 
-When running in dev mode (`make dev`), the server seeds the database with demo data linked to the Keycloak demo users. All IDs are fixed for idempotency — `make seed` resets everything cleanly.
+When running in dev mode (`make dev`), the server seeds the database with demo data linked to the Keycloak demo users. All IDs are fixed for idempotency — `make clean && make dev` resets everything cleanly.
 
 ### Organizations
 
@@ -99,7 +99,6 @@ graph TD
 make dev              # start dev environment with hot reload
 make logs-server      # tail server logs
 make logs-web         # tail web logs
-make seed             # reset database with fresh demo data
 make shell-server     # interactive shell in server container
 make shell-web        # interactive shell in web container
 ```
@@ -122,7 +121,6 @@ make shell-web        # interactive shell in web container
 | `make restart` | Restart all services |
 | `make restart-<svc>` | Restart one service |
 | `make clean` | Nuclear reset: remove containers, volumes, images |
-| `make seed` | Re-seed: wipe app data, restart server |
 | `make shell-<svc>` | Open shell in container |
 | `make ps` | Show running services |
 
@@ -195,4 +193,4 @@ make build        # build images without starting
 | Server compilation slow | First Rust build caches deps (~2-5 min), subsequent builds are fast |
 | Hot reload not working | Check volume mounts; try `make restart-web` or `make restart-server` |
 | Port 3000 in use | Run `make down` first, or change port in docker-compose.yml |
-| Database issues | Run `make seed` to wipe and re-create demo data |
+| Database issues | Run `make clean && make dev` to wipe and re-create demo data |

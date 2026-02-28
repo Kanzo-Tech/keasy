@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 
-const API_URL = process.env.KEASY_API_URL ?? 'http://localhost:8080';
+const API_URL = process.env.KEASY_API_URL!;
 
 export async function getEffectiveRole(): Promise<string | null> {
   const cookieStore = await cookies();

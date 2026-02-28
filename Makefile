@@ -1,14 +1,13 @@
 COMPOSE_DEV  = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 
-.PHONY: help dev down prod build logs restart clean seed ps
+.PHONY: help dev down prod build logs restart clean ps
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 dev: ## Start dev environment (creates .env files on first run)
 	@cp -n .env.example .env 2>/dev/null || true
-	@cp -n web/.env.local.example web/.env.local 2>/dev/null || true
 	$(COMPOSE_DEV) up --build -d
 
 down: ## Stop all services
@@ -36,11 +35,6 @@ restart-%: ## Restart one service (e.g., make restart-web)
 clean: ## Nuclear reset: remove containers, volumes, images
 	$(COMPOSE_DEV) down -v --rmi local
 	@$(COMPOSE_PROD) down -v --rmi local 2>/dev/null || true
-
-seed: ## Re-seed: wipe app data, restart server
-	$(COMPOSE_DEV) rm -sf server
-	@docker volume rm keasy_keasy-data 2>/dev/null || true
-	$(COMPOSE_DEV) up --build -d server
 
 shell-%: ## Open shell in container (e.g., make shell-server)
 	$(COMPOSE_DEV) exec $* sh

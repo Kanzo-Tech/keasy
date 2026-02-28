@@ -116,25 +116,17 @@ function ConnectionsContent() {
 
   return (
     <Tabs value={tab} onValueChange={handleTabChange}>
-      <div className="flex items-center justify-between">
-        <TabsList>
-          <TabsTrigger value="data" className="gap-1.5">
-            <Database size={14} />
-            Data
-          </TabsTrigger>
+      <TabsList>
+        <TabsTrigger value="data" className="gap-1.5">
+          <Database size={14} />
+          Data
+        </TabsTrigger>
 
-          <TabsTrigger value="vocab" className="gap-1.5">
-            <BookOpen size={14} />
-            Vocabulary
-          </TabsTrigger>
-        </TabsList>
-        <Button asChild size="sm">
-          <Link href="/connections/new">
-            <Plus size={14} className="mr-1" />
-            Create connection
-          </Link>
-        </Button>
-      </div>
+        <TabsTrigger value="vocab" className="gap-1.5">
+          <BookOpen size={14} />
+          Vocabulary
+        </TabsTrigger>
+      </TabsList>
 
         {connections.length === 0 ? (
           <EmptyState
@@ -156,6 +148,14 @@ function ConnectionsContent() {
             searchKey="name"
             searchPlaceholder="Search connections..."
             onRowClick={(conn) => router.push(`/connections/${conn.id}`)}
+            toolbarActions={
+              <Button asChild size="sm">
+                <Link href="/connections/new">
+                  <Plus size={14} className="mr-1" />
+                  Create connection
+                </Link>
+              </Button>
+            }
           />
         )}
     </Tabs>

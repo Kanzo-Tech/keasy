@@ -112,14 +112,6 @@ export function CloudAccountsTab() {
       <SettingsSection
         title="Cloud accounts"
         description="Manage credentials for cloud storage providers. Accounts are used by sources to access data."
-        action={
-          <Button size="sm" asChild>
-            <Link href="/settings/cloud-accounts/new">
-              <Plus size={14} />
-              Add account
-            </Link>
-          </Button>
-        }
       >
         {accounts.length === 0 ? (
           <EmptyState
@@ -142,6 +134,14 @@ export function CloudAccountsTab() {
             searchPlaceholder="Search accounts..."
             onRowClick={(account) =>
               router.push(`/settings/cloud-accounts/${account.id}`)
+            }
+            toolbarActions={
+              <Button size="sm" asChild>
+                <Link href="/settings/cloud-accounts/new">
+                  <Plus size={14} />
+                  Add account
+                </Link>
+              </Button>
             }
           />
         )}

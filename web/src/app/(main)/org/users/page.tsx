@@ -114,19 +114,11 @@ export default function OrgUsersPage() {
   return (
     <div className="flex-1 overflow-auto p-4">
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-medium">Users</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage users in your organization.
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/org/users/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Add User
-          </Link>
-        </Button>
+      <div>
+        <h2 className="text-lg font-medium">Users</h2>
+        <p className="text-sm text-muted-foreground">
+          Manage users in your organization.
+        </p>
       </div>
 
       {!isLoading && !users.length ? (
@@ -148,6 +140,14 @@ export default function OrgUsersPage() {
           data={users}
           searchKey="email"
           searchPlaceholder="Search users..."
+          toolbarActions={
+            <Button asChild size="sm">
+              <Link href="/org/users/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Add User
+              </Link>
+            </Button>
+          }
         />
       )}
     </div>

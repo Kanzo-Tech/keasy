@@ -113,25 +113,17 @@ export default function JobsPage() {
 
   return (
     <Tabs defaultValue="jobs">
-      <div className="flex items-center justify-between">
-        <TabsList>
-          <TabsTrigger value="jobs" className="gap-1.5">
-            <Briefcase size={14} />
-            Jobs
-          </TabsTrigger>
+      <TabsList>
+        <TabsTrigger value="jobs" className="gap-1.5">
+          <Briefcase size={14} />
+          Jobs
+        </TabsTrigger>
 
-          <TabsTrigger value="graph" className="gap-1.5">
-            <Share2 size={14} />
-            Graph
-          </TabsTrigger>
-        </TabsList>
-        <Button asChild size="sm">
-          <Link href="/jobs/new">
-            <Plus size={14} className="mr-1" />
-            Create job
-          </Link>
-        </Button>
-      </div>
+        <TabsTrigger value="graph" className="gap-1.5">
+          <Share2 size={14} />
+          Graph
+        </TabsTrigger>
+      </TabsList>
 
         <TabsContent value="jobs">
           {!jobs?.length ? (
@@ -154,6 +146,14 @@ export default function JobsPage() {
               searchKey="name"
               searchPlaceholder="Search jobs..."
               onRowClick={handleRowClick}
+              toolbarActions={
+                <Button asChild size="sm">
+                  <Link href="/jobs/new">
+                    <Plus size={14} className="mr-1" />
+                    Create job
+                  </Link>
+                </Button>
+              }
             />
           )}
         </TabsContent>

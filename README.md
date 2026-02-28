@@ -67,18 +67,20 @@ When running in dev mode (`make dev`), the server seeds the database with demo d
 
 ## Architecture
 
-```
-Browser :3000
-  └─ Caddy (reverse proxy)
-       ├─ /v1/*   → Server :8080 (Rust/Axum API)
-       ├─ /auth/* → Keycloak :8080 (OIDC identity)
-       └─ /*      → Web :3000 (Next.js frontend)
+```mermaid
+graph TD
+    Browser -->|":3000"| Caddy
 
-Server → SQLite (app data)
-       → Keycloak Admin API (user management)
-       → WaltID Verifier :7003 (credential verification)
+    Caddy -->|"/v1/*"| Server["Server :8080<br/>(Rust/Axum)"]
+    Caddy -->|"/auth/*"| Keycloak[":8080<br/>Keycloak (OIDC)"]
+    Caddy -->|"/*"| Web["Web :3000<br/>(Next.js)"]
 
-Keycloak → PostgreSQL (identity data)
+    Server --> SQLite[(SQLite<br/>app data)]
+    Server -->|"admin API"| Keycloak
+    Server --> WaltID["WaltID Verifier :7003"]
+    Server --> GXDCH["GXDCH<br/>(Notary + Compliance)"]
+
+    Keycloak --> PostgreSQL[(PostgreSQL<br/>identity data)]
 ```
 
 ## Tech Stack

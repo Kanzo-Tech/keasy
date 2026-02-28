@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { ConnectionEditor } from "@/components/connection-editor";
+import { ConnectionEditor } from "@/components/connections/connection-editor";
 
 export default function NewConnectionPage() {
   return (

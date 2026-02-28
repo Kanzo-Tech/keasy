@@ -8,7 +8,7 @@ import useSWR, { useSWRConfig } from "swr";
 import Link from "next/link";
 import { fetchCloudAccounts, createConnection } from "@/lib/api";
 import { getProviderIcon } from "@/lib/provider-icons";
-import { FormField, FormActions } from "@/components/form-layout";
+import { FormField, FormActions } from "@/components/shared/form-layout";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ComingSoon } from "@/components/coming-soon";
+import { ComingSoon } from "@/components/shared/coming-soon";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { ConnectionKind, LocationType } from "@/lib/types";

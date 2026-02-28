@@ -17,7 +17,7 @@ import {
   CatalogView,
   DiscoveryView,
   ValidationTab,
-} from "@/components/job-detail";
+} from "@/components/jobs/detail";
 import type { JobStatus } from "@/lib/types";
 
 function isTerminal(status: JobStatus): boolean {

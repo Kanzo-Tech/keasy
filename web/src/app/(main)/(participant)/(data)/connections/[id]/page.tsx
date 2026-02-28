@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { ConnectionDetail } from "@/components/connection-detail";
+import { ConnectionDetail } from "@/components/connections/connection-detail";
 
 export default function ConnectionDetailPage({
   params,

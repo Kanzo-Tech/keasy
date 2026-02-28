@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { BarChart3, MessageCircle, Search } from "lucide-react";
-import { DashboardBuilder } from "@/components/dashboard-builder";
-import { DiscoveryAsk } from "@/components/discovery-ask";
-import { DiscoveryExplorer } from "@/components/discovery-explorer";
-import { ExperimentalBadge } from "@/components/experimental-badge";
+import { DashboardBuilder } from "@/components/discovery/dashboard-builder";
+import { DiscoveryAsk } from "@/components/discovery/discovery-ask";
+import { DiscoveryExplorer } from "@/components/discovery/discovery-explorer";
+import { ExperimentalBadge } from "@/components/shared/experimental-badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface DiscoveryViewProps {

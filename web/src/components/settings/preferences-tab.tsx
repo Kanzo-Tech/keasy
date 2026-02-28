@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
-import { usePreferences } from "@/components/preferences-provider";
+import { usePreferences } from "@/components/providers/preferences-provider";
 import { SettingsSection, SettingsPage } from "@/components/settings/settings-section";
-import { FormField } from "@/components/form-layout";
+import { FormField } from "@/components/shared/form-layout";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {

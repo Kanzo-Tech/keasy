@@ -1,6 +1,6 @@
-import { ExperimentalBadge } from "@/components/experimental-badge";
+import { ExperimentalBadge } from "@/components/shared/experimental-badge";
 import { PipelineFlow } from "@/components/pipeline-flow";
-import { Section } from "@/components/section";
+import { Section } from "@/components/shared/section";
 import type { PipelineSummary } from "@/lib/types";
 
 interface PipelineSectionProps {

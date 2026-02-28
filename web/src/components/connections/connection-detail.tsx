@@ -21,7 +21,7 @@ import {
   fetchConnectionFiles,
   fetchProviders,
 } from "@/lib/api";
-import { MetaItem } from "@/components/meta-item";
+import { MetaItem } from "@/components/shared/meta-item";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getProviderIcon } from "@/lib/provider-icons";
 

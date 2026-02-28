@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Code2, Network } from "lucide-react";
-import { CodeView } from "@/components/code-view";
-import { KnowledgeGraph } from "@/components/knowledge-graph";
+import { CodeView } from "@/components/discovery/code-view";
+import { KnowledgeGraph } from "@/components/discovery/knowledge-graph";
 import {
   Select,
   SelectContent,

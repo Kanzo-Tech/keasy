@@ -25,7 +25,7 @@ import {
   isNumeric,
   isChartAvailable,
   defaultAxesForType,
-} from "@/components/chart-widget";
+} from "@/components/discovery/chart-widget";
 import { fetchJob, loadJobDiscovery } from "@/lib/api";
 import {
   loadDashboard,

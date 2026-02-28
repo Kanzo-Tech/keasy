@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { PreferencesProvider } from "@/components/preferences-provider";
-import { SWRProvider } from "@/components/swr-provider";
-import { ThemeProvider } from "@/components/theme-provider";
+import { PreferencesProvider } from "@/components/providers/preferences-provider";
+import { SWRProvider } from "@/components/providers/swr-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 

@@ -1,6 +1,6 @@
-import { AppSidebar } from "@/components/app-sidebar";
-import { DynamicBreadcrumbs } from "@/components/dynamic-breadcrumbs";
-import { RedirectToast } from "@/components/redirect-toast";
+import { AppSidebar } from "@/components/layout/app-sidebar";
+import { DynamicBreadcrumbs } from "@/components/layout/dynamic-breadcrumbs";
+import { RedirectToast } from "@/components/shared/redirect-toast";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarProvider,

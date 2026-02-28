@@ -20,7 +20,7 @@ import {
   deleteConversation,
 } from "@/lib/api";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
-import { EmptyState } from "@/components/empty-state";
+import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { EditableText } from "@/components/ui/editable-text";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { CodeView } from "@/components/code-view";
+import { CodeView } from "@/components/discovery/code-view";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { Markdown } from "@/components/ui/markdown";
 import {

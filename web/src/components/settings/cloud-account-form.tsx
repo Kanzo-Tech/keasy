@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FormField, FormActions } from "@/components/form-layout";
+import { FormField, FormActions } from "@/components/shared/form-layout";
 import { getProviderIcon } from "@/lib/provider-icons";
 import { cn } from "@/lib/utils";
 import type { ProviderSchema, FieldSchema, CloudAccountSummary } from "@/lib/types";

@@ -11,7 +11,7 @@ import {
   useEdgesState,
 } from "@xyflow/react";
 import { useTheme } from "next-themes";
-import { ZoomSelect } from "@/components/zoom-select";
+import { ZoomSelect } from "@/components/pipeline-flow/zoom-select";
 import { cn } from "@/lib/utils";
 import type { PipelineSummary } from "@/lib/types";
 import { nodeTypes } from "./nodes";

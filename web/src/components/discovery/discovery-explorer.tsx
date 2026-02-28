@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { searchGraphNodes, expandGraphNode, loadJobDiscovery } from "@/lib/api";
-import { ForceGraph } from "@/components/force-graph";
+import { ForceGraph } from "@/components/discovery/force-graph";
 import { useGraphModel } from "@/hooks/use-graph-model";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import useSWR from "swr";

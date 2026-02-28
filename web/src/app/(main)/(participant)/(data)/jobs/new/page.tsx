@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { JobEditor } from "@/components/job-editor";
+import { JobEditor } from "@/components/jobs/job-editor";
 
 export default function NewJobPage() {
   return (

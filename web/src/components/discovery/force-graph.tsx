@@ -10,7 +10,7 @@ import {
   drawLink,
   buildNodeTooltip,
 } from "@/lib/graph-rendering";
-import { usePreferences } from "@/components/preferences-provider";
+import { usePreferences } from "@/components/providers/preferences-provider";
 import type { GraphData, GraphNode } from "@/lib/types";
 
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {

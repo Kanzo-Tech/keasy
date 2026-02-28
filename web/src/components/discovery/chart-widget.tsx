@@ -56,7 +56,7 @@ import type {
   ChartWidget as ChartWidgetType,
   ChartType,
 } from "@/lib/dashboard-store";
-import type { FieldSchema } from "@/components/dashboard-builder";
+import type { FieldSchema } from "@/components/discovery/dashboard-builder";
 
 interface RenderContext {
   widget: ChartWidgetType;

@@ -1,7 +1,7 @@
 "use client";
 
 import { BookOpenCheck } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
+import { EmptyState } from "@/components/shared/empty-state";
 
 export default function CatalogPage() {
   return (

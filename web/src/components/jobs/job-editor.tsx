@@ -11,11 +11,11 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { FormField, FormActions } from "@/components/form-layout";
-import { JobSummaryPanel } from "@/components/job-summary-dialog";
-import { CodeEditor } from "@/components/code-editor";
+import { FormField, FormActions } from "@/components/shared/form-layout";
+import { JobSummaryPanel } from "@/components/jobs/job-summary-dialog";
+import { CodeEditor } from "@/components/discovery/code-editor";
 import { cn } from "@/lib/utils";
-import { ComingSoon } from "@/components/coming-soon";
+import { ComingSoon } from "@/components/shared/coming-soon";
 import { Save, Loader2 } from "lucide-react";
 import {
   createJob,

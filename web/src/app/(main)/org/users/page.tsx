@@ -21,7 +21,7 @@ import {
   sortableHeader,
   actionsColumn,
 } from "@/components/ui/data-table";
-import { EmptyState } from "@/components/empty-state";
+import { EmptyState } from "@/components/shared/empty-state";
 import { useOrgUsers } from "@/hooks/use-org-users";
 import type { OrgUser } from "@/lib/types";
 

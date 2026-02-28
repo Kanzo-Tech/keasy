@@ -17,7 +17,7 @@ import {
   sortableHeader,
   actionsColumn,
 } from "@/components/ui/data-table";
-import { EmptyState } from "@/components/empty-state";
+import { EmptyState } from "@/components/shared/empty-state";
 import { SettingsSection, SettingsPage } from "@/components/settings/settings-section";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";

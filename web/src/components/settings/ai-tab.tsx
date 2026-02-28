@@ -7,7 +7,7 @@ import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { fetchAiProviders, saveAiProvider, deleteAiProvider } from "@/lib/api";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
 import { SettingsPage } from "@/components/settings/settings-section";
-import { FormField, FormActions } from "@/components/form-layout";
+import { FormField, FormActions } from "@/components/shared/form-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

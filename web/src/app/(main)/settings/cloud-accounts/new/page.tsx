@@ -7,7 +7,7 @@ import { toastError } from "@/lib/toast-error";
 import useSWR from "swr";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { fetchSchema, createCloudAccount } from "@/lib/api";
-import { CloudAccountForm } from "@/components/cloud-account-form";
+import { CloudAccountForm } from "@/components/settings/cloud-account-form";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function NewCloudAccountPage() {

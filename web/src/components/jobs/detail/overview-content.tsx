@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AlertCircle } from "lucide-react";
-import { MetaItem } from "@/components/meta-item";
-import { PipelineSection } from "@/components/pipeline-section";
+import { MetaItem } from "@/components/shared/meta-item";
+import { PipelineSection } from "@/components/pipeline-flow/pipeline-section";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getErrorInfo } from "@/lib/error-codes";

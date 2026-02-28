@@ -2,7 +2,7 @@
 
 import useSWR from "swr";
 import { fetchJobGraph, fetchUnifiedGraph } from "@/lib/api";
-import { ForceGraph } from "@/components/force-graph";
+import { ForceGraph } from "@/components/discovery/force-graph";
 import type { GraphData } from "@/lib/types";
 
 export function KnowledgeGraph({ jobId }: { jobId?: string }) {

@@ -17,11 +17,11 @@ import {
   sortableHeader,
   actionsColumn,
 } from "@/components/ui/data-table";
-import { EmptyState } from "@/components/empty-state";
-import { KnowledgeGraph } from "@/components/knowledge-graph";
+import { EmptyState } from "@/components/shared/empty-state";
+import { KnowledgeGraph } from "@/components/discovery/knowledge-graph";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { JobStatusBadge } from "@/components/job-status-badge";
+import { JobStatusBadge } from "@/components/jobs/job-status-badge";
 import { formatDate, formatJobDuration } from "@/lib/formatters";
 import type { Job, JobStatus } from "@/lib/types";
 

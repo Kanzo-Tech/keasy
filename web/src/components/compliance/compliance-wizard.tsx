@@ -13,6 +13,7 @@ import { StepLrn } from "@/components/compliance/steps/step-lrn";
 import { StepLegalParticipant } from "@/components/compliance/steps/step-legal-participant";
 import { StepTerms } from "@/components/compliance/steps/step-terms";
 import { StepGxdchSubmit } from "@/components/compliance/steps/step-gxdch-submit";
+import { ServiceGate } from "@/components/ui/service-gate";
 
 interface WizardState {
   current_step?: number;
@@ -177,6 +178,7 @@ export function ComplianceWizard() {
 
   return (
     <PageContent>
+      <ServiceGate requires={["gxdch_notary", "gxdch_compliance"]}>
       <div className="max-w-5xl mx-auto">
         <PageHeader
           title="Gaia-X Compliance Wizard"
@@ -197,6 +199,7 @@ export function ComplianceWizard() {
           {renderStep()}
         </WizardLayout>
       </div>
+      </ServiceGate>
     </PageContent>
   );
 }

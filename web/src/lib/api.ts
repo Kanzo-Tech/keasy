@@ -87,6 +87,8 @@ export const deleteJob = (id: string) => del(`/v1/jobs/${id}`);
 export const fetchJobGraph = (id: string) =>
   get<GraphData>(`/v1/jobs/${id}/graph`);
 export const fetchUnifiedGraph = () => get<GraphData>("/v1/graph");
+export const fetchAdminGraph = (orgId?: string) =>
+  get<GraphData>(orgId ? `/v1/graph?org_id=${encodeURIComponent(orgId)}` : "/v1/graph");
 
 export async function fetchJobCatalog(
   id: string,
@@ -245,3 +247,13 @@ export const createOrgInvite = (role: string) =>
   post<{ token: string; invite_url: string }>("/v1/org/invites", { role });
 export const fetchOrgInvites = () => get<OrgInvite[]>("/v1/org/invites");
 export const revokeOrgInvite = (token: string) => del(`/v1/org/invites/${token}`);
+
+// Service status
+export interface ServiceStatus {
+  wallet: boolean;
+  oidc: boolean;
+  gxdch_notary: boolean;
+  gxdch_compliance: boolean;
+}
+
+export const fetchServiceStatus = () => get<ServiceStatus>("/v1/status");

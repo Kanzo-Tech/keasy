@@ -37,6 +37,12 @@ const registry: Record<string, ErrorInfo> = {
     message: "The specified bucket or container was not found.",
     link: cloudLink,
   },
+  "auth/vc_unavailable": {
+    message: "Wallet service is temporarily unavailable.",
+  },
+  "auth/oidc_not_configured": {
+    message: "Single sign-on is not configured.",
+  },
   ERROR: FALLBACK,
   UNKNOWN: FALLBACK,
 };

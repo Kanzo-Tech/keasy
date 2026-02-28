@@ -120,7 +120,6 @@ async fn main() {
                 .unwrap_or_default(),
         )
     } else {
-        info!("Walt.id Verifier URL not configured — wallet connection disabled");
         None
     };
 
@@ -128,20 +127,14 @@ async fn main() {
     let keycloak_admin = match (&config.oidc_issuer_url, &config.oidc_client_id, &config.oidc_client_secret) {
         (Some(issuer), Some(client_id), Some(secret)) => {
             match keasy_server::keycloak::admin::KeycloakAdmin::new(issuer, client_id, secret.clone()) {
-                Ok(admin) => {
-                    tracing::info!(issuer = %issuer, "Keycloak admin client configured");
-                    Some(admin)
-                }
+                Ok(admin) => Some(admin),
                 Err(e) => {
                     tracing::warn!(error = %e, "Failed to configure Keycloak admin client — instance registration will be unavailable");
                     None
                 }
             }
         }
-        _ => {
-            tracing::info!("OIDC not configured — Keycloak admin client disabled");
-            None
-        }
+        _ => None,
     };
 
     // Build OIDC relying party client — only when all three config fields are present.
@@ -160,10 +153,7 @@ async fn main() {
             )
             .await
             {
-                Ok(state) => {
-                    tracing::info!(issuer = %issuer, "OIDC relying party client initialized");
-                    Some(Arc::new(state))
-                }
+                Ok(state) => Some(Arc::new(state)),
                 Err(e) => {
                     tracing::warn!(
                         error = %e,
@@ -173,10 +163,7 @@ async fn main() {
                 }
             }
         }
-        _ => {
-            tracing::info!("OIDC not fully configured — OIDC auth disabled");
-            None
-        }
+        _ => None,
     };
 
     // Ensure keasy:dataspaces protocol mapper exists in Keycloak (idempotent).
@@ -208,6 +195,14 @@ async fn main() {
         keycloak_admin,
         oidc_state,
     };
+    info!(
+        wallet = if state.vc_client.is_some() { "ready" } else { "not configured" },
+        oidc = if state.oidc_state.is_some() { "ready" } else { "not configured" },
+        gxdch_notary = %state.gxdch_notary_url,
+        gxdch_compliance = %state.gxdch_compliance_url,
+        "External services"
+    );
+
     let app = build_router(state, config.cors_origins, session_store, config.session_secret);
 
     let listener = match tokio::net::TcpListener::bind(config.bind_addr).await {

@@ -36,6 +36,7 @@ import {
   CircleCheck,
 } from "lucide-react";
 import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
+import { ServiceGate } from "@/components/ui/service-gate";
 
 type WalletStatus = {
   connected: boolean;
@@ -220,6 +221,7 @@ export function WalletSettings() {
         title="Wallet"
         description="Connect an external wallet to use Verifiable Credentials."
       >
+      <ServiceGate requires="wallet">
       {walletLoading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -384,6 +386,7 @@ export function WalletSettings() {
           </CardFooter>
         </Card>
       )}
+      </ServiceGate>
       </SettingsSection>
     </SettingsPage>
   );

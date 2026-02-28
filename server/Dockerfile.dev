@@ -1,0 +1,16 @@
+FROM rust:1.90-bookworm
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    clang libclang-dev curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN cargo install cargo-watch
+
+WORKDIR /app
+
+# Cache dependencies: copy manifests, build with dummy source
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir src && echo 'fn main() {}' > src/main.rs && cargo build && rm -rf src
+
+EXPOSE 8080
+CMD ["cargo", "watch", "-x", "run"]

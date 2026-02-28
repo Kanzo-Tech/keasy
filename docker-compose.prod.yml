@@ -1,0 +1,31 @@
+# Production overlay — optimized builds, no seed data.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    environment:
+      KEASY_DEV_SEED: "false"
+      RUST_LOG: info
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  caddy:
+    depends_on:
+      web:
+        condition: service_healthy
+      server:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy

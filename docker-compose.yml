@@ -1,4 +1,9 @@
+# Base compose — shared config for all environments.
+# Use with an overlay: docker compose -f docker-compose.yml -f docker-compose.{dev,prod}.yml up
+
 services:
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+
   keycloak-postgres:
     image: postgres:15
     environment:
@@ -32,7 +37,7 @@ services:
       KC_PROXY_HEADERS: xforwarded
       KEASY_OIDC_CLIENT_SECRET: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
     volumes:
-      - ./keycloak/realm-import:/opt/keycloak/data/import
+      - ./infra/keycloak/realm-import:/opt/keycloak/data/import
     depends_on:
       keycloak-postgres:
         condition: service_healthy
@@ -47,9 +52,9 @@ services:
       retries: 5
       start_period: 60s
 
+  # ── Application ─────────────────────────────────────────────────────────────
+
   server:
-    build:
-      context: ./server
     ports:
       - "8080:8080"
     environment:
@@ -59,7 +64,6 @@ services:
       KEASY_DATA_DIR: /var/lib/keasy
       KEASY_SECRET_KEY: ${KEASY_SECRET_KEY:-change-me-in-production}
       KEASY_SESSION_SECRET: "8VVnhO7zkhlc+oelkbjrKnlpkz4S2+HCQLOnz9/gnR/Rwlc2/8gZe+W7EURQDUa53j8oP+miZ5MpMuL4ZLvjoA=="
-      RUST_LOG: debug
       KEASY_BASE_URL: http://localhost:3000
       KEASY_WALT_ID_VERIFIER_URL: http://waltid-verifier-api:7003
       KEASY_OIDC_ISSUER_URL: http://localhost:3000/auth/realms/keasy
@@ -71,16 +75,14 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz/live"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
 
   web:
-    build:
-      context: ./web
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(() => process.exit(0)).catch(() => process.exit(1))"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
     depends_on:
       server:
         condition: service_healthy
@@ -90,12 +92,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
     depends_on:
-      web:
-        condition: service_healthy
-      server:
-        condition: service_healthy
       keycloak:
         condition: service_healthy
 
@@ -104,7 +102,7 @@ services:
     ports:
       - "7003:7003"
     volumes:
-      - ./waltid/config:/waltid-verifier-api/config:ro
+      - ./infra/waltid/config:/waltid-verifier-api/config:ro
 
 volumes:
   keasy-data:

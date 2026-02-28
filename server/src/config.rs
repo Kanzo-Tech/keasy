@@ -44,6 +44,9 @@ pub struct ServerConfig {
     /// to this internal URL (e.g. `http://keycloak:8080`).
     /// Read from KEASY_OIDC_INTERNAL_BASE_URL.
     pub oidc_internal_base_url: Option<String>,
+    /// When true, create demo users, orgs, connections, and jobs at startup.
+    /// Read from KEASY_DEV_SEED. Default false.
+    pub dev_seed: bool,
 }
 
 impl ServerConfig {
@@ -143,6 +146,10 @@ impl ServerConfig {
             .ok()
             .filter(|s| !s.trim().is_empty());
 
+        let dev_seed = std::env::var("KEASY_DEV_SEED")
+            .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
+            .unwrap_or(false);
+
         Self {
             bind_addr,
             api_key: SecretString::from(api_key),
@@ -162,6 +169,7 @@ impl ServerConfig {
             oidc_client_id,
             oidc_client_secret,
             oidc_internal_base_url,
+            dev_seed,
         }
     }
 }

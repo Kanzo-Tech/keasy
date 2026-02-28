@@ -31,5 +31,31 @@
         "email"
       ]
     }
+  ],
+  "users": [
+    {
+      "id": "aaaaaaaa-0000-0000-0000-000000000001",
+      "username": "admin@keasy.dev",
+      "email": "admin@keasy.dev",
+      "firstName": "Ada",
+      "lastName": "Lovelace",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "admin", "temporary": false }
+      ]
+    },
+    {
+      "id": "aaaaaaaa-0000-0000-0000-000000000002",
+      "username": "user@keasy.dev",
+      "email": "user@keasy.dev",
+      "firstName": "Alan",
+      "lastName": "Turing",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "user", "temporary": false }
+      ]
+    }
   ]
 }

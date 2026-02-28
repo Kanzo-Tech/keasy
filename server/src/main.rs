@@ -45,6 +45,16 @@ async fn main() {
 
     info!(path = %db_path.display(), "Database opened");
 
+    if config.dev_seed {
+        info!("dev seed enabled — creating demo data");
+        let conn = db.write().await;
+        if let Err(e) = keasy_server::db::seed::ensure_dev_seed(&conn) {
+            eprintln!("FATAL: dev seed failed: {e}");
+            std::process::exit(1);
+        }
+        drop(conn);
+    }
+
     if !db.verify_secret_key().await {
         eprintln!("FATAL: KEASY_SECRET_KEY does not match the key used to encrypt stored secrets");
         eprintln!("       Cloud account credentials will not be accessible.");

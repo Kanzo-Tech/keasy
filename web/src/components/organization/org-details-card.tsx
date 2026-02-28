@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
-import { Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,20 +13,24 @@ import type { OrgIdentity } from "@/lib/types";
 
 interface OrgDetailsCardProps {
   readOnly?: boolean;
+  editing?: boolean;
+  onEditingChange?: (editing: boolean) => void;
 }
 
-export function OrgDetailsCard({ readOnly }: OrgDetailsCardProps) {
+export function OrgDetailsCard({ readOnly, editing: editingProp, onEditingChange }: OrgDetailsCardProps) {
   const { data, isLoading, mutate } = useSWR("org-identity", fetchOrgIdentity);
-  const [editing, setEditing] = useState(false);
+  const [editingInternal, setEditingInternal] = useState(false);
+  const editing = editingProp ?? editingInternal;
+  const setEditing = onEditingChange ?? setEditingInternal;
   const [form, setForm] = useState<OrgIdentity | null>(null);
   const [saving, setSaving] = useState(false);
 
-  function startEdit() {
-    setForm(
-      data ?? { legal_name: "", country: "", registration_number: null },
-    );
-    setEditing(true);
-  }
+  // Initialize form when editing is triggered externally
+  useEffect(() => {
+    if (editing && !form) {
+      setForm(data ?? { legal_name: "", country: "", registration_number: null });
+    }
+  }, [editing, form, data]);
 
   function cancelEdit() {
     setEditing(false);
@@ -106,14 +109,6 @@ export function OrgDetailsCard({ readOnly }: OrgDetailsCardProps) {
 
   return (
     <div className="space-y-4">
-      {!readOnly && (
-        <div className="flex justify-end">
-          <Button variant="ghost" size="sm" onClick={startEdit}>
-            <Pencil className="h-4 w-4 mr-1" />
-            Edit
-          </Button>
-        </div>
-      )}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <Label className="text-muted-foreground">Legal Name</Label>

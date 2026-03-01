@@ -343,6 +343,7 @@ pub async fn oidc_start(
     Query(params): Query<OidcStartParams>,
 ) -> Result<impl IntoResponse, AuthError> {
     let oidc = state
+        .auth
         .oidc_state
         .as_ref()
         .ok_or(AuthError::OidcNotConfigured)?;
@@ -462,6 +463,7 @@ pub async fn oidc_callback(
 
     // 6. Get OidcState.
     let oidc = state
+        .auth
         .oidc_state
         .as_ref()
         .ok_or(AuthError::OidcNotConfigured)?;

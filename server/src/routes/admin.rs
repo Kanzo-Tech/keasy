@@ -124,7 +124,7 @@ pub async fn register_oidc_client(
     Json(payload): Json<RegisterOidcClientRequest>,
 ) -> Result<impl IntoResponse, RbacError> {
     // 1. Verify Keycloak admin is configured
-    let kc_admin = state.keycloak_admin.as_ref().ok_or_else(|| {
+    let kc_admin = state.auth.keycloak_admin.as_ref().ok_or_else(|| {
         RbacError::Internal(
             "Identity service not configured — set KEASY_OIDC_* environment variables".to_string(),
         )

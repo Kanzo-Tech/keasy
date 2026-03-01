@@ -1,4 +1,4 @@
-use keasy_server::{AppState, OutputCache, Database, GraphStore, JobRunner, RdfGraph};
+use keasy_server::{AppState, AuthServices, GaiaXServices, OutputCache, Database, GraphStore, JobRunner, RdfGraph};
 use keasy_server::config::ServerConfig;
 use keasy_server::routes::build_router;
 use keasy_server::tenant::TenantScoped;
@@ -179,6 +179,18 @@ async fn main() {
     }
 
     let shutdown_grace = Duration::from_secs(config.shutdown_grace_secs);
+    let auth = AuthServices {
+        oidc_state,
+        keycloak_admin,
+        oidc_issuer_url: config.oidc_issuer_url,
+        oidc_client_id: config.oidc_client_id,
+        oidc_client_secret: config.oidc_client_secret,
+    };
+    let gaia_x = GaiaXServices {
+        vc_client,
+        gxdch_notary_url: config.gxdch_notary_url,
+        gxdch_compliance_url: config.gxdch_compliance_url,
+    };
     let state = AppState {
         db,
         runner: runner.clone(),
@@ -186,20 +198,14 @@ async fn main() {
         output_cache,
         api_key: config.api_key,
         base_url: config.base_url,
-        vc_client,
-        gxdch_notary_url: config.gxdch_notary_url,
-        gxdch_compliance_url: config.gxdch_compliance_url,
-        oidc_issuer_url: config.oidc_issuer_url,
-        oidc_client_id: config.oidc_client_id,
-        oidc_client_secret: config.oidc_client_secret,
-        keycloak_admin,
-        oidc_state,
+        auth,
+        gaia_x,
     };
     info!(
-        wallet = if state.vc_client.is_some() { "ready" } else { "not configured" },
-        oidc = if state.oidc_state.is_some() { "ready" } else { "not configured" },
-        gxdch_notary = %state.gxdch_notary_url,
-        gxdch_compliance = %state.gxdch_compliance_url,
+        wallet = if state.gaia_x.vc_client.is_some() { "ready" } else { "not configured" },
+        oidc = if state.auth.oidc_state.is_some() { "ready" } else { "not configured" },
+        gxdch_notary = %state.gaia_x.gxdch_notary_url,
+        gxdch_compliance = %state.gaia_x.gxdch_compliance_url,
         "External services"
     );
 

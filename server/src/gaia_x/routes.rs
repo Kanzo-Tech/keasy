@@ -309,7 +309,7 @@ pub async fn request_lrn(
     };
 
     // Build a reqwest client (use vc_client if available, otherwise build ad-hoc).
-    let client = match &state.vc_client {
+    let client = match &state.gaia_x.vc_client {
         Some(c) => c.clone(),
         None => match reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(30))
@@ -322,7 +322,7 @@ pub async fn request_lrn(
 
     let lrn_vc = match gxdch::request_lrn_credential(
         &client,
-        &state.gxdch_notary_url,
+        &state.gaia_x.gxdch_notary_url,
         &domain,
         &payload.lrn_type,
         &payload.lrn_value,
@@ -588,7 +588,7 @@ pub async fn submit_gxdch(
     // VC-07: assemble VP with inline credentials.
     let vp_value = vp::assemble_vp(&lrn, &lp, &tc);
 
-    let client = match &state.vc_client {
+    let client = match &state.gaia_x.vc_client {
         Some(c) => c.clone(),
         None => match reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(60))
@@ -601,7 +601,7 @@ pub async fn submit_gxdch(
 
     let compliance_vc = match gxdch::submit_compliance(
         &client,
-        &state.gxdch_compliance_url,
+        &state.gaia_x.gxdch_compliance_url,
         &vp_value,
     )
     .await
@@ -761,7 +761,7 @@ pub async fn rerun_compliance(
 
     let vp_value = vp::assemble_vp(&lrn, &lp, &tc);
 
-    let client = match &state.vc_client {
+    let client = match &state.gaia_x.vc_client {
         Some(c) => c.clone(),
         None => match reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(60))
@@ -774,7 +774,7 @@ pub async fn rerun_compliance(
 
     let compliance_vc = match gxdch::submit_compliance(
         &client,
-        &state.gxdch_compliance_url,
+        &state.gaia_x.gxdch_compliance_url,
         &vp_value,
     )
     .await

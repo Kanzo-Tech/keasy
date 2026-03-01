@@ -8,6 +8,8 @@ pub enum ConnectionError {
     InvalidConnection(String),
     #[error("failed to list files: {0}")]
     ListFilesFailed(String),
+    #[error("internal: {0}")]
+    Internal(String),
 }
 
 impl ConnectionError {
@@ -33,6 +35,14 @@ impl ConnectionError {
                 "list_files_failed",
                 msg.clone(),
             ),
+            ConnectionError::Internal(msg) => {
+                tracing::error!(detail = %msg, "Internal connection error");
+                (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal_error",
+                    "An internal error occurred".to_string(),
+                )
+            }
         }
     }
 }

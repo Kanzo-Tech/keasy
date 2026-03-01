@@ -24,7 +24,7 @@ pub async fn init_wallet_session(
     State(state): State<AppState>,
     RequireOrgAdmin(_ctx): RequireOrgAdmin,
 ) -> Result<impl IntoResponse, AuthError> {
-    let client = state.vc_client.as_ref()
+    let client = state.gaia_x.vc_client.as_ref()
         .ok_or(AuthError::VcUnavailable)?;
 
     let verifier_url = std::env::var("KEASY_WALT_ID_VERIFIER_URL")
@@ -49,7 +49,7 @@ pub async fn wallet_verify_status(
     RequireOrgAdmin(_ctx): RequireOrgAdmin,
     axum::extract::Path(session_id): axum::extract::Path<String>,
 ) -> Result<impl IntoResponse, AuthError> {
-    let client = state.vc_client.as_ref()
+    let client = state.gaia_x.vc_client.as_ref()
         .ok_or(AuthError::VcUnavailable)?;
 
     let verifier_url = std::env::var("KEASY_WALT_ID_VERIFIER_URL")
@@ -96,7 +96,7 @@ pub async fn save_wallet_connection(
     axum::Extension(auth_user): axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
     Json(payload): Json<ConnectPayload>,
 ) -> Result<impl IntoResponse, AuthError> {
-    let client = state.vc_client.as_ref()
+    let client = state.gaia_x.vc_client.as_ref()
         .ok_or(AuthError::VcUnavailable)?;
 
     let verifier_url = std::env::var("KEASY_WALT_ID_VERIFIER_URL")

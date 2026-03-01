@@ -50,7 +50,8 @@ impl Database {
         let (fields, secrets) = split_fields_secrets(&active, all_values);
 
         let id = uuid::Uuid::new_v4().to_string();
-        let fields_json = serde_json::to_string(&fields).unwrap();
+        let fields_json = serde_json::to_string(&fields)
+            .map_err(|e| format!("failed to serialize fields: {e}"))?;
 
         let conn = self.write().await;
         conn.execute(
@@ -90,15 +91,7 @@ impl Database {
         conn.query_row(
             "SELECT id, name, provider_id, auth_method, fields FROM cloud_accounts WHERE id = ?1 AND organization_id = ?2",
             params![ctx.inner(), ctx.org_id().as_str()],
-            |row| {
-                Ok(CloudAccountSummary {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                    provider_id: row.get(2)?,
-                    auth_method: row.get(3)?,
-                    fields: serde_json::from_str(&row.get::<_, String>(4)?).unwrap_or_default(),
-                })
-            },
+            row_to_cloud_account_summary,
         )
         .ok()
     }
@@ -134,7 +127,8 @@ impl Database {
             }
         }
 
-        let fields_json = serde_json::to_string(&fields).unwrap();
+        let fields_json = serde_json::to_string(&fields)
+            .map_err(|e| format!("failed to serialize fields: {e}"))?;
         let secrets_plain: HashMap<&str, &str> = secrets
             .iter()
             .map(|(k, v)| (k.as_str(), v.expose_secret()))
@@ -175,15 +169,7 @@ impl Database {
         let mut stmt = conn
             .prepare("SELECT id, name, provider_id, auth_method, fields FROM cloud_accounts WHERE organization_id = ?1")
             .expect("prepare list accounts");
-        stmt.query_map([ctx.org_id().as_str()], |row| {
-            Ok(CloudAccountSummary {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                provider_id: row.get(2)?,
-                auth_method: row.get(3)?,
-                fields: serde_json::from_str(&row.get::<_, String>(4)?).unwrap_or_default(),
-            })
-        })
+        stmt.query_map([ctx.org_id().as_str()], row_to_cloud_account_summary)
         .expect("query accounts")
         .filter_map(|r| r.ok())
         .collect()
@@ -243,7 +229,7 @@ impl Database {
     }
 
     async fn set_secret_json(&self, key: &str, value: &impl serde::Serialize) {
-        let json = serde_json::to_vec(value).unwrap();
+        let json = serde_json::to_vec(value).expect("failed to serialize secret JSON");
         self.set_secret(key, &json).await;
     }
 }
@@ -262,4 +248,14 @@ fn split_fields_secrets(
         }
     }
     (fields, secrets)
+}
+
+fn row_to_cloud_account_summary(row: &rusqlite::Row<'_>) -> rusqlite::Result<CloudAccountSummary> {
+    Ok(CloudAccountSummary {
+        id: row.get("id")?,
+        name: row.get("name")?,
+        provider_id: row.get("provider_id")?,
+        auth_method: row.get("auth_method")?,
+        fields: serde_json::from_str(&row.get::<_, String>("fields")?).unwrap_or_default(),
+    })
 }

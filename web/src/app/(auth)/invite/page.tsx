@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { fetchAuthMe, fetchInviteInfo } from "@/lib/api";
 
 
 function InviteForm() {
@@ -27,38 +28,36 @@ function InviteForm() {
   useEffect(() => {
     if (!token) return;
 
-    // Check if user is already logged in
-    fetch("/v1/auth/me")
-      .then((r) => {
-        if (r.ok) {
-          // Already logged in -- redirect to OIDC start with invite token
-          // The backend will auto-accept the invite after callback
-          setRedirecting(true);
-          window.location.href = `/v1/auth/oidc-start?invite_token=${encodeURIComponent(token)}`;
-          return null;
-        }
+    (async () => {
+      try {
+        // Check if user is already logged in
+        await fetchAuthMe();
+        // Already logged in -- redirect to OIDC start with invite token
+        // The backend will auto-accept the invite after callback
+        setRedirecting(true);
+        window.location.href = `/v1/auth/oidc-start?invite_token=${encodeURIComponent(token)}`;
+        return;
+      } catch {
         // Not logged in -- validate the invite token
-        return fetch(
-          `/v1/auth/invite-info?token=${encodeURIComponent(token)}`
-        ).then((r) => r.json());
-      })
-      .then((data) => {
-        if (data === null) return; // Already redirecting
-        const e = data.data?.email ?? data.email;
-        if (e) {
-          setEmail(e);
+      }
+
+      try {
+        const data = await fetchInviteInfo(token);
+        if (data?.email) {
+          setEmail(data.email);
         } else {
           setError(
             "This invite link is invalid or has expired. Please contact the person who invited you."
           );
         }
-      })
-      .catch(() =>
+      } catch {
         setError(
           "This invite link is invalid or has expired. Please contact the person who invited you."
-        )
-      )
-      .finally(() => setLoading(false));
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [token]);
 
   function handleAcceptInvite() {

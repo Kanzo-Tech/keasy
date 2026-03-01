@@ -6,6 +6,7 @@ use super::Database;
 pub struct Organization {
     pub id: String,
     pub name: String,
+    pub slug: String,
     pub legal_name: String,
     pub registration_number: Option<String>,
     pub country: String,
@@ -53,11 +54,12 @@ impl Database {
         let conn = self.write().await;
         conn.execute(
             "INSERT INTO organizations
-             (id, name, legal_name, registration_number, country, role, vc_verified_at, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+             (id, name, slug, legal_name, registration_number, country, role, vc_verified_at, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             params![
                 org.id,
                 org.name,
+                org.slug,
                 org.legal_name,
                 org.registration_number,
                 org.country,
@@ -74,7 +76,7 @@ impl Database {
     pub async fn get_organization(&self, id: &str) -> Option<Organization> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, legal_name, registration_number, country, role, vc_verified_at, created_at, updated_at
+            "SELECT id, name, slug, legal_name, registration_number, country, role, vc_verified_at, created_at, updated_at
              FROM organizations WHERE id = ?1",
             [id],
             row_to_org,
@@ -112,7 +114,7 @@ impl Database {
         let (_permit, conn) = self.read().await;
         let mut stmt = conn
             .prepare(
-                "SELECT id, name, legal_name, registration_number, country, role, vc_verified_at, created_at, updated_at
+                "SELECT id, name, slug, legal_name, registration_number, country, role, vc_verified_at, created_at, updated_at
                  FROM organizations ORDER BY name",
             )
             .expect("prepare list organizations");
@@ -120,6 +122,17 @@ impl Database {
             .expect("query organizations")
             .filter_map(|r| r.ok())
             .collect()
+    }
+
+    pub async fn get_organization_by_slug(&self, slug: &str) -> Option<Organization> {
+        let (_permit, conn) = self.read().await;
+        conn.query_row(
+            "SELECT id, name, slug, legal_name, registration_number, country, role, vc_verified_at, created_at, updated_at
+             FROM organizations WHERE slug = ?1",
+            [slug],
+            row_to_org,
+        )
+        .ok()
     }
 
     /// Returns the org membership for a user. One user belongs to exactly one org.
@@ -157,14 +170,56 @@ fn row_to_org(row: &rusqlite::Row<'_>) -> rusqlite::Result<Organization> {
     Ok(Organization {
         id: row.get(0)?,
         name: row.get(1)?,
-        legal_name: row.get(2)?,
-        registration_number: row.get(3)?,
-        country: row.get(4)?,
-        role: row.get(5)?,
-        vc_verified_at: row.get(6)?,
-        created_at: row.get(7)?,
-        updated_at: row.get(8)?,
+        slug: row.get(2)?,
+        legal_name: row.get(3)?,
+        registration_number: row.get(4)?,
+        country: row.get(5)?,
+        role: row.get(6)?,
+        vc_verified_at: row.get(7)?,
+        created_at: row.get(8)?,
+        updated_at: row.get(9)?,
     })
+}
+
+/// Generate a URL-safe slug from an organization name.
+/// Lowercase, only [a-z0-9-], max 63 chars, no leading/trailing hyphens.
+pub fn generate_slug(name: &str) -> String {
+    let slug: String = name
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .collect::<String>()
+        .split('-')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("-");
+    let truncated = if slug.len() > 63 { &slug[..63] } else { &slug };
+    truncated.trim_end_matches('-').to_string()
+}
+
+/// Generate a unique slug, appending a numeric suffix if the base slug is taken.
+pub fn generate_unique_slug(conn: &rusqlite::Connection, name: &str) -> String {
+    let base = generate_slug(name);
+    if !slug_exists(conn, &base) {
+        return base;
+    }
+    for i in 2..100 {
+        let candidate = format!("{}-{}", base, i);
+        if !slug_exists(conn, &candidate) {
+            return candidate;
+        }
+    }
+    // Fallback: use a random suffix
+    format!("{}-{}", base, uuid::Uuid::new_v4().to_string().split('-').next().unwrap())
+}
+
+fn slug_exists(conn: &rusqlite::Connection, slug: &str) -> bool {
+    conn.query_row(
+        "SELECT 1 FROM organizations WHERE slug = ?1",
+        [slug],
+        |_| Ok(()),
+    )
+    .is_ok()
 }
 
 fn row_to_user_org_membership(row: &rusqlite::Row<'_>) -> rusqlite::Result<UserOrgMembership> {

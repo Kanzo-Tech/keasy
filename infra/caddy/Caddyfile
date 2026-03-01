@@ -11,6 +11,14 @@
 		reverse_proxy waltid-verifier-api:3000
 	}
 
+	handle /.well-known/* {
+		reverse_proxy server:8080
+	}
+
+	handle /openid-credential-issuer/* {
+		reverse_proxy waltid-issuer-api:3000
+	}
+
 	handle {
 		reverse_proxy web:3000
 	}

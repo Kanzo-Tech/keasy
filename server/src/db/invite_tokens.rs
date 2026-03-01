@@ -1,7 +1,7 @@
 use rusqlite::params;
 use super::Database;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
 pub struct InviteToken {
     pub token: String,
     pub email: Option<String>,

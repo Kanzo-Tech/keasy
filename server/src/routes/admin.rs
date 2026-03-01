@@ -12,7 +12,7 @@ use serde::Deserialize;
 use crate::AppState;
 use crate::db::invite_tokens::InviteToken;
 use crate::db::oidc_clients::OidcClient;
-use crate::db::organizations::Organization;
+use crate::db::organizations::{Organization, generate_unique_slug};
 use crate::error::data_response;
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::middleware::tenant::{RbacError, RequirePromotor};
@@ -21,6 +21,9 @@ use crate::middleware::tenant::{RbacError, RequirePromotor};
 // GET /v1/admin/organizations
 // ---------------------------------------------------------------------------
 
+#[utoipa::path(get, path = "/v1/admin/organizations", tag = "Admin",
+    responses((status = 200, description = "List all organizations", body = Vec<Organization>))
+)]
 pub async fn list_all_orgs(
     RequirePromotor(_ctx): RequirePromotor,
     State(state): State<AppState>,
@@ -33,13 +36,19 @@ pub async fn list_all_orgs(
 // POST /v1/admin/organizations — create org + invite token + send email
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CreateOrgAndInviteRequest {
     pub name: String,
     pub admin_email: String,
 }
 
-/// POST /v1/admin/organizations — create org, generate invite token, send invite email.
+#[utoipa::path(post, path = "/v1/admin/organizations", tag = "Admin",
+    request_body = CreateOrgAndInviteRequest,
+    responses(
+        (status = 201, description = "Organization created with invite"),
+        (status = 403, description = "Insufficient role"),
+    )
+)]
 pub async fn create_org_and_invite(
     RequirePromotor(_ctx): RequirePromotor,
     axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
@@ -49,9 +58,14 @@ pub async fn create_org_and_invite(
     let now = jiff::Timestamp::now().to_string();
 
     // 1. Create organization as participant
+    let slug = {
+        let (_permit, conn) = state.db.read().await;
+        generate_unique_slug(&conn, &payload.name)
+    };
     let org = Organization {
         id: uuid::Uuid::new_v4().to_string(),
         name: payload.name.clone(),
+        slug,
         legal_name: payload.name.clone(),
         registration_number: None,
         country: "EU".to_string(),
@@ -105,7 +119,7 @@ pub async fn create_org_and_invite(
 // POST /v1/admin/oidc-clients — Register a dataspace instance as an OIDC client
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct RegisterOidcClientRequest {
     pub name: String,
     pub url: String,
@@ -113,11 +127,13 @@ pub struct RegisterOidcClientRequest {
     pub logo: Option<String>,
 }
 
-/// POST /v1/admin/oidc-clients — Register a new dataspace instance as an OIDC client.
-///
-/// Creates the OIDC client in Keycloak, stores display metadata in SQLite,
-/// and returns the registered instance record including client_id and client_secret.
-/// The client_secret is returned once and NOT stored — the caller must save it.
+#[utoipa::path(post, path = "/v1/admin/oidc-clients", tag = "Admin",
+    request_body = RegisterOidcClientRequest,
+    responses(
+        (status = 201, description = "OIDC client registered"),
+        (status = 403, description = "Insufficient role"),
+    )
+)]
 pub async fn register_oidc_client(
     RequirePromotor(_ctx): RequirePromotor,
     State(state): State<AppState>,
@@ -189,9 +205,9 @@ pub async fn register_oidc_client(
 // GET /v1/admin/oidc-clients — List all registered dataspace instances
 // ---------------------------------------------------------------------------
 
-/// GET /v1/admin/oidc-clients — List all registered dataspace instances.
-///
-/// Returns display metadata only — no secrets.
+#[utoipa::path(get, path = "/v1/admin/oidc-clients", tag = "Admin",
+    responses((status = 200, description = "List of registered OIDC clients", body = Vec<OidcClient>))
+)]
 pub async fn list_oidc_clients(
     RequirePromotor(_ctx): RequirePromotor,
     State(state): State<AppState>,
@@ -204,7 +220,9 @@ pub async fn list_oidc_clients(
 // GET /v1/admin/invites — List all invite tokens
 // ---------------------------------------------------------------------------
 
-/// GET /v1/admin/invites — List all invite tokens with org names and status.
+#[utoipa::path(get, path = "/v1/admin/invites", tag = "Admin",
+    responses((status = 200, description = "List all invite tokens"))
+)]
 pub async fn list_invites(
     RequirePromotor(_ctx): RequirePromotor,
     State(state): State<AppState>,
@@ -244,14 +262,18 @@ pub async fn list_invites(
 // POST /v1/admin/invites — Create invite link (no email sent)
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CreateInviteRequest {
     pub org_name: String,
 }
 
-/// POST /v1/admin/invites — Create a new participant org and invite link.
-///
-/// Returns the invite URL directly — no email is sent.
+#[utoipa::path(post, path = "/v1/admin/invites", tag = "Admin",
+    request_body = CreateInviteRequest,
+    responses(
+        (status = 201, description = "Invite created"),
+        (status = 403, description = "Insufficient role"),
+    )
+)]
 pub async fn create_invite(
     RequirePromotor(_ctx): RequirePromotor,
     axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
@@ -261,9 +283,14 @@ pub async fn create_invite(
     let now = jiff::Timestamp::now().to_string();
 
     // 1. Create participant org
+    let slug = {
+        let (_permit, conn) = state.db.read().await;
+        generate_unique_slug(&conn, &payload.org_name)
+    };
     let org = Organization {
         id: uuid::Uuid::new_v4().to_string(),
         name: payload.org_name.clone(),
+        slug,
         legal_name: payload.org_name.clone(),
         registration_number: None,
         country: "EU".to_string(),
@@ -319,7 +346,13 @@ pub async fn create_invite(
 // DELETE /v1/admin/invites/{token} — Revoke an invite token
 // ---------------------------------------------------------------------------
 
-/// DELETE /v1/admin/invites/{token} — Revoke (delete) an invite token.
+#[utoipa::path(delete, path = "/v1/admin/invites/{token}", tag = "Admin",
+    params(("token" = String, Path, description = "Invite token to revoke")),
+    responses(
+        (status = 204, description = "Invite revoked"),
+        (status = 403, description = "Insufficient role"),
+    )
+)]
 pub async fn revoke_invite(
     RequirePromotor(_ctx): RequirePromotor,
     axum::extract::Path(token): axum::extract::Path<String>,

@@ -1,9 +1,11 @@
 use serde_json::{json, Value};
 
-/// Calls POST /openid4vc/verify on the Verifier to create a new OID4VP session.
+/// Calls POST /openid4vc/verify on the Verifier to create a SIOPv2 session.
 /// Returns `{ "id": "<session_id>", "url": "openid4vp://..." }`.
 ///
-/// The Verifier API returns the openid4vp:// URL as plain text. The session ID
+/// Uses SIOPv2 (no credential request) so the wallet only needs to prove
+/// ownership of its DID — no specific Verifiable Credential required.
+/// The Verifier API returns the authorization URL as plain text. The session ID
 /// is extracted from the `state` query parameter embedded in that URL.
 pub async fn create_verification_session(
     client: &reqwest::Client,
@@ -13,22 +15,18 @@ pub async fn create_verification_session(
         .post(format!("{verifier_url}/openid4vc/verify"))
         .header("authorizeBaseUrl", "openid4vp://authorize")
         .header("responseMode", "direct_post")
-        .json(&json!({
-            "vp_policies": ["signature", "expired"],
-            "vc_policies": ["signature", "expired"],
-            "request_credentials": [
-                { "type": "VerifiableId", "format": "jwt_vc_json" }
-            ]
-        }))
+        .json(&json!({}))
         .send()
         .await
         .map_err(|e| format!("verifier unreachable: {e}"))?;
 
     if !resp.status().is_success() {
-        return Err(format!("verifier returned status {}", resp.status()));
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(format!("verifier returned status {status}: {body}"));
     }
 
-    // The Verifier returns the openid4vp:// authorization URL as plain text.
+    // The Verifier returns the authorization URL as plain text.
     let url = resp
         .text()
         .await
@@ -75,31 +73,32 @@ pub async fn poll_session_status(
 }
 
 /// Extracts the holder DID from a successful verification response.
-/// Looks in tokenResponse.vp_token or policyResults for the holder subject.
+///
+/// Checks multiple locations in order:
+/// 1. `tokenResponse.id_token` — SIOPv2 self-issued ID token (sub/iss = DID)
+/// 2. `tokenResponse.vp_token` — OID4VP verifiable presentation (sub/iss = holder DID)
+/// 3. `policyResults` — fallback from credential subject
+///
 /// Falls back to "unknown" if extraction fails (should not happen on a verified session).
 pub fn extract_holder_did(body: &Value) -> String {
-    // Try tokenResponse first — contains the VP token with holder info
-    if let Some(vp_token) = body
-        .get("tokenResponse")
+    let token_response = body.get("tokenResponse");
+
+    // Try id_token first (SIOPv2 — DID auth without credentials)
+    if let Some(did) = token_response
+        .and_then(|t| t.get("id_token"))
+        .and_then(|v| v.as_str())
+        .and_then(did_from_jwt)
+    {
+        return did;
+    }
+
+    // Try vp_token (OID4VP — credential presentation)
+    if let Some(did) = token_response
         .and_then(|t| t.get("vp_token"))
         .and_then(|v| v.as_str())
+        .and_then(did_from_jwt)
     {
-        // The VP token is typically a JWT — the subject (sub) claim is the holder DID
-        // For JWTs: header.payload.signature — decode payload
-        let parts: Vec<&str> = vp_token.split('.').collect();
-        if parts.len() >= 2 {
-            if let Ok(decoded) = base64_decode_segment(parts[1]) {
-                if let Ok(payload) = serde_json::from_slice::<Value>(&decoded) {
-                    if let Some(sub) = payload
-                        .get("sub")
-                        .or_else(|| payload.get("iss"))
-                        .and_then(|v| v.as_str())
-                    {
-                        return sub.to_string();
-                    }
-                }
-            }
-        }
+        return did;
     }
 
     // Fallback: look in policyResults for a holder identifier
@@ -121,6 +120,18 @@ pub fn extract_holder_did(body: &Value) -> String {
     }
 
     "unknown".to_string()
+}
+
+/// Decode a JWT and extract the holder DID from `sub` or `iss` claims.
+fn did_from_jwt(token: &str) -> Option<String> {
+    let payload_b64 = token.split('.').nth(1)?;
+    let decoded = base64_decode_segment(payload_b64).ok()?;
+    let payload: Value = serde_json::from_slice(&decoded).ok()?;
+    payload
+        .get("sub")
+        .or_else(|| payload.get("iss"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
 }
 
 fn base64_decode_segment(segment: &str) -> Result<Vec<u8>, String> {

@@ -7,13 +7,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FormField } from "@/components/shared/form-layout";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { signTerms, ApiError } from "@/lib/api";
+import type { WizardState } from "@/lib/types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
-interface WizardState {
-  tc_credential?: object;
-  current_step?: number;
-  [key: string]: unknown;
-}
 
 interface StepTermsProps {
   onComplete: () => void;
@@ -54,18 +50,10 @@ export function StepTerms({ onComplete, completed, wizardState }: StepTermsProps
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/v1/gaia-x/wizard/terms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ private_key_pem: privateKeyPem }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message ?? `Request failed with status ${res.status}`);
-      }
+      await signTerms(privateKeyPem);
       onComplete();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      setError(err instanceof ApiError ? err.message : "An unexpected error occurred");
     } finally {
       setLoading(false);
     }

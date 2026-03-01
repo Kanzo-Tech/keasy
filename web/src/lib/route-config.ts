@@ -50,7 +50,7 @@ const ROUTES: Record<string, RouteDef> = {
   "/settings/cloud-accounts":     { name: "Cloud Accounts", icon: GalleryVerticalEnd },
   "/settings/cloud-accounts/new": { name: "New Cloud Account" },
   "/settings/preferences":        { name: "Preferences" },
-  "/settings/wallet":             { name: "Wallet" },
+  "/organization/compliance":     { name: "Compliance", icon: ShieldCheck },
 };
 
 // ── Derived ──────────────────────────────────────────────────────────────────

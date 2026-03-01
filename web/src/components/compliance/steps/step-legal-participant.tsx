@@ -6,15 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FormField } from "@/components/shared/form-layout";
+import { signLegalParticipant, ApiError } from "@/lib/api";
+import type { WizardState } from "@/lib/types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
-interface WizardState {
-  lp_credential?: object;
-  legal_name?: string;
-  country_code?: string;
-  current_step?: number;
-  [key: string]: unknown;
-}
 
 interface StepLegalParticipantProps {
   onComplete: () => void;
@@ -47,22 +41,10 @@ export function StepLegalParticipant({ onComplete, completed, wizardState }: Ste
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/v1/gaia-x/wizard/legal-participant", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          legal_name: legalName.trim(),
-          country_code: countryCode.trim(),
-          private_key_pem: privateKeyPem,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message ?? `Request failed with status ${res.status}`);
-      }
+      await signLegalParticipant(legalName.trim(), countryCode.trim(), privateKeyPem);
       onComplete();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      setError(err instanceof ApiError ? err.message : "An unexpected error occurred");
     } finally {
       setLoading(false);
     }

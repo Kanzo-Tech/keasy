@@ -8,6 +8,8 @@ import { usePathname } from "next/navigation";
 import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getSidebarRoutes, ROLE_LABEL } from "@/lib/route-config";
+import { fetchAuthMe, fetchWorkspaces } from "@/lib/api";
+import type { MeResponse, WorkspacesResponse, Workspace } from "@/lib/types";
 import { NavMain } from "@/components/layout/nav-main";
 import { NavUser } from "@/components/layout/nav-user";
 import {
@@ -28,29 +30,6 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-type MeResponse = {
-  user_id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  effective_role: string;
-  vc_holder_did: string | null;
-  wallet_connected_at: string | null;
-  org: { id: string; name: string; role: string; vc_verified_at?: string | null } | null;
-  membership_role: string | null;
-};
-
-type Workspace = {
-  client_id: string;
-  name: string;
-  url: string;
-};
-
-type WorkspacesResponse = {
-  workspaces: Workspace[];
-  current_client_id: string;
-};
-
 // Deterministic color from client_id string — matches workspace picker page
 function clientIdToColor(id: string): string {
   let hash = 0;
@@ -64,16 +43,11 @@ function clientIdToColor(id: string): string {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
 
-  const { data: me } = useSWR<MeResponse>("auth-me", () =>
-    fetch("/v1/auth/me").then((r) => r.json()).then((r) => r.data ?? r)
-  );
+  const { data: me } = useSWR<MeResponse>("auth-me", fetchAuthMe);
 
   const { data: workspacesData } = useSWR<WorkspacesResponse>(
     "workspaces",
-    () =>
-      fetch("/v1/auth/workspaces")
-        .then((r) => r.json())
-        .then((r) => r.data ?? r)
+    fetchWorkspaces,
   );
 
   const workspaces = workspacesData?.workspaces ?? [];

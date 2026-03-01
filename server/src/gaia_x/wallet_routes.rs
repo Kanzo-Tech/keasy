@@ -10,16 +10,17 @@ use crate::error::data_response;
 use crate::middleware::tenant::RequireOrgAdmin;
 use super::vc_client;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct ConnectPayload {
     pub session_id: String,
 }
 
-/// POST /v1/gaia-x/wallet/vc-init — start an OID4VP session for wallet connection.
-///
-/// Creates a verification session with the walt.id Verifier and returns
-/// { session_id, qr_url } for the frontend to render a QR code.
-/// Org-admin only: only participant org admins can link a wallet.
+#[utoipa::path(post, path = "/v1/gaia-x/wallet/vc-init", tag = "Gaia-X Wallet",
+    responses(
+        (status = 200, description = "Wallet verification session initiated"),
+        (status = 503, description = "VC service unavailable"),
+    )
+)]
 pub async fn init_wallet_session(
     State(state): State<AppState>,
     RequireOrgAdmin(_ctx): RequireOrgAdmin,
@@ -27,8 +28,8 @@ pub async fn init_wallet_session(
     let client = state.gaia_x.vc_client.as_ref()
         .ok_or(AuthError::VcUnavailable)?;
 
-    let verifier_url = std::env::var("KEASY_WALT_ID_VERIFIER_URL")
-        .unwrap_or_else(|_| "http://localhost:7003".to_string());
+    let verifier_url = state.gaia_x.walt_id_verifier_url.as_deref()
+        .ok_or(AuthError::VcUnavailable)?;
 
     let body = vc_client::create_verification_session(client, &verifier_url)
         .await
@@ -40,10 +41,10 @@ pub async fn init_wallet_session(
     })))
 }
 
-/// GET /v1/gaia-x/wallet/vc-status/{session_id} — poll OID4VP session for wallet connection.
-///
-/// Returns { status: "pending" | "authenticated" | "expired" }.
-/// The frontend polls this until it gets "authenticated", then calls vc-connect.
+#[utoipa::path(get, path = "/v1/gaia-x/wallet/vc-status/{session_id}", tag = "Gaia-X Wallet",
+    params(("session_id" = String, Path, description = "Verification session ID")),
+    responses((status = 200, description = "Session status (pending | authenticated | expired)"))
+)]
 pub async fn wallet_verify_status(
     State(state): State<AppState>,
     RequireOrgAdmin(_ctx): RequireOrgAdmin,
@@ -52,8 +53,8 @@ pub async fn wallet_verify_status(
     let client = state.gaia_x.vc_client.as_ref()
         .ok_or(AuthError::VcUnavailable)?;
 
-    let verifier_url = std::env::var("KEASY_WALT_ID_VERIFIER_URL")
-        .unwrap_or_else(|_| "http://localhost:7003".to_string());
+    let verifier_url = state.gaia_x.walt_id_verifier_url.as_deref()
+        .ok_or(AuthError::VcUnavailable)?;
 
     let body = vc_client::poll_session_status(client, &verifier_url, &session_id)
         .await
@@ -70,7 +71,9 @@ pub async fn wallet_verify_status(
     Ok(data_response(json!({ "status": "pending" })))
 }
 
-/// GET /v1/gaia-x/wallet — returns current wallet connection status (org-admin only)
+#[utoipa::path(get, path = "/v1/gaia-x/wallet", tag = "Gaia-X Wallet",
+    responses((status = 200, description = "Wallet connection status"))
+)]
 pub async fn get_wallet(
     State(state): State<AppState>,
     RequireOrgAdmin(_ctx): RequireOrgAdmin,
@@ -85,11 +88,13 @@ pub async fn get_wallet(
     })))
 }
 
-/// POST /v1/gaia-x/wallet/vc-connect — save wallet DID after successful OID4VP session (org-admin only)
-///
-/// The frontend already polled vc-status and knows the session succeeded.
-/// This endpoint re-polls the Verifier (defense-in-depth) to extract the holder DID,
-/// then stores it on the user's account.
+#[utoipa::path(post, path = "/v1/gaia-x/wallet/vc-connect", tag = "Gaia-X Wallet",
+    request_body = ConnectPayload,
+    responses(
+        (status = 200, description = "Wallet connected"),
+        (status = 400, description = "Verification not successful"),
+    )
+)]
 pub async fn save_wallet_connection(
     State(state): State<AppState>,
     RequireOrgAdmin(_ctx): RequireOrgAdmin,
@@ -99,8 +104,8 @@ pub async fn save_wallet_connection(
     let client = state.gaia_x.vc_client.as_ref()
         .ok_or(AuthError::VcUnavailable)?;
 
-    let verifier_url = std::env::var("KEASY_WALT_ID_VERIFIER_URL")
-        .unwrap_or_else(|_| "http://localhost:7003".to_string());
+    let verifier_url = state.gaia_x.walt_id_verifier_url.as_deref()
+        .ok_or(AuthError::VcUnavailable)?;
 
     let body = vc_client::poll_session_status(client, &verifier_url, &payload.session_id)
         .await
@@ -130,7 +135,9 @@ pub async fn save_wallet_connection(
     })))
 }
 
-/// DELETE /v1/gaia-x/wallet — disconnect wallet (org-admin only)
+#[utoipa::path(delete, path = "/v1/gaia-x/wallet", tag = "Gaia-X Wallet",
+    responses((status = 200, description = "Wallet disconnected"))
+)]
 pub async fn disconnect_wallet(
     State(state): State<AppState>,
     RequireOrgAdmin(_ctx): RequireOrgAdmin,

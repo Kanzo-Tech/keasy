@@ -6,8 +6,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useServices } from "@/hooks/use-services";
 import type { ServiceStatus } from "@/lib/api";
 
-const SERVICE_LABELS: Record<keyof ServiceStatus, string> = {
+const SERVICE_LABELS: Partial<Record<keyof ServiceStatus, string>> = {
   wallet: "Wallet connection is not configured. Contact your administrator.",
+  issuer: "Credential issuer is not configured. Contact your administrator.",
   oidc: "Single sign-on (OIDC) is not configured.",
   gxdch_notary: "GXDCH Notary service is not configured.",
   gxdch_compliance: "GXDCH Compliance service is not configured.",
@@ -25,7 +26,10 @@ export function ServiceGate({ requires, message, children }: Props) {
   if (isLoading) return null;
 
   const keys = Array.isArray(requires) ? requires : [requires];
-  const missing = keys.filter((k) => !services[k]);
+  const missing = keys.filter((k) => {
+    const v = services[k];
+    return v === false || v === null || v === undefined;
+  });
 
   if (missing.length === 0) return <>{children}</>;
 
@@ -34,7 +38,7 @@ export function ServiceGate({ requires, message, children }: Props) {
       <Info className="h-4 w-4" />
       <AlertTitle>Service unavailable</AlertTitle>
       <AlertDescription>
-        {message ?? missing.map((k) => SERVICE_LABELS[k]).join(" ")}
+        {message ?? missing.map((k) => SERVICE_LABELS[k] ?? `${k} is not configured.`).join(" ")}
       </AlertDescription>
     </Alert>
   );

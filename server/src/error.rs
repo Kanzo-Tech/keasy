@@ -36,6 +36,25 @@ pub fn data_response<T: Serialize>(value: T) -> DataResponse<T> {
     DataResponse { data: value }
 }
 
+/// Build a 500 response with a logged detail message and opaque user-facing body.
+pub fn internal_error_response(msg: &str) -> Response {
+    tracing::error!("{}", msg);
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(error_body("internal_error", "An internal error occurred")),
+    )
+        .into_response()
+}
+
+/// Build a 400 response with a caller-visible message.
+pub fn bad_request_response(msg: impl Into<String>) -> Response {
+    (
+        StatusCode::BAD_REQUEST,
+        Json(error_body("bad_request", msg)),
+    )
+        .into_response()
+}
+
 /// Typed application error enum.
 /// `impl IntoResponse` maps each variant to the correct HTTP status and error body.
 #[allow(dead_code)]

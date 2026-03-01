@@ -33,8 +33,10 @@ pub async fn readiness(State(state): State<AppState>) -> impl IntoResponse {
 pub async fn service_status(State(state): State<AppState>) -> impl IntoResponse {
     data_response(json!({
         "wallet": state.gaia_x.vc_client.is_some(),
+        "issuer": state.gaia_x.issuer_client.is_some(),
         "oidc": state.auth.oidc_state.is_some(),
         "gxdch_notary": !state.gaia_x.gxdch_notary_url.is_empty(),
         "gxdch_compliance": !state.gaia_x.gxdch_compliance_url.is_empty(),
+        "base_domain": state.gaia_x.base_domain,
     }))
 }

@@ -16,6 +16,8 @@ pub mod gxdch;
 pub mod keys;
 pub mod routes;
 pub mod signing;
+pub mod issuer_client;
+pub mod issuer_routes;
 pub mod vc_client;
 pub mod vp;
 pub mod wallet_routes;
@@ -25,7 +27,7 @@ use serde::{Deserialize, Serialize};
 /// Wizard state record — mirrors the gaia_x_wizard_state table.
 /// All credential/key/cert fields are stored as JSON or PEM text.
 /// Private key is NEVER stored — only public_key_jwk (locked decision).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct WizardState {
     pub org_id: String,
     pub current_step: i64,

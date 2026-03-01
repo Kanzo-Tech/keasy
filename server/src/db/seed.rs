@@ -14,8 +14,8 @@ pub fn ensure_seed_data(conn: &Connection) -> Result<(), String> {
     // Default organization (promotor)
     conn.execute(
         "INSERT OR IGNORE INTO organizations
-         (id, name, legal_name, registration_number, country, role, created_at, updated_at)
-         VALUES (?1, 'Keasy', 'Keasy Promotor Org', NULL, 'EU', 'promotor', ?2, ?2)",
+         (id, name, slug, legal_name, registration_number, country, role, created_at, updated_at)
+         VALUES (?1, 'Keasy', 'keasy', 'Keasy Promotor Org', NULL, 'EU', 'promotor', ?2, ?2)",
         rusqlite::params![SEED_ORG_ID, now],
     )
     .map_err(|e| format!("seed org: {e}"))?;
@@ -99,8 +99,8 @@ pub fn ensure_dev_seed(conn: &Connection) -> Result<(), String> {
     // ── Participant organization ─────────────────────────────────────────────
     conn.execute(
         "INSERT OR IGNORE INTO organizations
-         (id, name, legal_name, registration_number, country, role, created_at, updated_at)
-         VALUES (?1, 'ACME Corp', 'ACME Corporation GmbH', NULL, 'DE', 'participant', ?2, ?2)",
+         (id, name, slug, legal_name, registration_number, country, role, created_at, updated_at)
+         VALUES (?1, 'ACME Corp', 'acme-corp', 'ACME Corporation GmbH', NULL, 'DE', 'participant', ?2, ?2)",
         rusqlite::params![DEV_PARTICIPANT_ORG_ID, now],
     )
     .map_err(|e| format!("dev seed participant org: {e}"))?;

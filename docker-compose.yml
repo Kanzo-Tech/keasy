@@ -66,6 +66,7 @@ services:
       KEASY_SESSION_SECRET: "8VVnhO7zkhlc+oelkbjrKnlpkz4S2+HCQLOnz9/gnR/Rwlc2/8gZe+W7EURQDUa53j8oP+miZ5MpMuL4ZLvjoA=="
       KEASY_BASE_URL: http://localhost:3000
       KEASY_WALT_ID_VERIFIER_URL: http://waltid-verifier-api:3000
+      KEASY_WALT_ID_ISSUER_URL: http://waltid-issuer-api:3000
       KEASY_OIDC_ISSUER_URL: http://localhost:3000/auth/realms/keasy
       KEASY_OIDC_CLIENT_ID: keasy-server
       KEASY_OIDC_CLIENT_SECRET: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
@@ -103,6 +104,11 @@ services:
     image: waltid/verifier-api:0.17.1
     volumes:
       - ./infra/waltid/config:/waltid-verifier-api/config:ro
+
+  waltid-issuer-api:
+    image: waltid/issuer-api:0.17.1
+    volumes:
+      - ./infra/waltid/issuer-config:/waltid-issuer-api/config:ro
 
 volumes:
   keasy-data:

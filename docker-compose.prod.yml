@@ -8,6 +8,8 @@ services:
       dockerfile: Dockerfile
     environment:
       KEASY_DEV_SEED: "false"
+      KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-}
+      KEASY_WALT_ID_ISSUER_URL: ${KEASY_WALT_ID_ISSUER_URL:-}
       RUST_LOG: info
 
   web:
@@ -22,6 +24,14 @@ services:
       start_period: 10s
 
   caddy:
+    build:
+      context: ./infra/caddy
+      dockerfile: Dockerfile
+    volumes:
+      - ./infra/caddy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+    environment:
+      KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-localhost}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
     depends_on:
       web:
         condition: service_healthy

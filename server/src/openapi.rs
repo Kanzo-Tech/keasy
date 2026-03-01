@@ -49,6 +49,45 @@ use utoipa::OpenApi;
         crate::auth::routes::list_workspaces,
         // Scripts
         crate::routes::scripts::validate_script,
+        // Providers
+        crate::routes::providers::list_providers,
+        // Admin
+        crate::routes::admin::list_all_orgs,
+        crate::routes::admin::create_org_and_invite,
+        crate::routes::admin::list_invites,
+        crate::routes::admin::create_invite,
+        crate::routes::admin::revoke_invite,
+        crate::routes::admin::list_oidc_clients,
+        crate::routes::admin::register_oidc_client,
+        // Organization
+        crate::routes::org::list_users,
+        crate::routes::org::update_user_role,
+        crate::routes::org::remove_user,
+        crate::routes::org::get_org_identity,
+        crate::routes::org::update_org_identity,
+        crate::routes::org::create_org_invite,
+        crate::routes::org::list_org_invites,
+        crate::routes::org::revoke_org_invite,
+        // Gaia-X Compliance Wizard
+        crate::gaia_x::routes::get_wizard_state,
+        crate::gaia_x::routes::generate_keys,
+        crate::gaia_x::routes::validate_certificate,
+        crate::gaia_x::routes::request_lrn,
+        crate::gaia_x::routes::sign_legal_participant,
+        crate::gaia_x::routes::sign_terms_conditions,
+        crate::gaia_x::routes::submit_gxdch,
+        crate::gaia_x::routes::get_compliance_status,
+        crate::gaia_x::routes::rerun_compliance,
+        crate::gaia_x::routes::get_did_document,
+        crate::gaia_x::routes::get_cert_chain,
+        // Gaia-X Wallet
+        crate::gaia_x::wallet_routes::init_wallet_session,
+        crate::gaia_x::wallet_routes::wallet_verify_status,
+        crate::gaia_x::wallet_routes::get_wallet,
+        crate::gaia_x::wallet_routes::save_wallet_connection,
+        crate::gaia_x::wallet_routes::disconnect_wallet,
+        // Gaia-X Credentials
+        crate::gaia_x::issuer_routes::create_credential_offer,
     ),
     components(schemas(
         crate::error::DataResponse<serde_json::Value>,
@@ -85,6 +124,28 @@ use utoipa::OpenApi;
         crate::db::organizations::Organization,
         // Scripts
         crate::routes::scripts::ValidateRequest,
+        // Invite Tokens
+        crate::db::invite_tokens::InviteToken,
+        // OIDC Clients
+        crate::db::oidc_clients::OidcClient,
+        // Users
+        crate::db::users::UserWithRole,
+        // Gaia-X Wizard
+        crate::gaia_x::WizardState,
+        crate::gaia_x::routes::CertUploadPayload,
+        crate::gaia_x::routes::LrnPayload,
+        crate::gaia_x::routes::LpPayload,
+        crate::gaia_x::routes::TcPayload,
+        // Gaia-X Wallet
+        crate::gaia_x::wallet_routes::ConnectPayload,
+        // Admin
+        crate::routes::admin::CreateOrgAndInviteRequest,
+        crate::routes::admin::RegisterOidcClientRequest,
+        crate::routes::admin::CreateInviteRequest,
+        // Organization
+        crate::routes::org::UpdateUserRoleRequest,
+        crate::routes::org::UpdateOrgIdentityPayload,
+        crate::routes::org::CreateOrgInviteRequest,
     ))
 )]
 pub struct ApiDoc;

@@ -20,34 +20,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PageContent } from "@/components/layout/page-content";
-import type { OrgEntry } from "@/lib/types";
-
-type InviteEntry = {
-  token: string;
-  org_id: string | null;
-  org_name: string | null;
-  status: "pending" | "used" | "expired";
-  created_at: string;
-  expires_at: string;
-  used_at: string | null;
-};
-
-const orgFetcher = () =>
-  fetch("/v1/admin/organizations")
-    .then((r) => r.json())
-    .then((r) => r.data ?? []);
-
-const inviteFetcher = () =>
-  fetch("/v1/admin/invites")
-    .then((r) => r.json())
-    .then((r) => r.data ?? []);
+import type { OrgEntry, AdminInvite } from "@/lib/types";
+import {
+  fetchAdminOrgs,
+  fetchAdminInvites,
+  createAdminInvite,
+  revokeAdminInvite,
+  ApiError,
+} from "@/lib/api";
 
 export default function ParticipantsPage() {
-  const { data: orgs } = useSWR<OrgEntry[]>("admin-orgs", orgFetcher);
+  const { data: orgs } = useSWR<OrgEntry[]>("admin-orgs", fetchAdminOrgs);
   const {
     data: invites,
     mutate: mutateInvites,
-  } = useSWR<InviteEntry[]>("admin-invites", inviteFetcher);
+  } = useSWR<AdminInvite[]>("admin-invites", fetchAdminInvites);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [orgName, setOrgName] = useState("");
@@ -108,25 +95,17 @@ export default function ParticipantsPage() {
     if (!orgName.trim()) return;
     setIsCreating(true);
     try {
-      const res = await fetch("/v1/admin/invites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ org_name: orgName.trim() }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        toast.error(json.message ?? "Failed to create invite");
-        return;
-      }
-      const data = json.data ?? json;
+      const data = await createAdminInvite(orgName.trim());
       const inviteUrl =
         data.invite_url ??
         `${window.location.origin}/invite?token=${data.token}`;
       setCreatedInviteUrl(inviteUrl);
       await mutateInvites();
       toast.success("Invite link created");
-    } catch {
-      toast.error("Failed to create invite");
+    } catch (err) {
+      toast.error(
+        err instanceof ApiError ? err.message : "Failed to create invite",
+      );
     } finally {
       setIsCreating(false);
     }
@@ -134,18 +113,13 @@ export default function ParticipantsPage() {
 
   async function handleRevokeInvite(token: string) {
     try {
-      const res = await fetch(`/v1/admin/invites/${encodeURIComponent(token)}`, {
-        method: "DELETE",
-      });
-      if (!res.ok && res.status !== 204) {
-        const json = await res.json().catch(() => ({}));
-        toast.error(json.message ?? "Failed to revoke invite");
-        return;
-      }
+      await revokeAdminInvite(token);
       await mutateInvites();
       toast.success("Invite revoked");
-    } catch {
-      toast.error("Failed to revoke invite");
+    } catch (err) {
+      toast.error(
+        err instanceof ApiError ? err.message : "Failed to revoke invite",
+      );
     }
   }
 
@@ -169,7 +143,7 @@ export default function ParticipantsPage() {
   }
 
   const statusVariant = (
-    status: InviteEntry["status"],
+    status: AdminInvite["status"],
   ): "default" | "secondary" | "destructive" => {
     if (status === "pending") return "default";
     if (status === "used") return "secondary";

@@ -13,6 +13,7 @@ import {
   fetchJobs,
   fetchCloudAccounts,
   fetchConnections,
+  fetchComplianceStatus,
 } from "@/lib/api";
 import { hasRunningJobs } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
@@ -31,14 +32,9 @@ export function ParticipantDashboard() {
     "connections",
     () => fetchConnections(),
   );
-  const { data: complianceStatus, isLoading: complianceLoading } = useSWR<{
-    compliant: boolean;
-  }>(
+  const { data: complianceStatus, isLoading: complianceLoading } = useSWR(
     "gx-compliance-status",
-    () =>
-      fetch("/v1/gaia-x/compliance")
-        .then((r) => r.json())
-        .then((r) => r.data ?? r),
+    fetchComplianceStatus,
   );
 
   const loading =

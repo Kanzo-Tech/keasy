@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Paintbrush, Cloud, Sparkles, Wallet } from "lucide-react";
+import { Paintbrush, Cloud, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import useSWR from "swr";
+import { fetchAuthMe } from "@/lib/api";
+import type { MeResponse } from "@/lib/types";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -22,11 +24,7 @@ interface NavItem {
 export function SettingsNav() {
   const pathname = usePathname();
 
-  const { data: me } = useSWR("auth-me", () =>
-    fetch("/v1/auth/me")
-      .then((r) => r.json())
-      .then((r) => r.data ?? r),
-  );
+  const { data: me } = useSWR<MeResponse>("auth-me", fetchAuthMe);
   const isPromotor = me?.effective_role === "promotor";
   const isAdmin = me?.effective_role === "org_admin";
 
@@ -57,9 +55,6 @@ export function SettingsNav() {
         {
           heading: "Integrations",
           items: [
-            ...(isAdmin
-              ? [{ href: "/settings/wallet", label: "Wallet", icon: Wallet }]
-              : []),
             {
               href: "/settings/cloud-accounts",
               label: "Cloud Accounts",

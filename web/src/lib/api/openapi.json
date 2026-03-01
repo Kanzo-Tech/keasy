@@ -1,0 +1,1725 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Keasy API",
+    "description": "Keasy — data pipeline execution, cloud storage, and Gaia-X compliance API",
+    "contact": {
+      "name": "Ángel Iglesias Préstamo",
+      "email": "angel.iglesias.prestamo@gmail.com"
+    },
+    "license": {
+      "name": ""
+    },
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/healthz/live": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "operationId": "liveness",
+        "responses": {
+          "200": {
+            "description": "Service is alive"
+          }
+        }
+      }
+    },
+    "/healthz/ready": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "operationId": "readiness",
+        "responses": {
+          "200": {
+            "description": "Service is ready"
+          },
+          "503": {
+            "description": "Service is not ready"
+          }
+        }
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "POST /v1/auth/logout",
+        "description": "Destroys the session cookie and removes the user_sessions DB entry.\nReturns 200 with `end_session_url` — the Keycloak end-session URL for full\nsingle logout. The frontend redirects the browser to this URL to complete\nthe OIDC RP-Initiated Logout flow.\n\nIf OIDC is not configured, `end_session_url` is null and the caller only\nneeds to clear the local session (existing VC behavior is preserved).",
+        "operationId": "logout",
+        "responses": {
+          "200": {
+            "description": "Logout successful, returns end_session_url"
+          }
+        }
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "GET /v1/auth/me",
+        "description": "Returns the authenticated user's profile, org, and effective role.\nProtected by session_required but NOT tenant_context_required.",
+        "operationId": "get_me",
+        "responses": {
+          "200": {
+            "description": "Authenticated user profile"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/v1/auth/workspaces": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "GET /v1/auth/workspaces",
+        "description": "Returns the list of dataspaces the authenticated user has access to,\nresolved from the `dataspaces` session value to display info via\nthe oidc_clients table. Protected by session_required, NOT tenant_context_required.",
+        "operationId": "list_workspaces",
+        "responses": {
+          "200": {
+            "description": "List of accessible workspaces"
+          }
+        }
+      }
+    },
+    "/v1/cloud-accounts": {
+      "get": {
+        "tags": [
+          "Cloud Accounts"
+        ],
+        "operationId": "list_accounts",
+        "responses": {
+          "200": {
+            "description": "List of cloud accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CloudAccountSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Cloud Accounts"
+        ],
+        "operationId": "create_account",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCloudAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Cloud account created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAccountSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/v1/cloud-accounts/{id}": {
+      "get": {
+        "tags": [
+          "Cloud Accounts"
+        ],
+        "operationId": "get_account",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Cloud account ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cloud account details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAccountSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cloud account not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Cloud Accounts"
+        ],
+        "operationId": "update_account",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Cloud account ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCloudAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Cloud account updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAccountSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Cloud Accounts"
+        ],
+        "operationId": "delete_account",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Cloud account ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Cloud account deleted"
+          }
+        }
+      }
+    },
+    "/v1/connections": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "list_connections",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Filter by connection type",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of connections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Connection"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "create_connection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Connection created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid connection or container not found"
+          }
+        }
+      }
+    },
+    "/v1/connections/{id}": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "get_connection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Connection ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connection details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Connection not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "update_connection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Connection ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Connection updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid connection"
+          },
+          "404": {
+            "description": "Connection not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "delete_connection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Connection ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Connection deleted"
+          }
+        }
+      }
+    },
+    "/v1/connections/{id}/files": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "list_connection_files",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Connection ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of files in the connection"
+          },
+          "400": {
+            "description": "File listing not supported"
+          },
+          "404": {
+            "description": "Connection not found"
+          }
+        }
+      }
+    },
+    "/v1/graph": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "get_unified_graph",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "query",
+            "description": "Filter by organization",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unified knowledge graph"
+          }
+        }
+      }
+    },
+    "/v1/jobs": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "list_jobs",
+        "responses": {
+          "200": {
+            "description": "List of jobs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Job"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "create_job",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Draft job created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Job submitted for execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "get_job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "update_job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Job updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Job is not a draft"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "delete_job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Job deleted"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "cancel_job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/catalog": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "get_job_catalog",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "RDF export format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DCAT catalog"
+          },
+          "404": {
+            "description": "Job or catalog not found"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/graph": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "get_job_graph",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job knowledge graph"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/v1/scripts/validate": {
+      "post": {
+        "tags": [
+          "Scripts"
+        ],
+        "operationId": "validate_script",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Validation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/settings/ai/providers": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "list_ai_providers",
+        "responses": {
+          "200": {
+            "description": "List of AI providers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AiSettingsPayload"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/settings/ai/providers/{provider_id}": {
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "save_ai_provider",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "description": "Provider ID (e.g. anthropic, openai)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiSettingsPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Provider saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiSettingsPayload"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown provider"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "delete_ai_provider",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "description": "Provider ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Provider deleted"
+          },
+          "400": {
+            "description": "Unknown provider"
+          }
+        }
+      }
+    },
+    "/v1/settings/organization": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "get_org_settings",
+        "responses": {
+          "200": {
+            "description": "Organization settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgSettings"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No settings configured"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "save_org_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrgSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Settings saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/settings/preferences": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "get_preferences",
+        "responses": {
+          "200": {
+            "description": "UI preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "save_preferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Preferences"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Preferences saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/status": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "operationId": "service_status",
+        "responses": {
+          "200": {
+            "description": "External service status"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AiSettingsPayload": {
+        "type": "object",
+        "required": [
+          "provider",
+          "api_key"
+        ],
+        "properties": {
+          "api_key": {
+            "type": "string"
+          },
+          "max_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider": {
+            "type": "string"
+          }
+        }
+      },
+      "CloudAccountSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "provider_id",
+          "fields"
+        ],
+        "properties": {
+          "auth_method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "provider_id": {
+            "type": "string"
+          }
+        }
+      },
+      "Connection": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "location_type",
+          "url"
+        ],
+        "properties": {
+          "cloud_account_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ConnectionKind"
+          },
+          "location_type": {
+            "$ref": "#/components/schemas/LocationType"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "ConnectionKind": {
+        "type": "string",
+        "enum": [
+          "data",
+          "vocab"
+        ]
+      },
+      "CreateCloudAccountRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "provider_id",
+          "fields"
+        ],
+        "properties": {
+          "auth_method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "provider_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateConnectionRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "location_type",
+          "url"
+        ],
+        "properties": {
+          "cloud_account_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ConnectionKind"
+          },
+          "location_type": {
+            "$ref": "#/components/schemas/LocationType"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateJobRequest": {
+        "type": "object",
+        "required": [
+          "script"
+        ],
+        "properties": {
+          "connection_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dcat_enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "dcat_format": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "draft": {
+            "type": "boolean"
+          },
+          "mode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunMode"
+              }
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pipeline": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PipelineSummary"
+              }
+            ]
+          },
+          "script": {
+            "type": "string"
+          }
+        }
+      },
+      "DataResponse_Value": {
+        "type": "object",
+        "description": "Typed envelope for successful API responses: `{ \"data\": T }`.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {}
+        }
+      },
+      "Field": {
+        "type": "object",
+        "required": [
+          "name",
+          "type"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "uri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "FieldMapping": {
+        "type": "object",
+        "required": [
+          "target",
+          "source"
+        ],
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        }
+      },
+      "Job": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "created_at",
+          "mode",
+          "pipeline"
+        ],
+        "properties": {
+          "catalog": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "connection_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "error": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JobRuntimeError"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/RunMode"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pipeline": {
+            "$ref": "#/components/schemas/PipelineSummary"
+          },
+          "script": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          }
+        }
+      },
+      "JobRuntimeError": {
+        "type": "object",
+        "description": "Runtime job error — stored in the database as JSON on a failed job.\nThis is NOT an API error type; it is a serializable record of what went wrong during execution.",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "pending",
+          "running",
+          "completed",
+          "failed",
+          "cancelled"
+        ]
+      },
+      "LocationType": {
+        "type": "string",
+        "enum": [
+          "cloud",
+          "local"
+        ]
+      },
+      "OperationInput": {
+        "type": "object",
+        "required": [
+          "source"
+        ],
+        "properties": {
+          "key_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      },
+      "OrgSettings": {
+        "type": "object",
+        "required": [
+          "publisher_name"
+        ],
+        "properties": {
+          "catalog_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contact_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "license_uri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "publisher_name": {
+            "type": "string"
+          },
+          "publisher_uri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Organization": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "legal_name",
+          "country",
+          "role",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "country": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "legal_name": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "registration_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "role": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "vc_verified_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PipelineInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "fields"
+        ],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Field"
+            }
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "PipelineOperation": {
+        "type": "object",
+        "required": [
+          "kind",
+          "label",
+          "fields",
+          "inputs"
+        ],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Field"
+            }
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperationInput"
+            }
+          },
+          "kind": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "PipelineOutput": {
+        "type": "object",
+        "required": [
+          "type_name",
+          "fields"
+        ],
+        "properties": {
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Field"
+            }
+          },
+          "mappings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldMapping"
+            }
+          },
+          "rdf_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type_name": {
+            "type": "string"
+          }
+        }
+      },
+      "PipelineSummary": {
+        "type": "object",
+        "required": [
+          "inputs",
+          "operations",
+          "outputs"
+        ],
+        "properties": {
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PipelineInput"
+            }
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PipelineOperation"
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PipelineOutput"
+            }
+          }
+        }
+      },
+      "Preferences": {
+        "type": "object",
+        "required": [
+          "accent_color",
+          "font_family",
+          "mono_font_family",
+          "font_size",
+          "mono_font_size"
+        ],
+        "properties": {
+          "accent_color": {
+            "type": "string"
+          },
+          "font_family": {
+            "type": "string"
+          },
+          "font_size": {
+            "type": "string"
+          },
+          "mono_font_family": {
+            "type": "string"
+          },
+          "mono_font_size": {
+            "type": "string"
+          }
+        }
+      },
+      "RunMode": {
+        "type": "string",
+        "enum": [
+          "integrated",
+          "scheduled"
+        ]
+      },
+      "UpdateCloudAccountRequest": {
+        "type": "object",
+        "properties": {
+          "auth_method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fields": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UpdateConnectionRequest": {
+        "type": "object",
+        "properties": {
+          "cloud_account_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConnectionKind"
+              }
+            ]
+          },
+          "location_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LocationType"
+              }
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UpdateJobRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "script": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ValidateRequest": {
+        "type": "object",
+        "required": [
+          "script"
+        ],
+        "properties": {
+          "script": {
+            "type": "string"
+          }
+        }
+      },
+      "ValidationResult": {
+        "type": "object",
+        "required": [
+          "valid",
+          "pipeline",
+          "errors"
+        ],
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pipeline": {
+            "$ref": "#/components/schemas/PipelineSummary"
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

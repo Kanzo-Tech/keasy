@@ -16,16 +16,9 @@ import { OrgDetailsCard, type OrgDetailsCardHandle } from "@/components/organiza
 import {
   CredentialCard,
   formatDate,
-  type Credential,
 } from "@/components/compliance/compliance-view";
-import { fetchOrgIdentity } from "@/lib/api";
-
-interface ComplianceStatus {
-  compliant: boolean;
-  verified_at: string | null;
-  credentials: Credential[];
-  wizard_state?: { current_step?: number };
-}
+import { fetchOrgIdentity, fetchComplianceStatus, rerunCompliance, ApiError } from "@/lib/api";
+import { WalletExportSection } from "@/components/compliance/wallet-export-section";
 
 export function OrgDetailsPage() {
   const { mutate: globalMutate } = useSWRConfig();
@@ -34,11 +27,7 @@ export function OrgDetailsPage() {
   const [saving, setSaving] = useState(false);
   const cardRef = useRef<OrgDetailsCardHandle>(null);
   const { data: compliance, isLoading: complianceLoading } =
-    useSWR<ComplianceStatus>("gx-compliance-status", () =>
-      fetch("/v1/gaia-x/compliance")
-        .then((r) => r.json())
-        .then((r) => r.data ?? r),
-    );
+    useSWR("gx-compliance-status", fetchComplianceStatus);
 
   const [rerunLoading, setRerunLoading] = useState(false);
 
@@ -48,21 +37,16 @@ export function OrgDetailsPage() {
   async function handleRerun() {
     setRerunLoading(true);
     try {
-      const res = await fetch("/v1/gaia-x/compliance/rerun", {
-        method: "POST",
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        toast.error(
-          json?.message ?? "Re-run compliance check failed. Please try again.",
-        );
-        return;
-      }
+      await rerunCompliance();
       await globalMutate("gx-compliance-status");
       await globalMutate("org-identity");
       toast.success("Compliance check completed successfully");
-    } catch {
-      toast.error("Network error. Could not re-run compliance check.");
+    } catch (err) {
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : "Network error. Could not re-run compliance check.",
+      );
     } finally {
       setRerunLoading(false);
     }
@@ -174,6 +158,15 @@ export function OrgDetailsPage() {
           </Card>
         )}
       </SettingsSection>
+
+      {isGaiaX && (
+        <SettingsSection
+          title="Wallet & Export"
+          description="Export your compliance credentials to an external wallet."
+        >
+          <WalletExportSection />
+        </SettingsSection>
+      )}
     </SettingsPage>
   );
 }

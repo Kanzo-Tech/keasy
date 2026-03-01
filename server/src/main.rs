@@ -123,6 +123,19 @@ async fn main() {
         None
     };
 
+    // Walt.id Issuer client — used for OID4VCI credential export.
+    // Only active when KEASY_WALT_ID_ISSUER_URL is configured.
+    let issuer_client = if config.walt_id_issuer_url.is_some() {
+        Some(
+            reqwest::Client::builder()
+                .timeout(Duration::from_secs(10))
+                .build()
+                .unwrap_or_default(),
+        )
+    } else {
+        None
+    };
+
     // Keycloak admin client — only active when all three OIDC config fields are present
     let keycloak_admin = match (&config.oidc_issuer_url, &config.oidc_client_id, &config.oidc_client_secret) {
         (Some(issuer), Some(client_id), Some(secret)) => {
@@ -188,8 +201,12 @@ async fn main() {
     };
     let gaia_x = GaiaXServices {
         vc_client,
+        walt_id_verifier_url: config.walt_id_verifier_url,
+        issuer_client,
+        walt_id_issuer_url: config.walt_id_issuer_url,
         gxdch_notary_url: config.gxdch_notary_url,
         gxdch_compliance_url: config.gxdch_compliance_url,
+        base_domain: config.base_domain,
     };
     let state = AppState {
         db,
@@ -203,9 +220,11 @@ async fn main() {
     };
     info!(
         wallet = if state.gaia_x.vc_client.is_some() { "ready" } else { "not configured" },
+        issuer = if state.gaia_x.issuer_client.is_some() { "ready" } else { "not configured" },
         oidc = if state.auth.oidc_state.is_some() { "ready" } else { "not configured" },
         gxdch_notary = %state.gaia_x.gxdch_notary_url,
         gxdch_compliance = %state.gaia_x.gxdch_compliance_url,
+        base_domain = state.gaia_x.base_domain.as_deref().unwrap_or("not configured"),
         "External services"
     );
 

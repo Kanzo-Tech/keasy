@@ -1,18 +1,22 @@
-use axum::Json;
 use axum::response::IntoResponse;
 use serde::Serialize;
 
 use fossil_lang::runtime::storage::StorageConfig;
 
+use crate::error::data_response;
 use crate::jobs::script::init_context;
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 struct ProviderEntry {
     name: String,
     extensions: Vec<&'static str>,
+    #[schema(value_type = String)]
     kind: fossil_lang::traits::provider::ProviderKind,
 }
 
+#[utoipa::path(get, path = "/v1/providers", tag = "Providers",
+    responses((status = 200, description = "List of available data providers"))
+)]
 pub async fn list_providers() -> impl IntoResponse {
     let gcx = init_context(StorageConfig::default());
     let providers: Vec<ProviderEntry> = gcx
@@ -24,5 +28,5 @@ pub async fn list_providers() -> impl IntoResponse {
             kind: info.kind,
         })
         .collect();
-    Json(providers)
+    data_response(providers)
 }

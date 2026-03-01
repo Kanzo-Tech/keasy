@@ -3,7 +3,7 @@ use rusqlite::params;
 use super::Database;
 
 /// User with their role in a specific organization, for org admin user management.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
 pub struct UserWithRole {
     pub id: String,
     pub email: String,

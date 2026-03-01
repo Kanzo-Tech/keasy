@@ -1,91 +1,43 @@
-export type JobStatus = "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
+import type { components } from "./api/schema";
 
-export type RunMode = "integrated" | "scheduled";
+// ---------------------------------------------------------------------------
+// Re-export types generated from the OpenAPI spec (source of truth: server)
+// ---------------------------------------------------------------------------
 
-export interface JobError {
-  code: string;
-  message: string;
-  detail?: string;
-}
+type S = components["schemas"];
 
-export interface Job {
-  id: string;
-  status: JobStatus;
-  name?: string;
-  created_at: string;
-  started_at?: string;
-  completed_at?: string;
-  error?: JobError;
-  mode: RunMode;
-  pipeline?: PipelineSummary;
-  catalog?: string | null;
-  connection_ids?: string[];
-  script?: string;
-}
+export type JobStatus = S["JobStatus"];
+export type RunMode = S["RunMode"];
+export type Job = S["Job"];
+export type CreateJobRequest = S["CreateJobRequest"];
+export type UpdateJobRequest = S["UpdateJobRequest"];
+export type Field = S["Field"];
+export type FieldMapping = S["FieldMapping"];
+export type OperationInput = S["OperationInput"];
+export type PipelineInput = S["PipelineInput"];
+export type PipelineOperation = S["PipelineOperation"];
+export type PipelineOutput = S["PipelineOutput"];
+export type PipelineSummary = S["PipelineSummary"];
+export type ValidationResult = S["ValidationResult"];
+export type CloudAccountSummary = S["CloudAccountSummary"];
+export type CreateCloudAccountRequest = S["CreateCloudAccountRequest"];
+export type UpdateCloudAccountRequest = S["UpdateCloudAccountRequest"];
+export type OrgSettings = S["OrgSettings"];
+export type Preferences = S["Preferences"];
+export type ConnectionKind = S["ConnectionKind"];
+export type LocationType = S["LocationType"];
+export type Connection = S["Connection"];
+export type CreateConnectionRequest = S["CreateConnectionRequest"];
+export type UpdateConnectionRequest = S["UpdateConnectionRequest"];
+export type AiSettings = S["AiSettingsPayload"];
 
-export interface CreateJobRequest {
-  script: string;
-  name?: string;
-  mode?: RunMode;
-  pipeline?: PipelineSummary;
-  dcat_enabled?: boolean;
-  connection_ids?: string[];
-  draft?: boolean;
-}
+// Alias: server calls it JobRuntimeError, frontend used JobError
+export type JobError = S["JobRuntimeError"];
 
-export interface UpdateJobRequest {
-  script?: string;
-  name?: string;
-}
-
-export interface Field {
-  name: string;
-  type: string;
-  uri?: string;
-}
-
-export interface PipelineInput {
-  name: string;
-  fields: Field[];
-}
-
-export interface FieldMapping {
-  target: string;
-  source: string;
-}
-
-export interface OperationInput {
-  source: string;
-  key_fields: string[];
-}
-
-export interface PipelineOperation {
-  kind: string;
-  label: string;
-  fields: Field[];
-  inputs: OperationInput[];
-}
-
-export interface PipelineOutput {
-  type_name: string;
-  fields: Field[];
-  mappings?: FieldMapping[];
-  source?: string;
-  destination?: string;
-  rdf_type?: string;
-}
-
-export interface PipelineSummary {
-  inputs: PipelineInput[];
-  operations: PipelineOperation[];
-  outputs: PipelineOutput[];
-}
-
-export interface ValidationResult {
-  valid: boolean;
-  pipeline: PipelineSummary;
-  errors: string[];
-}
+// ---------------------------------------------------------------------------
+// Types NOT in the OpenAPI spec (discovery, graph, conversations, etc.)
+// These remain manually defined until their utoipa annotations are added.
+// ---------------------------------------------------------------------------
 
 export interface FieldSchema {
   name: string;
@@ -108,71 +60,6 @@ export interface ProviderSchema {
   icon: string;
   common_fields: FieldSchema[];
   auth_methods: AuthMethodSchema[];
-}
-
-export interface CloudAccountSummary {
-  id: string;
-  name: string;
-  provider_id: string;
-  auth_method?: string;
-  fields: Record<string, string>;
-}
-
-export interface CreateCloudAccountRequest {
-  name: string;
-  provider_id: string;
-  auth_method?: string;
-  fields: Record<string, string>;
-}
-
-export interface UpdateCloudAccountRequest {
-  name?: string;
-  auth_method?: string;
-  fields?: Record<string, string>;
-}
-
-export interface OrgSettings {
-  publisher_name: string;
-  publisher_uri?: string;
-  contact_email?: string;
-  license_uri?: string;
-  catalog_description?: string;
-}
-
-export interface Preferences {
-  accent_color: string;
-  font_family: string;
-  mono_font_family: string;
-  font_size: string;
-  mono_font_size: string;
-}
-
-export type ConnectionKind = "data" | "vocab";
-export type LocationType = "cloud" | "local";
-
-export interface Connection {
-  id: string;
-  name: string;
-  kind: ConnectionKind;
-  location_type: LocationType;
-  cloud_account_id?: string;
-  url: string;
-}
-
-export interface CreateConnectionRequest {
-  name: string;
-  kind: ConnectionKind;
-  location_type: LocationType;
-  cloud_account_id?: string;
-  url: string;
-}
-
-export interface UpdateConnectionRequest {
-  name?: string;
-  kind?: ConnectionKind;
-  location_type?: LocationType;
-  cloud_account_id?: string;
-  url?: string;
 }
 
 export interface FileEntry {
@@ -202,13 +89,6 @@ export interface TabularData {
   columns: string[];
   rows: Record<string, string | number>[];
   column_types: Record<string, "numeric" | "string">;
-}
-
-export interface AiSettings {
-  provider: string;
-  api_key: string;
-  model?: string;
-  max_tokens?: number;
 }
 
 export interface AskResponse {
@@ -294,4 +174,104 @@ export interface OrgInvite {
   created_at: string;
   expires_at: string;
   used_at: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Auth types
+// ---------------------------------------------------------------------------
+
+export interface MeResponse {
+  user_id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  effective_role: string;
+  vc_holder_did?: string;
+  wallet_connected_at?: string;
+  org?: {
+    id: string;
+    name: string;
+    role: string;
+    vc_verified_at: string | null;
+  };
+}
+
+export interface Workspace {
+  client_id: string;
+  name: string;
+  url: string;
+}
+
+export interface WorkspacesResponse {
+  workspaces: Workspace[];
+  current_client_id: string;
+}
+
+// ---------------------------------------------------------------------------
+// Gaia-X Compliance / Wizard types
+// ---------------------------------------------------------------------------
+
+export interface WizardState {
+  current_step?: number;
+  domain?: string;
+  public_key_jwk?: Record<string, unknown>;
+  did_document?: Record<string, unknown>;
+  cert_chain_pem?: string;
+  lrn_type?: string;
+  lrn_value?: string;
+  lrn_credential?: Record<string, unknown>;
+  legal_name?: string;
+  country_code?: string;
+  lp_credential?: Record<string, unknown>;
+  tc_credential?: Record<string, unknown>;
+  compliance_vc?: Record<string, unknown>;
+}
+
+export interface ComplianceCredential {
+  name: string;
+  issued_at: string;
+  raw_json: Record<string, unknown>;
+}
+
+export interface ComplianceStatus {
+  compliant: boolean;
+  verified_at?: string | null;
+  credentials: ComplianceCredential[];
+  wizard_state?: WizardState;
+}
+
+// ---------------------------------------------------------------------------
+// Wallet types
+// ---------------------------------------------------------------------------
+
+export interface WalletStatus {
+  connected: boolean;
+  did?: string;
+  connected_at?: string;
+}
+
+export interface WalletSession {
+  session_id: string;
+  qr_url: string;
+}
+
+// ---------------------------------------------------------------------------
+// Admin types
+// ---------------------------------------------------------------------------
+
+export interface AdminInvite {
+  token: string;
+  org_id: string;
+  org_name: string;
+  status: string;
+  created_at: string;
+  expires_at: string;
+  used_at: string | null;
+}
+
+export interface AdminInviteResult {
+  token: string;
+  org_id: string;
+  org_name: string;
+  invite_url: string;
 }

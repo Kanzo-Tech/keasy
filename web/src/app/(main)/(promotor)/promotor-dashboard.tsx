@@ -5,20 +5,18 @@ import { Users, Network, type LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import { fetchAdminOrgs } from "@/lib/api";
 
 export function PromotorDashboard() {
   const { data: catalogData, isLoading: loading } = useSWR(
     "promotor-dashboard",
-    () =>
-      fetch("/v1/admin/organizations")
-        .then((r) => r.json())
-        .then((r) => {
-          const data = r.data ?? [];
-          const participantCount = data.filter(
-            (o: { role: string }) => o.role !== "promotor",
-          ).length;
-          return { participantCount };
-        }),
+    async () => {
+      const data = await fetchAdminOrgs();
+      const participantCount = data.filter(
+        (o) => o.role !== "promotor",
+      ).length;
+      return { participantCount };
+    },
   );
 
   const participantCount = catalogData?.participantCount ?? 0;

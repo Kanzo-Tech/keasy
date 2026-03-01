@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Users } from "lucide-react";
+import { Building2, ShieldCheck, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import useSWR from "swr";
+import { fetchAuthMe } from "@/lib/api";
+import type { MeResponse } from "@/lib/types";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -22,11 +24,7 @@ interface NavItem {
 export function OrgNav() {
   const pathname = usePathname();
 
-  const { data: me } = useSWR("auth-me", () =>
-    fetch("/v1/auth/me")
-      .then((r) => r.json())
-      .then((r) => r.data ?? r),
-  );
+  const { data: me } = useSWR<MeResponse>("auth-me", fetchAuthMe);
   const isAdmin = me?.effective_role === "org_admin";
 
   const sections: { heading: string; items: NavItem[] }[] = [
@@ -38,6 +36,12 @@ export function OrgNav() {
     },
     ...(isAdmin
       ? [
+          {
+            heading: "Compliance",
+            items: [
+              { href: "/organization/compliance", label: "Gaia-X", icon: ShieldCheck },
+            ],
+          },
           {
             heading: "Members",
             items: [

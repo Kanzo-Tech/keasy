@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useSWRConfig } from "swr";
 import { ShieldCheck, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { rerunCompliance, ApiError } from "@/lib/api";
+import type { ComplianceCredential } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,11 +17,8 @@ import {
 } from "@/components/ui/collapsible";
 import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
 
-export interface Credential {
-  name: string;
-  issued_at: string;
-  raw_json: object;
-}
+/** @deprecated Use ComplianceCredential from @/lib/types directly */
+export type Credential = ComplianceCredential;
 
 interface ComplianceViewProps {
   status: {
@@ -29,7 +28,7 @@ interface ComplianceViewProps {
   };
 }
 
-export function formatDate(dateStr: string | null): string {
+export function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "Unknown";
   return new Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -89,19 +88,16 @@ export function ComplianceView({ status }: ComplianceViewProps) {
   async function handleRerun() {
     setRerunLoading(true);
     try {
-      const res = await fetch("/v1/gaia-x/compliance/rerun", { method: "POST" });
-      const json = await res.json();
-      if (!res.ok) {
-        const message =
-          json?.message ?? "Re-run compliance check failed. Please try again.";
-        toast.error(message);
-        return;
-      }
+      await rerunCompliance();
       // Refresh compliance status in SWR cache
       await mutate("gx-compliance-status");
       toast.success("Compliance check completed successfully");
-    } catch {
-      toast.error("Network error. Could not re-run compliance check.");
+    } catch (err) {
+      toast.error(
+        err instanceof ApiError
+          ? err.message
+          : "Network error. Could not re-run compliance check.",
+      );
     } finally {
       setRerunLoading(false);
     }

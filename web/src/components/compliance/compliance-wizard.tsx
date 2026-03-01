@@ -14,23 +14,8 @@ import { StepLegalParticipant } from "@/components/compliance/steps/step-legal-p
 import { StepTerms } from "@/components/compliance/steps/step-terms";
 import { StepGxdchSubmit } from "@/components/compliance/steps/step-gxdch-submit";
 import { ServiceGate } from "@/components/ui/service-gate";
-
-interface WizardState {
-  current_step?: number;
-  domain?: string;
-  public_key_jwk?: object;
-  did_document?: object;
-  cert_chain_pem?: string;
-  lrn_type?: string;
-  lrn_value?: string;
-  lrn_credential?: object;
-  legal_name?: string;
-  country_code?: string;
-  lp_credential?: object;
-  tc_credential?: object;
-  compliance_vc?: object;
-  [key: string]: unknown;
-}
+import { fetchWizardState } from "@/lib/api";
+import type { WizardState } from "@/lib/types";
 
 const STEP_DEFS: WizardStepDef[] = [
   { id: "keys", label: "Key Pair Generation", description: "Generate P-256 key pair" },
@@ -57,7 +42,7 @@ export function ComplianceWizard() {
   const router = useRouter();
   const { data: wizardState, isLoading, mutate } = useSWR<WizardState>(
     "gx-wizard",
-    () => fetch("/v1/gaia-x/wizard").then((r) => r.json()).then((r) => r.data ?? r)
+    fetchWizardState,
   );
 
   const [currentStep, setCurrentStep] = useState<number | null>(null);

@@ -6,6 +6,7 @@ PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS organizations (
     id                  TEXT PRIMARY KEY,
     name                TEXT NOT NULL,
+    slug                TEXT NOT NULL UNIQUE,
     legal_name          TEXT NOT NULL,
     registration_number TEXT,
     country             TEXT NOT NULL CHECK(length(country) = 2),

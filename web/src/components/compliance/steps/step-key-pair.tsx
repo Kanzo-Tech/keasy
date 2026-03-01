@@ -5,6 +5,7 @@ import { Key, RotateCcw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { generateWizardKeys, ApiError } from "@/lib/api";
 
 interface StepKeyPairProps {
   onComplete: () => void;
@@ -20,13 +21,8 @@ export function StepKeyPair({ onComplete, completed, publicKeyJwk }: StepKeyPair
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/v1/gaia-x/wizard/keys", { method: "POST" });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message ?? `Request failed with status ${res.status}`);
-      }
-      const data = await res.json();
-      const pem: string = data.data?.private_key_pem ?? data.private_key_pem;
+      const data = await generateWizardKeys();
+      const pem = data.private_key_pem;
 
       // Trigger download of PEM file
       const blob = new Blob([pem], { type: "application/x-pem-file" });
@@ -41,7 +37,7 @@ export function StepKeyPair({ onComplete, completed, publicKeyJwk }: StepKeyPair
 
       onComplete();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      setError(err instanceof ApiError ? err.message : "An unexpected error occurred");
     } finally {
       setLoading(false);
     }

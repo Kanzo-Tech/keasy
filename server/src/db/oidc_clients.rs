@@ -2,7 +2,7 @@ use rusqlite::params;
 
 use super::Database;
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
 pub struct OidcClient {
     pub id: String,
     pub client_id: String,

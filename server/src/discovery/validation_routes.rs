@@ -6,7 +6,7 @@ use rudof_rdf::rdf_core::RDFFormat;
 
 use crate::cloud::reader;
 use crate::connections::models::LocationType;
-use crate::error::error_body;
+use crate::error::{data_response, error_body};
 use crate::middleware::tenant::RequireParticipant;
 use super::validation_types::{ShapeFormat, ValidationRequest};
 use super::validation::ValidatableGraph;
@@ -105,7 +105,7 @@ pub async fn validate_job(
     .await;
 
     match result {
-        Ok(Ok(validation_result)) => Json(validation_result).into_response(),
+        Ok(Ok(validation_result)) => data_response(validation_result).into_response(),
         Ok(Err(msg)) => (
             StatusCode::UNPROCESSABLE_ENTITY,
             Json(error_body("validation_error", msg)),

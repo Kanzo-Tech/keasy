@@ -328,6 +328,11 @@ pub fn build_router(
             "/v1/gaia-x/compliance/rerun",
             axum::routing::post(crate::gaia_x::routes::rerun_compliance),
         )
+        // OID4VCI credential export
+        .route(
+            "/v1/gaia-x/credentials/offer",
+            axum::routing::post(crate::gaia_x::issuer_routes::create_credential_offer),
+        )
         .layer(middleware::from_fn_with_state(
             state.clone(),
             tenant_context_required, // runs second (inner), after session_required

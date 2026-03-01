@@ -13,11 +13,14 @@ use serde::Deserialize;
 
 use crate::AppState;
 use crate::db::invite_tokens::InviteToken;
+use crate::db::users::UserWithRole;
 use crate::error::{data_response, error_body};
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::middleware::tenant::{RbacError, RequireOrgAdmin, RequireParticipant};
 
-/// GET /v1/org/users — list all users in the caller's org.
+#[utoipa::path(get, path = "/v1/org/users", tag = "Organization",
+    responses((status = 200, description = "List of users in the org", body = Vec<UserWithRole>))
+)]
 pub async fn list_users(
     RequireOrgAdmin(ctx): RequireOrgAdmin,
     State(state): State<AppState>,
@@ -26,12 +29,19 @@ pub async fn list_users(
     Ok(data_response(users))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct UpdateUserRoleRequest {
     pub role: String,
 }
 
-/// PUT /v1/org/users/{id} — change a user's role within the org.
+#[utoipa::path(put, path = "/v1/org/users/{id}", tag = "Organization",
+    params(("id" = String, Path, description = "User ID")),
+    request_body = UpdateUserRoleRequest,
+    responses(
+        (status = 204, description = "Role updated"),
+        (status = 403, description = "Insufficient role"),
+    )
+)]
 pub async fn update_user_role(
     RequireOrgAdmin(ctx): RequireOrgAdmin,
     State(state): State<AppState>,
@@ -49,7 +59,13 @@ pub async fn update_user_role(
     Ok(StatusCode::NO_CONTENT)
 }
 
-/// DELETE /v1/org/users/{id} — remove a user from the org.
+#[utoipa::path(delete, path = "/v1/org/users/{id}", tag = "Organization",
+    params(("id" = String, Path, description = "User ID")),
+    responses(
+        (status = 204, description = "User removed"),
+        (status = 403, description = "Insufficient role"),
+    )
+)]
 pub async fn remove_user(
     RequireOrgAdmin(ctx): RequireOrgAdmin,
     State(state): State<AppState>,
@@ -65,21 +81,26 @@ pub async fn remove_user(
 
 // ── Organization identity ────────────────────────────────────────────────────
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
 struct OrgIdentityResponse {
     legal_name: String,
     country: String,
     registration_number: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct UpdateOrgIdentityPayload {
     pub legal_name: String,
     pub country: String,
     pub registration_number: Option<String>,
 }
 
-/// GET /v1/org/identity — read the org's identity fields (any participant user).
+#[utoipa::path(get, path = "/v1/org/identity", tag = "Organization",
+    responses(
+        (status = 200, description = "Org identity", body = OrgIdentityResponse),
+        (status = 404, description = "Organization not found"),
+    )
+)]
 pub async fn get_org_identity(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -100,7 +121,13 @@ pub async fn get_org_identity(
     }
 }
 
-/// PUT /v1/org/identity — update org identity fields (org admins + promotors).
+#[utoipa::path(put, path = "/v1/org/identity", tag = "Organization",
+    request_body = UpdateOrgIdentityPayload,
+    responses(
+        (status = 200, description = "Identity updated", body = OrgIdentityResponse),
+        (status = 400, description = "Validation error"),
+    )
+)]
 pub async fn update_org_identity(
     RequireOrgAdmin(ctx): RequireOrgAdmin,
     State(state): State<AppState>,
@@ -144,12 +171,18 @@ pub async fn update_org_identity(
 
 // ── Org invite management ────────────────────────────────────────────────────
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CreateOrgInviteRequest {
     pub role: String,
 }
 
-/// POST /v1/org/invites — create an invite token scoped to the caller's org.
+#[utoipa::path(post, path = "/v1/org/invites", tag = "Organization",
+    request_body = CreateOrgInviteRequest,
+    responses(
+        (status = 201, description = "Invite created"),
+        (status = 403, description = "Insufficient role"),
+    )
+)]
 pub async fn create_org_invite(
     RequireOrgAdmin(ctx): RequireOrgAdmin,
     axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
@@ -195,7 +228,9 @@ pub async fn create_org_invite(
     ))
 }
 
-/// GET /v1/org/invites — list invite tokens for the caller's org.
+#[utoipa::path(get, path = "/v1/org/invites", tag = "Organization",
+    responses((status = 200, description = "List of org invite tokens"))
+)]
 pub async fn list_org_invites(
     RequireOrgAdmin(ctx): RequireOrgAdmin,
     State(state): State<AppState>,
@@ -225,7 +260,13 @@ pub async fn list_org_invites(
     Ok(data_response(result))
 }
 
-/// DELETE /v1/org/invites/{token} — revoke an invite token (must belong to caller's org).
+#[utoipa::path(delete, path = "/v1/org/invites/{token}", tag = "Organization",
+    params(("token" = String, Path, description = "Invite token to revoke")),
+    responses(
+        (status = 204, description = "Invite revoked"),
+        (status = 403, description = "Insufficient role"),
+    )
+)]
 pub async fn revoke_org_invite(
     RequireOrgAdmin(ctx): RequireOrgAdmin,
     Path(token): Path<String>,

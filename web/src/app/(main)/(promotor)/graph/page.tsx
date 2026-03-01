@@ -12,11 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { OrgEntry } from "@/lib/types";
+import { fetchAdminOrgs } from "@/lib/api";
 
-const orgFetcher = () =>
-  fetch("/v1/admin/organizations")
-    .then((r) => r.json())
-    .then((r) => (r.data ?? []).filter((o: OrgEntry) => o.role !== "promotor"));
+const orgFetcher = async () => {
+  const data = await fetchAdminOrgs();
+  return data.filter((o) => o.role !== "promotor");
+};
 
 export default function GraphPage() {
   const [selectedOrg, setSelectedOrg] = useState<string | undefined>();

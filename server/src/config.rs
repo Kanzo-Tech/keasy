@@ -44,6 +44,13 @@ pub struct ServerConfig {
     /// to this internal URL (e.g. `http://keycloak:8080`).
     /// Read from KEASY_OIDC_INTERNAL_BASE_URL.
     pub oidc_internal_base_url: Option<String>,
+    /// Base domain for org subdomains (e.g. "keasy.example.com").
+    /// When set, each org gets `{slug}.{base_domain}` for did:web resolution.
+    /// Read from KEASY_BASE_DOMAIN.
+    pub base_domain: Option<String>,
+    /// Walt.id Issuer API base URL. When set, OID4VCI credential export is enabled.
+    /// Read from KEASY_WALT_ID_ISSUER_URL. Default None — issuer disabled.
+    pub walt_id_issuer_url: Option<String>,
     /// When true, create demo users, orgs, connections, and jobs at startup.
     /// Read from KEASY_DEV_SEED. Default false.
     pub dev_seed: bool,
@@ -146,6 +153,14 @@ impl ServerConfig {
             .ok()
             .filter(|s| !s.trim().is_empty());
 
+        let base_domain = std::env::var("KEASY_BASE_DOMAIN")
+            .ok()
+            .filter(|s| !s.trim().is_empty());
+
+        let walt_id_issuer_url = std::env::var("KEASY_WALT_ID_ISSUER_URL")
+            .ok()
+            .filter(|s| !s.trim().is_empty());
+
         let dev_seed = std::env::var("KEASY_DEV_SEED")
             .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
             .unwrap_or(false);
@@ -169,6 +184,8 @@ impl ServerConfig {
             oidc_client_id,
             oidc_client_secret,
             oidc_internal_base_url,
+            base_domain,
+            walt_id_issuer_url,
             dev_seed,
         }
     }

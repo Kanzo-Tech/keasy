@@ -5,16 +5,9 @@ import { Check, ChevronDown, ChevronUp, AlertCircle, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { submitGxdch, ApiError } from "@/lib/api";
+import type { WizardState } from "@/lib/types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
-interface WizardState {
-  lrn_credential?: object;
-  lp_credential?: object;
-  tc_credential?: object;
-  compliance_vc?: object;
-  current_step?: number;
-  [key: string]: unknown;
-}
 
 interface StepGxdchSubmitProps {
   onComplete: () => void;
@@ -92,21 +85,13 @@ export function StepGxdchSubmit({ onComplete, completed, wizardState }: StepGxdc
     setPhase("submitting");
 
     try {
-      const res = await fetch("/v1/gaia-x/wizard/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
+      await submitGxdch();
       setPhase("verifying");
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message ?? `Submission failed with status ${res.status}`);
-      }
       setPhase("complete");
       onComplete();
     } catch (err) {
       setPhase("error");
-      setError(err instanceof Error ? err.message : "GXDCH submission failed");
+      setError(err instanceof ApiError ? err.message : "GXDCH submission failed");
     }
   }
 

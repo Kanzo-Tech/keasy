@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { FormField } from "@/components/shared/form-layout";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { requestLrn, ApiError } from "@/lib/api";
+import type { WizardState } from "@/lib/types";
 import {
   Select,
   SelectContent,
@@ -15,14 +17,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
-interface WizardState {
-  lrn_credential?: object;
-  lrn_type?: string;
-  lrn_value?: string;
-  current_step?: number;
-  [key: string]: unknown;
-}
 
 interface StepLrnProps {
   onComplete: () => void;
@@ -52,18 +46,10 @@ export function StepLrn({ onComplete, completed, wizardState }: StepLrnProps) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/v1/gaia-x/wizard/lrn", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lrn_type: lrnType, lrn_value: lrnValue.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message ?? `Request failed with status ${res.status}`);
-      }
+      await requestLrn(lrnType, lrnValue.trim());
       onComplete();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      setError(err instanceof ApiError ? err.message : "An unexpected error occurred");
     } finally {
       setLoading(false);
     }

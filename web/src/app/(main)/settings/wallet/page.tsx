@@ -1,5 +1,5 @@
-import { WalletSettings } from "@/components/settings/wallet-settings";
+import { redirect } from "next/navigation";
 
 export default function WalletSettingsPage() {
-  return <WalletSettings />;
+  redirect("/organization/details");
 }

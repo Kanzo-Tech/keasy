@@ -4,6 +4,8 @@
 /// The .well-known endpoints are public (no auth required).
 use axum::response::IntoResponse;
 use axum::{Json, extract::State};
+use axum::http::HeaderMap;
+use axum::http::header::HOST;
 use jiff::Timestamp;
 use serde::Deserialize;
 use serde_json::Value;
@@ -12,7 +14,7 @@ use std::collections::HashMap;
 use rusqlite::OptionalExtension;
 
 use crate::AppState;
-use crate::error::{data_response, error_body};
+use crate::error::{bad_request_response, data_response, error_body, internal_error_response};
 use crate::gaia_x::{WizardState, cert, credentials, db, gxdch, keys, signing, vp};
 use crate::middleware::tenant::RequireParticipant;
 
@@ -21,26 +23,26 @@ use axum::response::Response;
 
 // ── Payload types ─────────────────────────────────────────────────────────────
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct CertUploadPayload {
     pub cert_chain_pem: String,
     pub domain: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct LrnPayload {
     pub lrn_type: String,
     pub lrn_value: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct LpPayload {
     pub legal_name: String,
     pub country_code: String,
     pub private_key_pem: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct TcPayload {
     pub private_key_pem: String,
 }
@@ -49,23 +51,6 @@ pub struct TcPayload {
 
 fn now_iso() -> String {
     Timestamp::now().to_string()
-}
-
-fn internal_error(msg: &str) -> Response {
-    tracing::error!("{}", msg);
-    (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(error_body("internal_error", "An internal error occurred")),
-    )
-        .into_response()
-}
-
-fn bad_request(msg: impl Into<String>) -> Response {
-    (
-        StatusCode::BAD_REQUEST,
-        Json(error_body("bad_request", msg)),
-    )
-        .into_response()
 }
 
 /// Build a default empty wizard state for an org that hasn't started the wizard.
@@ -90,18 +75,144 @@ fn default_state(org_id: &str) -> WizardState {
     }
 }
 
+// ── Wizard state helpers (extract repeated load/validate/save patterns) ──────
+
+/// Load the wizard state from DB, returning an error response if no record exists.
+async fn load_wizard(state: &AppState, org_id: &str) -> Result<WizardState, Response> {
+    let (_permit, conn) = state.db.read().await;
+    match db::get_wizard_state(&conn, org_id) {
+        Ok(Some(w)) => Ok(w),
+        Ok(None) => Err(bad_request_response("Wizard not started — complete previous steps first")),
+        Err(e) => Err(internal_error_response(&format!("db read failed: {e}"))),
+    }
+}
+
+/// Save the wizard state to DB, upserting if needed.
+async fn save_wizard_step(state: &AppState, wizard: &WizardState) -> Result<(), Response> {
+    let conn = state.db.write().await;
+    let existing = db::get_wizard_state(&conn, &wizard.org_id)
+        .map_err(|e| internal_error_response(&format!("db read for write failed: {e}")))?;
+    let mut w = existing.unwrap_or_else(|| default_state(&wizard.org_id));
+    // Copy all fields from the incoming wizard state
+    w.public_key_jwk = wizard.public_key_jwk.clone();
+    w.cert_chain_pem = wizard.cert_chain_pem.clone();
+    w.root_ca_pem = wizard.root_ca_pem.clone();
+    w.did_document = wizard.did_document.clone();
+    w.lrn_credential = wizard.lrn_credential.clone();
+    w.lp_credential = wizard.lp_credential.clone();
+    w.tc_credential = wizard.tc_credential.clone();
+    w.compliance_vc = wizard.compliance_vc.clone();
+    w.lrn_type = wizard.lrn_type.clone();
+    w.lrn_value = wizard.lrn_value.clone();
+    w.legal_name = wizard.legal_name.clone();
+    w.country_code = wizard.country_code.clone();
+    w.domain = wizard.domain.clone();
+    if wizard.current_step > w.current_step {
+        w.current_step = wizard.current_step;
+    }
+    w.updated_at = now_iso();
+    db::upsert_wizard_state(&conn, &w)
+        .map_err(|e| internal_error_response(&format!("failed to save wizard state: {e}")))?;
+    Ok(())
+}
+
+/// Require cert chain from wizard state, returning a 400 if missing or invalid.
+fn require_cert_chain(wizard: &WizardState) -> Result<String, Response> {
+    let cert_pem = wizard.cert_chain_pem.as_ref()
+        .ok_or_else(|| bad_request_response("Certificate not uploaded — complete step 2 first"))?
+        .clone();
+    cert::validate_chain(&cert_pem)
+        .map_err(|e| bad_request_response(format!("Certificate validation failed: {}", e.0)))?;
+    Ok(cert_pem)
+}
+
+/// Require domain from wizard state, returning a 400 if missing.
+fn require_domain(wizard: &WizardState) -> Result<String, Response> {
+    wizard.domain.as_ref()
+        .ok_or_else(|| bad_request_response("Domain not set — complete step 2 first"))
+        .cloned()
+}
+
+/// Get or create an HTTP client for GXDCH calls.
+fn gxdch_client(state: &AppState, timeout_secs: u64) -> Result<reqwest::Client, Response> {
+    match &state.gaia_x.vc_client {
+        Some(c) => Ok(c.clone()),
+        None => reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(timeout_secs))
+            .build()
+            .map_err(|e| internal_error_response(&format!("failed to create HTTP client: {e}"))),
+    }
+}
+
+// ── .well-known org resolution ────────────────────────────────────────────────
+
+/// Resolve the organization for .well-known endpoints.
+/// 1. If `base_domain` is configured: extract slug from Host header (`{slug}.{base_domain}`)
+/// 2. Fallback: `?org=` query param (dev/local)
+async fn resolve_org_id_from_request(
+    state: &AppState,
+    headers: &HeaderMap,
+    params: &HashMap<String, String>,
+) -> Result<String, Response> {
+    // Try Host header subdomain resolution first
+    if let Some(base_domain) = &state.gaia_x.base_domain {
+        if let Some(host) = headers.get(HOST).and_then(|h| h.to_str().ok()) {
+            // Strip port if present (e.g. "acme-corp.keasy.example.com:3000")
+            let host_no_port = host.split(':').next().unwrap_or(host);
+            if let Some(slug) = host_no_port.strip_suffix(&format!(".{}", base_domain)) {
+                if !slug.is_empty() && !slug.contains('.') {
+                    if let Some(org) = state.db.get_organization_by_slug(slug).await {
+                        return Ok(org.id);
+                    }
+                    return Err((
+                        StatusCode::NOT_FOUND,
+                        Json(error_body("not_found", "Organization not found for subdomain")),
+                    ).into_response());
+                }
+            }
+        }
+    }
+
+    // Fallback: ?org= query param
+    params.get("org").cloned().ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("bad_request", "Missing ?org=<org_id> query parameter")),
+        ).into_response()
+    })
+}
+
 // ── a) GET /v1/gaia-x/wizard ──────────────────────────────────────────────────
 
-/// Return the current wizard state for the authenticated org.
-/// Returns a default (empty, step 0) state if no record exists yet.
+#[utoipa::path(get, path = "/v1/gaia-x/wizard", tag = "Gaia-X Compliance",
+    responses((status = 200, description = "Current wizard state", body = WizardState))
+)]
 pub async fn get_wizard_state(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
 ) -> Response {
     let org_id = ctx.org_id.0.clone();
     let (_permit, conn) = state.db.read().await;
+    // Helper: auto-fill domain from org slug + base_domain if configured
+    let auto_fill_domain = |ws: &mut WizardState| {
+        if ws.domain.is_none() {
+            if let Some(base_domain) = &state.gaia_x.base_domain {
+                if let Ok(Some(org)) = conn.query_row(
+                    "SELECT slug FROM organizations WHERE id = ?1",
+                    rusqlite::params![&org_id],
+                    |row| Ok(row.get::<_, String>(0)?),
+                ).optional() {
+                    ws.domain = Some(format!("{}.{}", org, base_domain));
+                }
+            }
+        }
+    };
+
     match db::get_wizard_state(&conn, &org_id) {
-        Ok(Some(wizard)) => data_response(wizard).into_response(),
+        Ok(Some(mut wizard)) => {
+            auto_fill_domain(&mut wizard);
+            data_response(wizard).into_response()
+        }
         Ok(None) => {
             let mut ws = default_state(&org_id);
             // Pre-fill from organization identity if available
@@ -119,36 +230,37 @@ pub async fn get_wizard_state(
                 if !c.is_empty() { ws.country_code = Some(c); }
                 if let Some(r) = rn { ws.lrn_value = Some(r); }
             }
+            auto_fill_domain(&mut ws);
             data_response(ws).into_response()
         }
-        Err(e) => internal_error(&format!("failed to load wizard state: {e}")),
+        Err(e) => internal_error_response(&format!("failed to load wizard state: {e}")),
     }
 }
 
 // ── b) POST /v1/gaia-x/wizard/keys ───────────────────────────────────────────
 
-/// Generate a P-256 key pair.
-/// Returns { private_key_pem, public_key_jwk }.
-/// The private key is returned once for download — NEVER stored in DB.
+#[utoipa::path(post, path = "/v1/gaia-x/wizard/keys", tag = "Gaia-X Compliance",
+    responses((status = 200, description = "Generated key pair"))
+)]
 pub async fn generate_keys(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
 ) -> Response {
     let pair = match keys::generate_key_pair() {
         Ok(p) => p,
-        Err(e) => return internal_error(&format!("key generation failed: {e}")),
+        Err(e) => return internal_error_response(&format!("key generation failed: {e}")),
     };
 
     let jwk_str = match serde_json::to_string(&pair.public_key_jwk) {
         Ok(s) => s,
-        Err(e) => return internal_error(&format!("failed to serialize JWK: {e}")),
+        Err(e) => return internal_error_response(&format!("failed to serialize JWK: {e}")),
     };
 
     let org_id = ctx.org_id.0.clone();
     let conn = state.db.write().await;
     let existing = match db::get_wizard_state(&conn, &org_id) {
         Ok(e) => e,
-        Err(e) => return internal_error(&format!("db read failed: {e}")),
+        Err(e) => return internal_error_response(&format!("db read failed: {e}")),
     };
     let mut wizard = existing.unwrap_or_else(|| default_state(&org_id));
     wizard.public_key_jwk = Some(jwk_str);
@@ -158,7 +270,7 @@ pub async fn generate_keys(
     wizard.updated_at = now_iso();
 
     if let Err(e) = db::upsert_wizard_state(&conn, &wizard) {
-        return internal_error(&format!("failed to save wizard state: {e}"));
+        return internal_error_response(&format!("failed to save wizard state: {e}"));
     }
 
     data_response(serde_json::json!({
@@ -170,8 +282,13 @@ pub async fn generate_keys(
 
 // ── c) POST /v1/gaia-x/wizard/certificate ────────────────────────────────────
 
-/// Validate uploaded certificate chain and assemble DID document.
-/// VC-05: cert chain is validated here (called at every step).
+#[utoipa::path(post, path = "/v1/gaia-x/wizard/certificate", tag = "Gaia-X Compliance",
+    request_body = CertUploadPayload,
+    responses(
+        (status = 200, description = "Certificate validated and DID document assembled"),
+        (status = 400, description = "Invalid certificate"),
+    )
+)]
 pub async fn validate_certificate(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -179,7 +296,7 @@ pub async fn validate_certificate(
 ) -> Response {
     // VC-05: validate chain
     if let Err(e) = cert::validate_chain(&payload.cert_chain_pem) {
-        return bad_request(e.0);
+        return bad_request_response(e.0);
     }
 
     let org_id = ctx.org_id.0.clone();
@@ -188,19 +305,19 @@ pub async fn validate_certificate(
     let (_permit, read_conn) = state.db.read().await;
     let existing = match db::get_wizard_state(&read_conn, &org_id) {
         Ok(e) => e,
-        Err(e) => return internal_error(&format!("db read failed: {e}")),
+        Err(e) => return internal_error_response(&format!("db read failed: {e}")),
     };
     drop(read_conn);
     drop(_permit);
 
     let stored_jwk_str = match existing.as_ref().and_then(|s| s.public_key_jwk.as_ref()) {
         Some(j) => j.clone(),
-        None => return bad_request("Key pair not generated yet — complete step 1 first"),
+        None => return bad_request_response("Key pair not generated yet — complete step 1 first"),
     };
 
     let public_key_jwk: Value = match serde_json::from_str(&stored_jwk_str) {
         Ok(v) => v,
-        Err(e) => return internal_error(&format!("failed to parse stored JWK: {e}")),
+        Err(e) => return internal_error_response(&format!("failed to parse stored JWK: {e}")),
     };
 
     let domain = &payload.domain;
@@ -245,14 +362,14 @@ pub async fn validate_certificate(
 
     let did_doc_str = match serde_json::to_string(&did_document) {
         Ok(s) => s,
-        Err(e) => return internal_error(&format!("failed to serialize DID document: {e}")),
+        Err(e) => return internal_error_response(&format!("failed to serialize DID document: {e}")),
     };
 
     // Persist.
     let conn = state.db.write().await;
     let existing2 = match db::get_wizard_state(&conn, &org_id) {
         Ok(e) => e,
-        Err(e) => return internal_error(&format!("db read for write failed: {e}")),
+        Err(e) => return internal_error_response(&format!("db read for write failed: {e}")),
     };
     let mut wizard = existing2.unwrap_or_else(|| default_state(&org_id));
     wizard.cert_chain_pem = Some(payload.cert_chain_pem.clone());
@@ -264,7 +381,7 @@ pub async fn validate_certificate(
     wizard.updated_at = now_iso();
 
     if let Err(e) = db::upsert_wizard_state(&conn, &wizard) {
-        return internal_error(&format!("failed to save wizard state: {e}"));
+        return internal_error_response(&format!("failed to save wizard state: {e}"));
     }
 
     data_response(serde_json::json!({
@@ -277,48 +394,28 @@ pub async fn validate_certificate(
 
 // ── d) POST /v1/gaia-x/wizard/lrn ────────────────────────────────────────────
 
-/// Request a signed LRN Verifiable Credential from the GXDCH Notary.
-/// VC-05: cert chain re-validated before proceeding.
+#[utoipa::path(post, path = "/v1/gaia-x/wizard/lrn", tag = "Gaia-X Compliance",
+    request_body = LrnPayload,
+    responses(
+        (status = 200, description = "LRN credential obtained"),
+        (status = 400, description = "Wizard not ready"),
+        (status = 502, description = "GXDCH notary error"),
+    )
+)]
 pub async fn request_lrn(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Json(payload): Json<LrnPayload>,
 ) -> Response {
     let org_id = ctx.org_id.0.clone();
-    let (_permit, conn) = state.db.read().await;
-    let wizard = match db::get_wizard_state(&conn, &org_id) {
-        Ok(Some(w)) => w,
-        Ok(None) => return bad_request("Wizard not started — complete previous steps first"),
-        Err(e) => return internal_error(&format!("db read failed: {e}")),
-    };
-    drop(conn);
-    drop(_permit);
-
-    // VC-05: re-validate cert chain at this step
-    let cert_pem = match &wizard.cert_chain_pem {
-        Some(p) => p.clone(),
-        None => return bad_request("Certificate not uploaded — complete step 2 first"),
-    };
-    if let Err(e) = cert::validate_chain(&cert_pem) {
-        return bad_request(format!("Certificate validation failed: {}", e.0));
-    }
-
-    let domain = match &wizard.domain {
-        Some(d) => d.clone(),
-        None => return bad_request("Domain not set — complete step 2 first"),
+    let mut wizard = match load_wizard(&state, &org_id).await {
+        Ok(w) => w,
+        Err(r) => return r,
     };
 
-    // Build a reqwest client (use vc_client if available, otherwise build ad-hoc).
-    let client = match &state.gaia_x.vc_client {
-        Some(c) => c.clone(),
-        None => match reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(30))
-            .build()
-        {
-            Ok(c) => c,
-            Err(e) => return internal_error(&format!("failed to create HTTP client: {e}")),
-        },
-    };
+    let _cert_pem = match require_cert_chain(&wizard) { Ok(c) => c, Err(r) => return r };
+    let domain = match require_domain(&wizard) { Ok(d) => d, Err(r) => return r };
+    let client = match gxdch_client(&state, 30) { Ok(c) => c, Err(r) => return r };
 
     let lrn_vc = match gxdch::request_lrn_credential(
         &client,
@@ -341,75 +438,52 @@ pub async fn request_lrn(
 
     let lrn_str = match serde_json::to_string(&lrn_vc) {
         Ok(s) => s,
-        Err(e) => return internal_error(&format!("failed to serialize LRN VC: {e}")),
+        Err(e) => return internal_error_response(&format!("failed to serialize LRN VC: {e}")),
     };
 
-    let write_conn = state.db.write().await;
-    let existing = match db::get_wizard_state(&write_conn, &org_id) {
-        Ok(e) => e,
-        Err(e) => return internal_error(&format!("db read for write failed: {e}")),
-    };
-    let mut w = existing.unwrap_or_else(|| default_state(&org_id));
-    w.lrn_credential = Some(lrn_str);
-    w.lrn_type = Some(payload.lrn_type.clone());
-    w.lrn_value = Some(payload.lrn_value.clone());
-    if w.current_step < 3 {
-        w.current_step = 3;
-    }
-    w.updated_at = now_iso();
-
-    if let Err(e) = db::upsert_wizard_state(&write_conn, &w) {
-        return internal_error(&format!("failed to save wizard state: {e}"));
-    }
+    wizard.lrn_credential = Some(lrn_str);
+    wizard.lrn_type = Some(payload.lrn_type.clone());
+    wizard.lrn_value = Some(payload.lrn_value.clone());
+    wizard.current_step = 3;
+    if let Err(r) = save_wizard_step(&state, &wizard).await { return r; }
 
     data_response(lrn_vc).into_response()
 }
 
 // ── e) POST /v1/gaia-x/wizard/legal-participant ───────────────────────────────
 
-/// Assemble, sign, and store the LegalParticipant Verifiable Credential.
-/// The private key is accepted in-memory for signing and immediately dropped.
-/// VC-05: cert chain re-validated.
+#[utoipa::path(post, path = "/v1/gaia-x/wizard/legal-participant", tag = "Gaia-X Compliance",
+    request_body = LpPayload,
+    responses(
+        (status = 200, description = "Legal Participant credential signed"),
+        (status = 400, description = "Wizard not ready or key mismatch"),
+    )
+)]
 pub async fn sign_legal_participant(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Json(payload): Json<LpPayload>,
 ) -> Response {
     let org_id = ctx.org_id.0.clone();
-    let (_permit, conn) = state.db.read().await;
-    let wizard = match db::get_wizard_state(&conn, &org_id) {
-        Ok(Some(w)) => w,
-        Ok(None) => return bad_request("Wizard not started — complete previous steps first"),
-        Err(e) => return internal_error(&format!("db read failed: {e}")),
+    let mut wizard = match load_wizard(&state, &org_id).await {
+        Ok(w) => w,
+        Err(r) => return r,
     };
-    drop(conn);
-    drop(_permit);
 
-    // VC-05: re-validate cert chain
-    let cert_pem = match &wizard.cert_chain_pem {
-        Some(p) => p.clone(),
-        None => return bad_request("Certificate not uploaded — complete step 2 first"),
-    };
-    if let Err(e) = cert::validate_chain(&cert_pem) {
-        return bad_request(format!("Certificate validation failed: {}", e.0));
-    }
-
-    let domain = match &wizard.domain {
-        Some(d) => d.clone(),
-        None => return bad_request("Domain not set — complete step 2 first"),
-    };
+    let _cert_pem = match require_cert_chain(&wizard) { Ok(c) => c, Err(r) => return r };
+    let domain = match require_domain(&wizard) { Ok(d) => d, Err(r) => return r };
 
     // Verify private key matches stored public key.
     let stored_jwk: Value = match wizard.public_key_jwk.as_ref() {
         Some(j) => match serde_json::from_str(j) {
             Ok(v) => v,
-            Err(e) => return internal_error(&format!("failed to parse stored JWK: {e}")),
+            Err(e) => return internal_error_response(&format!("failed to parse stored JWK: {e}")),
         },
-        None => return bad_request("Key pair not generated yet — complete step 1 first"),
+        None => return bad_request_response("Key pair not generated yet — complete step 1 first"),
     };
 
     if let Err(e) = keys::verify_key_match(&payload.private_key_pem, &stored_jwk) {
-        return bad_request(e);
+        return bad_request_response(e);
     }
 
     // Assemble LP credential and sign in-memory.
@@ -420,184 +494,126 @@ pub async fn sign_legal_participant(
     );
 
     if let Err(e) = signing::sign_credential(&mut lp_cred, &payload.private_key_pem, &domain) {
-        return internal_error(&format!("signing failed: {e}"));
+        return internal_error_response(&format!("signing failed: {e}"));
     }
     // private_key_pem is dropped when `payload` is dropped at end of scope — never stored.
 
     let lp_str = match serde_json::to_string(&lp_cred) {
         Ok(s) => s,
-        Err(e) => return internal_error(&format!("failed to serialize LP credential: {e}")),
+        Err(e) => return internal_error_response(&format!("failed to serialize LP credential: {e}")),
     };
 
-    let write_conn = state.db.write().await;
-    let existing = match db::get_wizard_state(&write_conn, &org_id) {
-        Ok(e) => e,
-        Err(e) => return internal_error(&format!("db read for write failed: {e}")),
-    };
-    let mut w = existing.unwrap_or_else(|| default_state(&org_id));
-    w.lp_credential = Some(lp_str);
-    w.legal_name = Some(payload.legal_name.clone());
-    w.country_code = Some(payload.country_code.clone());
-    if w.current_step < 4 {
-        w.current_step = 4;
-    }
-    w.updated_at = now_iso();
-
-    if let Err(e) = db::upsert_wizard_state(&write_conn, &w) {
-        return internal_error(&format!("failed to save wizard state: {e}"));
-    }
+    wizard.lp_credential = Some(lp_str);
+    wizard.legal_name = Some(payload.legal_name.clone());
+    wizard.country_code = Some(payload.country_code.clone());
+    wizard.current_step = 4;
+    if let Err(r) = save_wizard_step(&state, &wizard).await { return r; }
 
     data_response(lp_cred).into_response()
 }
 
 // ── f) POST /v1/gaia-x/wizard/terms ──────────────────────────────────────────
 
-/// Assemble, sign, and store the T&C Verifiable Credential.
-/// The private key is accepted in-memory for signing and immediately dropped.
-/// VC-05: cert chain re-validated.
+#[utoipa::path(post, path = "/v1/gaia-x/wizard/terms", tag = "Gaia-X Compliance",
+    request_body = TcPayload,
+    responses(
+        (status = 200, description = "Terms & Conditions credential signed"),
+        (status = 400, description = "Wizard not ready or key mismatch"),
+    )
+)]
 pub async fn sign_terms_conditions(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Json(payload): Json<TcPayload>,
 ) -> Response {
     let org_id = ctx.org_id.0.clone();
-    let (_permit, conn) = state.db.read().await;
-    let wizard = match db::get_wizard_state(&conn, &org_id) {
-        Ok(Some(w)) => w,
-        Ok(None) => return bad_request("Wizard not started — complete previous steps first"),
-        Err(e) => return internal_error(&format!("db read failed: {e}")),
+    let mut wizard = match load_wizard(&state, &org_id).await {
+        Ok(w) => w,
+        Err(r) => return r,
     };
-    drop(conn);
-    drop(_permit);
 
-    // VC-05: re-validate cert chain
-    let cert_pem = match &wizard.cert_chain_pem {
-        Some(p) => p.clone(),
-        None => return bad_request("Certificate not uploaded — complete step 2 first"),
-    };
-    if let Err(e) = cert::validate_chain(&cert_pem) {
-        return bad_request(format!("Certificate validation failed: {}", e.0));
-    }
-
-    let domain = match &wizard.domain {
-        Some(d) => d.clone(),
-        None => return bad_request("Domain not set — complete step 2 first"),
-    };
+    let _cert_pem = match require_cert_chain(&wizard) { Ok(c) => c, Err(r) => return r };
+    let domain = match require_domain(&wizard) { Ok(d) => d, Err(r) => return r };
 
     // Verify private key matches stored public key.
     let stored_jwk: Value = match wizard.public_key_jwk.as_ref() {
         Some(j) => match serde_json::from_str(j) {
             Ok(v) => v,
-            Err(e) => return internal_error(&format!("failed to parse stored JWK: {e}")),
+            Err(e) => return internal_error_response(&format!("failed to parse stored JWK: {e}")),
         },
-        None => return bad_request("Key pair not generated yet — complete step 1 first"),
+        None => return bad_request_response("Key pair not generated yet — complete step 1 first"),
     };
 
     if let Err(e) = keys::verify_key_match(&payload.private_key_pem, &stored_jwk) {
-        return bad_request(e);
+        return bad_request_response(e);
     }
 
     let mut tc_cred = credentials::assemble_terms_conditions(&domain);
 
     if let Err(e) = signing::sign_credential(&mut tc_cred, &payload.private_key_pem, &domain) {
-        return internal_error(&format!("signing failed: {e}"));
+        return internal_error_response(&format!("signing failed: {e}"));
     }
     // private_key_pem dropped here — never stored.
 
     let tc_str = match serde_json::to_string(&tc_cred) {
         Ok(s) => s,
-        Err(e) => return internal_error(&format!("failed to serialize T&C credential: {e}")),
+        Err(e) => return internal_error_response(&format!("failed to serialize T&C credential: {e}")),
     };
 
-    let write_conn = state.db.write().await;
-    let existing = match db::get_wizard_state(&write_conn, &org_id) {
-        Ok(e) => e,
-        Err(e) => return internal_error(&format!("db read for write failed: {e}")),
-    };
-    let mut w = existing.unwrap_or_else(|| default_state(&org_id));
-    w.tc_credential = Some(tc_str);
-    if w.current_step < 5 {
-        w.current_step = 5;
-    }
-    w.updated_at = now_iso();
-
-    if let Err(e) = db::upsert_wizard_state(&write_conn, &w) {
-        return internal_error(&format!("failed to save wizard state: {e}"));
-    }
+    wizard.tc_credential = Some(tc_str);
+    wizard.current_step = 5;
+    if let Err(r) = save_wizard_step(&state, &wizard).await { return r; }
 
     data_response(tc_cred).into_response()
 }
 
 // ── g) POST /v1/gaia-x/wizard/submit ─────────────────────────────────────────
 
-/// Assemble VP and submit to GXDCH Compliance Service.
-/// VC-05: cert chain re-validated.
-/// VC-07: VP assembles all credentials as inline objects.
+#[utoipa::path(post, path = "/v1/gaia-x/wizard/submit", tag = "Gaia-X Compliance",
+    responses(
+        (status = 200, description = "Compliance submission result"),
+        (status = 400, description = "Credentials missing"),
+    )
+)]
 pub async fn submit_gxdch(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
 ) -> Response {
     let org_id = ctx.org_id.0.clone();
-    let (_permit, conn) = state.db.read().await;
-    let wizard = match db::get_wizard_state(&conn, &org_id) {
-        Ok(Some(w)) => w,
-        Ok(None) => {
-            return bad_request("Wizard not started — complete all previous steps first")
-        }
-        Err(e) => return internal_error(&format!("db read failed: {e}")),
+    let mut wizard = match load_wizard(&state, &org_id).await {
+        Ok(w) => w,
+        Err(r) => return r,
     };
-    drop(conn);
-    drop(_permit);
 
-    // VC-05: re-validate cert chain
-    let cert_pem = match &wizard.cert_chain_pem {
-        Some(p) => p.clone(),
-        None => return bad_request("Certificate not uploaded — complete step 2 first"),
-    };
-    if let Err(e) = cert::validate_chain(&cert_pem) {
-        return bad_request(format!("Certificate validation failed: {}", e.0));
-    }
+    let _cert_pem = match require_cert_chain(&wizard) { Ok(c) => c, Err(r) => return r };
 
     // Verify all 3 credentials exist.
     let lrn: Value = match wizard.lrn_credential.as_ref() {
         Some(s) => match serde_json::from_str(s) {
             Ok(v) => v,
-            Err(e) => return internal_error(&format!("failed to parse LRN credential: {e}")),
+            Err(e) => return internal_error_response(&format!("failed to parse LRN credential: {e}")),
         },
-        None => return bad_request("LRN credential missing — complete step 3 first"),
+        None => return bad_request_response("LRN credential missing — complete step 3 first"),
     };
     let lp: Value = match wizard.lp_credential.as_ref() {
         Some(s) => match serde_json::from_str(s) {
             Ok(v) => v,
-            Err(e) => {
-                return internal_error(&format!("failed to parse LP credential: {e}"))
-            }
+            Err(e) => return internal_error_response(&format!("failed to parse LP credential: {e}")),
         },
-        None => return bad_request("Legal Participant credential missing — complete step 4 first"),
+        None => return bad_request_response("Legal Participant credential missing — complete step 4 first"),
     };
     let tc: Value = match wizard.tc_credential.as_ref() {
         Some(s) => match serde_json::from_str(s) {
             Ok(v) => v,
-            Err(e) => {
-                return internal_error(&format!("failed to parse T&C credential: {e}"))
-            }
+            Err(e) => return internal_error_response(&format!("failed to parse T&C credential: {e}")),
         },
-        None => return bad_request("T&C credential missing — complete step 5 first"),
+        None => return bad_request_response("T&C credential missing — complete step 5 first"),
     };
 
     // VC-07: assemble VP with inline credentials.
     let vp_value = vp::assemble_vp(&lrn, &lp, &tc);
 
-    let client = match &state.gaia_x.vc_client {
-        Some(c) => c.clone(),
-        None => match reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(60))
-            .build()
-        {
-            Ok(c) => c,
-            Err(e) => return internal_error(&format!("failed to create HTTP client: {e}")),
-        },
-    };
+    let client = match gxdch_client(&state, 60) { Ok(c) => c, Err(r) => return r };
 
     let compliance_vc = match gxdch::submit_compliance(
         &client,
@@ -618,25 +634,16 @@ pub async fn submit_gxdch(
 
     let vc_str = match serde_json::to_string(&compliance_vc) {
         Ok(s) => s,
-        Err(e) => return internal_error(&format!("failed to serialize compliance VC: {e}")),
+        Err(e) => return internal_error_response(&format!("failed to serialize compliance VC: {e}")),
     };
 
     let now = now_iso();
-    let write_conn = state.db.write().await;
-    let existing = match db::get_wizard_state(&write_conn, &org_id) {
-        Ok(e) => e,
-        Err(e) => return internal_error(&format!("db read for write failed: {e}")),
-    };
-    let mut w = existing.unwrap_or_else(|| default_state(&org_id));
-    w.compliance_vc = Some(vc_str);
-    w.current_step = 6;
-    w.updated_at = now.clone();
-
-    if let Err(e) = db::upsert_wizard_state(&write_conn, &w) {
-        return internal_error(&format!("failed to save wizard state: {e}"));
-    }
+    wizard.compliance_vc = Some(vc_str);
+    wizard.current_step = 6;
+    if let Err(r) = save_wizard_step(&state, &wizard).await { return r; }
 
     // Update org's vc_verified_at.
+    let write_conn = state.db.write().await;
     if let Err(e) = write_conn.execute(
         "UPDATE organizations SET vc_verified_at = ?1, updated_at = ?1 WHERE id = ?2",
         rusqlite::params![now, org_id],
@@ -645,11 +652,11 @@ pub async fn submit_gxdch(
     }
 
     // Sync wizard identity fields back to organization
-    if let (Some(legal_name), Some(country_code)) = (&w.legal_name, &w.country_code) {
+    if let (Some(legal_name), Some(country_code)) = (&wizard.legal_name, &wizard.country_code) {
         let country_2 = &country_code[..std::cmp::min(2, country_code.len())];
         let _ = write_conn.execute(
             "UPDATE organizations SET legal_name = ?1, country = ?2, registration_number = ?3, updated_at = ?4 WHERE id = ?5",
-            rusqlite::params![legal_name, country_2, &w.lrn_value, &now, &org_id],
+            rusqlite::params![legal_name, country_2, &wizard.lrn_value, &now, &org_id],
         );
     }
 
@@ -662,7 +669,9 @@ pub async fn submit_gxdch(
 
 // ── h) GET /v1/gaia-x/compliance ─────────────────────────────────────────────
 
-/// Return compliance status and credential inventory for the authenticated org.
+#[utoipa::path(get, path = "/v1/gaia-x/compliance", tag = "Gaia-X Compliance",
+    responses((status = 200, description = "Compliance status and credentials"))
+)]
 pub async fn get_compliance_status(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -690,7 +699,7 @@ pub async fn get_compliance_status(
             }))
             .into_response()
         }
-        Err(e) => return internal_error(&format!("db read failed: {e}")),
+        Err(e) => return internal_error_response(&format!("db read failed: {e}")),
     };
 
     let compliant = wizard.compliance_vc.is_some();
@@ -731,46 +740,37 @@ pub async fn get_compliance_status(
 
 // ── i) POST /v1/gaia-x/compliance/rerun ──────────────────────────────────────
 
-/// Re-assemble VP from stored credentials and re-submit to GXDCH.
+#[utoipa::path(post, path = "/v1/gaia-x/compliance/rerun", tag = "Gaia-X Compliance",
+    responses(
+        (status = 200, description = "Re-submitted compliance result"),
+        (status = 400, description = "Credentials missing"),
+    )
+)]
 pub async fn rerun_compliance(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
 ) -> Response {
     let org_id = ctx.org_id.0.clone();
-    let (_permit, conn) = state.db.read().await;
-    let wizard = match db::get_wizard_state(&conn, &org_id) {
-        Ok(Some(w)) => w,
-        Ok(None) => return bad_request("No wizard state — complete the wizard first"),
-        Err(e) => return internal_error(&format!("db read failed: {e}")),
+    let mut wizard = match load_wizard(&state, &org_id).await {
+        Ok(w) => w,
+        Err(r) => return r,
     };
-    drop(conn);
-    drop(_permit);
 
     let lrn: Value = match wizard.lrn_credential.as_ref() {
         Some(s) => serde_json::from_str(s).unwrap_or_default(),
-        None => return bad_request("LRN credential missing"),
+        None => return bad_request_response("LRN credential missing"),
     };
     let lp: Value = match wizard.lp_credential.as_ref() {
         Some(s) => serde_json::from_str(s).unwrap_or_default(),
-        None => return bad_request("Legal Participant credential missing"),
+        None => return bad_request_response("Legal Participant credential missing"),
     };
     let tc: Value = match wizard.tc_credential.as_ref() {
         Some(s) => serde_json::from_str(s).unwrap_or_default(),
-        None => return bad_request("T&C credential missing"),
+        None => return bad_request_response("T&C credential missing"),
     };
 
     let vp_value = vp::assemble_vp(&lrn, &lp, &tc);
-
-    let client = match &state.gaia_x.vc_client {
-        Some(c) => c.clone(),
-        None => match reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(60))
-            .build()
-        {
-            Ok(c) => c,
-            Err(e) => return internal_error(&format!("failed to create HTTP client: {e}")),
-        },
-    };
+    let client = match gxdch_client(&state, 60) { Ok(c) => c, Err(r) => return r };
 
     let compliance_vc = match gxdch::submit_compliance(
         &client,
@@ -791,23 +791,14 @@ pub async fn rerun_compliance(
 
     let vc_str = match serde_json::to_string(&compliance_vc) {
         Ok(s) => s,
-        Err(e) => return internal_error(&format!("failed to serialize compliance VC: {e}")),
+        Err(e) => return internal_error_response(&format!("failed to serialize compliance VC: {e}")),
     };
 
     let now = now_iso();
+    wizard.compliance_vc = Some(vc_str);
+    if let Err(r) = save_wizard_step(&state, &wizard).await { return r; }
+
     let write_conn = state.db.write().await;
-    let existing = match db::get_wizard_state(&write_conn, &org_id) {
-        Ok(e) => e,
-        Err(e) => return internal_error(&format!("db read for write failed: {e}")),
-    };
-    let mut w = existing.unwrap_or_else(|| default_state(&org_id));
-    w.compliance_vc = Some(vc_str);
-    w.updated_at = now.clone();
-
-    if let Err(e) = db::upsert_wizard_state(&write_conn, &w) {
-        return internal_error(&format!("failed to save wizard state: {e}"));
-    }
-
     if let Err(e) = write_conn.execute(
         "UPDATE organizations SET vc_verified_at = ?1, updated_at = ?1 WHERE id = ?2",
         rusqlite::params![now, org_id],
@@ -816,11 +807,11 @@ pub async fn rerun_compliance(
     }
 
     // Sync wizard identity fields back to organization
-    if let (Some(legal_name), Some(country_code)) = (&w.legal_name, &w.country_code) {
+    if let (Some(legal_name), Some(country_code)) = (&wizard.legal_name, &wizard.country_code) {
         let country_2 = &country_code[..std::cmp::min(2, country_code.len())];
         let _ = write_conn.execute(
             "UPDATE organizations SET legal_name = ?1, country = ?2, registration_number = ?3, updated_at = ?4 WHERE id = ?5",
-            rusqlite::params![legal_name, country_2, &w.lrn_value, &now, &org_id],
+            rusqlite::params![legal_name, country_2, &wizard.lrn_value, &now, &org_id],
         );
     }
 
@@ -834,28 +825,21 @@ pub async fn rerun_compliance(
 
 // ── j) GET /.well-known/did.json ──────────────────────────────────────────────
 
-/// Public endpoint: serve the DID document for an org.
-///
-/// NOTE: Since did:web resolution uses the domain, and Keasy is single-domain,
-/// the .well-known endpoint uses a query param `?org={org_id}` to identify
-/// which org's DID document to serve. In a multi-tenant SaaS deployment each
-/// org would typically use a sub-domain; this is a known limitation.
+#[utoipa::path(get, path = "/.well-known/did.json", tag = "Gaia-X Public",
+    params(("org" = Option<String>, Query, description = "Organization ID (dev fallback)")),
+    responses(
+        (status = 200, description = "DID document"),
+        (status = 404, description = "DID document not found"),
+    )
+)]
 pub async fn get_did_document(
     State(state): State<AppState>,
+    headers: HeaderMap,
     axum::extract::Query(params): axum::extract::Query<HashMap<String, String>>,
 ) -> Response {
-    let org_id = match params.get("org") {
-        Some(id) => id.clone(),
-        None => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(error_body(
-                    "bad_request",
-                    "Missing ?org=<org_id> query parameter",
-                )),
-            )
-                .into_response()
-        }
+    let org_id = match resolve_org_id_from_request(&state, &headers, &params).await {
+        Ok(id) => id,
+        Err(r) => return r,
     };
 
     let (_permit, conn) = state.db.read().await;
@@ -868,7 +852,7 @@ pub async fn get_did_document(
             )
                 .into_response()
         }
-        Err(e) => return internal_error(&format!("db read failed: {e}")),
+        Err(e) => return internal_error_response(&format!("db read failed: {e}")),
     };
 
     let did_doc_str = match wizard.did_document {
@@ -884,7 +868,7 @@ pub async fn get_did_document(
 
     let did_doc: Value = match serde_json::from_str(&did_doc_str) {
         Ok(v) => v,
-        Err(e) => return internal_error(&format!("failed to parse DID document: {e}")),
+        Err(e) => return internal_error_response(&format!("failed to parse DID document: {e}")),
     };
 
     (
@@ -897,24 +881,21 @@ pub async fn get_did_document(
 
 // ── k) GET /.well-known/x509CertificateChain.pem ──────────────────────────────
 
-/// Public endpoint: serve the X.509 certificate chain PEM for an org.
-/// See `get_did_document` for notes on the ?org= query param pattern.
+#[utoipa::path(get, path = "/.well-known/x509CertificateChain.pem", tag = "Gaia-X Public",
+    params(("org" = Option<String>, Query, description = "Organization ID (dev fallback)")),
+    responses(
+        (status = 200, description = "X.509 certificate chain PEM"),
+        (status = 404, description = "Certificate chain not found"),
+    )
+)]
 pub async fn get_cert_chain(
     State(state): State<AppState>,
+    headers: HeaderMap,
     axum::extract::Query(params): axum::extract::Query<HashMap<String, String>>,
 ) -> Response {
-    let org_id = match params.get("org") {
-        Some(id) => id.clone(),
-        None => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(error_body(
-                    "bad_request",
-                    "Missing ?org=<org_id> query parameter",
-                )),
-            )
-                .into_response()
-        }
+    let org_id = match resolve_org_id_from_request(&state, &headers, &params).await {
+        Ok(id) => id,
+        Err(r) => return r,
     };
 
     let (_permit, conn) = state.db.read().await;
@@ -924,7 +905,7 @@ pub async fn get_cert_chain(
             return (StatusCode::NOT_FOUND, "Certificate chain not found".to_string())
                 .into_response()
         }
-        Err(e) => return internal_error(&format!("db read failed: {e}")),
+        Err(e) => return internal_error_response(&format!("db read failed: {e}")),
     };
 
     let cert_pem = match wizard.cert_chain_pem {

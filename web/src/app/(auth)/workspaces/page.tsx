@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate } from "swr";
 import { Loader2 } from "lucide-react";
+import { fetchWorkspaces } from "@/lib/api";
+import type { Workspace } from "@/lib/types";
 import {
   Card,
   CardHeader,
@@ -11,12 +13,6 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
-type Workspace = {
-  client_id: string;
-  name: string;
-  url: string;
-};
 
 // Deterministic color from client_id string (hash-based hue)
 function clientIdToColor(id: string): string {
@@ -35,10 +31,9 @@ export default function WorkspacesPage() {
   const [switching, setSwitching] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/v1/auth/workspaces")
-      .then((r) => r.json())
+    fetchWorkspaces()
       .then((data) => {
-        const ws: Workspace[] = data?.data?.workspaces ?? [];
+        const ws: Workspace[] = data?.workspaces ?? [];
         if (ws.length <= 1) {
           // Auto-skip for single dataspace — redirect straight to dashboard
           router.replace("/");

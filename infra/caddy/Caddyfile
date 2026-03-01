@@ -7,6 +7,10 @@
 		reverse_proxy keycloak:8080
 	}
 
+	handle /openid4vc/* {
+		reverse_proxy waltid-verifier-api:3000
+	}
+
 	handle {
 		reverse_proxy web:3000
 	}

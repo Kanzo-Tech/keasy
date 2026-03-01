@@ -1,7 +1,10 @@
 use serde_json::{json, Value};
 
 /// Calls POST /openid4vc/verify on the Verifier to create a new OID4VP session.
-/// Returns the raw JSON body containing "id" (session_id) and "url" (openid4vp:// URL).
+/// Returns `{ "id": "<session_id>", "url": "openid4vp://..." }`.
+///
+/// The Verifier API returns the openid4vp:// URL as plain text. The session ID
+/// is extracted from the `state` query parameter embedded in that URL.
 pub async fn create_verification_session(
     client: &reqwest::Client,
     verifier_url: &str,
@@ -25,9 +28,26 @@ pub async fn create_verification_session(
         return Err(format!("verifier returned status {}", resp.status()));
     }
 
-    resp.json::<Value>()
+    // The Verifier returns the openid4vp:// authorization URL as plain text.
+    let url = resp
+        .text()
         .await
-        .map_err(|e| format!("verifier response parse: {e}"))
+        .map_err(|e| format!("verifier response read: {e}"))?;
+
+    // Extract session ID from the `state` query parameter in the URL.
+    let session_id = url
+        .split('?')
+        .nth(1)
+        .and_then(|qs| {
+            qs.split('&')
+                .find_map(|pair| pair.strip_prefix("state="))
+        })
+        .ok_or_else(|| "verifier URL missing state parameter".to_string())?;
+
+    Ok(json!({
+        "id": session_id,
+        "url": url,
+    }))
 }
 
 /// Polls GET /openid4vc/session/{session_id} on the Verifier.

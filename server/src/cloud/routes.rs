@@ -4,12 +4,15 @@ use axum::response::IntoResponse;
 use axum::Json;
 
 use crate::AppState;
-use crate::cloud::models::{CreateCloudAccountRequest, UpdateCloudAccountRequest};
+use crate::cloud::models::{CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest};
 use crate::error::data_response;
 use crate::middleware::tenant::RequireParticipant;
 
 use super::errors::CloudAccountError;
 
+#[utoipa::path(get, path = "/v1/cloud-accounts", tag = "Cloud Accounts",
+    responses((status = 200, description = "List of cloud accounts", body = Vec<CloudAccountSummary>))
+)]
 pub async fn list_accounts(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -17,6 +20,13 @@ pub async fn list_accounts(
     Ok(data_response(state.db.list_cloud_accounts(&ctx.as_ctx()).await))
 }
 
+#[utoipa::path(post, path = "/v1/cloud-accounts", tag = "Cloud Accounts",
+    request_body = CreateCloudAccountRequest,
+    responses(
+        (status = 201, description = "Cloud account created", body = CloudAccountSummary),
+        (status = 400, description = "Validation failed"),
+    )
+)]
 pub async fn create_account(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -28,6 +38,13 @@ pub async fn create_account(
     }
 }
 
+#[utoipa::path(get, path = "/v1/cloud-accounts/{id}", tag = "Cloud Accounts",
+    params(("id" = String, Path, description = "Cloud account ID")),
+    responses(
+        (status = 200, description = "Cloud account details", body = CloudAccountSummary),
+        (status = 404, description = "Cloud account not found"),
+    )
+)]
 pub async fn get_account(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -39,6 +56,14 @@ pub async fn get_account(
     }
 }
 
+#[utoipa::path(put, path = "/v1/cloud-accounts/{id}", tag = "Cloud Accounts",
+    params(("id" = String, Path, description = "Cloud account ID")),
+    request_body = UpdateCloudAccountRequest,
+    responses(
+        (status = 200, description = "Cloud account updated", body = CloudAccountSummary),
+        (status = 400, description = "Validation failed"),
+    )
+)]
 pub async fn update_account(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -51,6 +76,10 @@ pub async fn update_account(
     }
 }
 
+#[utoipa::path(delete, path = "/v1/cloud-accounts/{id}", tag = "Cloud Accounts",
+    params(("id" = String, Path, description = "Cloud account ID")),
+    responses((status = 204, description = "Cloud account deleted"))
+)]
 pub async fn delete_account(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,

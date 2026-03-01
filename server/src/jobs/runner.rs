@@ -82,11 +82,13 @@ impl JobRunner {
                 Err(_) => {
                     let ctx = make_scoped(&job_id);
                     let ctx_ref = TenantScoped::new(OrgId(org_id.clone()), ctx.inner().as_str());
-                    db.update_job(&ctx_ref, |job| {
+                    if let Err(e) = db.update_job(&ctx_ref, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(JobRuntimeError::new("INTERNAL_ERROR", "Failed to acquire execution permit"));
                         job.completed_at = Some(now_iso8601());
-                    }).await;
+                    }).await {
+                        error!(job_id = %job_id, error = %e, "failed to update job");
+                    }
                     return;
                 }
             };
@@ -99,10 +101,12 @@ impl JobRunner {
                 .map(|j| (j.name.clone(), j.pipeline.outputs.clone()))
                 .unwrap_or_default();
 
-            db.update_job(&job_ctx, |job| {
+            if let Err(e) = db.update_job(&job_ctx, |job| {
                 job.status = JobStatus::Running;
                 job.started_at = Some(now_iso8601());
-            }).await;
+            }).await {
+                error!(job_id = %job_id, error = %e, "failed to update job");
+            }
 
             info!(job_id = %job_id, "Job started");
 
@@ -135,36 +139,44 @@ impl JobRunner {
                         let triples = build_catalog_triples(input);
                         catalog.insert_triples(Some(&graph_name), &triples);
                     }
-                    db.update_job(&job_ctx, |job| {
+                    if let Err(e) = db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Completed;
                         job.completed_at = Some(now_iso8601());
                         job.catalog = catalog_str;
                         job.dcat_input = dcat_input;
-                    }).await;
+                    }).await {
+                        error!(job_id = %job_id, error = %e, "failed to update job");
+                    }
                 }
                 Ok(Ok(Err(err))) => {
                     error!(job_id = %job_id, error = %err, "Job failed");
-                    db.update_job(&job_ctx, |job| {
+                    if let Err(e) = db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(classify_error(&err));
                         job.completed_at = Some(now_iso8601());
-                    }).await;
+                    }).await {
+                        error!(job_id = %job_id, error = %e, "failed to update job");
+                    }
                 }
                 Ok(Err(join_err)) => {
                     error!(job_id = %job_id, error = %join_err, "Job panicked");
-                    db.update_job(&job_ctx, |job| {
+                    if let Err(e) = db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(JobRuntimeError::with_detail("INTERNAL_ERROR", "An internal error occurred", join_err.to_string()));
                         job.completed_at = Some(now_iso8601());
-                    }).await;
+                    }).await {
+                        error!(job_id = %job_id, error = %e, "failed to update job");
+                    }
                 }
                 Err(_elapsed) => {
                     error!(job_id = %job_id, "Job execution timed out");
-                    db.update_job(&job_ctx, |job| {
+                    if let Err(e) = db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(JobRuntimeError::new("TIMEOUT", "Job execution timed out"));
                         job.completed_at = Some(now_iso8601());
-                    }).await;
+                    }).await {
+                        error!(job_id = %job_id, error = %e, "failed to update job");
+                    }
                 }
             }
         });

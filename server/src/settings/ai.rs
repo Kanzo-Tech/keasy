@@ -8,7 +8,7 @@ pub struct AiSettings {
     pub max_tokens: Option<u32>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct AiSettingsPayload {
     pub provider: String,
     pub api_key: String,

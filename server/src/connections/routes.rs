@@ -5,7 +5,7 @@ use axum::Json;
 use serde::Deserialize;
 
 use crate::cloud::reader;
-use crate::connections::models::{CreateConnectionRequest, LocationType, UpdateConnectionRequest};
+use crate::connections::models::{Connection, CreateConnectionRequest, LocationType, UpdateConnectionRequest};
 use crate::error::data_response;
 use crate::middleware::tenant::RequireParticipant;
 use crate::AppState;
@@ -18,6 +18,10 @@ pub struct ListConnectionsQuery {
     pub connection_type: Option<String>,
 }
 
+#[utoipa::path(get, path = "/v1/connections", tag = "Connections",
+    params(("type" = Option<String>, Query, description = "Filter by connection type")),
+    responses((status = 200, description = "List of connections", body = Vec<Connection>))
+)]
 pub async fn list_connections(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -27,6 +31,13 @@ pub async fn list_connections(
     Ok(data_response(connections))
 }
 
+#[utoipa::path(post, path = "/v1/connections", tag = "Connections",
+    request_body = CreateConnectionRequest,
+    responses(
+        (status = 201, description = "Connection created", body = Connection),
+        (status = 400, description = "Invalid connection or container not found"),
+    )
+)]
 pub async fn create_connection(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -49,6 +60,13 @@ pub async fn create_connection(
     }
 }
 
+#[utoipa::path(get, path = "/v1/connections/{id}", tag = "Connections",
+    params(("id" = String, Path, description = "Connection ID")),
+    responses(
+        (status = 200, description = "Connection details", body = Connection),
+        (status = 404, description = "Connection not found"),
+    )
+)]
 pub async fn get_connection(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -60,6 +78,15 @@ pub async fn get_connection(
     }
 }
 
+#[utoipa::path(put, path = "/v1/connections/{id}", tag = "Connections",
+    params(("id" = String, Path, description = "Connection ID")),
+    request_body = UpdateConnectionRequest,
+    responses(
+        (status = 200, description = "Connection updated", body = Connection),
+        (status = 400, description = "Invalid connection"),
+        (status = 404, description = "Connection not found"),
+    )
+)]
 pub async fn update_connection(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -72,15 +99,30 @@ pub async fn update_connection(
     }
 }
 
+#[utoipa::path(delete, path = "/v1/connections/{id}", tag = "Connections",
+    params(("id" = String, Path, description = "Connection ID")),
+    responses(
+        (status = 204, description = "Connection deleted"),
+    )
+)]
 pub async fn delete_connection(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    state.db.remove_connection(&ctx.scoped(id.as_str())).await;
+    state.db.remove_connection(&ctx.scoped(id.as_str())).await
+        .map_err(ConnectionError::Internal)?;
     Ok(StatusCode::NO_CONTENT.into_response())
 }
 
+#[utoipa::path(get, path = "/v1/connections/{id}/files", tag = "Connections",
+    params(("id" = String, Path, description = "Connection ID")),
+    responses(
+        (status = 200, description = "List of files in the connection"),
+        (status = 400, description = "File listing not supported"),
+        (status = 404, description = "Connection not found"),
+    )
+)]
 pub async fn list_connection_files(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,

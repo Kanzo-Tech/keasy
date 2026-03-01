@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 /// Runtime job error — stored in the database as JSON on a failed job.
 /// This is NOT an API error type; it is a serializable record of what went wrong during execution.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct JobRuntimeError {
     pub code: String,
     pub message: String,
@@ -92,6 +92,8 @@ pub enum JobApiError {
     NoCatalog,
     #[error("serialization failed: {0}")]
     Serialization(String),
+    #[error("internal: {0}")]
+    Internal(String),
 }
 
 impl JobApiError {
@@ -127,6 +129,14 @@ impl JobApiError {
                 "serialization_error",
                 msg.clone(),
             ),
+            JobApiError::Internal(msg) => {
+                tracing::error!(detail = %msg, "Internal job error");
+                (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal_error",
+                    "An internal error occurred".to_string(),
+                )
+            }
         }
     }
 }

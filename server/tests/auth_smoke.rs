@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tower::ServiceExt; // for oneshot
 
-use keasy_server::{AppState, Database, JobRunner, OutputCache, RdfGraph};
+use keasy_server::{AppState, AuthServices, Database, GaiaXServices, JobRunner, OutputCache, RdfGraph};
 
 /// Helper: build a test router backed by a temp directory SQLite DB.
 async fn test_router() -> axum::Router {
@@ -43,14 +43,18 @@ async fn test_router() -> axum::Router {
         output_cache,
         api_key,
         base_url: "http://localhost:3000".to_string(),
-        vc_client: None,
-        gxdch_notary_url: "https://example.com/notary".to_string(),
-        gxdch_compliance_url: "https://example.com/compliance".to_string(),
-        oidc_issuer_url: None,
-        oidc_client_id: None,
-        oidc_client_secret: None,
-        keycloak_admin: None,
-        oidc_state: None,
+        auth: AuthServices {
+            oidc_state: None,
+            keycloak_admin: None,
+            oidc_issuer_url: None,
+            oidc_client_id: None,
+            oidc_client_secret: None,
+        },
+        gaia_x: GaiaXServices {
+            vc_client: None,
+            gxdch_notary_url: "https://example.com/notary".to_string(),
+            gxdch_compliance_url: "https://example.com/compliance".to_string(),
+        },
     };
 
     let session_secret = SecretString::from("test-session-secret-at-least-32-chars-long");

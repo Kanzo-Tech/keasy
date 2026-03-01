@@ -15,6 +15,11 @@ use crate::middleware::tenant::RequireParticipant;
 
 use super::errors::JobApiError;
 
+#[utoipa::path(get, path = "/v1/jobs", tag = "Jobs",
+    responses(
+        (status = 200, description = "List of jobs", body = Vec<Job>),
+    )
+)]
 pub async fn list_jobs(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -23,6 +28,13 @@ pub async fn list_jobs(
     Ok(data_response(jobs))
 }
 
+#[utoipa::path(post, path = "/v1/jobs", tag = "Jobs",
+    request_body = CreateJobRequest,
+    responses(
+        (status = 201, description = "Draft job created", body = Job),
+        (status = 202, description = "Job submitted for execution", body = Job),
+    )
+)]
 pub async fn create_job(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -46,7 +58,8 @@ pub async fn create_job(
             connection_ids: payload.connection_ids.clone(),
             script: Some(payload.script),
         };
-        state.db.insert_job(&ctx.as_ctx(), &job).await;
+        state.db.insert_job(&ctx.as_ctx(), &job).await
+            .map_err(JobApiError::Internal)?;
         return Ok((StatusCode::CREATED, data_response(job)).into_response());
     }
 
@@ -71,7 +84,8 @@ pub async fn create_job(
         script: None,
     };
 
-    state.db.insert_job(&ctx.as_ctx(), &job).await;
+    state.db.insert_job(&ctx.as_ctx(), &job).await
+        .map_err(JobApiError::Internal)?;
 
     let org_settings = if dcat_enabled {
         state.db.get_org_settings().await
@@ -93,6 +107,13 @@ pub async fn create_job(
     Ok((StatusCode::ACCEPTED, data_response(job)).into_response())
 }
 
+#[utoipa::path(get, path = "/v1/jobs/{id}", tag = "Jobs",
+    params(("id" = String, Path, description = "Job ID")),
+    responses(
+        (status = 200, description = "Job details", body = Job),
+        (status = 404, description = "Job not found"),
+    )
+)]
 pub async fn get_job(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -104,6 +125,15 @@ pub async fn get_job(
     }
 }
 
+#[utoipa::path(put, path = "/v1/jobs/{id}", tag = "Jobs",
+    params(("id" = String, Path, description = "Job ID")),
+    request_body = UpdateJobRequest,
+    responses(
+        (status = 200, description = "Job updated", body = Job),
+        (status = 400, description = "Job is not a draft"),
+        (status = 404, description = "Job not found"),
+    )
+)]
 pub async fn update_job(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -120,13 +150,20 @@ pub async fn update_job(
         if let Some(name) = payload.name {
             job.name = Some(name);
         }
-    }).await {
+    }).await.map_err(JobApiError::Internal)? {
         Some(job) if job.status == JobStatus::Draft => Ok(data_response(job).into_response()),
         Some(_) => Err(JobApiError::NotDraft),
         None => Err(JobApiError::NotFound),
     }
 }
 
+#[utoipa::path(post, path = "/v1/jobs/{id}/cancel", tag = "Jobs",
+    params(("id" = String, Path, description = "Job ID")),
+    responses(
+        (status = 200, description = "Job cancelled", body = Job),
+        (status = 404, description = "Job not found"),
+    )
+)]
 pub async fn cancel_job(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -135,12 +172,19 @@ pub async fn cancel_job(
     match state.db.update_job(&ctx.scoped(id.as_str()), |job| {
         job.status = JobStatus::Cancelled;
         job.completed_at = Some(now_iso8601());
-    }).await {
+    }).await.map_err(JobApiError::Internal)? {
         Some(job) => Ok(data_response(job).into_response()),
         None => Err(JobApiError::NotFound),
     }
 }
 
+#[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs",
+    params(("id" = String, Path, description = "Job ID")),
+    responses(
+        (status = 204, description = "Job deleted"),
+        (status = 404, description = "Job not found"),
+    )
+)]
 pub async fn delete_job(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -158,7 +202,8 @@ pub async fn delete_job(
         cache.remove(&id);
     }
 
-    state.db.remove_job(&ctx.scoped(id.as_str())).await;
+    state.db.remove_job(&ctx.scoped(id.as_str())).await
+        .map_err(JobApiError::Internal)?;
 
     Ok(StatusCode::NO_CONTENT.into_response())
 }
@@ -168,6 +213,16 @@ pub struct CatalogQuery {
     pub format: Option<String>,
 }
 
+#[utoipa::path(get, path = "/v1/jobs/{id}/catalog", tag = "Jobs",
+    params(
+        ("id" = String, Path, description = "Job ID"),
+        ("format" = Option<String>, Query, description = "RDF export format"),
+    ),
+    responses(
+        (status = 200, description = "DCAT catalog"),
+        (status = 404, description = "Job or catalog not found"),
+    )
+)]
 pub async fn get_job_catalog(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -196,6 +251,13 @@ pub async fn get_job_catalog(
     }
 }
 
+#[utoipa::path(get, path = "/v1/jobs/{id}/graph", tag = "Jobs",
+    params(("id" = String, Path, description = "Job ID")),
+    responses(
+        (status = 200, description = "Job knowledge graph"),
+        (status = 404, description = "Job not found"),
+    )
+)]
 pub async fn get_job_graph(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -216,6 +278,10 @@ pub struct UnifiedGraphQuery {
     pub org_id: Option<String>,
 }
 
+#[utoipa::path(get, path = "/v1/graph", tag = "Jobs",
+    params(("org_id" = Option<String>, Query, description = "Filter by organization")),
+    responses((status = 200, description = "Unified knowledge graph"))
+)]
 pub async fn get_unified_graph(
     RequireParticipant(_ctx): RequireParticipant,
     State(state): State<AppState>,

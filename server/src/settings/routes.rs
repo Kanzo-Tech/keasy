@@ -15,10 +15,19 @@ use crate::settings::schema::PROVIDER_REGISTRY;
 
 const KNOWN_PROVIDERS: &[&str] = &["anthropic", "openai"];
 
+#[utoipa::path(get, path = "/v1/settings/schema", tag = "Settings",
+    responses((status = 200, description = "Provider registry schema"))
+)]
 pub async fn get_schema() -> impl IntoResponse {
     data_response(PROVIDER_REGISTRY)
 }
 
+#[utoipa::path(get, path = "/v1/settings/organization", tag = "Settings",
+    responses(
+        (status = 200, description = "Organization settings", body = OrgSettings),
+        (status = 204, description = "No settings configured"),
+    )
+)]
 pub async fn get_org_settings(State(state): State<AppState>) -> Response {
     match state.db.get_org_settings().await {
         Some(settings) => data_response(settings).into_response(),
@@ -26,6 +35,13 @@ pub async fn get_org_settings(State(state): State<AppState>) -> Response {
     }
 }
 
+#[utoipa::path(put, path = "/v1/settings/organization", tag = "Settings",
+    request_body = OrgSettings,
+    responses(
+        (status = 200, description = "Settings saved", body = OrgSettings),
+        (status = 400, description = "Validation error"),
+    )
+)]
 pub async fn save_org_settings(
     State(state): State<AppState>,
     Json(payload): Json<OrgSettings>,
@@ -40,10 +56,20 @@ pub async fn save_org_settings(
     data_response(payload).into_response()
 }
 
+#[utoipa::path(get, path = "/v1/settings/preferences", tag = "Settings",
+    responses((status = 200, description = "UI preferences", body = Preferences))
+)]
 pub async fn get_preferences(State(state): State<AppState>) -> impl IntoResponse {
     data_response(state.db.get_preferences().await)
 }
 
+#[utoipa::path(put, path = "/v1/settings/preferences", tag = "Settings",
+    request_body = Preferences,
+    responses(
+        (status = 200, description = "Preferences saved", body = Preferences),
+        (status = 400, description = "Validation error"),
+    )
+)]
 pub async fn save_preferences(
     State(state): State<AppState>,
     Json(payload): Json<Preferences>,
@@ -66,12 +92,23 @@ pub async fn save_preferences(
     data_response(payload).into_response()
 }
 
+#[utoipa::path(get, path = "/v1/settings/ai/providers", tag = "Settings",
+    responses((status = 200, description = "List of AI providers", body = Vec<AiSettingsPayload>))
+)]
 pub async fn list_ai_providers(State(state): State<AppState>) -> impl IntoResponse {
     let providers = state.db.list_ai_providers().await;
     let payloads: Vec<AiSettingsPayload> = providers.iter().map(to_payload).collect();
     data_response(payloads)
 }
 
+#[utoipa::path(put, path = "/v1/settings/ai/providers/{provider_id}", tag = "Settings",
+    params(("provider_id" = String, Path, description = "Provider ID (e.g. anthropic, openai)")),
+    request_body = AiSettingsPayload,
+    responses(
+        (status = 200, description = "Provider saved", body = AiSettingsPayload),
+        (status = 400, description = "Unknown provider"),
+    )
+)]
 pub async fn save_ai_provider(
     State(state): State<AppState>,
     Path(provider_id): Path<String>,
@@ -103,6 +140,13 @@ pub async fn save_ai_provider(
     data_response(to_payload(&settings)).into_response()
 }
 
+#[utoipa::path(delete, path = "/v1/settings/ai/providers/{provider_id}", tag = "Settings",
+    params(("provider_id" = String, Path, description = "Provider ID")),
+    responses(
+        (status = 204, description = "Provider deleted"),
+        (status = 400, description = "Unknown provider"),
+    )
+)]
 pub async fn delete_ai_provider(
     State(state): State<AppState>,
     Path(provider_id): Path<String>,

@@ -7,11 +7,15 @@ use crate::jobs::script;
 use crate::jobs::rewrite;
 use crate::middleware::tenant::RequireParticipant;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct ValidateRequest {
     pub script: String,
 }
 
+#[utoipa::path(post, path = "/v1/scripts/validate", tag = "Scripts",
+    request_body = ValidateRequest,
+    responses((status = 200, description = "Validation result", body = ValidationResult))
+)]
 pub async fn validate_script(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,

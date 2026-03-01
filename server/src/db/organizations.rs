@@ -2,7 +2,7 @@ use rusqlite::params;
 
 use super::Database;
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
 pub struct Organization {
     pub id: String,
     pub name: String,
@@ -88,6 +88,22 @@ impl Database {
         conn.execute(
             "UPDATE organizations SET vc_verified_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1",
             [org_id],
+        )?;
+        Ok(())
+    }
+
+    /// Update an organization's identity fields (legal_name, country, registration_number).
+    pub async fn update_org_identity(
+        &self,
+        org_id: &str,
+        legal_name: &str,
+        country: &str,
+        registration_number: Option<&str>,
+    ) -> Result<(), rusqlite::Error> {
+        let conn = self.write().await;
+        conn.execute(
+            "UPDATE organizations SET legal_name = ?1, country = ?2, registration_number = ?3, updated_at = datetime('now') WHERE id = ?4",
+            params![legal_name, country, registration_number, org_id],
         )?;
         Ok(())
     }

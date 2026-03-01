@@ -11,7 +11,7 @@ pub struct CloudAccount {
     pub secrets: HashMap<String, SecretString>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CreateCloudAccountRequest {
     pub name: String,
     pub provider_id: String,
@@ -19,14 +19,14 @@ pub struct CreateCloudAccountRequest {
     pub fields: HashMap<String, String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct UpdateCloudAccountRequest {
     pub name: Option<String>,
     pub auth_method: Option<String>,
     pub fields: Option<HashMap<String, String>>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct CloudAccountSummary {
     pub id: String,
     pub name: String,

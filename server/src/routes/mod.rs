@@ -42,6 +42,7 @@ pub fn build_router(
         .with_state(state.clone());
 
     let public_api_routes = Router::new()
+        .route("/openapi.json", axum::routing::get(crate::openapi::openapi_json))
         .route("/v1/status", axum::routing::get(health::service_status))
         .route(
             "/v1/settings/schema",

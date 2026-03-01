@@ -1,16 +1,37 @@
+use rusqlite::types::{FromSql, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use serde::{Deserialize, Serialize};
 
 use crate::discovery::dcat_types::DcatInput;
 use super::pipeline_types::PipelineSummary;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum RunMode {
     Integrated,
     Scheduled,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+impl ToSql for RunMode {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        let s = match self {
+            Self::Integrated => "integrated",
+            Self::Scheduled => "scheduled",
+        };
+        Ok(s.into())
+    }
+}
+
+impl FromSql for RunMode {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        let s = value.as_str()?;
+        Ok(match s {
+            "scheduled" => Self::Scheduled,
+            _ => Self::Integrated,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum JobStatus {
     Draft,
@@ -21,7 +42,36 @@ pub enum JobStatus {
     Cancelled,
 }
 
-#[derive(Debug, Clone, Serialize)]
+impl ToSql for JobStatus {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        let s = match self {
+            Self::Draft => "draft",
+            Self::Pending => "pending",
+            Self::Running => "running",
+            Self::Completed => "completed",
+            Self::Failed => "failed",
+            Self::Cancelled => "cancelled",
+        };
+        Ok(s.into())
+    }
+}
+
+impl FromSql for JobStatus {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        let s = value.as_str()?;
+        Ok(match s {
+            "draft" => Self::Draft,
+            "pending" => Self::Pending,
+            "running" => Self::Running,
+            "completed" => Self::Completed,
+            "failed" => Self::Failed,
+            "cancelled" => Self::Cancelled,
+            _ => Self::Pending,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct Job {
     pub id: String,
     pub status: JobStatus,
@@ -39,6 +89,7 @@ pub struct Job {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalog: Option<String>,
     #[serde(skip)]
+    #[schema(ignore)]
     pub dcat_input: Option<DcatInput>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub connection_ids: Vec<String>,
@@ -46,7 +97,7 @@ pub struct Job {
     pub script: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CreateJobRequest {
     pub script: String,
     pub name: Option<String>,
@@ -60,7 +111,7 @@ pub struct CreateJobRequest {
     pub draft: bool,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct UpdateJobRequest {
     pub script: Option<String>,
     pub name: Option<String>,

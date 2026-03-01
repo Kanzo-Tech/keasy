@@ -1,11 +1,10 @@
 use rusqlite::params;
-use tracing::error;
 
 use crate::db::Database;
 use crate::tenant::{OrgId, TenantScoped};
 
 use super::models::{
-    Connection, ConnectionKind, CreateConnectionRequest, LocationType, UpdateConnectionRequest,
+    Connection, CreateConnectionRequest, LocationType, UpdateConnectionRequest,
 };
 
 impl Database {
@@ -14,15 +13,7 @@ impl Database {
         ctx: &TenantScoped<()>,
         req: CreateConnectionRequest,
     ) -> Result<Connection, String> {
-        if req.name.trim().is_empty() {
-            return Err("name is required".into());
-        }
-        if req.url.trim().is_empty() {
-            return Err("url is required".into());
-        }
-        if req.location_type == LocationType::Cloud && req.cloud_account_id.is_none() {
-            return Err("cloud_account_id is required for cloud connections".into());
-        }
+        req.validate()?;
 
         if let Some(ref account_id) = req.cloud_account_id
             && self
@@ -45,7 +36,7 @@ impl Database {
         let conn = self.write().await;
         conn.execute(
             "INSERT INTO connections (id, organization_id, name, kind, location_type, cloud_account_id, url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![connection.id, ctx.org_id().as_str(), connection.name, connection.kind.as_str(), connection.location_type.as_str(), connection.cloud_account_id, connection.url],
+            params![connection.id, ctx.org_id().as_str(), connection.name, connection.kind, connection.location_type, connection.cloud_account_id, connection.url],
         )
         .map_err(|e| format!("failed to create connection: {e}"))?;
 
@@ -131,7 +122,7 @@ impl Database {
         let conn = self.write().await;
         conn.execute(
             "UPDATE connections SET name = ?1, kind = ?2, location_type = ?3, cloud_account_id = ?4, url = ?5 WHERE id = ?6 AND organization_id = ?7",
-            params![name, kind.as_str(), location_type.as_str(), cloud_account_id, url, ctx.inner(), ctx.org_id().as_str()],
+            params![name, kind, location_type, cloud_account_id, url, ctx.inner(), ctx.org_id().as_str()],
         )
         .map_err(|e| format!("failed to update connection: {e}"))?;
 
@@ -145,14 +136,14 @@ impl Database {
         })
     }
 
-    pub async fn remove_connection(&self, ctx: &TenantScoped<&str>) {
+    pub async fn remove_connection(&self, ctx: &TenantScoped<&str>) -> Result<(), String> {
         let conn = self.write().await;
-        if let Err(e) = conn.execute(
+        conn.execute(
             "DELETE FROM connections WHERE id = ?1 AND organization_id = ?2",
             params![ctx.inner(), ctx.org_id().as_str()],
-        ) {
-            error!(connection_id = %ctx.inner(), error = %e, "failed to delete connection");
-        }
+        )
+        .map_err(|e| format!("failed to delete connection: {e}"))?;
+        Ok(())
     }
 
     pub async fn resolve_cloud_account_ids(
@@ -184,24 +175,12 @@ impl Database {
 }
 
 fn row_to_connection(row: &rusqlite::Row<'_>) -> rusqlite::Result<Connection> {
-    let kind_str: String = row.get(2)?;
-    let location_type_str: String = row.get(3)?;
-
-    let kind = match kind_str.as_str() {
-        "vocab" => ConnectionKind::Vocab,
-        _ => ConnectionKind::Data,
-    };
-    let location_type = match location_type_str.as_str() {
-        "local" => LocationType::Local,
-        _ => LocationType::Cloud,
-    };
-
     Ok(Connection {
-        id: row.get(0)?,
-        name: row.get(1)?,
-        kind,
-        location_type,
-        cloud_account_id: row.get(4)?,
-        url: row.get(5)?,
+        id: row.get("id")?,
+        name: row.get("name")?,
+        kind: row.get("kind")?,
+        location_type: row.get("location_type")?,
+        cloud_account_id: row.get("cloud_account_id")?,
+        url: row.get("url")?,
     })
 }

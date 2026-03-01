@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, utoipa::ToSchema)]
 pub struct Field {
     pub name: String,
     #[serde(rename = "type")]
@@ -9,26 +9,26 @@ pub struct Field {
     pub uri: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, utoipa::ToSchema)]
 pub struct PipelineInput {
     pub name: String,
     pub fields: Vec<Field>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, utoipa::ToSchema)]
 pub struct FieldMapping {
     pub target: String,
     pub source: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, utoipa::ToSchema)]
 pub struct OperationInput {
     pub source: String,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub key_fields: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, utoipa::ToSchema)]
 pub struct PipelineOperation {
     pub kind: String,
     pub label: String,
@@ -36,7 +36,7 @@ pub struct PipelineOperation {
     pub inputs: Vec<OperationInput>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, utoipa::ToSchema)]
 pub struct PipelineOutput {
     pub type_name: String,
     pub fields: Vec<Field>,
@@ -50,14 +50,14 @@ pub struct PipelineOutput {
     pub rdf_type: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, utoipa::ToSchema)]
 pub struct PipelineSummary {
     pub inputs: Vec<PipelineInput>,
     pub operations: Vec<PipelineOperation>,
     pub outputs: Vec<PipelineOutput>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct ValidationResult {
     pub valid: bool,
     pub pipeline: PipelineSummary,

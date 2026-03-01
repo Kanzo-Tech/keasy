@@ -15,6 +15,7 @@ pub mod gaia_x;
 pub mod jobs;
 pub mod keycloak;
 pub mod middleware;
+pub mod openapi;
 pub mod routes;
 pub mod settings;
 pub mod tenant;
@@ -56,13 +57,18 @@ pub struct AppState {
     pub output_cache: Arc<Mutex<OutputCache>>,
     pub api_key: SecretString,
     pub base_url: String,
-    /// HTTP client for calls to the walt.id Verifier API (wallet connection).
-    /// None when KEASY_WALT_ID_VERIFIER_URL is not set.
-    pub vc_client: Option<reqwest::Client>,
-    /// GXDCH Notary endpoint URL for LRN credential requests.
-    pub gxdch_notary_url: String,
-    /// GXDCH Compliance Service endpoint URL for VP submission.
-    pub gxdch_compliance_url: String,
+    pub auth: AuthServices,
+    pub gaia_x: GaiaXServices,
+}
+
+/// Authentication and identity services (Keycloak / OIDC).
+#[derive(Clone)]
+pub struct AuthServices {
+    /// OIDC relying party state (client, JWKS cache, HTTP client).
+    /// None when OIDC is not fully configured or when Keycloak was unreachable at startup.
+    pub oidc_state: Option<Arc<crate::auth::oidc::OidcState>>,
+    /// Keycloak admin API client. None when OIDC is not configured.
+    pub keycloak_admin: Option<keycloak::admin::KeycloakAdmin>,
     /// Keycloak OIDC issuer URL (internal Docker network).
     /// None when Keycloak is not configured.
     pub oidc_issuer_url: Option<String>,
@@ -70,9 +76,16 @@ pub struct AppState {
     pub oidc_client_id: Option<String>,
     /// OIDC client_secret for admin API calls.
     pub oidc_client_secret: Option<SecretString>,
-    /// Keycloak admin API client. None when OIDC is not configured.
-    pub keycloak_admin: Option<keycloak::admin::KeycloakAdmin>,
-    /// OIDC relying party state (client, JWKS cache, HTTP client).
-    /// None when OIDC is not fully configured or when Keycloak was unreachable at startup.
-    pub oidc_state: Option<Arc<crate::auth::oidc::OidcState>>,
+}
+
+/// Gaia-X external services (GXDCH, wallet).
+#[derive(Clone)]
+pub struct GaiaXServices {
+    /// HTTP client for calls to the walt.id Verifier API (wallet connection).
+    /// None when KEASY_WALT_ID_VERIFIER_URL is not set.
+    pub vc_client: Option<reqwest::Client>,
+    /// GXDCH Notary endpoint URL for LRN credential requests.
+    pub gxdch_notary_url: String,
+    /// GXDCH Compliance Service endpoint URL for VP submission.
+    pub gxdch_compliance_url: String,
 }

@@ -18,10 +18,22 @@ pub fn validation_error_body(message: impl Into<String>, fields: &HashMap<String
     json!({ "error": "validation_failed", "message": message.into(), "fields": fields })
 }
 
+/// Typed envelope for successful API responses: `{ "data": T }`.
+#[derive(Serialize, utoipa::ToSchema)]
+pub struct DataResponse<T: Serialize> {
+    pub data: T,
+}
+
+impl<T: Serialize> IntoResponse for DataResponse<T> {
+    fn into_response(self) -> Response {
+        Json(self).into_response()
+    }
+}
+
 /// Wrap a successful payload in the standard response envelope: `{ "data": value }`.
 /// All successful responses except 204 No Content use this helper.
-pub fn data_response<T: Serialize>(value: T) -> Json<Value> {
-    Json(json!({ "data": value }))
+pub fn data_response<T: Serialize>(value: T) -> DataResponse<T> {
+    DataResponse { data: value }
 }
 
 /// Typed application error enum.

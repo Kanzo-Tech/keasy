@@ -2,9 +2,10 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-interface SectionAction {
+export interface SectionAction {
   label: string;
   icon?: React.ReactNode;
+  variant?: "outline" | "ghost" | "default";
   onClick?: () => void;
   href?: string;
   disabled?: boolean;
@@ -16,7 +17,7 @@ interface SettingsSectionProps {
   title: React.ReactNode;
   description?: string;
   children: React.ReactNode;
-  action?: SectionAction;
+  action?: SectionAction | SectionAction[];
 }
 
 export function SettingsSection({
@@ -35,8 +36,10 @@ export function SettingsSection({
           )}
         </div>
         {action && (
-          <div className="shrink-0">
-            <SectionActionButton action={action} />
+          <div className="shrink-0 flex items-center gap-2">
+            {(Array.isArray(action) ? action : [action]).map((a) => (
+              <SectionActionButton key={a.label} action={a} />
+            ))}
           </div>
         )}
       </div>
@@ -58,9 +61,11 @@ function SectionActionButton({ action }: { action: SectionAction }) {
     </>
   );
 
+  const variant = action.variant ?? "outline";
+
   if (action.href) {
     return (
-      <Button variant="outline" size="sm" disabled={action.disabled} asChild>
+      <Button variant={variant} size="sm" disabled={action.disabled} asChild>
         <Link href={action.href}>{content}</Link>
       </Button>
     );
@@ -68,7 +73,7 @@ function SectionActionButton({ action }: { action: SectionAction }) {
 
   return (
     <Button
-      variant="outline"
+      variant={variant}
       size="sm"
       onClick={action.onClick}
       disabled={action.disabled || action.loading}

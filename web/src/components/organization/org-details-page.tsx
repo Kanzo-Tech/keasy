@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import useSWR, { useSWRConfig } from "swr";
 import { ShieldCheck, Pencil } from "lucide-react";
@@ -12,7 +12,7 @@ import {
   SettingsPage,
   SettingsSection,
 } from "@/components/settings/settings-section";
-import { OrgDetailsCard } from "@/components/organization/org-details-card";
+import { OrgDetailsCard, type OrgDetailsCardHandle } from "@/components/organization/org-details-card";
 import {
   CredentialCard,
   formatDate,
@@ -31,6 +31,8 @@ export function OrgDetailsPage() {
   const { mutate: globalMutate } = useSWRConfig();
   const { isLoading: identityLoading } = useSWR("org-identity", fetchOrgIdentity);
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const cardRef = useRef<OrgDetailsCardHandle>(null);
   const { data: compliance, isLoading: complianceLoading } =
     useSWR<ComplianceStatus>("gx-compliance-status", () =>
       fetch("/v1/gaia-x/compliance")
@@ -85,12 +87,17 @@ export function OrgDetailsPage() {
             : "Configure your organization identity for catalog generation."
         }
         action={
-          !isGaiaX && !editing
-            ? { label: "Edit", icon: <Pencil className="h-4 w-4 mr-1" />, onClick: () => setEditing(true) }
-            : undefined
+          isGaiaX
+            ? undefined
+            : editing
+              ? [
+                  { label: "Save", onClick: () => cardRef.current?.save(), disabled: saving, loading: saving, loadingLabel: "Saving..." },
+                  { label: "Cancel", variant: "ghost" as const, onClick: () => setEditing(false), disabled: saving },
+                ]
+              : { label: "Edit", icon: <Pencil className="h-4 w-4 mr-1" />, onClick: () => setEditing(true) }
         }
       >
-        <OrgDetailsCard readOnly={isGaiaX} editing={editing} onEditingChange={setEditing} />
+        <OrgDetailsCard ref={cardRef} readOnly={isGaiaX} editing={editing} onEditingChange={setEditing} onSavingChange={setSaving} />
       </SettingsSection>
 
       <SettingsSection

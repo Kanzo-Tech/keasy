@@ -20,7 +20,7 @@ export function StepKeyPair({ onComplete, completed, publicKeyJwk }: StepKeyPair
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/v1/compliance/wizard/keys", { method: "POST" });
+      const res = await fetch("/v1/gaia-x/wizard/keys", { method: "POST" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.message ?? `Request failed with status ${res.status}`);

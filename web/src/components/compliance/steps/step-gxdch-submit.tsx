@@ -92,7 +92,7 @@ export function StepGxdchSubmit({ onComplete, completed, wizardState }: StepGxdc
     setPhase("submitting");
 
     try {
-      const res = await fetch("/v1/compliance/wizard/submit", {
+      const res = await fetch("/v1/gaia-x/wizard/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),

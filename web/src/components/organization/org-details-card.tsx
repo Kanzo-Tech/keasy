@@ -1,136 +1,114 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Combobox } from "@/components/ui/combobox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormField } from "@/components/shared/form-layout";
+import { COUNTRY_OPTIONS, getCountryName } from "@/lib/countries";
 import { fetchOrgIdentity, saveOrgIdentity } from "@/lib/api";
 import type { OrgIdentity } from "@/lib/types";
+
+export interface OrgDetailsCardHandle {
+  save: () => Promise<void>;
+}
 
 interface OrgDetailsCardProps {
   readOnly?: boolean;
   editing?: boolean;
   onEditingChange?: (editing: boolean) => void;
+  onSavingChange?: (saving: boolean) => void;
 }
 
-export function OrgDetailsCard({ readOnly, editing: editingProp, onEditingChange }: OrgDetailsCardProps) {
-  const { data, isLoading, mutate } = useSWR("org-identity", fetchOrgIdentity);
-  const [editingInternal, setEditingInternal] = useState(false);
-  const editing = editingProp ?? editingInternal;
-  const setEditing = onEditingChange ?? setEditingInternal;
-  const [form, setForm] = useState<OrgIdentity | null>(null);
-  const [saving, setSaving] = useState(false);
+export const OrgDetailsCard = forwardRef<OrgDetailsCardHandle, OrgDetailsCardProps>(
+  function OrgDetailsCard({ readOnly, editing: editingProp, onEditingChange, onSavingChange }, ref) {
+    const { data, isLoading, mutate } = useSWR("org-identity", fetchOrgIdentity);
+    const [editingInternal, setEditingInternal] = useState(false);
+    const editing = editingProp ?? editingInternal;
+    const setEditing = onEditingChange ?? setEditingInternal;
+    const [form, setForm] = useState<OrgIdentity | null>(null);
+    const [saving, setSaving] = useState(false);
 
-  // Initialize form when editing is triggered externally
-  useEffect(() => {
-    if (editing && !form) {
-      setForm(data ?? { legal_name: "", country: "", registration_number: null });
+    useEffect(() => {
+      if (editing && !form) {
+        setForm(data ?? { legal_name: "", country: "", registration_number: null });
+      }
+      if (!editing) {
+        setForm(null);
+      }
+    }, [editing, form, data]);
+
+    function updateSaving(value: boolean) {
+      setSaving(value);
+      onSavingChange?.(value);
     }
-  }, [editing, form, data]);
 
-  function cancelEdit() {
-    setEditing(false);
-    setForm(null);
-  }
-
-  async function handleSave() {
-    if (!form) return;
-    setSaving(true);
-    try {
-      await saveOrgIdentity(form);
-      await mutate();
-      toast.success("Organization details saved");
-      setEditing(false);
-      setForm(null);
-    } catch {
-      toast.error("Failed to save organization details");
-    } finally {
-      setSaving(false);
+    async function handleSave() {
+      if (!form) return;
+      updateSaving(true);
+      try {
+        await saveOrgIdentity(form);
+        await mutate();
+        toast.success("Organization details saved");
+        setEditing(false);
+        setForm(null);
+      } catch {
+        toast.error("Failed to save organization details");
+      } finally {
+        updateSaving(false);
+      }
     }
-  }
 
-  if (isLoading) {
-    return <Skeleton className="h-24 w-full" />;
-  }
+    useImperativeHandle(ref, () => ({ save: handleSave }));
 
-  if (!readOnly && editing && form) {
+    if (isLoading) {
+      return <Skeleton className="h-24 w-full" />;
+    }
+
+    const canEdit = !readOnly && editing && form;
+
     return (
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <FormField label="Legal Name">
           <Input
-            value={form.legal_name}
-            onChange={(e) =>
-              setForm({ ...form, legal_name: e.target.value })
-            }
+            value={canEdit ? form.legal_name : data?.legal_name ?? ""}
+            onChange={(e) => canEdit && setForm({ ...form, legal_name: e.target.value })}
+            disabled={!canEdit || saving}
             placeholder="Acme Corp GmbH"
           />
         </FormField>
-        <FormField label="Country Code" description="ISO 3166-1 alpha-2 (e.g. DE, FR, US)">
-          <Input
-            value={form.country}
-            onChange={(e) =>
-              setForm({ ...form, country: e.target.value.toUpperCase() })
-            }
-            maxLength={2}
-            placeholder="DE"
-          />
+        <FormField label="Country">
+          {canEdit ? (
+            <Combobox
+              options={COUNTRY_OPTIONS}
+              value={form.country}
+              onValueChange={(v) => setForm({ ...form, country: v })}
+              placeholder="Select country..."
+              searchPlaceholder="Search countries..."
+              emptyMessage="No country found."
+              disabled={saving}
+            />
+          ) : (
+            <Input
+              value={data?.country ? `${getCountryName(data.country) ?? data.country} (${data.country})` : ""}
+              disabled
+              placeholder="Not set"
+            />
+          )}
         </FormField>
         <FormField label="Registration Number" optional>
           <Input
-            value={form.registration_number ?? ""}
+            value={canEdit ? (form.registration_number ?? "") : (data?.registration_number ?? "")}
             onChange={(e) =>
-              setForm({
-                ...form,
-                registration_number: e.target.value || null,
-              })
+              canEdit && setForm({ ...form, registration_number: e.target.value || null })
             }
+            disabled={!canEdit || saving}
             placeholder="HRB 12345"
           />
         </FormField>
-        <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save"}
-          </Button>
-          <Button variant="outline" onClick={cancelEdit} disabled={saving}>
-            Cancel
-          </Button>
-        </div>
       </div>
     );
-  }
-
-  const empty = (
-    <span className="text-muted-foreground italic">Not set</span>
-  );
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
-          <Label className="text-muted-foreground">Legal Name</Label>
-          <p className="text-sm mt-1">
-            {data?.legal_name || empty}
-          </p>
-        </div>
-        <div>
-          <Label className="text-muted-foreground">Country</Label>
-          <p className="text-sm mt-1">
-            {data?.country || empty}
-          </p>
-        </div>
-        <div>
-          <Label className="text-muted-foreground">
-            Registration Number
-          </Label>
-          <p className="text-sm mt-1">
-            {data?.registration_number || empty}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
+  },
+);

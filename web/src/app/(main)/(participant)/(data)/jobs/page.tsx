@@ -3,7 +3,7 @@
 import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
-import { Briefcase, Plus, Share2 } from "lucide-react";
+import { Briefcase, Plus } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -18,9 +18,7 @@ import {
   actionsColumn,
 } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
-import { KnowledgeGraph } from "@/components/discovery/knowledge-graph";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JobStatusBadge } from "@/components/jobs/job-status-badge";
 import { formatDate, formatJobDuration } from "@/lib/formatters";
 import type { Job, JobStatus } from "@/lib/types";
@@ -111,56 +109,34 @@ export default function JobsPage() {
     [router],
   );
 
-  return (
-    <Tabs defaultValue="jobs">
-      <TabsList>
-        <TabsTrigger value="jobs" className="gap-1.5">
-          <Briefcase size={14} />
-          Jobs
-        </TabsTrigger>
-
-        <TabsTrigger value="graph" className="gap-1.5">
-          <Share2 size={14} />
-          Graph
-        </TabsTrigger>
-      </TabsList>
-
-        <TabsContent value="jobs">
-          {!jobs?.length ? (
-            <EmptyState
-              icon={Briefcase}
-              title="No jobs yet"
-              description={
-                <>
-                  <Link href="/jobs/new" className="underline underline-offset-4 hover:text-foreground">
-                    Create a job
-                  </Link>{" "}
-                  to process and transform your data assets.
-                </>
-              }
-            />
-          ) : (
-            <DataTable
-              columns={columns}
-              data={jobs}
-              searchKey="name"
-              searchPlaceholder="Search jobs..."
-              onRowClick={handleRowClick}
-              toolbarActions={
-                <Button asChild size="sm">
-                  <Link href="/jobs/new">
-                    <Plus size={14} className="mr-1" />
-                    Create job
-                  </Link>
-                </Button>
-              }
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="graph">
-          <KnowledgeGraph />
-        </TabsContent>
-    </Tabs>
+  return !jobs?.length ? (
+    <EmptyState
+      icon={Briefcase}
+      title="No jobs yet"
+      description={
+        <>
+          <Link href="/jobs/new" className="underline underline-offset-4 hover:text-foreground">
+            Create a job
+          </Link>{" "}
+          to process and transform your data assets.
+        </>
+      }
+    />
+  ) : (
+    <DataTable
+      columns={columns}
+      data={jobs}
+      searchKey="name"
+      searchPlaceholder="Search jobs..."
+      onRowClick={handleRowClick}
+      toolbarActions={
+        <Button asChild size="sm">
+          <Link href="/jobs/new">
+            <Plus size={14} className="mr-1" />
+            Create job
+          </Link>
+        </Button>
+      }
+    />
   );
 }

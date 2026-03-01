@@ -1,5 +1,5 @@
 import { ComplianceWizard } from "@/components/compliance/compliance-wizard";
 
-export default function ComplianceWizardPage() {
+export default function OrganizationWizardPage() {
   return <ComplianceWizard />;
 }

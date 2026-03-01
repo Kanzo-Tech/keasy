@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { Users, BookOpenCheck, type LucideIcon } from "lucide-react";
+import { Users, Network, type LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
@@ -40,9 +40,9 @@ export function PromotorDashboard() {
             }
           />
           <SummaryCard
-            href="/catalog"
-            icon={BookOpenCheck}
-            title="Catalog Items"
+            href="/graph"
+            icon={Network}
+            title="Graph"
             value={loading ? undefined : "0"}
             description="data assets published"
           />

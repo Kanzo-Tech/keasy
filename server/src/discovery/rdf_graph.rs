@@ -90,8 +90,7 @@ impl RdfGraph {
                        .map_err(|e| e.to_string()))
             .collect();
         self.store
-            .bulk_loader()
-            .load_quads(quads?)
+            .extend(quads?)
             .map_err(|e| e.to_string())
     }
 

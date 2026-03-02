@@ -129,7 +129,7 @@ function ConnectionsContent() {
             title={`No ${tab === "data" ? "data" : "vocabulary"} connections`}
             description={
               <>
-                <Link href="/connections/new" className="underline underline-offset-4 hover:text-foreground">
+                <Link href={`/connections/new?type=${tab}`} className="underline underline-offset-4 hover:text-foreground">
                   Create a {tab === "data" ? "data" : "vocabulary"} connection
                 </Link>{" "}
                 to get started.
@@ -145,7 +145,7 @@ function ConnectionsContent() {
             onRowClick={(conn) => router.push(`/connections/${conn.id}`)}
             toolbarActions={
               <Button asChild size="sm">
-                <Link href="/connections/new">
+                <Link href={`/connections/new?type=${tab}`}>
                   <Plus size={14} className="mr-1" />
                   Create connection
                 </Link>

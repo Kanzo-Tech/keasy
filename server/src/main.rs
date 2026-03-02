@@ -60,19 +60,13 @@ async fn main() {
         std::process::exit(1);
     }
 
-    let catalog = Arc::new(RdfGraph::new());
+    let graph_path = config.data_dir.join("graph.db");
+    let graph_store = Arc::new(RdfGraph::open(&graph_path).unwrap_or_else(|e| {
+        eprintln!("FATAL: Cannot open graph store: {e}");
+        std::process::exit(1)
+    }));
 
-    let mut restored = 0usize;
-    for (job_id, turtle) in &db.completed_catalogs_all().await {
-        match catalog.bulk_load_bytes(Some(&format!("urn:keasy:job:{job_id}")), turtle.as_bytes(), "catalog.ttl") {
-            Ok(()) => restored += 1,
-            Err(e) => warn!(job_id = %job_id, error = %e, "Failed to restore catalog"),
-        }
-    }
-
-    if restored > 0 {
-        info!(count = restored, "Restored catalogs into graph store");
-    }
+    info!(path = %graph_path.display(), "Graph store opened");
 
     // Session store — separate tokio-rusqlite connection (safe in WAL mode).
     // tower-sessions-rusqlite-store manages its own schema via migrate().
@@ -98,7 +92,7 @@ async fn main() {
 
     let runner = Arc::new(JobRunner::new(
         db.clone(),
-        catalog.clone(),
+        graph_store.clone(),
         config.max_concurrent_jobs,
         config.job_timeout_secs,
     ));
@@ -199,7 +193,7 @@ async fn main() {
     let state = AppState {
         db,
         runner: runner.clone(),
-        catalog,
+        graph_store,
         api_key: config.api_key,
         base_url: config.base_url,
         auth,

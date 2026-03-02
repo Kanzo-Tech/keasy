@@ -194,8 +194,10 @@ pub async fn delete_job(
         return Err(JobApiError::NotFound);
     }
 
-    let graph_name = format!("urn:keasy:job:{id}");
-    state.catalog.clear_named_graph(&graph_name);
+    let cat_graph = format!("urn:keasy:job:{id}");
+    let out_graph = format!("urn:keasy:output:{id}");
+    state.graph_store.clear_named_graph(&cat_graph);
+    state.graph_store.clear_named_graph(&out_graph);
 
     state.db.remove_job(&ctx.scoped(id.as_str())).await
         .map_err(JobApiError::Internal)?;
@@ -237,7 +239,7 @@ pub async fn get_job_catalog(
         .unwrap_or(RdfExportFormat::Turtle);
 
     let graph_name = format!("urn:keasy:job:{id}");
-    match state.catalog.serialize_graph(Some(&graph_name), format) {
+    match state.graph_store.serialize_graph(Some(&graph_name), format) {
         Ok(catalog) if !catalog.trim().is_empty() => {
             Ok(data_response(serde_json::json!({ "catalog": catalog })).into_response())
         }
@@ -261,7 +263,7 @@ pub async fn get_job_graph(
     match state.db.get_job(&ctx.scoped(id.as_str())).await {
         Some(_) => {
             let graph_name = format!("urn:keasy:job:{id}");
-            let graph_data = state.catalog.get_graph(Some(&graph_name));
+            let graph_data = state.graph_store.get_graph(Some(&graph_name));
             Ok(data_response(graph_data).into_response())
         }
         None => Err(JobApiError::NotFound),
@@ -289,9 +291,9 @@ pub async fn get_unified_graph(
                 .into_iter()
                 .map(|id| format!("urn:keasy:job:{id}"))
                 .collect();
-            state.catalog.get_merged_graphs(&graph_names)
+            state.graph_store.get_merged_graphs(&graph_names)
         }
-        None => state.catalog.get_graph(None),
+        None => state.graph_store.get_graph(None),
     };
     data_response(graph_data)
 }

@@ -26,15 +26,13 @@ pub use discovery::rdf_graph::RdfGraph;
 pub use jobs::runner::JobRunner;
 
 use secrecy::SecretString;
-use std::num::NonZeroUsize;
 use std::sync::Arc;
-
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: Database,
     pub runner: Arc<JobRunner>,
-    pub catalog: Arc<RdfGraph>,
+    pub graph_store: Arc<RdfGraph>,
     pub api_key: SecretString,
     pub base_url: String,
     pub auth: AuthServices,

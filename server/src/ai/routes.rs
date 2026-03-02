@@ -10,7 +10,6 @@ use std::fmt::Write as FmtWrite;
 use tracing::warn;
 
 use crate::AppState;
-use crate::discovery::routes::load_graph_for_job;
 use super::client::{AiError, ask_llm};
 use super::models::{Conversation, ConversationMessage};
 use crate::error::data_response;
@@ -28,10 +27,13 @@ pub async fn ask_discover(
     Path(id): Path<String>,
     Json(req): Json<AskRequest>,
 ) -> Response {
-    let graph = match load_graph_for_job(&state, &ctx, &id).await {
-        Ok(g) => g,
-        Err(resp) => return resp,
-    };
+    let output_graph = format!("urn:keasy:output:{id}");
+    if !state.graph_store.graph_exists(&output_graph) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(crate::error::error_body("not_ready", "Job output is not yet available.")),
+        ).into_response();
+    }
 
     let ai_settings = if let Some(pid) = &req.provider {
         state.db.get_ai_provider(pid).await
@@ -138,7 +140,7 @@ pub async fn ask_discover(
 
     let sparql = format_sparql(&parsed.sparql);
 
-    let data = match graph.sparql_select(&sparql) {
+    let data = match state.graph_store.sparql_select(&sparql, Some(&output_graph)) {
         Ok(data) => Some(data),
         Err(err) => {
             warn!("SPARQL execution failed: {err}");

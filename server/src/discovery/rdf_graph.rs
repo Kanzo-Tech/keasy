@@ -23,6 +23,14 @@ impl Default for RdfGraph {
     }
 }
 
+impl RdfGraph {
+    pub fn open(path: &std::path::Path) -> Result<Self, String> {
+        Store::open(path)
+            .map(|store| Self { store })
+            .map_err(|e| e.to_string())
+    }
+}
+
 fn to_oxrdf_triple(kt: &KeasyTriple) -> Triple {
     let subject = match &kt.subject {
         TermValue::Iri(iri) => oxrdf::NamedOrBlankNode::NamedNode(NamedNode::new_unchecked(iri)),
@@ -182,7 +190,7 @@ impl RdfGraph {
         convert::triples_to_graph_data(&all_triples)
     }
 
-    pub fn search_nodes(&self, query: &str, limit: usize) -> Vec<SearchResult> {
+    pub fn search_nodes(&self, graph_name: Option<&str>, query: &str, limit: usize) -> Vec<SearchResult> {
         let filter_clause = if query.trim().is_empty() {
             String::new()
         } else {
@@ -196,18 +204,25 @@ impl RdfGraph {
             )
         };
 
+        let graph_clause = match graph_name {
+            Some(g) => format!("GRAPH <{g}>"),
+            None => "GRAPH ?g".to_string(),
+        };
+
         let sparql = format!(
             r#"
             PREFIX dct: <http://purl.org/dc/terms/>
             PREFIX foaf: <http://xmlns.com/foaf/0.1/>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             SELECT DISTINCT ?s (SAMPLE(?lbl) AS ?label) (SAMPLE(?t) AS ?type) WHERE {{
-              ?s ?p ?o .
-              OPTIONAL {{ ?s dct:title ?titleVal }}
-              OPTIONAL {{ ?s foaf:name ?nameVal }}
-              BIND(COALESCE(?titleVal, ?nameVal) AS ?lbl)
-              OPTIONAL {{ ?s rdf:type ?t }}
-              {filter_clause}
+              {graph_clause} {{
+                ?s ?p ?o .
+                OPTIONAL {{ ?s dct:title ?titleVal }}
+                OPTIONAL {{ ?s foaf:name ?nameVal }}
+                BIND(COALESCE(?titleVal, ?nameVal) AS ?lbl)
+                OPTIONAL {{ ?s rdf:type ?t }}
+                {filter_clause}
+              }}
             }}
             GROUP BY ?s
             LIMIT {limit}
@@ -235,14 +250,21 @@ impl RdfGraph {
         results
     }
 
-    pub fn expand_node(&self, node_iri: &str) -> GraphData {
+    pub fn expand_node(&self, graph_name: Option<&str>, node_iri: &str) -> GraphData {
         let escaped = node_iri.replace('\\', "\\\\").replace('"', "\\\"");
+
+        let graph_clause = match graph_name {
+            Some(g) => format!("GRAPH <{g}>"),
+            None => "GRAPH ?g".to_string(),
+        };
 
         let sparql = format!(
             "CONSTRUCT {{ ?s ?p ?o }} WHERE {{ \
-               {{ BIND(<{escaped}> AS ?s) ?s ?p ?o }} \
-               UNION \
-               {{ BIND(<{escaped}> AS ?o) ?s ?p ?o }} \
+               {graph_clause} {{ \
+                 {{ BIND(<{escaped}> AS ?s) ?s ?p ?o }} \
+                 UNION \
+                 {{ BIND(<{escaped}> AS ?o) ?s ?p ?o }} \
+               }} \
              }} LIMIT 500"
         );
 
@@ -253,8 +275,16 @@ impl RdfGraph {
         convert::triples_to_graph_data(&triples)
     }
 
-    pub fn sparql_select(&self, sparql: &str) -> Result<TabularData, String> {
-        match self.evaluate_query(sparql) {
+    pub fn graph_exists(&self, graph_name: &str) -> bool {
+        self.triple_count(Some(graph_name)) > 0
+    }
+
+    pub fn sparql_select(&self, sparql: &str, graph_name: Option<&str>) -> Result<TabularData, String> {
+        let query = match graph_name {
+            Some(g) => sparql.replacen("WHERE", &format!("FROM <{g}> WHERE"), 1),
+            None => sparql.to_string(),
+        };
+        match self.evaluate_query(&query) {
             Ok(QueryResults::Solutions(solutions)) => {
                 let vars: Vec<String> = solutions
                     .variables()

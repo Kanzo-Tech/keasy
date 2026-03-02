@@ -36,7 +36,7 @@ pub struct SpawnParams {
 
 pub struct JobRunner {
     db: Database,
-    catalog: Arc<RdfGraph>,
+    graph_store: Arc<RdfGraph>,
     semaphore: Arc<Semaphore>,
     job_timeout: Duration,
     tasks: std::sync::Mutex<JoinSet<()>>,
@@ -45,13 +45,13 @@ pub struct JobRunner {
 impl JobRunner {
     pub fn new(
         db: Database,
-        catalog: Arc<RdfGraph>,
+        graph_store: Arc<RdfGraph>,
         max_concurrent: usize,
         job_timeout_secs: u64,
     ) -> Self {
         Self {
             db,
-            catalog,
+            graph_store,
             semaphore: Arc::new(Semaphore::new(max_concurrent)),
             job_timeout: Duration::from_secs(job_timeout_secs),
             tasks: std::sync::Mutex::new(JoinSet::new()),
@@ -68,20 +68,15 @@ impl JobRunner {
         let SpawnParams { org_id, job_id, script, storage, org_settings, dcat_enabled, dcat_format } = params;
         let db = self.db.clone();
         let semaphore = self.semaphore.clone();
-        let catalog = self.catalog.clone();
+        let graph_store = self.graph_store.clone();
         let job_timeout = self.job_timeout;
 
         self.tasks.lock().expect("tasks lock poisoned").spawn(async move {
-            // Construct a tenant-scoped context for all DAL calls within this task
-            let make_ctx = || TenantScoped::new(OrgId(org_id.clone()), ());
-            let make_scoped = |id: &str| TenantScoped::new(OrgId(org_id.clone()), id.to_string());
-
             let _permit = match semaphore.acquire_owned().await {
                 Ok(permit) => permit,
                 Err(_) => {
-                    let ctx = make_scoped(&job_id);
-                    let ctx_ref = TenantScoped::new(OrgId(org_id.clone()), ctx.inner().as_str());
-                    if let Err(e) = db.update_job(&ctx_ref, |job| {
+                    let ctx = TenantScoped::new(OrgId(org_id.clone()), job_id.as_str());
+                    if let Err(e) = db.update_job(&ctx, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(JobRuntimeError::new("INTERNAL_ERROR", "Failed to acquire execution permit"));
                         job.completed_at = Some(now_iso8601());
@@ -110,6 +105,7 @@ impl JobRunner {
             info!(job_id = %job_id, "Job started");
 
             let job_id_clone = job_id.clone();
+            let pipeline_outputs_for_blocking = pipeline_outputs.clone();
             let result = tokio::time::timeout(
                 job_timeout,
                 tokio::task::spawn_blocking(move || {
@@ -119,16 +115,12 @@ impl JobRunner {
                         storage,
                         if dcat_enabled { org_settings.as_ref() } else { None },
                         job_name.as_deref(),
-                        &pipeline_outputs,
+                        &pipeline_outputs_for_blocking,
                         dcat_format.as_deref(),
                     )
                 }),
             )
             .await;
-
-            let _ = make_ctx; // used above; suppress warning
-
-            let job_ctx = TenantScoped::new(OrgId(org_id.clone()), job_id.as_str());
 
             match result {
                 Ok(Ok(Ok((catalog_str, dcat_input)))) => {
@@ -136,8 +128,33 @@ impl JobRunner {
                     if let Some(input) = &dcat_input {
                         let graph_name = format!("urn:keasy:job:{job_id}");
                         let triples = build_catalog_triples(input);
-                        catalog.insert_triples(Some(&graph_name), &triples);
+                        graph_store.insert_triples(Some(&graph_name), &triples);
                     }
+                    // Auto-load job output into graph store in the background
+                    let graph_store_bg = graph_store.clone();
+                    let db_bg = db.clone();
+                    let org_id_bg = org_id.clone();
+                    let job_id_bg = job_id.clone();
+                    let outputs_bg = pipeline_outputs.clone();
+                    tokio::spawn(async move {
+                        let output_graph = format!("urn:keasy:output:{job_id_bg}");
+                        if !graph_store_bg.graph_exists(&output_graph) {
+                            let ctx = TenantScoped::new(OrgId(org_id_bg), ());
+                            let creds = db_bg.env_snapshot_all(&ctx).await;
+                            for output in &outputs_bg {
+                                if let Some(dest) = &output.destination {
+                                    match crate::cloud::reader::download(dest, &creds).await {
+                                        Ok(bytes) => {
+                                            if let Err(e) = graph_store_bg.bulk_load_bytes(Some(&output_graph), &bytes, dest) {
+                                                warn!(job_id = %job_id_bg, url = %dest, error = %e, "Failed to auto-load output");
+                                            }
+                                        }
+                                        Err(e) => warn!(job_id = %job_id_bg, url = %dest, error = %e, "Failed to download output"),
+                                    }
+                                }
+                            }
+                        }
+                    });
                     if let Err(e) = db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Completed;
                         job.completed_at = Some(now_iso8601());

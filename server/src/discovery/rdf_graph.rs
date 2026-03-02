@@ -279,16 +279,6 @@ impl RdfGraph {
         self.triple_count(Some(graph_name)) > 0
     }
 
-    /// Insert a sentinel triple so that graph_exists() returns true even when
-    /// the job produced no downloadable outputs.
-    pub fn mark_output_initialized(&self, graph_name: &str) {
-        let graph = GraphNameRef::NamedNode(NamedNodeRef::new_unchecked(graph_name));
-        let subject = NamedNodeRef::new_unchecked(graph_name);
-        let predicate = NamedNodeRef::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
-        let object = NamedNodeRef::new_unchecked("urn:keasy:OutputGraph");
-        let _ = self.store.insert(QuadRef::new(subject, predicate, object, graph));
-    }
-
     pub fn sparql_select(&self, sparql: &str, graph_name: Option<&str>) -> Result<TabularData, String> {
         let query = match graph_name {
             Some(g) => sparql.replacen("WHERE", &format!("FROM <{g}> WHERE"), 1),

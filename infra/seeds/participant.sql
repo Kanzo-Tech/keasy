@@ -12,13 +12,6 @@ ON CONFLICT(id) DO UPDATE SET
   legal_name = excluded.legal_name,
   updated_at = excluded.updated_at;
 
--- System user — satisfies FK on bootstrap invite token. Cannot authenticate.
-INSERT OR IGNORE INTO users
-  (id, email, first_name, last_name, password_hash, status, created_at, updated_at)
-VALUES
-  ('00000000-0000-0000-0000-000000000000', 'system@keasy.local', 'System', '', '', 'inactive',
-   strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), strftime('%Y-%m-%dT%H:%M:%SZ', 'now'));
-
 -- Open invite token — first user joins as admin (reusable).
 INSERT OR IGNORE INTO invite_tokens
   (token, org_id, role, created_by, expires_at, created_at)

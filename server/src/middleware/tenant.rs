@@ -11,7 +11,6 @@ use thiserror::Error;
 use crate::AppState;
 use crate::error::error_body;
 use crate::middleware::session_auth::AuthenticatedUser;
-use crate::db::organizations::OrgRole;
 use crate::tenant::OrgId;
 
 /// Flat role assigned to a tenant context. No hierarchy — each variant
@@ -191,17 +190,17 @@ pub async fn tenant_context_required(
         .cloned()
         .ok_or(RbacError::AuthRequired)?;
 
-    // 2. Get user's org membership
-    let membership = state
+    // 2. Get org membership
+    let member = state
         .db
-        .get_user_org_membership(&user.user_id)
+        .get_org_membership(&user.user_id)
         .await
         .ok_or(RbacError::NoMembership)?;
 
     // 3. Get the org to read its role (promotor/participant)
     let org = state
         .db
-        .get_organization(&membership.org_id)
+        .get_organization(&member.org_id)
         .await
         .ok_or(RbacError::NoMembership)?;
 
@@ -209,15 +208,15 @@ pub async fn tenant_context_required(
     let role = if org.role == "promotor" {
         TenantRole::Promotor
     } else {
-        match membership.role {
-            OrgRole::Admin => TenantRole::OrgAdmin,
-            OrgRole::User => TenantRole::OrgUser,
+        match member.role.as_str() {
+            "admin" => TenantRole::OrgAdmin,
+            _ => TenantRole::OrgUser,
         }
     };
 
     // 5. Build TenantContext
     let ctx = TenantContext {
-        org_id: OrgId(membership.org_id.clone()),
+        org_id: OrgId(member.org_id),
         role,
     };
 

@@ -39,11 +39,6 @@ import { useOrgUsers } from "@/hooks/use-org-users";
 import { api } from "@/lib/api";
 import type { OrgUser, OrgInvite } from "@/lib/types";
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
-  active: "default",
-  inactive: "secondary",
-};
-
 function orgUserColumns(
   onRoleChange: (userId: string, role: string) => void,
   onRemove: (userId: string, name: string) => void,
@@ -72,7 +67,7 @@ function orgUserColumns(
       cell: ({ row }) => (
         <Select
           value={row.original.role}
-          onValueChange={(val) => onRoleChange(row.original.id, val)}
+          onValueChange={(val) => onRoleChange(row.original.user_id, val)}
         >
           <SelectTrigger
             className="w-[100px] h-8"
@@ -87,18 +82,6 @@ function orgUserColumns(
         </Select>
       ),
     },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ getValue }) => {
-        const status = getValue<string>();
-        return (
-          <Badge variant={STATUS_VARIANT[status] ?? "outline"}>
-            {status}
-          </Badge>
-        );
-      },
-    },
     actionsColumn<OrgUser>((user) => {
       const displayName =
         [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email;
@@ -107,7 +90,7 @@ function orgUserColumns(
           variant="destructive"
           onClick={(e) => {
             e.stopPropagation();
-            onRemove(user.id, displayName);
+            onRemove(user.user_id, displayName);
           }}
         >
           Remove

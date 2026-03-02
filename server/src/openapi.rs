@@ -58,8 +58,8 @@ use utoipa::OpenApi;
         crate::routes::admin::list_invites,
         crate::routes::admin::create_invite,
         crate::routes::admin::revoke_invite,
-        crate::routes::admin::list_oidc_clients,
-        crate::routes::admin::register_oidc_client,
+        crate::routes::admin::list_dataspaces,
+        crate::routes::admin::register_dataspace,
         // Organization
         crate::routes::org::list_users,
         crate::routes::org::update_user_role,
@@ -81,14 +81,6 @@ use utoipa::OpenApi;
         crate::gaia_x::routes::rerun_compliance,
         crate::gaia_x::routes::get_did_document,
         crate::gaia_x::routes::get_cert_chain,
-        // Gaia-X Wallet
-        crate::gaia_x::wallet_routes::init_wallet_session,
-        crate::gaia_x::wallet_routes::wallet_verify_status,
-        crate::gaia_x::wallet_routes::get_wallet,
-        crate::gaia_x::wallet_routes::save_wallet_connection,
-        crate::gaia_x::wallet_routes::disconnect_wallet,
-        // Gaia-X Credentials
-        crate::gaia_x::issuer_routes::create_credential_offer,
         // Discovery
         crate::discovery::routes::search_nodes,
         crate::discovery::routes::expand_node,
@@ -148,23 +140,31 @@ use utoipa::OpenApi;
         crate::routes::scripts::ValidateRequest,
         // Invite Tokens
         crate::db::invite_tokens::InviteToken,
-        // OIDC Clients
-        crate::db::oidc_clients::OidcClient,
-        // Users
-        crate::db::users::UserWithRole,
+        // Dataspaces
+        crate::db::dataspaces::Dataspace,
+        // Org members
+        crate::db::org_members::OrgMember,
         // Gaia-X Wizard
         crate::gaia_x::WizardState,
+        crate::gaia_x::routes::ComplianceCredential,
+        crate::gaia_x::routes::ComplianceStatus,
         crate::gaia_x::routes::CertUploadPayload,
         crate::gaia_x::routes::LrnPayload,
         crate::gaia_x::routes::LpPayload,
         crate::gaia_x::routes::TcPayload,
-        // Gaia-X Wallet
-        crate::gaia_x::wallet_routes::ConnectPayload,
+        // Auth response types
+        crate::auth::routes::MeResponse,
+        crate::auth::routes::MeOrg,
+        crate::auth::routes::Workspace,
+        crate::auth::routes::WorkspacesResponse,
         // Admin
         crate::routes::admin::CreateOrgAndInviteRequest,
         crate::routes::admin::RegisterOidcClientRequest,
         crate::routes::admin::CreateInviteRequest,
+        crate::routes::admin::AdminInviteEntry,
+        crate::routes::admin::AdminInviteResult,
         // Organization
+        crate::routes::org::OrgInviteEntry,
         crate::routes::org::UpdateUserRoleRequest,
         crate::routes::org::UpdateOrgIdentityPayload,
         crate::routes::org::CreateOrgInviteRequest,

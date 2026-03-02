@@ -11,32 +11,19 @@ CREATE TABLE IF NOT EXISTS organizations (
     registration_number TEXT,
     country             TEXT NOT NULL CHECK(length(country) = 2),
     role                TEXT NOT NULL DEFAULT 'participant' CHECK(role IN ('promotor', 'participant')),
-    vc_verified_at      TEXT,
     created_at          TEXT NOT NULL,
     updated_at          TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS users (
-    id                  TEXT PRIMARY KEY,
-    email               TEXT NOT NULL UNIQUE,
-    first_name          TEXT NOT NULL,
-    last_name           TEXT NOT NULL,
-    password_hash       TEXT NOT NULL,
-    vc_holder_did       TEXT UNIQUE,
-    wallet_connected_at TEXT,
-    status              TEXT NOT NULL DEFAULT 'inactive' CHECK(status IN ('active', 'inactive')),
-    created_at          TEXT NOT NULL,
-    updated_at          TEXT NOT NULL
-);
-
--- User-to-org membership (role = admin or user)
-CREATE TABLE IF NOT EXISTS user_org_memberships (
-    id         TEXT PRIMARY KEY,
-    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS org_members (
+    user_id    TEXT NOT NULL,
     org_id     TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    role       TEXT NOT NULL CHECK(role IN ('admin', 'user')),
-    created_at TEXT NOT NULL,
-    UNIQUE(user_id, org_id)
+    role       TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('admin', 'user')),
+    email      TEXT NOT NULL DEFAULT '',
+    first_name TEXT NOT NULL DEFAULT '',
+    last_name  TEXT NOT NULL DEFAULT '',
+    joined_at  TEXT NOT NULL,
+    PRIMARY KEY (user_id, org_id)
 );
 
 -- Existing resource tables with organization_id NOT NULL FK
@@ -108,7 +95,7 @@ CREATE TABLE IF NOT EXISTS secrets (
 
 -- Session-auth lookup: enforces single active session per user
 CREATE TABLE IF NOT EXISTS user_sessions (
-    user_id    TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    user_id    TEXT PRIMARY KEY,
     session_id TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
@@ -118,35 +105,33 @@ CREATE TABLE IF NOT EXISTS invite_tokens (
     token      TEXT PRIMARY KEY,
     org_id     TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     role       TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('admin', 'user')),
-    created_by TEXT NOT NULL REFERENCES users(id),
+    created_by TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
 
--- Gaia-X compliance wizard state (per-org, auto-saved)
+-- Gaia-X compliance state per org (replaces gaia_x_wizard_state)
 -- Private key is NEVER stored — only public_key_jwk is persisted (locked decision)
-CREATE TABLE IF NOT EXISTS gaia_x_wizard_state (
+-- did_document is NOT persisted: derived at runtime from public_key_jwk + domain
+CREATE TABLE IF NOT EXISTS org_gaiax (
     org_id          TEXT PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
-    current_step    INTEGER NOT NULL DEFAULT 0,
+    domain          TEXT,
     public_key_jwk  TEXT,
     cert_chain_pem  TEXT,
     root_ca_pem     TEXT,
-    did_document    TEXT,
-    lrn_credential  TEXT,
-    lp_credential   TEXT,
-    tc_credential   TEXT,
-    compliance_vc   TEXT,
     lrn_type        TEXT,
     lrn_value       TEXT,
-    legal_name      TEXT,
-    country_code    TEXT,
-    domain          TEXT,
+    lrn_vc          TEXT,
+    lp_vc           TEXT,
+    tandc_vc        TEXT,
+    compliance_vc   TEXT,
+    wizard_step     INTEGER NOT NULL DEFAULT 0,
     updated_at      TEXT NOT NULL
 );
 
 -- Registered dataspace instances (OIDC clients in Keycloak)
 -- Display metadata for workspace picker; OIDC credentials live in Keycloak only
-CREATE TABLE IF NOT EXISTS oidc_clients (
+CREATE TABLE IF NOT EXISTS dataspaces (
     id          TEXT PRIMARY KEY,
     client_id   TEXT NOT NULL UNIQUE,
     name        TEXT NOT NULL,

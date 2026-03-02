@@ -13,19 +13,19 @@ use serde::Deserialize;
 
 use crate::AppState;
 use crate::db::invite_tokens::InviteToken;
-use crate::db::users::UserWithRole;
+use crate::db::org_members::OrgMember;
 use crate::error::{data_response, error_body};
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::middleware::tenant::{RbacError, RequireOrgAdmin, RequireParticipant};
 
 #[utoipa::path(get, path = "/v1/org/users", tag = "Organization",
-    responses((status = 200, description = "List of users in the org", body = Vec<UserWithRole>))
+    responses((status = 200, description = "List of users in the org", body = Vec<OrgMember>))
 )]
 pub async fn list_users(
     RequireOrgAdmin(ctx): RequireOrgAdmin,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let users = state.db.list_users_in_org(&ctx.org_id.0).await;
+    let users = state.db.list_org_members(&ctx.org_id.0).await;
     Ok(data_response(users))
 }
 
@@ -53,7 +53,7 @@ pub async fn update_user_role(
     }
     state
         .db
-        .update_user_role_in_org(&user_id, &ctx.org_id.0, &payload.role)
+        .update_member_role(&user_id, &ctx.org_id.0, &payload.role)
         .await
         .map_err(RbacError::Internal)?;
     Ok(StatusCode::NO_CONTENT)
@@ -73,7 +73,7 @@ pub async fn remove_user(
 ) -> Result<impl IntoResponse, RbacError> {
     state
         .db
-        .remove_user_from_org(&user_id, &ctx.org_id.0)
+        .remove_org_member(&user_id, &ctx.org_id.0)
         .await
         .map_err(RbacError::Internal)?;
     Ok(StatusCode::NO_CONTENT)
@@ -171,6 +171,15 @@ pub async fn update_org_identity(
 
 // ── Org invite management ────────────────────────────────────────────────────
 
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct OrgInviteEntry {
+    pub token: String,
+    pub role: String,
+    pub status: String,
+    pub created_at: String,
+    pub expires_at: String,
+}
+
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CreateOrgInviteRequest {
     pub role: String,
@@ -227,7 +236,7 @@ pub async fn create_org_invite(
 }
 
 #[utoipa::path(get, path = "/v1/org/invites", tag = "Organization",
-    responses((status = 200, description = "List of org invite tokens"))
+    responses((status = 200, description = "List of org invite tokens", body = Vec<OrgInviteEntry>))
 )]
 pub async fn list_org_invites(
     RequireOrgAdmin(ctx): RequireOrgAdmin,
@@ -235,17 +244,17 @@ pub async fn list_org_invites(
 ) -> Result<impl IntoResponse, RbacError> {
     let tokens = state.db.list_invite_tokens_for_org(&ctx.org_id.0).await;
     let now = jiff::Timestamp::now().to_string();
-    let result: Vec<serde_json::Value> = tokens
+    let result: Vec<OrgInviteEntry> = tokens
         .into_iter()
         .map(|t| {
             let status = if now > t.expires_at { "expired" } else { "active" };
-            serde_json::json!({
-                "token": t.token,
-                "role": t.role,
-                "status": status,
-                "created_at": t.created_at,
-                "expires_at": t.expires_at,
-            })
+            OrgInviteEntry {
+                token: t.token,
+                role: t.role,
+                status: status.to_string(),
+                created_at: t.created_at,
+                expires_at: t.expires_at,
+            }
         })
         .collect();
     Ok(data_response(result))

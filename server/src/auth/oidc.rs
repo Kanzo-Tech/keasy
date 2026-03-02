@@ -528,27 +528,37 @@ pub async fn oidc_callback(
     let subject = claims.subject().to_string();
 
     // 10. Extract profile claims from ID token.
-    let email: Option<&str> = claims.email().map(|e| e.as_str());
-    let first_name: Option<String> = claims
+    let email_str = claims.email().map(|e| e.as_str()).unwrap_or("").to_string();
+    let first_str = claims
         .given_name()
         .and_then(|n| n.get(None))
-        .map(|n| n.to_string());
-    let last_name: Option<String> = claims
+        .map(|n| n.to_string())
+        .unwrap_or_default();
+    let last_str = claims
         .family_name()
         .and_then(|n| n.get(None))
-        .map(|n| n.to_string());
+        .map(|n| n.to_string())
+        .unwrap_or_default();
 
-    // 11. Upsert user in local DB by Keycloak subject (users.id = sub).
-    let user_id = state
-        .db
-        .upsert_user_by_subject(
-            &subject,
-            email,
-            first_name.as_deref(),
-            last_name.as_deref(),
-        )
+    // 10b. Store profile in session so /me can return identity even without org membership.
+    session
+        .insert("user_email", &email_str)
         .await
-        .map_err(|e| AuthError::Internal(format!("upsert_user_by_subject failed: {e}")))?;
+        .map_err(|e| AuthError::Internal(format!("session insert user_email: {e}")))?;
+    session
+        .insert("user_first_name", &first_str)
+        .await
+        .map_err(|e| AuthError::Internal(format!("session insert user_first_name: {e}")))?;
+    session
+        .insert("user_last_name", &last_str)
+        .await
+        .map_err(|e| AuthError::Internal(format!("session insert user_last_name: {e}")))?;
+
+    // 11. Sync cached profile in org_members (no-op if user has no membership yet).
+    let _ = state
+        .db
+        .sync_member_profile(&subject, &email_str, &first_str, &last_str)
+        .await;
 
     // 12. Read pending invite token BEFORE cycling session ID (cycle_id keeps data).
     let pending_invite_token: Option<String> = session.get("pending_invite_token").await.ok().flatten();
@@ -575,7 +585,7 @@ pub async fn oidc_callback(
 
     // 15. Set session values for the authenticated user.
     session
-        .insert("user_id", &user_id)
+        .insert("user_id", &subject)
         .await
         .map_err(|e| AuthError::Internal(format!("session insert user_id: {e}")))?;
 
@@ -603,13 +613,13 @@ pub async fn oidc_callback(
 
     state
         .db
-        .upsert_user_session(&user_id, &session_id)
+        .upsert_user_session(&subject, &session_id)
         .await
         .map_err(|e| AuthError::Internal(format!("upsert_user_session failed: {e}")))?;
 
     // 19. Auto-accept pending invite if one was stored before the OIDC redirect.
     if let Some(invite_token) = pending_invite_token {
-        let _ = accept_invite_for_user(&state, &user_id, &invite_token).await;
+        let _ = accept_invite_for_user(&state, &subject, &email_str, &first_str, &last_str, &invite_token).await;
         let _ = session.remove_value("pending_invite_token").await;
         let _ = session.save().await;
     }
@@ -631,6 +641,9 @@ pub async fn oidc_callback(
 async fn accept_invite_for_user(
     state: &AppState,
     user_id: &str,
+    email: &str,
+    first_name: &str,
+    last_name: &str,
     invite_token: &str,
 ) -> Result<(), String> {
     let token = state
@@ -644,10 +657,9 @@ async fn accept_invite_for_user(
         return Err("invite token expired".to_string());
     }
 
-    let membership_id = uuid::Uuid::new_v4().to_string();
     state
         .db
-        .create_user_org_membership(&membership_id, user_id, &token.org_id, &token.role)
+        .upsert_org_member(user_id, &token.org_id, &token.role, email, first_name, last_name)
         .await?;
 
     // Update Keycloak dataspaces attribute — user_id IS the Keycloak UUID.

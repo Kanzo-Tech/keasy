@@ -36,7 +36,7 @@ export type JobError = S["JobRuntimeError"];
 
 // Org types — re-exported from schema with frontend aliases
 export type OrgIdentity = S["OrgIdentityResponse"];
-export type OrgUser = S["UserWithRole"];
+export type OrgUser = S["OrgMember"];
 export type OrgEntry = S["Organization"];
 
 // ---------------------------------------------------------------------------
@@ -164,13 +164,10 @@ export interface MeResponse {
   first_name: string;
   last_name: string;
   effective_role: string;
-  vc_holder_did?: string;
-  wallet_connected_at?: string;
   org?: {
     id: string;
     name: string;
     role: string;
-    vc_verified_at: string | null;
   };
 }
 
@@ -193,13 +190,10 @@ export interface WizardState {
   current_step?: number;
   domain?: string;
   public_key_jwk?: Record<string, unknown>;
-  did_document?: Record<string, unknown>;
   cert_chain_pem?: string;
   lrn_type?: string;
   lrn_value?: string;
   lrn_credential?: Record<string, unknown>;
-  legal_name?: string;
-  country_code?: string;
   lp_credential?: Record<string, unknown>;
   tc_credential?: Record<string, unknown>;
   compliance_vc?: Record<string, unknown>;
@@ -216,21 +210,6 @@ export interface ComplianceStatus {
   verified_at?: string | null;
   credentials: ComplianceCredential[];
   wizard_state?: WizardState;
-}
-
-// ---------------------------------------------------------------------------
-// Wallet types
-// ---------------------------------------------------------------------------
-
-export interface WalletStatus {
-  connected: boolean;
-  did?: string;
-  connected_at?: string;
-}
-
-export interface WalletSession {
-  session_id: string;
-  qr_url: string;
 }
 
 // ---------------------------------------------------------------------------

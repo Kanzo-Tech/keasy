@@ -44,7 +44,7 @@ pub async fn get_me(
             OrgRole::Admin => "org_admin",
             OrgRole::User => "org_user",
         },
-        _ => "org_user",
+        _ => "none",
     };
 
     Ok(data_response(json!({
@@ -65,59 +65,87 @@ pub async fn get_me(
     })))
 }
 
-/// GET /v1/auth/invite-info?token=<token> — return pre-filled email for a valid unused token.
+/// GET /v1/auth/invite-info?token=<token> — validate an invite token exists and is not expired.
 ///
-/// Public endpoint (no session required) — used by the invite registration page to
-/// pre-fill the email field.
+/// Public endpoint (no session required) — used by the invite page to check
+/// whether the token is valid before showing the accept UI.
 #[derive(Deserialize)]
 pub struct InviteInfoQuery {
     pub token: String,
 }
 
+#[utoipa::path(get, path = "/v1/auth/invite-info", tag = "Auth",
+    params(("token" = String, Query, description = "Invite token")),
+    responses((status = 200, description = "Invite token validity"))
+)]
 pub async fn get_invite_info(
     State(state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<InviteInfoQuery>,
 ) -> impl IntoResponse {
-    let token = state.db.get_invite_token(&params.token).await;
-    match token {
-        Some(t) if t.used_at.is_none() => data_response(json!({ "email": t.email })),
-        _ => data_response(json!({ "email": null })),
-    }
+    let now = jiff::Timestamp::now().to_string();
+    let valid = state
+        .db
+        .get_invite_token(&params.token)
+        .await
+        .map(|t| t.expires_at > now)
+        .unwrap_or(false);
+    data_response(json!({ "valid": valid }))
 }
 
 /// GET /v1/auth/workspaces
 ///
 /// Returns the list of dataspaces the authenticated user has access to,
 /// resolved from the `dataspaces` session value to display info via
-/// the oidc_clients table. Protected by session_required, NOT tenant_context_required.
+/// the oidc_clients table. Used by the sidebar instance switcher.
 #[utoipa::path(get, path = "/v1/auth/workspaces", tag = "Auth",
     responses((status = 200, description = "List of accessible workspaces"))
 )]
 pub async fn list_workspaces(
-    session: Session,
+    _session: Session,
     State(state): State<AppState>,
-    _auth_user: axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
+    auth_user: axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
 ) -> Result<impl IntoResponse, AuthError> {
-    let dataspaces: Vec<String> = session
-        .get("dataspaces")
-        .await
-        .ok()
-        .flatten()
-        .unwrap_or_default();
+    // Read workspaces live from Keycloak (user_id = Keycloak sub).
+    let dataspaces: Vec<String> = if let Some(kc_admin) = &state.auth.keycloak_admin {
+        match kc_admin.get_user_workspaces(&auth_user.user_id).await {
+            Ok(ds) => {
+                tracing::debug!(user_id = %auth_user.user_id, workspaces = ?ds, "Keycloak workspaces");
+                ds
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, user_id = %auth_user.user_id, "Failed to read workspaces from Keycloak");
+                Vec::new()
+            }
+        }
+    } else {
+        tracing::debug!("No Keycloak admin configured, returning empty workspaces");
+        Vec::new()
+    };
 
     let current_client_id = state.auth.oidc_client_id.clone().unwrap_or_default();
 
     let mut workspaces = Vec::new();
     for client_id in &dataspaces {
+        // Check local cache first
         if let Some(client) = state.db.get_oidc_client_by_client_id(client_id).await {
             workspaces.push(json!({
                 "client_id": client.client_id,
                 "name": client.name,
                 "url": client.url,
             }));
+            continue;
         }
-        // Silently skip client_ids not found in local oidc_clients table
-        // (may be instances registered elsewhere)
+        // Cache miss — resolve via Keycloak Admin API and cache locally
+        if let Some(kc_admin) = &state.auth.keycloak_admin {
+            if let Some(resolved) = kc_admin.resolve_client(client_id).await {
+                let _ = state.db.ensure_oidc_client(client_id, &resolved.name, &resolved.url).await;
+                workspaces.push(json!({
+                    "client_id": client_id,
+                    "name": resolved.name,
+                    "url": resolved.url,
+                }));
+            }
+        }
     }
 
     Ok(data_response(json!({

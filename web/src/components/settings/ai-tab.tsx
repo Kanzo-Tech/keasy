@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { fetchAiProviders, saveAiProvider, deleteAiProvider } from "@/lib/api";
+import { api } from "@/lib/api";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
 import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
 import { FormField, FormActions } from "@/components/shared/form-layout";
@@ -37,7 +37,7 @@ function ProviderPanel({
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      await saveAiProvider(provider.id, {
+      await api.ai.saveProvider(provider.id, {
         api_key: apiKey,
         model: model.trim() || undefined,
         max_tokens: maxTokens.trim() ? parseInt(maxTokens.trim(), 10) : undefined,
@@ -55,7 +55,7 @@ function ProviderPanel({
   const handleRemove = useCallback(async () => {
     setRemoving(true);
     try {
-      await deleteAiProvider(provider.id);
+      await api.ai.removeProvider(provider.id);
       setApiKey("");
       setModel("");
       setMaxTokens("");
@@ -132,7 +132,7 @@ function ProviderPanel({
 }
 
 export function AiTab() {
-  const { data: providers, isLoading, mutate } = useSWR("ai-providers", fetchAiProviders);
+  const { data: providers, isLoading, mutate } = useSWR("ai-providers", api.ai.providers);
   const showSkeleton = useDelayedLoading(isLoading);
 
   if (isLoading) {

@@ -51,9 +51,12 @@ pub struct ServerConfig {
     /// Walt.id Issuer API base URL. When set, OID4VCI credential export is enabled.
     /// Read from KEASY_WALT_ID_ISSUER_URL. Default None — issuer disabled.
     pub walt_id_issuer_url: Option<String>,
-    /// When true, create demo users, orgs, connections, and jobs at startup.
-    /// Read from KEASY_DEV_SEED. Default false.
-    pub dev_seed: bool,
+    /// Path to an external SQL seed file executed at startup.
+    /// Read from KEASY_SEED_FILE. Default None — no seed data.
+    pub seed_file: Option<PathBuf>,
+    /// Session cookie name — allows multiple Keasy instances on the same host.
+    /// Read from KEASY_SESSION_COOKIE_NAME. Default "keasy.sid".
+    pub session_cookie_name: String,
 }
 
 impl ServerConfig {
@@ -161,9 +164,13 @@ impl ServerConfig {
             .ok()
             .filter(|s| !s.trim().is_empty());
 
-        let dev_seed = std::env::var("KEASY_DEV_SEED")
-            .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
-            .unwrap_or(false);
+        let seed_file = std::env::var("KEASY_SEED_FILE")
+            .ok()
+            .filter(|s| !s.trim().is_empty())
+            .map(PathBuf::from);
+
+        let session_cookie_name = std::env::var("KEASY_SESSION_COOKIE_NAME")
+            .unwrap_or_else(|_| "keasy.sid".to_string());
 
         Self {
             bind_addr,
@@ -186,7 +193,8 @@ impl ServerConfig {
             oidc_internal_base_url,
             base_domain,
             walt_id_issuer_url,
-            dev_seed,
+            seed_file,
+            session_cookie_name,
         }
     }
 }

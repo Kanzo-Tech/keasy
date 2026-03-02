@@ -8,11 +8,34 @@
   "verifyEmail": false,
   "accessTokenLifespan": 3600,
   "ssoSessionMaxLifespan": 86400,
+  "clientScopes": [
+    {
+      "name": "keasy-dataspaces",
+      "description": "Maps keasy.dataspaces user attribute to keasy:dataspaces ID-token claim",
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "keasy-dataspaces",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "keasy.dataspaces",
+            "claim.name": "keasy:dataspaces",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
   "clients": [
     {
       "clientId": "keasy-server",
       "name": "Keasy Server",
-      "description": "Keasy application server — OIDC relying party and admin API client",
+      "description": "Single-instance dev setup — OIDC relying party",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
@@ -28,37 +51,8 @@
       "attributes": {
         "post.logout.redirect.uris": "http://localhost:8080/*##http://localhost:3000/*"
       },
-      "defaultClientScopes": [
-        "openid",
-        "profile",
-        "email"
-      ]
+      "defaultClientScopes": ["openid", "profile", "email", "keasy-dataspaces"]
     }
   ],
-  "users": [
-    {
-      "id": "aaaaaaaa-0000-0000-0000-000000000001",
-      "username": "admin@keasy.dev",
-      "email": "admin@keasy.dev",
-      "firstName": "Ada",
-      "lastName": "Lovelace",
-      "enabled": true,
-      "emailVerified": true,
-      "credentials": [
-        { "type": "password", "value": "admin", "temporary": false }
-      ]
-    },
-    {
-      "id": "aaaaaaaa-0000-0000-0000-000000000002",
-      "username": "user@keasy.dev",
-      "email": "user@keasy.dev",
-      "firstName": "Alan",
-      "lastName": "Turing",
-      "enabled": true,
-      "emailVerified": true,
-      "credentials": [
-        { "type": "password", "value": "user", "temporary": false }
-      ]
-    }
-  ]
+  "users": []
 }

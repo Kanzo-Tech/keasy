@@ -208,71 +208,42 @@ impl Database {
         Ok(())
     }
 
-    /// Look up a user by their Keycloak subject (sub) claim. Returns only active users.
+    /// Upsert a user by their Keycloak subject (sub) claim.
     ///
-    /// Used by the OIDC auth flow to check if a Keycloak user already has a local account.
-    pub async fn get_user_by_subject(&self, subject: &str) -> Option<User> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, email, first_name, last_name, password_hash, status, created_at, updated_at, vc_holder_did, wallet_connected_at
-             FROM users WHERE subject = ?1 AND status = 'active'",
-            [subject],
-            row_to_user,
-        )
-        .ok()
-    }
-
-    /// Upsert a user by their Keycloak subject claim.
+    /// `users.id` IS the Keycloak sub — no separate `subject` column.
+    /// INSERT with id=sub, ON CONFLICT(id) update email/name.
     ///
-    /// - If a user with this subject exists, optionally updates their email and returns the existing id.
-    /// - If not, creates a new user with an empty password_hash (OIDC users have no local password).
-    ///
-    /// Returns the user's local DB `id`.
+    /// Returns the Keycloak sub (= user id).
     pub async fn upsert_user_by_subject(
         &self,
         subject: &str,
         email: Option<&str>,
+        first_name: Option<&str>,
+        last_name: Option<&str>,
     ) -> Result<String, String> {
-        // Fast path: user already exists by subject.
-        if let Some(existing) = self.get_user_by_subject(subject).await {
-            // Update email if it changed and a new one was provided.
-            if let Some(new_email) = email {
-                if existing.email != new_email {
-                    let now = jiff::Timestamp::now().to_string();
-                    let conn = self.write().await;
-                    let _ = conn.execute(
-                        "UPDATE users SET email = ?1, updated_at = ?2 WHERE id = ?3",
-                        params![new_email, now, existing.id],
-                    );
-                }
-            }
-            return Ok(existing.id);
-        }
-
-        // Slow path: create a new local user record for this OIDC identity.
-        let user_id = uuid::Uuid::new_v4().to_string();
-        let email_val = email.unwrap_or(subject); // fallback to subject if no email in token
+        let email_val = email.unwrap_or(subject);
+        let first = first_name.unwrap_or("");
+        let last = last_name.unwrap_or("");
         let now = jiff::Timestamp::now().to_string();
 
         let conn = self.write().await;
         conn.execute(
-            "INSERT INTO users (id, email, first_name, last_name, password_hash, subject, status, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            "INSERT INTO users (id, email, first_name, last_name, password_hash, status, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)
+             ON CONFLICT(id) DO UPDATE SET email = ?2, first_name = ?3, last_name = ?4, updated_at = ?7",
             params![
-                user_id,
-                email_val,
-                "",             // first_name — populated by Keycloak profile sync in a future phase
-                "",             // last_name  — same
-                "",             // password_hash — empty string: OIDC users have no local password
                 subject,
+                email_val,
+                first,
+                last,
+                "",       // password_hash — OIDC users have no local password
                 "active",
-                now,
                 now,
             ],
         )
-        .map_err(|e| format!("failed to insert OIDC user: {e}"))?;
+        .map_err(|e| format!("failed to upsert OIDC user: {e}"))?;
 
-        Ok(user_id)
+        Ok(subject.to_string())
     }
 }
 

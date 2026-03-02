@@ -36,6 +36,7 @@ use utoipa::OpenApi;
         crate::cloud::routes::update_account,
         crate::cloud::routes::delete_account,
         // Settings
+        crate::settings::routes::get_schema,
         crate::settings::routes::get_org_settings,
         crate::settings::routes::save_org_settings,
         crate::settings::routes::get_preferences,
@@ -88,6 +89,27 @@ use utoipa::OpenApi;
         crate::gaia_x::wallet_routes::disconnect_wallet,
         // Gaia-X Credentials
         crate::gaia_x::issuer_routes::create_credential_offer,
+        // Discovery
+        crate::discovery::routes::search_nodes,
+        crate::discovery::routes::expand_node,
+        crate::discovery::routes::query_discover,
+        crate::discovery::routes::chart_discover,
+        crate::discovery::routes::load_discover,
+        crate::discovery::routes::export_discover,
+        // Validation
+        crate::discovery::validation_routes::validate_job,
+        // AI / Conversations
+        crate::ai::routes::ask_discover,
+        crate::ai::routes::create_conversation,
+        crate::ai::routes::list_conversations,
+        crate::ai::routes::get_conversation_messages,
+        crate::ai::routes::rename_conversation,
+        crate::ai::routes::delete_conversation,
+        // Dashboard Layout
+        crate::jobs::routes::get_dashboard_layout,
+        crate::jobs::routes::save_dashboard_layout,
+        // Auth (additional)
+        crate::auth::routes::get_invite_info,
     ),
     components(schemas(
         crate::error::DataResponse<serde_json::Value>,
@@ -146,6 +168,17 @@ use utoipa::OpenApi;
         crate::routes::org::UpdateUserRoleRequest,
         crate::routes::org::UpdateOrgIdentityPayload,
         crate::routes::org::CreateOrgInviteRequest,
+        // Discovery
+        crate::discovery::routes::SearchRequest,
+        crate::discovery::routes::ExpandRequest,
+        crate::discovery::routes::QueryRequest,
+        crate::discovery::routes::ChartRequest,
+        crate::discovery::routes::LoadDiscoverResponse,
+        // AI / Conversations
+        crate::ai::routes::AskRequest,
+        crate::ai::routes::AskResponse,
+        crate::ai::routes::CreateConversationRequest,
+        crate::ai::routes::RenameConversationRequest,
     ))
 )]
 pub struct ApiDoc;

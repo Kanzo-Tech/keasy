@@ -3,12 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import { toastError } from "@/lib/toast-error";
-import {
-  fetchJob,
-  fetchJobCatalog,
-  cancelJob,
-  fetchConnections,
-} from "@/lib/api";
+import { api } from "@/lib/api";
 import { reverseMapUrl, reverseMapPipeline } from "@/lib/formatters";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,10 +26,10 @@ export function JobDetailView({ id }: { id: string }) {
     data: job,
     isLoading,
     mutate,
-  } = useSWR(`job-${id}`, () => fetchJob(id), {
+  } = useSWR(`job-${id}`, () => api.jobs.get(id), {
     refreshInterval: (data) => (data && isTerminal(data.status) ? 0 : 2000),
   });
-  const { data: connections } = useSWR("connections", fetchConnections);
+  const { data: connections } = useSWR("connections", api.connections.list);
 
   const [dcatFormat, setDcatFormat] = useState("turtle");
 
@@ -44,7 +39,7 @@ export function JobDetailView({ id }: { id: string }) {
       : null;
   const { data: fetchedCatalog, isLoading: catalogLoading } = useSWR(
     catalogSwrKey,
-    () => fetchJobCatalog(id, dcatFormat),
+    () => api.jobs.catalog(id, dcatFormat),
   );
   const catalogContent =
     dcatFormat === "turtle" ? (job?.catalog ?? null) : (fetchedCatalog ?? null);
@@ -58,7 +53,7 @@ export function JobDetailView({ id }: { id: string }) {
   }, [job?.status, job?.error]);
 
   async function handleCancel() {
-    await cancelJob(id);
+    await api.jobs.cancel(id);
     mutate();
   }
 

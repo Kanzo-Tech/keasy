@@ -23,7 +23,6 @@ CREATE TABLE IF NOT EXISTS users (
     last_name           TEXT NOT NULL,
     password_hash       TEXT NOT NULL,
     vc_holder_did       TEXT UNIQUE,
-    subject             TEXT UNIQUE,
     wallet_connected_at TEXT,
     status              TEXT NOT NULL DEFAULT 'inactive' CHECK(status IN ('active', 'inactive')),
     created_at          TEXT NOT NULL,
@@ -114,14 +113,12 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     created_at TEXT NOT NULL
 );
 
--- Invite tokens for invite-only registration
+-- Invite tokens for invite-only registration (reusable, Slack-style)
 CREATE TABLE IF NOT EXISTS invite_tokens (
     token      TEXT PRIMARY KEY,
-    email      TEXT,
     org_id     TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     role       TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('admin', 'user')),
     created_by TEXT NOT NULL REFERENCES users(id),
-    used_at    TEXT,
     expires_at TEXT NOT NULL,
     created_at TEXT NOT NULL
 );

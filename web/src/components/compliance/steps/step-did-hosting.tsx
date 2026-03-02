@@ -5,7 +5,7 @@ import { Upload, CheckCircle, AlertTriangle, ChevronDown, ChevronUp } from "luci
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { validateCertificate, ApiError } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { useServices } from "@/hooks/use-services";
 import type { WizardState } from "@/lib/types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -51,7 +51,7 @@ export function StepDidHosting({ onComplete, completed, wizardState }: StepDidHo
     setValidationResult(null);
     try {
       const text = await file.text();
-      const result = await validateCertificate(text, domain);
+      const result = await api.gaiax.wizard.validateCert(text, domain);
       setValidationResult({
         success: true,
         message: `Certificate chain valid — ${result.cert_count ?? "??"} certificate(s), root CA present`,

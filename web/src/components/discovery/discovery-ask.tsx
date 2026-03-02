@@ -10,15 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import useSWR from "swr";
-import {
-  ApiError,
-  askDiscover,
-  fetchAiProviders,
-  listConversations,
-  getMessages,
-  renameConversation,
-  deleteConversation,
-} from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
@@ -151,7 +143,7 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
   const [selectedProvider, setSelectedProvider] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { data: aiProviders, isLoading: loadingAiProviders } = useSWR("ai-providers", fetchAiProviders);
+  const { data: aiProviders, isLoading: loadingAiProviders } = useSWR("ai-providers", api.ai.providers);
   const connectedProviders = AI_PROVIDERS.filter((p) =>
     aiProviders?.some((s) => s.provider === p.id && s.api_key),
   );
@@ -165,7 +157,7 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
 
   const { data: initialConversations, isLoading: loadingConversations, mutate: mutateConversations } = useSWR(
     `conversations-${jobId}`,
-    () => listConversations(jobId),
+    () => api.conversations.list(jobId),
   );
 
   useEffect(() => {
@@ -179,7 +171,7 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
 
   const { data: loadedMessages } = useSWR(
     activeConversationId ? `messages-${activeConversationId}` : null,
-    () => getMessages(activeConversationId!),
+    () => api.conversations.messages(activeConversationId!),
   );
 
   useEffect(() => {
@@ -205,7 +197,7 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
       cs.map((c) => (c.id === conversationId ? { ...c, title: trimmed } : c)),
     );
     try {
-      await renameConversation(conversationId, trimmed);
+      await api.conversations.rename(conversationId, trimmed);
     } catch {
       setConversations((cs) =>
         cs.map((c) => (c.id === conversationId ? { ...c, title: prev?.title } : c)),
@@ -215,7 +207,7 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
 
   async function handleDelete(conversationId: string) {
     try {
-      await deleteConversation(conversationId);
+      await api.conversations.remove(conversationId);
       setConversations((prev) => prev.filter((c) => c.id !== conversationId));
       if (activeConversationId === conversationId) {
         setActiveConversationId(null);
@@ -241,7 +233,7 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
-      const response = await askDiscover(
+      const response = await api.discovery.ask(
         jobId,
         q,
         activeConversationId ?? undefined,

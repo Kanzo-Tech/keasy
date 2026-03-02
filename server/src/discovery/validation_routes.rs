@@ -12,6 +12,9 @@ use super::validation_types::{ShapeFormat, ValidationRequest};
 use super::validation::ValidatableGraph;
 use crate::AppState;
 
+#[utoipa::path(post, path = "/v1/validate", tag = "Validation",
+    responses((status = 200, description = "Validation result"), (status = 400, description = "Invalid request"))
+)]
 pub async fn validate_job(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,

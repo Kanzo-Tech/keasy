@@ -5,7 +5,7 @@ import { Check, ChevronDown, ChevronUp, AlertCircle, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { submitGxdch, ApiError } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import type { WizardState } from "@/lib/types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -85,7 +85,7 @@ export function StepGxdchSubmit({ onComplete, completed, wizardState }: StepGxdc
     setPhase("submitting");
 
     try {
-      await submitGxdch();
+      await api.gaiax.wizard.submit();
       setPhase("verifying");
       setPhase("complete");
       onComplete();

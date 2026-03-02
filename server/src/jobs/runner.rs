@@ -63,8 +63,7 @@ impl JobRunner {
     }
 
     /// Spawn a job execution task.
-    /// `params.org_id` is the organization that owns this job. Phase 1 passes SEED_ORG_ID;
-    /// Phase 4 will pass the real session org_id from the request context.
+    /// `params.org_id` is the organization that owns this job.
     pub fn spawn(&self, params: SpawnParams) {
         let SpawnParams { org_id, job_id, script, storage, org_settings, dcat_enabled, dcat_format } = params;
         let db = self.db.clone();

@@ -20,6 +20,7 @@ pub fn build_router(
     cors_origins: Option<Vec<String>>,
     session_store: tower_sessions_rusqlite_store::RusqliteStore,
     session_secret: secrecy::SecretString,
+    session_cookie_name: String,
 ) -> Router {
     // Build the session layer with signed cookies
     // Key::from requires at least 64 bytes — derive from the session secret
@@ -27,7 +28,7 @@ pub fn build_router(
     let key = Key::from(&key_bytes);
 
     let session_layer = SessionManagerLayer::new(session_store)
-        .with_name("keasy.sid")
+        .with_name(session_cookie_name)
         .with_http_only(true)
         .with_same_site(SameSite::Lax)
         .with_secure(false) // TODO: make configurable via env var; false for local dev

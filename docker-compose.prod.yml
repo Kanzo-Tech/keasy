@@ -7,7 +7,6 @@ services:
       context: ./server
       dockerfile: Dockerfile
     environment:
-      KEASY_DEV_SEED: "false"
       KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-}
       KEASY_WALT_ID_ISSUER_URL: ${KEASY_WALT_ID_ISSUER_URL:-}
       RUST_LOG: info

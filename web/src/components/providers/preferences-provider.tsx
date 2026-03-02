@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import type { Preferences } from "@/lib/types";
-import { fetchPreferences, savePreferences as apiSavePreferences } from "@/lib/api";
+import { api } from "@/lib/api";
 
 interface PreferencesContextValue {
   preferences: Preferences;
@@ -58,7 +58,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchPreferences()
+    api.settings.preferences()
       .then((prefs) => {
         setPreferences(prefs);
         applyToDOM(prefs);
@@ -69,7 +69,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   const save = useCallback(async (prefs: Preferences) => {
     setSaving(true);
     try {
-      const saved = await apiSavePreferences(prefs);
+      const saved = await api.settings.savePreferences(prefs);
       setPreferences(saved);
       applyToDOM(saved);
     } finally {

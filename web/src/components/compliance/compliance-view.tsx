@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSWRConfig } from "swr";
 import { ShieldCheck, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { rerunCompliance, ApiError } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import type { ComplianceCredential } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -88,7 +88,7 @@ export function ComplianceView({ status }: ComplianceViewProps) {
   async function handleRerun() {
     setRerunLoading(true);
     try {
-      await rerunCompliance();
+      await api.gaiax.compliance.rerun();
       // Refresh compliance status in SWR cache
       await mutate("gx-compliance-status");
       toast.success("Compliance check completed successfully");

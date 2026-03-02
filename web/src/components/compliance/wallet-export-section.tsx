@@ -17,11 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Download, Loader2, CheckCircle, Wallet, ExternalLink } from "lucide-react";
 import { ServiceGate } from "@/components/ui/service-gate";
 import { WalletConnectionCard } from "@/components/wallet/wallet-connection-card";
-import {
-  fetchWalletStatus,
-  createCredentialOffer,
-  ApiError,
-} from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { useServices } from "@/hooks/use-services";
 import type { WalletStatus } from "@/lib/types";
 
@@ -29,7 +25,7 @@ type ExportStep = "idle" | "creating" | "ready" | "error";
 
 export function WalletExportSection() {
   const { services } = useServices();
-  const { data: wallet } = useSWR<WalletStatus>("wallet-status", fetchWalletStatus);
+  const { data: wallet } = useSWR<WalletStatus>("wallet-status", api.gaiax.wallet.status);
 
   const [exportStep, setExportStep] = useState<ExportStep>("idle");
   const [offerUrl, setOfferUrl] = useState<string | null>(null);
@@ -43,7 +39,7 @@ export function WalletExportSection() {
     setOfferUrl(null);
 
     try {
-      const result = await createCredentialOffer();
+      const result = await api.gaiax.credentials.offer();
       setOfferUrl(result.offer_url);
       setExportStep("ready");
       toast.success("Credential offer created");

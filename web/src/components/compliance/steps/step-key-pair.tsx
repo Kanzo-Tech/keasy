@@ -5,7 +5,7 @@ import { Key, RotateCcw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { generateWizardKeys, ApiError } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 
 interface StepKeyPairProps {
   onComplete: () => void;
@@ -21,7 +21,7 @@ export function StepKeyPair({ onComplete, completed, publicKeyJwk }: StepKeyPair
     setLoading(true);
     setError(null);
     try {
-      const data = await generateWizardKeys();
+      const data = await api.gaiax.wizard.generateKeys();
       const pem = data.private_key_pem;
 
       // Trigger download of PEM file

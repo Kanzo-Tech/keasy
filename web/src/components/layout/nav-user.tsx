@@ -8,7 +8,7 @@ import {
   Settings,
 } from "lucide-react"
 import Link from "next/link"
-import { logout } from "@/lib/api"
+import { api } from "@/lib/api"
 
 import {
   AlertDialog,
@@ -66,7 +66,7 @@ export function NavUser({
   async function handleLogout() {
     setLoggingOut(true)
     try {
-      const data = await logout()
+      const data = await api.auth.logout()
       if (data?.end_session_url) {
         // Redirect to Keycloak end-session for full single logout
         window.location.href = data.end_session_url

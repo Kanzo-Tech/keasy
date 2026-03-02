@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { FormField } from "@/components/shared/form-layout";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { requestLrn, ApiError } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import type { WizardState } from "@/lib/types";
 import {
   Select,
@@ -46,7 +46,7 @@ export function StepLrn({ onComplete, completed, wizardState }: StepLrnProps) {
     setLoading(true);
     setError(null);
     try {
-      await requestLrn(lrnType, lrnValue.trim());
+      await api.gaiax.wizard.requestLrn(lrnType, lrnValue.trim());
       onComplete();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "An unexpected error occurred");

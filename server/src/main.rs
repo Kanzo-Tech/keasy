@@ -1,7 +1,6 @@
 use keasy_server::{AppState, AuthServices, GaiaXServices, OutputCache, Database, GraphStore, JobRunner, RdfGraph};
 use keasy_server::config::ServerConfig;
 use keasy_server::routes::build_router;
-use keasy_server::tenant::TenantScoped;
 use secrecy::ExposeSecret;
 
 use std::net::SocketAddr;
@@ -35,7 +34,7 @@ async fn main() {
     }
 
     let db_path = config.data_dir.join("keasy.db");
-    let db = match Database::open(&db_path, config.secret_key) {
+    let db = match Database::open(&db_path, config.secret_key, config.seed_file.as_deref()) {
         Ok(db) => db,
         Err(e) => {
             eprintln!("FATAL: Failed to open database: {e}");
@@ -43,16 +42,16 @@ async fn main() {
         }
     };
 
-    info!(path = %db_path.display(), "Database opened");
+    info!(path = %db_path.display(), seed_file = ?config.seed_file, "Database opened");
 
-    if config.dev_seed {
-        info!("dev seed enabled — creating demo data");
-        let conn = db.write().await;
-        if let Err(e) = keasy_server::db::seed::ensure_dev_seed(&conn) {
-            eprintln!("FATAL: dev seed failed: {e}");
-            std::process::exit(1);
+    // Self-register in oidc_clients so workspace picker can find this instance
+    if let Some(client_id) = &config.oidc_client_id {
+        if let Err(e) = db
+            .ensure_oidc_client(client_id, "This Instance", &config.base_url)
+            .await
+        {
+            warn!(error = %e, "Failed to self-register in oidc_clients");
         }
-        drop(conn);
     }
 
     if !db.verify_secret_key().await {
@@ -65,9 +64,7 @@ async fn main() {
     let catalog: Arc<dyn GraphStore> = Arc::new(RdfGraph::new());
 
     let mut restored = 0usize;
-    // Startup catalog restore — uses startup_ctx (seed org) since no session context exists at boot
-    let catalog_ctx = TenantScoped::startup_ctx();
-    for (job_id, turtle) in &db.completed_catalogs(&catalog_ctx).await {
+    for (job_id, turtle) in &db.completed_catalogs_all().await {
         match keasy_server::discovery::loader::parse_rdf_to_triples(turtle.as_bytes(), "catalog.ttl") {
             Ok(triples) => {
                 catalog.insert_triples(Some(&format!("urn:keasy:job:{job_id}")), &triples);
@@ -136,10 +133,17 @@ async fn main() {
         None
     };
 
-    // Keycloak admin client — only active when all three OIDC config fields are present
+    // Keycloak admin client — only active when all three OIDC config fields are present.
+    // Uses internal_base_url when set so admin API calls reach Keycloak via Docker DNS
+    // (the public issuer URL resolves to this server container, not Keycloak).
     let keycloak_admin = match (&config.oidc_issuer_url, &config.oidc_client_id, &config.oidc_client_secret) {
         (Some(issuer), Some(client_id), Some(secret)) => {
-            match keasy_server::keycloak::admin::KeycloakAdmin::new(issuer, client_id, secret.clone()) {
+            match keasy_server::keycloak::admin::KeycloakAdmin::new(
+                issuer,
+                client_id,
+                secret.clone(),
+                config.oidc_internal_base_url.as_deref(),
+            ) {
                 Ok(admin) => Some(admin),
                 Err(e) => {
                     tracing::warn!(error = %e, "Failed to configure Keycloak admin client — instance registration will be unavailable");
@@ -179,18 +183,6 @@ async fn main() {
         _ => None,
     };
 
-    // Ensure keasy:dataspaces protocol mapper exists in Keycloak (idempotent).
-    // Best-effort: if it fails, the server still starts but custom claims may be missing.
-    if let (Some(admin), Some(client_id)) = (&keycloak_admin, &config.oidc_client_id) {
-        match admin.ensure_protocol_mapper(client_id).await {
-            Ok(()) => tracing::debug!("Keycloak protocol mapper verified"),
-            Err(e) => tracing::warn!(
-                error = %e,
-                "Failed to ensure keasy:dataspaces protocol mapper — custom claims may not appear in ID tokens"
-            ),
-        }
-    }
-
     let shutdown_grace = Duration::from_secs(config.shutdown_grace_secs);
     let auth = AuthServices {
         oidc_state,
@@ -228,7 +220,7 @@ async fn main() {
         "External services"
     );
 
-    let app = build_router(state, config.cors_origins, session_store, config.session_secret);
+    let app = build_router(state, config.cors_origins, session_store, config.session_secret, config.session_cookie_name);
 
     let listener = match tokio::net::TcpListener::bind(config.bind_addr).await {
         Ok(l) => l,

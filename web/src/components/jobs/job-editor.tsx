@@ -17,16 +17,7 @@ import { CodeEditor } from "@/components/discovery/code-editor";
 import { cn } from "@/lib/utils";
 import { ComingSoon } from "@/components/shared/coming-soon";
 import { Save, Loader2 } from "lucide-react";
-import {
-  createJob,
-  updateJob,
-  fetchJob,
-  validateScript,
-  fetchOrgSettings,
-  fetchConnections,
-  fetchProviders,
-  deleteJob,
-} from "@/lib/api";
+import { api } from "@/lib/api";
 import type {
   RunMode,
   ValidationResult,
@@ -55,7 +46,7 @@ export function JobEditor() {
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
 
   useEffect(() => {
-    fetchOrgSettings()
+    api.settings.org()
       .then((settings) => {
         const configured = settings != null && !!settings.publisher_name;
         setOrgConfigured(configured);
@@ -63,18 +54,18 @@ export function JobEditor() {
       })
       .catch(() => {});
 
-    fetchConnections()
+    api.connections.list()
       .then(setConnections)
       .catch(() => {});
 
-    fetchProviders()
+    api.settings.providers()
       .then(setProviders)
       .catch(() => {});
   }, []);
 
   useEffect(() => {
     if (!draftId) return;
-    fetchJob(draftId)
+    api.jobs.get(draftId)
       .then((job) => {
         if (job.status !== "draft") return;
         if (job.script) setScript(job.script);
@@ -88,7 +79,7 @@ export function JobEditor() {
     setSavingDraft(true);
     try {
       if (draftId) {
-        await updateJob(draftId, {
+        await api.jobs.update(draftId, {
           script,
           name: name.trim() || undefined,
         });
@@ -97,7 +88,7 @@ export function JobEditor() {
         const connectionIds = connections
           .filter((s) => script.includes(`@${s.name}/`))
           .map((s) => s.id);
-        await createJob({
+        await api.jobs.create({
           script,
           name: name.trim() || undefined,
           mode,
@@ -118,7 +109,7 @@ export function JobEditor() {
   async function handleReview() {
     setValidating(true);
     try {
-      const result = await validateScript(script);
+      const result = await api.scripts.validate(script);
       if (!result.valid) {
         result.errors.forEach((err) => toastError(err));
         return;
@@ -144,10 +135,10 @@ export function JobEditor() {
 
       // Delete the draft before creating the real job
       if (draftId) {
-        await deleteJob(draftId).catch(() => {});
+        await api.jobs.remove(draftId).catch(() => {});
       }
 
-      const job = await createJob({
+      const job = await api.jobs.create({
         script,
         name: jobName,
         mode,

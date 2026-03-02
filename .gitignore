@@ -50,3 +50,6 @@ CLAUDE.md
 
 # runtime data
 data/
+
+# next.js
+.next/

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FormField } from "@/components/shared/form-layout";
-import { signLegalParticipant, ApiError } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import type { WizardState } from "@/lib/types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -41,7 +41,7 @@ export function StepLegalParticipant({ onComplete, completed, wizardState }: Ste
     setLoading(true);
     setError(null);
     try {
-      await signLegalParticipant(legalName.trim(), countryCode.trim(), privateKeyPem);
+      await api.gaiax.wizard.signLp(legalName.trim(), countryCode.trim(), privateKeyPem);
       onComplete();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "An unexpected error occurred");

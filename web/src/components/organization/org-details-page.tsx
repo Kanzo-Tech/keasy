@@ -17,17 +17,17 @@ import {
   CredentialCard,
   formatDate,
 } from "@/components/compliance/compliance-view";
-import { fetchOrgIdentity, fetchComplianceStatus, rerunCompliance, ApiError } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { WalletExportSection } from "@/components/compliance/wallet-export-section";
 
 export function OrgDetailsPage() {
   const { mutate: globalMutate } = useSWRConfig();
-  const { isLoading: identityLoading } = useSWR("org-identity", fetchOrgIdentity);
+  const { isLoading: identityLoading } = useSWR("org-identity", api.org.identity);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const cardRef = useRef<OrgDetailsCardHandle>(null);
   const { data: compliance, isLoading: complianceLoading } =
-    useSWR("gx-compliance-status", fetchComplianceStatus);
+    useSWR("gx-compliance-status", api.gaiax.compliance.status);
 
   const [rerunLoading, setRerunLoading] = useState(false);
 
@@ -37,7 +37,7 @@ export function OrgDetailsPage() {
   async function handleRerun() {
     setRerunLoading(true);
     try {
-      await rerunCompliance();
+      await api.gaiax.compliance.rerun();
       await globalMutate("gx-compliance-status");
       await globalMutate("org-identity");
       toast.success("Compliance check completed successfully");

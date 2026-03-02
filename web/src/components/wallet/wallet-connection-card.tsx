@@ -34,13 +34,7 @@ import {
   RefreshCw,
   CircleCheck,
 } from "lucide-react";
-import {
-  fetchWalletStatus,
-  initWalletSession,
-  walletVerifyStatus,
-  saveWalletConnection,
-  disconnectWallet,
-} from "@/lib/api";
+import { api } from "@/lib/api";
 import type { WalletStatus } from "@/lib/types";
 
 type ConnectStep = "idle" | "connecting" | "verifying" | "saving" | "done";
@@ -61,7 +55,7 @@ interface WalletConnectionCardProps {
 export function WalletConnectionCard({ renderActions }: WalletConnectionCardProps) {
   const { data: wallet, isLoading: walletLoading } = useSWR<WalletStatus>(
     "wallet-status",
-    fetchWalletStatus,
+    api.gaiax.wallet.status,
   );
 
   const [step, setStep] = useState<ConnectStep>("idle");
@@ -87,7 +81,7 @@ export function WalletConnectionCard({ renderActions }: WalletConnectionCardProp
     setVcSession(null);
 
     try {
-      const session = await initWalletSession();
+      const session = await api.gaiax.wallet.init();
       const sessionId = session.session_id;
       const qrUrl = session.qr_url;
 
@@ -104,14 +98,14 @@ export function WalletConnectionCard({ renderActions }: WalletConnectionCardProp
 
       pollingRef.current = setInterval(async () => {
         try {
-          const statusData = await walletVerifyStatus(sessionId);
+          const statusData = await api.gaiax.wallet.verifyStatus(sessionId);
           const status = statusData.status;
 
           if (status === "authenticated") {
             if (pollingRef.current) clearInterval(pollingRef.current);
             if (qrTimerRef.current) clearTimeout(qrTimerRef.current);
             setStep("saving");
-            await saveWalletConnection(sessionId);
+            await api.gaiax.wallet.connect(sessionId);
             setStep("done");
             toast.success("Wallet connected");
             await mutate("wallet-status");
@@ -149,7 +143,7 @@ export function WalletConnectionCard({ renderActions }: WalletConnectionCardProp
 
   const handleDisconnect = useCallback(async () => {
     try {
-      await disconnectWallet();
+      await api.gaiax.wallet.disconnect();
       toast.success("Wallet disconnected");
       await mutate("wallet-status");
       await mutate("auth-me");

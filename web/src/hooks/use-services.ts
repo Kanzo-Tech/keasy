@@ -1,5 +1,5 @@
 import useSWR from "swr";
-import { fetchServiceStatus, type ServiceStatus } from "@/lib/api";
+import { api, type ServiceStatus } from "@/lib/api";
 
 const DEFAULTS: ServiceStatus = {
   wallet: false,
@@ -11,7 +11,7 @@ const DEFAULTS: ServiceStatus = {
 };
 
 export function useServices() {
-  const { data, isLoading } = useSWR("service-status", fetchServiceStatus, {
+  const { data, isLoading } = useSWR("service-status", api.status.services, {
     revalidateOnFocus: false,
     dedupingInterval: 60_000,
   });

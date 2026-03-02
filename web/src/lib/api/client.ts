@@ -45,3 +45,12 @@ client.use(envelopeMiddleware);
 export default client;
 export type { paths, components };
 export type Schemas = components["schemas"];
+
+export function unwrap<T>(result: { data?: T; error?: unknown }): T {
+  if (result.error !== undefined) {
+    throw result.error instanceof Error
+      ? result.error
+      : new ApiError("unknown", String(result.error));
+  }
+  return result.data as T;
+}

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
 import useSWR, { useSWRConfig } from "swr";
 import Link from "next/link";
-import { fetchCloudAccounts, createConnection } from "@/lib/api";
+import { api } from "@/lib/api";
 import { getProviderIcon } from "@/lib/provider-icons";
 import { FormField, FormActions } from "@/components/shared/form-layout";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,7 @@ export function ConnectionEditor() {
   const searchParams = useSearchParams();
   const initialType = (searchParams.get("type") as ConnectionKind) || "data";
 
-  const { data } = useSWR("connection-new-init", fetchCloudAccounts);
+  const { data } = useSWR("connection-new-init", api.cloud.list);
   const accounts = data ?? [];
 
   const [name, setName] = useState("");
@@ -91,7 +91,7 @@ export function ConnectionEditor() {
         locationType === "cloud" && selectedScheme
           ? `${selectedScheme}${url.trim()}`
           : url.trim();
-      await createConnection({
+      await api.connections.create({
         name: name.trim(),
         kind: connectionKind,
         location_type: locationType,

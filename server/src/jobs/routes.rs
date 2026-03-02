@@ -301,6 +301,10 @@ pub async fn get_unified_graph(
     data_response(graph_data)
 }
 
+#[utoipa::path(get, path = "/v1/jobs/{id}/dashboard-layout", tag = "Jobs",
+    params(("id" = String, Path, description = "Job ID")),
+    responses((status = 200, description = "Dashboard layout"), (status = 204, description = "No layout saved"))
+)]
 pub async fn get_dashboard_layout(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -315,6 +319,10 @@ pub async fn get_dashboard_layout(
     }
 }
 
+#[utoipa::path(put, path = "/v1/jobs/{id}/dashboard-layout", tag = "Jobs",
+    params(("id" = String, Path, description = "Job ID")),
+    responses((status = 200, description = "Layout saved"))
+)]
 pub async fn save_dashboard_layout(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,

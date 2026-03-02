@@ -21,20 +21,14 @@ import {
 } from "@/components/ui/dialog";
 import { PageContent } from "@/components/layout/page-content";
 import type { OrgEntry, AdminInvite } from "@/lib/types";
-import {
-  fetchAdminOrgs,
-  fetchAdminInvites,
-  createAdminInvite,
-  revokeAdminInvite,
-  ApiError,
-} from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 
 export default function ParticipantsPage() {
-  const { data: orgs } = useSWR<OrgEntry[]>("admin-orgs", fetchAdminOrgs);
+  const { data: orgs } = useSWR<OrgEntry[]>("admin-orgs", api.admin.orgs);
   const {
     data: invites,
     mutate: mutateInvites,
-  } = useSWR<AdminInvite[]>("admin-invites", fetchAdminInvites);
+  } = useSWR<AdminInvite[]>("admin-invites", api.admin.invites);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [orgName, setOrgName] = useState("");
@@ -95,7 +89,7 @@ export default function ParticipantsPage() {
     if (!orgName.trim()) return;
     setIsCreating(true);
     try {
-      const data = await createAdminInvite(orgName.trim());
+      const data = await api.admin.createInvite(orgName.trim());
       const inviteUrl =
         data.invite_url ??
         `${window.location.origin}/invite?token=${data.token}`;
@@ -113,7 +107,7 @@ export default function ParticipantsPage() {
 
   async function handleRevokeInvite(token: string) {
     try {
-      await revokeAdminInvite(token);
+      await api.admin.revokeInvite(token);
       await mutateInvites();
       toast.success("Invite revoked");
     } catch (err) {
@@ -144,9 +138,8 @@ export default function ParticipantsPage() {
 
   const statusVariant = (
     status: AdminInvite["status"],
-  ): "default" | "secondary" | "destructive" => {
-    if (status === "pending") return "default";
-    if (status === "used") return "secondary";
+  ): "default" | "destructive" => {
+    if (status === "active") return "default";
     return "destructive";
   };
 
@@ -204,7 +197,7 @@ export default function ParticipantsPage() {
                 <Badge variant={statusVariant(invite.status)}>
                   {invite.status}
                 </Badge>
-                {invite.status === "pending" && (
+                {invite.status === "active" && (
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Button
                       variant="ghost"

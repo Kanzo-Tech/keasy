@@ -14,13 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  fetchConnection,
-  fetchSchema,
-  fetchCloudAccounts,
-  fetchConnectionFiles,
-  fetchProviders,
-} from "@/lib/api";
+import { api } from "@/lib/api";
 import { MetaItem } from "@/components/shared/meta-item";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getProviderIcon } from "@/lib/provider-icons";
@@ -40,10 +34,10 @@ function formatSize(bytes: number): string {
 export function ConnectionDetail({ id }: { id: string }) {
   const { data, isLoading } = useSWR(`connection-edit-${id}`, () =>
     Promise.all([
-      fetchConnection(id),
-      fetchSchema(),
-      fetchCloudAccounts(),
-      fetchProviders(),
+      api.connections.get(id),
+      api.settings.schema(),
+      api.cloud.list(),
+      api.settings.providers(),
     ]),
   );
   const showSkeleton = useDelayedLoading(isLoading);
@@ -60,7 +54,7 @@ export function ConnectionDetail({ id }: { id: string }) {
     connection && connection.location_type !== "local"
       ? `connection-files-${id}`
       : null,
-    () => fetchConnectionFiles(id),
+    () => api.connections.files(id),
     { onError: () => toast.error("Failed to list files") },
   );
 

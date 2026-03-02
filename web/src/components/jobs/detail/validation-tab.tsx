@@ -4,11 +4,7 @@ import { useEffect, useState } from "react";
 import { Play, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { toastError } from "@/lib/toast-error";
 import useSWR from "swr";
-import {
-  fetchConnections,
-  fetchConnectionFiles,
-  validateJob,
-} from "@/lib/api";
+import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -45,7 +41,7 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
   const [result, setResult] = useState<ShapeValidationResult | null>(null);
   const [view, setView] = useState<"errors" | "valid">("errors");
 
-  const { data: vocabConnections } = useSWR("vocab-connections", () => fetchConnections("vocab"));
+  const { data: vocabConnections } = useSWR("vocab-connections", () => api.connections.list("vocab"));
 
   useEffect(() => {
     if (!selectedConnection) {
@@ -56,7 +52,7 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
     setFilesLoading(true);
     setSelectedFile("");
     setResult(null);
-    fetchConnectionFiles(selectedConnection)
+    api.connections.files(selectedConnection)
       .then((f) => setFiles(f.filter((e) => isShapeFile(e.path))))
       .catch(() => {
         toastError("Failed to list files");
@@ -70,7 +66,7 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
     setValidating(true);
     setResult(null);
     try {
-      const r = await validateJob(selectedDest, selectedConnection, selectedFile);
+      const r = await api.validation.validate(selectedDest, selectedConnection, selectedFile);
       setResult(r);
     } catch (err) {
       toastError(err instanceof Error ? err.message : "Validation failed");

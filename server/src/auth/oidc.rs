@@ -524,17 +524,29 @@ pub async fn oidc_callback(
         }
     }
 
-    // 9. Extract subject (Keycloak user UUID) and custom claims.
+    // 9. Extract subject (Keycloak user UUID).
     let subject = claims.subject().to_string();
-    let dataspaces: Vec<String> = claims.additional_claims().dataspaces.clone();
 
-    // 10. Extract email from ID token (may be absent if email scope was not granted).
+    // 10. Extract profile claims from ID token.
     let email: Option<&str> = claims.email().map(|e| e.as_str());
+    let first_name: Option<String> = claims
+        .given_name()
+        .and_then(|n| n.get(None))
+        .map(|n| n.to_string());
+    let last_name: Option<String> = claims
+        .family_name()
+        .and_then(|n| n.get(None))
+        .map(|n| n.to_string());
 
-    // 11. Upsert user in local DB by Keycloak subject.
+    // 11. Upsert user in local DB by Keycloak subject (users.id = sub).
     let user_id = state
         .db
-        .upsert_user_by_subject(&subject, email)
+        .upsert_user_by_subject(
+            &subject,
+            email,
+            first_name.as_deref(),
+            last_name.as_deref(),
+        )
         .await
         .map_err(|e| AuthError::Internal(format!("upsert_user_by_subject failed: {e}")))?;
 
@@ -572,11 +584,6 @@ pub async fn oidc_callback(
         .await
         .map_err(|e| AuthError::Internal(format!("session insert auth_method: {e}")))?;
 
-    session
-        .insert("dataspaces", &dataspaces)
-        .await
-        .map_err(|e| AuthError::Internal(format!("session insert dataspaces: {e}")))?;
-
     // 16. Set 24-hour fixed expiry (same as password auth pattern).
     session.set_expiry(Some(Expiry::AtDateTime(
         OffsetDateTime::now_utc() + time::Duration::hours(24),
@@ -603,18 +610,12 @@ pub async fn oidc_callback(
     // 19. Auto-accept pending invite if one was stored before the OIDC redirect.
     if let Some(invite_token) = pending_invite_token {
         let _ = accept_invite_for_user(&state, &user_id, &invite_token).await;
-        // Clean up pending_invite_token from session regardless of accept outcome.
         let _ = session.remove_value("pending_invite_token").await;
         let _ = session.save().await;
     }
 
-    // 20. Redirect to workspace picker if multiple dataspaces, else dashboard.
-    let redirect_target = if dataspaces.len() > 1 {
-        "/workspaces"
-    } else {
-        "/"
-    };
-    Ok(Redirect::to(redirect_target).into_response())
+    // 20. Always redirect to dashboard.
+    Ok(Redirect::to("/").into_response())
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -623,9 +624,10 @@ pub async fn oidc_callback(
 
 /// Auto-accept a pending invite for a newly OIDC-authenticated user.
 ///
-/// Validates the token (must be unused and not expired), creates the org membership,
-/// and marks the token used. Silently ignores failures — if the invite is expired
-/// or already used, the user still logs in; they just have no org membership yet.
+/// Validates the token (must not be expired), creates the org membership,
+/// and updates the user's `keasy.dataspaces` attribute in Keycloak.
+/// Reusable — the token is not consumed. Silently ignores failures — if the
+/// invite is expired or the user already has a membership, they still log in.
 async fn accept_invite_for_user(
     state: &AppState,
     user_id: &str,
@@ -636,10 +638,6 @@ async fn accept_invite_for_user(
         .get_invite_token(invite_token)
         .await
         .ok_or("invite token not found")?;
-
-    if token.used_at.is_some() {
-        return Err("invite token already used".to_string());
-    }
 
     let now_str = jiff::Timestamp::now().to_string();
     if token.expires_at <= now_str {
@@ -652,7 +650,20 @@ async fn accept_invite_for_user(
         .create_user_org_membership(&membership_id, user_id, &token.org_id, &token.role)
         .await?;
 
-    state.db.mark_invite_token_used(invite_token).await?;
+    // Update Keycloak dataspaces attribute — user_id IS the Keycloak UUID.
+    if let (Some(kc_admin), Some(client_id)) = (
+        &state.auth.keycloak_admin,
+        &state.auth.oidc_client_id,
+    ) {
+        if let Err(e) = kc_admin.add_user_workspace(user_id, client_id).await {
+            tracing::warn!(
+                error = %e,
+                user_id = %user_id,
+                client_id = %client_id,
+                "Failed to update Keycloak dataspaces attribute"
+            );
+        }
+    }
 
     tracing::info!(
         user_id = %user_id,

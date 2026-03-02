@@ -9,7 +9,7 @@ import useSWR from "swr";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { fetchSchema, fetchCloudAccounts, deleteCloudAccount } from "@/lib/api";
+import { api } from "@/lib/api";
 import {
   DataTable,
   ActionItem,
@@ -77,7 +77,7 @@ export function CloudAccountsTab() {
   const router = useRouter();
   const { data, isLoading, mutate } = useSWR(
     "cloud-init",
-    () => Promise.all([fetchSchema(), fetchCloudAccounts()]),
+    () => Promise.all([api.settings.schema(), api.cloud.list()]),
   );
   const showSkeleton = useDelayedLoading(isLoading);
 
@@ -85,7 +85,7 @@ export function CloudAccountsTab() {
 
   const handleDelete = useCallback(
     async (id: string) => {
-      await deleteCloudAccount(id);
+      await api.cloud.remove(id);
       toast.success("Cloud account deleted");
       mutate();
     },

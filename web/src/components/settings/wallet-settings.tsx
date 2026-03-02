@@ -6,11 +6,11 @@ import useSWR from "swr";
 import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
 import { ServiceGate } from "@/components/ui/service-gate";
 import { WalletConnectionCard } from "@/components/wallet/wallet-connection-card";
-import { fetchAuthMe } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export function WalletSettings() {
   const router = useRouter();
-  const { data: me } = useSWR("auth-me", fetchAuthMe);
+  const { data: me } = useSWR("auth-me", api.auth.me);
 
   // Defense-in-depth: redirect non-org_admin users away from this page
   useEffect(() => {

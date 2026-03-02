@@ -26,7 +26,7 @@ import {
   isChartAvailable,
   defaultAxesForType,
 } from "@/components/discovery/chart-widget";
-import { fetchJob, loadJobDiscovery } from "@/lib/api";
+import { api } from "@/lib/api";
 import {
   loadDashboard,
   saveDashboard,
@@ -77,7 +77,7 @@ function buildSchema(outputs: PipelineOutput[]): FieldSchema[] {
 }
 
 export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
-  const { data: job } = useSWR(`job-${jobId}`, () => fetchJob(jobId));
+  const { data: job } = useSWR(`job-${jobId}`, () => api.jobs.get(jobId));
 
   const { data: savedLayout, isLoading: layoutLoading } = useSWR(
     `dashboard-${jobId}`,
@@ -92,7 +92,7 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
 
   const { data: discovery, isLoading, error } = useSWR(
     `discovery-db-${jobId}`,
-    () => loadJobDiscovery(jobId),
+    () => api.discovery.load(jobId),
   );
   const showSkeleton = useDelayedLoading(isLoading || layoutLoading);
 

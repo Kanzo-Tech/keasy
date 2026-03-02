@@ -19,6 +19,11 @@ use crate::discovery::graph_store::GraphStore;
 use crate::jobs::PipelineSummary;
 use crate::middleware::tenant::RequireParticipant;
 
+#[utoipa::path(post, path = "/v1/jobs/{id}/discover/ask", tag = "Discovery",
+    params(("id" = String, Path, description = "Job ID")),
+    request_body = AskRequest,
+    responses((status = 200, description = "AI answer with optional SPARQL results", body = AskResponse))
+)]
 pub async fn ask_discover(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -187,11 +192,16 @@ pub async fn ask_discover(
     }).into_response()
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct CreateConversationRequest {
     pub title: Option<String>,
 }
 
+#[utoipa::path(post, path = "/v1/jobs/{id}/conversations", tag = "Conversations",
+    params(("id" = String, Path, description = "Job ID")),
+    request_body = CreateConversationRequest,
+    responses((status = 201, description = "Conversation created"))
+)]
 pub async fn create_conversation(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -209,6 +219,10 @@ pub async fn create_conversation(
     (StatusCode::CREATED, data_response(conv)).into_response()
 }
 
+#[utoipa::path(get, path = "/v1/jobs/{id}/conversations", tag = "Conversations",
+    params(("id" = String, Path, description = "Job ID")),
+    responses((status = 200, description = "List of conversations"))
+)]
 pub async fn list_conversations(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -218,6 +232,10 @@ pub async fn list_conversations(
     data_response(convs)
 }
 
+#[utoipa::path(get, path = "/v1/conversations/{id}/messages", tag = "Conversations",
+    params(("id" = String, Path, description = "Conversation ID")),
+    responses((status = 200, description = "Conversation messages"), (status = 404, description = "Not found"))
+)]
 pub async fn get_conversation_messages(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -234,11 +252,16 @@ pub async fn get_conversation_messages(
     data_response(messages).into_response()
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct RenameConversationRequest {
     pub title: String,
 }
 
+#[utoipa::path(put, path = "/v1/conversations/{id}", tag = "Conversations",
+    params(("id" = String, Path, description = "Conversation ID")),
+    request_body = RenameConversationRequest,
+    responses((status = 204, description = "Conversation renamed"))
+)]
 pub async fn rename_conversation(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -256,6 +279,10 @@ pub async fn rename_conversation(
     StatusCode::NO_CONTENT.into_response()
 }
 
+#[utoipa::path(delete, path = "/v1/conversations/{id}", tag = "Conversations",
+    params(("id" = String, Path, description = "Conversation ID")),
+    responses((status = 204, description = "Conversation deleted"))
+)]
 pub async fn delete_conversation(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -265,17 +292,18 @@ pub async fn delete_conversation(
     StatusCode::NO_CONTENT
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct AskRequest {
     pub question: String,
     pub conversation_id: Option<String>,
     pub provider: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct AskResponse {
     pub answer: String,
     pub sparql: Option<String>,
+    #[schema(value_type = Option<Object>)]
     pub data: Option<crate::discovery::graph_types::TabularData>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conversation_id: Option<String>,

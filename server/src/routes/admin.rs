@@ -39,7 +39,6 @@ pub async fn list_all_orgs(
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CreateOrgAndInviteRequest {
     pub name: String,
-    pub admin_email: String,
 }
 
 #[utoipa::path(post, path = "/v1/admin/organizations", tag = "Admin",
@@ -90,11 +89,9 @@ pub async fn create_org_and_invite(
     };
     let invite = InviteToken {
         token: token_value.clone(),
-        email: Some(payload.admin_email.clone()),
         org_id: org.id.clone(),
         role: "admin".to_string(),
         created_by: auth_user.user_id.clone(),
-        used_at: None,
         expires_at,
         created_at: now,
     };
@@ -237,13 +234,7 @@ pub async fn list_invites(
     let result: Vec<serde_json::Value> = tokens
         .into_iter()
         .map(|t| {
-            let status = if t.used_at.is_some() {
-                "used"
-            } else if now > t.expires_at {
-                "expired"
-            } else {
-                "pending"
-            };
+            let status = if now > t.expires_at { "expired" } else { "active" };
             serde_json::json!({
                 "token": t.token,
                 "org_id": t.org_id,
@@ -251,7 +242,6 @@ pub async fn list_invites(
                 "status": status,
                 "created_at": t.created_at,
                 "expires_at": t.expires_at,
-                "used_at": t.used_at,
             })
         })
         .collect();
@@ -315,11 +305,9 @@ pub async fn create_invite(
     };
     let invite = InviteToken {
         token: token_value.clone(),
-        email: None, // link-based — no email
         org_id: org.id.clone(),
         role: "admin".to_string(),
         created_by: auth_user.user_id.clone(),
-        used_at: None,
         expires_at,
         created_at: now,
     };

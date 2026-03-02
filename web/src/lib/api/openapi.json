@@ -13,6 +13,60 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/.well-known/did.json": {
+      "get": {
+        "tags": [
+          "Gaia-X Public"
+        ],
+        "operationId": "get_did_document",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "query",
+            "description": "Organization ID (dev fallback)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DID document"
+          },
+          "404": {
+            "description": "DID document not found"
+          }
+        }
+      }
+    },
+    "/.well-known/x509CertificateChain.pem": {
+      "get": {
+        "tags": [
+          "Gaia-X Public"
+        ],
+        "operationId": "get_cert_chain",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "query",
+            "description": "Organization ID (dev fallback)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "X.509 certificate chain PEM"
+          },
+          "404": {
+            "description": "Certificate chain not found"
+          }
+        }
+      }
+    },
     "/healthz/live": {
       "get": {
         "tags": [
@@ -38,6 +92,188 @@
           },
           "503": {
             "description": "Service is not ready"
+          }
+        }
+      }
+    },
+    "/v1/admin/invites": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "list_invites",
+        "responses": {
+          "200": {
+            "description": "List all invite tokens"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "create_invite",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInviteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Invite created"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      }
+    },
+    "/v1/admin/invites/{token}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "revoke_invite",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "Invite token to revoke",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Invite revoked"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      }
+    },
+    "/v1/admin/oidc-clients": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "list_oidc_clients",
+        "responses": {
+          "200": {
+            "description": "List of registered OIDC clients",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OidcClient"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "register_oidc_client",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterOidcClientRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "OIDC client registered"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      }
+    },
+    "/v1/admin/organizations": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "list_all_orgs",
+        "responses": {
+          "200": {
+            "description": "List all organizations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Organization"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "create_org_and_invite",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrgAndInviteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Organization created with invite"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      }
+    },
+    "/v1/auth/invite-info": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "get_invite_info",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "description": "Invite token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invite info with optional email"
           }
         }
       }
@@ -438,6 +674,380 @@
         }
       }
     },
+    "/v1/conversations/{id}": {
+      "put": {
+        "tags": [
+          "Conversations"
+        ],
+        "operationId": "rename_conversation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Conversation ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameConversationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Conversation renamed"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Conversations"
+        ],
+        "operationId": "delete_conversation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Conversation ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Conversation deleted"
+          }
+        }
+      }
+    },
+    "/v1/conversations/{id}/messages": {
+      "get": {
+        "tags": [
+          "Conversations"
+        ],
+        "operationId": "get_conversation_messages",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Conversation ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation messages"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/v1/gaia-x/compliance": {
+      "get": {
+        "tags": [
+          "Gaia-X Compliance"
+        ],
+        "operationId": "get_compliance_status",
+        "responses": {
+          "200": {
+            "description": "Compliance status and credentials"
+          }
+        }
+      }
+    },
+    "/v1/gaia-x/compliance/rerun": {
+      "post": {
+        "tags": [
+          "Gaia-X Compliance"
+        ],
+        "operationId": "rerun_compliance",
+        "responses": {
+          "200": {
+            "description": "Re-submitted compliance result"
+          },
+          "400": {
+            "description": "Credentials missing"
+          }
+        }
+      }
+    },
+    "/v1/gaia-x/credentials/offer": {
+      "post": {
+        "tags": [
+          "Gaia-X Credentials"
+        ],
+        "operationId": "create_credential_offer",
+        "responses": {
+          "200": {
+            "description": "Credential offer URL created"
+          },
+          "400": {
+            "description": "Issuer not configured or org not compliant"
+          }
+        }
+      }
+    },
+    "/v1/gaia-x/wallet": {
+      "get": {
+        "tags": [
+          "Gaia-X Wallet"
+        ],
+        "operationId": "get_wallet",
+        "responses": {
+          "200": {
+            "description": "Wallet connection status"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Gaia-X Wallet"
+        ],
+        "operationId": "disconnect_wallet",
+        "responses": {
+          "200": {
+            "description": "Wallet disconnected"
+          }
+        }
+      }
+    },
+    "/v1/gaia-x/wallet/vc-connect": {
+      "post": {
+        "tags": [
+          "Gaia-X Wallet"
+        ],
+        "operationId": "save_wallet_connection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Wallet connected"
+          },
+          "400": {
+            "description": "Verification not successful"
+          }
+        }
+      }
+    },
+    "/v1/gaia-x/wallet/vc-init": {
+      "post": {
+        "tags": [
+          "Gaia-X Wallet"
+        ],
+        "operationId": "init_wallet_session",
+        "responses": {
+          "200": {
+            "description": "Wallet verification session initiated"
+          },
+          "503": {
+            "description": "VC service unavailable"
+          }
+        }
+      }
+    },
+    "/v1/gaia-x/wallet/vc-status/{session_id}": {
+      "get": {
+        "tags": [
+          "Gaia-X Wallet"
+        ],
+        "operationId": "wallet_verify_status",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "description": "Verification session ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session status (pending | authenticated | expired)"
+          }
+        }
+      }
+    },
+    "/v1/gaia-x/wizard": {
+      "get": {
+        "tags": [
+          "Gaia-X Compliance"
+        ],
+        "operationId": "get_wizard_state",
+        "responses": {
+          "200": {
+            "description": "Current wizard state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WizardState"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/gaia-x/wizard/certificate": {
+      "post": {
+        "tags": [
+          "Gaia-X Compliance"
+        ],
+        "operationId": "validate_certificate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CertUploadPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Certificate validated and DID document assembled"
+          },
+          "400": {
+            "description": "Invalid certificate"
+          }
+        }
+      }
+    },
+    "/v1/gaia-x/wizard/keys": {
+      "post": {
+        "tags": [
+          "Gaia-X Compliance"
+        ],
+        "operationId": "generate_keys",
+        "responses": {
+          "200": {
+            "description": "Generated key pair"
+          }
+        }
+      }
+    },
+    "/v1/gaia-x/wizard/legal-participant": {
+      "post": {
+        "tags": [
+          "Gaia-X Compliance"
+        ],
+        "operationId": "sign_legal_participant",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LpPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Legal Participant credential signed"
+          },
+          "400": {
+            "description": "Wizard not ready or key mismatch"
+          }
+        }
+      }
+    },
+    "/v1/gaia-x/wizard/lrn": {
+      "post": {
+        "tags": [
+          "Gaia-X Compliance"
+        ],
+        "operationId": "request_lrn",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LrnPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "LRN credential obtained"
+          },
+          "400": {
+            "description": "Wizard not ready"
+          },
+          "502": {
+            "description": "GXDCH notary error"
+          }
+        }
+      }
+    },
+    "/v1/gaia-x/wizard/submit": {
+      "post": {
+        "tags": [
+          "Gaia-X Compliance"
+        ],
+        "operationId": "submit_gxdch",
+        "responses": {
+          "200": {
+            "description": "Compliance submission result"
+          },
+          "400": {
+            "description": "Credentials missing"
+          }
+        }
+      }
+    },
+    "/v1/gaia-x/wizard/terms": {
+      "post": {
+        "tags": [
+          "Gaia-X Compliance"
+        ],
+        "operationId": "sign_terms_conditions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TcPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Terms & Conditions credential signed"
+          },
+          "400": {
+            "description": "Wizard not ready or key mismatch"
+          }
+        }
+      }
+    },
     "/v1/graph": {
       "get": {
         "tags": [
@@ -458,6 +1068,52 @@
         "responses": {
           "200": {
             "description": "Unified knowledge graph"
+          }
+        }
+      }
+    },
+    "/v1/graph/expand": {
+      "post": {
+        "tags": [
+          "Graph"
+        ],
+        "operationId": "expand_node",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpandRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Expanded node data"
+          }
+        }
+      }
+    },
+    "/v1/graph/search": {
+      "post": {
+        "tags": [
+          "Graph"
+        ],
+        "operationId": "search_nodes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Graph search results"
           }
         }
       }
@@ -697,6 +1353,298 @@
         }
       }
     },
+    "/v1/jobs/{id}/conversations": {
+      "get": {
+        "tags": [
+          "Conversations"
+        ],
+        "operationId": "list_conversations",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of conversations"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "operationId": "create_conversation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Conversation created"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/dashboard-layout": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "get_dashboard_layout",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard layout"
+          },
+          "204": {
+            "description": "No layout saved"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "save_dashboard_layout",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Layout saved"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/discover/ask": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "operationId": "ask_discover",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "AI answer with optional SPARQL results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/discover/chart": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "operationId": "chart_discover",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Chart data"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/discover/export": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "operationId": "export_discover",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Export format (turtle, ntriples, rdfxml, etc.)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RDF file download"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/discover/load": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "operationId": "load_discover",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Discovery data loaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoadDiscoverResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Job not completed"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/discover/query": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "operationId": "query_discover",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "SPARQL query results"
+          },
+          "400": {
+            "description": "SPARQL error"
+          }
+        }
+      }
+    },
     "/v1/jobs/{id}/graph": {
       "get": {
         "tags": [
@@ -720,6 +1668,222 @@
           },
           "404": {
             "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/v1/org/identity": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "get_org_identity",
+        "responses": {
+          "200": {
+            "description": "Org identity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgIdentityResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "update_org_identity",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrgIdentityPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Identity updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgIdentityResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/org/invites": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "list_org_invites",
+        "responses": {
+          "200": {
+            "description": "List of org invite tokens"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "create_org_invite",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrgInviteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Invite created"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      }
+    },
+    "/v1/org/invites/{token}": {
+      "delete": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "revoke_org_invite",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "Invite token to revoke",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Invite revoked"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      }
+    },
+    "/v1/org/users": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "list_users",
+        "responses": {
+          "200": {
+            "description": "List of users in the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserWithRole"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/org/users/{id}": {
+      "put": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "update_user_role",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Role updated"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "remove_user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "User removed"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      }
+    },
+    "/v1/providers": {
+      "get": {
+        "tags": [
+          "Providers"
+        ],
+        "operationId": "list_providers",
+        "responses": {
+          "200": {
+            "description": "List of available data providers"
           }
         }
       }
@@ -951,6 +2115,19 @@
         }
       }
     },
+    "/v1/settings/schema": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "get_schema",
+        "responses": {
+          "200": {
+            "description": "Provider registry schema"
+          }
+        }
+      }
+    },
     "/v1/status": {
       "get": {
         "tags": [
@@ -960,6 +2137,32 @@
         "responses": {
           "200": {
             "description": "External service status"
+          }
+        }
+      }
+    },
+    "/v1/validate": {
+      "post": {
+        "tags": [
+          "Validation"
+        ],
+        "operationId": "validate_job",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Validation result"
+          },
+          "400": {
+            "description": "Invalid request"
           }
         }
       }
@@ -996,6 +2199,103 @@
           }
         }
       },
+      "AskRequest": {
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "properties": {
+          "conversation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "question": {
+            "type": "string"
+          }
+        }
+      },
+      "AskResponse": {
+        "type": "object",
+        "required": [
+          "answer",
+          "code"
+        ],
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "conversation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "data": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "sparql": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "CertUploadPayload": {
+        "type": "object",
+        "required": [
+          "cert_chain_pem",
+          "domain"
+        ],
+        "properties": {
+          "cert_chain_pem": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          }
+        }
+      },
+      "ChartRequest": {
+        "type": "object",
+        "required": [
+          "x_predicate"
+        ],
+        "properties": {
+          "aggregation": {
+            "type": "string"
+          },
+          "group_predicate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "x_predicate": {
+            "type": "string"
+          },
+          "y_predicate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "CloudAccountSummary": {
         "type": "object",
         "required": [
@@ -1027,6 +2327,17 @@
             "type": "string"
           },
           "provider_id": {
+            "type": "string"
+          }
+        }
+      },
+      "ConnectPayload": {
+        "type": "object",
+        "required": [
+          "session_id"
+        ],
+        "properties": {
+          "session_id": {
             "type": "string"
           }
         }
@@ -1131,6 +2442,28 @@
           }
         }
       },
+      "CreateConversationRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "CreateInviteRequest": {
+        "type": "object",
+        "required": [
+          "org_name"
+        ],
+        "properties": {
+          "org_name": {
+            "type": "string"
+          }
+        }
+      },
       "CreateJobRequest": {
         "type": "object",
         "required": [
@@ -1189,6 +2522,32 @@
           }
         }
       },
+      "CreateOrgAndInviteRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "admin_email"
+        ],
+        "properties": {
+          "admin_email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateOrgInviteRequest": {
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "type": "string"
+          }
+        }
+      },
       "DataResponse_Value": {
         "type": "object",
         "description": "Typed envelope for successful API responses: `{ \"data\": T }`.",
@@ -1197,6 +2556,23 @@
         ],
         "properties": {
           "data": {}
+        }
+      },
+      "ExpandRequest": {
+        "type": "object",
+        "required": [
+          "node_id"
+        ],
+        "properties": {
+          "job_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "node_id": {
+            "type": "string"
+          }
         }
       },
       "Field": {
@@ -1232,6 +2608,49 @@
           },
           "target": {
             "type": "string"
+          }
+        }
+      },
+      "InviteToken": {
+        "type": "object",
+        "required": [
+          "token",
+          "org_id",
+          "role",
+          "created_by",
+          "expires_at",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "used_at": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -1341,12 +2760,110 @@
           "cancelled"
         ]
       },
+      "LoadDiscoverResponse": {
+        "type": "object",
+        "required": [
+          "loaded",
+          "triple_count",
+          "subject_count"
+        ],
+        "properties": {
+          "loaded": {
+            "type": "boolean"
+          },
+          "subject_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "triple_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
       "LocationType": {
         "type": "string",
         "enum": [
           "cloud",
           "local"
         ]
+      },
+      "LpPayload": {
+        "type": "object",
+        "required": [
+          "legal_name",
+          "country_code",
+          "private_key_pem"
+        ],
+        "properties": {
+          "country_code": {
+            "type": "string"
+          },
+          "legal_name": {
+            "type": "string"
+          },
+          "private_key_pem": {
+            "type": "string"
+          }
+        }
+      },
+      "LrnPayload": {
+        "type": "object",
+        "required": [
+          "lrn_type",
+          "lrn_value"
+        ],
+        "properties": {
+          "lrn_type": {
+            "type": "string"
+          },
+          "lrn_value": {
+            "type": "string"
+          }
+        }
+      },
+      "OidcClient": {
+        "type": "object",
+        "required": [
+          "id",
+          "client_id",
+          "name",
+          "url",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "logo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
       },
       "OperationInput": {
         "type": "object",
@@ -1362,6 +2879,27 @@
           },
           "source": {
             "type": "string"
+          }
+        }
+      },
+      "OrgIdentityResponse": {
+        "type": "object",
+        "required": [
+          "legal_name",
+          "country"
+        ],
+        "properties": {
+          "country": {
+            "type": "string"
+          },
+          "legal_name": {
+            "type": "string"
+          },
+          "registration_number": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -1405,6 +2943,7 @@
         "required": [
           "id",
           "name",
+          "slug",
           "legal_name",
           "country",
           "role",
@@ -1434,6 +2973,9 @@
             ]
           },
           "role": {
+            "type": "string"
+          },
+          "slug": {
             "type": "string"
           },
           "updated_at": {
@@ -1591,12 +3133,96 @@
           }
         }
       },
+      "QueryRequest": {
+        "type": "object",
+        "required": [
+          "sparql"
+        ],
+        "properties": {
+          "sparql": {
+            "type": "string"
+          }
+        }
+      },
+      "RegisterOidcClientRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "url"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "logo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "RenameConversationRequest": {
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        }
+      },
       "RunMode": {
         "type": "string",
         "enum": [
           "integrated",
           "scheduled"
         ]
+      },
+      "SearchRequest": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "query": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TcPayload": {
+        "type": "object",
+        "required": [
+          "private_key_pem"
+        ],
+        "properties": {
+          "private_key_pem": {
+            "type": "string"
+          }
+        }
       },
       "UpdateCloudAccountRequest": {
         "type": "object",
@@ -1687,6 +3313,74 @@
           }
         }
       },
+      "UpdateOrgIdentityPayload": {
+        "type": "object",
+        "required": [
+          "legal_name",
+          "country"
+        ],
+        "properties": {
+          "country": {
+            "type": "string"
+          },
+          "legal_name": {
+            "type": "string"
+          },
+          "registration_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UpdateUserRoleRequest": {
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "type": "string"
+          }
+        }
+      },
+      "UserWithRole": {
+        "type": "object",
+        "description": "User with their role in a specific organization, for org admin user management.",
+        "required": [
+          "id",
+          "email",
+          "first_name",
+          "last_name",
+          "status",
+          "created_at",
+          "role"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
       "ValidateRequest": {
         "type": "object",
         "required": [
@@ -1694,6 +3388,25 @@
         ],
         "properties": {
           "script": {
+            "type": "string"
+          }
+        }
+      },
+      "ValidationRequest": {
+        "type": "object",
+        "required": [
+          "data_url",
+          "connection_id",
+          "shape_path"
+        ],
+        "properties": {
+          "connection_id": {
+            "type": "string"
+          },
+          "data_url": {
+            "type": "string"
+          },
+          "shape_path": {
             "type": "string"
           }
         }
@@ -1717,6 +3430,105 @@
           },
           "valid": {
             "type": "boolean"
+          }
+        }
+      },
+      "WizardState": {
+        "type": "object",
+        "description": "Wizard state record — mirrors the gaia_x_wizard_state table.\nAll credential/key/cert fields are stored as JSON or PEM text.\nPrivate key is NEVER stored — only public_key_jwk (locked decision).",
+        "required": [
+          "org_id",
+          "current_step",
+          "updated_at"
+        ],
+        "properties": {
+          "cert_chain_pem": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "compliance_vc": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "country_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "current_step": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "did_document": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "domain": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "legal_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lp_credential": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lrn_credential": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lrn_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lrn_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "public_key_jwk": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "root_ca_pem": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tc_credential": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string"
           }
         }
       }

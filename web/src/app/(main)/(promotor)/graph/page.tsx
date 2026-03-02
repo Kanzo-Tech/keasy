@@ -12,10 +12,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { OrgEntry } from "@/lib/types";
-import { fetchAdminOrgs } from "@/lib/api";
+import { api } from "@/lib/api";
 
 const orgFetcher = async () => {
-  const data = await fetchAdminOrgs();
+  const data = await api.admin.orgs();
   return data.filter((o) => o.role !== "promotor");
 };
 

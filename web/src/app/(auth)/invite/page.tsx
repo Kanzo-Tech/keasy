@@ -11,13 +11,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { fetchAuthMe, fetchInviteInfo } from "@/lib/api";
+import { api } from "@/lib/api";
 
 
 function InviteForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
-  const [email, setEmail] = useState<string | null>(null);
+  const [valid, setValid] = useState(false);
   // If no token, start with error set and loading=false to skip the effect
   const [loading, setLoading] = useState(!!token);
   const [redirecting, setRedirecting] = useState(false);
@@ -31,7 +31,7 @@ function InviteForm() {
     (async () => {
       try {
         // Check if user is already logged in
-        await fetchAuthMe();
+        await api.auth.me();
         // Already logged in -- redirect to OIDC start with invite token
         // The backend will auto-accept the invite after callback
         setRedirecting(true);
@@ -42,9 +42,9 @@ function InviteForm() {
       }
 
       try {
-        const data = await fetchInviteInfo(token);
-        if (data?.email) {
-          setEmail(data.email);
+        const data = await api.auth.inviteInfo(token);
+        if (data?.valid) {
+          setValid(true);
         } else {
           setError(
             "This invite link is invalid or has expired. Please contact the person who invited you."
@@ -75,7 +75,7 @@ function InviteForm() {
     );
   }
 
-  if (error) {
+  if (error || !valid) {
     return (
       <Card className="w-full max-w-sm">
         <CardHeader>
@@ -96,8 +96,7 @@ function InviteForm() {
       <CardHeader>
         <CardTitle>You&apos;ve been invited</CardTitle>
         <CardDescription>
-          An invitation has been sent to <strong>{email}</strong>. Continue to
-          create your account or sign in.
+          Continue to create your account or sign in with an existing one.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -109,7 +108,9 @@ function InviteForm() {
           )}
         </Button>
         <Button variant="outline" asChild className="w-full">
-          <a href="/v1/auth/oidc-start">Already have an account? Sign in</a>
+          <a href={`/v1/auth/oidc-start?invite_token=${encodeURIComponent(token)}`}>
+            Already have an account? Sign in
+          </a>
         </Button>
       </CardContent>
     </Card>

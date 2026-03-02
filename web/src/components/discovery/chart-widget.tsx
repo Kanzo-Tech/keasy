@@ -51,7 +51,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { chartJobData } from "@/lib/api";
+import { api } from "@/lib/api";
 import type {
   ChartWidget as ChartWidgetType,
   ChartType,
@@ -355,7 +355,7 @@ export function ChartWidget({
     : null;
 
   const { data: rawResult, isLoading: queryLoading } = useSWR(chartSwrKey, () =>
-    chartJobData(jobId, {
+    api.discovery.chart(jobId, {
       x_predicate: xField!.iri,
       y_predicate: yField?.iri,
       group_predicate: groupField?.iri,

@@ -14,7 +14,7 @@ import { StepLegalParticipant } from "@/components/compliance/steps/step-legal-p
 import { StepTerms } from "@/components/compliance/steps/step-terms";
 import { StepGxdchSubmit } from "@/components/compliance/steps/step-gxdch-submit";
 import { ServiceGate } from "@/components/ui/service-gate";
-import { fetchWizardState } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { WizardState } from "@/lib/types";
 
 const STEP_DEFS: WizardStepDef[] = [
@@ -42,7 +42,7 @@ export function ComplianceWizard() {
   const router = useRouter();
   const { data: wizardState, isLoading, mutate } = useSWR<WizardState>(
     "gx-wizard",
-    fetchWizardState,
+    api.gaiax.wizard.state,
   );
 
   const [currentStep, setCurrentStep] = useState<number | null>(null);

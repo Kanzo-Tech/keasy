@@ -36,11 +36,7 @@ import {
 import { EmptyState } from "@/components/shared/empty-state";
 import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
 import { useOrgUsers } from "@/hooks/use-org-users";
-import {
-  createOrgInvite,
-  fetchOrgInvites,
-  revokeOrgInvite,
-} from "@/lib/api";
+import { api } from "@/lib/api";
 import type { OrgUser, OrgInvite } from "@/lib/types";
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
@@ -123,9 +119,8 @@ function orgUserColumns(
 
 const inviteStatusVariant = (
   status: OrgInvite["status"],
-): "default" | "secondary" | "destructive" => {
-  if (status === "pending") return "default";
-  if (status === "used") return "secondary";
+): "default" | "destructive" => {
+  if (status === "active") return "default";
   return "destructive";
 };
 
@@ -134,7 +129,7 @@ export default function OrgUsersPage() {
   const {
     data: invites,
     mutate: mutateInvites,
-  } = useSWR<OrgInvite[]>("org-invites", fetchOrgInvites);
+  } = useSWR<OrgInvite[]>("org-invites", api.org.invites);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [inviteRole, setInviteRole] = useState("user");
@@ -161,7 +156,7 @@ export default function OrgUsersPage() {
   async function handleCreateInvite() {
     setIsCreating(true);
     try {
-      const data = await createOrgInvite(inviteRole);
+      const data = await api.org.createInvite(inviteRole);
       const inviteUrl =
         data.invite_url ??
         `${window.location.origin}/invite?token=${data.token}`;
@@ -177,7 +172,7 @@ export default function OrgUsersPage() {
 
   async function handleRevokeInvite(token: string) {
     try {
-      await revokeOrgInvite(token);
+      await api.org.revokeInvite(token);
       await mutateInvites();
       toast.success("Invite revoked");
     } catch {
@@ -259,7 +254,7 @@ export default function OrgUsersPage() {
                 <Badge variant={inviteStatusVariant(invite.status)}>
                   {invite.status}
                 </Badge>
-                {invite.status === "pending" && (
+                {invite.status === "active" && (
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Button
                       variant="ghost"

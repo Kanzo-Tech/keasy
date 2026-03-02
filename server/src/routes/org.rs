@@ -204,11 +204,9 @@ pub async fn create_org_invite(
 
     let invite = InviteToken {
         token: token_value.clone(),
-        email: None,
         org_id: ctx.org_id.0.clone(),
         role: payload.role.clone(),
         created_by: auth_user.user_id.clone(),
-        used_at: None,
         expires_at,
         created_at: now,
     };
@@ -240,20 +238,13 @@ pub async fn list_org_invites(
     let result: Vec<serde_json::Value> = tokens
         .into_iter()
         .map(|t| {
-            let status = if t.used_at.is_some() {
-                "used"
-            } else if now > t.expires_at {
-                "expired"
-            } else {
-                "pending"
-            };
+            let status = if now > t.expires_at { "expired" } else { "active" };
             serde_json::json!({
                 "token": t.token,
                 "role": t.role,
                 "status": status,
                 "created_at": t.created_at,
                 "expires_at": t.expires_at,
-                "used_at": t.used_at,
             })
         })
         .collect();

@@ -120,6 +120,21 @@ impl Database {
             .collect()
     }
 
+    /// Return all completed catalogs across all orgs. Used at startup to restore
+    /// the in-memory graph store without depending on a seed org ID.
+    pub async fn completed_catalogs_all(&self) -> Vec<(String, String)> {
+        let (_permit, conn) = self.read().await;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, catalog FROM jobs WHERE status = 'completed' AND catalog IS NOT NULL",
+            )
+            .expect("prepare completed_catalogs_all");
+        stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+            .expect("query completed_catalogs_all")
+            .filter_map(|r| r.ok())
+            .collect()
+    }
+
     pub async fn completed_job_ids_for_org(&self, org_id: &str) -> Vec<String> {
         let (_permit, conn) = self.read().await;
         let mut stmt = conn

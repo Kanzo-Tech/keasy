@@ -15,6 +15,27 @@ pub struct OidcClient {
 }
 
 impl Database {
+    /// Idempotent upsert — registers an OIDC client if it doesn't exist yet (by client_id).
+    /// Used at startup to self-register and register federation peers.
+    pub async fn ensure_oidc_client(
+        &self,
+        client_id: &str,
+        name: &str,
+        url: &str,
+    ) -> Result<(), String> {
+        let conn = self.write().await;
+        let now = jiff::Timestamp::now().to_string();
+        let id = uuid::Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO oidc_clients (id, client_id, name, url, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?5)
+             ON CONFLICT(client_id) DO UPDATE SET name = ?3, url = ?4, updated_at = ?5",
+            params![id, client_id, name, url, now],
+        )
+        .map_err(|e| format!("ensure_oidc_client: {e}"))?;
+        Ok(())
+    }
+
     pub async fn create_oidc_client(&self, client: &OidcClient) -> Result<(), String> {
         let conn = self.write().await;
         conn.execute(

@@ -7,10 +7,13 @@ use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 
 /// Client for interacting with the Keycloak Admin REST API.
+///
+/// Supports Docker networking: when `internal_base_url` is set (e.g. `http://keycloak:8080`),
+/// all HTTP requests go to the internal URL while the realm is derived from the public issuer.
 #[derive(Clone)]
 pub struct KeycloakAdmin {
     http: reqwest::Client,
-    /// Internal Keycloak base URL (e.g., http://keycloak:8080/auth)
+    /// Keycloak base URL for HTTP requests (internal if configured, public otherwise)
     base_url: String,
     /// Keycloak realm name
     realm: String,
@@ -30,6 +33,12 @@ struct ClientSecretResponse {
     value: String,
 }
 
+/// Result of resolving an OIDC client from Keycloak by clientId.
+pub struct ResolvedClient {
+    pub name: String,
+    pub url: String,
+}
+
 /// Result of registering a new OIDC client in Keycloak.
 pub struct RegisteredClient {
     /// The Keycloak-internal UUID for the client (NOT the clientId).
@@ -41,15 +50,18 @@ pub struct RegisteredClient {
 impl KeycloakAdmin {
     /// Create a new KeycloakAdmin client.
     ///
-    /// `issuer_url` should be the full issuer URL (e.g., http://keycloak:8080/auth/realms/keasy).
-    /// The base URL and realm are extracted from it.
+    /// `issuer_url` — full issuer URL (e.g. `http://localhost:8080/realms/keasy`).
+    /// `internal_base_url` — when set (e.g. `http://keycloak:8080`), HTTP requests use
+    /// this URL instead of the host from `issuer_url`. Required inside Docker where the
+    /// public issuer URL (`localhost:8080`) resolves to the server container, not Keycloak.
     pub fn new(
         issuer_url: &str,
         client_id: &str,
         client_secret: SecretString,
+        internal_base_url: Option<&str>,
     ) -> Result<Self, String> {
-        // Parse issuer URL: http://keycloak:8080/auth/realms/keasy
-        // Extract base: http://keycloak:8080/auth, realm: keasy
+        // Parse issuer URL: http://localhost:8080/realms/keasy
+        // Extract base: http://localhost:8080, realm: keasy
         let parts: Vec<&str> = issuer_url.rsplitn(2, "/realms/").collect();
         if parts.len() != 2 {
             return Err(format!(
@@ -58,7 +70,13 @@ impl KeycloakAdmin {
             ));
         }
         let realm = parts[0].to_string();
-        let base_url = parts[1].to_string();
+        let public_base = parts[1].to_string();
+
+        // Use internal URL for HTTP if configured (Docker networking), otherwise public
+        let base_url = match internal_base_url {
+            Some(url) => url.trim_end_matches('/').to_string(),
+            None => public_base,
+        };
 
         Ok(Self {
             http: reqwest::Client::new(),
@@ -255,6 +273,146 @@ impl KeycloakAdmin {
                 ))
             }
         }
+    }
+
+    /// Add a workspace client_id to a Keycloak user's `keasy.dataspaces` attribute.
+    ///
+    /// Reads the user's current attributes, appends the client_id (deduped),
+    /// and PUTs the updated attributes back.
+    pub async fn add_user_workspace(
+        &self,
+        keycloak_user_id: &str,
+        client_id: &str,
+    ) -> Result<(), String> {
+        let token = self.get_admin_token().await?;
+
+        // GET current user representation
+        let user_url = format!(
+            "{}/admin/realms/{}/users/{}",
+            self.base_url, self.realm, keycloak_user_id
+        );
+        let resp = self
+            .http
+            .get(&user_url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak get user failed: {e}"))?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            return Err(format!("Keycloak get user returned {status}: {body}"));
+        }
+
+        let mut user: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse Keycloak user response: {e}"))?;
+
+        // Read existing dataspaces attribute
+        let mut dataspaces: Vec<String> = user
+            .get("attributes")
+            .and_then(|a| a.get("keasy.dataspaces"))
+            .and_then(|v| serde_json::from_value(v.clone()).ok())
+            .unwrap_or_default();
+
+        // Dedup — only add if not already present
+        if !dataspaces.contains(&client_id.to_string()) {
+            dataspaces.push(client_id.to_string());
+        }
+
+        // Update the user representation
+        let attributes = user
+            .as_object_mut()
+            .ok_or("user is not an object")?
+            .entry("attributes")
+            .or_insert_with(|| serde_json::json!({}));
+        attributes["keasy.dataspaces"] = serde_json::json!(dataspaces);
+
+        // PUT updated user
+        let resp = self
+            .http
+            .put(&user_url)
+            .bearer_auth(&token)
+            .json(&user)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak update user failed: {e}"))?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            return Err(format!("Keycloak update user returned {status}: {body}"));
+        }
+
+        tracing::info!(
+            user_id = %keycloak_user_id,
+            client_id = %client_id,
+            "Added dataspace to Keycloak user"
+        );
+        Ok(())
+    }
+
+    /// Resolve a Keycloak OIDC client by its clientId string.
+    ///
+    /// Returns the client's display name and base URL (from webOrigins[0]).
+    /// Used by the workspace switcher to resolve unknown dataspaces on cache miss.
+    pub async fn resolve_client(&self, client_id: &str) -> Option<ResolvedClient> {
+        let token = self.get_admin_token().await.ok()?;
+
+        let clients_url = format!(
+            "{}/admin/realms/{}/clients?clientId={}",
+            self.base_url, self.realm, client_id
+        );
+        let resp = self.http
+            .get(&clients_url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .ok()?;
+
+        let clients: Vec<serde_json::Value> = resp.json().await.ok()?;
+        let client = clients.first()?;
+
+        let name = client.get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or(client_id)
+            .to_string();
+
+        let url = client.get("webOrigins")
+            .and_then(|v| v.as_array())
+            .and_then(|arr| arr.first())
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())?;
+
+        Some(ResolvedClient { name, url })
+    }
+
+    /// Read the user's workspaces from Keycloak (`keasy.dataspaces` attribute).
+    ///
+    /// Returns the live list from Keycloak (not the stale ID token claim).
+    pub async fn get_user_workspaces(&self, keycloak_user_id: &str) -> Result<Vec<String>, String> {
+        let token = self.get_admin_token().await?;
+        let user_url = format!(
+            "{}/admin/realms/{}/users/{}",
+            self.base_url, self.realm, keycloak_user_id
+        );
+        let resp = self.http.get(&user_url).bearer_auth(&token).send().await
+            .map_err(|e| format!("get user: {e}"))?;
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            return Err(format!("get user returned {status}: {body}"));
+        }
+        let user: serde_json::Value = resp.json().await
+            .map_err(|e| format!("parse user: {e}"))?;
+        let dataspaces: Vec<String> = user
+            .get("attributes")
+            .and_then(|a| a.get("keasy.dataspaces"))
+            .and_then(|v| serde_json::from_value(v.clone()).ok())
+            .unwrap_or_default();
+        Ok(dataspaces)
     }
 
     /// Retrieve the client secret for a given Keycloak-internal client UUID.

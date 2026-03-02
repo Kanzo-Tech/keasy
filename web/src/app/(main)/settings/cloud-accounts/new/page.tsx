@@ -6,14 +6,14 @@ import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
 import useSWR from "swr";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { fetchSchema, createCloudAccount } from "@/lib/api";
+import { api } from "@/lib/api";
 import { CloudAccountForm } from "@/components/settings/cloud-account-form";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function NewCloudAccountPage() {
   const router = useRouter();
   const { mutate } = useSWRConfig();
-  const { data: schema, isLoading } = useSWR("schema", fetchSchema);
+  const { data: schema, isLoading } = useSWR("schema", api.settings.schema);
   const showSkeleton = useDelayedLoading(isLoading);
 
   if (isLoading || !schema) {
@@ -30,7 +30,7 @@ export default function NewCloudAccountPage() {
       schema={schema}
       onSubmit={async (data) => {
         try {
-          await createCloudAccount(data);
+          await api.cloud.create(data);
           toast.success("Cloud account created");
           mutate("cloud-init");
           router.push("/settings/cloud-accounts");

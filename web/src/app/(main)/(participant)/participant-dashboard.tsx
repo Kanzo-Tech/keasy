@@ -9,32 +9,27 @@ import {
   FileText,
   type LucideIcon,
 } from "lucide-react";
-import {
-  fetchJobs,
-  fetchCloudAccounts,
-  fetchConnections,
-  fetchComplianceStatus,
-} from "@/lib/api";
+import { api } from "@/lib/api";
 import { hasRunningJobs } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 export function ParticipantDashboard() {
-  const { data: jobs, isLoading: jobsLoading } = useSWR("jobs", fetchJobs, {
+  const { data: jobs, isLoading: jobsLoading } = useSWR("jobs", api.jobs.list, {
     refreshInterval: (data) => (hasRunningJobs(data) ? 2000 : 0),
   });
   const { data: accounts, isLoading: accountsLoading } = useSWR(
     "cloud-accounts",
-    fetchCloudAccounts,
+    api.cloud.list,
   );
   const { data: connections, isLoading: connectionsLoading } = useSWR(
     "connections",
-    () => fetchConnections(),
+    () => api.connections.list(),
   );
   const { data: complianceStatus, isLoading: complianceLoading } = useSWR(
     "gx-compliance-status",
-    fetchComplianceStatus,
+    api.gaiax.compliance.status,
   );
 
   const loading =

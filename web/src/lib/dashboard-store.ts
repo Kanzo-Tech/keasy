@@ -1,4 +1,4 @@
-import { fetchDashboardLayout, saveDashboardLayout } from "./api";
+import { api } from "./api";
 
 export type ChartType = "bar" | "line" | "area" | "pie" | "scatter";
 
@@ -23,7 +23,7 @@ const DEFAULT_LAYOUT: DashboardLayout = { widgets: [], columns: 2 };
 
 export async function loadDashboard(jobId: string): Promise<DashboardLayout> {
   try {
-    const data = await fetchDashboardLayout(jobId);
+    const data = await api.jobs.dashboardLayout(jobId);
     if (!data) return DEFAULT_LAYOUT;
     return {
       widgets: (data.widgets as ChartWidget[]) ?? [],
@@ -39,7 +39,7 @@ export async function saveDashboard(
   layout: DashboardLayout,
 ): Promise<void> {
   try {
-    await saveDashboardLayout(jobId, layout);
+    await api.jobs.saveDashboardLayout(jobId, layout);
   } catch {
   }
 }

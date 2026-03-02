@@ -6,7 +6,7 @@ pub enum ShapeFormat {
     Shacl,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct ValidationRequest {
     pub data_url: String,
     pub connection_id: String,

@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 
-import { fetchJobs, deleteJob } from "@/lib/api";
+import { api } from "@/lib/api";
 import { hasRunningJobs } from "@/lib/utils";
 import {
   DataTable,
@@ -83,13 +83,13 @@ function jobColumns(onDelete: (id: string) => void): ColumnDef<Job>[] {
 export default function JobsPage() {
   const router = useRouter();
 
-  const { data: jobs, mutate } = useSWR("jobs", fetchJobs, {
+  const { data: jobs, mutate } = useSWR("jobs", api.jobs.list, {
     refreshInterval: (data) => (hasRunningJobs(data) ? 2000 : 0),
   });
 
   const handleDelete = useCallback(
     async (id: string) => {
-      await deleteJob(id);
+      await api.jobs.remove(id);
       toast.success("Job deleted");
       mutate();
     },

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Building2, ShieldCheck, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import useSWR from "swr";
-import { fetchAuthMe } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { MeResponse } from "@/lib/types";
 import {
   SidebarGroup,
@@ -24,7 +24,7 @@ interface NavItem {
 export function OrgNav() {
   const pathname = usePathname();
 
-  const { data: me } = useSWR<MeResponse>("auth-me", fetchAuthMe);
+  const { data: me } = useSWR<MeResponse>("auth-me", api.auth.me);
   const isAdmin = me?.effective_role === "org_admin";
 
   const sections: { heading: string; items: NavItem[] }[] = [

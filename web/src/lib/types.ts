@@ -34,9 +34,14 @@ export type AiSettings = S["AiSettingsPayload"];
 // Alias: server calls it JobRuntimeError, frontend used JobError
 export type JobError = S["JobRuntimeError"];
 
+// Org types — re-exported from schema with frontend aliases
+export type OrgIdentity = S["OrgIdentityResponse"];
+export type OrgUser = S["UserWithRole"];
+export type OrgEntry = S["Organization"];
+
 // ---------------------------------------------------------------------------
 // Types NOT in the OpenAPI spec (discovery, graph, conversations, etc.)
-// These remain manually defined until their utoipa annotations are added.
+// These remain manually defined until their server response types are annotated.
 // ---------------------------------------------------------------------------
 
 export interface FieldSchema {
@@ -141,39 +146,12 @@ export interface GraphData {
   links: GraphLink[];
 }
 
-export interface OrgUser {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  status: string;
-  created_at: string;
-  role: string;
-}
-
-export interface OrgEntry {
-  id: string;
-  name: string;
-  legal_name: string;
-  role: string;
-  country: string;
-  vc_verified_at: string | null;
-  created_at: string;
-}
-
-export interface OrgIdentity {
-  legal_name: string;
-  country: string;
-  registration_number: string | null;
-}
-
 export interface OrgInvite {
   token: string;
   role: string;
-  status: "pending" | "used" | "expired";
+  status: "active" | "expired";
   created_at: string;
   expires_at: string;
-  used_at: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -263,10 +241,9 @@ export interface AdminInvite {
   token: string;
   org_id: string;
   org_name: string;
-  status: string;
+  status: "active" | "expired";
   created_at: string;
   expires_at: string;
-  used_at: string | null;
 }
 
 export interface AdminInviteResult {

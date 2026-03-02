@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Paintbrush, Cloud, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import useSWR from "swr";
-import { fetchAuthMe } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { MeResponse } from "@/lib/types";
 import {
   SidebarGroup,
@@ -24,7 +24,7 @@ interface NavItem {
 export function SettingsNav() {
   const pathname = usePathname();
 
-  const { data: me } = useSWR<MeResponse>("auth-me", fetchAuthMe);
+  const { data: me } = useSWR<MeResponse>("auth-me", api.auth.me);
   const isPromotor = me?.effective_role === "promotor";
   const isAdmin = me?.effective_role === "org_admin";
 

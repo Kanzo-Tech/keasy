@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
 import useSWR from "swr";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { fetchSchema, fetchCloudAccount, updateCloudAccount } from "@/lib/api";
+import { api } from "@/lib/api";
 import { CloudAccountForm } from "@/components/settings/cloud-account-form";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -21,7 +21,7 @@ export default function EditCloudAccountPage({
   const { mutate: globalMutate } = useSWRConfig();
 
   const { data, isLoading } = useSWR(`cloud-edit-${id}`, () =>
-    Promise.all([fetchSchema(), fetchCloudAccount(id)]),
+    Promise.all([api.settings.schema(), api.cloud.get(id)]),
   );
   const showSkeleton = useDelayedLoading(isLoading);
 
@@ -46,7 +46,7 @@ export default function EditCloudAccountPage({
       account={account}
       onSubmit={async (data) => {
         try {
-          await updateCloudAccount(id, {
+          await api.cloud.update(id, {
             name: data.name,
             auth_method: data.auth_method,
             fields: data.fields,

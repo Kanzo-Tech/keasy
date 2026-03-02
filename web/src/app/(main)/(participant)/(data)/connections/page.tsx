@@ -11,12 +11,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  fetchConnections,
-  fetchSchema,
-  fetchCloudAccounts,
-  deleteConnection,
-} from "@/lib/api";
+import { api } from "@/lib/api";
 import {
   DataTable,
   ActionItem,
@@ -92,7 +87,7 @@ function ConnectionsContent() {
   const tab = (searchParams.get("type") as ConnectionKind) || "data";
 
   const { data, mutate } = useSWR(`connections-init-${tab}`, () =>
-    Promise.all([fetchConnections(tab), fetchSchema(), fetchCloudAccounts()]),
+    Promise.all([api.connections.list(tab), api.settings.schema(), api.cloud.list()]),
   );
   const [connections, schema, accounts] = data ?? [[], [], []];
 
@@ -102,7 +97,7 @@ function ConnectionsContent() {
 
   const handleDelete = useCallback(
     async (id: string) => {
-      await deleteConnection(id);
+      await api.connections.remove(id);
       toast.success("Connection deleted");
       mutate();
     },

@@ -9,8 +9,9 @@ services:
     volumes:
       - ./server/src:/app/src
       - server-target:/app/target
+      - ./infra/seeds/dev-promotor.sql:/seed/init.sql:ro
     environment:
-      KEASY_DEV_SEED: "true"
+      KEASY_SEED_FILE: /seed/init.sql
       RUST_LOG: debug
     healthcheck:
       interval: 10s

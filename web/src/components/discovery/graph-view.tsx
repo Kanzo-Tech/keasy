@@ -8,13 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  fetchJobGraph,
-  fetchAdminGraph,
-  searchGraphNodes,
-  expandGraphNode,
-  loadJobDiscovery,
-} from "@/lib/api";
+import { api } from "@/lib/api";
 import { ForceGraph } from "@/components/discovery/force-graph";
 import { useGraphModel } from "@/hooks/use-graph-model";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
@@ -43,9 +37,9 @@ export function GraphView({ source, interactive }: GraphViewProps) {
 
 function StaticGraphView({ source }: { source: GraphSource }) {
   const fetcher = (): Promise<GraphData> => {
-    if (source.type === "job") return fetchJobGraph(source.jobId);
-    if (source.type === "admin") return fetchAdminGraph(source.orgId);
-    return fetchJobGraph((source as { type: "discovery"; jobId: string }).jobId);
+    if (source.type === "job") return api.jobs.graph(source.jobId);
+    if (source.type === "admin") return api.jobs.adminGraph(source.orgId);
+    return api.jobs.graph((source as { type: "discovery"; jobId: string }).jobId);
   };
 
   const swrKey =
@@ -91,8 +85,8 @@ function InteractiveGraphView({ source }: { source: GraphSource }) {
     isLoading,
     error: loadError,
   } = useSWR(`explorer-${jobId}`, async () => {
-    const discovery = await loadJobDiscovery(jobId);
-    const nodes = await searchGraphNodes("", jobId);
+    const discovery = await api.discovery.load(jobId);
+    const nodes = await api.discovery.search("", jobId);
     return { discovery, nodes };
   });
   const showSkeleton = useDelayedLoading(isLoading);
@@ -134,7 +128,7 @@ function InteractiveGraphView({ source }: { source: GraphSource }) {
     searchTimeout.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const r = await searchGraphNodes(query, jobId);
+        const r = await api.discovery.search(query, jobId);
         const ids = new Set(local.map((n) => n.id));
         const extra = r.filter((n) => !ids.has(n.id));
         if (extra.length > 0) {
@@ -154,7 +148,7 @@ function InteractiveGraphView({ source }: { source: GraphSource }) {
     setShowResults(false);
     setQuery("");
     try {
-      const data = await expandGraphNode(result.id, jobId);
+      const data = await api.discovery.expand(result.id, jobId);
       if (data.nodes.length === 0 && data.links.length === 0) {
         graph.merge({
           nodes: [{ id: result.id, label: result.label, group: result.group }],
@@ -178,7 +172,7 @@ function InteractiveGraphView({ source }: { source: GraphSource }) {
     setSelectedNode(node);
     if (node.group === "literal") return;
     try {
-      const data = await expandGraphNode(node.id, jobId);
+      const data = await api.discovery.expand(node.id, jobId);
       graph.merge(data);
       if (data.links.length > 0) {
         graph.markExpanded({

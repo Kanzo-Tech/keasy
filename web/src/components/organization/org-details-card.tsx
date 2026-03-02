@@ -8,7 +8,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormField } from "@/components/shared/form-layout";
 import { COUNTRY_OPTIONS, getCountryName } from "@/lib/countries";
-import { fetchOrgIdentity, saveOrgIdentity } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { OrgIdentity } from "@/lib/types";
 
 export interface OrgDetailsCardHandle {
@@ -24,7 +24,7 @@ interface OrgDetailsCardProps {
 
 export const OrgDetailsCard = forwardRef<OrgDetailsCardHandle, OrgDetailsCardProps>(
   function OrgDetailsCard({ readOnly, editing: editingProp, onEditingChange, onSavingChange }, ref) {
-    const { data, isLoading, mutate } = useSWR("org-identity", fetchOrgIdentity);
+    const { data, isLoading, mutate } = useSWR("org-identity", api.org.identity);
     const [editingInternal, setEditingInternal] = useState(false);
     const editing = editingProp ?? editingInternal;
     const setEditing = onEditingChange ?? setEditingInternal;
@@ -49,7 +49,7 @@ export const OrgDetailsCard = forwardRef<OrgDetailsCardHandle, OrgDetailsCardPro
       if (!form) return;
       updateSaving(true);
       try {
-        await saveOrgIdentity(form);
+        await api.org.saveIdentity(form);
         await mutate();
         toast.success("Organization details saved");
         setEditing(false);

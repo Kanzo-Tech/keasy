@@ -34,10 +34,3 @@ impl<T> TenantScoped<T> {
 
 /// Re-export the real TenantContext from middleware::tenant.
 pub use crate::middleware::tenant::TenantContext;
-
-impl TenantScoped<()> {
-    /// Used only at server startup for catalog init. Not for request handling.
-    pub fn startup_ctx() -> Self {
-        Self::new(OrgId(crate::db::seed::SEED_ORG_ID.to_string()), ())
-    }
-}

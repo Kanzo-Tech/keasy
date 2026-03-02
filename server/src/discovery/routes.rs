@@ -16,19 +16,23 @@ use crate::jobs::models::JobStatus;
 use super::rdf_format::RdfExportFormat;
 use crate::middleware::tenant::RequireParticipant;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct SearchRequest {
     pub query: Option<String>,
     pub limit: Option<usize>,
     pub job_id: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct ExpandRequest {
     pub node_id: String,
     pub job_id: Option<String>,
 }
 
+#[utoipa::path(post, path = "/v1/graph/search", tag = "Graph",
+    request_body = SearchRequest,
+    responses((status = 200, description = "Graph search results"))
+)]
 pub async fn search_nodes(
     RequireParticipant(_ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -48,6 +52,10 @@ pub async fn search_nodes(
     }
 }
 
+#[utoipa::path(post, path = "/v1/graph/expand", tag = "Graph",
+    request_body = ExpandRequest,
+    responses((status = 200, description = "Expanded node data"))
+)]
 pub async fn expand_node(
     RequireParticipant(_ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -64,18 +72,23 @@ pub async fn expand_node(
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct LoadDiscoverResponse {
     pub loaded: bool,
     pub triple_count: usize,
     pub subject_count: usize,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct QueryRequest {
     pub sparql: String,
 }
 
+#[utoipa::path(post, path = "/v1/jobs/{id}/discover/query", tag = "Discovery",
+    params(("id" = String, Path, description = "Job ID")),
+    request_body = QueryRequest,
+    responses((status = 200, description = "SPARQL query results"), (status = 400, description = "SPARQL error"))
+)]
 pub async fn query_discover(
     RequireParticipant(_ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -95,7 +108,7 @@ pub async fn query_discover(
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct ChartRequest {
     pub x_predicate: String,
     pub y_predicate: Option<String>,
@@ -108,6 +121,11 @@ fn default_aggregation() -> String {
     "count".to_string()
 }
 
+#[utoipa::path(post, path = "/v1/jobs/{id}/discover/chart", tag = "Discovery",
+    params(("id" = String, Path, description = "Job ID")),
+    request_body = ChartRequest,
+    responses((status = 200, description = "Chart data"))
+)]
 pub async fn chart_discover(
     RequireParticipant(_ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -166,6 +184,13 @@ fn build_chart_sparql(req: &ChartRequest) -> String {
     }
 }
 
+#[utoipa::path(post, path = "/v1/jobs/{id}/discover/load", tag = "Discovery",
+    params(("id" = String, Path, description = "Job ID")),
+    responses(
+        (status = 200, description = "Discovery data loaded", body = LoadDiscoverResponse),
+        (status = 400, description = "Job not completed"),
+    )
+)]
 pub async fn load_discover(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
@@ -234,11 +259,18 @@ pub async fn load_discover(
     data_response(LoadDiscoverResponse { loaded: true, triple_count: total, subject_count: subjects }).into_response()
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct ExportQuery {
     pub format: Option<String>,
 }
 
+#[utoipa::path(get, path = "/v1/jobs/{id}/discover/export", tag = "Discovery",
+    params(
+        ("id" = String, Path, description = "Job ID"),
+        ("format" = Option<String>, Query, description = "Export format (turtle, ntriples, rdfxml, etc.)"),
+    ),
+    responses((status = 200, description = "RDF file download"))
+)]
 pub async fn export_discover(
     RequireParticipant(_ctx): RequireParticipant,
     State(state): State<AppState>,

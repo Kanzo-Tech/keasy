@@ -17,7 +17,7 @@ import {
   lightTheme, darkTheme,
   editorLayout, useIsDark,
 } from "@/lib/codemirror-theme";
-import { fetchConnectionFiles } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { Connection, FileEntry, ProviderInfo } from "@/lib/types";
 
 function fossilLanguage() {
@@ -89,7 +89,7 @@ function connectionCompletion(
       let files = fileCache.get(connection.id);
       if (!files) {
         try {
-          files = await fetchConnectionFiles(connection.id);
+          files = await api.connections.files(connection.id);
           fileCache.set(connection.id, files);
         } catch {
           return null;

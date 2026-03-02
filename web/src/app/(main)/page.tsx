@@ -1,9 +1,8 @@
 import { getEffectiveRole } from "@/lib/auth-check";
-import { redirect } from "next/navigation";
+import { forbidden, redirect } from "next/navigation";
 import { PageContent } from "@/components/layout/page-content";
 import { PromotorDashboard } from "./(promotor)/promotor-dashboard";
 import { ParticipantDashboard } from "./(participant)/participant-dashboard";
-import { NoMembership } from "@/components/layout/no-membership";
 
 export default async function HomePage() {
   const role = await getEffectiveRole();
@@ -13,7 +12,7 @@ export default async function HomePage() {
   }
 
   if (role === "none") {
-    return <NoMembership />;
+    forbidden();
   }
 
   if (role === "promotor") {

@@ -27,13 +27,10 @@ pub async fn ask_discover(
     Path(id): Path<String>,
     Json(req): Json<AskRequest>,
 ) -> Response {
-    let output_graph = format!("urn:keasy:output:{id}");
-    if !state.graph_store.graph_exists(&output_graph) {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(crate::error::error_body("not_ready", "Job output is not yet available.")),
-        ).into_response();
-    }
+    let output_graph = match crate::discovery::routes::require_output_ready(&state, &ctx, &id).await {
+        Ok(g) => g,
+        Err(r) => return r,
+    };
 
     let ai_settings = if let Some(pid) = &req.provider {
         state.db.get_ai_provider(pid).await

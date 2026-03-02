@@ -8,7 +8,7 @@ use crate::AppState;
 use crate::error::{AppError, data_response, error_body};
 use crate::jobs::models::JobStatus;
 use super::rdf_format::RdfExportFormat;
-use crate::middleware::tenant::RequireParticipant;
+use crate::middleware::tenant::{RequireParticipant, TenantContext};
 
 #[derive(Deserialize, utoipa::ToSchema)]
 pub struct SearchRequest {
@@ -28,7 +28,7 @@ pub struct ExpandRequest {
     responses((status = 200, description = "Graph search results"))
 )]
 pub async fn search_nodes(
-    RequireParticipant(_ctx): RequireParticipant,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Json(req): Json<SearchRequest>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -36,10 +36,10 @@ pub async fn search_nodes(
     let query = req.query.unwrap_or_default();
 
     if let Some(job_id) = &req.job_id {
-        let graph_name = format!("urn:keasy:output:{job_id}");
-        if !state.graph_store.graph_exists(&graph_name) {
-            return Ok(not_ready_error());
-        }
+        let graph_name = match require_output_ready(&state, &ctx, job_id).await {
+            Ok(g) => g,
+            Err(r) => return Ok(r),
+        };
         Ok(data_response(state.graph_store.search_nodes(Some(&graph_name), &query, limit)).into_response())
     } else {
         Ok(data_response(state.graph_store.search_nodes(None, &query, limit)).into_response())
@@ -51,15 +51,15 @@ pub async fn search_nodes(
     responses((status = 200, description = "Expanded node data"))
 )]
 pub async fn expand_node(
-    RequireParticipant(_ctx): RequireParticipant,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Json(req): Json<ExpandRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     if let Some(job_id) = &req.job_id {
-        let graph_name = format!("urn:keasy:output:{job_id}");
-        if !state.graph_store.graph_exists(&graph_name) {
-            return Ok(not_ready_error());
-        }
+        let graph_name = match require_output_ready(&state, &ctx, job_id).await {
+            Ok(g) => g,
+            Err(r) => return Ok(r),
+        };
         Ok(data_response(state.graph_store.expand_node(Some(&graph_name), &req.node_id)).into_response())
     } else {
         Ok(data_response(state.graph_store.expand_node(None, &req.node_id)).into_response())
@@ -77,15 +77,15 @@ pub struct QueryRequest {
     responses((status = 200, description = "SPARQL query results"), (status = 400, description = "SPARQL error"))
 )]
 pub async fn query_discover(
-    RequireParticipant(_ctx): RequireParticipant,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<QueryRequest>,
 ) -> Response {
-    let graph_name = format!("urn:keasy:output:{id}");
-    if !state.graph_store.graph_exists(&graph_name) {
-        return not_ready_error();
-    }
+    let graph_name = match require_output_ready(&state, &ctx, &id).await {
+        Ok(g) => g,
+        Err(r) => return r,
+    };
     match state.graph_store.sparql_select(&req.sparql, Some(&graph_name)) {
         Ok(data) => data_response(data).into_response(),
         Err(msg) => (
@@ -114,15 +114,15 @@ fn default_aggregation() -> String {
     responses((status = 200, description = "Chart data"))
 )]
 pub async fn chart_discover(
-    RequireParticipant(_ctx): RequireParticipant,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<ChartRequest>,
 ) -> Response {
-    let graph_name = format!("urn:keasy:output:{id}");
-    if !state.graph_store.graph_exists(&graph_name) {
-        return not_ready_error();
-    }
+    let graph_name = match require_output_ready(&state, &ctx, &id).await {
+        Ok(g) => g,
+        Err(r) => return r,
+    };
     let sparql = build_chart_sparql(&req);
     match state.graph_store.sparql_select(&sparql, Some(&graph_name)) {
         Ok(data) => data_response(data).into_response(),
@@ -184,15 +184,15 @@ pub struct ExportQuery {
     responses((status = 200, description = "RDF file download"))
 )]
 pub async fn export_discover(
-    RequireParticipant(_ctx): RequireParticipant,
+    RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
     axum::extract::Query(query): axum::extract::Query<ExportQuery>,
 ) -> Response {
-    let graph_name = format!("urn:keasy:output:{id}");
-    if !state.graph_store.graph_exists(&graph_name) {
-        return not_ready_error();
-    }
+    let graph_name = match require_output_ready(&state, &ctx, &id).await {
+        Ok(g) => g,
+        Err(r) => return r,
+    };
 
     let format = match query
         .format
@@ -260,10 +260,20 @@ pub async fn load_discover(
     }).into_response()
 }
 
-fn not_ready_error() -> Response {
-    (
-        StatusCode::BAD_REQUEST,
-        Json(error_body("not_ready", "Job output is not yet available. The job may still be loading.")),
-    )
-        .into_response()
+/// Returns Ok(graph_name) if the output is ready to query, or Err(Response) with the right error.
+/// Fast path: graph already has triples → no DB lookup needed.
+/// Slow path: graph empty → check job status to distinguish "not completed" from "completed but no outputs".
+pub(crate) async fn require_output_ready(state: &AppState, ctx: &TenantContext, job_id: &str) -> Result<String, Response> {
+    let graph_name = format!("urn:keasy:output:{job_id}");
+    if state.graph_store.graph_exists(&graph_name) {
+        return Ok(graph_name);
+    }
+    match state.db.get_job(&ctx.scoped(job_id)).await {
+        None => Err((StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response()),
+        Some(j) if j.status != JobStatus::Completed => Err((
+            StatusCode::BAD_REQUEST,
+            Json(error_body("not_completed", "Job is not completed yet")),
+        ).into_response()),
+        Some(_) => Ok(graph_name), // completed but no outputs — queries will return empty results
+    }
 }

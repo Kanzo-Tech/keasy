@@ -8,6 +8,8 @@ use shacl_ir::compiled::schema_ir::SchemaIR as CompiledSchema;
 use shacl_rdf::ShaclParser;
 use shacl_validation::shacl_processor::{GraphValidation, ShaclProcessor, ShaclValidationMode};
 use shacl_validation::store::graph::Graph;
+use shex_ast::ShExFormat;
+use shex_ast::ast::Schema;
 use shex_ast::compact::ShExParser;
 use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::shapemap::{NodeSelector, QueryShapeMap, ShapeSelector};
@@ -30,10 +32,21 @@ impl ValidatableGraph {
         Ok(Self(graph))
     }
 
-    pub fn validate_shex(self, shape_content: &str) -> Result<ValidationResult, String> {
-        let source_iri = IriS::new_unchecked("http://example.org/shapes");
-        let ast = ShExParser::from_reader(Cursor::new(shape_content.as_bytes()), None, &source_iri)
-            .map_err(|e| format!("Failed to parse ShEx: {e}"))?;
+    pub fn validate_shex(self, shape_content: &str, format: &ShExFormat) -> Result<ValidationResult, String> {
+        let ast = match format {
+            ShExFormat::ShExC => {
+                let source_iri = IriS::new_unchecked("http://example.org/shapes");
+                ShExParser::from_reader(Cursor::new(shape_content.as_bytes()), None, &source_iri)
+                    .map_err(|e| format!("Failed to parse ShEx: {e}"))
+            }
+            ShExFormat::ShExJ => {
+                Schema::from_reader(shape_content.as_bytes())
+                    .map_err(|e| format!("Failed to parse ShExJ: {e}"))
+            }
+            ShExFormat::RDFFormat(_) => {
+                Err("RDF-based ShEx formats are not supported".to_string())
+            }
+        }?;
 
         // NOTE: rudof bug — StartDecl doesn't call .deref(), so BASE-relative shape
         // labels in `start = @<Foo>` are not resolved. Use PREFIX : instead of BASE.

@@ -27,20 +27,6 @@ export function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const SHAPE_EXTENSIONS = [".shex", ".ttl", ".shapes.ttl"];
-
-export function isShapeFile(path: string): boolean {
-  return SHAPE_EXTENSIONS.some((ext) => path.toLowerCase().endsWith(ext));
-}
-
-/** Detect the shape format from a file path extension. */
-export function detectShapeFormat(path: string): "ShEx" | "SHACL" | null {
-  const lower = path.toLowerCase();
-  if (lower.endsWith(".shex")) return "ShEx";
-  if (lower.endsWith(".ttl")) return "SHACL";
-  return null;
-}
-
 /** Extract the local name from a full IRI (after last `/` or `#`). */
 export function localName(iri: string): string {
   const clean = iri.replace(/^<|>$/g, "");

@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
+use shex_ast::ShExFormat;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum ShapeFormat {
-    ShEx,
+    ShEx(ShExFormat),
     Shacl,
 }
 

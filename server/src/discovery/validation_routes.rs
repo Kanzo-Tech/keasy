@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use rudof_rdf::rdf_core::RDFFormat;
+use shex_ast::ShExFormat;
 
 use crate::cloud::reader;
 use crate::connections::models::LocationType;
@@ -11,6 +12,22 @@ use crate::middleware::tenant::RequireParticipant;
 use super::validation_types::{ShapeFormat, ValidationRequest};
 use super::validation::ValidatableGraph;
 use crate::AppState;
+
+/// Supported ShEx formats for detection (ShExR/RDF is niche — defer).
+const SUPPORTED_SHEX_FORMATS: &[ShExFormat] = &[ShExFormat::ShExC, ShExFormat::ShExJ];
+
+fn detect_shape_format(path: &str) -> Option<ShapeFormat> {
+    let ext = path.rsplit('.').next()?.to_lowercase();
+    for fmt in SUPPORTED_SHEX_FORMATS {
+        if fmt.extensions().contains(&ext.as_str()) {
+            return Some(ShapeFormat::ShEx(fmt.clone()));
+        }
+    }
+    if ext == "ttl" {
+        return Some(ShapeFormat::Shacl);
+    }
+    None
+}
 
 #[utoipa::path(post, path = "/v1/validate", tag = "Validation",
     responses((status = 200, description = "Validation result"), (status = 400, description = "Invalid request"))
@@ -84,16 +101,14 @@ pub async fn validate_job(
         }
     };
 
-    let path_lower = req.shape_path.to_lowercase();
-    let shape_format = if path_lower.ends_with(".shex") {
-        ShapeFormat::ShEx
-    } else if path_lower.ends_with(".ttl") {
-        ShapeFormat::Shacl
-    } else {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(error_body("unsupported_format", "Unsupported shape file extension. Use .shex for ShEx or .ttl for SHACL.")),
-        ).into_response();
+    let shape_format = match detect_shape_format(&req.shape_path) {
+        Some(fmt) => fmt,
+        None => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(error_body("unsupported_format", "Unsupported shape file extension. Use .shex/.shexj for ShEx or .ttl for SHACL.")),
+            ).into_response();
+        }
     };
 
     let data_format = rdf_format_from_url(&req.data_url);
@@ -101,7 +116,7 @@ pub async fn validate_job(
     let result = tokio::task::spawn_blocking(move || {
         let graph = ValidatableGraph::from_bytes(&data_bytes, &data_format)?;
         match shape_format {
-            ShapeFormat::ShEx => graph.validate_shex(&shape_content),
+            ShapeFormat::ShEx(fmt) => graph.validate_shex(&shape_content, &fmt),
             ShapeFormat::Shacl => graph.validate_shacl(&shape_content),
         }
     })

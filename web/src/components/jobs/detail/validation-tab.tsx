@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { isShapeFile, detectShapeFormat, localName, cleanValidationMessage } from "@/lib/formatters";
+import { localName, cleanValidationMessage } from "@/lib/formatters";
 import type {
   FileEntry,
   ShapeValidationResult,
@@ -42,6 +42,19 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
   const [view, setView] = useState<"errors" | "valid">("errors");
 
   const { data: vocabConnections } = useSWR("vocab-connections", () => api.connections.list("vocab"));
+  const { data: providers } = useSWR("providers", () => api.settings.providers());
+
+  const schemaProviders = (providers ?? []).filter(
+    (p) => p.kind === "schema" || p.kind === "both",
+  );
+  const schemaExtensions = schemaProviders.flatMap((p) => p.extensions);
+
+  /** Match a file extension to the provider name for badge display. */
+  function matchProviderName(path: string): string | null {
+    const ext = path.split(".").pop()?.toLowerCase() ?? "";
+    const match = schemaProviders.find((p) => p.extensions.includes(ext));
+    return match?.name ?? null;
+  }
 
   useEffect(() => {
     if (!selectedConnection) {
@@ -53,13 +66,17 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
     setSelectedFile("");
     setResult(null);
     api.connections.files(selectedConnection)
-      .then((f) => setFiles(f.filter((e) => isShapeFile(e.path))))
+      .then((f) => setFiles(f.filter((e) => {
+        const ext = e.path.split(".").pop()?.toLowerCase() ?? "";
+        return schemaExtensions.includes(ext);
+      })))
       .catch(() => {
         toastError("Failed to list files");
         setFiles([]);
       })
       .finally(() => setFilesLoading(false));
-  }, [selectedConnection]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- re-filter when providers load
+  }, [selectedConnection, providers]);
 
   async function handleValidate() {
     if (!selectedDest || !selectedConnection || !selectedFile) return;
@@ -134,11 +151,11 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
               <FormField label="Shape file">
                 <Combobox
                   options={files.map((f) => {
-                    const fmt = detectShapeFormat(f.path);
+                    const name = matchProviderName(f.path);
                     return {
                       value: f.path,
                       label: f.path,
-                      suffix: fmt ? <Badge variant="outline" className="text-[10px] px-1.5 py-0">{fmt}</Badge> : undefined,
+                      suffix: name ? <Badge variant="outline" className="text-[10px] px-1.5 py-0">{name}</Badge> : undefined,
                     };
                   })}
                   value={selectedFile}

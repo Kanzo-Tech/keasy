@@ -1,5 +1,4 @@
 use super::dcat_types::{DatasetInfo, DcatInput, DistributionInfo};
-use super::graph_store::GraphStore;
 use super::graph_types::{KeasyTriple, TermValue};
 use super::rdf_format::RdfExportFormat;
 use super::rdf_graph::RdfGraph;

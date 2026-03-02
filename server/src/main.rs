@@ -1,4 +1,4 @@
-use keasy_server::{AppState, AuthServices, GaiaXServices, OutputCache, Database, GraphStore, JobRunner, RdfGraph};
+use keasy_server::{AppState, AuthServices, GaiaXServices, Database, JobRunner, RdfGraph};
 use keasy_server::config::ServerConfig;
 use keasy_server::routes::build_router;
 use secrecy::ExposeSecret;
@@ -7,7 +7,6 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tokio::sync::Mutex;
 use tracing::{info, warn};
 
 use tower_sessions::ExpiredDeletion;
@@ -61,18 +60,16 @@ async fn main() {
         std::process::exit(1);
     }
 
-    let catalog: Arc<dyn GraphStore> = Arc::new(RdfGraph::new());
+    let catalog = Arc::new(RdfGraph::new());
 
     let mut restored = 0usize;
     for (job_id, turtle) in &db.completed_catalogs_all().await {
-        match keasy_server::discovery::loader::parse_rdf_to_triples(turtle.as_bytes(), "catalog.ttl") {
-            Ok(triples) => {
-                catalog.insert_triples(Some(&format!("urn:keasy:job:{job_id}")), &triples);
-                restored += 1;
-            }
+        match catalog.bulk_load_bytes(Some(&format!("urn:keasy:job:{job_id}")), turtle.as_bytes(), "catalog.ttl") {
+            Ok(()) => restored += 1,
             Err(e) => warn!(job_id = %job_id, error = %e, "Failed to restore catalog"),
         }
     }
+
     if restored > 0 {
         info!(count = restored, "Restored catalogs into graph store");
     }
@@ -99,7 +96,6 @@ async fn main() {
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
     );
 
-    let output_cache = Arc::new(Mutex::new(OutputCache::new(config.cache_capacity)));
     let runner = Arc::new(JobRunner::new(
         db.clone(),
         catalog.clone(),
@@ -204,7 +200,6 @@ async fn main() {
         db,
         runner: runner.clone(),
         catalog,
-        output_cache,
         api_key: config.api_key,
         base_url: config.base_url,
         auth,

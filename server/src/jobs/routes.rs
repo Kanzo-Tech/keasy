@@ -197,11 +197,6 @@ pub async fn delete_job(
     let graph_name = format!("urn:keasy:job:{id}");
     state.catalog.clear_named_graph(&graph_name);
 
-    {
-        let mut cache = state.output_cache.lock().await;
-        cache.remove(&id);
-    }
-
     state.db.remove_job(&ctx.scoped(id.as_str())).await
         .map_err(JobApiError::Internal)?;
 

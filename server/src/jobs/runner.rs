@@ -16,7 +16,7 @@ use crate::discovery::dcat_extract::extract_dcat_input;
 use crate::discovery::dcat_generator::{build_catalog_triples, generate_dcat_catalog};
 use crate::discovery::dcat_types::DcatInput;
 use crate::discovery::rdf_format::RdfExportFormat;
-use crate::discovery::graph_store::GraphStore;
+use crate::discovery::rdf_graph::RdfGraph;
 use super::pipeline_types::PipelineOutput;
 use super::script;
 use crate::settings::org::OrgSettings;
@@ -36,7 +36,7 @@ pub struct SpawnParams {
 
 pub struct JobRunner {
     db: Database,
-    catalog: Arc<dyn GraphStore>,
+    catalog: Arc<RdfGraph>,
     semaphore: Arc<Semaphore>,
     job_timeout: Duration,
     tasks: std::sync::Mutex<JoinSet<()>>,
@@ -45,7 +45,7 @@ pub struct JobRunner {
 impl JobRunner {
     pub fn new(
         db: Database,
-        catalog: Arc<dyn GraphStore>,
+        catalog: Arc<RdfGraph>,
         max_concurrent: usize,
         job_timeout_secs: u64,
     ) -> Self {

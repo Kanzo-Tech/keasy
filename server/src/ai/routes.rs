@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -12,10 +10,10 @@ use std::fmt::Write as FmtWrite;
 use tracing::warn;
 
 use crate::AppState;
+use crate::discovery::routes::load_graph_for_job;
 use super::client::{AiError, ask_llm};
 use super::models::{Conversation, ConversationMessage};
 use crate::error::data_response;
-use crate::discovery::graph_store::GraphStore;
 use crate::jobs::PipelineSummary;
 use crate::middleware::tenant::RequireParticipant;
 
@@ -30,9 +28,9 @@ pub async fn ask_discover(
     Path(id): Path<String>,
     Json(req): Json<AskRequest>,
 ) -> Response {
-    let graph = match get_cached_graph(&state, &id).await {
-        Some(g) => g,
-        None => return not_loaded_error(),
+    let graph = match load_graph_for_job(&state, &ctx, &id).await {
+        Ok(g) => g,
+        Err(resp) => return resp,
     };
 
     let ai_settings = if let Some(pid) = &req.provider {
@@ -311,12 +309,11 @@ pub struct AskResponse {
 }
 
 fn strip_markdown_fences(raw: &str) -> &str {
-    raw.strip_prefix("```json")
+    let mid = raw
+        .strip_prefix("```json")
         .or_else(|| raw.strip_prefix("```"))
-        .unwrap_or(raw)
-        .strip_suffix("```")
-        .unwrap_or(raw)
-        .trim()
+        .unwrap_or(raw);
+    mid.strip_suffix("```").unwrap_or(mid).trim()
 }
 
 fn format_sparql(sparql: &str) -> String {
@@ -422,18 +419,3 @@ fn summarize_results_for_llm(data: &crate::discovery::graph_types::TabularData) 
     out
 }
 
-async fn get_cached_graph(state: &AppState, job_id: &str) -> Option<Arc<dyn GraphStore>> {
-    let mut cache = state.output_cache.lock().await;
-    cache.get(job_id)
-}
-
-fn not_loaded_error() -> Response {
-    (
-        StatusCode::BAD_REQUEST,
-        Json(crate::error::error_body(
-            "not_loaded",
-            "Output data for this job is not loaded. Call /discover/load first.",
-        )),
-    )
-        .into_response()
-}

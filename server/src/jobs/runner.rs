@@ -153,6 +153,9 @@ impl JobRunner {
                                     }
                                 }
                             }
+                            // Mark the output graph as initialized even if no outputs were loaded,
+                            // so discovery endpoints can distinguish "ready (empty)" from "not yet processed".
+                            graph_store_bg.mark_output_initialized(&output_graph);
                         }
                     });
                     if let Err(e) = db.update_job(&job_ctx, |job| {

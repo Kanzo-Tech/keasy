@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { PreferencesProvider } from "@/components/providers/preferences-provider";
-import { SWRProvider } from "@/components/providers/swr-provider";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
@@ -50,12 +50,12 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <TooltipProvider>
-            <SWRProvider>
+            <QueryProvider>
               <PreferencesProvider>
                 {children}
                 <Toaster position="bottom-right" closeButton />
               </PreferencesProvider>
-            </SWRProvider>
+            </QueryProvider>
           </TooltipProvider>
         </ThemeProvider>
       </body>

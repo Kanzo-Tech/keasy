@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import useSWR from "swr";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toastError } from "@/lib/toast-error";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { reverseMapUrl, reverseMapPipeline } from "@/lib/formatters";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,25 +23,29 @@ function isTerminal(status: JobStatus): boolean {
 }
 
 export function JobDetailView({ id }: { id: string }) {
+  const queryClient = useQueryClient();
+
   const {
     data: job,
     isLoading,
-    mutate,
-  } = useSWR(`job-${id}`, () => api.jobs.get(id), {
-    refreshInterval: (data) => (data && isTerminal(data.status) ? 0 : 2000),
+  } = useQuery({
+    queryKey: queryKeys.jobs.detail(id),
+    queryFn: () => api.jobs.get(id),
+    refetchInterval: (query) => (query.state.data && isTerminal(query.state.data.status) ? 0 : 2000),
   });
-  const { data: connections } = useSWR("connections", api.connections.list);
+  const { data: connections } = useQuery({
+    queryKey: queryKeys.connections.all(),
+    queryFn: () => api.connections.list(),
+  });
 
   const [dcatFormat, setDcatFormat] = useState("turtle");
 
-  const catalogSwrKey =
-    job?.catalog && dcatFormat !== "turtle"
-      ? `catalog-${id}-${dcatFormat}`
-      : null;
-  const { data: fetchedCatalog, isLoading: catalogLoading } = useSWR(
-    catalogSwrKey,
-    () => api.jobs.catalog(id, dcatFormat),
-  );
+  const catalogEnabled = !!job?.catalog && dcatFormat !== "turtle";
+  const { data: fetchedCatalog, isLoading: catalogLoading } = useQuery({
+    queryKey: queryKeys.jobs.catalog(id, dcatFormat),
+    queryFn: () => api.jobs.catalog(id, dcatFormat),
+    enabled: catalogEnabled,
+  });
   const catalogContent =
     dcatFormat === "turtle" ? (job?.catalog ?? null) : (fetchedCatalog ?? null);
 
@@ -52,9 +57,13 @@ export function JobDetailView({ id }: { id: string }) {
     }
   }, [job?.status, job?.error]);
 
-  async function handleCancel() {
-    await api.jobs.cancel(id);
-    mutate();
+  const cancelMutation = useMutation({
+    mutationFn: () => api.jobs.cancel(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.jobs.detail(id) }),
+  });
+
+  function handleCancel() {
+    cancelMutation.mutate();
   }
 
   if (isLoading) {

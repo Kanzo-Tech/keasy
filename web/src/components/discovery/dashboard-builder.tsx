@@ -12,7 +12,8 @@ import {
   Square,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -77,12 +78,12 @@ function buildSchema(outputs: PipelineOutput[]): FieldSchema[] {
 }
 
 export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
-  const { data: job } = useSWR(`job-${jobId}`, () => api.jobs.get(jobId));
+  const { data: job } = useQuery({ queryKey: queryKeys.jobs.detail(jobId), queryFn: () => api.jobs.get(jobId) });
 
-  const { data: savedLayout, isLoading: layoutLoading } = useSWR(
-    `dashboard-${jobId}`,
-    () => loadDashboard(jobId),
-  );
+  const { data: savedLayout, isLoading: layoutLoading } = useQuery({
+    queryKey: queryKeys.dashboard(jobId),
+    queryFn: () => loadDashboard(jobId),
+  });
 
   const [widgets, setWidgets] = useState<ChartWidgetType[] | null>(null);
   const [columns, setColumns] = useState<DashboardColumns | null>(null);
@@ -90,10 +91,10 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
   const effectiveWidgets = widgets ?? savedLayout?.widgets ?? [];
   const effectiveColumns = columns ?? savedLayout?.columns ?? 2;
 
-  const { data: discovery, isLoading, error } = useSWR(
-    `discovery-db-${jobId}`,
-    () => api.discovery.load(jobId),
-  );
+  const { data: discovery, isLoading, error } = useQuery({
+    queryKey: queryKeys.discovery.db(jobId),
+    queryFn: () => api.discovery.load(jobId),
+  });
   const showSkeleton = useDelayedLoading(isLoading || layoutLoading);
 
   const graphReady = discovery != null;

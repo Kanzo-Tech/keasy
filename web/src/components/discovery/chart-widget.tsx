@@ -2,7 +2,8 @@
 
 import { type ReactNode, useMemo } from "react";
 import { X, Loader2, Settings2 } from "lucide-react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 import {
   BarChart,
   Bar,
@@ -350,18 +351,17 @@ export function ChartWidget({
   const yField = widget.yAxis ? fieldMap[widget.yAxis] : undefined;
   const groupField = widget.groupBy ? fieldMap[widget.groupBy] : undefined;
 
-  const chartSwrKey = xField
-    ? `chart-${jobId}-${widget.xAxis}-${widget.yAxis ?? ""}-${widget.groupBy ?? ""}-${widget.type}-${effectiveAggregation}`
-    : null;
-
-  const { data: rawResult, isLoading: queryLoading } = useSWR(chartSwrKey, () =>
-    api.discovery.chart(jobId, {
-      x_predicate: xField!.iri,
-      y_predicate: yField?.iri,
-      group_predicate: groupField?.iri,
-      aggregation: effectiveAggregation,
-    }),
-  );
+  const { data: rawResult, isLoading: queryLoading } = useQuery({
+    queryKey: queryKeys.discovery.chart(jobId, widget.xAxis, widget.yAxis ?? "", widget.groupBy ?? "", widget.type, effectiveAggregation),
+    queryFn: () =>
+      api.discovery.chart(jobId, {
+        x_predicate: xField!.iri,
+        y_predicate: yField?.iri,
+        group_predicate: groupField?.iri,
+        aggregation: effectiveAggregation,
+      }),
+    enabled: !!xField,
+  });
 
   const chartData = useMemo<Record<string, string | number>[]>(() => {
     if (!rawResult) return [];

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import useSWR from "swr";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Copy, Link2, Plus, Trash2, UserCircle } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
@@ -37,6 +37,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
 import { useOrgUsers } from "@/hooks/use-org-users";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import type { OrgUser, OrgInvite } from "@/lib/types";
 
 function orgUserColumns(
@@ -108,11 +109,12 @@ const inviteStatusVariant = (
 };
 
 export default function OrgUsersPage() {
+  const queryClient = useQueryClient();
   const { users, isLoading, handleRoleChange, handleRemoveUser } = useOrgUsers();
-  const {
-    data: invites,
-    mutate: mutateInvites,
-  } = useSWR<OrgInvite[]>("org-invites", api.org.invites);
+  const { data: invites } = useQuery<OrgInvite[]>({
+    queryKey: queryKeys.org.invites,
+    queryFn: api.org.invites,
+  });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [inviteRole, setInviteRole] = useState("user");
@@ -144,7 +146,7 @@ export default function OrgUsersPage() {
         data.invite_url ??
         `${window.location.origin}/invite?token=${data.token}`;
       setCreatedInviteUrl(inviteUrl);
-      await mutateInvites();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.org.invites });
       toast.success("Invite link created");
     } catch {
       toast.error("Failed to create invite");
@@ -156,7 +158,7 @@ export default function OrgUsersPage() {
   async function handleRevokeInvite(token: string) {
     try {
       await api.org.revokeInvite(token);
-      await mutateInvites();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.org.invites });
       toast.success("Invite revoked");
     } catch {
       toast.error("Failed to revoke invite");

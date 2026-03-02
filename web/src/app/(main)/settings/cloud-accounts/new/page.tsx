@@ -1,19 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useSWRConfig } from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
-import useSWR from "swr";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { CloudAccountForm } from "@/components/settings/cloud-account-form";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function NewCloudAccountPage() {
   const router = useRouter();
-  const { mutate } = useSWRConfig();
-  const { data: schema, isLoading } = useSWR("schema", api.settings.schema);
+  const queryClient = useQueryClient();
+  const { data: schema, isLoading } = useQuery({ queryKey: queryKeys.settings.schema, queryFn: api.settings.schema });
   const showSkeleton = useDelayedLoading(isLoading);
 
   if (isLoading || !schema) {
@@ -32,7 +32,7 @@ export default function NewCloudAccountPage() {
         try {
           await api.cloud.create(data);
           toast.success("Cloud account created");
-          mutate("cloud-init");
+          queryClient.invalidateQueries({ queryKey: queryKeys.cloud.init });
           router.push("/settings/cloud-accounts");
         } catch (err) {
           toastError(err instanceof Error ? err.message : "Failed to create");

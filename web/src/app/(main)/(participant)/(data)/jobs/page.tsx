@@ -2,13 +2,14 @@
 
 import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Briefcase, Plus } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { hasRunningJobs } from "@/lib/utils";
 import {
   DataTable,
@@ -82,18 +83,26 @@ function jobColumns(onDelete: (id: string) => void): ColumnDef<Job>[] {
 
 export default function JobsPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const { data: jobs, mutate } = useSWR("jobs", api.jobs.list, {
-    refreshInterval: (data) => (hasRunningJobs(data) ? 2000 : 0),
+  const { data: jobs } = useQuery({
+    queryKey: queryKeys.jobs.all,
+    queryFn: api.jobs.list,
+    refetchInterval: (query) => (hasRunningJobs(query.state.data) ? 2000 : 0),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.jobs.remove(id),
+    onSuccess: () => {
+      toast.success("Job deleted");
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
+    },
+    onError: () => toast.error("Failed to delete job"),
   });
 
   const handleDelete = useCallback(
-    async (id: string) => {
-      await api.jobs.remove(id);
-      toast.success("Job deleted");
-      mutate();
-    },
-    [mutate],
+    (id: string) => { deleteMutation.mutate(id); },
+    [deleteMutation],
   );
 
   const columns = useMemo(() => jobColumns(handleDelete), [handleDelete]);

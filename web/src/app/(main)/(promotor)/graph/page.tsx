@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { GraphView } from "@/components/discovery/graph-view";
 import { PageContent, PageHeader } from "@/components/layout/page-content";
 import {
@@ -13,15 +13,17 @@ import {
 } from "@/components/ui/select";
 import type { OrgEntry } from "@/lib/types";
 import { api } from "@/lib/api";
-
-const orgFetcher = async () => {
-  const data = await api.admin.orgs();
-  return data.filter((o) => o.role !== "promotor");
-};
+import { queryKeys } from "@/lib/query-keys";
 
 export default function GraphPage() {
   const [selectedOrg, setSelectedOrg] = useState<string | undefined>();
-  const { data: orgs } = useSWR<OrgEntry[]>("admin-orgs-participants", orgFetcher);
+  const { data: orgs } = useQuery<OrgEntry[]>({
+    queryKey: queryKeys.admin.orgsParticipants,
+    queryFn: async () => {
+      const data = await api.admin.orgs();
+      return data.filter((o) => o.role !== "promotor");
+    },
+  });
 
   return (
     <PageContent className="flex flex-col p-0">

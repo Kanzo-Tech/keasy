@@ -1,11 +1,12 @@
 "use client";
 
 import * as React from "react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 
 import { getSidebarRoutes } from "@/lib/route-config";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import type { MeResponse } from "@/lib/types";
 import { NavMain } from "@/components/layout/nav-main";
 import { NavUser } from "@/components/layout/nav-user";
@@ -21,7 +22,7 @@ import {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
-  const { data: me } = useSWR<MeResponse>("auth-me", api.auth.me);
+  const { data: me } = useQuery<MeResponse>({ queryKey: queryKeys.me, queryFn: api.auth.me });
 
   const effectiveRole = me?.effective_role ?? "org_user";
   const sidebarRoutes = getSidebarRoutes(effectiveRole);

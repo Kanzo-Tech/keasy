@@ -1,14 +1,10 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, useContext } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import type { Preferences } from "@/lib/types";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 
 interface PreferencesContextValue {
   preferences: Preferences;
@@ -54,31 +50,28 @@ function applyToDOM(prefs: Preferences) {
 }
 
 export function PreferencesProvider({ children }: { children: React.ReactNode }) {
-  const [preferences, setPreferences] = useState<Preferences>(defaultPreferences);
-  const [saving, setSaving] = useState(false);
+  const { data: preferences = defaultPreferences } = useQuery({
+    queryKey: queryKeys.settings.preferences,
+    queryFn: async () => {
+      const prefs = await api.settings.preferences();
+      applyToDOM(prefs);
+      return prefs;
+    },
+  });
 
-  useEffect(() => {
-    api.settings.preferences()
-      .then((prefs) => {
-        setPreferences(prefs);
-        applyToDOM(prefs);
-      })
-      .catch(() => {});
-  }, []);
-
-  const save = useCallback(async (prefs: Preferences) => {
-    setSaving(true);
-    try {
-      const saved = await api.settings.savePreferences(prefs);
-      setPreferences(saved);
+  const { mutateAsync, isPending } = useMutation({
+    mutationFn: api.settings.savePreferences,
+    onSuccess: (saved) => {
       applyToDOM(saved);
-    } finally {
-      setSaving(false);
-    }
-  }, []);
+    },
+  });
+
+  async function savePreferences(prefs: Preferences) {
+    await mutateAsync(prefs);
+  }
 
   return (
-    <PreferencesContext value={{ preferences, saving, savePreferences: save }}>
+    <PreferencesContext value={{ preferences, saving: isPending, savePreferences }}>
       {children}
     </PreferencesContext>
   );

@@ -2,12 +2,12 @@
 
 import { use } from "react";
 import { useRouter } from "next/navigation";
-import { useSWRConfig } from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
-import useSWR from "swr";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { CloudAccountForm } from "@/components/settings/cloud-account-form";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -18,11 +18,12 @@ export default function EditCloudAccountPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const { mutate: globalMutate } = useSWRConfig();
+  const queryClient = useQueryClient();
 
-  const { data, isLoading } = useSWR(`cloud-edit-${id}`, () =>
-    Promise.all([api.settings.schema(), api.cloud.get(id)]),
-  );
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.cloud.detail(id),
+    queryFn: () => Promise.all([api.settings.schema(), api.cloud.get(id)]),
+  });
   const showSkeleton = useDelayedLoading(isLoading);
 
   const [schema, account] = data ?? [[], null];
@@ -52,7 +53,7 @@ export default function EditCloudAccountPage({
             fields: data.fields,
           });
           toast.success("Cloud account updated");
-          globalMutate("cloud-init");
+          queryClient.invalidateQueries({ queryKey: queryKeys.cloud.init });
           router.push("/settings/cloud-accounts");
         } catch (err) {
           toastError(err instanceof Error ? err.message : "Failed to update");

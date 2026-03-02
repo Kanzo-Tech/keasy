@@ -9,8 +9,9 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
@@ -133,6 +134,7 @@ function MessageEntry({ msg }: { msg: ConversationMessage }) {
 }
 
 export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
+  const queryClient = useQueryClient();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<
     string | null
@@ -143,7 +145,7 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
   const [selectedProvider, setSelectedProvider] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { data: aiProviders, isLoading: loadingAiProviders } = useSWR("ai-providers", api.ai.providers);
+  const { data: aiProviders, isLoading: loadingAiProviders } = useQuery({ queryKey: queryKeys.ai.providers, queryFn: api.ai.providers });
   const connectedProviders = AI_PROVIDERS.filter((p) =>
     aiProviders?.some((s) => s.provider === p.id && s.api_key),
   );
@@ -155,10 +157,10 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
     }
   }, [connectedProviders, selectedProvider]);
 
-  const { data: initialConversations, isLoading: loadingConversations, mutate: mutateConversations } = useSWR(
-    `conversations-${jobId}`,
-    () => api.conversations.list(jobId),
-  );
+  const { data: initialConversations, isLoading: loadingConversations } = useQuery({
+    queryKey: queryKeys.conversations.list(jobId),
+    queryFn: () => api.conversations.list(jobId),
+  });
 
   useEffect(() => {
     if (initialConversations) {
@@ -169,10 +171,11 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
     }
   }, [initialConversations]);
 
-  const { data: loadedMessages } = useSWR(
-    activeConversationId ? `messages-${activeConversationId}` : null,
-    () => api.conversations.messages(activeConversationId!),
-  );
+  const { data: loadedMessages } = useQuery({
+    queryKey: queryKeys.conversations.messages(activeConversationId ?? ""),
+    queryFn: () => api.conversations.messages(activeConversationId!),
+    enabled: !!activeConversationId,
+  });
 
   useEffect(() => {
     if (loadedMessages) setMessages(loadedMessages);
@@ -253,7 +256,7 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
             ...prev,
           ];
         });
-        mutateConversations();
+        queryClient.invalidateQueries({ queryKey: queryKeys.conversations.list(jobId) });
       }
       const assistantMsg: ConversationMessage = {
         id: crypto.randomUUID(),

@@ -1,11 +1,12 @@
 "use client";
 
 import * as React from "react";
-import useSWR, { mutate } from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { ROLE_LABEL } from "@/lib/route-config";
 import type { MeResponse, WorkspacesResponse, Workspace } from "@/lib/types";
 import {
@@ -24,12 +25,16 @@ import {
 
 export function WorkspaceSwitcher() {
   const { isMobile } = useSidebar();
+  const queryClient = useQueryClient();
 
-  const { data: me } = useSWR<MeResponse>("auth-me", api.auth.me);
-  const { data: workspacesData } = useSWR<WorkspacesResponse>(
-    "workspaces",
-    api.auth.workspaces,
-  );
+  const { data: me } = useQuery<MeResponse>({
+    queryKey: queryKeys.me,
+    queryFn: api.auth.me,
+  });
+  const { data: workspacesData } = useQuery<WorkspacesResponse>({
+    queryKey: queryKeys.workspaces,
+    queryFn: api.auth.workspaces,
+  });
 
   const workspaces = workspacesData?.workspaces ?? [];
   const currentClientId = workspacesData?.current_client_id ?? "";
@@ -50,7 +55,7 @@ export function WorkspaceSwitcher() {
   async function handleSwitch(ws: Workspace) {
     if (ws.client_id === currentClientId) return;
     setSwitching(ws.name);
-    await mutate(() => true, undefined, { revalidate: false });
+    await queryClient.resetQueries();
     try {
       setSwitchTarget(`${ws.url}/v1/auth/oidc-start`);
     } catch {

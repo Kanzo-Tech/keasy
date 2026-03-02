@@ -3,7 +3,7 @@
 import { createElement } from "react";
 
 import { toast } from "sonner";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { MetaItem } from "@/components/shared/meta-item";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getProviderIcon } from "@/lib/provider-icons";
@@ -32,14 +33,16 @@ function formatSize(bytes: number): string {
 }
 
 export function ConnectionDetail({ id }: { id: string }) {
-  const { data, isLoading } = useSWR(`connection-edit-${id}`, () =>
-    Promise.all([
-      api.connections.get(id),
-      api.settings.schema(),
-      api.cloud.list(),
-      api.settings.providers(),
-    ]),
-  );
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.connections.detail(id),
+    queryFn: () =>
+      Promise.all([
+        api.connections.get(id),
+        api.settings.schema(),
+        api.cloud.list(),
+        api.settings.providers(),
+      ]),
+  });
   const showSkeleton = useDelayedLoading(isLoading);
 
   const [connection, schema, accounts, providers] = data ?? [null, [], [], []];
@@ -50,13 +53,12 @@ export function ConnectionDetail({ id }: { id: string }) {
     ? (schema.find((s) => s.id === account.provider_id) ?? null)
     : null;
 
-  const { data: files = [], isLoading: filesLoading } = useSWR(
-    connection && connection.location_type !== "local"
-      ? `connection-files-${id}`
-      : null,
-    () => api.connections.files(id),
-    { onError: () => toast.error("Failed to list files") },
-  );
+  const { data: files = [], isLoading: filesLoading } = useQuery({
+    queryKey: queryKeys.connections.files(id),
+    queryFn: () => api.connections.files(id),
+    enabled: !!(connection && connection.location_type !== "local"),
+    meta: { onError: () => toast.error("Failed to list files") },
+  });
 
   if (isLoading) {
     return showSkeleton ? (

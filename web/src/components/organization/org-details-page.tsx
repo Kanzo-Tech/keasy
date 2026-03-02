@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import useSWR, { useSWRConfig } from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -18,16 +18,16 @@ import {
   formatDate,
 } from "@/components/compliance/compliance-view";
 import { api, ApiError } from "@/lib/api";
-import { WalletExportSection } from "@/components/compliance/wallet-export-section";
+import { queryKeys } from "@/lib/query-keys";
 
 export function OrgDetailsPage() {
-  const { mutate: globalMutate } = useSWRConfig();
-  const { isLoading: identityLoading } = useSWR("org-identity", api.org.identity);
+  const queryClient = useQueryClient();
+  const { isLoading: identityLoading } = useQuery({ queryKey: queryKeys.org.identity, queryFn: api.org.identity });
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const cardRef = useRef<OrgDetailsCardHandle>(null);
   const { data: compliance, isLoading: complianceLoading } =
-    useSWR("gx-compliance-status", api.gaiax.compliance.status);
+    useQuery({ queryKey: queryKeys.gx.compliance, queryFn: api.gaiax.compliance.status });
 
   const [rerunLoading, setRerunLoading] = useState(false);
 
@@ -38,8 +38,8 @@ export function OrgDetailsPage() {
     setRerunLoading(true);
     try {
       await api.gaiax.compliance.rerun();
-      await globalMutate("gx-compliance-status");
-      await globalMutate("org-identity");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.gx.compliance });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.org.identity });
       toast.success("Compliance check completed successfully");
     } catch (err) {
       toast.error(
@@ -159,14 +159,6 @@ export function OrgDetailsPage() {
         )}
       </SettingsSection>
 
-      {isGaiaX && (
-        <SettingsSection
-          title="Wallet & Export"
-          description="Export your compliance credentials to an external wallet."
-        >
-          <WalletExportSection />
-        </SettingsSection>
-      )}
     </SettingsPage>
   );
 }

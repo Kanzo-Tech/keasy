@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Users, Copy, Trash2, Link2 } from "lucide-react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
@@ -22,13 +22,12 @@ import {
 import { PageContent } from "@/components/layout/page-content";
 import type { OrgEntry, AdminInvite } from "@/lib/types";
 import { api, ApiError } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 
 export default function ParticipantsPage() {
-  const { data: orgs } = useSWR<OrgEntry[]>("admin-orgs", api.admin.orgs);
-  const {
-    data: invites,
-    mutate: mutateInvites,
-  } = useSWR<AdminInvite[]>("admin-invites", api.admin.invites);
+  const queryClient = useQueryClient();
+  const { data: orgs } = useQuery<OrgEntry[]>({ queryKey: queryKeys.admin.orgs, queryFn: api.admin.orgs });
+  const { data: invites } = useQuery<AdminInvite[]>({ queryKey: queryKeys.admin.invites, queryFn: api.admin.invites });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [orgName, setOrgName] = useState("");
@@ -94,7 +93,7 @@ export default function ParticipantsPage() {
         data.invite_url ??
         `${window.location.origin}/invite?token=${data.token}`;
       setCreatedInviteUrl(inviteUrl);
-      await mutateInvites();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.admin.invites });
       toast.success("Invite link created");
     } catch (err) {
       toast.error(
@@ -108,7 +107,7 @@ export default function ParticipantsPage() {
   async function handleRevokeInvite(token: string) {
     try {
       await api.admin.revokeInvite(token);
-      await mutateInvites();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.admin.invites });
       toast.success("Invite revoked");
     } catch (err) {
       toast.error(

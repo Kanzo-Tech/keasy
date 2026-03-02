@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useImperativeHandle, forwardRef } from "react";
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FormField } from "@/components/shared/form-layout";
 import { COUNTRY_OPTIONS, getCountryName } from "@/lib/countries";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import type { OrgIdentity } from "@/lib/types";
 
 export interface OrgDetailsCardHandle {
@@ -24,7 +25,8 @@ interface OrgDetailsCardProps {
 
 export const OrgDetailsCard = forwardRef<OrgDetailsCardHandle, OrgDetailsCardProps>(
   function OrgDetailsCard({ readOnly, editing: editingProp, onEditingChange, onSavingChange }, ref) {
-    const { data, isLoading, mutate } = useSWR("org-identity", api.org.identity);
+    const queryClient = useQueryClient();
+    const { data, isLoading } = useQuery({ queryKey: queryKeys.org.identity, queryFn: api.org.identity });
     const [editingInternal, setEditingInternal] = useState(false);
     const editing = editingProp ?? editingInternal;
     const setEditing = onEditingChange ?? setEditingInternal;
@@ -50,7 +52,7 @@ export const OrgDetailsCard = forwardRef<OrgDetailsCardHandle, OrgDetailsCardPro
       updateSaving(true);
       try {
         await api.org.saveIdentity(form);
-        await mutate();
+        await queryClient.invalidateQueries({ queryKey: queryKeys.org.identity });
         toast.success("Organization details saved");
         setEditing(false);
         setForm(null);

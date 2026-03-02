@@ -5,13 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Database, BookOpen, Plus } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import useSWR from "swr";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import {
   DataTable,
   ActionItem,
@@ -84,24 +85,31 @@ export default function ConnectionsPage() {
 function ConnectionsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const tab = (searchParams.get("type") as ConnectionKind) || "data";
 
-  const { data, mutate } = useSWR(`connections-init-${tab}`, () =>
-    Promise.all([api.connections.list(tab), api.settings.schema(), api.cloud.list()]),
-  );
+  const { data } = useQuery({
+    queryKey: queryKeys.connections.init(tab),
+    queryFn: () =>
+      Promise.all([api.connections.list(tab), api.settings.schema(), api.cloud.list()]),
+  });
   const [connections, schema, accounts] = data ?? [[], [], []];
+
+  const deleteMutation = useMutation({
+    mutationFn: api.connections.remove,
+    onSuccess: () => {
+      toast.success("Connection deleted");
+      queryClient.invalidateQueries({ queryKey: queryKeys.connections.init(tab) });
+    },
+  });
 
   function handleTabChange(value: string) {
     router.push(`/connections?type=${value}`);
   }
 
   const handleDelete = useCallback(
-    async (id: string) => {
-      await api.connections.remove(id);
-      toast.success("Connection deleted");
-      mutate();
-    },
-    [mutate],
+    (id: string) => deleteMutation.mutate(id),
+    [deleteMutation],
   );
 
   const columns = useMemo(

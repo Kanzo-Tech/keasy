@@ -2,9 +2,10 @@
 
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
 import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
 import { FormField, FormActions } from "@/components/shared/form-layout";
@@ -132,7 +133,8 @@ function ProviderPanel({
 }
 
 export function AiTab() {
-  const { data: providers, isLoading, mutate } = useSWR("ai-providers", api.ai.providers);
+  const queryClient = useQueryClient();
+  const { data: providers, isLoading } = useQuery({ queryKey: queryKeys.ai.providers, queryFn: api.ai.providers });
   const showSkeleton = useDelayedLoading(isLoading);
 
   if (isLoading) {
@@ -177,7 +179,7 @@ export function AiTab() {
             <ProviderPanel
               provider={p}
               saved={providers?.find((s) => s.provider === p.id)}
-              onSaved={() => mutate()}
+              onSaved={() => queryClient.invalidateQueries({ queryKey: queryKeys.ai.providers })}
             />
           </TabsContent>
         ))}

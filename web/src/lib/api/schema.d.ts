@@ -107,9 +107,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_oidc_clients"];
+        get: operations["list_dataspaces"];
         put?: never;
-        post: operations["register_oidc_client"];
+        post: operations["register_dataspace"];
         delete?: never;
         options?: never;
         head?: never;
@@ -157,16 +157,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * POST /v1/auth/logout
-         * @description Destroys the session cookie and removes the user_sessions DB entry.
-         *     Returns 200 with `end_session_url` — the Keycloak end-session URL for full
-         *     single logout. The frontend redirects the browser to this URL to complete
-         *     the OIDC RP-Initiated Logout flow.
-         *
-         *     If OIDC is not configured, `end_session_url` is null and the caller only
-         *     needs to clear the local session (existing VC behavior is preserved).
-         */
+        /** POST /v1/auth/logout */
         post: operations["logout"];
         delete?: never;
         options?: never;
@@ -206,7 +197,7 @@ export interface paths {
          * GET /v1/auth/workspaces
          * @description Returns the list of dataspaces the authenticated user has access to,
          *     resolved from the `dataspaces` session value to display info via
-         *     the oidc_clients table. Protected by session_required, NOT tenant_context_required.
+         *     the dataspaces table. Used by the sidebar instance switcher.
          */
         get: operations["list_workspaces"];
         put?: never;
@@ -355,86 +346,6 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["rerun_compliance"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/gaia-x/credentials/offer": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["create_credential_offer"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/gaia-x/wallet": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_wallet"];
-        put?: never;
-        post?: never;
-        delete: operations["disconnect_wallet"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/gaia-x/wallet/vc-connect": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["save_wallet_connection"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/gaia-x/wallet/vc-init": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["init_wallet_session"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/gaia-x/wallet/vc-status/{session_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["wallet_verify_status"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1021,6 +932,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AdminInviteEntry: {
+            created_at: string;
+            expires_at: string;
+            org_id: string;
+            org_name: string;
+            status: string;
+            token: string;
+        };
+        AdminInviteResult: {
+            invite_url: string;
+            org_id: string;
+            org_name: string;
+            token: string;
+        };
         AiSettingsPayload: {
             api_key: string;
             /** Format: int32 */
@@ -1059,8 +984,16 @@ export interface components {
             name: string;
             provider_id: string;
         };
-        ConnectPayload: {
-            session_id: string;
+        ComplianceCredential: {
+            issued_at: string;
+            name: string;
+            raw_json: unknown;
+        };
+        ComplianceStatus: {
+            compliant: boolean;
+            credentials: components["schemas"]["ComplianceCredential"][];
+            verified_at?: string | null;
+            wizard_state?: null | components["schemas"]["WizardState"];
         };
         Connection: {
             cloud_account_id?: string | null;
@@ -1104,7 +1037,6 @@ export interface components {
             script: string;
         };
         CreateOrgAndInviteRequest: {
-            admin_email: string;
             name: string;
         };
         CreateOrgInviteRequest: {
@@ -1113,6 +1045,16 @@ export interface components {
         /** @description Typed envelope for successful API responses: `{ "data": T }`. */
         DataResponse_Value: {
             data: unknown;
+        };
+        Dataspace: {
+            client_id: string;
+            created_at: string;
+            description?: string | null;
+            id: string;
+            logo?: string | null;
+            name: string;
+            updated_at: string;
+            url: string;
         };
         ExpandRequest: {
             job_id?: string | null;
@@ -1130,12 +1072,10 @@ export interface components {
         InviteToken: {
             created_at: string;
             created_by: string;
-            email?: string | null;
             expires_at: string;
             org_id: string;
             role: string;
             token: string;
-            used_at?: string | null;
         };
         Job: {
             catalog?: string | null;
@@ -1169,24 +1109,30 @@ export interface components {
         };
         /** @enum {string} */
         LocationType: "cloud" | "local";
+        /**
+         * @description LP payload — legal_name and country_code are read from the organization profile.
+         *     Update them via PUT /v1/org/identity before submitting this step.
+         */
         LpPayload: {
-            country_code: string;
-            legal_name: string;
             private_key_pem: string;
         };
         LrnPayload: {
             lrn_type: string;
             lrn_value: string;
         };
-        OidcClient: {
-            client_id: string;
-            created_at: string;
-            description?: string | null;
+        MeOrg: {
             id: string;
-            logo?: string | null;
             name: string;
-            updated_at: string;
-            url: string;
+            role: string;
+        };
+        MeResponse: {
+            effective_role: string;
+            email: string;
+            first_name: string;
+            last_name: string;
+            membership_role?: string | null;
+            org?: null | components["schemas"]["MeOrg"];
+            user_id: string;
         };
         OperationInput: {
             key_fields?: string[];
@@ -1196,6 +1142,26 @@ export interface components {
             country: string;
             legal_name: string;
             registration_number?: string | null;
+        };
+        OrgInviteEntry: {
+            created_at: string;
+            expires_at: string;
+            role: string;
+            status: string;
+            token: string;
+        };
+        /**
+         * @description An org member — a Keycloak user's membership in a Keasy organization.
+         *     Profile fields (email, first_name, last_name) are cached from OIDC tokens.
+         */
+        OrgMember: {
+            email: string;
+            first_name: string;
+            joined_at: string;
+            last_name: string;
+            org_id: string;
+            role: string;
+            user_id: string;
         };
         OrgSettings: {
             catalog_description?: string | null;
@@ -1214,7 +1180,6 @@ export interface components {
             role: string;
             slug: string;
             updated_at: string;
-            vc_verified_at?: string | null;
         };
         PipelineInput: {
             fields: components["schemas"]["Field"][];
@@ -1294,16 +1259,6 @@ export interface components {
         UpdateUserRoleRequest: {
             role: string;
         };
-        /** @description User with their role in a specific organization, for org admin user management. */
-        UserWithRole: {
-            created_at: string;
-            email: string;
-            first_name: string;
-            id: string;
-            last_name: string;
-            role: string;
-            status: string;
-        };
         ValidateRequest: {
             script: string;
         };
@@ -1318,19 +1273,18 @@ export interface components {
             valid: boolean;
         };
         /**
-         * @description Wizard state record — mirrors the gaia_x_wizard_state table.
+         * @description Wizard state record — mirrors the org_gaiax table.
          *     All credential/key/cert fields are stored as JSON or PEM text.
          *     Private key is NEVER stored — only public_key_jwk (locked decision).
+         *     did_document is NOT stored — derived at runtime from public_key_jwk + domain.
+         *     legal_name and country_code come from organizations, not from wizard state.
          */
         WizardState: {
             cert_chain_pem?: string | null;
             compliance_vc?: string | null;
-            country_code?: string | null;
             /** Format: int64 */
             current_step: number;
-            did_document?: string | null;
             domain?: string | null;
-            legal_name?: string | null;
             lp_credential?: string | null;
             lrn_credential?: string | null;
             lrn_type?: string | null;
@@ -1340,6 +1294,15 @@ export interface components {
             root_ca_pem?: string | null;
             tc_credential?: string | null;
             updated_at: string;
+        };
+        Workspace: {
+            client_id: string;
+            name: string;
+            url: string;
+        };
+        WorkspacesResponse: {
+            current_client_id: string;
+            workspaces: components["schemas"]["Workspace"][];
         };
     };
     responses: never;
@@ -1463,7 +1426,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AdminInviteEntry"][];
+                };
             };
         };
     };
@@ -1524,7 +1489,7 @@ export interface operations {
             };
         };
     };
-    list_oidc_clients: {
+    list_dataspaces: {
         parameters: {
             query?: never;
             header?: never;
@@ -1539,12 +1504,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OidcClient"][];
+                    "application/json": components["schemas"]["Dataspace"][];
                 };
             };
         };
     };
-    register_oidc_client: {
+    register_dataspace: {
         parameters: {
             query?: never;
             header?: never;
@@ -1634,7 +1599,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Invite info with optional email */
+            /** @description Invite token validity */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1675,7 +1640,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
             };
             /** @description Forbidden */
             403: {
@@ -1700,7 +1667,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["WorkspacesResponse"];
+                };
             };
         };
     };
@@ -2109,7 +2078,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ComplianceStatus"];
+                };
             };
         };
     };
@@ -2131,142 +2102,6 @@ export interface operations {
             };
             /** @description Credentials missing */
             400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    create_credential_offer: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Credential offer URL created */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Issuer not configured or org not compliant */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_wallet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Wallet connection status */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    disconnect_wallet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Wallet disconnected */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    save_wallet_connection: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConnectPayload"];
-            };
-        };
-        responses: {
-            /** @description Wallet connected */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Verification not successful */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    init_wallet_session: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Wallet verification session initiated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VC service unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    wallet_verify_status: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Verification session ID */
-                session_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Session status (pending | authenticated | expired) */
-            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2925,7 +2760,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Discovery data loaded */
+            /** @description Discovery data status */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2934,8 +2769,8 @@ export interface operations {
                     "application/json": components["schemas"]["LoadDiscoverResponse"];
                 };
             };
-            /** @description Job not completed */
-            400: {
+            /** @description Job output not yet available */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3075,7 +2910,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["OrgInviteEntry"][];
+                };
             };
         };
     };
@@ -3151,7 +2988,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserWithRole"][];
+                    "application/json": components["schemas"]["OrgMember"][];
                 };
             };
         };

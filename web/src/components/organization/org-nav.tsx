@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Building2, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import type { MeResponse } from "@/lib/types";
 import {
   SidebarGroup,
@@ -24,7 +25,7 @@ interface NavItem {
 export function OrgNav() {
   const pathname = usePathname();
 
-  const { data: me } = useSWR<MeResponse>("auth-me", api.auth.me);
+  const { data: me } = useQuery<MeResponse>({ queryKey: queryKeys.me, queryFn: api.auth.me });
   const isAdmin = me?.effective_role === "org_admin";
 
   const sections: { heading: string; items: NavItem[] }[] = [

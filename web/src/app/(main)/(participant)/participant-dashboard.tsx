@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import {
   Cloud,
   Database,
@@ -11,26 +11,29 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { hasRunningJobs } from "@/lib/utils";
+import { queryKeys } from "@/lib/query-keys";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 export function ParticipantDashboard() {
-  const { data: jobs, isLoading: jobsLoading } = useSWR("jobs", api.jobs.list, {
-    refreshInterval: (data) => (hasRunningJobs(data) ? 2000 : 0),
+  const { data: jobs, isLoading: jobsLoading } = useQuery({
+    queryKey: queryKeys.jobs.all,
+    queryFn: api.jobs.list,
+    refetchInterval: (query) => (hasRunningJobs(query.state.data) ? 2000 : 0),
   });
-  const { data: accounts, isLoading: accountsLoading } = useSWR(
-    "cloud-accounts",
-    api.cloud.list,
-  );
-  const { data: connections, isLoading: connectionsLoading } = useSWR(
-    "connections",
-    () => api.connections.list(),
-  );
-  const { data: complianceStatus, isLoading: complianceLoading } = useSWR(
-    "gx-compliance-status",
-    api.gaiax.compliance.status,
-  );
+  const { data: accounts, isLoading: accountsLoading } = useQuery({
+    queryKey: queryKeys.cloud.init,
+    queryFn: () => api.cloud.list(),
+  });
+  const { data: connections, isLoading: connectionsLoading } = useQuery({
+    queryKey: queryKeys.connections.all(),
+    queryFn: () => api.connections.list(),
+  });
+  const { data: complianceStatus, isLoading: complianceLoading } = useQuery({
+    queryKey: queryKeys.gx.compliance,
+    queryFn: api.gaiax.compliance.status,
+  });
 
   const loading =
     jobsLoading || accountsLoading || connectionsLoading || complianceLoading;

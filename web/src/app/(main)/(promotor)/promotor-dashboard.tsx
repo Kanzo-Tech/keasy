@@ -1,23 +1,24 @@
 "use client";
 
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { Users, Network, type LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 
 export function PromotorDashboard() {
-  const { data: catalogData, isLoading: loading } = useSWR(
-    "promotor-dashboard",
-    async () => {
+  const { data: catalogData, isLoading: loading } = useQuery({
+    queryKey: queryKeys.admin.orgs,
+    queryFn: async () => {
       const data = await api.admin.orgs();
       const participantCount = data.filter(
         (o) => o.role !== "promotor",
       ).length;
       return { participantCount };
     },
-  );
+  });
 
   const participantCount = catalogData?.participantCount ?? 0;
 

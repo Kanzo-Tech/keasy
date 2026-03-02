@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { toast } from "sonner";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,16 +43,16 @@ function StaticGraphView({ source }: { source: GraphSource }) {
     return api.jobs.graph((source as { type: "discovery"; jobId: string }).jobId);
   };
 
-  const swrKey =
+  const queryKey =
     source.type === "job"
-      ? `graph-${source.jobId}`
+      ? queryKeys.graph.job(source.jobId)
       : source.type === "admin"
         ? source.orgId
-          ? `graph-org-${source.orgId}`
-          : "graph-unified"
-        : `graph-${(source as { type: "discovery"; jobId: string }).jobId}`;
+          ? queryKeys.graph.org(source.orgId)
+          : queryKeys.graph.unified
+        : queryKeys.graph.job((source as { type: "discovery"; jobId: string }).jobId);
 
-  const { data, isLoading } = useSWR(swrKey, fetcher);
+  const { data, isLoading } = useQuery({ queryKey, queryFn: fetcher });
 
   if (isLoading) {
     return (
@@ -84,10 +85,13 @@ function InteractiveGraphView({ source }: { source: GraphSource }) {
     data: initial,
     isLoading,
     error: loadError,
-  } = useSWR(`explorer-${jobId}`, async () => {
-    const discovery = await api.discovery.load(jobId);
-    const nodes = await api.discovery.search("", jobId);
-    return { discovery, nodes };
+  } = useQuery({
+    queryKey: queryKeys.discovery.explorer(jobId),
+    queryFn: async () => {
+      const discovery = await api.discovery.load(jobId);
+      const nodes = await api.discovery.search("", jobId);
+      return { discovery, nodes };
+    },
   });
   const showSkeleton = useDelayedLoading(isLoading);
 

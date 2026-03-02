@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import useSWR, { mutate as globalMutate } from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageContent, PageHeader } from "@/components/layout/page-content";
 import { WizardLayout } from "@/components/compliance/wizard-layout";
@@ -15,6 +15,7 @@ import { StepTerms } from "@/components/compliance/steps/step-terms";
 import { StepGxdchSubmit } from "@/components/compliance/steps/step-gxdch-submit";
 import { ServiceGate } from "@/components/ui/service-gate";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import type { WizardState } from "@/lib/types";
 
 const STEP_DEFS: WizardStepDef[] = [
@@ -40,10 +41,11 @@ function isStepCompleted(step: number, state: WizardState): boolean {
 
 export function ComplianceWizard() {
   const router = useRouter();
-  const { data: wizardState, isLoading, mutate } = useSWR<WizardState>(
-    "gx-wizard",
-    api.gaiax.wizard.state,
-  );
+  const queryClient = useQueryClient();
+  const { data: wizardState, isLoading } = useQuery({
+    queryKey: queryKeys.gx.wizard,
+    queryFn: api.gaiax.wizard.state,
+  });
 
   const [currentStep, setCurrentStep] = useState<number | null>(null);
 
@@ -58,17 +60,17 @@ export function ComplianceWizard() {
   }, [wizardState]);
 
   const handleComplete = useCallback(async () => {
-    await mutate();
+    await queryClient.invalidateQueries({ queryKey: queryKeys.gx.wizard });
     const nextStep = effectiveStep + 1;
     if (nextStep >= STEP_DEFS.length) {
       // All steps complete — invalidate caches and navigate to details
-      await globalMutate("gx-compliance-status");
-      await globalMutate("org-identity");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.gx.compliance });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.org.identity });
       router.push("/organization/details");
     } else {
       setCurrentStep(nextStep);
     }
-  }, [effectiveStep, mutate, router]);
+  }, [effectiveStep, queryClient, router]);
 
   const handleBack = useCallback(() => {
     setCurrentStep((prev) => Math.max(0, (prev ?? effectiveStep) - 1));

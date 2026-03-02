@@ -189,7 +189,10 @@ export interface WorkspacesResponse {
 export interface WizardState {
   current_step?: number;
   domain?: string;
+  legal_name?: string;
+  country_code?: string;
   public_key_jwk?: Record<string, unknown>;
+  did_document?: Record<string, unknown>;
   cert_chain_pem?: string;
   lrn_type?: string;
   lrn_value?: string;

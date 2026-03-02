@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSWRConfig } from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
+import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,16 +19,11 @@ import { cn } from "@/lib/utils";
 import { ComingSoon } from "@/components/shared/coming-soon";
 import { Save, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
-import type {
-  RunMode,
-  ValidationResult,
-  Connection,
-  ProviderInfo,
-} from "@/lib/types";
+import type { RunMode, ValidationResult } from "@/lib/types";
 
 export function JobEditor() {
   const router = useRouter();
-  const { mutate } = useSWRConfig();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const draftId = searchParams.get("draft");
 
@@ -40,40 +36,29 @@ export function JobEditor() {
   const [savingDraft, setSavingDraft] = useState(false);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [dcatEnabled, setDcatEnabled] = useState(false);
-  const [orgConfigured, setOrgConfigured] = useState(false);
 
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [providers, setProviders] = useState<ProviderInfo[]>([]);
+  const { data: orgSettings } = useQuery({ queryKey: queryKeys.settings.org, queryFn: api.settings.org });
+  const { data: connections = [] } = useQuery({ queryKey: queryKeys.connections.all(), queryFn: () => api.connections.list() });
+  const { data: providers = [] } = useQuery({ queryKey: queryKeys.settings.providers, queryFn: api.settings.providers });
 
-  useEffect(() => {
-    api.settings.org()
-      .then((settings) => {
-        const configured = settings != null && !!settings.publisher_name;
-        setOrgConfigured(configured);
-        if (configured) setDcatEnabled(true);
-      })
-      .catch(() => {});
-
-    api.connections.list()
-      .then(setConnections)
-      .catch(() => {});
-
-    api.settings.providers()
-      .then(setProviders)
-      .catch(() => {});
-  }, []);
+  const orgConfigured = orgSettings != null && !!orgSettings.publisher_name;
 
   useEffect(() => {
-    if (!draftId) return;
-    api.jobs.get(draftId)
-      .then((job) => {
-        if (job.status !== "draft") return;
-        if (job.script) setScript(job.script);
-        if (job.name) setName(job.name);
-        setMode(job.mode);
-      })
-      .catch(() => {});
-  }, [draftId]);
+    if (orgConfigured) setDcatEnabled(true);
+  }, [orgConfigured]);
+
+  const { data: draftJob } = useQuery({
+    queryKey: queryKeys.jobs.detail(draftId!),
+    queryFn: () => api.jobs.get(draftId!),
+    enabled: !!draftId,
+  });
+
+  useEffect(() => {
+    if (!draftJob || draftJob.status !== "draft") return;
+    if (draftJob.script) setScript(draftJob.script);
+    if (draftJob.name) setName(draftJob.name);
+    setMode(draftJob.mode);
+  }, [draftJob]);
 
   async function handleSaveDraft() {
     setSavingDraft(true);
@@ -97,7 +82,7 @@ export function JobEditor() {
         });
         toast.success("Draft saved");
       }
-      mutate("jobs");
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
       router.push("/jobs");
     } catch (err) {
       toastError(err instanceof Error ? err.message : "Failed to save draft");
@@ -146,7 +131,7 @@ export function JobEditor() {
         dcat_enabled: dcatEnabled || undefined,
         connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
       });
-      mutate("jobs");
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
       router.push(`/jobs/${job.id}`);
     } catch (err) {
       toastError(err instanceof Error ? err.message : "Failed to create job");

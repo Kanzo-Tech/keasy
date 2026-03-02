@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useSWRConfig } from "swr";
+import { useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, ApiError } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import type { ComplianceCredential } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -80,7 +81,7 @@ export function CredentialCard({ credential }: { credential: Credential }) {
 }
 
 export function ComplianceView({ status }: ComplianceViewProps) {
-  const { mutate } = useSWRConfig();
+  const queryClient = useQueryClient();
   const [rerunLoading, setRerunLoading] = useState(false);
 
   const isConformant = status.compliant;
@@ -89,8 +90,7 @@ export function ComplianceView({ status }: ComplianceViewProps) {
     setRerunLoading(true);
     try {
       await api.gaiax.compliance.rerun();
-      // Refresh compliance status in SWR cache
-      await mutate("gx-compliance-status");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.gx.compliance });
       toast.success("Compliance check completed successfully");
     } catch (err) {
       toast.error(

@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Cloud, Plus } from "lucide-react";
 import { toast } from "sonner";
-import useSWR from "swr";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import {
   DataTable,
   ActionItem,
@@ -75,21 +76,27 @@ function cloudAccountColumns(
 
 export function CloudAccountsTab() {
   const router = useRouter();
-  const { data, isLoading, mutate } = useSWR(
-    "cloud-init",
-    () => Promise.all([api.settings.schema(), api.cloud.list()]),
-  );
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.cloud.init,
+    queryFn: () => Promise.all([api.settings.schema(), api.cloud.list()]),
+  });
   const showSkeleton = useDelayedLoading(isLoading);
 
   const [schema, accounts] = data ?? [[], []];
 
-  const handleDelete = useCallback(
-    async (id: string) => {
-      await api.cloud.remove(id);
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.cloud.remove(id),
+    onSuccess: () => {
       toast.success("Cloud account deleted");
-      mutate();
+      queryClient.invalidateQueries({ queryKey: queryKeys.cloud.init });
     },
-    [mutate],
+    onError: () => toast.error("Failed to delete cloud account"),
+  });
+
+  const handleDelete = useCallback(
+    (id: string) => { deleteMutation.mutate(id); },
+    [deleteMutation],
   );
 
   const columns = useMemo(

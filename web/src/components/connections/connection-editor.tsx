@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
-import useSWR, { useSWRConfig } from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { getProviderIcon } from "@/lib/provider-icons";
 import { FormField, FormActions } from "@/components/shared/form-layout";
 import { Button } from "@/components/ui/button";
@@ -41,11 +42,11 @@ const PROVIDER_PLACEHOLDERS: Record<string, string> = {
 
 export function ConnectionEditor() {
   const router = useRouter();
-  const { mutate: globalMutate } = useSWRConfig();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const initialType = (searchParams.get("type") as ConnectionKind) || "data";
 
-  const { data } = useSWR("connection-new-init", api.cloud.list);
+  const { data } = useQuery({ queryKey: queryKeys.cloud.accounts, queryFn: api.cloud.list });
   const accounts = data ?? [];
 
   const [name, setName] = useState("");
@@ -100,10 +101,7 @@ export function ConnectionEditor() {
         url: fullUrl,
       });
       toast.success("Connection created");
-      globalMutate(
-        (key: string) =>
-          typeof key === "string" && key.startsWith("connections-init"),
-      );
+      queryClient.invalidateQueries({ queryKey: ["connections-init"] });
       router.push(`/connections?type=${connectionKind}`);
     } catch (err) {
       toastError(

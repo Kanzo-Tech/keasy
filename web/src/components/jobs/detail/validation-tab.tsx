@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { Play, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { toastError } from "@/lib/toast-error";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -41,8 +42,14 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
   const [result, setResult] = useState<ShapeValidationResult | null>(null);
   const [view, setView] = useState<"errors" | "valid">("errors");
 
-  const { data: vocabConnections } = useSWR("vocab-connections", () => api.connections.list("vocab"));
-  const { data: providers } = useSWR("providers", () => api.settings.providers());
+  const { data: vocabConnections } = useQuery({
+    queryKey: queryKeys.vocab.connections,
+    queryFn: () => api.connections.list("vocab"),
+  });
+  const { data: providers } = useQuery({
+    queryKey: queryKeys.settings.providers,
+    queryFn: api.settings.providers,
+  });
 
   const schemaProviders = (providers ?? []).filter(
     (p) => p.kind === "schema" || p.kind === "both",

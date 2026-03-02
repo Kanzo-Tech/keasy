@@ -264,6 +264,16 @@ export function CodeEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [createExtensions]);
 
+  // Sync external value changes (e.g. draft loaded after connections)
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    const current = view.state.doc.toString();
+    if (current !== value) {
+      view.dispatch({ changes: { from: 0, to: current.length, insert: value } });
+    }
+  }, [value]);
+
   return (
     <div
       className={cn(

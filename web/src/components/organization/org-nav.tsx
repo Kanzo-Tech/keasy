@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ShieldCheck, Users } from "lucide-react";
+import { Building2, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import useSWR from "swr";
 import { api } from "@/lib/api";
@@ -36,12 +36,6 @@ export function OrgNav() {
     },
     ...(isAdmin
       ? [
-          {
-            heading: "Compliance",
-            items: [
-              { href: "/organization/compliance", label: "Gaia-X", icon: ShieldCheck },
-            ],
-          },
           {
             heading: "Members",
             items: [

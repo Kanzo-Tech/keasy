@@ -115,7 +115,7 @@ export function JobSummaryPanel({
             <p className="text-xs text-muted-foreground">
               {orgConfigured
                 ? "Generate a DCAT-AP metadata record for the published datasets"
-                : "Requires organization settings to be configured"}
+                : "Requires organization identity to be configured"}
             </p>
           </div>
           <Switch

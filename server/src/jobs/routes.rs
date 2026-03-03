@@ -93,7 +93,12 @@ pub async fn create_job(
         .map_err(JobApiError::Internal)?;
 
     let org_settings = if dcat_enabled {
-        state.db.get_org_settings().await
+        state.db.get_organization(&ctx.org_id.0).await.map(|org| {
+            crate::settings::org::OrgSettings {
+                publisher_name: org.legal_name,
+                ..Default::default()
+            }
+        })
     } else {
         None
     };

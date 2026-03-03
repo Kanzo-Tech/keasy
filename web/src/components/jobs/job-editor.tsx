@@ -37,11 +37,11 @@ export function JobEditor() {
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [dcatEnabled, setDcatEnabled] = useState(false);
 
-  const { data: orgSettings } = useQuery({ queryKey: queryKeys.settings.org, queryFn: api.settings.org });
+  const { data: orgIdentity } = useQuery({ queryKey: queryKeys.org.identity, queryFn: api.org.identity });
   const { data: connections = [] } = useQuery({ queryKey: queryKeys.connections.all(), queryFn: () => api.connections.list() });
   const { data: providers = [] } = useQuery({ queryKey: queryKeys.settings.providers, queryFn: api.settings.providers });
 
-  const orgConfigured = orgSettings != null && !!orgSettings.publisher_name;
+  const orgConfigured = orgIdentity != null && !!orgIdentity.legal_name;
 
   useEffect(() => {
     if (orgConfigured) setDcatEnabled(true);

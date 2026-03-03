@@ -12,6 +12,7 @@ services:
       - ./infra/seeds/dev-seed.sql:/seed/init.sql:ro
     environment:
       KEASY_SEED_FILE: /seed/init.sql
+      KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-keasy.local}
       RUST_LOG: debug
     healthcheck:
       interval: 10s

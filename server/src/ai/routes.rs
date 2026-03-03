@@ -65,6 +65,7 @@ pub async fn ask_discover(
     // Build data-aware semantic context
     let profile = state.graph_store.get_profile(&output_graph);
     let semantic_context = build_semantic_context(&job.pipeline, &profile);
+    warn!("--- Semantic Context ---\n{semantic_context}\n--- End Context ---");
 
     let conversation_id = match req.conversation_id {
         Some(cid) => cid,
@@ -91,27 +92,50 @@ pub async fn ask_discover(
     }
 
     let sparql_system = format!(
-        "You are a SPARQL query assistant for an RDF knowledge graph.\n\
-         The data was generated from typed fossil-lang records loaded into an Oxigraph store.\n\n\
-         RULES:\n\
-         1. The schema and data statistics below describe the ACTUAL data in the graph.\n\
-            Use the value ranges, distributions, and sample values to understand the domain.\n\
-         2. When the user uses subjective or abstract terms, decompose them into\n\
-            measurable criteria using the statistics. For example, if a numeric field\n\
-            has range [X, Y], \"high\" typically means the top 15-20% of that range.\n\
-         3. For categorical fields, use the value distribution to identify matching categories.\n\
-         4. Use xsd:double() or xsd:integer() casting for numeric FILTER comparisons.\n\
-         5. For string matching: FILTER(LCASE(STR(?var)) = \"value\")\n\
-         6. Use the exact predicate URIs shown in the schema — never invent URIs.\n\
-         7. When a field has no URI mapping, it was serialized using the field name as predicate.\n\
-         8. Always include human-readable labels in SELECT (e.g. name fields).\n\n\
+        "You are a SPARQL query assistant.\n\n\
+         The data was produced by Fossil, a statically typed data language.\n\
+         The schema below defines the types and their fields — treat it as the\n\
+         definitive source of truth for what exists in the data.\n\n\
+         ## Schema Guide\n\
+         - Each **Output Type** has a type name and optionally a graph URI in brackets.\n\
+           If a graph URI is shown (e.g. Type: Foo [<http://…>]):\n\
+             query with `?s a <graph_uri> .`\n\
+           If NO graph URI is shown: do NOT use `?s a <…>` — instead identify\n\
+             subjects solely by their field predicates.\n\
+         - Each **field** has a name, data type, required/optional status, and a predicate URI.\n\
+           To access a field: `?s <predicate_uri> ?variable .`\n\
+         - The **↳** lines show real data statistics collected from the graph:\n\
+             Numeric → count, coverage %, min–max range, average.\n\
+             Categorical → count, coverage %, distinct count, top values with frequencies.\n\
+             Text → count, coverage %, sample values.\n\n\
+         ## Before Writing SPARQL\n\
+         1. Identify which Output Type the question is about.\n\
+         2. Read ALL fields and their statistics for that type.\n\
+         3. For each concept in the question, find the matching field:\n\
+            - Categorical: pick the closest value from the top-values list\n\
+              (consider synonyms, translations, abbreviations).\n\
+              Use the exact casing shown in the statistics.\n\
+            - Numeric with vague qualifiers (\"tall\", \"heavy\", \"expensive\"):\n\
+              derive a threshold from the field's min/max/avg\n\
+              (typically top or bottom 15-20% of the range).\n\
+            - Composite or slang terms that imply multiple traits:\n\
+              decompose into individual field filters combined with AND.\n\
+         4. Only use predicate URIs from the schema — never invent URIs.\n\
+         5. Always include human-readable fields (name, label, title) in SELECT.\n\n\
+         ## SPARQL Patterns\n\
+         Always declare every PREFIX you use (e.g. PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>).\n\
+         - Numeric:  FILTER(xsd:double(?val) > N)\n\
+         - Exact:    FILTER(STR(?val) = \"Value\")\n\
+         - Contains: FILTER(CONTAINS(LCASE(STR(?val)), \"term\"))\n\
+         - Multi:    FILTER(xsd:double(?a) > X && xsd:double(?b) > Y)\n\
+         - Optional: OPTIONAL {{ ?s <pred> ?val }} FILTER(!BOUND(?val) || condition)\n\n\
          {semantic_context}\n\n\
-         Respond with a JSON object containing exactly three fields:\n\
-         - \"reasoning\": step-by-step explanation of how you interpreted the question,\n\
-           which fields and thresholds you chose, and why (referencing the data statistics)\n\
-         - \"sparql\": a SPARQL SELECT query that answers the question\n\
-         - \"explanation\": one-sentence summary of what the query retrieves\n\n\
-         Return ONLY valid JSON. No markdown fences."
+         Return ONLY a JSON object with these three fields:\n\
+         - \"reasoning\": step-by-step explanation — which type and fields you chose,\n\
+           which values/thresholds you derived from the statistics, and why.\n\
+         - \"sparql\": a valid SPARQL SELECT query.\n\
+         - \"explanation\": one-sentence summary of what the query retrieves.\n\n\
+         No markdown fences. No extra text."
     );
 
     // Error recovery loop: up to 2 attempts
@@ -194,7 +218,8 @@ pub async fn ask_discover(
         let sparql = format_sparql(&llm_resp.sparql);
 
         match state.graph_store.sparql_select(&sparql, Some(&output_graph)) {
-            Ok(_) => {
+            Ok(result) => {
+                warn!("SPARQL OK ({} rows)\n--- Generated SPARQL ---\n{sparql}\n--- End SPARQL ---", result.rows.len());
                 parsed = Some(LlmResponse {
                     reasoning: llm_resp.reasoning,
                     sparql,
@@ -204,7 +229,7 @@ pub async fn ask_discover(
             }
             Err(err) => {
                 if attempt == 0 {
-                    warn!("SPARQL execution failed (attempt 1): {err}");
+                    warn!("SPARQL execution failed (attempt 1): {err}\n--- Generated SPARQL ---\n{sparql}\n--- End SPARQL ---");
                     // Add the assistant's response and error feedback
                     messages.push(Message {
                         role: "assistant".to_string(),
@@ -215,7 +240,7 @@ pub async fn ask_discover(
                     ));
                     continue;
                 }
-                warn!("SPARQL execution failed (attempt 2): {err}");
+                warn!("SPARQL execution failed (attempt 2): {err}\n--- Generated SPARQL ---\n{sparql}\n--- End SPARQL ---");
                 let answer = "I generated a query but it didn't work against your data. Try rephrasing your question.".to_string();
                 state.db.add_message(&conversation_id, "assistant", &answer, Some(&sparql), None, Some("sparql_failed")).await;
                 return data_response(AskResponse {
@@ -457,7 +482,25 @@ fn format_sparql(sparql: &str) -> String {
     for kw in &["SELECT", "CONSTRUCT", "WHERE", "FILTER", "OPTIONAL", "UNION", "ORDER BY", "GROUP BY", "HAVING", "LIMIT", "OFFSET", "PREFIX", "BIND"] {
         result = result.replace(&format!(" {kw}"), &format!("\n{kw}"));
     }
-    result.trim().to_string()
+    let mut out = result.trim().to_string();
+
+    // Auto-inject common PREFIX declarations when used but not declared
+    const PREFIXES: &[(&str, &str)] = &[
+        ("xsd:", "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>"),
+        ("schema:", "PREFIX schema: <https://schema.org/>"),
+        ("rdf:", "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"),
+        ("rdfs:", "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"),
+        ("dcat:", "PREFIX dcat: <http://www.w3.org/ns/dcat#>"),
+        ("dct:", "PREFIX dct: <http://purl.org/dc/terms/>"),
+        ("foaf:", "PREFIX foaf: <http://xmlns.com/foaf/0.1/>"),
+    ];
+    for (short, decl) in PREFIXES {
+        if out.contains(short) && !out.contains(decl) {
+            out.insert_str(0, &format!("{decl}\n"));
+        }
+    }
+
+    out
 }
 
 fn summarize_results_for_llm(data: &crate::discovery::graph_types::TabularData) -> String {

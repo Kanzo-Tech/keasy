@@ -1,6 +1,7 @@
+use std::collections::HashMap;
 use std::fmt::Write;
 
-use crate::ai::profiler::GraphProfile;
+use crate::ai::profiler::{GraphProfile, PredicateStats};
 use crate::jobs::PipelineSummary;
 
 const MAX_CHARS: usize = 24_000;
@@ -9,25 +10,11 @@ pub fn build_semantic_context(pipeline: &PipelineSummary, profile: &GraphProfile
     let mut ctx = String::with_capacity(MAX_CHARS);
     let mut budget = MAX_CHARS;
 
-    // Section 1: Schema — types, fields, rdf_type, xsd, optionality
-    let schema_section = build_schema_section(pipeline);
+    let schema_section = build_schema_section(pipeline, profile);
     write_section(&mut ctx, &mut budget, &schema_section);
 
-    // Section 2: Data Statistics — per-predicate stats from GraphProfile
-    let stats_section = build_stats_section(profile);
-    write_section(&mut ctx, &mut budget, &stats_section);
-
-    // Section 3: Graph Summary — triple count, subject count, type distribution
-    let summary_section = build_graph_summary(profile);
-    write_section(&mut ctx, &mut budget, &summary_section);
-
-    // Section 4: Vocabulary Hints — auto-detected well-known namespaces
-    let vocab_section = build_vocab_hints(profile);
-    write_section(&mut ctx, &mut budget, &vocab_section);
-
-    // Section 5: SPARQL Tips
-    let tips_section = build_sparql_tips();
-    write_section(&mut ctx, &mut budget, &tips_section);
+    let fewshot_section = build_fewshot_example(pipeline, profile);
+    write_section(&mut ctx, &mut budget, &fewshot_section);
 
     ctx
 }
@@ -41,8 +28,18 @@ fn write_section(ctx: &mut String, budget: &mut usize, section: &str) {
     *budget = budget.saturating_sub(to_write);
 }
 
-fn build_schema_section(pipeline: &PipelineSummary) -> String {
+/// Build a lookup from predicate URI → PredicateStats for fast matching.
+fn build_stats_lookup(profile: &GraphProfile) -> HashMap<&str, &PredicateStats> {
+    profile
+        .predicates
+        .iter()
+        .map(|p| (p.predicate.as_str(), p))
+        .collect()
+}
+
+fn build_schema_section(pipeline: &PipelineSummary, profile: &GraphProfile) -> String {
     let mut out = String::new();
+    let stats_map = build_stats_lookup(profile);
 
     // Data sources
     if !pipeline.inputs.is_empty() {
@@ -113,7 +110,7 @@ fn build_schema_section(pipeline: &PipelineSummary) -> String {
             let rdf_suffix = output
                 .rdf_type
                 .as_deref()
-                .map(|r| format!(" [rdf:type = <{r}>]"))
+                .map(|r| format!(" [<{r}>]"))
                 .unwrap_or_default();
             let _ = writeln!(out, "\nType: {}{}", output.type_name, rdf_suffix);
             for field in &output.fields {
@@ -135,6 +132,10 @@ fn build_schema_section(pipeline: &PipelineSummary) -> String {
                             "  - {}: {}{}{} → <{}>{}",
                             field.name, field.field_type, opt_marker, req_label, u, xsd_suffix
                         );
+                        // Inline stats for this field
+                        if let Some(stats) = stats_map.get(u.as_str()) {
+                            write_inline_stats(&mut out, stats, profile.subject_count);
+                        }
                     }
                     None => {
                         let _ = writeln!(
@@ -182,137 +183,154 @@ fn build_schema_section(pipeline: &PipelineSummary) -> String {
     out
 }
 
-fn build_stats_section(profile: &GraphProfile) -> String {
-    if profile.predicates.is_empty() {
-        return String::new();
+/// Write inline stats line for a field (indented under the field).
+fn write_inline_stats(out: &mut String, stats: &PredicateStats, subject_count: usize) {
+    if stats.is_object_property {
+        let _ = writeln!(out, "    ↳ {} links (object property)", stats.count);
+        return;
     }
-    let mut out = String::from("## Data Statistics\n");
-    for pred in &profile.predicates {
-        if pred.is_object_property {
-            let _ = writeln!(
-                out,
-                "  {} — {} links (object property)",
-                pred.short_name, pred.count
-            );
+
+    let pct = if subject_count > 0 {
+        (stats.count as f64 / subject_count as f64 * 100.0).round() as usize
+    } else {
+        100
+    };
+    let coverage = if pct < 100 {
+        format!(" ({}%)", pct)
+    } else {
+        String::new()
+    };
+
+    if let (Some(min), Some(max), Some(avg)) = (stats.min, stats.max, stats.avg) {
+        let _ = writeln!(
+            out,
+            "    ↳ {} values{}, range: {:.2}–{:.2}, avg: {:.2}",
+            stats.count, coverage, min, max, avg
+        );
+    } else if let Some(top) = &stats.top_values {
+        let top_str: Vec<String> = top
+            .iter()
+            .take(10)
+            .map(|(v, c)| format!("{v} ({c})"))
+            .collect();
+        let _ = writeln!(
+            out,
+            "    ↳ {} values{}, {} unique: {}{}",
+            stats.count,
+            coverage,
+            stats.distinct,
+            top_str.join(", "),
+            if top.len() > 10 { "..." } else { "" }
+        );
+    } else if !stats.samples.is_empty() {
+        let samples_str: Vec<String> = stats.samples.iter().map(|s| format!("\"{s}\"")).collect();
+        let _ = writeln!(
+            out,
+            "    ↳ {} values{}, samples: {}",
+            stats.count, coverage, samples_str.join(", ")
+        );
+    } else {
+        let _ = writeln!(out, "    ↳ {} values{}", stats.count, coverage);
+    }
+}
+
+/// Generate a dynamic few-shot example using real predicates from the schema.
+///
+/// Looks for the first Output Type that has at least 1 categorical field (with top_values)
+/// and 1 numeric field (with min/max). Generates a SPARQL example combining both filters.
+fn build_fewshot_example(pipeline: &PipelineSummary, profile: &GraphProfile) -> String {
+    let stats_map = build_stats_lookup(profile);
+
+    for output in &pipeline.outputs {
+        if output.fields.is_empty() {
             continue;
         }
-
-        let pct = if profile.subject_count > 0 {
-            (pred.count as f64 / profile.subject_count as f64 * 100.0).round() as usize
-        } else {
-            100
-        };
-        let coverage = if pct < 100 {
-            format!(" ({}%)", pct)
-        } else {
-            String::new()
+        let rdf_type = match &output.rdf_type {
+            Some(r) => r,
+            None => continue,
         };
 
-        if let (Some(min), Some(max), Some(avg)) = (pred.min, pred.max, pred.avg) {
-            let _ = writeln!(
-                out,
-                "  {} — {} values{}, range: {:.2}–{:.2}, avg: {:.2}",
-                pred.short_name, pred.count, coverage, min, max, avg
-            );
-        } else if let Some(top) = &pred.top_values {
-            let top_str: Vec<String> = top
-                .iter()
-                .take(5)
-                .map(|(v, c)| format!("{v} ({c})"))
-                .collect();
-            let _ = writeln!(
-                out,
-                "  {} — {} values{}, {} unique: {}{}",
-                pred.short_name,
-                pred.count,
-                coverage,
-                pred.distinct,
-                top_str.join(", "),
-                if top.len() > 5 { "..." } else { "" }
-            );
-        } else if !pred.samples.is_empty() {
-            let samples_str: Vec<String> =
-                pred.samples.iter().map(|s| format!("\"{s}\"")).collect();
-            let _ = writeln!(
-                out,
-                "  {} — {} values{}, samples: {}",
-                pred.short_name,
-                pred.count,
-                coverage,
-                samples_str.join(", ")
-            );
-        } else {
-            let _ = writeln!(
-                out,
-                "  {} — {} values{}",
-                pred.short_name, pred.count, coverage
-            );
+        let mut cat_field: Option<(&str, &str, &str, usize)> = None; // (name, uri, top_value, count)
+        let mut num_field: Option<(&str, &str, f64, f64)> = None; // (name, uri, min, max)
+        let mut label_field: Option<&str> = None; // first string field for SELECT
+
+        for field in &output.fields {
+            let uri = match &field.uri {
+                Some(u) => u.as_str(),
+                None => continue,
+            };
+            let stats = match stats_map.get(uri) {
+                Some(s) => s,
+                None => continue,
+            };
+
+            // Track first likely label/name field
+            if label_field.is_none()
+                && field.field_type == "String"
+                && !field.optional
+                && (field.name.contains("name") || field.name.contains("label") || field.name.contains("title"))
+            {
+                label_field = Some(uri);
+            }
+
+            if cat_field.is_none() {
+                if let Some(top) = &stats.top_values {
+                    if let Some((val, cnt)) = top.first() {
+                        cat_field = Some((&field.name, uri, val.as_str(), *cnt));
+                    }
+                }
+            }
+
+            if num_field.is_none() {
+                if let (Some(min), Some(max)) = (stats.min, stats.max) {
+                    num_field = Some((&field.name, uri, min, max));
+                }
+            }
+
+            if cat_field.is_some() && num_field.is_some() {
+                break;
+            }
         }
-    }
-    let _ = writeln!(out);
-    out
-}
 
-fn build_graph_summary(profile: &GraphProfile) -> String {
-    let mut out = String::from("## Graph Summary\n");
-    let _ = writeln!(
-        out,
-        "  Triples: {}, Subjects: {}",
-        profile.triple_count, profile.subject_count
-    );
-    if !profile.type_distribution.is_empty() {
-        let _ = write!(out, "  Types: ");
-        let parts: Vec<String> = profile
-            .type_distribution
-            .iter()
-            .map(|(t, c)| format!("{} ({c})", shorten_uri(t)))
-            .collect();
-        let _ = writeln!(out, "{}", parts.join(", "));
-    }
-    let _ = writeln!(out);
-    out
-}
+        // Need both categorical and numeric to generate example
+        let (cat_name, cat_uri, cat_val, _) = match cat_field {
+            Some(c) => c,
+            None => continue,
+        };
+        let (num_name, num_uri, _min, max) = match num_field {
+            Some(n) => n,
+            None => continue,
+        };
 
-fn build_vocab_hints(profile: &GraphProfile) -> String {
-    let mut namespaces = std::collections::HashSet::new();
-    for pred in &profile.predicates {
-        if let Some(ns) = extract_namespace(&pred.predicate) {
-            namespaces.insert(ns);
-        }
-    }
-    for (type_uri, _) in &profile.type_distribution {
-        if let Some(ns) = extract_namespace(type_uri) {
-            namespaces.insert(ns);
-        }
-    }
+        // Threshold: ~top 20% of range
+        let threshold = (max * 0.8).round();
 
-    let hints: Vec<(&str, &str)> = VOCAB_DESCRIPTIONS
-        .iter()
-        .filter(|(ns, _)| namespaces.contains(*ns))
-        .copied()
-        .collect();
+        let label_line = label_field
+            .map(|u| format!("  ?s <{u}> ?name .\n"))
+            .unwrap_or_default();
+        let label_var = if label_field.is_some() { " ?name" } else { "" };
 
-    if hints.is_empty() {
-        return String::new();
+        let mut out = String::from("## Example Query\n");
+        let _ = writeln!(
+            out,
+            "Q: Which {type_name} have {cat_name}=\"{cat_val}\" and high {num_name}?\n\
+             ```sparql\n\
+             SELECT ?s{label_var} ?{cat_name} ?{num_name}\n\
+             WHERE {{\n\
+               ?s a <{rdf_type}> .\n\
+             {label_line}\
+               ?s <{cat_uri}> ?{cat_name} .\n\
+               ?s <{num_uri}> ?{num_name} .\n\
+             FILTER(STR(?{cat_name}) = \"{cat_val}\")\n\
+             FILTER(xsd:double(?{num_name}) > {threshold})\n\
+             }}\n\
+             ```\n",
+            type_name = output.type_name,
+        );
+        return out;
     }
 
-    let mut out = String::from("## Vocabulary Hints\n");
-    for (ns, desc) in hints {
-        let _ = writeln!(out, "  <{ns}> — {desc}");
-    }
-    let _ = writeln!(out);
-    out
-}
-
-fn build_sparql_tips() -> String {
-    "\
-## SPARQL Tips
-  - For numeric comparisons: FILTER(xsd:double(?val) > 100)
-  - For string matching: FILTER(CONTAINS(LCASE(STR(?val)), \"term\"))
-  - For exact category match: FILTER(STR(?val) = \"Category Name\")
-  - Predicates without a URI mapping use the field name directly as the predicate IRI.
-"
-    .to_string()
+    String::new()
 }
 
 fn shorten_xsd(uri: &str) -> String {
@@ -321,60 +339,3 @@ fn shorten_xsd(uri: &str) -> String {
         .unwrap_or_else(|| uri.to_string())
 }
 
-fn shorten_uri(uri: &str) -> String {
-    const PREFIXES: &[(&str, &str)] = &[
-        ("http://schema.org/", "schema:"),
-        ("http://www.w3.org/ns/dcat#", "dcat:"),
-        ("http://purl.org/dc/terms/", "dct:"),
-        ("http://xmlns.com/foaf/0.1/", "foaf:"),
-        ("http://www.w3.org/2006/vcard/ns#", "vcard:"),
-        ("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:"),
-        ("http://www.w3.org/2001/XMLSchema#", "xsd:"),
-    ];
-    for (full, short) in PREFIXES {
-        if let Some(local) = uri.strip_prefix(full) {
-            return format!("{short}{local}");
-        }
-    }
-    uri.rsplit_once('/')
-        .or_else(|| uri.rsplit_once('#'))
-        .map(|(_, local)| local.to_string())
-        .unwrap_or_else(|| uri.to_string())
-}
-
-fn extract_namespace(uri: &str) -> Option<String> {
-    uri.rfind('#')
-        .or_else(|| uri.rfind('/'))
-        .map(|pos| uri[..=pos].to_string())
-}
-
-const VOCAB_DESCRIPTIONS: &[(&str, &str)] = &[
-    (
-        "http://schema.org/",
-        "Schema.org — general-purpose structured data vocabulary",
-    ),
-    (
-        "http://www.w3.org/ns/dcat#",
-        "DCAT — Data Catalog vocabulary for datasets and distributions",
-    ),
-    (
-        "http://purl.org/dc/terms/",
-        "Dublin Core Terms — metadata for documents and resources",
-    ),
-    (
-        "http://xmlns.com/foaf/0.1/",
-        "FOAF — Friend of a Friend, people and social networks",
-    ),
-    (
-        "http://www.w3.org/2006/vcard/ns#",
-        "vCard — contact information (addresses, emails, phone numbers)",
-    ),
-    (
-        "http://www.w3.org/ns/org#",
-        "W3C Organization Ontology — organizational structures",
-    ),
-    (
-        "http://www.w3.org/2004/02/skos/core#",
-        "SKOS — Simple Knowledge Organization System, taxonomies and thesauri",
-    ),
-];

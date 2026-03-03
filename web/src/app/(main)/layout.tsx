@@ -1,3 +1,6 @@
+import { forbidden, redirect } from "next/navigation";
+import { getEffectiveRole } from "@/lib/auth-check";
+import { PreferencesProvider } from "@/components/providers/preferences-provider";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { DynamicBreadcrumbs } from "@/components/layout/dynamic-breadcrumbs";
 import { RedirectToast } from "@/components/shared/redirect-toast";
@@ -8,12 +11,17 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-export default function MainLayout({
+export default async function MainLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const role = await getEffectiveRole();
+  if (!role) redirect("/v1/auth/oidc-start");
+  if (role === "none") forbidden();
+
   return (
+    <PreferencesProvider>
     <SidebarProvider>
       <div className="flex h-dvh w-full overflow-hidden">
         <AppSidebar />
@@ -35,5 +43,6 @@ export default function MainLayout({
         </SidebarInset>
       </div>
     </SidebarProvider>
+    </PreferencesProvider>
   );
 }

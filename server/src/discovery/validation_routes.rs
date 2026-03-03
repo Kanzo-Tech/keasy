@@ -9,7 +9,7 @@ use crate::cloud::reader;
 use crate::connections::models::LocationType;
 use crate::error::{data_response, error_body};
 use crate::middleware::tenant::RequireParticipant;
-use super::validation_types::{ShapeFormat, ValidationRequest};
+use super::validation_types::{ShapeFormat, ShapeValidationResult, ValidationRequest};
 use super::validation::ValidatableGraph;
 use crate::AppState;
 
@@ -30,7 +30,11 @@ fn detect_shape_format(path: &str) -> Option<ShapeFormat> {
 }
 
 #[utoipa::path(post, path = "/v1/validate", tag = "Validation",
-    responses((status = 200, description = "Validation result"), (status = 400, description = "Invalid request"))
+    request_body = ValidationRequest,
+    responses(
+        (status = 200, description = "Validation result", body = ShapeValidationResult),
+        (status = 400, description = "Invalid request"),
+    )
 )]
 pub async fn validate_job(
     RequireParticipant(ctx): RequireParticipant,

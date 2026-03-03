@@ -1,10 +1,17 @@
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use serde_json::json;
 
 use crate::AppState;
 use crate::error::data_response;
+
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct ServiceStatusResponse {
+    pub oidc: bool,
+    pub gxdch_notary: bool,
+    pub gxdch_compliance: bool,
+    pub base_domain: Option<String>,
+}
 
 #[utoipa::path(get, path = "/healthz/live", tag = "Health",
     responses((status = 200, description = "Service is alive"))
@@ -28,15 +35,13 @@ pub async fn readiness(State(state): State<AppState>) -> impl IntoResponse {
 }
 
 #[utoipa::path(get, path = "/v1/status", tag = "Health",
-    responses((status = 200, description = "External service status"))
+    responses((status = 200, description = "External service status", body = ServiceStatusResponse))
 )]
 pub async fn service_status(State(state): State<AppState>) -> impl IntoResponse {
-    data_response(json!({
-        "wallet": state.gaia_x.vc_client.is_some(),
-        "issuer": state.gaia_x.issuer_client.is_some(),
-        "oidc": state.auth.oidc_state.is_some(),
-        "gxdch_notary": !state.gaia_x.gxdch_notary_url.is_empty(),
-        "gxdch_compliance": !state.gaia_x.gxdch_compliance_url.is_empty(),
-        "base_domain": state.gaia_x.base_domain,
-    }))
+    data_response(ServiceStatusResponse {
+        oidc: state.auth.oidc_state.is_some(),
+        gxdch_notary: !state.gaia_x.gxdch_notary_url.is_empty(),
+        gxdch_compliance: !state.gaia_x.gxdch_compliance_url.is_empty(),
+        base_domain: state.gaia_x.base_domain.clone(),
+    })
 }

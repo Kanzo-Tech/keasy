@@ -5,13 +5,13 @@ use std::collections::hash_map::DefaultHasher;
 use oxrdf::{Term, Triple};
 use serde::Serialize;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct GraphData {
     pub nodes: Vec<GraphNode>,
     pub links: Vec<GraphLink>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct GraphNode {
     pub id: String,
     pub label: String,
@@ -20,7 +20,7 @@ pub struct GraphNode {
     pub properties: BTreeMap<String, String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct GraphLink {
     pub source: String,
     pub target: String,

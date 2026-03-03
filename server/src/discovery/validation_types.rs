@@ -14,15 +14,15 @@ pub struct ValidationRequest {
     pub shape_path: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub struct ValidationResult {
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
+pub struct ShapeValidationResult {
     pub valid: bool,
-    pub errors: Vec<ValidationError>,
+    pub errors: Vec<ShapeValidationError>,
     pub valid_nodes: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub struct ValidationError {
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
+pub struct ShapeValidationError {
     pub node: String,
     pub message: String,
 }

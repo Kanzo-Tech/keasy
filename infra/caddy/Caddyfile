@@ -7,16 +7,8 @@
 		reverse_proxy keycloak:8080
 	}
 
-	handle /openid4vc/* {
-		reverse_proxy waltid-verifier-api:3000
-	}
-
 	handle /.well-known/* {
 		reverse_proxy server:8080
-	}
-
-	handle /openid-credential-issuer/* {
-		reverse_proxy waltid-issuer-api:3000
 	}
 
 	handle {

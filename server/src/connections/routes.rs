@@ -118,7 +118,7 @@ pub async fn delete_connection(
 #[utoipa::path(get, path = "/v1/connections/{id}/files", tag = "Connections",
     params(("id" = String, Path, description = "Connection ID")),
     responses(
-        (status = 200, description = "List of files in the connection"),
+        (status = 200, description = "List of files in the connection", body = Vec<crate::cloud::reader::FileEntry>),
         (status = 400, description = "File listing not supported"),
         (status = 404, description = "Connection not found"),
     )

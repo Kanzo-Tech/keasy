@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { PreferencesProvider } from "@/components/providers/preferences-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -51,10 +50,8 @@ export default function RootLayout({
         >
           <TooltipProvider>
             <QueryProvider>
-              <PreferencesProvider>
-                {children}
-                <Toaster position="bottom-right" closeButton />
-              </PreferencesProvider>
+              {children}
+              <Toaster position="bottom-right" closeButton />
             </QueryProvider>
           </TooltipProvider>
         </ThemeProvider>

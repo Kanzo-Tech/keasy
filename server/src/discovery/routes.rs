@@ -25,7 +25,7 @@ pub struct ExpandRequest {
 
 #[utoipa::path(post, path = "/v1/graph/search", tag = "Graph",
     request_body = SearchRequest,
-    responses((status = 200, description = "Graph search results"))
+    responses((status = 200, description = "Graph search results", body = Vec<crate::discovery::graph_types::SearchResult>))
 )]
 pub async fn search_nodes(
     RequireParticipant(ctx): RequireParticipant,
@@ -48,7 +48,7 @@ pub async fn search_nodes(
 
 #[utoipa::path(post, path = "/v1/graph/expand", tag = "Graph",
     request_body = ExpandRequest,
-    responses((status = 200, description = "Expanded node data"))
+    responses((status = 200, description = "Expanded node data", body = crate::discovery::convert::GraphData))
 )]
 pub async fn expand_node(
     RequireParticipant(ctx): RequireParticipant,
@@ -74,7 +74,10 @@ pub struct QueryRequest {
 #[utoipa::path(post, path = "/v1/jobs/{id}/discover/query", tag = "Discovery",
     params(("id" = String, Path, description = "Job ID")),
     request_body = QueryRequest,
-    responses((status = 200, description = "SPARQL query results"), (status = 400, description = "SPARQL error"))
+    responses(
+        (status = 200, description = "SPARQL query results", body = crate::discovery::graph_types::TabularData),
+        (status = 400, description = "SPARQL error"),
+    )
 )]
 pub async fn query_discover(
     RequireParticipant(ctx): RequireParticipant,
@@ -111,7 +114,7 @@ fn default_aggregation() -> String {
 #[utoipa::path(post, path = "/v1/jobs/{id}/discover/chart", tag = "Discovery",
     params(("id" = String, Path, description = "Job ID")),
     request_body = ChartRequest,
-    responses((status = 200, description = "Chart data"))
+    responses((status = 200, description = "Chart data", body = crate::discovery::graph_types::TabularData))
 )]
 pub async fn chart_discover(
     RequireParticipant(ctx): RequireParticipant,

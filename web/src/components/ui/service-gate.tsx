@@ -36,7 +36,7 @@ export function ServiceGate({ requires, message, children }: Props) {
       <Info className="h-4 w-4" />
       <AlertTitle>Service unavailable</AlertTitle>
       <AlertDescription>
-        {message ?? missing.map((k) => SERVICE_LABELS[k] ?? `${k} is not configured.`).join(" ")}
+        {message ?? missing.map((k) => SERVICE_LABELS[k] ?? `${String(k)} is not configured.`).join(" ")}
       </AlertDescription>
     </Alert>
   );

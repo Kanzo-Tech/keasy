@@ -7,7 +7,7 @@ use crate::error::data_response;
 use crate::jobs::script::init_context;
 
 #[derive(Serialize, utoipa::ToSchema)]
-struct ProviderEntry {
+pub struct ProviderEntry {
     name: String,
     extensions: Vec<&'static str>,
     #[schema(value_type = String)]
@@ -15,7 +15,7 @@ struct ProviderEntry {
 }
 
 #[utoipa::path(get, path = "/v1/providers", tag = "Providers",
-    responses((status = 200, description = "List of available data providers"))
+    responses((status = 200, description = "List of available data providers", body = Vec<ProviderEntry>))
 )]
 pub async fn list_providers() -> impl IntoResponse {
     let gcx = init_context(StorageConfig::default());

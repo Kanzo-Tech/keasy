@@ -1,8 +1,9 @@
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 
 const API_URL = process.env.KEASY_API_URL!;
 
-export async function getEffectiveRole(): Promise<string | null> {
+export const getEffectiveRole = cache(async (): Promise<string | null> => {
   const cookieStore = await cookies();
   try {
     const res = await fetch(`${API_URL}/v1/auth/me`, {
@@ -15,4 +16,4 @@ export async function getEffectiveRole(): Promise<string | null> {
   } catch {
     return null;
   }
-}
+});

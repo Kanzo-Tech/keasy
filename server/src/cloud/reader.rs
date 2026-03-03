@@ -5,7 +5,7 @@ use futures::StreamExt;
 use object_store::ObjectStore;
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct FileEntry {
     pub path: String,
     pub size: u64,

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::discovery::graph_types::TabularData;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct Conversation {
     pub id: String,
     pub job_id: String,
@@ -10,7 +10,7 @@ pub struct Conversation {
     pub title: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ConversationMessage {
     pub id: String,
     pub conversation_id: String,

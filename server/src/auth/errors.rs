@@ -17,9 +17,6 @@ pub enum AuthError {
     #[error("auth/validation_failed")]
     ValidationFailed(String),
 
-    #[error("auth/vc_unavailable")]
-    VcUnavailable,
-
     #[error("internal")]
     Internal(String),
 
@@ -59,11 +56,6 @@ impl IntoResponse for AuthError {
             AuthError::Forbidden => (
                 StatusCode::FORBIDDEN,
                 Json(error_body("auth/forbidden", "Access denied")),
-            ).into_response(),
-
-            AuthError::VcUnavailable => (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(error_body("auth/vc_unavailable", "Wallet verifier temporarily unavailable")),
             ).into_response(),
 
             AuthError::ValidationFailed(_detail) => (

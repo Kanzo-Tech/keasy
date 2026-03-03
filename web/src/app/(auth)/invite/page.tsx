@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/card";
 import { api } from "@/lib/api";
 
-
 function InviteForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
@@ -29,18 +28,6 @@ function InviteForm() {
     if (!token) return;
 
     (async () => {
-      try {
-        // Check if user is already logged in
-        await api.auth.me();
-        // Already logged in -- redirect to OIDC start with invite token
-        // The backend will auto-accept the invite after callback
-        setRedirecting(true);
-        window.location.href = `/v1/auth/oidc-start?invite_token=${encodeURIComponent(token)}`;
-        return;
-      } catch {
-        // Not logged in -- validate the invite token
-      }
-
       try {
         const data = await api.auth.inviteInfo(token);
         if (data?.valid) {

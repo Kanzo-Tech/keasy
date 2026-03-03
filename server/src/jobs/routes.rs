@@ -15,6 +15,11 @@ use crate::middleware::tenant::RequireParticipant;
 
 use super::errors::JobApiError;
 
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct CatalogResponse {
+    pub catalog: String,
+}
+
 #[utoipa::path(get, path = "/v1/jobs", tag = "Jobs",
     responses(
         (status = 200, description = "List of jobs", body = Vec<Job>),
@@ -216,7 +221,7 @@ pub struct CatalogQuery {
         ("format" = Option<String>, Query, description = "RDF export format"),
     ),
     responses(
-        (status = 200, description = "DCAT catalog"),
+        (status = 200, description = "DCAT catalog", body = CatalogResponse),
         (status = 404, description = "Job or catalog not found"),
     )
 )]
@@ -241,7 +246,7 @@ pub async fn get_job_catalog(
     let graph_name = format!("urn:keasy:job:{id}");
     match state.graph_store.serialize_graph(Some(&graph_name), format) {
         Ok(catalog) if !catalog.trim().is_empty() => {
-            Ok(data_response(serde_json::json!({ "catalog": catalog })).into_response())
+            Ok(data_response(CatalogResponse { catalog }).into_response())
         }
         Ok(_) => Err(JobApiError::NoCatalog),
         Err(err) => Err(JobApiError::Serialization(err)),
@@ -251,7 +256,7 @@ pub async fn get_job_catalog(
 #[utoipa::path(get, path = "/v1/jobs/{id}/graph", tag = "Jobs",
     params(("id" = String, Path, description = "Job ID")),
     responses(
-        (status = 200, description = "Job knowledge graph"),
+        (status = 200, description = "Job knowledge graph", body = crate::discovery::convert::GraphData),
         (status = 404, description = "Job not found"),
     )
 )]
@@ -277,7 +282,7 @@ pub struct UnifiedGraphQuery {
 
 #[utoipa::path(get, path = "/v1/graph", tag = "Jobs",
     params(("org_id" = Option<String>, Query, description = "Filter by organization")),
-    responses((status = 200, description = "Unified knowledge graph"))
+    responses((status = 200, description = "Unified knowledge graph", body = crate::discovery::convert::GraphData))
 )]
 pub async fn get_unified_graph(
     RequireParticipant(_ctx): RequireParticipant,

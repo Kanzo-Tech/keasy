@@ -15,7 +15,7 @@ use shex_ast::ir::schema_ir::SchemaIR;
 use shex_ast::shapemap::{NodeSelector, QueryShapeMap, ShapeSelector};
 use shex_validation::{Validator, ValidatorConfig};
 
-use super::validation_types::{ValidationError, ValidationResult};
+use super::validation_types::{ShapeValidationError, ShapeValidationResult};
 
 pub struct ValidatableGraph(InMemoryGraph);
 
@@ -32,7 +32,7 @@ impl ValidatableGraph {
         Ok(Self(graph))
     }
 
-    pub fn validate_shex(self, shape_content: &str, format: &ShExFormat) -> Result<ValidationResult, String> {
+    pub fn validate_shex(self, shape_content: &str, format: &ShExFormat) -> Result<ShapeValidationResult, String> {
         let ast = match format {
             ShExFormat::ShExC => {
                 let source_iri = IriS::new_unchecked("http://example.org/shapes");
@@ -86,10 +86,10 @@ impl ValidatableGraph {
             .validate_shapemap2(&shapemap, &self.0, &ir, &None)
             .map_err(|e| format!("ShEx validation failed: {e}"))?;
 
-        let errors: Vec<ValidationError> = result_map
+        let errors: Vec<ShapeValidationError> = result_map
             .iter()
             .filter(|(_, _, status)| status.is_non_conformant())
-            .map(|(node, _, status)| ValidationError {
+            .map(|(node, _, status)| ShapeValidationError {
                 node: node.to_string(),
                 message: status.reason(),
             })
@@ -101,14 +101,14 @@ impl ValidatableGraph {
             .map(|(node, _, _)| node.to_string())
             .collect();
 
-        Ok(ValidationResult {
+        Ok(ShapeValidationResult {
             valid: errors.is_empty(),
             errors,
             valid_nodes,
         })
     }
 
-    pub fn validate_shacl(self, shape_content: &str) -> Result<ValidationResult, String> {
+    pub fn validate_shacl(self, shape_content: &str) -> Result<ShapeValidationResult, String> {
         let shapes_graph = InMemoryGraph::from_reader(
             &mut Cursor::new(shape_content.as_bytes()),
             "shapes",
@@ -152,9 +152,9 @@ impl ValidatableGraph {
             .map(|r| format!("{}", r.focus_node()))
             .collect();
 
-        let errors: Vec<ValidationError> = results
+        let errors: Vec<ShapeValidationError> = results
             .iter()
-            .map(|r| ValidationError {
+            .map(|r| ShapeValidationError {
                 node: format!("{}", r.focus_node()),
                 message: r
                     .message()
@@ -168,7 +168,7 @@ impl ValidatableGraph {
             .filter(|s| !error_nodes.contains(s))
             .collect();
 
-        Ok(ValidationResult {
+        Ok(ShapeValidationResult {
             valid: report.conforms(),
             errors,
             valid_nodes,

@@ -23,8 +23,8 @@ export function ParticipantDashboard() {
     refetchInterval: (query) => (hasRunningJobs(query.state.data) ? 2000 : 0),
   });
   const { data: accounts, isLoading: accountsLoading } = useQuery({
-    queryKey: queryKeys.cloud.init,
-    queryFn: () => api.cloud.list(),
+    queryKey: queryKeys.cloud.accounts,
+    queryFn: api.cloud.list,
   });
   const { data: connections, isLoading: connectionsLoading } = useQuery({
     queryKey: queryKeys.connections.all(),

@@ -121,19 +121,6 @@ impl Database {
     }
 
 
-    pub async fn completed_job_ids_for_org(&self, org_id: &str) -> Vec<String> {
-        let (_permit, conn) = self.read().await;
-        let mut stmt = conn
-            .prepare(
-                "SELECT id FROM jobs WHERE status = 'completed' AND organization_id = ?1",
-            )
-            .expect("prepare completed_job_ids_for_org");
-        stmt.query_map([org_id], |row| row.get(0))
-            .expect("query completed_job_ids_for_org")
-            .filter_map(|r| r.ok())
-            .collect()
-    }
-
     pub async fn remove_job(&self, ctx: &TenantScoped<&str>) -> Result<(), String> {
         let conn = self.write().await;
         conn.execute(

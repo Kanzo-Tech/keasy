@@ -4,6 +4,7 @@ pub mod db;
 pub mod routes;
 pub mod reader;
 pub mod resolver;
+pub mod tee_resolver;
 
 use std::collections::HashMap;
 

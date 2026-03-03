@@ -29,6 +29,7 @@ oxrdfio = "0.2.3"
 oxigraph = "0.5"
 object_store = { version = "0.12", features = ["aws", "gcp", "azure"] }
 futures = "0.3"
+tokio-stream = { version = "0.1", features = ["sync"] }
 lru = "0.12"
 shex_ast = "0.1"
 shex_validation = "0.1"

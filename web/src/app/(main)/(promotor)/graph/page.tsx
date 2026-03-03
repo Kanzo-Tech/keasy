@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { GraphView } from "@/components/discovery/graph-view";
+import { InteractiveGraphView } from "@/components/discovery/graph-view";
 import { PageContent, PageHeader } from "@/components/layout/page-content";
 import {
   Select,
@@ -51,7 +51,7 @@ export default function GraphPage() {
         />
       </div>
       <div className="flex-1 overflow-auto">
-        <GraphView source={{ type: "admin", orgId: selectedOrg }} />
+        <InteractiveGraphView />
       </div>
     </PageContent>
   );

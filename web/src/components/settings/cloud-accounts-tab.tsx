@@ -77,20 +77,22 @@ function cloudAccountColumns(
 export function CloudAccountsTab() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: queryKeys.cloud.init,
-    queryFn: () => Promise.all([api.settings.schema(), api.cloud.list()]),
+  const { data: schema = [], isLoading: schemaLoading } = useQuery({
+    queryKey: queryKeys.settings.schema,
+    queryFn: api.settings.schema,
   });
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+    queryKey: queryKeys.cloud.accounts,
+    queryFn: api.cloud.list,
+  });
+  const isLoading = schemaLoading || accountsLoading;
   const showSkeleton = useDelayedLoading(isLoading);
-
-  const schema = data?.[0] ?? [];
-  const accounts = data?.[1] ?? [];
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.cloud.remove(id),
     onSuccess: () => {
       toast.success("Cloud account deleted");
-      queryClient.invalidateQueries({ queryKey: queryKeys.cloud.init });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cloud.accounts });
     },
     onError: () => toast.error("Failed to delete cloud account"),
   });

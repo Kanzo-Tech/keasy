@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,7 +16,7 @@ import { CredentialCard } from "@/components/compliance/credential-card";
 import { formatDate } from "@/components/compliance/compliance-view";
 import { api, ApiError } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
-import type { OrgIdentity, ComplyResponse, ComplianceCredential } from "@/lib/types";
+import type { OrgIdentity, ComplianceCredential } from "@/lib/types";
 
 const PHASES = [
   "Generating keys…",
@@ -27,10 +27,23 @@ const PHASES = [
   "Complete!",
 ] as const;
 
+/** Download a PEM string as a file. */
+function downloadPem(pem: string) {
+  const blob = new Blob([pem], { type: "application/x-pem-file" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "private_key.pem";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 /** Shared comply state — consumed by ComplianceSection (content) and OrgDetailsPage (header action). */
 export function useComply(identity: OrgIdentity | undefined) {
   const queryClient = useQueryClient();
   const [phaseIndex, setPhaseIndex] = useState(-1);
+  const [isRunning, setIsRunning] = useState(false);
+  const runningRef = useRef(false);
 
   const missingFields: string[] = [];
   if (identity) {
@@ -41,60 +54,49 @@ export function useComply(identity: OrgIdentity | undefined) {
   }
   const ready = !!identity && missingFields.length === 0;
 
-  const mutation = useMutation({
-    mutationFn: async () => {
-      setPhaseIndex(0);
-      const interval = setInterval(() => {
-        setPhaseIndex((prev) => (prev < PHASES.length - 2 ? prev + 1 : prev));
-      }, 2000);
+  const comply = useCallback(async () => {
+    if (runningRef.current) return;
+    runningRef.current = true;
+    setIsRunning(true);
+    setPhaseIndex(0);
 
-      try {
-        const result = await api.gaiax.comply();
-        clearInterval(interval);
-        setPhaseIndex(PHASES.length - 1);
-        return result;
-      } catch (e) {
-        clearInterval(interval);
-        throw e;
-      }
-    },
-    onSuccess: (data: ComplyResponse) => {
-      if (data.compliant && data.private_key_pem) {
-        const blob = new Blob([data.private_key_pem], { type: "application/x-pem-file" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "private_key.pem";
-        a.click();
-        URL.revokeObjectURL(url);
-        toast.success("Gaia-X compliance achieved! Private key downloaded.");
-      } else if (!data.compliant) {
-        if (data.private_key_pem) {
-          const blob = new Blob([data.private_key_pem], { type: "application/x-pem-file" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "private_key.pem";
-          a.click();
-          URL.revokeObjectURL(url);
+    try {
+      for await (const event of api.gaiax.complyStream()) {
+        setPhaseIndex(event.index);
+
+        if (event.error) {
+          if (event.data?.private_key_pem) downloadPem(event.data.private_key_pem);
+          toast.error(event.error);
+          queryClient.invalidateQueries({ queryKey: queryKeys.gx.compliance });
+          queryClient.invalidateQueries({ queryKey: queryKeys.org.identity });
+          setTimeout(() => setPhaseIndex(-1), 2000);
+          return;
         }
-        toast.error(data.error ?? "Compliance check failed");
+
+        if (event.phase === "complete" && event.data) {
+          if (event.data.compliant && event.data.private_key_pem) {
+            downloadPem(event.data.private_key_pem);
+            toast.success("Gaia-X compliance achieved! Private key downloaded.");
+          }
+          queryClient.invalidateQueries({ queryKey: queryKeys.gx.compliance });
+          queryClient.invalidateQueries({ queryKey: queryKeys.org.identity });
+          setTimeout(() => setPhaseIndex(-1), 2000);
+        }
       }
-      queryClient.invalidateQueries({ queryKey: queryKeys.gx.compliance });
-      queryClient.invalidateQueries({ queryKey: queryKeys.org.identity });
-      setTimeout(() => setPhaseIndex(-1), 2000);
-    },
-    onError: (err) => {
+    } catch (err) {
       toast.error(
-        err instanceof ApiError ? err.message : "Network error during compliance check."
+        err instanceof ApiError ? err.message : "Network error during compliance check.",
       );
       setPhaseIndex(-1);
-    },
-  });
+    } finally {
+      runningRef.current = false;
+      setIsRunning(false);
+    }
+  }, [queryClient]);
 
   return {
-    comply: () => mutation.mutate(),
-    isRunning: mutation.isPending,
+    comply,
+    isRunning,
     ready,
     missingFields,
     phaseIndex,

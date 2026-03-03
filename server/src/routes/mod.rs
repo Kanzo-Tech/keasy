@@ -116,8 +116,8 @@ pub fn build_router(
                 .delete(crate::jobs::routes::delete_job),
         )
         .route(
-            "/v1/jobs/{id}/cancel",
-            axum::routing::post(crate::jobs::routes::cancel_job),
+            "/v1/jobs/{id}/stream",
+            axum::routing::get(crate::jobs::routes::stream_job),
         )
         .route(
             "/v1/jobs/{id}/catalog",
@@ -126,10 +126,6 @@ pub fn build_router(
         .route(
             "/v1/jobs/{id}/graph",
             axum::routing::get(crate::jobs::routes::get_job_graph),
-        )
-        .route(
-            "/v1/graph",
-            axum::routing::get(crate::jobs::routes::get_unified_graph),
         )
         .route(
             "/v1/scripts/validate",

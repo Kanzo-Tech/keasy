@@ -351,22 +351,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/graph": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_unified_graph"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/graph/expand": {
         parameters: {
             query?: never;
@@ -426,22 +410,6 @@ export interface paths {
         put: operations["update_job"];
         post?: never;
         delete: operations["delete_job"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["cancel_job"];
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -583,6 +551,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get_job_graph"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["stream_job"];
         put?: never;
         post?: never;
         delete?: never;
@@ -883,6 +867,19 @@ export interface components {
             credentials: components["schemas"]["ComplianceCredential"][];
             verified_at?: string | null;
         };
+        /** @description SSE event emitted during the comply pipeline. */
+        ComplyEvent: {
+            data?: null | components["schemas"]["ComplyResponse"];
+            /** @description Error message (only on failure) */
+            error?: string | null;
+            /**
+             * Format: int32
+             * @description Index 0-5, maps to frontend PHASES array
+             */
+            index: number;
+            /** @description Phase name: key_generation, certificate, lrn_request, signing, compliance_submission, complete */
+            phase: string;
+        };
         /** @description Request body for the one-click comply endpoint. */
         ComplyRequest: {
             /** @description Optional PEM cert chain — fallback if Caddy certs are unavailable. */
@@ -1025,13 +1022,6 @@ export interface components {
                 [key: string]: string;
             };
         };
-        GxdchComplianceResult: {
-            compliance_vc?: {
-                [key: string]: unknown;
-            };
-            compliant: boolean;
-            error?: string | null;
-        };
         InviteInfoResponse: {
             valid: boolean;
         };
@@ -1057,6 +1047,15 @@ export interface components {
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
         };
+        /** @description SSE event emitted by the job runner at each execution phase. */
+        JobEvent: {
+            error?: string | null;
+            /** Format: int32 */
+            index: number;
+            phase: string;
+            /** Format: int32 */
+            total: number;
+        };
         /**
          * @description Runtime job error — stored in the database as JSON on a failed job.
          *     This is NOT an API error type; it is a serializable record of what went wrong during execution.
@@ -1070,7 +1069,6 @@ export interface components {
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
         LoadDiscoverResponse: {
             loaded: boolean;
-            subject_count: number;
             triple_count: number;
         };
         /** @enum {string} */
@@ -2091,13 +2089,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Compliance result */
+            /** @description SSE stream of compliance phases */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ComplyResponse"];
+                    "text/event-stream": components["schemas"]["ComplyEvent"];
                 };
             };
             /** @description Prerequisites missing */
@@ -2106,29 +2104,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    get_unified_graph: {
-        parameters: {
-            query?: {
-                /** @description Filter by organization */
-                org_id?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Unified knowledge graph */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GraphData"];
-                };
             };
         };
     };
@@ -2330,31 +2305,8 @@ export interface operations {
                 };
                 content?: never;
             };
-        };
-    };
-    cancel_job: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Job cancelled */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Job"];
-                };
-            };
-            /** @description Job not found */
-            404: {
+            /** @description Job is still running */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2659,6 +2611,36 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GraphData"];
+                };
+            };
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    stream_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SSE stream of job progress events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["JobEvent"];
                 };
             };
             /** @description Job not found */

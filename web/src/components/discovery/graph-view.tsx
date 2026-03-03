@@ -15,44 +15,17 @@ import { useGraphModel } from "@/hooks/use-graph-model";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import type { GraphData, GraphNode, SearchResult } from "@/lib/types";
 
-type GraphSource =
-  | { type: "job"; jobId: string }
-  | { type: "admin"; orgId?: string }
-  | { type: "discovery"; jobId: string };
+// ── Static mode (job DCAT catalog graph) ─────────────────────────────────────
 
 interface GraphViewProps {
-  source: GraphSource;
-  interactive?: boolean;
+  jobId: string;
 }
 
-export function GraphView({ source, interactive }: GraphViewProps) {
-  const isInteractive = interactive ?? source.type === "discovery";
-
-  if (isInteractive) {
-    return <InteractiveGraphView source={source} />;
-  }
-  return <StaticGraphView source={source} />;
-}
-
-// ── Static mode (job catalog + admin unified graph) ──────────────────────────
-
-function StaticGraphView({ source }: { source: GraphSource }) {
-  const fetcher = (): Promise<GraphData> => {
-    if (source.type === "job") return api.jobs.graph(source.jobId);
-    if (source.type === "admin") return api.jobs.adminGraph(source.orgId);
-    return api.jobs.graph((source as { type: "discovery"; jobId: string }).jobId);
-  };
-
-  const queryKey =
-    source.type === "job"
-      ? queryKeys.graph.job(source.jobId)
-      : source.type === "admin"
-        ? source.orgId
-          ? queryKeys.graph.org(source.orgId)
-          : queryKeys.graph.unified
-        : queryKeys.graph.job((source as { type: "discovery"; jobId: string }).jobId);
-
-  const { data, isLoading } = useQuery({ queryKey, queryFn: fetcher });
+export function GraphView({ jobId }: GraphViewProps) {
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.graph.job(jobId),
+    queryFn: () => api.jobs.graph(jobId),
+  });
 
   if (isLoading) {
     return (
@@ -73,30 +46,20 @@ function StaticGraphView({ source }: { source: GraphSource }) {
 
 // ── Interactive mode (discovery explorer) ────────────────────────────────────
 
-function InteractiveGraphView({ source }: { source: GraphSource }) {
-  const jobId =
-    source.type === "discovery"
-      ? source.jobId
-      : source.type === "job"
-        ? source.jobId
-        : "";
+interface InteractiveGraphViewProps {
+  jobId?: string;
+}
 
+export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
   const {
     data: initial,
     isLoading,
     error: loadError,
   } = useQuery({
     queryKey: queryKeys.discovery.explorer(jobId),
-    queryFn: async () => {
-      const discovery = await api.discovery.load(jobId);
-      const nodes = await api.discovery.search("", jobId);
-      return { discovery, nodes };
-    },
+    queryFn: () => api.discovery.search("", jobId),
   });
   const showSkeleton = useDelayedLoading(isLoading);
-
-  const tripleCount = initial?.discovery.triple_count ?? 0;
-  const subjectCount = initial?.discovery.subject_count ?? 0;
 
   const [query, setQuery] = useState("");
   const [allNodes, setAllNodes] = useState<SearchResult[]>([]);
@@ -110,9 +73,9 @@ function InteractiveGraphView({ source }: { source: GraphSource }) {
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>(null);
 
   useEffect(() => {
-    if (initial?.nodes) {
-      setAllNodes(initial.nodes);
-      setResults(initial.nodes);
+    if (initial) {
+      setAllNodes(initial);
+      setResults(initial);
     }
   }, [initial]);
 
@@ -217,12 +180,6 @@ function InteractiveGraphView({ source }: { source: GraphSource }) {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* Stats */}
-      <p className="text-xs text-muted-foreground mb-3">
-        {tripleCount.toLocaleString()} triples &middot;{" "}
-        {subjectCount.toLocaleString()} subjects
-      </p>
-
       {/* Search bar */}
       <div className="relative mb-4">
         <div className="flex items-center gap-2">

@@ -228,7 +228,6 @@ pub async fn export_discover(
 pub struct LoadDiscoverResponse {
     pub loaded: bool,
     pub triple_count: usize,
-    pub subject_count: usize,
 }
 
 #[utoipa::path(post, path = "/v1/jobs/{id}/discover/load", tag = "Discovery",
@@ -259,7 +258,6 @@ pub async fn load_discover(
     data_response(LoadDiscoverResponse {
         loaded,
         triple_count,
-        subject_count: state.graph_store.subject_count(),
     }).into_response()
 }
 

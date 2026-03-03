@@ -93,14 +93,19 @@ impl RdfGraph {
         let gn: GraphName = graph_name
             .map(|n| GraphName::NamedNode(NamedNode::new_unchecked(n)))
             .unwrap_or(GraphName::DefaultGraph);
-        let quads: Result<Vec<Quad>, String> = RdfParser::from_format(format)
-            .for_slice(bytes)
-            .map(|r| r.map(|t| Quad::new(t.subject, t.predicate, t.object, gn.clone()))
-                       .map_err(|e| e.to_string()))
-            .collect();
-        self.store
-            .extend(quads?)
-            .map_err(|e| e.to_string())
+
+        // Lazy streaming via bulk_loader: parses and inserts quads on-the-fly
+        // without materializing an intermediate Vec (avoids doubling memory).
+        let mut loader = self.store.bulk_loader();
+        loader
+            .load_quads(
+                RdfParser::from_format(format)
+                    .for_slice(bytes)
+                    .filter_map(|r| r.ok())
+                    .map(|t| Quad::new(t.subject, t.predicate, t.object, gn.clone())),
+            )
+            .map_err(|e| e.to_string())?;
+        loader.commit().map_err(|e| e.to_string())
     }
 
     pub(crate) fn insert_oxrdf_triples(&self, graph_name: Option<&str>, triples: &[Triple]) {
@@ -163,19 +168,6 @@ impl RdfGraph {
             .count()
     }
 
-    pub fn subject_count(&self) -> usize {
-        let sparql = "SELECT (COUNT(DISTINCT ?s) AS ?count) WHERE { ?s ?p ?o }";
-        if let Ok(QueryResults::Solutions(solutions)) = self.evaluate_query(sparql) {
-            for solution in solutions.flatten() {
-                if let Some(oxrdf::Term::Literal(lit)) = solution.get("count")
-                    && let Ok(n) = lit.value().parse::<usize>() {
-                        return n;
-                    }
-            }
-        }
-        0
-    }
-
     pub fn get_graph(&self, graph_name: Option<&str>) -> GraphData {
         let graph = graph_name.map(|n| GraphNameRef::NamedNode(NamedNodeRef::new_unchecked(n)));
         let triples: Vec<_> = self
@@ -185,20 +177,6 @@ impl RdfGraph {
             .map(|q| Triple::new(q.subject, q.predicate, q.object))
             .collect();
         convert::triples_to_graph_data(&triples)
-    }
-
-    pub fn get_merged_graphs(&self, graph_names: &[String]) -> GraphData {
-        let mut all_triples = Vec::new();
-        for name in graph_names {
-            let graph = GraphNameRef::NamedNode(NamedNodeRef::new_unchecked(name));
-            let triples = self
-                .store
-                .quads_for_pattern(None, None, None, Some(graph))
-                .filter_map(|q| q.ok())
-                .map(|q| Triple::new(q.subject, q.predicate, q.object));
-            all_triples.extend(triples);
-        }
-        convert::triples_to_graph_data(&all_triples)
     }
 
     pub fn search_nodes(&self, graph_name: Option<&str>, query: &str, limit: usize) -> Vec<SearchResult> {

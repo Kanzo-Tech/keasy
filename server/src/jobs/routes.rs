@@ -1,16 +1,22 @@
+use std::convert::Infallible;
+
 use axum::{
     Json,
     extract::{Path, Query, State},
     http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
+    response::sse::{Event, KeepAlive, Sse},
 };
 use serde::Deserialize;
+use tokio_stream::wrappers::BroadcastStream;
+use tokio_stream::StreamExt;
 
 use crate::AppState;
 use crate::error::data_response;
 use crate::discovery::rdf_format::RdfExportFormat;
 use crate::jobs::models::{CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601};
 use super::rewrite;
+use super::runner::JobEvent;
 use crate::middleware::tenant::RequireParticipant;
 
 use super::errors::JobApiError;
@@ -167,25 +173,64 @@ pub async fn update_job(
     }
 }
 
-#[utoipa::path(post, path = "/v1/jobs/{id}/cancel", tag = "Jobs",
+#[utoipa::path(get, path = "/v1/jobs/{id}/stream", tag = "Jobs",
     params(("id" = String, Path, description = "Job ID")),
     responses(
-        (status = 200, description = "Job cancelled", body = Job),
+        (status = 200, description = "SSE stream of job progress events", body = JobEvent, content_type = "text/event-stream"),
         (status = 404, description = "Job not found"),
     )
 )]
-pub async fn cancel_job(
+pub async fn stream_job(
     RequireParticipant(ctx): RequireParticipant,
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> Result<impl IntoResponse, JobApiError> {
-    match state.db.update_job(&ctx.scoped(id.as_str()), |job| {
-        job.status = JobStatus::Cancelled;
-        job.completed_at = Some(now_iso8601());
-    }).await.map_err(JobApiError::Internal)? {
-        Some(job) => Ok(data_response(job).into_response()),
-        None => Err(JobApiError::NotFound),
+) -> Result<Response, JobApiError> {
+    let job = state.db.get_job(&ctx.scoped(id.as_str())).await
+        .ok_or(JobApiError::NotFound)?;
+
+    fn is_terminal(status: &JobStatus) -> bool {
+        matches!(status, JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled)
     }
+
+    fn terminal_event(job: &Job) -> JobEvent {
+        let (phase, error) = match job.status {
+            JobStatus::Completed => ("complete", None),
+            JobStatus::Failed => ("error", job.error.as_ref().map(|e| e.message.clone())),
+            JobStatus::Cancelled => ("complete", None),
+            _ => ("complete", None),
+        };
+        JobEvent { phase: phase.into(), index: 4, total: 5, error }
+    }
+
+    // Already terminal → single event + close
+    if is_terminal(&job.status) {
+        let evt = terminal_event(&job);
+        let stream = futures::stream::once(async move {
+            Ok::<_, Infallible>(Event::default().data(serde_json::to_string(&evt).unwrap()))
+        });
+        return Ok(Sse::new(stream).keep_alive(KeepAlive::default()).into_response());
+    }
+
+    // Subscribe to broadcast channel
+    let rx = match state.runner.subscribe(&id) {
+        Some(rx) => rx,
+        None => {
+            // Channel gone — job may have finished between DB read and subscribe; refetch
+            let job = state.db.get_job(&ctx.scoped(id.as_str())).await
+                .ok_or(JobApiError::NotFound)?;
+            let evt = terminal_event(&job);
+            let stream = futures::stream::once(async move {
+                Ok::<_, Infallible>(Event::default().data(serde_json::to_string(&evt).unwrap()))
+            });
+            return Ok(Sse::new(stream).keep_alive(KeepAlive::default()).into_response());
+        }
+    };
+
+    let stream = BroadcastStream::new(rx)
+        .filter_map(|r| r.ok())
+        .map(|evt| Ok::<_, Infallible>(Event::default().data(serde_json::to_string(&evt).unwrap())));
+
+    Ok(Sse::new(stream).keep_alive(KeepAlive::default()).into_response())
 }
 
 #[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -193,6 +238,7 @@ pub async fn cancel_job(
     responses(
         (status = 204, description = "Job deleted"),
         (status = 404, description = "Job not found"),
+        (status = 409, description = "Job is still running"),
     )
 )]
 pub async fn delete_job(
@@ -200,8 +246,11 @@ pub async fn delete_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    if state.db.get_job(&ctx.scoped(id.as_str())).await.is_none() {
-        return Err(JobApiError::NotFound);
+    let job = state.db.get_job(&ctx.scoped(id.as_str())).await
+        .ok_or(JobApiError::NotFound)?;
+
+    if matches!(job.status, JobStatus::Pending | JobStatus::Running) {
+        return Err(JobApiError::StillRunning);
     }
 
     let cat_graph = format!("urn:keasy:job:{id}");
@@ -278,34 +327,6 @@ pub async fn get_job_graph(
         }
         None => Err(JobApiError::NotFound),
     }
-}
-
-#[derive(Deserialize)]
-pub struct UnifiedGraphQuery {
-    pub org_id: Option<String>,
-}
-
-#[utoipa::path(get, path = "/v1/graph", tag = "Jobs",
-    params(("org_id" = Option<String>, Query, description = "Filter by organization")),
-    responses((status = 200, description = "Unified knowledge graph", body = crate::discovery::convert::GraphData))
-)]
-pub async fn get_unified_graph(
-    RequireParticipant(_ctx): RequireParticipant,
-    State(state): State<AppState>,
-    Query(query): Query<UnifiedGraphQuery>,
-) -> impl IntoResponse {
-    let graph_data = match query.org_id {
-        Some(org_id) => {
-            let job_ids = state.db.completed_job_ids_for_org(&org_id).await;
-            let graph_names: Vec<String> = job_ids
-                .into_iter()
-                .map(|id| format!("urn:keasy:job:{id}"))
-                .collect();
-            state.graph_store.get_merged_graphs(&graph_names)
-        }
-        None => state.graph_store.get_graph(None),
-    };
-    data_response(graph_data)
 }
 
 #[utoipa::path(get, path = "/v1/jobs/{id}/dashboard-layout", tag = "Jobs",

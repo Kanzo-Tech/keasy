@@ -6,18 +6,21 @@
 /// - `get_did_document` — public .well-known/did.json
 /// - `get_cert_chain` — public .well-known/x509CertificateChain.pem
 use axum::response::IntoResponse;
+use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::{Json, extract::State};
 use axum::http::HeaderMap;
 use axum::http::header::HOST;
 use jiff::Timestamp;
 use serde_json::Value;
 use std::collections::HashMap;
+use std::convert::Infallible;
+use tokio_stream::wrappers::ReceiverStream;
 
 use rusqlite::OptionalExtension;
 
 use crate::AppState;
 use crate::error::{bad_request_response, data_response, error_body, internal_error_response};
-use crate::gaia_x::{ComplyRequest, ComplyResponse, GaiaxState, cert, credentials, db, keys, signing, vp};
+use crate::gaia_x::{ComplyEvent, ComplyRequest, ComplyResponse, GaiaxState, cert, credentials, db, keys, signing, vp};
 use crate::gaia_x::gxdch::MockGxdch;
 use crate::middleware::tenant::RequireParticipant;
 
@@ -46,14 +49,6 @@ pub struct ComplianceStatus {
     pub compliant: bool,
     pub verified_at: Option<String>,
     pub credentials: Vec<ComplianceCredential>,
-}
-
-#[derive(serde::Serialize, utoipa::ToSchema)]
-pub struct GxdchComplianceResult {
-    pub compliant: bool,
-    #[schema(schema_with = json_object)]
-    pub compliance_vc: Option<Value>,
-    pub error: Option<String>,
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -102,7 +97,7 @@ async fn resolve_org_id_from_request(
 #[utoipa::path(post, path = "/v1/gaia-x/comply", tag = "Gaia-X Compliance",
     request_body = ComplyRequest,
     responses(
-        (status = 200, description = "Compliance result", body = ComplyResponse),
+        (status = 200, description = "SSE stream of compliance phases", body = ComplyEvent, content_type = "text/event-stream"),
         (status = 400, description = "Prerequisites missing"),
     )
 )]
@@ -113,7 +108,7 @@ pub async fn comply(
 ) -> Response {
     let org_id = ctx.org_id.0.clone();
 
-    // 1. Load org and validate prerequisites
+    // ── Validate prerequisites synchronously (return JSON errors, not SSE) ──
     let org = match state.db.get_organization(&org_id).await {
         Some(o) => o,
         None => return bad_request_response("Organization not found"),
@@ -125,182 +120,193 @@ pub async fn comply(
     if org.registration_number_type.is_none() { missing.push("registration_number_type"); }
     if org.registration_number.as_ref().map_or(true, |s| s.is_empty()) { missing.push("registration_number"); }
     if !missing.is_empty() {
-        return data_response(ComplyResponse {
-            compliant: false,
-            private_key_pem: None,
-            compliance_vc: None,
-            error: Some(format!("Missing required fields: {}", missing.join(", "))),
-            failed_phase: None,
-        }).into_response();
+        return bad_request_response(format!("Missing required fields: {}", missing.join(", ")));
     }
 
-    let country_subdivision_code = org.country_subdivision_code.as_ref().unwrap();
-    let registration_number_type = org.registration_number_type.as_ref().unwrap();
-    let registration_number = org.registration_number.as_ref().unwrap();
-    let legal_name = &org.legal_name;
-
-    // 2. Derive domain
     let base_domain = match &state.gaia_x.base_domain {
         Some(bd) => bd.clone(),
-        None => return data_response(ComplyResponse {
-            compliant: false,
-            private_key_pem: None,
-            compliance_vc: None,
-            error: Some("KEASY_BASE_DOMAIN is not configured".to_string()),
-            failed_phase: None,
-        }).into_response(),
-    };
-    let domain = format!("{}.{}", org.slug, base_domain);
-
-    // 3. Generate key pair
-    let pair = match keys::generate_key_pair() {
-        Ok(p) => p,
-        Err(e) => return data_response(ComplyResponse {
-            compliant: false,
-            private_key_pem: None,
-            compliance_vc: None,
-            error: Some(format!("Key generation failed: {e}")),
-            failed_phase: Some("key_generation".to_string()),
-        }).into_response(),
-    };
-    let private_key_pem = pair.private_key_pem.clone();
-
-    let jwk_str = match serde_json::to_string(&pair.public_key_jwk) {
-        Ok(s) => s,
-        Err(e) => return data_response(ComplyResponse {
-            compliant: false,
-            private_key_pem: Some(private_key_pem),
-            compliance_vc: None,
-            error: Some(format!("Failed to serialize JWK: {e}")),
-            failed_phase: Some("key_generation".to_string()),
-        }).into_response(),
+        None => return bad_request_response("KEASY_BASE_DOMAIN is not configured"),
     };
 
-    // Helper macro for error responses that include the private key
-    macro_rules! fail {
-        ($phase:expr, $msg:expr) => {
-            return data_response(ComplyResponse {
-                compliant: false,
-                private_key_pem: Some(private_key_pem.clone()),
-                compliance_vc: None,
-                error: Some($msg),
-                failed_phase: Some($phase.to_string()),
-            }).into_response()
+    // ── Open SSE channel ────────────────────────────────────────────────────
+    let (tx, rx) = tokio::sync::mpsc::channel::<Result<Event, Infallible>>(8);
+
+    let country_subdivision_code = org.country_subdivision_code.clone().unwrap();
+    let registration_number_type = org.registration_number_type.clone().unwrap();
+    let registration_number = org.registration_number.clone().unwrap();
+    let legal_name = org.legal_name.clone();
+    let slug = org.slug.clone();
+    let cert_chain_pem_input = payload.cert_chain_pem.clone();
+
+    tokio::spawn(async move {
+        let domain = format!("{slug}.{base_domain}");
+
+        // Helper: send a ComplyEvent as an SSE data frame.
+        let emit = |tx: &tokio::sync::mpsc::Sender<Result<Event, Infallible>>, evt: ComplyEvent| {
+            let json = serde_json::to_string(&evt).unwrap_or_default();
+            let _ = tx.try_send(Ok(Event::default().data(json)));
         };
-    }
 
-    // 4. Get cert chain: Caddy volume → request body → self-signed fallback (mock mode)
-    let cert_chain_pem = if let Some(caddy_dir) = &state.gaia_x.caddy_certs_dir {
-        match cert::read_caddy_cert_chain(caddy_dir, &base_domain) {
-            Ok(pem) => pem,
-            Err(_) => match payload.cert_chain_pem {
-                Some(ref pem) if !pem.is_empty() => pem.clone(),
-                _ => fail!("certificate", "Could not read Caddy certificates and no cert_chain_pem provided".to_string()),
-            },
+        // Helper: send error event and return early.
+        macro_rules! fail_sse {
+            ($tx:expr, $phase:expr, $index:expr, $msg:expr, $pk:expr) => {{
+                emit(&$tx, ComplyEvent {
+                    phase: $phase.to_string(),
+                    index: $index,
+                    error: Some($msg),
+                    data: Some(ComplyResponse {
+                        compliant: false,
+                        private_key_pem: $pk,
+                        compliance_vc: None,
+                        error: Some($phase.to_string()),
+                        failed_phase: Some($phase.to_string()),
+                    }),
+                });
+                return;
+            }};
         }
-    } else {
-        match payload.cert_chain_pem {
-            Some(ref pem) if !pem.is_empty() => pem.clone(),
-            _ => {
-                if state.gaia_x.gxdch.is_mock() {
-                    tracing::warn!("[MOCK] No Caddy certs and no cert_chain_pem — generating self-signed certificate for {domain}");
-                    match MockGxdch::generate_self_signed_cert(&domain) {
-                        Ok(pem) => pem,
-                        Err(e) => fail!("certificate", format!("Failed to generate self-signed cert: {e}")),
+
+        // Phase 0: key_generation
+        let pair = match keys::generate_key_pair() {
+            Ok(p) => p,
+            Err(e) => fail_sse!(tx, "key_generation", 0, format!("Key generation failed: {e}"), None),
+        };
+        let private_key_pem = pair.private_key_pem.clone();
+
+        let jwk_str = match serde_json::to_string(&pair.public_key_jwk) {
+            Ok(s) => s,
+            Err(e) => fail_sse!(tx, "key_generation", 0, format!("Failed to serialize JWK: {e}"), Some(private_key_pem)),
+        };
+
+        emit(&tx, ComplyEvent { phase: "key_generation".into(), index: 0, error: None, data: None });
+
+        // Phase 1: certificate
+        let cert_chain_pem = if let Some(caddy_dir) = &state.gaia_x.caddy_certs_dir {
+            match cert::read_caddy_cert_chain(caddy_dir, &base_domain) {
+                Ok(pem) => pem,
+                Err(_) => match cert_chain_pem_input {
+                    Some(ref pem) if !pem.is_empty() => pem.clone(),
+                    _ => fail_sse!(tx, "certificate", 1, "Could not read Caddy certificates and no cert_chain_pem provided".into(), Some(private_key_pem)),
+                },
+            }
+        } else {
+            match cert_chain_pem_input {
+                Some(ref pem) if !pem.is_empty() => pem.clone(),
+                _ => {
+                    if state.gaia_x.gxdch.is_mock() {
+                        tracing::warn!("[MOCK] No Caddy certs and no cert_chain_pem — generating self-signed certificate for {domain}");
+                        match MockGxdch::generate_self_signed_cert(&domain) {
+                            Ok(pem) => pem,
+                            Err(e) => fail_sse!(tx, "certificate", 1, format!("Failed to generate self-signed cert: {e}"), Some(private_key_pem)),
+                        }
+                    } else {
+                        fail_sse!(tx, "certificate", 1, "KEASY_CADDY_CERTS_DIR not configured and no cert_chain_pem provided".into(), Some(private_key_pem))
                     }
-                } else {
-                    fail!("certificate", "KEASY_CADDY_CERTS_DIR not configured and no cert_chain_pem provided".to_string())
                 }
             }
+        };
+
+        if let Err(e) = cert::validate_chain(&cert_chain_pem) {
+            fail_sse!(tx, "certificate", 1, format!("Certificate validation failed: {}", e.0), Some(private_key_pem));
         }
-    };
 
-    // 5. Validate cert chain
-    if let Err(e) = cert::validate_chain(&cert_chain_pem) {
-        fail!("certificate", format!("Certificate validation failed: {}", e.0));
-    }
-
-    // 6. Save keys + cert + domain to org_gaiax (so .well-known endpoints work)
-    let mut gx_state = GaiaxState {
-        org_id: org_id.clone(),
-        public_key_jwk: Some(jwk_str),
-        cert_chain_pem: Some(cert_chain_pem),
-        lrn_credential: None,
-        lp_credential: None,
-        tc_credential: None,
-        compliance_vc: None,
-        lrn_type: None,
-        lrn_value: None,
-        domain: Some(domain.clone()),
-        updated_at: now_iso(),
-    };
-    {
-        let conn = state.db.write().await;
-        if let Err(e) = db::upsert(&conn, &gx_state) {
-            return internal_error_response(&format!("failed to save gaiax state: {e}"));
+        // Save keys + cert + domain (so .well-known endpoints work)
+        let mut gx_state = GaiaxState {
+            org_id: org_id.clone(),
+            public_key_jwk: Some(jwk_str),
+            cert_chain_pem: Some(cert_chain_pem),
+            lrn_credential: None,
+            lp_credential: None,
+            tc_credential: None,
+            compliance_vc: None,
+            lrn_type: None,
+            lrn_value: None,
+            domain: Some(domain.clone()),
+            updated_at: now_iso(),
+        };
+        {
+            let conn = state.db.write().await;
+            if let Err(e) = db::upsert(&conn, &gx_state) {
+                fail_sse!(tx, "certificate", 1, format!("Failed to save gaiax state: {e}"), Some(private_key_pem));
+            }
         }
-    }
 
-    // 7. Request LRN credential from GXDCH
-    let lrn_vc = match state.gaia_x.gxdch.request_lrn_credential(
-        &domain,
-        registration_number_type,
-        registration_number,
-    ).await {
-        Ok(vc) => vc,
-        Err(e) => fail!("lrn_request", format!("GXDCH Notary error: {e}")),
-    };
+        emit(&tx, ComplyEvent { phase: "certificate".into(), index: 1, error: None, data: None });
 
-    // 8. Assemble + sign Legal Participant credential
-    let mut lp_cred = credentials::assemble_legal_participant(
-        &domain,
-        legal_name,
-        country_subdivision_code,
-    );
-    if let Err(e) = signing::sign_credential(&mut lp_cred, &private_key_pem, &domain) {
-        fail!("lp_signing", format!("LP signing failed: {e}"));
-    }
+        // Phase 2: lrn_request
+        let lrn_vc = match state.gaia_x.gxdch.request_lrn_credential(
+            &domain,
+            &registration_number_type,
+            &registration_number,
+        ).await {
+            Ok(vc) => vc,
+            Err(e) => fail_sse!(tx, "lrn_request", 2, format!("GXDCH Notary error: {e}"), Some(private_key_pem)),
+        };
 
-    // 9. Assemble + sign Terms & Conditions credential
-    let mut tc_cred = credentials::assemble_terms_conditions(&domain);
-    if let Err(e) = signing::sign_credential(&mut tc_cred, &private_key_pem, &domain) {
-        fail!("tc_signing", format!("T&C signing failed: {e}"));
-    }
+        emit(&tx, ComplyEvent { phase: "lrn_request".into(), index: 2, error: None, data: None });
 
-    // 10. Assemble VP and submit to GXDCH Compliance Service
-    let vp_value = vp::assemble_vp(&lrn_vc, &lp_cred, &tc_cred);
-    let compliance_vc = match state.gaia_x.gxdch.submit_compliance(&vp_value, &domain).await {
-        Ok(vc) => vc,
-        Err(e) => fail!("compliance_submission", format!("GXDCH Compliance error: {e}")),
-    };
-
-    // 11. Save all credentials to DB
-    let lrn_str = serde_json::to_string(&lrn_vc).unwrap_or_default();
-    let lp_str = serde_json::to_string(&lp_cred).unwrap_or_default();
-    let tc_str = serde_json::to_string(&tc_cred).unwrap_or_default();
-    let vc_str = serde_json::to_string(&compliance_vc).unwrap_or_default();
-    gx_state.lrn_credential = Some(lrn_str);
-    gx_state.lrn_type = Some(registration_number_type.clone());
-    gx_state.lrn_value = Some(registration_number.clone());
-    gx_state.lp_credential = Some(lp_str);
-    gx_state.tc_credential = Some(tc_str);
-    gx_state.compliance_vc = Some(vc_str);
-    gx_state.updated_at = now_iso();
-    {
-        let conn = state.db.write().await;
-        if let Err(e) = db::upsert(&conn, &gx_state) {
-            return internal_error_response(&format!("failed to save gaiax state: {e}"));
+        // Phase 3: signing (LP + T&C)
+        let mut lp_cred = credentials::assemble_legal_participant(
+            &domain,
+            &legal_name,
+            &country_subdivision_code,
+        );
+        if let Err(e) = signing::sign_credential(&mut lp_cred, &private_key_pem, &domain) {
+            fail_sse!(tx, "signing", 3, format!("LP signing failed: {e}"), Some(private_key_pem));
         }
-    }
 
-    // 12. Return success
-    data_response(ComplyResponse {
-        compliant: true,
-        private_key_pem: Some(private_key_pem),
-        compliance_vc: Some(compliance_vc),
-        error: None,
-        failed_phase: None,
-    }).into_response()
+        let mut tc_cred = credentials::assemble_terms_conditions(&domain);
+        if let Err(e) = signing::sign_credential(&mut tc_cred, &private_key_pem, &domain) {
+            fail_sse!(tx, "signing", 3, format!("T&C signing failed: {e}"), Some(private_key_pem));
+        }
+
+        emit(&tx, ComplyEvent { phase: "signing".into(), index: 3, error: None, data: None });
+
+        // Phase 4: compliance_submission
+        let vp_value = vp::assemble_vp(&lrn_vc, &lp_cred, &tc_cred);
+        let compliance_vc = match state.gaia_x.gxdch.submit_compliance(&vp_value, &domain).await {
+            Ok(vc) => vc,
+            Err(e) => fail_sse!(tx, "compliance_submission", 4, format!("GXDCH Compliance error: {e}"), Some(private_key_pem)),
+        };
+
+        emit(&tx, ComplyEvent { phase: "compliance_submission".into(), index: 4, error: None, data: None });
+
+        // Save all credentials to DB
+        let lrn_str = serde_json::to_string(&lrn_vc).unwrap_or_default();
+        let lp_str = serde_json::to_string(&lp_cred).unwrap_or_default();
+        let tc_str = serde_json::to_string(&tc_cred).unwrap_or_default();
+        let vc_str = serde_json::to_string(&compliance_vc).unwrap_or_default();
+        gx_state.lrn_credential = Some(lrn_str);
+        gx_state.lrn_type = Some(registration_number_type);
+        gx_state.lrn_value = Some(registration_number);
+        gx_state.lp_credential = Some(lp_str);
+        gx_state.tc_credential = Some(tc_str);
+        gx_state.compliance_vc = Some(vc_str);
+        gx_state.updated_at = now_iso();
+        {
+            let conn = state.db.write().await;
+            if let Err(e) = db::upsert(&conn, &gx_state) {
+                tracing::error!("failed to save final gaiax state: {e}");
+            }
+        }
+
+        // Phase 5: complete
+        emit(&tx, ComplyEvent {
+            phase: "complete".into(),
+            index: 5,
+            error: None,
+            data: Some(ComplyResponse {
+                compliant: true,
+                private_key_pem: Some(private_key_pem),
+                compliance_vc: Some(compliance_vc),
+                error: None,
+                failed_phase: None,
+            }),
+        });
+    });
+
+    let stream: ReceiverStream<Result<Event, Infallible>> = ReceiverStream::new(rx);
+    Sse::new(stream).keep_alive(KeepAlive::default()).into_response()
 }
 
 // ── GET /v1/gaia-x/compliance ─────────────────────────────────────────────

@@ -1,7 +1,8 @@
 COMPOSE_DEV  = docker compose -f docker-compose.yml -f docker-compose.dev.yml
+COMPOSE_DEMO = docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.demo.yml
 COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 
-.PHONY: help dev down prod build logs restart clean ps
+.PHONY: help dev demo down prod build logs restart clean ps
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -9,6 +10,10 @@ help: ## Show this help
 dev: ## Start dev environment (creates .env files on first run)
 	@cp -n .env.example .env 2>/dev/null || true
 	$(COMPOSE_DEV) up --build -d
+
+demo: ## Start demo environment (release build, no hot-reload)
+	@cp -n .env.example .env 2>/dev/null || true
+	$(COMPOSE_DEMO) up --build -d
 
 down: ## Stop all services
 	$(COMPOSE_DEV) down

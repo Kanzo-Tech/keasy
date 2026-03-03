@@ -207,11 +207,6 @@ impl Database {
         self.build_storage_config(ctx, ctx.org_id().as_str(), account_ids).await.as_map().clone()
     }
 
-    pub async fn env_snapshot_all(&self, ctx: &TenantScoped<()>) -> HashMap<String, String> {
-        let ids: Vec<_> = self.list_cloud_accounts(ctx).await.iter().map(|a| a.id.clone()).collect();
-        self.env_snapshot(ctx, &ids).await
-    }
-
     async fn decrypt_secrets_for_account(&self, id: &str) -> HashMap<String, SecretString> {
         let Some(blob) = self.get_secret(&format!("cloud_account:{id}")).await else {
             return HashMap::new();

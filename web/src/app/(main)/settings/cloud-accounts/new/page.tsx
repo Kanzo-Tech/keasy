@@ -32,7 +32,7 @@ export default function NewCloudAccountPage() {
         try {
           await api.cloud.create(data);
           toast.success("Cloud account created");
-          queryClient.invalidateQueries({ queryKey: queryKeys.cloud.init });
+          queryClient.invalidateQueries({ queryKey: queryKeys.cloud.accounts });
           router.push("/settings/cloud-accounts");
         } catch (err) {
           toastError(err instanceof Error ? err.message : "Failed to create");

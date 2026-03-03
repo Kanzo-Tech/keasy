@@ -18,10 +18,9 @@ use utoipa::OpenApi;
         crate::jobs::routes::get_job,
         crate::jobs::routes::update_job,
         crate::jobs::routes::delete_job,
-        crate::jobs::routes::cancel_job,
+        crate::jobs::routes::stream_job,
         crate::jobs::routes::get_job_catalog,
         crate::jobs::routes::get_job_graph,
-        crate::jobs::routes::get_unified_graph,
         // Connections
         crate::connections::routes::list_connections,
         crate::connections::routes::create_connection,
@@ -140,9 +139,9 @@ use utoipa::OpenApi;
         // Gaia-X Compliance
         crate::gaia_x::routes::ComplianceCredential,
         crate::gaia_x::routes::ComplianceStatus,
-        crate::gaia_x::routes::GxdchComplianceResult,
         crate::gaia_x::ComplyRequest,
         crate::gaia_x::ComplyResponse,
+        crate::gaia_x::ComplyEvent,
         // Auth response types
         crate::auth::routes::MeResponse,
         crate::auth::routes::MeOrg,
@@ -169,6 +168,7 @@ use utoipa::OpenApi;
         crate::routes::org::OrgIdentityResponse,
         // Jobs
         crate::jobs::routes::CatalogResponse,
+        crate::jobs::runner::JobEvent,
         // Discovery
         crate::discovery::routes::SearchRequest,
         crate::discovery::routes::ExpandRequest,

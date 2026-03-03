@@ -88,6 +88,8 @@ pub enum JobApiError {
     InvalidFormat(String),
     #[error("script rewrite failed: {0}")]
     RewriteFailed(String),
+    #[error("cannot delete a running job")]
+    StillRunning,
     #[error("no catalog available for this job")]
     NoCatalog,
     #[error("serialization failed: {0}")]
@@ -118,6 +120,11 @@ impl JobApiError {
                 axum::http::StatusCode::BAD_REQUEST,
                 "rewrite_error",
                 msg.clone(),
+            ),
+            JobApiError::StillRunning => (
+                axum::http::StatusCode::CONFLICT,
+                "still_running",
+                "Cannot delete a job that is still running".to_string(),
             ),
             JobApiError::NoCatalog => (
                 axum::http::StatusCode::NOT_FOUND,

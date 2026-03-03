@@ -1,19 +1,21 @@
-import Link from "next/link";
 import { AlertCircle } from "lucide-react";
 import { MetaItem } from "@/components/shared/meta-item";
 import { PipelineSection } from "@/components/pipeline-flow/pipeline-section";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getErrorInfo } from "@/lib/error-codes";
 import { formatDuration } from "@/lib/formatters";
-import type { Job, JobError } from "@/lib/types";
+import type { Job, JobError, JobEvent } from "@/lib/types";
+import Link from "next/link";
+
+const PHASES = ["Queued", "Compiling", "Executing", "Finalizing", "Complete"];
 
 interface OverviewContentProps {
   job: Job;
   dests: string[];
   hasPipeline: boolean;
-  isTerminal: boolean;
-  onCancel: () => void;
+  progress: JobEvent | null;
 }
 
 function JobErrorBlock({ error }: { error: JobError }) {
@@ -47,8 +49,7 @@ export function OverviewContent({
   job,
   dests,
   hasPipeline,
-  isTerminal,
-  onCancel,
+  progress,
 }: OverviewContentProps) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -68,17 +69,30 @@ export function OverviewContent({
         {dests.length > 0 && <MetaItem label="Destination" value={dests.join(", ")} mono />}
       </div>
 
+      {(() => {
+        // SSE event takes priority; fall back to job.status for fast jobs
+        // where the stream hasn't connected yet.
+        const phase = progress
+          ? { index: progress.index, label: PHASES[progress.index] ?? progress.phase }
+          : job.status === "pending"
+            ? { index: 0, label: "Queued" }
+            : job.status === "running"
+              ? { index: 2, label: "Executing" }
+              : null;
+        if (!phase || progress?.phase === "complete") return null;
+        return (
+          <div className="mb-4 space-y-2">
+            <Progress value={Math.round(((phase.index + 1) / PHASES.length) * 100)} />
+            <p className="text-sm text-muted-foreground">{phase.label}...</p>
+          </div>
+        );
+      })()}
+
       {hasPipeline && job.pipeline && (
         <PipelineSection pipeline={job.pipeline} className="flex-1 min-h-0 flex flex-col" />
       )}
 
       {job.error && <JobErrorBlock error={job.error} />}
-
-      {!isTerminal && (
-        <Button variant="destructive" onClick={onCancel} className="mt-4 w-fit">
-          Cancel Job
-        </Button>
-      )}
     </div>
   );
 }

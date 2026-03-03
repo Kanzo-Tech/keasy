@@ -82,7 +82,7 @@ export function CatalogView({
           />
         )
       ) : (
-        <GraphView source={{ type: "job", jobId: id }} />
+        <GraphView jobId={id} />
       )}
     </div>
   );

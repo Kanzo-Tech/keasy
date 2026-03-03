@@ -10,8 +10,6 @@ export const queryKeys = {
     all: ["jobs"] as const,
     detail: (id: string) => ["jobs", id] as const,
     catalog: (id: string, format: string) => ["jobs", id, "catalog", format] as const,
-    graph: (id: string) => ["jobs", id, "graph"] as const,
-    adminGraph: (orgId?: string) => ["jobs", "admin-graph", orgId ?? "all"] as const,
   },
 
   // Connections
@@ -24,10 +22,8 @@ export const queryKeys = {
 
   // Cloud
   cloud: {
-    init: ["cloud-init"] as const,
     accounts: ["cloud-accounts"] as const,
     detail: (id: string) => ["cloud", id] as const,
-    schema: ["cloud-schema"] as const,
   },
 
   // Settings
@@ -68,7 +64,7 @@ export const queryKeys = {
   // Discovery
   discovery: {
     load: (jobId: string) => ["discovery", jobId] as const,
-    explorer: (jobId: string) => ["explorer", jobId] as const,
+    explorer: (jobId?: string) => ["explorer", jobId ?? "all"] as const,
     db: (jobId: string) => ["discovery-db", jobId] as const,
     chart: (jobId: string, xAxis: string, yAxis: string, groupBy: string, type: string, agg: string) =>
       ["chart", jobId, xAxis, yAxis, groupBy, type, agg] as const,
@@ -88,8 +84,6 @@ export const queryKeys = {
   // Graph
   graph: {
     job: (jobId: string) => ["graph", jobId] as const,
-    org: (orgId: string) => ["graph-org", orgId] as const,
-    unified: ["graph-unified"] as const,
   },
 
   // Dashboard

@@ -20,13 +20,16 @@ export default function EditCloudAccountPage({
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
-    queryKey: queryKeys.cloud.detail(id),
-    queryFn: () => Promise.all([api.settings.schema(), api.cloud.get(id)]),
+  const { data: schema = [], isLoading: schemaLoading } = useQuery({
+    queryKey: queryKeys.settings.schema,
+    queryFn: api.settings.schema,
   });
+  const { data: account, isLoading: accountLoading } = useQuery({
+    queryKey: queryKeys.cloud.detail(id),
+    queryFn: () => api.cloud.get(id),
+  });
+  const isLoading = schemaLoading || accountLoading;
   const showSkeleton = useDelayedLoading(isLoading);
-
-  const [schema, account] = data ?? [[], null];
 
   if (isLoading) {
     return showSkeleton ? (
@@ -53,7 +56,7 @@ export default function EditCloudAccountPage({
             fields: data.fields,
           });
           toast.success("Cloud account updated");
-          queryClient.invalidateQueries({ queryKey: queryKeys.cloud.init });
+          queryClient.invalidateQueries({ queryKey: queryKeys.cloud.accounts });
           router.push("/settings/cloud-accounts");
         } catch (err) {
           toastError(err instanceof Error ? err.message : "Failed to update");

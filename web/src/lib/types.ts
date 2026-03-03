@@ -12,10 +12,6 @@ export type Job = S["Job"];
 export type CreateJobRequest = S["CreateJobRequest"];
 export type UpdateJobRequest = S["UpdateJobRequest"];
 export type Field = S["Field"];
-export type FieldMapping = S["FieldMapping"];
-export type OperationInput = S["OperationInput"];
-export type PipelineInput = S["PipelineInput"];
-export type PipelineOperation = S["PipelineOperation"];
 export type PipelineOutput = S["PipelineOutput"];
 export type PipelineSummary = S["PipelineSummary"];
 export type ValidationResult = S["ValidationResult"];
@@ -60,13 +56,11 @@ export type FileEntry = S["FileEntry"];
 export type AskResponse = S["AskResponse"];
 
 // Shape validation — now in OpenAPI schema
-export type ShapeValidationError = S["ShapeValidationError"];
 export type ShapeValidationResult = S["ShapeValidationResult"];
 
 // Aliases for renamed/new response types
 export type OrgInvite = S["OrgInviteEntry"];
 export type ServiceStatus = S["ServiceStatusResponse"];
-export type GxdchComplianceResult = S["GxdchComplianceResult"];
 export type InviteInfoResponse = S["InviteInfoResponse"];
 export type LogoutResponse = S["LogoutResponse"];
 export type CreateOrgInviteResponse = S["CreateOrgInviteResponse"];
@@ -118,9 +112,8 @@ export type WorkspacesResponse = S["WorkspacesResponse"];
 // ---------------------------------------------------------------------------
 
 export type ComplianceCredential = S["ComplianceCredential"];
-export type ComplianceStatus = S["ComplianceStatus"];
-export type ComplyRequest = S["ComplyRequest"];
-export type ComplyResponse = S["ComplyResponse"];
+export type ComplyEvent = S["ComplyEvent"];
+export type JobEvent = S["JobEvent"];
 
 // ---------------------------------------------------------------------------
 // Admin types — re-exported from schema

@@ -7,6 +7,8 @@ import type {
   GraphData,
   Conversation,
   ConversationMessage,
+  ComplyEvent,
+  JobEvent,
   FileEntry,
   SearchResult,
   ShapeValidationResult,
@@ -36,8 +38,24 @@ export const api = {
     update: async (id: string, req: Schemas["UpdateJobRequest"]) =>
       unwrap(await client.PUT("/v1/jobs/{id}", { params: { path: { id } }, body: req })),
 
-    cancel: async (id: string) =>
-      unwrap(await client.POST("/v1/jobs/{id}/cancel", { params: { path: { id } } })),
+    stream: async function* (id: string, signal?: AbortSignal): AsyncGenerator<JobEvent> {
+      const res = await fetch(`/v1/jobs/${id}/stream`, { credentials: "same-origin", signal });
+      if (!res.ok) return;
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const parts = buf.split("\n\n");
+        buf = parts.pop()!;
+        for (const part of parts) {
+          const dataLine = part.split("\n").find((l) => l.startsWith("data:"));
+          if (dataLine) yield JSON.parse(dataLine.slice(5).trim()) as JobEvent;
+        }
+      }
+    },
 
     remove: async (id: string) => {
       unwrap(await client.DELETE("/v1/jobs/{id}", { params: { path: { id } } }));
@@ -45,14 +63,6 @@ export const api = {
 
     graph: async (id: string) =>
       unwrap(await client.GET("/v1/jobs/{id}/graph", { params: { path: { id } } })) as GraphData,
-
-    unifiedGraph: async () =>
-      unwrap(await client.GET("/v1/graph")) as GraphData,
-
-    adminGraph: async (orgId?: string) =>
-      unwrap(await client.GET("/v1/graph", {
-        params: { query: orgId ? { org_id: orgId } : {} },
-      })) as GraphData,
 
     catalog: async (id: string, format: string): Promise<string> => {
       const data = unwrap(
@@ -88,12 +98,6 @@ export const api = {
 
     create: async (req: Schemas["CreateConnectionRequest"]) =>
       unwrap(await client.POST("/v1/connections", { body: req })),
-
-    update: async (id: string, req: Schemas["UpdateConnectionRequest"]) =>
-      unwrap(await client.PUT("/v1/connections/{id}", {
-        params: { path: { id } },
-        body: req,
-      })),
 
     remove: async (id: string) => {
       unwrap(await client.DELETE("/v1/connections/{id}", { params: { path: { id } } }));
@@ -161,12 +165,6 @@ export const api = {
 
   // ── Conversations ─────────────────────────────────────────────────────
   conversations: {
-    create: async (id: string, title?: string) =>
-      unwrap(await client.POST("/v1/jobs/{id}/conversations", {
-        params: { path: { id } },
-        body: { title },
-      })) as Conversation,
-
     list: async (id: string) =>
       unwrap(await client.GET("/v1/jobs/{id}/conversations", {
         params: { path: { id } },
@@ -204,9 +202,6 @@ export const api = {
       if (result.data === undefined) return null;
       return result.data as Schemas["OrgSettings"];
     },
-
-    saveOrg: async (settings: Schemas["OrgSettings"]) =>
-      unwrap(await client.PUT("/v1/settings/organization", { body: settings })),
 
     preferences: async () =>
       unwrap(await client.GET("/v1/settings/preferences")),
@@ -295,10 +290,33 @@ export const api = {
         unwrap(await client.GET("/v1/gaia-x/compliance")),
     },
 
-    comply: async (certChainPem?: string) =>
-      unwrap(await client.POST("/v1/gaia-x/comply", {
-        body: { cert_chain_pem: certChainPem ?? null },
-      })) as Schemas["ComplyResponse"],
+    complyStream: async function* (certChainPem?: string): AsyncGenerator<ComplyEvent> {
+      const res = await fetch("/v1/gaia-x/comply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ cert_chain_pem: certChainPem ?? null }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        const msg = body?.error?.message ?? body?.message ?? `Request failed (${res.status})`;
+        throw new ApiError(String(body?.error?.code ?? "unknown"), msg);
+      }
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const parts = buf.split("\n\n");
+        buf = parts.pop()!;
+        for (const part of parts) {
+          const dataLine = part.split("\n").find((l) => l.startsWith("data:"));
+          if (dataLine) yield JSON.parse(dataLine.slice(5).trim()) as ComplyEvent;
+        }
+      }
+    },
 
   },
 

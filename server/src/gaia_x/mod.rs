@@ -62,6 +62,19 @@ pub struct ComplyResponse {
     pub failed_phase: Option<String>,
 }
 
+/// SSE event emitted during the comply pipeline.
+#[derive(Serialize, utoipa::ToSchema)]
+pub struct ComplyEvent {
+    /// Phase name: key_generation, certificate, lrn_request, signing, compliance_submission, complete
+    pub phase: String,
+    /// Index 0-5, maps to frontend PHASES array
+    pub index: u8,
+    /// Error message (only on failure)
+    pub error: Option<String>,
+    /// Final result (only on "complete" or error-after-key-gen)
+    pub data: Option<ComplyResponse>,
+}
+
 fn json_object() -> utoipa::openapi::schema::Object {
     use utoipa::openapi::schema::{AdditionalProperties, ObjectBuilder};
     ObjectBuilder::new()

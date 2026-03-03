@@ -35,26 +35,6 @@ fn iso_now() -> String {
     Timestamp::now().to_string()
 }
 
-/// Assemble the LRN (Legal Registration Number) request body for the GXDCH Notary.
-///
-/// This is NOT a full Verifiable Credential — it is the request body sent to the
-/// Notary endpoint. The Notary returns a signed VC in response.
-///
-/// - `domain`: the org's public domain (e.g. "example.com")
-/// - `lrn_type`: one of "vatID", "leiCode", "EORI"
-/// - `lrn_value`: the registration number value (e.g. "DE123456789")
-pub fn assemble_lrn_request(domain: &str, lrn_type: &str, lrn_value: &str) -> Value {
-    let lrn_key = format!("gx:{lrn_type}");
-    json!({
-        "@context": [
-            "https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/participant"
-        ],
-        "type": "gx:legalRegistrationNumber",
-        "id": format!("https://{}/.well-known/lrn.json", domain),
-        lrn_key: lrn_value
-    })
-}
-
 /// Assemble a LegalParticipant Verifiable Credential (without proof).
 ///
 /// VC-06: credentialSubject.id uses the `#cs` suffix pattern.

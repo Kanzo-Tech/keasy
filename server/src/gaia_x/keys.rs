@@ -5,7 +5,7 @@
 /// Only the public key JWK is persisted in wizard state.
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use p256::ecdsa::SigningKey;
-use p256::pkcs8::{DecodePrivateKey, EncodePrivateKey};
+use p256::pkcs8::EncodePrivateKey;
 // Use OsRng from rand_core 0.6 — compatible with p256 0.13 which uses rand_core 0.6 internally.
 use rand_core06::OsRng;
 
@@ -47,42 +47,4 @@ pub fn generate_key_pair() -> Result<GeneratedKeyPair, String> {
         private_key_pem,
         public_key_jwk,
     })
-}
-
-/// Verify that a PEM-encoded private key matches a stored public key JWK.
-///
-/// Used in steps 4 and 5 when the user re-uploads their private key for signing.
-/// Parses the PEM back to a SigningKey, derives the public JWK, and compares
-/// x and y fields with the stored JWK.
-pub fn verify_key_match(
-    private_pem: &str,
-    stored_jwk: &serde_json::Value,
-) -> Result<(), String> {
-    let signing_key = SigningKey::from_pkcs8_pem(private_pem)
-        .map_err(|e| format!("failed to parse private key PEM: {e}"))?;
-
-    let verifying_key = signing_key.verifying_key();
-    let point = verifying_key.to_encoded_point(false);
-    let x = point.x().ok_or("P-256 public key missing x coordinate")?;
-    let y = point.y().ok_or("P-256 public key missing y coordinate")?;
-
-    let derived_x = URL_SAFE_NO_PAD.encode(x);
-    let derived_y = URL_SAFE_NO_PAD.encode(y);
-
-    let stored_x = stored_jwk
-        .get("x")
-        .and_then(|v| v.as_str())
-        .ok_or("stored JWK missing x field")?;
-    let stored_y = stored_jwk
-        .get("y")
-        .and_then(|v| v.as_str())
-        .ok_or("stored JWK missing y field")?;
-
-    if derived_x != stored_x || derived_y != stored_y {
-        return Err(
-            "private key does not match the stored public key — upload the correct key".into(),
-        );
-    }
-
-    Ok(())
 }

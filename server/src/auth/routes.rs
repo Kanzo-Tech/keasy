@@ -1,7 +1,6 @@
 use axum::extract::State;
 use axum::response::IntoResponse;
 use serde::Deserialize;
-use serde_json::json;
 use tower_sessions::Session;
 
 use crate::AppState;
@@ -111,9 +110,14 @@ pub struct InviteInfoQuery {
     pub token: String,
 }
 
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct InviteInfoResponse {
+    pub valid: bool,
+}
+
 #[utoipa::path(get, path = "/v1/auth/invite-info", tag = "Auth",
     params(("token" = String, Query, description = "Invite token")),
-    responses((status = 200, description = "Invite token validity"))
+    responses((status = 200, description = "Invite token validity", body = InviteInfoResponse))
 )]
 pub async fn get_invite_info(
     State(state): State<AppState>,
@@ -126,7 +130,7 @@ pub async fn get_invite_info(
         .await
         .map(|t| t.expires_at > now)
         .unwrap_or(false);
-    data_response(json!({ "valid": valid }))
+    data_response(InviteInfoResponse { valid })
 }
 
 /// GET /v1/auth/workspaces
@@ -161,14 +165,21 @@ pub async fn list_workspaces(
 
     let current_client_id = state.auth.oidc_client_id.clone().unwrap_or_default();
 
-    let mut workspaces: Vec<Workspace> = Vec::new();
+    // Batch lookup: resolve all dataspaces in a single query
+    let client_id_refs: Vec<&str> = dataspaces.iter().map(|s| s.as_str()).collect();
+    let cached = state.db.get_dataspaces_by_client_ids(&client_id_refs).await;
+    let cached_ids: std::collections::HashSet<String> = cached.iter().map(|d| d.client_id.clone()).collect();
+
+    let mut workspaces: Vec<Workspace> = cached
+        .into_iter()
+        .map(|ds| Workspace { client_id: ds.client_id, name: ds.name, url: ds.url })
+        .collect();
+
+    // Resolve cache misses individually via Keycloak Admin API
     for client_id in &dataspaces {
-        // Check local cache first
-        if let Some(ds) = state.db.get_dataspace_by_client_id(client_id).await {
-            workspaces.push(Workspace { client_id: ds.client_id, name: ds.name, url: ds.url });
+        if cached_ids.contains(client_id) {
             continue;
         }
-        // Cache miss — resolve via Keycloak Admin API and cache locally
         if let Some(kc_admin) = &state.auth.keycloak_admin {
             if let Some(resolved) = kc_admin.resolve_client(client_id).await {
                 let _ = state.db.ensure_dataspace(client_id, &resolved.name, &resolved.url).await;
@@ -185,8 +196,13 @@ pub async fn list_workspaces(
 }
 
 /// POST /v1/auth/logout
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct LogoutResponse {
+    pub end_session_url: Option<String>,
+}
+
 #[utoipa::path(post, path = "/v1/auth/logout", tag = "Auth",
-    responses((status = 200, description = "Logout successful, returns end_session_url"))
+    responses((status = 200, description = "Logout successful, returns end_session_url", body = LogoutResponse))
 )]
 pub async fn logout(
     session: Session,
@@ -220,5 +236,5 @@ pub async fn logout(
         None
     };
 
-    Ok(data_response(json!({ "end_session_url": end_session_url })))
+    Ok(data_response(LogoutResponse { end_session_url }))
 }

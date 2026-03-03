@@ -13,9 +13,10 @@ pub struct ServerConfig {
     pub data_dir: PathBuf,
     pub secret_key: Option<SecretString>,
     /// Session cookie signing key — required. Read from KEASY_SESSION_SECRET.
-    /// Plan 03 wires this into the tower-sessions middleware.
-    #[allow(dead_code)]
     pub session_secret: SecretString,
+    /// Set the Secure flag on session cookies (requires HTTPS).
+    /// Read from KEASY_SESSION_SECURE. Default false (local dev).
+    pub session_secure: bool,
     pub cache_capacity: usize,
     /// Base URL for the frontend — used to construct invite links.
     /// Read from KEASY_BASE_URL, default "http://localhost:3000".
@@ -161,6 +162,10 @@ impl ServerConfig {
         let session_cookie_name = std::env::var("KEASY_SESSION_COOKIE_NAME")
             .unwrap_or_else(|_| "keasy.sid".to_string());
 
+        let session_secure = std::env::var("KEASY_SESSION_SECURE")
+            .map(|v| v == "true" || v == "1")
+            .unwrap_or(false);
+
         let caddy_certs_dir = std::env::var("KEASY_CADDY_CERTS_DIR")
             .ok()
             .filter(|s| !s.trim().is_empty())
@@ -176,6 +181,7 @@ impl ServerConfig {
             data_dir,
             secret_key,
             session_secret,
+            session_secure,
             cache_capacity,
             base_url,
             gxdch_notary_url,

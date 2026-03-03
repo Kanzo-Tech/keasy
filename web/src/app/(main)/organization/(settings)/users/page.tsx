@@ -169,7 +169,7 @@ export default function OrgUsersPage() {
     const url = `${window.location.origin}/invite?token=${token}`;
     navigator.clipboard.writeText(url).then(() => {
       toast.success("Link copied to clipboard");
-    });
+    }).catch(() => toast.error("Failed to copy link"));
   }
 
   return (

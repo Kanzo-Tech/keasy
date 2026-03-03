@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { api, ApiError } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
@@ -42,6 +43,7 @@ import { isError } from "@/lib/error-codes";
 import type {
   Conversation,
   ConversationMessage,
+  TabularData,
 } from "@/lib/types";
 
 interface DiscoveryAskProps {
@@ -55,7 +57,7 @@ function MessageEntry({ msg }: { msg: ConversationMessage }) {
     return <div className="text-sm font-medium break-words">{msg.content}</div>;
   }
 
-  const hasError = isError(msg.code);
+  const hasError = isError(msg.code ?? undefined);
   const hasData = msg.data && msg.data.rows.length > 0;
   const hasEmptyData = msg.data && msg.data.rows.length === 0;
 
@@ -217,6 +219,7 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
         setMessages([]);
       }
     } catch {
+      toast.error("Failed to delete conversation");
     }
   }
 
@@ -264,7 +267,7 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
         role: "assistant",
         content: response.answer,
         sparql: response.sparql,
-        data: response.data,
+        data: response.data as TabularData | undefined,
         code: response.code,
         created_at: new Date().toISOString(),
       };

@@ -16,10 +16,12 @@ impl Database {
             title,
         };
         let conn = self.write().await;
-        let _ = conn.execute(
+        if let Err(e) = conn.execute(
             "INSERT INTO conversations (id, organization_id, job_id, created_at, title) VALUES (?1, ?2, ?3, ?4, ?5)",
             params![conv.id, ctx.org_id().as_str(), conv.job_id, conv.created_at, conv.title],
-        );
+        ) {
+            tracing::error!(error = %e, "Failed to insert conversation");
+        }
         conv
     }
 
@@ -81,7 +83,7 @@ impl Database {
         };
         let data_json = msg.data.as_ref().map(|d| serde_json::to_string(d).unwrap());
         let conn = self.write().await;
-        let _ = conn.execute(
+        if let Err(e) = conn.execute(
             "INSERT INTO messages (id, conversation_id, role, content, sparql, data, code, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             params![
@@ -94,7 +96,9 @@ impl Database {
                 msg.code,
                 msg.created_at,
             ],
-        );
+        ) {
+            tracing::error!(error = %e, "Failed to insert message");
+        }
         msg
     }
 
@@ -126,17 +130,21 @@ impl Database {
 
     pub async fn rename_conversation(&self, id: &str, org_id: &str, title: &str) {
         let conn = self.write().await;
-        let _ = conn.execute(
+        if let Err(e) = conn.execute(
             "UPDATE conversations SET title = ?1 WHERE id = ?2 AND organization_id = ?3",
             params![title, id, org_id],
-        );
+        ) {
+            tracing::error!(error = %e, "Failed to rename conversation");
+        }
     }
 
     pub async fn delete_conversation(&self, id: &str, org_id: &str) {
         let conn = self.write().await;
-        let _ = conn.execute(
+        if let Err(e) = conn.execute(
             "DELETE FROM conversations WHERE id = ?1 AND organization_id = ?2",
             params![id, org_id],
-        );
+        ) {
+            tracing::error!(error = %e, "Failed to delete conversation");
+        }
     }
 }

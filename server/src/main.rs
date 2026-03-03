@@ -178,7 +178,7 @@ async fn main() {
         "External services"
     );
 
-    let app = build_router(state, config.cors_origins, session_store, config.session_secret, config.session_cookie_name);
+    let app = build_router(state, config.cors_origins, session_store, config.session_secret, config.session_cookie_name, config.session_secure);
 
     let listener = match tokio::net::TcpListener::bind(config.bind_addr).await {
         Ok(l) => l,

@@ -21,6 +21,7 @@ pub fn build_router(
     session_store: tower_sessions_rusqlite_store::RusqliteStore,
     session_secret: secrecy::SecretString,
     session_cookie_name: String,
+    session_secure: bool,
 ) -> Router {
     // Build the session layer with signed cookies
     // Key::from requires at least 64 bytes — derive from the session secret
@@ -31,7 +32,7 @@ pub fn build_router(
         .with_name(session_cookie_name)
         .with_http_only(true)
         .with_same_site(SameSite::Lax)
-        .with_secure(false) // TODO: make configurable via env var; false for local dev
+        .with_secure(session_secure)
         .with_expiry(tower_sessions::Expiry::OnInactivity(
             time::Duration::hours(24),
         ))
@@ -333,10 +334,13 @@ pub fn build_router(
                 .allow_methods(Any)
                 .allow_headers(Any)
         }
-        None => CorsLayer::new()
-            .allow_origin(Any)
-            .allow_methods(Any)
-            .allow_headers(Any),
+        None => {
+            tracing::warn!("CORS configured to allow all origins — set KEASY_CORS_ORIGINS in production");
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_headers(Any)
+        }
     };
 
     // IMPORTANT: session_layer MUST be outermost (applied after all merges).

@@ -9,6 +9,8 @@ use axum::{
     response::IntoResponse,
     Json,
 };
+use std::sync::LazyLock;
+use regex::Regex;
 use serde::Deserialize;
 
 use crate::AppState;
@@ -17,6 +19,9 @@ use crate::db::org_members::OrgMember;
 use crate::error::{data_response, error_body};
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::middleware::tenant::{RbacError, RequireOrgAdmin, RequireParticipant};
+
+static SUBDIVISION_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[A-Z]{2}-[A-Z0-9]{1,3}$").unwrap());
 
 #[utoipa::path(get, path = "/v1/org/users", tag = "Organization",
     responses((status = 200, description = "List of users in the org", body = Vec<OrgMember>))
@@ -168,8 +173,7 @@ pub async fn update_org_identity(
 
     // Validate country_subdivision_code (ISO 3166-2: XX-YYY)
     if let Some(ref csc) = payload.country_subdivision_code {
-        let re = regex::Regex::new(r"^[A-Z]{2}-[A-Z0-9]{1,3}$").unwrap();
-        if !re.is_match(csc) {
+        if !SUBDIVISION_RE.is_match(csc) {
             return Ok((
                 StatusCode::BAD_REQUEST,
                 Json(error_body("bad_request", "country_subdivision_code must match ISO 3166-2 (e.g. DE-BY)")),

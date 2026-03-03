@@ -128,13 +128,10 @@ impl ServerConfig {
         let base_url = std::env::var("KEASY_BASE_URL")
             .unwrap_or_else(|_| "http://localhost:3000".to_string());
 
-        let gxdch_notary_url = std::env::var("KEASY_GXDCH_NOTARY_URL").unwrap_or_else(|_| {
-            "https://registrationnumber.notary.lab.gaia-x.eu/v1/registrationNumberVC".to_string()
-        });
-        let gxdch_compliance_url =
-            std::env::var("KEASY_GXDCH_COMPLIANCE_URL").unwrap_or_else(|_| {
-                "https://compliance.lab.gaia-x.eu/main/api/credential-offers".to_string()
-            });
+        let gxdch_notary_url = std::env::var("KEASY_GXDCH_NOTARY_URL")
+            .unwrap_or_else(|_| crate::gaia_x::gxdch::GXDCH_NOTARY_URL.to_string());
+        let gxdch_compliance_url = std::env::var("KEASY_GXDCH_COMPLIANCE_URL")
+            .unwrap_or_else(|_| crate::gaia_x::gxdch::GXDCH_COMPLIANCE_URL.to_string());
 
         let oidc_issuer_url = std::env::var("KEASY_OIDC_ISSUER_URL")
             .ok()

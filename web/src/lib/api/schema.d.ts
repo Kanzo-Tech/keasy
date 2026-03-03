@@ -979,6 +979,7 @@ export interface components {
             conversation_id?: string | null;
             data?: null | components["schemas"]["TabularData"];
             sparql?: string | null;
+            reasoning?: string | null;
         };
         CatalogResponse: {
             catalog: string;
@@ -1127,6 +1128,9 @@ export interface components {
             name: string;
             type: string;
             uri?: string | null;
+            xsd_datatype?: string | null;
+            /** @default false */
+            optional: boolean;
         };
         FieldMapping: {
             source: string;

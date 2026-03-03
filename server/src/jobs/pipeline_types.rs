@@ -7,6 +7,10 @@ pub struct Field {
     pub field_type: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub uri: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub xsd_datatype: Option<String>,
+    #[serde(default)]
+    pub optional: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, utoipa::ToSchema)]

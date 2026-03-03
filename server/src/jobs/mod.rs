@@ -15,7 +15,7 @@ pub use pipeline_extract::extract_summary;
 use fossil_lang::context::{DefId, DefKind, Interner, Symbol};
 use fossil_lang::ir::{ExprId, ExprKind, Ir, PrimitiveType, TypeKind};
 use fossil_lang::passes::IrProgram;
-use fossil_stdlib::rdf::metadata::{RdfFieldAttrs, RdfTypeAttrs};
+use fossil_stdlib::rdf::metadata::{primitive_to_xsd, RdfFieldAttrs, RdfTypeAttrs};
 
 pub struct ProgramQuery<'a> {
     program: &'a IrProgram,
@@ -76,6 +76,8 @@ impl<'a> ProgramQuery<'a> {
                         name: self.interner().resolve(*s).to_string(),
                         field_type: "String".to_string(),
                         uri: None,
+                        xsd_datatype: Some("http://www.w3.org/2001/XMLSchema#string".to_string()),
+                        optional: false,
                     })
                     .collect();
             }
@@ -93,7 +95,13 @@ impl<'a> ProgramQuery<'a> {
             .iter()
             .map(|(field_sym, field_type_id)| {
                 let field_name = self.interner().resolve(*field_sym).to_string();
+                let ty = self.program.ir.types.get(*field_type_id);
+                let (optional, inner_type_id) = match &ty.kind {
+                    TypeKind::Optional(inner) => (true, *inner),
+                    _ => (false, *field_type_id),
+                };
                 let type_str = self.type_label(*field_type_id);
+                let xsd_datatype = self.type_to_xsd(inner_type_id);
                 let uri = def_id
                     .and_then(|id| self.program.gcx.type_metadata.get(&id))
                     .and_then(|tm| tm.field_metadata.get(field_sym))
@@ -103,9 +111,27 @@ impl<'a> ProgramQuery<'a> {
                     name: field_name,
                     field_type: type_str,
                     uri,
+                    xsd_datatype,
+                    optional,
                 }
             })
             .collect()
+    }
+
+    fn type_to_xsd(&self, type_id: fossil_lang::ir::TypeId) -> Option<String> {
+        let ty = self.program.ir.types.get(type_id);
+        match &ty.kind {
+            TypeKind::Primitive(prim) => {
+                // fossil's primitive_to_xsd returns None for String (implicit in RDF),
+                // but we want it explicit for the AI semantic context
+                Some(
+                    primitive_to_xsd(*prim)
+                        .unwrap_or("http://www.w3.org/2001/XMLSchema#string")
+                        .to_string(),
+                )
+            }
+            _ => None,
+        }
     }
 
     fn type_label(&self, type_id: fossil_lang::ir::TypeId) -> String {

@@ -1,5 +1,8 @@
 use std::collections::BTreeMap;
+use std::num::NonZeroUsize;
+use std::sync::Mutex;
 
+use lru::LruCache;
 use oxigraph::model::{GraphNameRef, NamedNodeRef, QuadRef};
 use oxigraph::sparql::{QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
@@ -10,15 +13,18 @@ use oxrdfio::{RdfFormat, RdfParser, RdfSerializer};
 use super::convert::{self, GraphData};
 use super::graph_types::{KeasyTriple, SearchResult, TabularData, TermValue};
 use super::rdf_format::RdfExportFormat;
+use crate::ai::profiler::GraphProfile;
 
 pub struct RdfGraph {
     store: Store,
+    profile_cache: Mutex<LruCache<String, GraphProfile>>,
 }
 
 impl Default for RdfGraph {
     fn default() -> Self {
         Self {
             store: Store::new().expect("Failed to create in-memory oxigraph store"),
+            profile_cache: Mutex::new(LruCache::new(NonZeroUsize::new(32).unwrap())),
         }
     }
 }
@@ -26,7 +32,10 @@ impl Default for RdfGraph {
 impl RdfGraph {
     pub fn open(path: &std::path::Path) -> Result<Self, String> {
         Store::open(path)
-            .map(|store| Self { store })
+            .map(|store| Self {
+                store,
+                profile_cache: Mutex::new(LruCache::new(NonZeroUsize::new(32).unwrap())),
+            })
             .map_err(|e| e.to_string())
     }
 }
@@ -141,6 +150,9 @@ impl RdfGraph {
                 quad.object.as_ref(),
                 graph,
             ));
+        }
+        if let Ok(mut cache) = self.profile_cache.lock() {
+            cache.pop(graph_name);
         }
     }
 
@@ -353,6 +365,55 @@ impl RdfGraph {
             Ok(_) => Err("Expected SELECT query".into()),
             Err(e) => Err(format!("SPARQL error: {e}")),
         }
+    }
+
+    /// Execute a SPARQL SELECT and return raw `oxrdf::Term` values.
+    /// Unlike `sparql_select` which stringifies everything into `TabularData`,
+    /// this preserves IRIs, typed literals, and datatypes for programmatic use.
+    pub(crate) fn sparql_solutions_raw(
+        &self,
+        sparql: &str,
+        graph_name: Option<&str>,
+    ) -> Result<Vec<Vec<(String, oxrdf::Term)>>, String> {
+        let query = match graph_name {
+            Some(g) => sparql.replacen("WHERE", &format!("FROM <{g}> WHERE"), 1),
+            None => sparql.to_string(),
+        };
+        match self.evaluate_query(&query) {
+            Ok(QueryResults::Solutions(solutions)) => {
+                let vars: Vec<String> = solutions
+                    .variables()
+                    .iter()
+                    .map(|v| v.as_str().to_string())
+                    .collect();
+                let mut rows = Vec::new();
+                for solution in solutions.flatten() {
+                    let row: Vec<(String, oxrdf::Term)> = vars
+                        .iter()
+                        .filter_map(|var| {
+                            solution.get(var.as_str()).map(|t| (var.clone(), t.clone()))
+                        })
+                        .collect();
+                    rows.push(row);
+                }
+                Ok(rows)
+            }
+            Ok(_) => Err("Expected SELECT query".into()),
+            Err(e) => Err(format!("SPARQL error: {e}")),
+        }
+    }
+
+    pub fn get_profile(&self, graph_name: &str) -> GraphProfile {
+        if let Ok(mut cache) = self.profile_cache.lock() {
+            if let Some(cached) = cache.get(graph_name) {
+                return cached.clone();
+            }
+        }
+        let profile = GraphProfile::build(self, graph_name);
+        if let Ok(mut cache) = self.profile_cache.lock() {
+            cache.put(graph_name.to_string(), profile.clone());
+        }
+        profile
     }
 
     pub fn serialize_to_format(&self, format: RdfExportFormat) -> Result<String, String> {

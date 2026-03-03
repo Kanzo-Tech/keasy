@@ -33,10 +33,10 @@ struct OpenAiRequest {
     messages: Vec<Message>,
 }
 
-#[derive(Serialize, Deserialize)]
-struct Message {
-    role: String,
-    content: String,
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Message {
+    pub role: String,
+    pub content: String,
 }
 
 #[derive(Deserialize)]
@@ -70,6 +70,21 @@ pub async fn ask_llm(settings: &AiSettings, system: &str, user: &str) -> Result<
     match settings.provider.as_str() {
         "openai" => ask_openai(&client, settings, system, user).await,
         _ => ask_anthropic(&client, settings, system, user).await,
+    }
+}
+
+pub async fn ask_llm_multi(
+    settings: &AiSettings,
+    system: &str,
+    messages: &[Message],
+    max_tokens_override: Option<u32>,
+) -> Result<String, AiError> {
+    let client = reqwest::Client::new();
+    let max_tokens = max_tokens_override.unwrap_or(settings.max_tokens.unwrap_or(2048));
+
+    match settings.provider.as_str() {
+        "openai" => ask_openai_multi(&client, settings, system, messages, max_tokens).await,
+        _ => ask_anthropic_multi(&client, settings, system, messages, max_tokens).await,
     }
 }
 
@@ -161,6 +176,122 @@ async fn ask_openai(
     let res = client
         .post("https://api.openai.com/v1/chat/completions")
         .header("Authorization", format!("Bearer {}", settings.api_key.expose_secret()))
+        .header("content-type", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| AiError::Failed(format!("OpenAI request failed: {e}")))?;
+
+    if !res.status().is_success() {
+        let status = res.status();
+        let body: serde_json::Value = res.json().await.unwrap_or_default();
+        let message = body["error"]["message"]
+            .as_str()
+            .unwrap_or("Unknown API error");
+        let code = body["error"]["code"].as_str().unwrap_or("");
+        let formatted = format!("{message} (openai, {status})");
+
+        if status.as_u16() == 402 || code == "insufficient_quota" {
+            return Err(AiError::InsufficientCredits(formatted));
+        }
+        return Err(AiError::Failed(formatted));
+    }
+
+    let resp: OpenAiResponse = res
+        .json()
+        .await
+        .map_err(|e| AiError::Failed(format!("Failed to parse OpenAI response: {e}")))?;
+
+    resp.choices
+        .into_iter()
+        .next()
+        .and_then(|c| c.message.content)
+        .ok_or_else(|| AiError::Failed("Empty response from OpenAI".to_string()))
+}
+
+async fn ask_anthropic_multi(
+    client: &reqwest::Client,
+    settings: &AiSettings,
+    system: &str,
+    messages: &[Message],
+    max_tokens: u32,
+) -> Result<String, AiError> {
+    let model = settings
+        .model
+        .as_deref()
+        .unwrap_or("claude-sonnet-4-20250514");
+
+    let body = AnthropicRequest {
+        model: model.to_string(),
+        max_tokens,
+        system: system.to_string(),
+        messages: messages.to_vec(),
+    };
+
+    let res = client
+        .post("https://api.anthropic.com/v1/messages")
+        .header("x-api-key", settings.api_key.expose_secret())
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| AiError::Failed(format!("Anthropic request failed: {e}")))?;
+
+    if !res.status().is_success() {
+        let status = res.status();
+        let body: serde_json::Value = res.json().await.unwrap_or_default();
+        let message = body["error"]["message"]
+            .as_str()
+            .unwrap_or("Unknown API error");
+        let formatted = format!("{message} (anthropic, {status})");
+
+        if status.as_u16() == 402
+            || (status.as_u16() == 429 && message.to_lowercase().contains("credit"))
+        {
+            return Err(AiError::InsufficientCredits(formatted));
+        }
+        return Err(AiError::Failed(formatted));
+    }
+
+    let resp: AnthropicResponse = res
+        .json()
+        .await
+        .map_err(|e| AiError::Failed(format!("Failed to parse Anthropic response: {e}")))?;
+
+    resp.content
+        .into_iter()
+        .find_map(|b| b.text)
+        .ok_or_else(|| AiError::Failed("Empty response from Anthropic".to_string()))
+}
+
+async fn ask_openai_multi(
+    client: &reqwest::Client,
+    settings: &AiSettings,
+    system: &str,
+    messages: &[Message],
+    max_tokens: u32,
+) -> Result<String, AiError> {
+    let model = settings.model.as_deref().unwrap_or("gpt-4o");
+
+    let mut all_messages = vec![Message {
+        role: "system".to_string(),
+        content: system.to_string(),
+    }];
+    all_messages.extend_from_slice(messages);
+
+    let body = OpenAiRequest {
+        model: model.to_string(),
+        max_tokens,
+        messages: all_messages,
+    };
+
+    let res = client
+        .post("https://api.openai.com/v1/chat/completions")
+        .header(
+            "Authorization",
+            format!("Bearer {}", settings.api_key.expose_secret()),
+        )
         .header("content-type", "application/json")
         .json(&body)
         .send()

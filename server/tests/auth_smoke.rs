@@ -4,10 +4,9 @@
 use axum::http::{Request, StatusCode};
 use secrecy::SecretString;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use tower::ServiceExt; // for oneshot
 
-use keasy_server::{AppState, AuthServices, Database, GaiaXServices, JobRunner, OutputCache, RdfGraph};
+use keasy_server::{AppState, AuthServices, Database, GaiaXServices, JobRunner, RdfGraph};
 
 /// Helper: build a test router backed by a temp directory SQLite DB.
 async fn test_router() -> axum::Router {
@@ -18,7 +17,7 @@ async fn test_router() -> axum::Router {
     // the router needs the DB to remain accessible during test execution.
     std::mem::forget(temp_dir);
 
-    let db = Database::open(&db_path, None).expect("failed to open test database");
+    let db = Database::open(&db_path, None, None).expect("failed to open test database");
 
     let session_conn =
         tower_sessions_rusqlite_store::tokio_rusqlite::Connection::open(&db_path)
@@ -31,16 +30,14 @@ async fn test_router() -> axum::Router {
         .await
         .expect("failed to migrate session store");
 
-    let catalog = Arc::new(RdfGraph::new());
-    let runner = Arc::new(JobRunner::new(db.clone(), catalog.clone(), 1, 30));
-    let output_cache = Arc::new(Mutex::new(OutputCache::new(1)));
+    let graph_store = Arc::new(RdfGraph::new());
+    let runner = Arc::new(JobRunner::new(db.clone(), graph_store.clone(), 1, 30));
     let api_key = SecretString::from("test-api-key");
 
     let state = AppState {
         db,
         runner,
-        catalog,
-        output_cache,
+        graph_store,
         api_key,
         base_url: "http://localhost:3000".to_string(),
         auth: AuthServices {
@@ -51,15 +48,15 @@ async fn test_router() -> axum::Router {
             oidc_client_secret: None,
         },
         gaia_x: GaiaXServices {
-            vc_client: None,
             gxdch_notary_url: "https://example.com/notary".to_string(),
             gxdch_compliance_url: "https://example.com/compliance".to_string(),
+            base_domain: None,
         },
     };
 
     let session_secret = SecretString::from("test-session-secret-at-least-32-chars-long");
 
-    keasy_server::routes::build_router(state, None, session_store, session_secret)
+    keasy_server::routes::build_router(state, None, session_store, session_secret, "sid".to_string())
 }
 
 /// All protected routes must return 401 without a session.
@@ -153,12 +150,6 @@ async fn protected_routes_return_401_without_session() {
         ("POST",   "/v1/org/users".to_string()),
         ("PUT",    format!("/v1/org/users/{dummy_id}")),
         ("DELETE", format!("/v1/org/users/{dummy_id}")),
-        // Gaia-X wallet
-        ("GET",    "/v1/gaia-x/wallet".to_string()),
-        ("DELETE", "/v1/gaia-x/wallet".to_string()),
-        ("POST",   "/v1/gaia-x/wallet/vc-init".to_string()),
-        ("GET",    format!("/v1/gaia-x/wallet/vc-status/{dummy_id}")),
-        ("POST",   "/v1/gaia-x/wallet/vc-connect".to_string()),
         // Gaia-X compliance wizard
         ("GET",    "/v1/gaia-x/wizard".to_string()),
         ("POST",   "/v1/gaia-x/wizard/keys".to_string()),

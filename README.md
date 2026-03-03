@@ -77,7 +77,6 @@ graph TD
 
     Server --> SQLite[(SQLite<br/>app data)]
     Server -->|"admin API"| Keycloak
-    Server --> WaltID["WaltID Verifier :7003"]
     Server --> GXDCH["GXDCH<br/>(Notary + Compliance)"]
 
     Keycloak --> PostgreSQL[(PostgreSQL<br/>identity data)]
@@ -91,7 +90,6 @@ graph TD
 | Backend | Rust, Axum, SQLite |
 | Identity | Keycloak (OIDC) |
 | Reverse Proxy | Caddy |
-| Credentials | WaltID Verifier |
 
 ## Development
 
@@ -131,7 +129,6 @@ keasy/
 ├── infra/                          # Infrastructure configs
 │   ├── caddy/Caddyfile             #   reverse proxy routing
 │   ├── keycloak/realm-import/      #   OIDC realm + demo users
-│   └── waltid/config/              #   credential verifier
 ├── server/                         # Rust API server
 │   ├── Dockerfile                  #   production (multi-stage, slim)
 │   ├── Dockerfile.dev              #   development (cargo-watch)

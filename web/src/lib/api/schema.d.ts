@@ -157,7 +157,6 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** POST /v1/auth/logout */
         post: operations["logout"];
         delete?: never;
         options?: never;
@@ -346,6 +345,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["rerun_compliance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/gaia-x/comply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["comply"];
         delete?: never;
         options?: never;
         head?: never;
@@ -962,8 +977,11 @@ export interface components {
             answer: string;
             code: string;
             conversation_id?: string | null;
-            data?: Record<string, never> | null;
+            data?: null | components["schemas"]["TabularData"];
             sparql?: string | null;
+        };
+        CatalogResponse: {
+            catalog: string;
         };
         CertUploadPayload: {
             cert_chain_pem: string;
@@ -987,13 +1005,33 @@ export interface components {
         ComplianceCredential: {
             issued_at: string;
             name: string;
-            raw_json: unknown;
+            raw_json: {
+                [key: string]: unknown;
+            };
         };
         ComplianceStatus: {
             compliant: boolean;
             credentials: components["schemas"]["ComplianceCredential"][];
             verified_at?: string | null;
-            wizard_state?: null | components["schemas"]["WizardState"];
+            wizard_state?: null | components["schemas"]["WizardStateResponse"];
+        };
+        /** @description Request body for the one-click comply endpoint. */
+        ComplyRequest: {
+            /** @description Optional PEM cert chain — fallback if Caddy certs are unavailable. */
+            cert_chain_pem?: string | null;
+        };
+        /** @description Response from the one-click comply endpoint. */
+        ComplyResponse: {
+            compliance_vc?: {
+                [key: string]: unknown;
+            };
+            compliant: boolean;
+            /** @description Error message on failure. */
+            error?: string | null;
+            /** @description Which phase failed: key_generation, certificate, lrn_request, lp_signing, tc_signing, compliance_submission. */
+            failed_phase?: string | null;
+            /** @description PEM-encoded private key (auto-download on success). */
+            private_key_pem?: string | null;
         };
         Connection: {
             cloud_account_id?: string | null;
@@ -1005,6 +1043,22 @@ export interface components {
         };
         /** @enum {string} */
         ConnectionKind: "data" | "vocab";
+        Conversation: {
+            created_at: string;
+            id: string;
+            job_id: string;
+            title?: string | null;
+        };
+        ConversationMessage: {
+            code?: string | null;
+            content: string;
+            conversation_id: string;
+            created_at: string;
+            data?: null | components["schemas"]["TabularData"];
+            id: string;
+            role: string;
+            sparql?: string | null;
+        };
         CreateCloudAccountRequest: {
             auth_method?: string | null;
             fields: {
@@ -1042,6 +1096,15 @@ export interface components {
         CreateOrgInviteRequest: {
             role: string;
         };
+        CreateOrgInviteResponse: {
+            invite_url: string;
+            token: string;
+        };
+        CreateOrgResponse: {
+            id: string;
+            name: string;
+            status: string;
+        };
         /** @description Typed envelope for successful API responses: `{ "data": T }`. */
         DataResponse_Value: {
             data: unknown;
@@ -1068,6 +1131,45 @@ export interface components {
         FieldMapping: {
             source: string;
             target: string;
+        };
+        FileEntry: {
+            last_modified?: string | null;
+            path: string;
+            /** Format: int64 */
+            size: number;
+        };
+        GenerateKeysResponse: {
+            private_key_pem: string;
+            public_key_jwk: {
+                [key: string]: unknown;
+            };
+        };
+        GraphData: {
+            links: components["schemas"]["GraphLink"][];
+            nodes: components["schemas"]["GraphNode"][];
+        };
+        GraphLink: {
+            label: string;
+            source: string;
+            target: string;
+        };
+        GraphNode: {
+            group: string;
+            id: string;
+            label: string;
+            properties?: {
+                [key: string]: string;
+            };
+        };
+        GxdchComplianceResult: {
+            compliance_vc?: {
+                [key: string]: unknown;
+            };
+            compliant: boolean;
+            error?: string | null;
+        };
+        InviteInfoResponse: {
+            valid: boolean;
         };
         InviteToken: {
             created_at: string;
@@ -1109,6 +1211,10 @@ export interface components {
         };
         /** @enum {string} */
         LocationType: "cloud" | "local";
+        /** @description POST /v1/auth/logout */
+        LogoutResponse: {
+            end_session_url?: string | null;
+        };
         /**
          * @description LP payload — legal_name and country_code are read from the organization profile.
          *     Update them via PUT /v1/org/identity before submitting this step.
@@ -1140,8 +1246,10 @@ export interface components {
         };
         OrgIdentityResponse: {
             country: string;
+            country_subdivision_code?: string | null;
             legal_name: string;
             registration_number?: string | null;
+            registration_number_type?: string | null;
         };
         OrgInviteEntry: {
             created_at: string;
@@ -1172,11 +1280,13 @@ export interface components {
         };
         Organization: {
             country: string;
+            country_subdivision_code?: string | null;
             created_at: string;
             id: string;
             legal_name: string;
             name: string;
             registration_number?: string | null;
+            registration_number_type?: string | null;
             role: string;
             slug: string;
             updated_at: string;
@@ -1211,8 +1321,22 @@ export interface components {
             mono_font_family: string;
             mono_font_size: string;
         };
+        ProviderEntry: {
+            extensions: string[];
+            kind: string;
+            name: string;
+        };
         QueryRequest: {
             sparql: string;
+        };
+        RegisterDataspaceResponse: {
+            client_id: string;
+            client_secret: string;
+            description?: string | null;
+            id: string;
+            logo?: string | null;
+            name: string;
+            url: string;
         };
         RegisterOidcClientRequest: {
             description?: string | null;
@@ -1229,6 +1353,33 @@ export interface components {
             job_id?: string | null;
             limit?: number | null;
             query?: string | null;
+        };
+        SearchResult: {
+            group: string;
+            id: string;
+            label: string;
+        };
+        ServiceStatusResponse: {
+            base_domain?: string | null;
+            gxdch_compliance: boolean;
+            gxdch_notary: boolean;
+            oidc: boolean;
+        };
+        ShapeValidationError: {
+            message: string;
+            node: string;
+        };
+        ShapeValidationResult: {
+            errors: components["schemas"]["ShapeValidationError"][];
+            valid: boolean;
+            valid_nodes: string[];
+        };
+        TabularData: {
+            column_types: {
+                [key: string]: string;
+            };
+            columns: string[];
+            rows: Record<string, never>[];
         };
         TcPayload: {
             private_key_pem: string;
@@ -1253,11 +1404,20 @@ export interface components {
         };
         UpdateOrgIdentityPayload: {
             country: string;
+            country_subdivision_code?: string | null;
             legal_name: string;
             registration_number?: string | null;
+            registration_number_type?: string | null;
         };
         UpdateUserRoleRequest: {
             role: string;
+        };
+        ValidateCertResponse: {
+            did_document: {
+                [key: string]: unknown;
+            };
+            domain_warning?: string | null;
+            ok: boolean;
         };
         ValidateRequest: {
             script: string;
@@ -1273,26 +1433,34 @@ export interface components {
             valid: boolean;
         };
         /**
-         * @description Wizard state record — mirrors the org_gaiax table.
-         *     All credential/key/cert fields are stored as JSON or PEM text.
-         *     Private key is NEVER stored — only public_key_jwk (locked decision).
-         *     did_document is NOT stored — derived at runtime from public_key_jwk + domain.
-         *     legal_name and country_code come from organizations, not from wizard state.
+         * @description API response type for wizard state.
+         *     Credentials are parsed from their stored JSON strings to proper objects,
+         *     so the frontend receives structured data rather than escaped strings.
          */
-        WizardState: {
+        WizardStateResponse: {
             cert_chain_pem?: string | null;
-            compliance_vc?: string | null;
+            compliance_vc?: {
+                [key: string]: unknown;
+            };
             /** Format: int64 */
             current_step: number;
             domain?: string | null;
-            lp_credential?: string | null;
-            lrn_credential?: string | null;
+            lp_credential?: {
+                [key: string]: unknown;
+            };
+            lrn_credential?: {
+                [key: string]: unknown;
+            };
             lrn_type?: string | null;
             lrn_value?: string | null;
             org_id: string;
-            public_key_jwk?: string | null;
+            public_key_jwk?: {
+                [key: string]: unknown;
+            };
             root_ca_pem?: string | null;
-            tc_credential?: string | null;
+            tc_credential?: {
+                [key: string]: unknown;
+            };
             updated_at: string;
         };
         Workspace: {
@@ -1450,7 +1618,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AdminInviteResult"];
+                };
             };
             /** @description Insufficient role */
             403: {
@@ -1527,7 +1697,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["RegisterDataspaceResponse"];
+                };
             };
             /** @description Insufficient role */
             403: {
@@ -1576,7 +1748,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["CreateOrgResponse"];
+                };
             };
             /** @description Insufficient role */
             403: {
@@ -1604,7 +1778,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["InviteInfoResponse"];
+                };
             };
         };
     };
@@ -1622,7 +1798,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["LogoutResponse"];
+                };
             };
         };
     };
@@ -1972,7 +2150,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["FileEntry"][];
+                };
             };
             /** @description File listing not supported */
             400: {
@@ -2053,7 +2233,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ConversationMessage"][];
+                };
             };
             /** @description Not found */
             404: {
@@ -2098,9 +2280,42 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GxdchComplianceResult"];
+                };
             };
             /** @description Credentials missing */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    comply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComplyRequest"];
+            };
+        };
+        responses: {
+            /** @description Compliance result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplyResponse"];
+                };
+            };
+            /** @description Prerequisites missing */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2124,7 +2339,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WizardState"];
+                    "application/json": components["schemas"]["WizardStateResponse"];
                 };
             };
         };
@@ -2147,7 +2362,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ValidateCertResponse"];
+                };
             };
             /** @description Invalid certificate */
             400: {
@@ -2172,7 +2389,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GenerateKeysResponse"];
+                };
             };
         };
     };
@@ -2189,12 +2408,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Legal Participant credential signed */
+            /** @description Legal Participant credential signed and wizard state updated */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["WizardStateResponse"];
+                };
             };
             /** @description Wizard not ready or key mismatch */
             400: {
@@ -2218,12 +2439,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description LRN credential obtained */
+            /** @description LRN credential obtained and wizard state updated */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["WizardStateResponse"];
+                };
             };
             /** @description Wizard not ready */
             400: {
@@ -2255,7 +2478,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GxdchComplianceResult"];
+                };
             };
             /** @description Credentials missing */
             400: {
@@ -2279,12 +2504,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Terms & Conditions credential signed */
+            /** @description Terms & Conditions credential signed and wizard state updated */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["WizardStateResponse"];
+                };
             };
             /** @description Wizard not ready or key mismatch */
             400: {
@@ -2312,7 +2539,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GraphData"];
+                };
             };
         };
     };
@@ -2334,7 +2563,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GraphData"];
+                };
             };
         };
     };
@@ -2356,7 +2587,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SearchResult"][];
+                };
             };
         };
     };
@@ -2562,7 +2795,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["CatalogResponse"];
+                };
             };
             /** @description Job or catalog not found */
             404: {
@@ -2590,7 +2825,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Conversation"][];
+                };
             };
         };
     };
@@ -2615,7 +2852,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Conversation"];
+                };
             };
         };
     };
@@ -2720,7 +2959,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TabularData"];
+                };
             };
         };
     };
@@ -2799,7 +3040,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TabularData"];
+                };
             };
             /** @description SPARQL error */
             400: {
@@ -2827,7 +3070,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GraphData"];
+                };
             };
             /** @description Job not found */
             404: {
@@ -2934,7 +3179,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["CreateOrgInviteResponse"];
+                };
             };
             /** @description Insufficient role */
             403: {
@@ -3067,7 +3314,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProviderEntry"][];
+                };
             };
         };
     };
@@ -3318,7 +3567,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ServiceStatusResponse"];
+                };
             };
         };
     };
@@ -3340,7 +3591,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ShapeValidationResult"];
+                };
             };
             /** @description Invalid request */
             400: {

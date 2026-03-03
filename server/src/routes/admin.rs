@@ -11,11 +11,51 @@ use serde::Deserialize;
 
 use crate::AppState;
 use crate::db::invite_tokens::InviteToken;
-use crate::db::oidc_clients::OidcClient;
+use crate::db::dataspaces::Dataspace;
 use crate::db::organizations::{Organization, generate_unique_slug};
 use crate::error::data_response;
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::middleware::tenant::{RbacError, RequirePromotor};
+
+// ---------------------------------------------------------------------------
+// Response types
+// ---------------------------------------------------------------------------
+
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct CreateOrgResponse {
+    pub id: String,
+    pub name: String,
+    pub status: String,
+}
+
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct RegisterDataspaceResponse {
+    pub id: String,
+    pub client_id: String,
+    pub client_secret: String,
+    pub name: String,
+    pub url: String,
+    pub description: Option<String>,
+    pub logo: Option<String>,
+}
+
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct AdminInviteEntry {
+    pub token: String,
+    pub org_id: String,
+    pub org_name: String,
+    pub status: String,
+    pub created_at: String,
+    pub expires_at: String,
+}
+
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct AdminInviteResult {
+    pub token: String,
+    pub org_id: String,
+    pub org_name: String,
+    pub invite_url: String,
+}
 
 // ---------------------------------------------------------------------------
 // GET /v1/admin/organizations
@@ -44,7 +84,7 @@ pub struct CreateOrgAndInviteRequest {
 #[utoipa::path(post, path = "/v1/admin/organizations", tag = "Admin",
     request_body = CreateOrgAndInviteRequest,
     responses(
-        (status = 201, description = "Organization created with invite"),
+        (status = 201, description = "Organization created with invite", body = CreateOrgResponse),
         (status = 403, description = "Insufficient role"),
     )
 )]
@@ -67,9 +107,10 @@ pub async fn create_org_and_invite(
         slug,
         legal_name: payload.name.clone(),
         registration_number: None,
+        country_subdivision_code: None,
+        registration_number_type: None,
         country: "EU".to_string(),
         role: "participant".to_string(),
-        vc_verified_at: None,
         created_at: now.clone(),
         updated_at: now.clone(),
     };
@@ -104,11 +145,11 @@ pub async fn create_org_and_invite(
     // 3. Return created org
     Ok((
         StatusCode::CREATED,
-        data_response(serde_json::json!({
-            "id": org.id,
-            "name": org.name,
-            "status": "pending",
-        })),
+        data_response(CreateOrgResponse {
+            id: org.id,
+            name: org.name,
+            status: "pending".to_string(),
+        }),
     ))
 }
 
@@ -127,11 +168,11 @@ pub struct RegisterOidcClientRequest {
 #[utoipa::path(post, path = "/v1/admin/oidc-clients", tag = "Admin",
     request_body = RegisterOidcClientRequest,
     responses(
-        (status = 201, description = "OIDC client registered"),
+        (status = 201, description = "OIDC client registered", body = RegisterDataspaceResponse),
         (status = 403, description = "Insufficient role"),
     )
 )]
-pub async fn register_oidc_client(
+pub async fn register_dataspace(
     RequirePromotor(_ctx): RequirePromotor,
     State(state): State<AppState>,
     Json(payload): Json<RegisterOidcClientRequest>,
@@ -167,7 +208,7 @@ pub async fn register_oidc_client(
         .map_err(RbacError::Internal)?;
 
     // 4. Store display metadata in SQLite (NO secret stored)
-    let oidc_client = OidcClient {
+    let dataspace = Dataspace {
         id: id.clone(),
         client_id: client_id.clone(),
         name: payload.name.clone(),
@@ -179,22 +220,22 @@ pub async fn register_oidc_client(
     };
     state
         .db
-        .create_oidc_client(&oidc_client)
+        .create_dataspace(&dataspace)
         .await
         .map_err(RbacError::Internal)?;
 
     // 5. Return the record WITH client_secret (one-time display — not stored)
     Ok((
         StatusCode::CREATED,
-        data_response(serde_json::json!({
-            "id": id,
-            "client_id": client_id,
-            "client_secret": registered.client_secret,
-            "name": payload.name,
-            "url": payload.url,
-            "description": payload.description,
-            "logo": payload.logo,
-        })),
+        data_response(RegisterDataspaceResponse {
+            id,
+            client_id,
+            client_secret: registered.client_secret,
+            name: payload.name,
+            url: payload.url,
+            description: payload.description,
+            logo: payload.logo,
+        }),
     ))
 }
 
@@ -203,13 +244,13 @@ pub async fn register_oidc_client(
 // ---------------------------------------------------------------------------
 
 #[utoipa::path(get, path = "/v1/admin/oidc-clients", tag = "Admin",
-    responses((status = 200, description = "List of registered OIDC clients", body = Vec<OidcClient>))
+    responses((status = 200, description = "List of registered OIDC clients", body = Vec<Dataspace>))
 )]
-pub async fn list_oidc_clients(
+pub async fn list_dataspaces(
     RequirePromotor(_ctx): RequirePromotor,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let clients = state.db.list_oidc_clients().await;
+    let clients = state.db.list_dataspaces().await;
     Ok(data_response(clients))
 }
 
@@ -218,7 +259,7 @@ pub async fn list_oidc_clients(
 // ---------------------------------------------------------------------------
 
 #[utoipa::path(get, path = "/v1/admin/invites", tag = "Admin",
-    responses((status = 200, description = "List all invite tokens"))
+    responses((status = 200, description = "List all invite tokens", body = Vec<AdminInviteEntry>))
 )]
 pub async fn list_invites(
     RequirePromotor(_ctx): RequirePromotor,
@@ -231,18 +272,18 @@ pub async fn list_invites(
         .map(|o| (o.id.clone(), o.name.clone()))
         .collect();
     let now = jiff::Timestamp::now().to_string();
-    let result: Vec<serde_json::Value> = tokens
+    let result: Vec<AdminInviteEntry> = tokens
         .into_iter()
         .map(|t| {
             let status = if now > t.expires_at { "expired" } else { "active" };
-            serde_json::json!({
-                "token": t.token,
-                "org_id": t.org_id,
-                "org_name": org_map.get(&t.org_id).cloned().unwrap_or_default(),
-                "status": status,
-                "created_at": t.created_at,
-                "expires_at": t.expires_at,
-            })
+            AdminInviteEntry {
+                org_name: org_map.get(&t.org_id).cloned().unwrap_or_default(),
+                token: t.token,
+                org_id: t.org_id,
+                status: status.to_string(),
+                created_at: t.created_at,
+                expires_at: t.expires_at,
+            }
         })
         .collect();
     Ok(data_response(result))
@@ -260,7 +301,7 @@ pub struct CreateInviteRequest {
 #[utoipa::path(post, path = "/v1/admin/invites", tag = "Admin",
     request_body = CreateInviteRequest,
     responses(
-        (status = 201, description = "Invite created"),
+        (status = 201, description = "Invite created", body = AdminInviteResult),
         (status = 403, description = "Insufficient role"),
     )
 )]
@@ -283,9 +324,10 @@ pub async fn create_invite(
         slug,
         legal_name: payload.org_name.clone(),
         registration_number: None,
+        country_subdivision_code: None,
+        registration_number_type: None,
         country: "EU".to_string(),
         role: "participant".to_string(),
-        vc_verified_at: None,
         created_at: now.clone(),
         updated_at: now.clone(),
     };
@@ -321,12 +363,12 @@ pub async fn create_invite(
     let invite_url = format!("{}/invite?token={}", state.base_url, token_value);
     Ok((
         StatusCode::CREATED,
-        data_response(serde_json::json!({
-            "token": token_value,
-            "org_id": org.id,
-            "org_name": org.name,
-            "invite_url": invite_url,
-        })),
+        data_response(AdminInviteResult {
+            token: token_value,
+            org_id: org.id,
+            org_name: org.name,
+            invite_url,
+        }),
     ))
 }
 

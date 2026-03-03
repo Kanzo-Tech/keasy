@@ -9,44 +9,12 @@ pub struct Organization {
     pub slug: String,
     pub legal_name: String,
     pub registration_number: Option<String>,
+    pub country_subdivision_code: Option<String>,
+    pub registration_number_type: Option<String>,
     pub country: String,
     pub role: String,
-    pub vc_verified_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
-}
-
-/// An organization's role within the instance (promotor or participant).
-#[derive(Debug, Clone, PartialEq)]
-pub enum OrgRole {
-    Admin,
-    User,
-}
-
-impl OrgRole {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            OrgRole::Admin => "admin",
-            OrgRole::User => "user",
-        }
-    }
-
-    #[allow(clippy::should_implement_trait)]
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "user" => OrgRole::User,
-            _ => OrgRole::Admin,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct UserOrgMembership {
-    pub id: String,
-    pub user_id: String,
-    pub org_id: String,
-    pub role: OrgRole,
-    pub created_at: String,
 }
 
 impl Database {
@@ -54,17 +22,18 @@ impl Database {
         let conn = self.write().await;
         conn.execute(
             "INSERT INTO organizations
-             (id, name, slug, legal_name, registration_number, country, role, vc_verified_at, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+             (id, name, slug, legal_name, registration_number, country_subdivision_code, registration_number_type, country, role, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
             params![
                 org.id,
                 org.name,
                 org.slug,
                 org.legal_name,
                 org.registration_number,
+                org.country_subdivision_code,
+                org.registration_number_type,
                 org.country,
                 org.role,
-                org.vc_verified_at,
                 org.created_at,
                 org.updated_at,
             ],
@@ -76,7 +45,7 @@ impl Database {
     pub async fn get_organization(&self, id: &str) -> Option<Organization> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, slug, legal_name, registration_number, country, role, vc_verified_at, created_at, updated_at
+            "SELECT id, name, slug, legal_name, registration_number, country_subdivision_code, registration_number_type, country, role, created_at, updated_at
              FROM organizations WHERE id = ?1",
             [id],
             row_to_org,
@@ -84,28 +53,20 @@ impl Database {
         .ok()
     }
 
-    /// Update an organization's vc_verified_at timestamp to now.
-    pub async fn update_org_vc_verified_at(&self, org_id: &str) -> Result<(), rusqlite::Error> {
-        let conn = self.write().await;
-        conn.execute(
-            "UPDATE organizations SET vc_verified_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1",
-            [org_id],
-        )?;
-        Ok(())
-    }
-
-    /// Update an organization's identity fields (legal_name, country, registration_number).
+    /// Update an organization's identity fields.
     pub async fn update_org_identity(
         &self,
         org_id: &str,
         legal_name: &str,
         country: &str,
         registration_number: Option<&str>,
+        country_subdivision_code: Option<&str>,
+        registration_number_type: Option<&str>,
     ) -> Result<(), rusqlite::Error> {
         let conn = self.write().await;
         conn.execute(
-            "UPDATE organizations SET legal_name = ?1, country = ?2, registration_number = ?3, updated_at = datetime('now') WHERE id = ?4",
-            params![legal_name, country, registration_number, org_id],
+            "UPDATE organizations SET legal_name = ?1, country = ?2, registration_number = ?3, country_subdivision_code = ?4, registration_number_type = ?5, updated_at = datetime('now') WHERE id = ?6",
+            params![legal_name, country, registration_number, country_subdivision_code, registration_number_type, org_id],
         )?;
         Ok(())
     }
@@ -114,7 +75,7 @@ impl Database {
         let (_permit, conn) = self.read().await;
         let mut stmt = conn
             .prepare(
-                "SELECT id, name, slug, legal_name, registration_number, country, role, vc_verified_at, created_at, updated_at
+                "SELECT id, name, slug, legal_name, registration_number, country_subdivision_code, registration_number_type, country, role, created_at, updated_at
                  FROM organizations ORDER BY name",
             )
             .expect("prepare list organizations");
@@ -127,42 +88,12 @@ impl Database {
     pub async fn get_organization_by_slug(&self, slug: &str) -> Option<Organization> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, slug, legal_name, registration_number, country, role, vc_verified_at, created_at, updated_at
+            "SELECT id, name, slug, legal_name, registration_number, country_subdivision_code, registration_number_type, country, role, created_at, updated_at
              FROM organizations WHERE slug = ?1",
             [slug],
             row_to_org,
         )
         .ok()
-    }
-
-    /// Returns the org membership for a user. One user belongs to exactly one org.
-    pub async fn get_user_org_membership(&self, user_id: &str) -> Option<UserOrgMembership> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, user_id, org_id, role, created_at
-             FROM user_org_memberships WHERE user_id = ?1",
-            [user_id],
-            row_to_user_org_membership,
-        )
-        .ok()
-    }
-
-    pub async fn add_user_to_org(&self, membership: &UserOrgMembership) -> Result<(), String> {
-        let conn = self.write().await;
-        conn.execute(
-            "INSERT INTO user_org_memberships
-             (id, user_id, org_id, role, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![
-                membership.id,
-                membership.user_id,
-                membership.org_id,
-                membership.role.as_str(),
-                membership.created_at,
-            ],
-        )
-        .map_err(|e| format!("failed to insert user-org membership: {e}"))?;
-        Ok(())
     }
 }
 
@@ -173,11 +104,12 @@ fn row_to_org(row: &rusqlite::Row<'_>) -> rusqlite::Result<Organization> {
         slug: row.get(2)?,
         legal_name: row.get(3)?,
         registration_number: row.get(4)?,
-        country: row.get(5)?,
-        role: row.get(6)?,
-        vc_verified_at: row.get(7)?,
-        created_at: row.get(8)?,
-        updated_at: row.get(9)?,
+        country_subdivision_code: row.get(5)?,
+        registration_number_type: row.get(6)?,
+        country: row.get(7)?,
+        role: row.get(8)?,
+        created_at: row.get(9)?,
+        updated_at: row.get(10)?,
     })
 }
 
@@ -220,15 +152,4 @@ fn slug_exists(conn: &rusqlite::Connection, slug: &str) -> bool {
         |_| Ok(()),
     )
     .is_ok()
-}
-
-fn row_to_user_org_membership(row: &rusqlite::Row<'_>) -> rusqlite::Result<UserOrgMembership> {
-    let role_str: String = row.get(3)?;
-    Ok(UserOrgMembership {
-        id: row.get(0)?,
-        user_id: row.get(1)?,
-        org_id: row.get(2)?,
-        role: OrgRole::from_str(&role_str),
-        created_at: row.get(4)?,
-    })
 }

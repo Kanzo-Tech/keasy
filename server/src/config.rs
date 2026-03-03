@@ -20,9 +20,6 @@ pub struct ServerConfig {
     /// Base URL for the frontend — used to construct invite links.
     /// Read from KEASY_BASE_URL, default "http://localhost:3000".
     pub base_url: String,
-    /// Walt.id Verifier API base URL. When set, VC authentication is enabled.
-    /// Read from KEASY_WALT_ID_VERIFIER_URL. Default None — VC auth disabled.
-    pub walt_id_verifier_url: Option<String>,
     /// GXDCH Notary API base URL for LRN credential requests.
     /// Read from KEASY_GXDCH_NOTARY_URL. Default: staging Notary endpoint.
     pub gxdch_notary_url: String,
@@ -48,15 +45,15 @@ pub struct ServerConfig {
     /// When set, each org gets `{slug}.{base_domain}` for did:web resolution.
     /// Read from KEASY_BASE_DOMAIN.
     pub base_domain: Option<String>,
-    /// Walt.id Issuer API base URL. When set, OID4VCI credential export is enabled.
-    /// Read from KEASY_WALT_ID_ISSUER_URL. Default None — issuer disabled.
-    pub walt_id_issuer_url: Option<String>,
     /// Path to an external SQL seed file executed at startup.
     /// Read from KEASY_SEED_FILE. Default None — no seed data.
     pub seed_file: Option<PathBuf>,
     /// Session cookie name — allows multiple Keasy instances on the same host.
     /// Read from KEASY_SESSION_COOKIE_NAME. Default "keasy.sid".
     pub session_cookie_name: String,
+    /// Path to Caddy's data directory for reading TLS certificates.
+    /// Read from KEASY_CADDY_CERTS_DIR.
+    pub caddy_certs_dir: Option<PathBuf>,
 }
 
 impl ServerConfig {
@@ -130,10 +127,6 @@ impl ServerConfig {
         let base_url = std::env::var("KEASY_BASE_URL")
             .unwrap_or_else(|_| "http://localhost:3000".to_string());
 
-        let walt_id_verifier_url = std::env::var("KEASY_WALT_ID_VERIFIER_URL")
-            .ok()
-            .filter(|s| !s.trim().is_empty());
-
         let gxdch_notary_url = std::env::var("KEASY_GXDCH_NOTARY_URL").unwrap_or_else(|_| {
             "https://registrationnumber.notary.lab.gaia-x.eu/v1/registrationNumberVC".to_string()
         });
@@ -160,10 +153,6 @@ impl ServerConfig {
             .ok()
             .filter(|s| !s.trim().is_empty());
 
-        let walt_id_issuer_url = std::env::var("KEASY_WALT_ID_ISSUER_URL")
-            .ok()
-            .filter(|s| !s.trim().is_empty());
-
         let seed_file = std::env::var("KEASY_SEED_FILE")
             .ok()
             .filter(|s| !s.trim().is_empty())
@@ -171,6 +160,11 @@ impl ServerConfig {
 
         let session_cookie_name = std::env::var("KEASY_SESSION_COOKIE_NAME")
             .unwrap_or_else(|_| "keasy.sid".to_string());
+
+        let caddy_certs_dir = std::env::var("KEASY_CADDY_CERTS_DIR")
+            .ok()
+            .filter(|s| !s.trim().is_empty())
+            .map(PathBuf::from);
 
         Self {
             bind_addr,
@@ -184,7 +178,6 @@ impl ServerConfig {
             session_secret,
             cache_capacity,
             base_url,
-            walt_id_verifier_url,
             gxdch_notary_url,
             gxdch_compliance_url,
             oidc_issuer_url,
@@ -192,9 +185,9 @@ impl ServerConfig {
             oidc_client_secret,
             oidc_internal_base_url,
             base_domain,
-            walt_id_issuer_url,
             seed_file,
             session_cookie_name,
+            caddy_certs_dir,
         }
     }
 }

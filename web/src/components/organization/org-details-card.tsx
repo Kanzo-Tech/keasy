@@ -5,6 +5,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormField } from "@/components/shared/form-layout";
 import { COUNTRY_OPTIONS, getCountryName } from "@/lib/countries";
@@ -35,7 +42,7 @@ export const OrgDetailsCard = forwardRef<OrgDetailsCardHandle, OrgDetailsCardPro
 
     useEffect(() => {
       if (editing && !form) {
-        setForm(data ?? { legal_name: "", country: "", registration_number: null });
+        setForm(data ?? { legal_name: "", country: "", registration_number: null, country_subdivision_code: null, registration_number_type: null });
       }
       if (!editing) {
         setForm(null);
@@ -109,6 +116,40 @@ export const OrgDetailsCard = forwardRef<OrgDetailsCardHandle, OrgDetailsCardPro
             disabled={!canEdit || saving}
             placeholder="HRB 12345"
           />
+        </FormField>
+        <FormField label="Country Subdivision" description="ISO 3166-2" optional>
+          <Input
+            value={canEdit ? (form.country_subdivision_code ?? "") : (data?.country_subdivision_code ?? "")}
+            onChange={(e) =>
+              canEdit && setForm({ ...form, country_subdivision_code: e.target.value || null })
+            }
+            disabled={!canEdit || saving}
+            placeholder="e.g. DE-BY"
+          />
+        </FormField>
+        <FormField label="Reg. Number Type" optional>
+          {canEdit ? (
+            <Select
+              value={form.registration_number_type ?? ""}
+              onValueChange={(v) => setForm({ ...form, registration_number_type: v || null })}
+              disabled={saving}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select type..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="vatID">VAT ID</SelectItem>
+                <SelectItem value="leiCode">LEI Code</SelectItem>
+                <SelectItem value="EORI">EORI</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              value={data?.registration_number_type ?? ""}
+              disabled
+              placeholder="Not set"
+            />
+          )}
         </FormField>
       </div>
     );

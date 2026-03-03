@@ -2,13 +2,14 @@
 ///
 /// Validates:
 /// - At least one certificate is present in the PEM
-/// - The last certificate is self-signed (root CA check)
 /// - No certificate is expired
 ///
-/// This function is called at EVERY step transition per VC-05 (not only at final submission).
+/// Note: the root CA self-signed check has been relaxed. TLS chains from ACME
+/// (Let's Encrypt) typically don't include the root CA. GXDCH validates independently.
 // Use the explicit crate path to avoid ambiguity with the `pem` module
 // re-exported by `x509_parser::prelude::*`.
 use ::pem::parse_many;
+use std::path::Path;
 use x509_parser::prelude::*;
 
 /// Error type returned when certificate chain validation fails.
@@ -28,8 +29,7 @@ impl std::fmt::Display for CertValidationError {
 ///
 /// Validation rules (VC-05):
 /// 1. At least one certificate must be present.
-/// 2. The last certificate must be self-signed (issuer == subject — root CA).
-/// 3. No certificate may be expired.
+/// 2. No certificate may be expired.
 pub fn validate_chain(chain_pem: &str) -> Result<(), CertValidationError> {
     // Parse all CERTIFICATE PEM blocks.
     let pem_items = parse_many(chain_pem.as_bytes())
@@ -70,14 +70,6 @@ pub fn validate_chain(chain_pem: &str) -> Result<(), CertValidationError> {
         });
     }
 
-    // Validate root CA: last cert must be self-signed (issuer == subject).
-    let root = &owned_certs.last().unwrap().cert;
-    if root.issuer() != root.subject() {
-        return Err(CertValidationError(
-            "Root CA missing — last certificate is not self-signed".to_string(),
-        ));
-    }
-
     // Validate expiry: no cert may have not_after < now.
     let now = ASN1Time::now();
     for owned in &owned_certs {
@@ -91,4 +83,37 @@ pub fn validate_chain(chain_pem: &str) -> Result<(), CertValidationError> {
     }
 
     Ok(())
+}
+
+/// Try to read a TLS certificate chain from Caddy's data directory.
+///
+/// Tries paths in order:
+/// 1. Wildcard cert: `{dir}/caddy/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.{domain}/wildcard_.{domain}.crt`
+/// 2. Exact cert: `{dir}/caddy/certificates/acme-v02.api.letsencrypt.org-directory/{domain}/{domain}.crt`
+pub fn read_caddy_cert_chain(caddy_dir: &Path, base_domain: &str) -> Result<String, String> {
+    let acme_dir = caddy_dir
+        .join("caddy")
+        .join("certificates")
+        .join("acme-v02.api.letsencrypt.org-directory");
+
+    let candidates = [
+        acme_dir
+            .join(format!("wildcard_.{base_domain}"))
+            .join(format!("wildcard_.{base_domain}.crt")),
+        acme_dir
+            .join(base_domain)
+            .join(format!("{base_domain}.crt")),
+    ];
+
+    for path in &candidates {
+        if path.exists() {
+            return std::fs::read_to_string(path)
+                .map_err(|e| format!("failed to read cert at {}: {e}", path.display()));
+        }
+    }
+
+    Err(format!(
+        "No Caddy TLS certificate found for {base_domain} in {}",
+        caddy_dir.display()
+    ))
 }

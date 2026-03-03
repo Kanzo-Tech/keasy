@@ -82,10 +82,12 @@ pub async fn remove_user(
 // ── Organization identity ────────────────────────────────────────────────────
 
 #[derive(Debug, serde::Serialize, utoipa::ToSchema)]
-struct OrgIdentityResponse {
+pub struct OrgIdentityResponse {
     legal_name: String,
     country: String,
     registration_number: Option<String>,
+    country_subdivision_code: Option<String>,
+    registration_number_type: Option<String>,
 }
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -93,6 +95,8 @@ pub struct UpdateOrgIdentityPayload {
     pub legal_name: String,
     pub country: String,
     pub registration_number: Option<String>,
+    pub country_subdivision_code: Option<String>,
+    pub registration_number_type: Option<String>,
 }
 
 #[utoipa::path(get, path = "/v1/org/identity", tag = "Organization",
@@ -111,6 +115,8 @@ pub async fn get_org_identity(
             legal_name: o.legal_name,
             country: o.country,
             registration_number: o.registration_number,
+            country_subdivision_code: o.country_subdivision_code,
+            registration_number_type: o.registration_number_type,
         })
         .into_response(),
         None => (
@@ -149,6 +155,29 @@ pub async fn update_org_identity(
             .into_response());
     }
 
+    // Validate registration_number_type
+    if let Some(ref rnt) = payload.registration_number_type {
+        if !matches!(rnt.as_str(), "vatID" | "leiCode" | "EORI") {
+            return Ok((
+                StatusCode::BAD_REQUEST,
+                Json(error_body("bad_request", "registration_number_type must be vatID, leiCode, or EORI")),
+            )
+                .into_response());
+        }
+    }
+
+    // Validate country_subdivision_code (ISO 3166-2: XX-YYY)
+    if let Some(ref csc) = payload.country_subdivision_code {
+        let re = regex::Regex::new(r"^[A-Z]{2}-[A-Z0-9]{1,3}$").unwrap();
+        if !re.is_match(csc) {
+            return Ok((
+                StatusCode::BAD_REQUEST,
+                Json(error_body("bad_request", "country_subdivision_code must match ISO 3166-2 (e.g. DE-BY)")),
+            )
+                .into_response());
+        }
+    }
+
     state
         .db
         .update_org_identity(
@@ -156,6 +185,8 @@ pub async fn update_org_identity(
             &legal_name,
             &payload.country,
             payload.registration_number.as_deref(),
+            payload.country_subdivision_code.as_deref(),
+            payload.registration_number_type.as_deref(),
         )
         .await
         .map_err(|e| RbacError::Internal(format!("failed to update org identity: {e}")))?;
@@ -165,6 +196,8 @@ pub async fn update_org_identity(
         legal_name,
         country: payload.country,
         registration_number: payload.registration_number,
+        country_subdivision_code: payload.country_subdivision_code,
+        registration_number_type: payload.registration_number_type,
     })
     .into_response())
 }
@@ -185,10 +218,16 @@ pub struct CreateOrgInviteRequest {
     pub role: String,
 }
 
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct CreateOrgInviteResponse {
+    pub token: String,
+    pub invite_url: String,
+}
+
 #[utoipa::path(post, path = "/v1/org/invites", tag = "Organization",
     request_body = CreateOrgInviteRequest,
     responses(
-        (status = 201, description = "Invite created"),
+        (status = 201, description = "Invite created", body = CreateOrgInviteResponse),
         (status = 403, description = "Insufficient role"),
     )
 )]
@@ -228,10 +267,10 @@ pub async fn create_org_invite(
     let invite_url = format!("{}/invite?token={}", state.base_url, token_value);
     Ok((
         StatusCode::CREATED,
-        data_response(serde_json::json!({
-            "token": token_value,
-            "invite_url": invite_url,
-        })),
+        data_response(CreateOrgInviteResponse {
+            token: token_value,
+            invite_url,
+        }),
     ))
 }
 

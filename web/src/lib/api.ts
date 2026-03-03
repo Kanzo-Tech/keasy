@@ -12,26 +12,14 @@ import type {
   ShapeValidationResult,
   TabularData,
   OrgInvite,
-  MeResponse,
-  WorkspacesResponse,
-  WizardState,
-  ComplianceStatus,
-  WalletStatus,
-  WalletSession,
   AdminInvite,
   AdminInviteResult,
+  CreateOrgInviteResponse,
+  CatalogResponse,
 } from "./types";
 
 export { ApiError };
-
-export interface ServiceStatus {
-  wallet: boolean;
-  issuer: boolean;
-  oidc: boolean;
-  gxdch_notary: boolean;
-  gxdch_compliance: boolean;
-  base_domain: string | null;
-}
+export type { ServiceStatus } from "./types";
 
 export const api = {
   // ── Jobs ──────────────────────────────────────────────────────────────
@@ -56,22 +44,22 @@ export const api = {
     },
 
     graph: async (id: string) =>
-      unwrap(await client.GET("/v1/jobs/{id}/graph", { params: { path: { id } } })) as unknown as GraphData,
+      unwrap(await client.GET("/v1/jobs/{id}/graph", { params: { path: { id } } })) as GraphData,
 
     unifiedGraph: async () =>
-      unwrap(await client.GET("/v1/graph")) as unknown as GraphData,
+      unwrap(await client.GET("/v1/graph")) as GraphData,
 
     adminGraph: async (orgId?: string) =>
       unwrap(await client.GET("/v1/graph", {
         params: { query: orgId ? { org_id: orgId } : {} },
-      })) as unknown as GraphData,
+      })) as GraphData,
 
     catalog: async (id: string, format: string): Promise<string> => {
       const data = unwrap(
         await client.GET("/v1/jobs/{id}/catalog", {
           params: { path: { id }, query: { format } },
         }),
-      ) as unknown as { catalog: string };
+      ) as CatalogResponse;
       return data.catalog;
     },
 
@@ -114,7 +102,7 @@ export const api = {
     files: async (id: string) =>
       unwrap(await client.GET("/v1/connections/{id}/files", {
         params: { path: { id } },
-      })) as unknown as FileEntry[],
+      })) as FileEntry[],
   },
 
   // ── Cloud Accounts ────────────────────────────────────────────────────
@@ -148,7 +136,7 @@ export const api = {
       unwrap(await client.POST("/v1/jobs/{id}/discover/chart", {
         params: { path: { id } },
         body: request,
-      })) as unknown as TabularData,
+      })) as TabularData,
 
     ask: async (id: string, question: string, conversationId?: string, provider?: string) =>
       unwrap(await client.POST("/v1/jobs/{id}/discover/ask", {
@@ -158,17 +146,17 @@ export const api = {
           conversation_id: conversationId,
           ...(provider ? { provider } : {}),
         },
-      })) as unknown as AskResponse,
+      })) as AskResponse,
 
     search: async (query: string, jobId?: string) =>
       unwrap(await client.POST("/v1/graph/search", {
         body: { query, job_id: jobId },
-      })) as unknown as SearchResult[],
+      })) as SearchResult[],
 
     expand: async (nodeId: string, jobId?: string) =>
       unwrap(await client.POST("/v1/graph/expand", {
         body: { node_id: nodeId, job_id: jobId },
-      })) as unknown as GraphData,
+      })) as GraphData,
   },
 
   // ── Conversations ─────────────────────────────────────────────────────
@@ -177,17 +165,17 @@ export const api = {
       unwrap(await client.POST("/v1/jobs/{id}/conversations", {
         params: { path: { id } },
         body: { title },
-      })) as unknown as Conversation,
+      })) as Conversation,
 
     list: async (id: string) =>
       unwrap(await client.GET("/v1/jobs/{id}/conversations", {
         params: { path: { id } },
-      })) as unknown as Conversation[],
+      })) as Conversation[],
 
     messages: async (id: string) =>
       unwrap(await client.GET("/v1/conversations/{id}/messages", {
         params: { path: { id } },
-      })) as unknown as ConversationMessage[],
+      })) as ConversationMessage[],
 
     rename: async (id: string, title: string) => {
       unwrap(await client.PUT("/v1/conversations/{id}", {
@@ -251,18 +239,18 @@ export const api = {
   // ── Auth ───────────────────────────────────────────────────────────────
   auth: {
     me: async () =>
-      unwrap(await client.GET("/v1/auth/me")) as unknown as MeResponse,
+      unwrap(await client.GET("/v1/auth/me")),
 
     workspaces: async () =>
-      unwrap(await client.GET("/v1/auth/workspaces")) as unknown as WorkspacesResponse,
+      unwrap(await client.GET("/v1/auth/workspaces")),
 
     logout: async () =>
-      unwrap(await client.POST("/v1/auth/logout")) as unknown as { end_session_url?: string },
+      unwrap(await client.POST("/v1/auth/logout")) as Schemas["LogoutResponse"],
 
     inviteInfo: async (token: string) =>
       unwrap(await client.GET("/v1/auth/invite-info", {
         params: { query: { token } },
-      })) as unknown as { valid: boolean },
+      })) as Schemas["InviteInfoResponse"],
   },
 
   // ── Org ────────────────────────────────────────────────────────────────
@@ -288,10 +276,10 @@ export const api = {
     },
 
     invites: async () =>
-      unwrap(await client.GET("/v1/org/invites")) as unknown as OrgInvite[],
+      unwrap(await client.GET("/v1/org/invites")) as OrgInvite[],
 
     createInvite: async (role: string) =>
-      unwrap(await client.POST("/v1/org/invites", { body: { role } })) as unknown as { token: string; invite_url: string },
+      unwrap(await client.POST("/v1/org/invites", { body: { role } })) as CreateOrgInviteResponse,
 
     revokeInvite: async (token: string) => {
       unwrap(await client.DELETE("/v1/org/invites/{token}", {
@@ -304,78 +292,22 @@ export const api = {
   gaiax: {
     wizard: {
       state: async () =>
-        unwrap(await client.GET("/v1/gaia-x/wizard")) as unknown as WizardState,
-
-      generateKeys: async () =>
-        unwrap(await client.POST("/v1/gaia-x/wizard/keys")) as unknown as { private_key_pem: string },
-
-      validateCert: async (certChainPem: string, domain: string) =>
-        unwrap(await client.POST("/v1/gaia-x/wizard/certificate", {
-          body: { cert_chain_pem: certChainPem, domain },
-        })) as unknown as { cert_count: number },
-
-      requestLrn: async (lrnType: string, lrnValue: string) => {
-        unwrap(await client.POST("/v1/gaia-x/wizard/lrn", {
-          body: { lrn_type: lrnType, lrn_value: lrnValue },
-        }));
-      },
-
-      signLp: async (legalName: string, countryCode: string, privateKeyPem: string) => {
-        unwrap(await client.POST("/v1/gaia-x/wizard/legal-participant", {
-          body: {
-            legal_name: legalName,
-            country_code: countryCode,
-            private_key_pem: privateKeyPem,
-          },
-        }));
-      },
-
-      signTerms: async (privateKeyPem: string) => {
-        unwrap(await client.POST("/v1/gaia-x/wizard/terms", {
-          body: { private_key_pem: privateKeyPem },
-        }));
-      },
-
-      submit: async () => {
-        unwrap(await client.POST("/v1/gaia-x/wizard/submit"));
-      },
+        unwrap(await client.GET("/v1/gaia-x/wizard")),
     },
 
     compliance: {
       status: async () =>
-        unwrap(await client.GET("/v1/gaia-x/compliance")) as unknown as ComplianceStatus,
+        unwrap(await client.GET("/v1/gaia-x/compliance")),
 
       rerun: async () =>
-        unwrap(await client.POST("/v1/gaia-x/compliance/rerun")) as unknown as { compliant: boolean; compliance_vc?: unknown; verified_at?: string },
+        unwrap(await client.POST("/v1/gaia-x/compliance/rerun")) as Schemas["GxdchComplianceResult"],
     },
 
-    wallet: {
-      status: async () =>
-        unwrap(await client.GET("/v1/gaia-x/wallet")) as unknown as WalletStatus,
+    comply: async (certChainPem?: string) =>
+      unwrap(await client.POST("/v1/gaia-x/comply", {
+        body: { cert_chain_pem: certChainPem ?? null },
+      })) as Schemas["ComplyResponse"],
 
-      init: async () =>
-        unwrap(await client.POST("/v1/gaia-x/wallet/vc-init")) as unknown as WalletSession,
-
-      verifyStatus: async (sessionId: string) =>
-        unwrap(await client.GET("/v1/gaia-x/wallet/vc-status/{session_id}", {
-          params: { path: { session_id: sessionId } },
-        })) as unknown as { status: string },
-
-      connect: async (sessionId: string) => {
-        unwrap(await client.POST("/v1/gaia-x/wallet/vc-connect", {
-          body: { session_id: sessionId },
-        }));
-      },
-
-      disconnect: async () => {
-        unwrap(await client.DELETE("/v1/gaia-x/wallet"));
-      },
-    },
-
-    credentials: {
-      offer: async () =>
-        unwrap(await client.POST("/v1/gaia-x/credentials/offer")) as unknown as { offer_url: string },
-    },
   },
 
   // ── Admin ─────────────────────────────────────────────────────────────
@@ -384,10 +316,10 @@ export const api = {
       unwrap(await client.GET("/v1/admin/organizations")),
 
     invites: async () =>
-      unwrap(await client.GET("/v1/admin/invites")) as unknown as AdminInvite[],
+      unwrap(await client.GET("/v1/admin/invites")) as AdminInvite[],
 
     createInvite: async (orgName: string) =>
-      unwrap(await client.POST("/v1/admin/invites", { body: { org_name: orgName } })) as unknown as AdminInviteResult,
+      unwrap(await client.POST("/v1/admin/invites", { body: { org_name: orgName } })) as AdminInviteResult,
 
     revokeInvite: async (token: string) => {
       unwrap(await client.DELETE("/v1/admin/invites/{token}", {
@@ -399,7 +331,7 @@ export const api = {
   // ── Status ────────────────────────────────────────────────────────────
   status: {
     services: async () =>
-      unwrap(await client.GET("/v1/status")) as unknown as ServiceStatus,
+      unwrap(await client.GET("/v1/status")) as Schemas["ServiceStatusResponse"],
   },
 
   // ── Scripts ───────────────────────────────────────────────────────────
@@ -417,6 +349,6 @@ export const api = {
           connection_id: sourceId,
           shape_path: shapePath,
         },
-      })) as unknown as ShapeValidationResult,
+      })) as ShapeValidationResult,
   },
 };

@@ -43,13 +43,13 @@ async fn main() {
 
     info!(path = %db_path.display(), seed_file = ?config.seed_file, "Database opened");
 
-    // Self-register in oidc_clients so workspace picker can find this instance
+    // Self-register in dataspaces so workspace picker can find this instance
     if let Some(client_id) = &config.oidc_client_id {
         if let Err(e) = db
-            .ensure_oidc_client(client_id, "This Instance", &config.base_url)
+            .ensure_dataspace(client_id, "This Instance", &config.base_url)
             .await
         {
-            warn!(error = %e, "Failed to self-register in oidc_clients");
+            warn!(error = %e, "Failed to self-register in dataspaces");
         }
     }
 
@@ -96,32 +96,6 @@ async fn main() {
         config.max_concurrent_jobs,
         config.job_timeout_secs,
     ));
-
-    // Walt.id Verifier client — used for wallet connection (OID4VP).
-    // Only active when KEASY_WALT_ID_VERIFIER_URL is configured.
-    let vc_client = if config.walt_id_verifier_url.is_some() {
-        Some(
-            reqwest::Client::builder()
-                .timeout(Duration::from_secs(5))
-                .build()
-                .unwrap_or_default(),
-        )
-    } else {
-        None
-    };
-
-    // Walt.id Issuer client — used for OID4VCI credential export.
-    // Only active when KEASY_WALT_ID_ISSUER_URL is configured.
-    let issuer_client = if config.walt_id_issuer_url.is_some() {
-        Some(
-            reqwest::Client::builder()
-                .timeout(Duration::from_secs(10))
-                .build()
-                .unwrap_or_default(),
-        )
-    } else {
-        None
-    };
 
     // Keycloak admin client — only active when all three OIDC config fields are present.
     // Uses internal_base_url when set so admin API calls reach Keycloak via Docker DNS
@@ -182,13 +156,10 @@ async fn main() {
         oidc_client_secret: config.oidc_client_secret,
     };
     let gaia_x = GaiaXServices {
-        vc_client,
-        walt_id_verifier_url: config.walt_id_verifier_url,
-        issuer_client,
-        walt_id_issuer_url: config.walt_id_issuer_url,
         gxdch_notary_url: config.gxdch_notary_url,
         gxdch_compliance_url: config.gxdch_compliance_url,
         base_domain: config.base_domain,
+        caddy_certs_dir: config.caddy_certs_dir,
     };
     let state = AppState {
         db,
@@ -200,8 +171,6 @@ async fn main() {
         gaia_x,
     };
     info!(
-        wallet = if state.gaia_x.vc_client.is_some() { "ready" } else { "not configured" },
-        issuer = if state.gaia_x.issuer_client.is_some() { "ready" } else { "not configured" },
         oidc = if state.auth.oidc_state.is_some() { "ready" } else { "not configured" },
         gxdch_notary = %state.gaia_x.gxdch_notary_url,
         gxdch_compliance = %state.gaia_x.gxdch_compliance_url,

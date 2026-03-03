@@ -26,6 +26,7 @@ pub use discovery::rdf_graph::RdfGraph;
 pub use jobs::runner::JobRunner;
 
 use secrecy::SecretString;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -56,20 +57,9 @@ pub struct AuthServices {
     pub oidc_client_secret: Option<SecretString>,
 }
 
-/// Gaia-X external services (GXDCH, wallet, issuer).
+/// Gaia-X external services (GXDCH).
 #[derive(Clone)]
 pub struct GaiaXServices {
-    /// HTTP client for calls to the walt.id Verifier API (wallet connection).
-    /// None when KEASY_WALT_ID_VERIFIER_URL is not set.
-    pub vc_client: Option<reqwest::Client>,
-    /// walt.id Verifier API base URL (e.g. http://waltid-verifier-api:3000).
-    /// Set together with vc_client from KEASY_WALT_ID_VERIFIER_URL.
-    pub walt_id_verifier_url: Option<String>,
-    /// HTTP client for calls to the walt.id Issuer API (OID4VCI credential export).
-    /// None when KEASY_WALT_ID_ISSUER_URL is not set.
-    pub issuer_client: Option<reqwest::Client>,
-    /// walt.id Issuer API base URL (e.g. http://waltid-issuer-api:3000).
-    pub walt_id_issuer_url: Option<String>,
     /// GXDCH Notary endpoint URL for LRN credential requests.
     pub gxdch_notary_url: String,
     /// GXDCH Compliance Service endpoint URL for VP submission.
@@ -77,4 +67,6 @@ pub struct GaiaXServices {
     /// Base domain for org subdomains (e.g. "keasy.example.com").
     /// When set, .well-known endpoints resolve org via Host header subdomain.
     pub base_domain: Option<String>,
+    /// Path to Caddy's data directory for reading TLS certificates.
+    pub caddy_certs_dir: Option<PathBuf>,
 }

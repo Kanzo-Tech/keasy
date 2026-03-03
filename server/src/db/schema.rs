@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS organizations (
     slug                TEXT NOT NULL UNIQUE,
     legal_name          TEXT NOT NULL,
     registration_number TEXT,
+    country_subdivision_code TEXT,
+    registration_number_type TEXT CHECK(registration_number_type IN ('vatID', 'leiCode', 'EORI')),
     country             TEXT NOT NULL CHECK(length(country) = 2),
     role                TEXT NOT NULL DEFAULT 'participant' CHECK(role IN ('promotor', 'participant')),
     created_at          TEXT NOT NULL,

@@ -40,8 +40,42 @@ export type OrgUser = S["OrgMember"];
 export type OrgEntry = S["Organization"];
 
 // ---------------------------------------------------------------------------
-// Types NOT in the OpenAPI spec (discovery, graph, conversations, etc.)
-// These remain manually defined until their server response types are annotated.
+// Types now in OpenAPI spec — re-exported from schema
+// ---------------------------------------------------------------------------
+
+export type SearchResult = S["SearchResult"];
+// Override rows type — server uses serde_json::Value per cell, schema generates Record<string,never>
+export type TabularData = Omit<S["TabularData"], "rows"> & {
+  rows: Record<string, string | number | null>[];
+};
+export type GraphData = S["GraphData"];
+export type GraphNode = S["GraphNode"];
+export type GraphLink = S["GraphLink"];
+export type Conversation = S["Conversation"];
+// Override data type — schema generates rows: Record<string,never>[], we use Record<string, string|number|null>[]
+export type ConversationMessage = Omit<S["ConversationMessage"], "data"> & {
+  data?: TabularData | null;
+};
+export type FileEntry = S["FileEntry"];
+export type AskResponse = S["AskResponse"];
+
+// Shape validation — now in OpenAPI schema
+export type ShapeValidationError = S["ShapeValidationError"];
+export type ShapeValidationResult = S["ShapeValidationResult"];
+
+// Aliases for renamed/new response types
+export type OrgInvite = S["OrgInviteEntry"];
+export type ServiceStatus = S["ServiceStatusResponse"];
+export type GenerateKeysResponse = S["GenerateKeysResponse"];
+export type ValidateCertResponse = S["ValidateCertResponse"];
+export type GxdchComplianceResult = S["GxdchComplianceResult"];
+export type InviteInfoResponse = S["InviteInfoResponse"];
+export type LogoutResponse = S["LogoutResponse"];
+export type CreateOrgInviteResponse = S["CreateOrgInviteResponse"];
+export type CatalogResponse = S["CatalogResponse"];
+
+// ---------------------------------------------------------------------------
+// Types NOT in the OpenAPI spec — remain manually defined (UI/static config)
 // ---------------------------------------------------------------------------
 
 export interface FieldSchema {
@@ -67,170 +101,34 @@ export interface ProviderSchema {
   auth_methods: AuthMethodSchema[];
 }
 
-export interface FileEntry {
-  path: string;
-  size: number;
-  last_modified?: string;
-}
-
-export interface ShapeValidationResult {
-  valid: boolean;
-  errors: ShapeValidationError[];
-  valid_nodes: string[];
-}
-
-export interface ShapeValidationError {
-  node: string;
-  message: string;
-}
-
-export interface SearchResult {
-  id: string;
-  label: string;
-  group: string;
-}
-
-export interface TabularData {
-  columns: string[];
-  rows: Record<string, string | number>[];
-  column_types: Record<string, "numeric" | "string">;
-}
-
-export interface AskResponse {
-  answer: string;
-  sparql?: string;
-  data?: TabularData;
-  conversation_id?: string;
-  code: string;
-}
-
-export interface Conversation {
-  id: string;
-  job_id: string;
-  created_at: string;
-  title?: string;
-}
-
-export interface ConversationMessage {
-  id: string;
-  conversation_id: string;
-  role: "user" | "assistant";
-  content: string;
-  sparql?: string;
-  data?: TabularData;
-  code?: string;
-  created_at: string;
-}
-
 export interface ProviderInfo {
   name: string;
   extensions: string[];
   kind: "schema" | "data" | "both";
 }
 
-export interface GraphNode {
-  id: string;
-  label: string;
-  group: string;
-  properties?: Record<string, string>;
-}
-
-export interface GraphLink {
-  source: string;
-  target: string;
-  label: string;
-}
-
-export interface GraphData {
-  nodes: GraphNode[];
-  links: GraphLink[];
-}
-
-export interface OrgInvite {
-  token: string;
-  role: string;
-  status: "active" | "expired";
-  created_at: string;
-  expires_at: string;
-}
-
 // ---------------------------------------------------------------------------
-// Auth types
+// Auth types — re-exported from schema
 // ---------------------------------------------------------------------------
 
-export interface MeResponse {
-  user_id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  effective_role: string;
-  org?: {
-    id: string;
-    name: string;
-    role: string;
-  };
-}
-
-export interface Workspace {
-  client_id: string;
-  name: string;
-  url: string;
-}
-
-export interface WorkspacesResponse {
-  workspaces: Workspace[];
-  current_client_id: string;
-}
+export type MeResponse = S["MeResponse"];
+export type Workspace = S["Workspace"];
+export type WorkspacesResponse = S["WorkspacesResponse"];
 
 // ---------------------------------------------------------------------------
-// Gaia-X Compliance / Wizard types
+// Gaia-X Compliance / Wizard types — re-exported from schema
 // ---------------------------------------------------------------------------
 
-export interface WizardState {
-  current_step?: number;
-  domain?: string;
-  legal_name?: string;
-  country_code?: string;
-  public_key_jwk?: Record<string, unknown>;
-  did_document?: Record<string, unknown>;
-  cert_chain_pem?: string;
-  lrn_type?: string;
-  lrn_value?: string;
-  lrn_credential?: Record<string, unknown>;
-  lp_credential?: Record<string, unknown>;
-  tc_credential?: Record<string, unknown>;
-  compliance_vc?: Record<string, unknown>;
-}
-
-export interface ComplianceCredential {
-  name: string;
-  issued_at: string;
-  raw_json: Record<string, unknown>;
-}
-
-export interface ComplianceStatus {
-  compliant: boolean;
-  verified_at?: string | null;
-  credentials: ComplianceCredential[];
-  wizard_state?: WizardState;
-}
+// WizardState is the API response type (credentials parsed to objects)
+export type WizardState = S["WizardStateResponse"];
+export type ComplianceCredential = S["ComplianceCredential"];
+export type ComplianceStatus = S["ComplianceStatus"];
+export type ComplyRequest = S["ComplyRequest"];
+export type ComplyResponse = S["ComplyResponse"];
 
 // ---------------------------------------------------------------------------
-// Admin types
+// Admin types — re-exported from schema
 // ---------------------------------------------------------------------------
 
-export interface AdminInvite {
-  token: string;
-  org_id: string;
-  org_name: string;
-  status: "active" | "expired";
-  created_at: string;
-  expires_at: string;
-}
-
-export interface AdminInviteResult {
-  token: string;
-  org_id: string;
-  org_name: string;
-  invite_url: string;
-}
+export type AdminInvite = S["AdminInviteEntry"];
+export type AdminInviteResult = S["AdminInviteResult"];

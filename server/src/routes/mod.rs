@@ -247,8 +247,8 @@ pub fn build_router(
         // OIDC instance registration — promotor only
         .route(
             "/v1/admin/oidc-clients",
-            axum::routing::get(admin::list_oidc_clients)
-                .post(admin::register_oidc_client),
+            axum::routing::get(admin::list_dataspaces)
+                .post(admin::register_dataspace),
         )
         // Org identity — read for any participant, write for participant org admins
         .route(
@@ -273,24 +273,6 @@ pub fn build_router(
         .route(
             "/v1/org/invites/{token}",
             axum::routing::delete(org::revoke_org_invite),
-        )
-        // Gaia-X wallet connection routes (session + tenant protected)
-        .route(
-            "/v1/gaia-x/wallet",
-            axum::routing::get(crate::gaia_x::wallet_routes::get_wallet)
-                .delete(crate::gaia_x::wallet_routes::disconnect_wallet),
-        )
-        .route(
-            "/v1/gaia-x/wallet/vc-init",
-            axum::routing::post(crate::gaia_x::wallet_routes::init_wallet_session),
-        )
-        .route(
-            "/v1/gaia-x/wallet/vc-status/{session_id}",
-            axum::routing::get(crate::gaia_x::wallet_routes::wallet_verify_status),
-        )
-        .route(
-            "/v1/gaia-x/wallet/vc-connect",
-            axum::routing::post(crate::gaia_x::wallet_routes::save_wallet_connection),
         )
         // Gaia-X compliance wizard routes (session + tenant protected)
         .route(
@@ -329,10 +311,9 @@ pub fn build_router(
             "/v1/gaia-x/compliance/rerun",
             axum::routing::post(crate::gaia_x::routes::rerun_compliance),
         )
-        // OID4VCI credential export
         .route(
-            "/v1/gaia-x/credentials/offer",
-            axum::routing::post(crate::gaia_x::issuer_routes::create_credential_offer),
+            "/v1/gaia-x/comply",
+            axum::routing::post(crate::gaia_x::routes::comply),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),

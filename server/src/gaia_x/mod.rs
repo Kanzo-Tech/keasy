@@ -16,33 +16,105 @@ pub mod gxdch;
 pub mod keys;
 pub mod routes;
 pub mod signing;
-pub mod issuer_client;
-pub mod issuer_routes;
-pub mod vc_client;
 pub mod vp;
-pub mod wallet_routes;
 
 use serde::{Deserialize, Serialize};
 
-/// Wizard state record — mirrors the gaia_x_wizard_state table.
+/// Wizard state record — mirrors the org_gaiax table.
 /// All credential/key/cert fields are stored as JSON or PEM text.
 /// Private key is NEVER stored — only public_key_jwk (locked decision).
-#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+/// did_document is NOT stored — derived at runtime from public_key_jwk + domain.
+/// legal_name and country_code come from organizations, not from wizard state.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WizardState {
     pub org_id: String,
     pub current_step: i64,
     pub public_key_jwk: Option<String>,
     pub cert_chain_pem: Option<String>,
     pub root_ca_pem: Option<String>,
-    pub did_document: Option<String>,
     pub lrn_credential: Option<String>,
     pub lp_credential: Option<String>,
     pub tc_credential: Option<String>,
     pub compliance_vc: Option<String>,
     pub lrn_type: Option<String>,
     pub lrn_value: Option<String>,
-    pub legal_name: Option<String>,
-    pub country_code: Option<String>,
     pub domain: Option<String>,
     pub updated_at: String,
+}
+
+/// API response type for wizard state.
+/// Credentials are parsed from their stored JSON strings to proper objects,
+/// so the frontend receives structured data rather than escaped strings.
+#[derive(Serialize, utoipa::ToSchema)]
+pub struct WizardStateResponse {
+    pub org_id: String,
+    pub current_step: i64,
+    #[schema(schema_with = json_object)]
+    pub public_key_jwk: Option<serde_json::Value>,
+    pub cert_chain_pem: Option<String>,
+    pub root_ca_pem: Option<String>,
+    #[schema(schema_with = json_object)]
+    pub lrn_credential: Option<serde_json::Value>,
+    #[schema(schema_with = json_object)]
+    pub lp_credential: Option<serde_json::Value>,
+    #[schema(schema_with = json_object)]
+    pub tc_credential: Option<serde_json::Value>,
+    #[schema(schema_with = json_object)]
+    pub compliance_vc: Option<serde_json::Value>,
+    pub lrn_type: Option<String>,
+    pub lrn_value: Option<String>,
+    pub domain: Option<String>,
+    pub updated_at: String,
+}
+
+fn json_object() -> utoipa::openapi::schema::Object {
+    use utoipa::openapi::schema::{AdditionalProperties, ObjectBuilder};
+    ObjectBuilder::new()
+        .additional_properties(Some(AdditionalProperties::FreeForm(true)))
+        .build()
+}
+
+/// Request body for the one-click comply endpoint.
+#[derive(Deserialize, utoipa::ToSchema)]
+pub struct ComplyRequest {
+    /// Optional PEM cert chain — fallback if Caddy certs are unavailable.
+    pub cert_chain_pem: Option<String>,
+}
+
+/// Response from the one-click comply endpoint.
+#[derive(Serialize, utoipa::ToSchema)]
+pub struct ComplyResponse {
+    pub compliant: bool,
+    /// PEM-encoded private key (auto-download on success).
+    pub private_key_pem: Option<String>,
+    /// The compliance Verifiable Credential.
+    #[schema(schema_with = json_object)]
+    pub compliance_vc: Option<serde_json::Value>,
+    /// Error message on failure.
+    pub error: Option<String>,
+    /// Which phase failed: key_generation, certificate, lrn_request, lp_signing, tc_signing, compliance_submission.
+    pub failed_phase: Option<String>,
+}
+
+impl From<WizardState> for WizardStateResponse {
+    fn from(ws: WizardState) -> Self {
+        fn parse(s: Option<String>) -> Option<serde_json::Value> {
+            s.and_then(|v| serde_json::from_str(&v).ok())
+        }
+        Self {
+            org_id: ws.org_id,
+            current_step: ws.current_step,
+            public_key_jwk: parse(ws.public_key_jwk),
+            cert_chain_pem: ws.cert_chain_pem,
+            root_ca_pem: ws.root_ca_pem,
+            lrn_credential: parse(ws.lrn_credential),
+            lp_credential: parse(ws.lp_credential),
+            tc_credential: parse(ws.tc_credential),
+            compliance_vc: parse(ws.compliance_vc),
+            lrn_type: ws.lrn_type,
+            lrn_value: ws.lrn_value,
+            domain: ws.domain,
+            updated_at: ws.updated_at,
+        }
+    }
 }

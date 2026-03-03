@@ -79,6 +79,7 @@ use utoipa::OpenApi;
         crate::gaia_x::routes::submit_gxdch,
         crate::gaia_x::routes::get_compliance_status,
         crate::gaia_x::routes::rerun_compliance,
+        crate::gaia_x::routes::comply,
         crate::gaia_x::routes::get_did_document,
         crate::gaia_x::routes::get_cert_chain,
         // Discovery
@@ -145,40 +146,69 @@ use utoipa::OpenApi;
         // Org members
         crate::db::org_members::OrgMember,
         // Gaia-X Wizard
-        crate::gaia_x::WizardState,
+        crate::gaia_x::WizardStateResponse,
         crate::gaia_x::routes::ComplianceCredential,
         crate::gaia_x::routes::ComplianceStatus,
         crate::gaia_x::routes::CertUploadPayload,
         crate::gaia_x::routes::LrnPayload,
         crate::gaia_x::routes::LpPayload,
         crate::gaia_x::routes::TcPayload,
+        crate::gaia_x::routes::GenerateKeysResponse,
+        crate::gaia_x::routes::ValidateCertResponse,
+        crate::gaia_x::routes::GxdchComplianceResult,
+        crate::gaia_x::ComplyRequest,
+        crate::gaia_x::ComplyResponse,
         // Auth response types
         crate::auth::routes::MeResponse,
         crate::auth::routes::MeOrg,
         crate::auth::routes::Workspace,
         crate::auth::routes::WorkspacesResponse,
+        crate::auth::routes::InviteInfoResponse,
+        crate::auth::routes::LogoutResponse,
+        // Health
+        crate::routes::health::ServiceStatusResponse,
         // Admin
         crate::routes::admin::CreateOrgAndInviteRequest,
         crate::routes::admin::RegisterOidcClientRequest,
         crate::routes::admin::CreateInviteRequest,
         crate::routes::admin::AdminInviteEntry,
         crate::routes::admin::AdminInviteResult,
+        crate::routes::admin::CreateOrgResponse,
+        crate::routes::admin::RegisterDataspaceResponse,
         // Organization
         crate::routes::org::OrgInviteEntry,
         crate::routes::org::UpdateUserRoleRequest,
         crate::routes::org::UpdateOrgIdentityPayload,
         crate::routes::org::CreateOrgInviteRequest,
+        crate::routes::org::CreateOrgInviteResponse,
+        crate::routes::org::OrgIdentityResponse,
+        // Jobs
+        crate::jobs::routes::CatalogResponse,
         // Discovery
         crate::discovery::routes::SearchRequest,
         crate::discovery::routes::ExpandRequest,
         crate::discovery::routes::QueryRequest,
         crate::discovery::routes::ChartRequest,
         crate::discovery::routes::LoadDiscoverResponse,
+        crate::discovery::graph_types::TabularData,
+        crate::discovery::graph_types::SearchResult,
+        crate::discovery::convert::GraphData,
+        crate::discovery::convert::GraphNode,
+        crate::discovery::convert::GraphLink,
+        // Validation
+        crate::discovery::validation_types::ShapeValidationResult,
+        crate::discovery::validation_types::ShapeValidationError,
+        // Providers
+        crate::routes::providers::ProviderEntry,
         // AI / Conversations
         crate::ai::routes::AskRequest,
         crate::ai::routes::AskResponse,
         crate::ai::routes::CreateConversationRequest,
         crate::ai::routes::RenameConversationRequest,
+        crate::ai::models::Conversation,
+        crate::ai::models::ConversationMessage,
+        // Cloud files
+        crate::cloud::reader::FileEntry,
     ))
 )]
 pub struct ApiDoc;

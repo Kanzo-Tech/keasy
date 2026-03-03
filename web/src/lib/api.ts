@@ -290,17 +290,9 @@ export const api = {
 
   // ── Gaia-X ────────────────────────────────────────────────────────────
   gaiax: {
-    wizard: {
-      state: async () =>
-        unwrap(await client.GET("/v1/gaia-x/wizard")),
-    },
-
     compliance: {
       status: async () =>
         unwrap(await client.GET("/v1/gaia-x/compliance")),
-
-      rerun: async () =>
-        unwrap(await client.POST("/v1/gaia-x/compliance/rerun")) as Schemas["GxdchComplianceResult"],
     },
 
     comply: async (certChainPem?: string) =>

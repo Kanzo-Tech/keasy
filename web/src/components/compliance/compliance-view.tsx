@@ -1,21 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useQueryClient } from "@tanstack/react-query";
-import { ShieldCheck, ChevronDown, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { api, ApiError } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
+import { ShieldCheck } from "lucide-react";
 import type { ComplianceCredential } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CredentialCard } from "@/components/compliance/credential-card";
 import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
 
 /** @deprecated Use ComplianceCredential from @/lib/types directly */
@@ -40,107 +37,32 @@ export function formatDate(dateStr: string | null | undefined): string {
   }).format(new Date(dateStr));
 }
 
-export function CredentialCard({ credential }: { credential: Credential }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-base font-semibold">
-              {credential.name}
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              Issued on {formatDate(credential.issued_at)}
-            </p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <Collapsible open={open} onOpenChange={setOpen}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="gap-1 px-0 h-auto text-xs text-muted-foreground hover:text-foreground">
-              View Raw JSON
-              <ChevronDown
-                className={`h-3 w-3 transition-transform duration-200 ${
-                  open ? "rotate-180" : ""
-                }`}
-              />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <pre className="bg-muted rounded-md p-4 text-xs font-mono overflow-x-auto mt-2 whitespace-pre-wrap break-all">
-              {JSON.stringify(credential.raw_json, null, 2)}
-            </pre>
-          </CollapsibleContent>
-        </Collapsible>
-      </CardContent>
-    </Card>
-  );
-}
-
 export function ComplianceView({ status }: ComplianceViewProps) {
-  const queryClient = useQueryClient();
-  const [rerunLoading, setRerunLoading] = useState(false);
+  const [selectedCredential, setSelectedCredential] = useState<ComplianceCredential | null>(null);
 
   const isConformant = status.compliant;
-
-  async function handleRerun() {
-    setRerunLoading(true);
-    try {
-      await api.gaiax.compliance.rerun();
-      await queryClient.invalidateQueries({ queryKey: queryKeys.gx.compliance });
-      toast.success("Compliance check completed successfully");
-    } catch (err) {
-      toast.error(
-        err instanceof ApiError
-          ? err.message
-          : "Network error. Could not re-run compliance check.",
-      );
-    } finally {
-      setRerunLoading(false);
-    }
-  }
 
   return (
     <SettingsPage>
       <SettingsSection title="Compliance Status">
       <Card>
         <CardHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <ShieldCheck className="h-10 w-10 text-emerald-600 shrink-0" />
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-xl">Gaia-X Conformant</CardTitle>
-                  <Badge
-                    variant={isConformant ? "default" : "destructive"}
-                    className={isConformant ? "bg-emerald-600 hover:bg-emerald-700" : undefined}
-                  >
-                    {isConformant ? "Conformant" : "Non-conformant"}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Verified on {formatDate(status.verified_at)}
-                </p>
+          <div className="flex items-center gap-4">
+            <ShieldCheck className="h-10 w-10 text-emerald-600 shrink-0" />
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-xl">Gaia-X Conformant</CardTitle>
+                <Badge
+                  variant={isConformant ? "default" : "destructive"}
+                  className={isConformant ? "bg-emerald-600 hover:bg-emerald-700" : undefined}
+                >
+                  {isConformant ? "Conformant" : "Non-conformant"}
+                </Badge>
               </div>
+              <p className="text-sm text-muted-foreground">
+                Verified on {formatDate(status.verified_at)}
+              </p>
             </div>
-            <Button
-              variant="outline"
-              onClick={handleRerun}
-              disabled={rerunLoading}
-              className="shrink-0"
-            >
-              {rerunLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Running...
-                </>
-              ) : (
-                "Re-run Compliance Check"
-              )}
-            </Button>
           </div>
         </CardHeader>
       </Card>
@@ -150,24 +72,37 @@ export function ComplianceView({ status }: ComplianceViewProps) {
         title="Credentials"
         description="All generated Gaia-X credentials for your organization."
       >
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {status.credentials.map((credential) => (
-            <CredentialCard key={credential.name} credential={credential} />
+            <CredentialCard
+              key={credential.name}
+              credential={credential}
+              onClick={() => setSelectedCredential(credential)}
+            />
           ))}
         </div>
       </SettingsSection>
 
-      <div className="text-center pt-4 border-t">
-        <p className="text-sm text-muted-foreground">
-          Need to update credentials?{" "}
-          <Link
-            href="/organization/compliance/wizard"
-            className="text-primary underline-offset-4 hover:underline"
-          >
-            Start the wizard again
-          </Link>
-        </p>
-      </div>
+      <Dialog
+        open={selectedCredential !== null}
+        onOpenChange={(open) => { if (!open) setSelectedCredential(null); }}
+      >
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          {selectedCredential && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedCredential.name}</DialogTitle>
+                <DialogDescription>
+                  Issued on {formatDate(selectedCredential.issued_at)}
+                </DialogDescription>
+              </DialogHeader>
+              <pre className="bg-muted rounded-md p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">
+                {JSON.stringify(selectedCredential.raw_json, null, 2)}
+              </pre>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </SettingsPage>
   );
 }

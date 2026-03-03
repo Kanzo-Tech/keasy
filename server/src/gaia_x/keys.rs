@@ -2,7 +2,7 @@
 ///
 /// The private key is returned to the caller as PKCS#8 PEM for download.
 /// It is NEVER stored in the database (locked decision).
-/// Only the public key JWK is persisted in wizard state.
+/// Only the public key JWK is persisted in org_gaiax.
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use p256::ecdsa::SigningKey;
 use p256::pkcs8::EncodePrivateKey;
@@ -13,7 +13,7 @@ use rand_core06::OsRng;
 pub struct GeneratedKeyPair {
     /// PKCS#8 PEM-encoded private key — returned to client for download, never stored.
     pub private_key_pem: String,
-    /// Public key as JWK — stored in gaia_x_wizard_state.
+    /// Public key as JWK — stored in org_gaiax.
     pub public_key_jwk: serde_json::Value,
 }
 

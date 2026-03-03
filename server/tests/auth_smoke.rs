@@ -168,7 +168,6 @@ async fn protected_routes_return_401_without_session() {
         ("POST", "/v1/gaia-x/wizard/terms".to_string()),
         ("POST", "/v1/gaia-x/wizard/submit".to_string()),
         ("GET", "/v1/gaia-x/compliance".to_string()),
-        ("POST", "/v1/gaia-x/compliance/rerun".to_string()),
     ];
 
     for (method, path) in &protected {

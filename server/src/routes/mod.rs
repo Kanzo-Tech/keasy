@@ -284,10 +284,6 @@ pub fn build_router(
             "/v1/gaia-x/compliance",
             axum::routing::get(crate::gaia_x::routes::get_compliance_status),
         )
-        .route(
-            "/v1/gaia-x/compliance/rerun",
-            axum::routing::post(crate::gaia_x::routes::rerun_compliance),
-        )
         .layer(middleware::from_fn_with_state(
             state.clone(),
             tenant_context_required, // runs second (inner), after session_required

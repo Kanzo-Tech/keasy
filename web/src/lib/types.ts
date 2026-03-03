@@ -66,8 +66,6 @@ export type ShapeValidationResult = S["ShapeValidationResult"];
 // Aliases for renamed/new response types
 export type OrgInvite = S["OrgInviteEntry"];
 export type ServiceStatus = S["ServiceStatusResponse"];
-export type GenerateKeysResponse = S["GenerateKeysResponse"];
-export type ValidateCertResponse = S["ValidateCertResponse"];
 export type GxdchComplianceResult = S["GxdchComplianceResult"];
 export type InviteInfoResponse = S["InviteInfoResponse"];
 export type LogoutResponse = S["LogoutResponse"];
@@ -116,11 +114,9 @@ export type Workspace = S["Workspace"];
 export type WorkspacesResponse = S["WorkspacesResponse"];
 
 // ---------------------------------------------------------------------------
-// Gaia-X Compliance / Wizard types — re-exported from schema
+// Gaia-X Compliance types — re-exported from schema
 // ---------------------------------------------------------------------------
 
-// WizardState is the API response type (credentials parsed to objects)
-export type WizardState = S["WizardStateResponse"];
 export type ComplianceCredential = S["ComplianceCredential"];
 export type ComplianceStatus = S["ComplianceStatus"];
 export type ComplyRequest = S["ComplyRequest"];

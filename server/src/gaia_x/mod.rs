@@ -1,4 +1,4 @@
-/// Gaia-X compliance wizard — module root.
+/// Gaia-X compliance — module root.
 ///
 /// This module implements the full Gaia-X credential lifecycle:
 /// - P-256 key pair generation
@@ -7,8 +7,8 @@
 /// - JsonWebSignature2020 proof generation
 /// - Verifiable Presentation assembly with inline credentials (VC-07)
 /// - GXDCH Notary and Compliance Service HTTP clients
-/// - Wizard state persistence per org
-/// - Axum route handlers for all wizard endpoints
+/// - State persistence per org
+/// - Axum route handlers for compliance endpoints
 pub mod cert;
 pub mod credentials;
 pub mod db;
@@ -20,18 +20,16 @@ pub mod vp;
 
 use serde::{Deserialize, Serialize};
 
-/// Wizard state record — mirrors the org_gaiax table.
+/// Gaia-X state record — mirrors the org_gaiax table.
 /// All credential/key/cert fields are stored as JSON or PEM text.
 /// Private key is NEVER stored — only public_key_jwk (locked decision).
 /// did_document is NOT stored — derived at runtime from public_key_jwk + domain.
-/// legal_name and country_code come from organizations, not from wizard state.
+/// legal_name and country_code come from organizations, not from this state.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WizardState {
+pub struct GaiaxState {
     pub org_id: String,
-    pub current_step: i64,
     pub public_key_jwk: Option<String>,
     pub cert_chain_pem: Option<String>,
-    pub root_ca_pem: Option<String>,
     pub lrn_credential: Option<String>,
     pub lp_credential: Option<String>,
     pub tc_credential: Option<String>,
@@ -40,38 +38,6 @@ pub struct WizardState {
     pub lrn_value: Option<String>,
     pub domain: Option<String>,
     pub updated_at: String,
-}
-
-/// API response type for wizard state.
-/// Credentials are parsed from their stored JSON strings to proper objects,
-/// so the frontend receives structured data rather than escaped strings.
-#[derive(Serialize, utoipa::ToSchema)]
-pub struct WizardStateResponse {
-    pub org_id: String,
-    pub current_step: i64,
-    #[schema(schema_with = json_object)]
-    pub public_key_jwk: Option<serde_json::Value>,
-    pub cert_chain_pem: Option<String>,
-    pub root_ca_pem: Option<String>,
-    #[schema(schema_with = json_object)]
-    pub lrn_credential: Option<serde_json::Value>,
-    #[schema(schema_with = json_object)]
-    pub lp_credential: Option<serde_json::Value>,
-    #[schema(schema_with = json_object)]
-    pub tc_credential: Option<serde_json::Value>,
-    #[schema(schema_with = json_object)]
-    pub compliance_vc: Option<serde_json::Value>,
-    pub lrn_type: Option<String>,
-    pub lrn_value: Option<String>,
-    pub domain: Option<String>,
-    pub updated_at: String,
-}
-
-fn json_object() -> utoipa::openapi::schema::Object {
-    use utoipa::openapi::schema::{AdditionalProperties, ObjectBuilder};
-    ObjectBuilder::new()
-        .additional_properties(Some(AdditionalProperties::FreeForm(true)))
-        .build()
 }
 
 /// Request body for the one-click comply endpoint.
@@ -96,25 +62,9 @@ pub struct ComplyResponse {
     pub failed_phase: Option<String>,
 }
 
-impl From<WizardState> for WizardStateResponse {
-    fn from(ws: WizardState) -> Self {
-        fn parse(s: Option<String>) -> Option<serde_json::Value> {
-            s.and_then(|v| serde_json::from_str(&v).ok())
-        }
-        Self {
-            org_id: ws.org_id,
-            current_step: ws.current_step,
-            public_key_jwk: parse(ws.public_key_jwk),
-            cert_chain_pem: ws.cert_chain_pem,
-            root_ca_pem: ws.root_ca_pem,
-            lrn_credential: parse(ws.lrn_credential),
-            lp_credential: parse(ws.lp_credential),
-            tc_credential: parse(ws.tc_credential),
-            compliance_vc: parse(ws.compliance_vc),
-            lrn_type: ws.lrn_type,
-            lrn_value: ws.lrn_value,
-            domain: ws.domain,
-            updated_at: ws.updated_at,
-        }
-    }
+fn json_object() -> utoipa::openapi::schema::Object {
+    use utoipa::openapi::schema::{AdditionalProperties, ObjectBuilder};
+    ObjectBuilder::new()
+        .additional_properties(Some(AdditionalProperties::FreeForm(true)))
+        .build()
 }

@@ -1,9 +1,8 @@
 /// Axum route handlers for Gaia-X compliance.
 ///
-/// Remaining handlers (5):
+/// Handlers (4):
 /// - `comply` — one-click compliance pipeline
 /// - `get_compliance_status` — read current compliance state
-/// - `rerun_compliance` — re-submit VP to GXDCH Compliance Service
 /// - `get_did_document` — public .well-known/did.json
 /// - `get_cert_chain` — public .well-known/x509CertificateChain.pem
 use axum::response::IntoResponse;
@@ -18,7 +17,7 @@ use rusqlite::OptionalExtension;
 
 use crate::AppState;
 use crate::error::{bad_request_response, data_response, error_body, internal_error_response};
-use crate::gaia_x::{ComplyRequest, ComplyResponse, WizardState, WizardStateResponse, cert, credentials, db, keys, signing, vp};
+use crate::gaia_x::{ComplyRequest, ComplyResponse, GaiaxState, cert, credentials, db, keys, signing, vp};
 use crate::gaia_x::gxdch::MockGxdch;
 use crate::middleware::tenant::RequireParticipant;
 
@@ -47,7 +46,6 @@ pub struct ComplianceStatus {
     pub compliant: bool,
     pub verified_at: Option<String>,
     pub credentials: Vec<ComplianceCredential>,
-    pub wizard_state: Option<WizardStateResponse>,
 }
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
@@ -62,60 +60,6 @@ pub struct GxdchComplianceResult {
 
 fn now_iso() -> String {
     Timestamp::now().to_string()
-}
-
-/// Build a default empty wizard state for an org that hasn't started the wizard.
-fn default_state(org_id: &str) -> WizardState {
-    WizardState {
-        org_id: org_id.to_string(),
-        current_step: 0,
-        public_key_jwk: None,
-        cert_chain_pem: None,
-        root_ca_pem: None,
-        lrn_credential: None,
-        lp_credential: None,
-        tc_credential: None,
-        compliance_vc: None,
-        lrn_type: None,
-        lrn_value: None,
-        domain: None,
-        updated_at: now_iso(),
-    }
-}
-
-/// Load the wizard state from DB, returning an error response if no record exists.
-async fn load_wizard(state: &AppState, org_id: &str) -> Result<WizardState, Response> {
-    let (_permit, conn) = state.db.read().await;
-    match db::get_wizard_state(&conn, org_id) {
-        Ok(Some(w)) => Ok(w),
-        Ok(None) => Err(bad_request_response("Wizard not started — complete previous steps first")),
-        Err(e) => Err(internal_error_response(&format!("db read failed: {e}"))),
-    }
-}
-
-/// Save the wizard state to DB, upserting if needed. Returns the saved state.
-async fn save_wizard_step(state: &AppState, wizard: &WizardState) -> Result<WizardState, Response> {
-    let conn = state.db.write().await;
-    let existing = db::get_wizard_state(&conn, &wizard.org_id)
-        .map_err(|e| internal_error_response(&format!("db read for write failed: {e}")))?;
-    let mut w = existing.unwrap_or_else(|| default_state(&wizard.org_id));
-    w.public_key_jwk = wizard.public_key_jwk.clone();
-    w.cert_chain_pem = wizard.cert_chain_pem.clone();
-    w.root_ca_pem = wizard.root_ca_pem.clone();
-    w.lrn_credential = wizard.lrn_credential.clone();
-    w.lp_credential = wizard.lp_credential.clone();
-    w.tc_credential = wizard.tc_credential.clone();
-    w.compliance_vc = wizard.compliance_vc.clone();
-    w.lrn_type = wizard.lrn_type.clone();
-    w.lrn_value = wizard.lrn_value.clone();
-    w.domain = wizard.domain.clone();
-    if wizard.current_step > w.current_step {
-        w.current_step = wizard.current_step;
-    }
-    w.updated_at = now_iso();
-    db::upsert_wizard_state(&conn, &w)
-        .map_err(|e| internal_error_response(&format!("failed to save wizard state: {e}")))?;
-    Ok(w)
 }
 
 // ── .well-known org resolution ────────────────────────────────────────────────
@@ -277,12 +221,25 @@ pub async fn comply(
     }
 
     // 6. Save keys + cert + domain to org_gaiax (so .well-known endpoints work)
-    let mut wizard = default_state(&org_id);
-    wizard.public_key_jwk = Some(jwk_str);
-    wizard.cert_chain_pem = Some(cert_chain_pem);
-    wizard.domain = Some(domain.clone());
-    wizard.current_step = 2;
-    if let Err(r) = save_wizard_step(&state, &wizard).await { return r; }
+    let mut gx_state = GaiaxState {
+        org_id: org_id.clone(),
+        public_key_jwk: Some(jwk_str),
+        cert_chain_pem: Some(cert_chain_pem),
+        lrn_credential: None,
+        lp_credential: None,
+        tc_credential: None,
+        compliance_vc: None,
+        lrn_type: None,
+        lrn_value: None,
+        domain: Some(domain.clone()),
+        updated_at: now_iso(),
+    };
+    {
+        let conn = state.db.write().await;
+        if let Err(e) = db::upsert(&conn, &gx_state) {
+            return internal_error_response(&format!("failed to save gaiax state: {e}"));
+        }
+    }
 
     // 7. Request LRN credential from GXDCH
     let lrn_vc = match state.gaia_x.gxdch.request_lrn_credential(
@@ -294,13 +251,6 @@ pub async fn comply(
         Err(e) => fail!("lrn_request", format!("GXDCH Notary error: {e}")),
     };
 
-    let lrn_str = serde_json::to_string(&lrn_vc).unwrap_or_default();
-    wizard.lrn_credential = Some(lrn_str);
-    wizard.lrn_type = Some(registration_number_type.clone());
-    wizard.lrn_value = Some(registration_number.clone());
-    wizard.current_step = 3;
-    if let Err(r) = save_wizard_step(&state, &wizard).await { return r; }
-
     // 8. Assemble + sign Legal Participant credential
     let mut lp_cred = credentials::assemble_legal_participant(
         &domain,
@@ -310,20 +260,12 @@ pub async fn comply(
     if let Err(e) = signing::sign_credential(&mut lp_cred, &private_key_pem, &domain) {
         fail!("lp_signing", format!("LP signing failed: {e}"));
     }
-    let lp_str = serde_json::to_string(&lp_cred).unwrap_or_default();
-    wizard.lp_credential = Some(lp_str);
-    wizard.current_step = 4;
-    if let Err(r) = save_wizard_step(&state, &wizard).await { return r; }
 
     // 9. Assemble + sign Terms & Conditions credential
     let mut tc_cred = credentials::assemble_terms_conditions(&domain);
     if let Err(e) = signing::sign_credential(&mut tc_cred, &private_key_pem, &domain) {
         fail!("tc_signing", format!("T&C signing failed: {e}"));
     }
-    let tc_str = serde_json::to_string(&tc_cred).unwrap_or_default();
-    wizard.tc_credential = Some(tc_str);
-    wizard.current_step = 5;
-    if let Err(r) = save_wizard_step(&state, &wizard).await { return r; }
 
     // 10. Assemble VP and submit to GXDCH Compliance Service
     let vp_value = vp::assemble_vp(&lrn_vc, &lp_cred, &tc_cred);
@@ -332,11 +274,24 @@ pub async fn comply(
         Err(e) => fail!("compliance_submission", format!("GXDCH Compliance error: {e}")),
     };
 
-    // 11. Save compliance VC, set wizard_step=6
+    // 11. Save all credentials to DB
+    let lrn_str = serde_json::to_string(&lrn_vc).unwrap_or_default();
+    let lp_str = serde_json::to_string(&lp_cred).unwrap_or_default();
+    let tc_str = serde_json::to_string(&tc_cred).unwrap_or_default();
     let vc_str = serde_json::to_string(&compliance_vc).unwrap_or_default();
-    wizard.compliance_vc = Some(vc_str);
-    wizard.current_step = 6;
-    if let Err(r) = save_wizard_step(&state, &wizard).await { return r; }
+    gx_state.lrn_credential = Some(lrn_str);
+    gx_state.lrn_type = Some(registration_number_type.clone());
+    gx_state.lrn_value = Some(registration_number.clone());
+    gx_state.lp_credential = Some(lp_str);
+    gx_state.tc_credential = Some(tc_str);
+    gx_state.compliance_vc = Some(vc_str);
+    gx_state.updated_at = now_iso();
+    {
+        let conn = state.db.write().await;
+        if let Err(e) = db::upsert(&conn, &gx_state) {
+            return internal_error_response(&format!("failed to save gaiax state: {e}"));
+        }
+    }
 
     // 12. Return success
     data_response(ComplyResponse {
@@ -360,27 +315,26 @@ pub async fn get_compliance_status(
     let org_id = ctx.org_id.0.clone();
     let (_permit, conn) = state.db.read().await;
 
-    let wizard = match db::get_wizard_state(&conn, &org_id) {
+    let gx = match db::get(&conn, &org_id) {
         Ok(Some(w)) => w,
         Ok(None) => {
             return data_response(ComplianceStatus {
                 compliant: false,
                 verified_at: None,
                 credentials: vec![],
-                wizard_state: None,
             })
             .into_response()
         }
         Err(e) => return internal_error_response(&format!("db read failed: {e}")),
     };
 
-    let compliant = wizard.compliance_vc.is_some();
+    let compliant = gx.compliance_vc.is_some();
 
     let credential_fields: &[(&str, &Option<String>)] = &[
-        ("LRN Credential", &wizard.lrn_credential),
-        ("Legal Participant Credential", &wizard.lp_credential),
-        ("Terms & Conditions Credential", &wizard.tc_credential),
-        ("Compliance VC", &wizard.compliance_vc),
+        ("LRN Credential", &gx.lrn_credential),
+        ("Legal Participant Credential", &gx.lp_credential),
+        ("Terms & Conditions Credential", &gx.tc_credential),
+        ("Compliance VC", &gx.compliance_vc),
     ];
 
     let mut creds: Vec<ComplianceCredential> = Vec::new();
@@ -404,73 +358,6 @@ pub async fn get_compliance_status(
         compliant,
         verified_at: None,
         credentials: creds,
-        wizard_state: Some(WizardStateResponse::from(wizard)),
-    })
-    .into_response()
-}
-
-// ── POST /v1/gaia-x/compliance/rerun ──────────────────────────────────────
-
-#[utoipa::path(post, path = "/v1/gaia-x/compliance/rerun", tag = "Gaia-X Compliance",
-    responses(
-        (status = 200, description = "Re-submitted compliance result", body = GxdchComplianceResult),
-        (status = 400, description = "Credentials missing"),
-    )
-)]
-pub async fn rerun_compliance(
-    RequireParticipant(ctx): RequireParticipant,
-    State(state): State<AppState>,
-) -> Response {
-    let org_id = ctx.org_id.0.clone();
-    let mut wizard = match load_wizard(&state, &org_id).await {
-        Ok(w) => w,
-        Err(r) => return r,
-    };
-
-    let domain = match wizard.domain.as_ref() {
-        Some(d) => d.clone(),
-        None => return bad_request_response("Domain not set"),
-    };
-
-    let lrn: Value = match wizard.lrn_credential.as_ref() {
-        Some(s) => serde_json::from_str(s).unwrap_or_default(),
-        None => return bad_request_response("LRN credential missing"),
-    };
-    let lp: Value = match wizard.lp_credential.as_ref() {
-        Some(s) => serde_json::from_str(s).unwrap_or_default(),
-        None => return bad_request_response("Legal Participant credential missing"),
-    };
-    let tc: Value = match wizard.tc_credential.as_ref() {
-        Some(s) => serde_json::from_str(s).unwrap_or_default(),
-        None => return bad_request_response("T&C credential missing"),
-    };
-
-    let vp_value = vp::assemble_vp(&lrn, &lp, &tc);
-
-    let compliance_vc = match state.gaia_x.gxdch.submit_compliance(&vp_value, &domain).await {
-        Ok(vc) => vc,
-        Err(e) => {
-            return data_response(GxdchComplianceResult {
-                compliant: false,
-                compliance_vc: None,
-                error: Some(e),
-            })
-            .into_response()
-        }
-    };
-
-    let vc_str = match serde_json::to_string(&compliance_vc) {
-        Ok(s) => s,
-        Err(e) => return internal_error_response(&format!("failed to serialize compliance VC: {e}")),
-    };
-
-    wizard.compliance_vc = Some(vc_str);
-    if let Err(r) = save_wizard_step(&state, &wizard).await { return r; }
-
-    data_response(GxdchComplianceResult {
-        compliant: true,
-        compliance_vc: Some(compliance_vc),
-        error: None,
     })
     .into_response()
 }
@@ -495,7 +382,7 @@ pub async fn get_did_document(
     };
 
     let (_permit, conn) = state.db.read().await;
-    let wizard = match db::get_wizard_state(&conn, &org_id) {
+    let gx = match db::get(&conn, &org_id) {
         Ok(Some(w)) => w,
         Ok(None) => {
             return (
@@ -507,8 +394,8 @@ pub async fn get_did_document(
         Err(e) => return internal_error_response(&format!("db read failed: {e}")),
     };
 
-    // Get domain: from wizard state or derive from org slug + base_domain
-    let domain = if let Some(d) = wizard.domain.as_ref() {
+    // Get domain: from state or derive from org slug + base_domain
+    let domain = if let Some(d) = gx.domain.as_ref() {
         d.clone()
     } else if let Some(base_domain) = &state.gaia_x.base_domain {
         match conn.query_row(
@@ -530,11 +417,11 @@ pub async fn get_did_document(
     };
 
     // Get public key JWK
-    let public_key_jwk_str = match wizard.public_key_jwk.as_ref() {
+    let public_key_jwk_str = match gx.public_key_jwk.as_ref() {
         Some(s) => s.clone(),
         None => return (
             StatusCode::NOT_FOUND,
-            Json(error_body("not_found", "DID document not configured — complete wizard steps first")),
+            Json(error_body("not_found", "DID document not configured — run comply first")),
         ).into_response(),
     };
 
@@ -597,7 +484,7 @@ pub async fn get_cert_chain(
     };
 
     let (_permit, conn) = state.db.read().await;
-    let wizard = match db::get_wizard_state(&conn, &org_id) {
+    let gx = match db::get(&conn, &org_id) {
         Ok(Some(w)) => w,
         Ok(None) => {
             return (StatusCode::NOT_FOUND, "Certificate chain not found".to_string())
@@ -606,7 +493,7 @@ pub async fn get_cert_chain(
         Err(e) => return internal_error_response(&format!("db read failed: {e}")),
     };
 
-    let cert_pem = match wizard.cert_chain_pem {
+    let cert_pem = match gx.cert_chain_pem {
         Some(s) => s,
         None => {
             return (

@@ -335,22 +335,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/gaia-x/compliance/rerun": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["rerun_compliance"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/gaia-x/comply": {
         parameters: {
             query?: never;
@@ -361,118 +345,6 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["comply"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/gaia-x/wizard": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_wizard_state"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/gaia-x/wizard/certificate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["validate_certificate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/gaia-x/wizard/keys": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["generate_keys"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/gaia-x/wizard/legal-participant": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["sign_legal_participant"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/gaia-x/wizard/lrn": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["request_lrn"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/gaia-x/wizard/submit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["submit_gxdch"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/gaia-x/wizard/terms": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["sign_terms_conditions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -978,15 +850,11 @@ export interface components {
             code: string;
             conversation_id?: string | null;
             data?: null | components["schemas"]["TabularData"];
-            sparql?: string | null;
             reasoning?: string | null;
+            sparql?: string | null;
         };
         CatalogResponse: {
             catalog: string;
-        };
-        CertUploadPayload: {
-            cert_chain_pem: string;
-            domain: string;
         };
         ChartRequest: {
             aggregation?: string;
@@ -1014,7 +882,6 @@ export interface components {
             compliant: boolean;
             credentials: components["schemas"]["ComplianceCredential"][];
             verified_at?: string | null;
-            wizard_state?: null | components["schemas"]["WizardStateResponse"];
         };
         /** @description Request body for the one-click comply endpoint. */
         ComplyRequest: {
@@ -1126,11 +993,10 @@ export interface components {
         };
         Field: {
             name: string;
+            optional?: boolean;
             type: string;
             uri?: string | null;
             xsd_datatype?: string | null;
-            /** @default false */
-            optional: boolean;
         };
         FieldMapping: {
             source: string;
@@ -1141,12 +1007,6 @@ export interface components {
             path: string;
             /** Format: int64 */
             size: number;
-        };
-        GenerateKeysResponse: {
-            private_key_pem: string;
-            public_key_jwk: {
-                [key: string]: unknown;
-            };
         };
         GraphData: {
             links: components["schemas"]["GraphLink"][];
@@ -1218,17 +1078,6 @@ export interface components {
         /** @description POST /v1/auth/logout */
         LogoutResponse: {
             end_session_url?: string | null;
-        };
-        /**
-         * @description LP payload — legal_name and country_code are read from the organization profile.
-         *     Update them via PUT /v1/org/identity before submitting this step.
-         */
-        LpPayload: {
-            private_key_pem: string;
-        };
-        LrnPayload: {
-            lrn_type: string;
-            lrn_value: string;
         };
         MeOrg: {
             id: string;
@@ -1385,9 +1234,6 @@ export interface components {
             columns: string[];
             rows: Record<string, never>[];
         };
-        TcPayload: {
-            private_key_pem: string;
-        };
         UpdateCloudAccountRequest: {
             auth_method?: string | null;
             fields?: {
@@ -1416,13 +1262,6 @@ export interface components {
         UpdateUserRoleRequest: {
             role: string;
         };
-        ValidateCertResponse: {
-            did_document: {
-                [key: string]: unknown;
-            };
-            domain_warning?: string | null;
-            ok: boolean;
-        };
         ValidateRequest: {
             script: string;
         };
@@ -1435,37 +1274,6 @@ export interface components {
             errors: string[];
             pipeline: components["schemas"]["PipelineSummary"];
             valid: boolean;
-        };
-        /**
-         * @description API response type for wizard state.
-         *     Credentials are parsed from their stored JSON strings to proper objects,
-         *     so the frontend receives structured data rather than escaped strings.
-         */
-        WizardStateResponse: {
-            cert_chain_pem?: string | null;
-            compliance_vc?: {
-                [key: string]: unknown;
-            };
-            /** Format: int64 */
-            current_step: number;
-            domain?: string | null;
-            lp_credential?: {
-                [key: string]: unknown;
-            };
-            lrn_credential?: {
-                [key: string]: unknown;
-            };
-            lrn_type?: string | null;
-            lrn_value?: string | null;
-            org_id: string;
-            public_key_jwk?: {
-                [key: string]: unknown;
-            };
-            root_ca_pem?: string | null;
-            tc_credential?: {
-                [key: string]: unknown;
-            };
-            updated_at: string;
         };
         Workspace: {
             client_id: string;
@@ -2270,33 +2078,6 @@ export interface operations {
             };
         };
     };
-    rerun_compliance: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Re-submitted compliance result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GxdchComplianceResult"];
-                };
-            };
-            /** @description Credentials missing */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     comply: {
         parameters: {
             query?: never;
@@ -2320,204 +2101,6 @@ export interface operations {
                 };
             };
             /** @description Prerequisites missing */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_wizard_state: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Current wizard state */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WizardStateResponse"];
-                };
-            };
-        };
-    };
-    validate_certificate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CertUploadPayload"];
-            };
-        };
-        responses: {
-            /** @description Certificate validated and DID document assembled */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ValidateCertResponse"];
-                };
-            };
-            /** @description Invalid certificate */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    generate_keys: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Generated key pair */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GenerateKeysResponse"];
-                };
-            };
-        };
-    };
-    sign_legal_participant: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LpPayload"];
-            };
-        };
-        responses: {
-            /** @description Legal Participant credential signed and wizard state updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WizardStateResponse"];
-                };
-            };
-            /** @description Wizard not ready or key mismatch */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    request_lrn: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LrnPayload"];
-            };
-        };
-        responses: {
-            /** @description LRN credential obtained and wizard state updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WizardStateResponse"];
-                };
-            };
-            /** @description Wizard not ready */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description GXDCH notary error */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    submit_gxdch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Compliance submission result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GxdchComplianceResult"];
-                };
-            };
-            /** @description Credentials missing */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    sign_terms_conditions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TcPayload"];
-            };
-        };
-        responses: {
-            /** @description Terms & Conditions credential signed and wizard state updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WizardStateResponse"];
-                };
-            };
-            /** @description Wizard not ready or key mismatch */
             400: {
                 headers: {
                     [name: string]: unknown;

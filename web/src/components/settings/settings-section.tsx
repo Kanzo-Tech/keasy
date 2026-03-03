@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export interface SectionAction {
   label: string;
@@ -11,13 +17,17 @@ export interface SectionAction {
   disabled?: boolean;
   loading?: boolean;
   loadingLabel?: string;
+  tooltip?: string;
 }
 
 interface SettingsSectionProps {
   title: React.ReactNode;
   description?: string;
   children: React.ReactNode;
+  /** Structured action buttons rendered in the header. */
   action?: SectionAction | SectionAction[];
+  /** Free-form ReactNode rendered in the action slot (takes precedence over `action`). */
+  actionSlot?: React.ReactNode;
 }
 
 export function SettingsSection({
@@ -25,7 +35,16 @@ export function SettingsSection({
   description,
   children,
   action,
+  actionSlot,
 }: SettingsSectionProps) {
+  const slot = actionSlot ?? (action && (
+    <div className="flex items-center gap-2">
+      {(Array.isArray(action) ? action : [action]).map((a) => (
+        <SectionActionButton key={a.label} action={a} />
+      ))}
+    </div>
+  ));
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
@@ -35,13 +54,7 @@ export function SettingsSection({
             <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
           )}
         </div>
-        {action && (
-          <div className="shrink-0 flex items-center gap-2">
-            {(Array.isArray(action) ? action : [action]).map((a) => (
-              <SectionActionButton key={a.label} action={a} />
-            ))}
-          </div>
-        )}
+        {slot && <div className="shrink-0">{slot}</div>}
       </div>
       {children}
     </div>
@@ -63,15 +76,11 @@ function SectionActionButton({ action }: { action: SectionAction }) {
 
   const variant = action.variant ?? "outline";
 
-  if (action.href) {
-    return (
-      <Button variant={variant} size="sm" disabled={action.disabled} asChild>
-        <Link href={action.href}>{content}</Link>
-      </Button>
-    );
-  }
-
-  return (
+  const button = action.href ? (
+    <Button variant={variant} size="sm" disabled={action.disabled} asChild>
+      <Link href={action.href}>{content}</Link>
+    </Button>
+  ) : (
     <Button
       variant={variant}
       size="sm"
@@ -80,6 +89,20 @@ function SectionActionButton({ action }: { action: SectionAction }) {
     >
       {content}
     </Button>
+  );
+
+  if (!action.tooltip) return button;
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {/* span wrapper so tooltip works on disabled buttons */}
+          <span className="inline-flex">{button}</span>
+        </TooltipTrigger>
+        <TooltipContent>{action.tooltip}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 

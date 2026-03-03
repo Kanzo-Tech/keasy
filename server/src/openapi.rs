@@ -72,7 +72,6 @@ use utoipa::OpenApi;
         // Gaia-X Compliance
         crate::gaia_x::routes::comply,
         crate::gaia_x::routes::get_compliance_status,
-        crate::gaia_x::routes::rerun_compliance,
         crate::gaia_x::routes::get_did_document,
         crate::gaia_x::routes::get_cert_chain,
         // Discovery
@@ -139,7 +138,6 @@ use utoipa::OpenApi;
         // Org members
         crate::db::org_members::OrgMember,
         // Gaia-X Compliance
-        crate::gaia_x::WizardStateResponse,
         crate::gaia_x::routes::ComplianceCredential,
         crate::gaia_x::routes::ComplianceStatus,
         crate::gaia_x::routes::GxdchComplianceResult,

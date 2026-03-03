@@ -9,7 +9,7 @@ import {
   SettingsSection,
 } from "@/components/settings/settings-section";
 import { OrgDetailsCard, type OrgDetailsCardHandle } from "@/components/organization/org-details-card";
-import { ComplianceSection } from "@/components/compliance/compliance-section";
+import { ComplianceSection, useComply } from "@/components/compliance/compliance-section";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -27,23 +27,21 @@ export function OrgDetailsPage() {
   });
 
   const isGaiaX = compliance?.compliant === true;
+  const comply = useComply(identityData);
+
+  const complianceDescription = isGaiaX
+    ? "Your organization is Gaia-X conformant."
+    : comply.ready
+      ? "Your organization identity is complete. Click to become Gaia-X compliant."
+      : "Fill in the organization identity above to become Gaia-X compliant.";
 
   return (
     <SettingsPage>
       <SettingsSection
-        title={
-          <span className="flex items-center gap-2">
-            Organization Identity
-            {isGaiaX && (
-              <Badge className="bg-emerald-600 hover:bg-emerald-700">
-                Verified
-              </Badge>
-            )}
-          </span>
-        }
+        title="Organization Identity"
         description={
           isGaiaX
-            ? "Identity sourced from Gaia-X credentials. Re-run to update."
+            ? "Identity sourced from Gaia-X credentials."
             : "Configure your organization identity for catalog generation."
         }
         action={
@@ -62,13 +60,28 @@ export function OrgDetailsPage() {
 
       <SettingsSection
         title="Gaia-X Compliance"
-        description={
+        description={complianceDescription}
+        action={
           isGaiaX
-            ? "Your organization is Gaia-X conformant."
-            : "Become a verified Gaia-X participant to join the European data ecosystem."
+            ? undefined
+            : {
+                label: "Become Compliant",
+                onClick: comply.comply,
+                disabled: !comply.ready || comply.isRunning,
+                loading: comply.isRunning,
+                loadingLabel: "Running…",
+                tooltip: comply.ready
+                  ? undefined
+                  : `Missing: ${comply.missingFields.join(", ")}`,
+              }
+        }
+        actionSlot={
+          isGaiaX
+            ? <Badge className="bg-emerald-600 hover:bg-emerald-700">Verified</Badge>
+            : undefined
         }
       >
-        <ComplianceSection identity={identityData} identityLoading={identityLoading} />
+        <ComplianceSection identity={identityData} identityLoading={identityLoading} comply={comply} />
       </SettingsSection>
     </SettingsPage>
   );

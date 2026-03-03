@@ -60,7 +60,6 @@ export const queryKeys = {
   // Gaia-X
   gx: {
     compliance: ["gx-compliance-status"] as const,
-    wizard: ["gx-wizard"] as const,
   },
 
   // Services

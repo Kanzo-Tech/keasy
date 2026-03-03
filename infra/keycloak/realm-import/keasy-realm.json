@@ -54,5 +54,26 @@
       "defaultClientScopes": ["openid", "profile", "email", "keasy-dataspaces"]
     }
   ],
-  "users": []
+  "users": [
+    {
+      "id": "aaaa0000-0000-0000-0000-000000000001",
+      "username": "promotor@keasy.dev",
+      "email": "promotor@keasy.dev",
+      "firstName": "Admin",
+      "lastName": "Promotor",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "promotor", "temporary": false }]
+    },
+    {
+      "id": "bbbb0000-0000-0000-0000-000000000001",
+      "username": "participant@keasy.dev",
+      "email": "participant@keasy.dev",
+      "firstName": "User",
+      "lastName": "Participant",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "participant", "temporary": false }]
+    }
+  ]
 }

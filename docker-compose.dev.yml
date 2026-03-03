@@ -9,7 +9,7 @@ services:
     volumes:
       - ./server/src:/app/src
       - server-target:/app/target
-      - ./infra/seeds/dev-promotor.sql:/seed/init.sql:ro
+      - ./infra/seeds/dev-seed.sql:/seed/init.sql:ro
     environment:
       KEASY_SEED_FILE: /seed/init.sql
       RUST_LOG: debug

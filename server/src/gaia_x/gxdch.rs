@@ -8,13 +8,13 @@
 /// Both URLs are overridable via KEASY_GXDCH_NOTARY_URL and KEASY_GXDCH_COMPLIANCE_URL.
 use serde_json::{Value, json};
 
-/// Default GXDCH Notary URL (staging).
+/// Default GXDCH Notary URL (v1-staging).
 pub const GXDCH_NOTARY_URL: &str =
-    "https://registrationnumber.notary.lab.gaia-x.eu/v1/registrationNumberVC";
+    "https://registrationnumber.notary.lab.gaia-x.eu/v1-staging/registrationNumberVC";
 
-/// Default GXDCH Compliance Service URL (main/stable branch).
+/// Default GXDCH Compliance Service URL (v1-staging).
 pub const GXDCH_COMPLIANCE_URL: &str =
-    "https://compliance.lab.gaia-x.eu/main/api/credential-offers";
+    "https://compliance.lab.gaia-x.eu/v1-staging/api/credential-offers";
 
 /// Request a signed LRN Verifiable Credential from the GXDCH Notary.
 ///
@@ -40,7 +40,7 @@ pub async fn request_lrn_credential(
 
     let body = json!({
         "@context": [
-            "https://registry.lab.gaia-x.eu/v1-staging/api/trusted-shape-registry/v1/shapes/jsonld/participant"
+            "https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/participant"
         ],
         "type": "gx:legalRegistrationNumber",
         "id": &vc_id,

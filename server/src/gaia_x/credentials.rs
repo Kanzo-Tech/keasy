@@ -10,10 +10,10 @@ use jiff::Timestamp;
 use serde_json::{Value, json};
 
 /// Standard Gaia-X Trust Framework context URL (Loire / v1-staging release).
-const TRUSTFRAMEWORK_CTX: &str = "https://registry.lab.gaia-x.eu/v1-staging/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#";
+const TRUSTFRAMEWORK_CTX: &str = "https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#";
 
 /// T&C text from the Gaia-X registry.
-/// TODO: fetch dynamically from https://registry.lab.gaia-x.eu/v1-staging/api/termsAndConditions
+/// TODO: fetch dynamically from https://registry.lab.gaia-x.eu/development/api/termsAndConditions
 /// at runtime rather than embedding. Embedded here as a fallback.
 const TERMS_AND_CONDITIONS_TEXT: &str =
     "The PARTICIPANT signing the self-description agrees as follows: \
@@ -47,7 +47,7 @@ pub fn assemble_lrn_request(domain: &str, lrn_type: &str, lrn_value: &str) -> Va
     let lrn_key = format!("gx:{lrn_type}");
     json!({
         "@context": [
-            "https://registry.lab.gaia-x.eu/v1-staging/api/trusted-shape-registry/v1/shapes/jsonld/participant"
+            "https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/participant"
         ],
         "type": "gx:legalRegistrationNumber",
         "id": format!("https://{}/.well-known/lrn.json", domain),

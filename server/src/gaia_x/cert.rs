@@ -117,3 +117,14 @@ pub fn read_caddy_cert_chain(caddy_dir: &Path, base_domain: &str) -> Result<Stri
         caddy_dir.display()
     ))
 }
+
+/// Generate a self-signed certificate for dev/testing.
+///
+/// Uses rcgen to create a self-signed cert for the given domain.
+/// Only available with the `dev-certs` feature (excluded from production builds).
+#[cfg(feature = "dev-certs")]
+pub fn generate_self_signed(domain: &str) -> Result<String, String> {
+    let certified_key = rcgen::generate_simple_self_signed(vec![domain.to_string()])
+        .map_err(|e| format!("rcgen self-signed generation failed: {e}"))?;
+    Ok(certified_key.cert.pem())
+}

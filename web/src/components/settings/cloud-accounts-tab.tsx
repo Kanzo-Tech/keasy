@@ -83,7 +83,8 @@ export function CloudAccountsTab() {
   });
   const showSkeleton = useDelayedLoading(isLoading);
 
-  const [schema, accounts] = data ?? [[], []];
+  const schema = data?.[0] ?? [];
+  const accounts = data?.[1] ?? [];
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.cloud.remove(id),

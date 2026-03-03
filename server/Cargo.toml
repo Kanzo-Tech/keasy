@@ -12,6 +12,10 @@ authors = ["Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>"]
 edition = "2024"
 rust-version = "1.90.0"
 
+[features]
+default = ["dev-certs"]
+dev-certs = ["rcgen"]
+
 [dependencies]
 thiserror = "2"
 jiff = "0.2"
@@ -60,6 +64,7 @@ p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "jwk"] }
 x509-parser = { version = "0.16", features = ["verify"] }
 pem = "3"
 urlencoding = "2"
+rcgen = { version = "0.13", optional = true }
 rand_core06 = { package = "rand_core", version = "0.6", features = ["getrandom"] }
 utoipa = { version = "5", features = ["axum_extras"] }
 

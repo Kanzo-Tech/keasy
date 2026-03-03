@@ -897,7 +897,7 @@ pub async fn comply(
         };
     }
 
-    // 4. Get cert chain: Caddy volume → request body → error
+    // 4. Get cert chain: Caddy volume → request body → self-signed fallback (dev)
     let cert_chain_pem = if let Some(caddy_dir) = &state.gaia_x.caddy_certs_dir {
         match cert::read_caddy_cert_chain(caddy_dir, &base_domain) {
             Ok(pem) => pem,
@@ -909,7 +909,18 @@ pub async fn comply(
     } else {
         match payload.cert_chain_pem {
             Some(ref pem) if !pem.is_empty() => pem.clone(),
-            _ => fail!("certificate", "KEASY_CADDY_CERTS_DIR not configured and no cert_chain_pem provided".to_string()),
+            _ => {
+                #[cfg(feature = "dev-certs")]
+                {
+                    tracing::warn!("No Caddy certs and no cert_chain_pem — generating self-signed certificate for {domain}");
+                    match cert::generate_self_signed(&domain) {
+                        Ok(pem) => pem,
+                        Err(e) => fail!("certificate", format!("Failed to generate self-signed cert: {e}")),
+                    }
+                }
+                #[cfg(not(feature = "dev-certs"))]
+                fail!("certificate", "KEASY_CADDY_CERTS_DIR not configured and no cert_chain_pem provided".to_string())
+            }
         }
     };
 

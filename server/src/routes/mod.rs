@@ -275,34 +275,10 @@ pub fn build_router(
             "/v1/org/invites/{token}",
             axum::routing::delete(org::revoke_org_invite),
         )
-        // Gaia-X compliance wizard routes (session + tenant protected)
+        // Gaia-X compliance routes (session + tenant protected)
         .route(
-            "/v1/gaia-x/wizard",
-            axum::routing::get(crate::gaia_x::routes::get_wizard_state),
-        )
-        .route(
-            "/v1/gaia-x/wizard/keys",
-            axum::routing::post(crate::gaia_x::routes::generate_keys),
-        )
-        .route(
-            "/v1/gaia-x/wizard/certificate",
-            axum::routing::post(crate::gaia_x::routes::validate_certificate),
-        )
-        .route(
-            "/v1/gaia-x/wizard/lrn",
-            axum::routing::post(crate::gaia_x::routes::request_lrn),
-        )
-        .route(
-            "/v1/gaia-x/wizard/legal-participant",
-            axum::routing::post(crate::gaia_x::routes::sign_legal_participant),
-        )
-        .route(
-            "/v1/gaia-x/wizard/terms",
-            axum::routing::post(crate::gaia_x::routes::sign_terms_conditions),
-        )
-        .route(
-            "/v1/gaia-x/wizard/submit",
-            axum::routing::post(crate::gaia_x::routes::submit_gxdch),
+            "/v1/gaia-x/comply",
+            axum::routing::post(crate::gaia_x::routes::comply),
         )
         .route(
             "/v1/gaia-x/compliance",
@@ -311,10 +287,6 @@ pub fn build_router(
         .route(
             "/v1/gaia-x/compliance/rerun",
             axum::routing::post(crate::gaia_x::routes::rerun_compliance),
-        )
-        .route(
-            "/v1/gaia-x/comply",
-            axum::routing::post(crate::gaia_x::routes::comply),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),

@@ -55,6 +55,9 @@ pub struct ServerConfig {
     /// Path to Caddy's data directory for reading TLS certificates.
     /// Read from KEASY_CADDY_CERTS_DIR.
     pub caddy_certs_dir: Option<PathBuf>,
+    /// Use mock GXDCH client (returns structurally valid JSON-LD, no network calls).
+    /// Read from KEASY_GXDCH_MOCK. Default false.
+    pub gxdch_mock: bool,
 }
 
 impl ServerConfig {
@@ -168,6 +171,10 @@ impl ServerConfig {
             .filter(|s| !s.trim().is_empty())
             .map(PathBuf::from);
 
+        let gxdch_mock = std::env::var("KEASY_GXDCH_MOCK")
+            .map(|v| v == "true" || v == "1")
+            .unwrap_or(false);
+
         Self {
             bind_addr,
             api_key: SecretString::from(api_key),
@@ -191,6 +198,7 @@ impl ServerConfig {
             seed_file,
             session_cookie_name,
             caddy_certs_dir,
+            gxdch_mock,
         }
     }
 }

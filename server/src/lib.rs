@@ -60,10 +60,8 @@ pub struct AuthServices {
 /// Gaia-X external services (GXDCH).
 #[derive(Clone)]
 pub struct GaiaXServices {
-    /// GXDCH Notary endpoint URL for LRN credential requests.
-    pub gxdch_notary_url: String,
-    /// GXDCH Compliance Service endpoint URL for VP submission.
-    pub gxdch_compliance_url: String,
+    /// GXDCH client — Real (HTTP) or Mock (local JSON-LD).
+    pub gxdch: crate::gaia_x::gxdch::GxdchClient,
     /// Base domain for org subdomains (e.g. "keasy.example.com").
     /// When set, .well-known endpoints resolve org via Host header subdomain.
     pub base_domain: Option<String>,

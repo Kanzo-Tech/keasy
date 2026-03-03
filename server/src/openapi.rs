@@ -69,17 +69,10 @@ use utoipa::OpenApi;
         crate::routes::org::create_org_invite,
         crate::routes::org::list_org_invites,
         crate::routes::org::revoke_org_invite,
-        // Gaia-X Compliance Wizard
-        crate::gaia_x::routes::get_wizard_state,
-        crate::gaia_x::routes::generate_keys,
-        crate::gaia_x::routes::validate_certificate,
-        crate::gaia_x::routes::request_lrn,
-        crate::gaia_x::routes::sign_legal_participant,
-        crate::gaia_x::routes::sign_terms_conditions,
-        crate::gaia_x::routes::submit_gxdch,
+        // Gaia-X Compliance
+        crate::gaia_x::routes::comply,
         crate::gaia_x::routes::get_compliance_status,
         crate::gaia_x::routes::rerun_compliance,
-        crate::gaia_x::routes::comply,
         crate::gaia_x::routes::get_did_document,
         crate::gaia_x::routes::get_cert_chain,
         // Discovery
@@ -145,16 +138,10 @@ use utoipa::OpenApi;
         crate::db::dataspaces::Dataspace,
         // Org members
         crate::db::org_members::OrgMember,
-        // Gaia-X Wizard
+        // Gaia-X Compliance
         crate::gaia_x::WizardStateResponse,
         crate::gaia_x::routes::ComplianceCredential,
         crate::gaia_x::routes::ComplianceStatus,
-        crate::gaia_x::routes::CertUploadPayload,
-        crate::gaia_x::routes::LrnPayload,
-        crate::gaia_x::routes::LpPayload,
-        crate::gaia_x::routes::TcPayload,
-        crate::gaia_x::routes::GenerateKeysResponse,
-        crate::gaia_x::routes::ValidateCertResponse,
         crate::gaia_x::routes::GxdchComplianceResult,
         crate::gaia_x::ComplyRequest,
         crate::gaia_x::ComplyResponse,

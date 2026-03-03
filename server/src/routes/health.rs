@@ -40,8 +40,8 @@ pub async fn readiness(State(state): State<AppState>) -> impl IntoResponse {
 pub async fn service_status(State(state): State<AppState>) -> impl IntoResponse {
     data_response(ServiceStatusResponse {
         oidc: state.auth.oidc_state.is_some(),
-        gxdch_notary: !state.gaia_x.gxdch_notary_url.is_empty(),
-        gxdch_compliance: !state.gaia_x.gxdch_compliance_url.is_empty(),
+        gxdch_notary: true,
+        gxdch_compliance: true,
         base_domain: state.gaia_x.base_domain.clone(),
     })
 }

@@ -9,11 +9,11 @@ WORKDIR /app
 # Cache dependencies: copy manifests, build with dummy source, then swap in real source
 COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo 'fn main() {}' > src/main.rs
-RUN cargo build --release --no-default-features
+RUN cargo build --release
 RUN rm -rf src
 
 COPY src ./src
-RUN touch src/main.rs && cargo build --release --no-default-features
+RUN touch src/main.rs && cargo build --release
 
 FROM debian:bookworm-slim
 

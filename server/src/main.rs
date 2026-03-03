@@ -156,8 +156,11 @@ async fn main() {
         oidc_client_secret: config.oidc_client_secret,
     };
     let gaia_x = GaiaXServices {
-        gxdch_notary_url: config.gxdch_notary_url,
-        gxdch_compliance_url: config.gxdch_compliance_url,
+        gxdch: keasy_server::gaia_x::gxdch::GxdchClient::from_config(
+            config.gxdch_mock,
+            config.gxdch_notary_url,
+            config.gxdch_compliance_url,
+        ),
         base_domain: config.base_domain,
         caddy_certs_dir: config.caddy_certs_dir,
     };
@@ -172,8 +175,7 @@ async fn main() {
     };
     info!(
         oidc = if state.auth.oidc_state.is_some() { "ready" } else { "not configured" },
-        gxdch_notary = %state.gaia_x.gxdch_notary_url,
-        gxdch_compliance = %state.gaia_x.gxdch_compliance_url,
+        gxdch = %state.gaia_x.gxdch,
         base_domain = state.gaia_x.base_domain.as_deref().unwrap_or("not configured"),
         "External services"
     );

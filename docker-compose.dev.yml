@@ -13,6 +13,7 @@ services:
     environment:
       KEASY_SEED_FILE: /seed/init.sql
       KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-keasy.local}
+      KEASY_GXDCH_MOCK: "true"
       RUST_LOG: debug
     healthcheck:
       interval: 10s

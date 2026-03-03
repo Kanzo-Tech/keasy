@@ -47,8 +47,7 @@ async fn test_router() -> axum::Router {
             oidc_client_secret: None,
         },
         gaia_x: GaiaXServices {
-            gxdch_notary_url: "https://example.com/notary".to_string(),
-            gxdch_compliance_url: "https://example.com/compliance".to_string(),
+            gxdch: keasy_server::gaia_x::gxdch::GxdchClient::Mock(keasy_server::gaia_x::gxdch::MockGxdch),
             base_domain: None,
             caddy_certs_dir: None,
         },

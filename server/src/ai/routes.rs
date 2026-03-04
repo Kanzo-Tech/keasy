@@ -7,12 +7,12 @@ use serde::{Deserialize, Serialize};
 
 use std::fmt::Write as FmtWrite;
 
-use tracing::warn;
+use tracing::{debug, warn};
 
 use crate::AppState;
 use super::client::{AiError, Message, ask_llm, ask_llm_multi};
 use super::context::build_semantic_context;
-use super::models::{Conversation, ConversationMessage};
+use super::models::{AskResultCode, Conversation, ConversationMessage};
 use crate::error::data_response;
 use crate::middleware::tenant::RequireParticipant;
 
@@ -65,7 +65,7 @@ pub async fn ask_discover(
     // Build data-aware semantic context
     let profile = state.graph_store.get_profile(&output_graph);
     let semantic_context = build_semantic_context(&job.pipeline, &profile);
-    warn!("--- Semantic Context ---\n{semantic_context}\n--- End Context ---");
+    debug!("--- Semantic Context ---\n{semantic_context}\n--- End Context ---");
 
     let conversation_id = match req.conversation_id {
         Some(cid) => cid,
@@ -75,16 +75,20 @@ pub async fn ask_discover(
         }
     };
 
+    // Build conversation history BEFORE inserting the new message to avoid a
+    // write-then-read round-trip (we already have the question in memory).
+    let history = state.db.get_messages(&conversation_id).await;
     state.db.add_message(&conversation_id, "user", &req.question, None, None, None).await;
 
-    // Build conversation history
-    let history = state.db.get_messages(&conversation_id).await;
     let mut messages = build_conversation_messages(&history);
-    // Last message is the current question (already in history from add_message above),
-    // but we build from DB state so it's included.
+    // Append the current question (we fetched history before insert)
+    messages.push(Message {
+        role: "user".to_string(),
+        content: req.question.clone(),
+    });
 
-    // If messages is empty (race condition or fresh), ensure the question is present
-    if messages.is_empty() {
+    // If messages only has the current question (fresh conversation), ensure it's present
+    if messages.len() == 1 && messages[0].role != "user" {
         messages.push(Message {
             role: "user".to_string(),
             content: req.question.clone(),
@@ -150,6 +154,7 @@ pub async fn ask_discover(
 
     let mut last_error: Option<String> = None;
     let mut parsed: Option<LlmResponse> = None;
+    let mut validated_data: Option<crate::discovery::graph_types::TabularData> = None;
 
     for attempt in 0..=1 {
         // If retrying, inject error feedback
@@ -165,22 +170,22 @@ pub async fn ask_discover(
             Err(e) => {
                 let (code, answer) = match &e {
                     AiError::InsufficientCredits(_) => (
-                        "insufficient_credits",
+                        AskResultCode::InsufficientCredits,
                         "Your AI provider account has insufficient credits. Please check your billing settings.",
                     ),
                     AiError::Failed(_) => (
-                        "llm_failed",
+                        AskResultCode::LlmFailed,
                         "Something went wrong while generating a query. Please try again.",
                     ),
                 };
                 warn!("LLM call failed: {e}");
-                state.db.add_message(&conversation_id, "assistant", answer, None, None, Some(code)).await;
+                state.db.add_message(&conversation_id, "assistant", answer, None, None, Some(code.as_str())).await;
                 return data_response(AskResponse {
                     answer: answer.to_string(),
                     sparql: None,
                     data: None,
                     conversation_id: Some(conversation_id),
-                    code: code.to_string(),
+                    code,
                     reasoning: None,
                 }).into_response();
             }
@@ -203,13 +208,13 @@ pub async fn ask_discover(
                     continue;
                 }
                 let answer = "I wasn't able to understand the data well enough to generate a query. Could you rephrase your question?".to_string();
-                state.db.add_message(&conversation_id, "assistant", &answer, None, None, Some("parse_failed")).await;
+                state.db.add_message(&conversation_id, "assistant", &answer, None, None, Some(AskResultCode::ParseFailed.as_str())).await;
                 return data_response(AskResponse {
                     answer,
                     sparql: None,
                     data: None,
                     conversation_id: Some(conversation_id),
-                    code: "parse_failed".to_string(),
+                    code: AskResultCode::ParseFailed,
                     reasoning: None,
                 }).into_response();
             }
@@ -219,7 +224,8 @@ pub async fn ask_discover(
 
         match state.graph_store.sparql_select(&sparql, Some(&output_graph)) {
             Ok(result) => {
-                warn!("SPARQL OK ({} rows)\n--- Generated SPARQL ---\n{sparql}\n--- End SPARQL ---", result.rows.len());
+                debug!("SPARQL OK ({} rows)\n--- Generated SPARQL ---\n{sparql}\n--- End SPARQL ---", result.rows.len());
+                validated_data = Some(result);
                 parsed = Some(LlmResponse {
                     reasoning: llm_resp.reasoning,
                     sparql,
@@ -242,13 +248,13 @@ pub async fn ask_discover(
                 }
                 warn!("SPARQL execution failed (attempt 2): {err}\n--- Generated SPARQL ---\n{sparql}\n--- End SPARQL ---");
                 let answer = "I generated a query but it didn't work against your data. Try rephrasing your question.".to_string();
-                state.db.add_message(&conversation_id, "assistant", &answer, Some(&sparql), None, Some("sparql_failed")).await;
+                state.db.add_message(&conversation_id, "assistant", &answer, Some(&sparql), None, Some(AskResultCode::SparqlFailed.as_str())).await;
                 return data_response(AskResponse {
                     answer,
                     sparql: Some(sparql),
                     data: None,
                     conversation_id: Some(conversation_id),
-                    code: "sparql_failed".to_string(),
+                    code: AskResultCode::SparqlFailed,
                     reasoning: Some(llm_resp.reasoning),
                 }).into_response();
             }
@@ -259,20 +265,20 @@ pub async fn ask_discover(
         Some(p) => p,
         None => {
             let answer = "I wasn't able to generate a working query. Could you rephrase your question?".to_string();
-            state.db.add_message(&conversation_id, "assistant", &answer, None, None, Some("parse_failed")).await;
+            state.db.add_message(&conversation_id, "assistant", &answer, None, None, Some(AskResultCode::ParseFailed.as_str())).await;
             return data_response(AskResponse {
                 answer,
                 sparql: None,
                 data: None,
                 conversation_id: Some(conversation_id),
-                code: "parse_failed".to_string(),
+                code: AskResultCode::ParseFailed,
                 reasoning: None,
             }).into_response();
         }
     };
 
-    // Re-execute the validated SPARQL to get data
-    let data = state.graph_store.sparql_select(&parsed.sparql, Some(&output_graph)).ok();
+    // Use the result from the validation loop (already executed successfully)
+    let data = validated_data;
     let has_rows = data.as_ref().is_some_and(|d| !d.rows.is_empty());
 
     let answer = if has_rows {
@@ -298,14 +304,14 @@ pub async fn ask_discover(
         "No data matched your query. Try rephrasing your question.".to_string()
     };
 
-    state.db.add_message(&conversation_id, "assistant", &answer, Some(&parsed.sparql), data.as_ref(), Some("success")).await;
+    state.db.add_message(&conversation_id, "assistant", &answer, Some(&parsed.sparql), data.as_ref(), Some(AskResultCode::Success.as_str())).await;
 
     data_response(AskResponse {
         answer,
         sparql: Some(parsed.sparql),
         data,
         conversation_id: Some(conversation_id),
-        code: "success".to_string(),
+        code: AskResultCode::Success,
         reasoning: if parsed.reasoning.is_empty() { None } else { Some(parsed.reasoning) },
     }).into_response()
 }
@@ -463,7 +469,7 @@ pub struct AskResponse {
     pub data: Option<crate::discovery::graph_types::TabularData>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conversation_id: Option<String>,
-    pub code: String,
+    pub code: AskResultCode,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reasoning: Option<String>,
 }

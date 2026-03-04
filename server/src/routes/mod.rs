@@ -15,24 +15,29 @@ use crate::AppState;
 use crate::middleware::session_auth::session_required;
 use crate::middleware::tenant::tenant_context_required;
 
+/// Session configuration — groups the 4 session-related params for `build_router`.
+pub struct SessionConfig {
+    pub store: tower_sessions_rusqlite_store::RusqliteStore,
+    pub secret: secrecy::SecretString,
+    pub cookie_name: String,
+    pub secure: bool,
+}
+
 pub fn build_router(
     state: AppState,
     cors_origins: Option<Vec<String>>,
-    session_store: tower_sessions_rusqlite_store::RusqliteStore,
-    session_secret: secrecy::SecretString,
-    session_cookie_name: String,
-    session_secure: bool,
+    session: SessionConfig,
 ) -> Router {
     // Build the session layer with signed cookies
     // Key::from requires at least 64 bytes — derive from the session secret
-    let key_bytes = derive_session_key(session_secret.expose_secret().as_bytes());
+    let key_bytes = derive_session_key(session.secret.expose_secret().as_bytes());
     let key = Key::from(&key_bytes);
 
-    let session_layer = SessionManagerLayer::new(session_store)
-        .with_name(session_cookie_name)
+    let session_layer = SessionManagerLayer::new(session.store)
+        .with_name(session.cookie_name)
         .with_http_only(true)
         .with_same_site(SameSite::Lax)
-        .with_secure(session_secure)
+        .with_secure(session.secure)
         .with_expiry(tower_sessions::Expiry::OnInactivity(
             time::Duration::hours(24),
         ))

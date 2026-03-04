@@ -20,7 +20,7 @@ use rusqlite::OptionalExtension;
 
 use crate::AppState;
 use crate::error::{bad_request_response, data_response, error_body, internal_error_response};
-use crate::gaia_x::{ComplyEvent, ComplyRequest, ComplyResponse, GaiaxState, cert, credentials, db, keys, signing, vp};
+use crate::gaia_x::{ComplyEvent, ComplyRequest, ComplyResponse, GaiaxState, cert, credentials, db, did_web, did_web_key, keys, signing, vp, well_known_url};
 use crate::gaia_x::gxdch::MockGxdch;
 use crate::middleware::tenant::RequireParticipant;
 
@@ -437,9 +437,9 @@ pub async fn get_did_document(
     };
 
     // Assemble DID document in memory
-    let cert_url = format!("https://{}/.well-known/x509CertificateChain.pem", domain);
-    let did = format!("did:web:{domain}");
-    let key_id = format!("did:web:{domain}#key-1");
+    let cert_url = well_known_url(&domain, "x509CertificateChain.pem");
+    let did = did_web(&domain);
+    let key_id = did_web_key(&domain);
 
     let mut pub_jwk_with_x5u = public_key_jwk.clone();
     if let Some(obj) = pub_jwk_with_x5u.as_object_mut() {

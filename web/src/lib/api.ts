@@ -3,25 +3,29 @@ import type { Schemas } from "./api/client";
 import type {
   ProviderSchema,
   ProviderInfo,
-  AskResponse,
-  GraphData,
-  Conversation,
-  ConversationMessage,
   ComplyEvent,
   JobEvent,
-  FileEntry,
-  SearchResult,
-  ShapeValidationResult,
   TabularData,
-  OrgInvite,
-  AdminInvite,
-  AdminInviteResult,
-  CreateOrgInviteResponse,
-  CatalogResponse,
 } from "./types";
 
 export { ApiError };
 export type { ServiceStatus } from "./types";
+
+async function* parseSseStream<T>(reader: ReadableStreamDefaultReader<Uint8Array>): AsyncGenerator<T> {
+  const decoder = new TextDecoder();
+  let buf = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const parts = buf.split("\n\n");
+    buf = parts.pop()!;
+    for (const part of parts) {
+      const dataLine = part.split("\n").find((l) => l.startsWith("data:"));
+      if (dataLine) yield JSON.parse(dataLine.slice(5).trim()) as T;
+    }
+  }
+}
 
 export const api = {
   // ── Jobs ──────────────────────────────────────────────────────────────
@@ -41,20 +45,7 @@ export const api = {
     stream: async function* (id: string, signal?: AbortSignal): AsyncGenerator<JobEvent> {
       const res = await fetch(`/v1/jobs/${id}/stream`, { credentials: "same-origin", signal });
       if (!res.ok) return;
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const parts = buf.split("\n\n");
-        buf = parts.pop()!;
-        for (const part of parts) {
-          const dataLine = part.split("\n").find((l) => l.startsWith("data:"));
-          if (dataLine) yield JSON.parse(dataLine.slice(5).trim()) as JobEvent;
-        }
-      }
+      yield* parseSseStream<JobEvent>(res.body!.getReader());
     },
 
     remove: async (id: string) => {
@@ -62,14 +53,14 @@ export const api = {
     },
 
     graph: async (id: string) =>
-      unwrap(await client.GET("/v1/jobs/{id}/graph", { params: { path: { id } } })) as GraphData,
+      unwrap(await client.GET("/v1/jobs/{id}/graph", { params: { path: { id } } })),
 
     catalog: async (id: string, format: string): Promise<string> => {
       const data = unwrap(
         await client.GET("/v1/jobs/{id}/catalog", {
           params: { path: { id }, query: { format } },
         }),
-      ) as CatalogResponse;
+      );
       return data.catalog;
     },
 
@@ -106,7 +97,7 @@ export const api = {
     files: async (id: string) =>
       unwrap(await client.GET("/v1/connections/{id}/files", {
         params: { path: { id } },
-      })) as FileEntry[],
+      })),
   },
 
   // ── Cloud Accounts ────────────────────────────────────────────────────
@@ -140,7 +131,7 @@ export const api = {
       unwrap(await client.POST("/v1/jobs/{id}/discover/chart", {
         params: { path: { id } },
         body: request,
-      })) as TabularData,
+      })) as TabularData, // Override: rows type differs from schema
 
     ask: async (id: string, question: string, conversationId?: string, provider?: string) =>
       unwrap(await client.POST("/v1/jobs/{id}/discover/ask", {
@@ -150,17 +141,17 @@ export const api = {
           conversation_id: conversationId,
           ...(provider ? { provider } : {}),
         },
-      })) as AskResponse,
+      })),
 
     search: async (query: string, jobId?: string) =>
       unwrap(await client.POST("/v1/graph/search", {
         body: { query, job_id: jobId },
-      })) as SearchResult[],
+      })),
 
     expand: async (nodeId: string, jobId?: string) =>
       unwrap(await client.POST("/v1/graph/expand", {
         body: { node_id: nodeId, job_id: jobId },
-      })) as GraphData,
+      })),
   },
 
   // ── Conversations ─────────────────────────────────────────────────────
@@ -168,12 +159,12 @@ export const api = {
     list: async (id: string) =>
       unwrap(await client.GET("/v1/jobs/{id}/conversations", {
         params: { path: { id } },
-      })) as Conversation[],
+      })),
 
     messages: async (id: string) =>
       unwrap(await client.GET("/v1/conversations/{id}/messages", {
         params: { path: { id } },
-      })) as ConversationMessage[],
+      })),
 
     rename: async (id: string, title: string) => {
       unwrap(await client.PUT("/v1/conversations/{id}", {
@@ -191,16 +182,18 @@ export const api = {
 
   // ── Settings ──────────────────────────────────────────────────────────
   settings: {
+    // TODO: add ProviderSchema to openapi spec
     schema: async () =>
       unwrap(await client.GET("/v1/settings/schema")) as unknown as ProviderSchema[],
 
+    // TODO: add ProviderInfo to openapi spec
     providers: async () =>
       unwrap(await client.GET("/v1/providers")) as unknown as ProviderInfo[],
 
     org: async () => {
       const result = await client.GET("/v1/settings/organization");
       if (result.data === undefined) return null;
-      return result.data as Schemas["OrgSettings"];
+      return result.data;
     },
 
     preferences: async () =>
@@ -240,12 +233,12 @@ export const api = {
       unwrap(await client.GET("/v1/auth/workspaces")),
 
     logout: async () =>
-      unwrap(await client.POST("/v1/auth/logout")) as Schemas["LogoutResponse"],
+      unwrap(await client.POST("/v1/auth/logout")),
 
     inviteInfo: async (token: string) =>
       unwrap(await client.GET("/v1/auth/invite-info", {
         params: { query: { token } },
-      })) as Schemas["InviteInfoResponse"],
+      })),
   },
 
   // ── Org ────────────────────────────────────────────────────────────────
@@ -271,10 +264,10 @@ export const api = {
     },
 
     invites: async () =>
-      unwrap(await client.GET("/v1/org/invites")) as OrgInvite[],
+      unwrap(await client.GET("/v1/org/invites")),
 
     createInvite: async (role: string) =>
-      unwrap(await client.POST("/v1/org/invites", { body: { role } })) as CreateOrgInviteResponse,
+      unwrap(await client.POST("/v1/org/invites", { body: { role } })),
 
     revokeInvite: async (token: string) => {
       unwrap(await client.DELETE("/v1/org/invites/{token}", {
@@ -302,20 +295,7 @@ export const api = {
         const msg = body?.error?.message ?? body?.message ?? `Request failed (${res.status})`;
         throw new ApiError(String(body?.error?.code ?? "unknown"), msg);
       }
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const parts = buf.split("\n\n");
-        buf = parts.pop()!;
-        for (const part of parts) {
-          const dataLine = part.split("\n").find((l) => l.startsWith("data:"));
-          if (dataLine) yield JSON.parse(dataLine.slice(5).trim()) as ComplyEvent;
-        }
-      }
+      yield* parseSseStream<ComplyEvent>(res.body!.getReader());
     },
 
   },
@@ -326,10 +306,10 @@ export const api = {
       unwrap(await client.GET("/v1/admin/organizations")),
 
     invites: async () =>
-      unwrap(await client.GET("/v1/admin/invites")) as AdminInvite[],
+      unwrap(await client.GET("/v1/admin/invites")),
 
     createInvite: async (orgName: string) =>
-      unwrap(await client.POST("/v1/admin/invites", { body: { org_name: orgName } })) as AdminInviteResult,
+      unwrap(await client.POST("/v1/admin/invites", { body: { org_name: orgName } })),
 
     revokeInvite: async (token: string) => {
       unwrap(await client.DELETE("/v1/admin/invites/{token}", {
@@ -341,7 +321,7 @@ export const api = {
   // ── Status ────────────────────────────────────────────────────────────
   status: {
     services: async () =>
-      unwrap(await client.GET("/v1/status")) as Schemas["ServiceStatusResponse"],
+      unwrap(await client.GET("/v1/status")),
   },
 
   // ── Scripts ───────────────────────────────────────────────────────────
@@ -359,6 +339,6 @@ export const api = {
           connection_id: sourceId,
           shape_path: shapePath,
         },
-      })) as ShapeValidationResult,
+      })),
   },
 };

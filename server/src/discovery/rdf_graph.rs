@@ -97,14 +97,25 @@ impl RdfGraph {
         // Lazy streaming via bulk_loader: parses and inserts quads on-the-fly
         // without materializing an intermediate Vec (avoids doubling memory).
         let mut loader = self.store.bulk_loader();
+        let skipped = std::cell::Cell::new(0usize);
         loader
             .load_quads(
                 RdfParser::from_format(format)
                     .for_slice(bytes)
-                    .filter_map(|r| r.ok())
+                    .filter_map(|r| match r {
+                        Ok(q) => Some(q),
+                        Err(_) => {
+                            skipped.set(skipped.get() + 1);
+                            None
+                        }
+                    })
                     .map(|t| Quad::new(t.subject, t.predicate, t.object, gn.clone())),
             )
             .map_err(|e| e.to_string())?;
+        let n = skipped.get();
+        if n > 0 {
+            tracing::warn!("Skipped {n} malformed triple(s) during RDF load from {url}");
+        }
         loader.commit().map_err(|e| e.to_string())
     }
 

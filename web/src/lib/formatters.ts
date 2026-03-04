@@ -17,8 +17,15 @@ export function formatJobDuration(job: Job): string {
   return formatDuration(job.started_at, end);
 }
 
-export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString();
+export function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "Unknown";
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(dateStr));
 }
 
 export function formatSize(bytes: number): string {

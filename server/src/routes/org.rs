@@ -15,7 +15,7 @@ use serde::Deserialize;
 
 use crate::AppState;
 use crate::db::invite_tokens::InviteToken;
-use crate::db::org_members::OrgMember;
+use crate::db::org_members::{MemberRole, OrgMember};
 use crate::error::{data_response, error_body};
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::middleware::tenant::{RbacError, RequireOrgAdmin, RequireParticipant};
@@ -53,12 +53,11 @@ pub async fn update_user_role(
     Path(user_id): Path<String>,
     Json(payload): Json<UpdateUserRoleRequest>,
 ) -> Result<impl IntoResponse, RbacError> {
-    if payload.role != "admin" && payload.role != "user" {
-        return Err(RbacError::Internal("role must be 'admin' or 'user'".to_string()));
-    }
+    let role: MemberRole = payload.role.parse()
+        .map_err(RbacError::Internal)?;
     state
         .db
-        .update_member_role(&user_id, &ctx.org_id.0, &payload.role)
+        .update_member_role(&user_id, &ctx.org_id.0, role.as_str())
         .await
         .map_err(RbacError::Internal)?;
     Ok(StatusCode::NO_CONTENT)
@@ -241,9 +240,8 @@ pub async fn create_org_invite(
     State(state): State<AppState>,
     Json(payload): Json<CreateOrgInviteRequest>,
 ) -> Result<impl IntoResponse, RbacError> {
-    if payload.role != "admin" && payload.role != "user" {
-        return Err(RbacError::Internal("role must be 'admin' or 'user'".to_string()));
-    }
+    let role: MemberRole = payload.role.parse()
+        .map_err(RbacError::Internal)?;
 
     let now = jiff::Timestamp::now().to_string();
     let token_value = uuid::Uuid::new_v4().to_string();
@@ -257,7 +255,7 @@ pub async fn create_org_invite(
     let invite = InviteToken {
         token: token_value.clone(),
         org_id: ctx.org_id.0.clone(),
-        role: payload.role.clone(),
+        role: role.as_str().to_string(),
         created_by: auth_user.user_id.clone(),
         expires_at,
         created_at: now,

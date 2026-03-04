@@ -68,7 +68,7 @@ pub fn sign_credential(
     let jws = format!("{header_b64}..{sig_b64}");
 
     let created = Timestamp::now().to_string();
-    let verification_method = format!("did:web:{domain}#key-1");
+    let verification_method = super::did_web_key(domain);
 
     credential["proof"] = serde_json::json!({
         "type": "JsonWebSignature2020",

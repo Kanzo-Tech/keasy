@@ -5,18 +5,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { CredentialCard } from "@/components/compliance/credential-card";
-import { formatDate } from "@/components/compliance/compliance-view";
+import { CredentialGrid } from "@/components/compliance/credential-grid";
 import { api, ApiError } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
-import type { OrgIdentity, ComplianceCredential } from "@/lib/types";
+import type { OrgIdentity } from "@/lib/types";
 
 const PHASES = [
   "Generating keys…",
@@ -110,8 +102,6 @@ interface ComplianceSectionProps {
 }
 
 export function ComplianceSection({ identityLoading, comply }: ComplianceSectionProps) {
-  const [selectedCredential, setSelectedCredential] = useState<ComplianceCredential | null>(null);
-
   const { data: compliance, isLoading: complianceLoading } = useQuery({
     queryKey: queryKeys.gx.compliance,
     queryFn: api.gaiax.compliance.status,
@@ -125,43 +115,8 @@ export function ComplianceSection({ identityLoading, comply }: ComplianceSection
   }
 
   // Compliant — show credential cards
-  if (isGaiaX && compliance) {
-    return (
-      <>
-        {compliance.credentials.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {compliance.credentials.map((credential) => (
-                <CredentialCard
-                  key={credential.name}
-                  credential={credential}
-                  onClick={() => setSelectedCredential(credential)}
-                />
-              ))}
-          </div>
-        )}
-
-        <Dialog
-          open={selectedCredential !== null}
-          onOpenChange={(open) => { if (!open) setSelectedCredential(null); }}
-        >
-          <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
-            {selectedCredential && (
-              <>
-                <DialogHeader>
-                  <DialogTitle>{selectedCredential.name}</DialogTitle>
-                  <DialogDescription>
-                    Issued on {formatDate(selectedCredential.issued_at)}
-                  </DialogDescription>
-                </DialogHeader>
-                <pre className="bg-muted rounded-md p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">
-                  {JSON.stringify(selectedCredential.raw_json, null, 2)}
-                </pre>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
-      </>
-    );
+  if (isGaiaX && compliance && compliance.credentials.length > 0) {
+    return <CredentialGrid credentials={compliance.credentials} />;
   }
 
   // Running — show progress bar

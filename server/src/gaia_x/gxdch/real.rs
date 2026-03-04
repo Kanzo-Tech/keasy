@@ -1,6 +1,8 @@
 /// Real GXDCH HTTP client — calls the live Notary and Compliance Service APIs.
 use serde_json::{Value, json};
 
+use crate::gaia_x::well_known_url;
+
 /// Real GXDCH client with configurable endpoint URLs.
 #[derive(Clone)]
 pub struct RealGxdch {
@@ -22,7 +24,7 @@ impl RealGxdch {
             .map_err(|e| format!("failed to create HTTP client: {e}"))?;
 
         let lrn_key = format!("gx:{lrn_type}");
-        let vc_id = format!("https://{}/.well-known/lrn.json", domain);
+        let vc_id = well_known_url(domain, "lrn.json");
 
         let body = json!({
             "@context": [

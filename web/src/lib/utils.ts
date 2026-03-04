@@ -7,8 +7,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 
+export function isTerminalStatus(status: string): boolean {
+  return status === "completed" || status === "failed" || status === "cancelled";
+}
+
 export function hasRunningJobs(jobs: Job[] | undefined): boolean {
   return (
-    jobs?.some((j) => j.status === "pending" || j.status === "running") ?? false
+    jobs?.some((j) => !isTerminalStatus(j.status)) ?? false
   );
 }

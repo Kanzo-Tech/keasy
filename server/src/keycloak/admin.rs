@@ -3,8 +3,12 @@
 //! Provides methods to authenticate via client credentials flow and manage
 //! OIDC client registrations. Uses the keasy-server service account.
 
+use std::sync::Arc;
+
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
+use tokio::sync::Mutex;
+use tokio::time::Instant;
 
 /// Client for interacting with the Keycloak Admin REST API.
 ///
@@ -21,6 +25,8 @@ pub struct KeycloakAdmin {
     client_id: String,
     /// Service account client_secret
     client_secret: SecretString,
+    /// Cached admin token with issue time (TTL 50s, under Keycloak's 60s default)
+    token_cache: Arc<Mutex<Option<(String, Instant)>>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -84,11 +90,22 @@ impl KeycloakAdmin {
             realm,
             client_id: client_id.to_string(),
             client_secret,
+            token_cache: Arc::new(Mutex::new(None)),
         })
     }
 
     /// Obtain an admin bearer token using the client credentials flow.
+    /// Tokens are cached for 50s (under Keycloak's default 60s lifetime).
     async fn get_admin_token(&self) -> Result<String, String> {
+        {
+            let cache = self.token_cache.lock().await;
+            if let Some((ref token, issued_at)) = *cache {
+                if issued_at.elapsed() < std::time::Duration::from_secs(50) {
+                    return Ok(token.clone());
+                }
+            }
+        }
+
         let token_url = format!(
             "{}/realms/{}/protocol/openid-connect/token",
             self.base_url, self.realm
@@ -117,6 +134,9 @@ impl KeycloakAdmin {
             .json()
             .await
             .map_err(|e| format!("Failed to parse Keycloak token response: {e}"))?;
+
+        let mut cache = self.token_cache.lock().await;
+        *cache = Some((token_resp.access_token.clone(), Instant::now()));
 
         Ok(token_resp.access_token)
     }

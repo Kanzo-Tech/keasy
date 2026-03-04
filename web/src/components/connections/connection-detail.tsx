@@ -33,19 +33,26 @@ function formatSize(bytes: number): string {
 }
 
 export function ConnectionDetail({ id }: { id: string }) {
-  const { data, isLoading } = useQuery({
+  const { data: connection, isLoading: connLoading } = useQuery({
     queryKey: queryKeys.connections.detail(id),
-    queryFn: () =>
-      Promise.all([
-        api.connections.get(id),
-        api.settings.schema(),
-        api.cloud.list(),
-        api.settings.providers(),
-      ]),
+    queryFn: () => api.connections.get(id),
   });
+  const { data: schema = [], isLoading: schemaLoading } = useQuery({
+    queryKey: queryKeys.settings.schema,
+    queryFn: () => api.settings.schema(),
+  });
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+    queryKey: queryKeys.cloud.accounts,
+    queryFn: () => api.cloud.list(),
+  });
+  const { data: providers = [], isLoading: providersLoading } = useQuery({
+    queryKey: queryKeys.settings.providers,
+    queryFn: () => api.settings.providers(),
+  });
+
+  const isLoading = connLoading || schemaLoading || accountsLoading || providersLoading;
   const showSkeleton = useDelayedLoading(isLoading);
 
-  const [connection, schema, accounts, providers] = data ?? [null, [], [], []];
   const account = connection?.cloud_account_id
     ? accounts.find((a) => a.id === connection.cloud_account_id)
     : null;

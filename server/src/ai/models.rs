@@ -2,6 +2,29 @@ use serde::{Deserialize, Serialize};
 
 use crate::discovery::graph_types::TabularData;
 
+/// Result code for AI ask responses — replaces raw string literals.
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AskResultCode {
+    Success,
+    ParseFailed,
+    SparqlFailed,
+    InsufficientCredits,
+    LlmFailed,
+}
+
+impl AskResultCode {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Success => "success",
+            Self::ParseFailed => "parse_failed",
+            Self::SparqlFailed => "sparql_failed",
+            Self::InsufficientCredits => "insufficient_credits",
+            Self::LlmFailed => "llm_failed",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct Conversation {
     pub id: String,

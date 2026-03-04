@@ -88,18 +88,24 @@ function ConnectionsContent() {
   const queryClient = useQueryClient();
   const tab = (searchParams.get("type") as ConnectionKind) || "data";
 
-  const { data } = useQuery({
-    queryKey: queryKeys.connections.init(tab),
-    queryFn: () =>
-      Promise.all([api.connections.list(tab), api.settings.schema(), api.cloud.list()]),
+  const { data: connections = [] } = useQuery({
+    queryKey: queryKeys.connections.all(tab),
+    queryFn: () => api.connections.list(tab),
   });
-  const [connections, schema, accounts] = data ?? [[], [], []];
+  const { data: schema = [] } = useQuery({
+    queryKey: queryKeys.settings.schema,
+    queryFn: () => api.settings.schema(),
+  });
+  const { data: accounts = [] } = useQuery({
+    queryKey: queryKeys.cloud.accounts,
+    queryFn: () => api.cloud.list(),
+  });
 
   const deleteMutation = useMutation({
     mutationFn: api.connections.remove,
     onSuccess: () => {
       toast.success("Connection deleted");
-      queryClient.invalidateQueries({ queryKey: queryKeys.connections.init(tab) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.connections.all(tab) });
     },
   });
 

@@ -9,6 +9,8 @@
 use jiff::Timestamp;
 use serde_json::{Value, json};
 
+use super::{did_web, well_known_url};
+
 /// Standard Gaia-X Trust Framework context URL (Loire / v1-staging release).
 const TRUSTFRAMEWORK_CTX: &str = "https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#";
 
@@ -44,12 +46,12 @@ fn iso_now() -> String {
 /// - `legal_name`: organization's legal name
 /// - `country_code`: ISO 3166-2 subdivision code (e.g. "DE-BY")
 pub fn assemble_legal_participant(domain: &str, legal_name: &str, country_code: &str) -> Value {
-    let did = format!("did:web:{domain}");
-    let vc_id = format!("https://{}/.well-known/participant.json", domain);
+    let did = did_web(domain);
+    let vc_id = well_known_url(domain, "participant.json");
     // VC-06: credentialSubject.id uses #cs suffix
     let cs_id = format!("{}#cs", vc_id);
     // Links to the LRN credential's credentialSubject.id (VC-06)
-    let lrn_cs_id = format!("https://{}/.well-known/lrn.json#cs", domain);
+    let lrn_cs_id = format!("{}#cs", well_known_url(domain, "lrn.json"));
 
     json!({
         "@context": [
@@ -86,8 +88,8 @@ pub fn assemble_legal_participant(domain: &str, legal_name: &str, country_code: 
 ///
 /// - `domain`: the org's public domain
 pub fn assemble_terms_conditions(domain: &str) -> Value {
-    let did = format!("did:web:{domain}");
-    let vc_id = format!("https://{}/.well-known/tandc.json", domain);
+    let did = did_web(domain);
+    let vc_id = well_known_url(domain, "tandc.json");
     // VC-06: credentialSubject.id uses #cs suffix
     let cs_id = format!("{}#cs", vc_id);
 

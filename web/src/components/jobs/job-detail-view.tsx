@@ -14,20 +14,15 @@ import {
   DiscoveryView,
   ValidationTab,
 } from "@/components/jobs/detail";
+import { isTerminalStatus } from "@/lib/utils";
 import type { JobStatus, JobEvent } from "@/lib/types";
-
-function isTerminal(status: JobStatus): boolean {
-  return (
-    status === "completed" || status === "failed" || status === "cancelled"
-  );
-}
 
 function useJobStream(id: string, status: JobStatus | undefined) {
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState<JobEvent | null>(null);
 
   useEffect(() => {
-    if (!status || isTerminal(status)) return;
+    if (!status || isTerminalStatus(status)) return;
 
     const controller = new AbortController();
 

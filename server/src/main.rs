@@ -1,6 +1,6 @@
 use keasy_server::{AppState, AuthServices, GaiaXServices, Database, JobRunner, RdfGraph};
 use keasy_server::config::ServerConfig;
-use keasy_server::routes::build_router;
+use keasy_server::routes::{build_router, SessionConfig};
 use secrecy::ExposeSecret;
 
 use std::net::SocketAddr;
@@ -180,7 +180,13 @@ async fn main() {
         "External services"
     );
 
-    let app = build_router(state, config.cors_origins, session_store, config.session_secret, config.session_cookie_name, config.session_secure);
+    let session_config = SessionConfig {
+        store: session_store,
+        secret: config.session_secret,
+        cookie_name: config.session_cookie_name,
+        secure: config.session_secure,
+    };
+    let app = build_router(state, config.cors_origins, session_config);
 
     let listener = match tokio::net::TcpListener::bind(config.bind_addr).await {
         Ok(l) => l,

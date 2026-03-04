@@ -1,6 +1,41 @@
+use std::fmt;
+
 use rusqlite::params;
 
 use super::Database;
+
+/// Role of a user within their organization.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MemberRole {
+    Admin,
+    User,
+}
+
+impl MemberRole {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            MemberRole::Admin => "admin",
+            MemberRole::User => "user",
+        }
+    }
+}
+
+impl std::str::FromStr for MemberRole {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "admin" => Ok(MemberRole::Admin),
+            "user" => Ok(MemberRole::User),
+            other => Err(format!("invalid role: '{other}', expected 'admin' or 'user'")),
+        }
+    }
+}
+
+impl fmt::Display for MemberRole {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
 
 /// An org member — a Keycloak user's membership in a Keasy organization.
 /// Profile fields (email, first_name, last_name) are cached from OIDC tokens.

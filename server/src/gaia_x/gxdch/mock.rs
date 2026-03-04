@@ -3,7 +3,7 @@
 /// Useful for local dev where GXDCH cannot resolve `did:web:*.keasy.local`.
 use serde_json::{Value, json};
 
-use crate::gaia_x::cert;
+use crate::gaia_x::{cert, did_web, well_known_url};
 
 /// Mock GXDCH client — no network calls.
 #[derive(Clone)]
@@ -18,7 +18,7 @@ impl MockGxdch {
         lrn_value: &str,
     ) -> Result<Value, String> {
         tracing::warn!("[MOCK] Returning mock LRN credential for {domain}");
-        let vc_id = format!("https://{}/.well-known/lrn.json", domain);
+        let vc_id = well_known_url(domain, "lrn.json");
         let lrn_key = format!("gx:{lrn_type}");
 
         Ok(json!({
@@ -42,7 +42,7 @@ impl MockGxdch {
     /// Return a mock Compliance Verifiable Credential.
     pub fn submit_compliance(&self, _vp: &Value, domain: &str) -> Result<Value, String> {
         tracing::warn!("[MOCK] Returning mock Compliance VC for {domain}");
-        let vc_id = format!("https://{}/.well-known/compliance.json", domain);
+        let vc_id = well_known_url(domain, "compliance.json");
 
         Ok(json!({
             "@context": [
@@ -55,7 +55,7 @@ impl MockGxdch {
             "issuanceDate": jiff::Timestamp::now().to_string(),
             "credentialSubject": [{
                 "type": "gx:compliance",
-                "id": format!("did:web:{domain}"),
+                "id": did_web(domain),
                 "gx:integrity": "sha256-mock",
                 "gx:version": "22.10"
             }],

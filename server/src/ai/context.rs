@@ -10,10 +10,12 @@ pub fn build_semantic_context(pipeline: &PipelineSummary, profile: &GraphProfile
     let mut ctx = String::with_capacity(MAX_CHARS);
     let mut budget = MAX_CHARS;
 
-    let schema_section = build_schema_section(pipeline, profile);
+    let stats_map = build_stats_lookup(profile);
+
+    let schema_section = build_schema_section(pipeline, profile, &stats_map);
     write_section(&mut ctx, &mut budget, &schema_section);
 
-    let fewshot_section = build_fewshot_example(pipeline, profile);
+    let fewshot_section = build_fewshot_example(pipeline, &stats_map);
     write_section(&mut ctx, &mut budget, &fewshot_section);
 
     ctx
@@ -37,9 +39,8 @@ fn build_stats_lookup(profile: &GraphProfile) -> HashMap<&str, &PredicateStats> 
         .collect()
 }
 
-fn build_schema_section(pipeline: &PipelineSummary, profile: &GraphProfile) -> String {
+fn build_schema_section(pipeline: &PipelineSummary, profile: &GraphProfile, stats_map: &HashMap<&str, &PredicateStats>) -> String {
     let mut out = String::new();
-    let stats_map = build_stats_lookup(profile);
 
     // Data sources
     if !pipeline.inputs.is_empty() {
@@ -238,9 +239,7 @@ fn write_inline_stats(out: &mut String, stats: &PredicateStats, subject_count: u
 ///
 /// Looks for the first Output Type that has at least 1 categorical field (with top_values)
 /// and 1 numeric field (with min/max). Generates a SPARQL example combining both filters.
-fn build_fewshot_example(pipeline: &PipelineSummary, profile: &GraphProfile) -> String {
-    let stats_map = build_stats_lookup(profile);
-
+fn build_fewshot_example(pipeline: &PipelineSummary, stats_map: &HashMap<&str, &PredicateStats>) -> String {
     for output in &pipeline.outputs {
         if output.fields.is_empty() {
             continue;

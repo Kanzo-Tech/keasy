@@ -2,7 +2,7 @@
 
 import { FileCheck, FileText, ShieldCheck, User } from "lucide-react";
 import type { ComplianceCredential } from "@/lib/types";
-import { formatDate } from "@/components/compliance/compliance-view";
+import { formatDate } from "@/lib/formatters";
 
 const CARD_ICONS: Record<string, typeof FileCheck> = {
   "LRN Credential": FileCheck,

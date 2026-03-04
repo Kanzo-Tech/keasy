@@ -75,6 +75,21 @@ pub struct ComplyEvent {
     pub data: Option<ComplyResponse>,
 }
 
+/// Construct a `did:web:{domain}` DID.
+pub fn did_web(domain: &str) -> String {
+    format!("did:web:{domain}")
+}
+
+/// Construct a `did:web:{domain}#key-1` verification method ID.
+pub fn did_web_key(domain: &str) -> String {
+    format!("did:web:{domain}#key-1")
+}
+
+/// Construct a `https://{domain}/.well-known/{name}` URL.
+pub fn well_known_url(domain: &str, name: &str) -> String {
+    format!("https://{domain}/.well-known/{name}")
+}
+
 fn json_object() -> utoipa::openapi::schema::Object {
     use utoipa::openapi::schema::{AdditionalProperties, ObjectBuilder};
     ObjectBuilder::new()

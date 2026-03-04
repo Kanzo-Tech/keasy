@@ -45,19 +45,13 @@ export function WorkspaceSwitcher() {
   const displayName = currentWorkspace?.name ?? orgName;
 
   const [switching, setSwitching] = React.useState<string | null>(null);
-  const [switchTarget, setSwitchTarget] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (switchTarget === null) return;
-    window.location.assign(switchTarget);
-  }, [switchTarget]);
 
   async function handleSwitch(ws: Workspace) {
     if (ws.client_id === currentClientId) return;
     setSwitching(ws.name);
-    await queryClient.resetQueries();
     try {
-      setSwitchTarget(`${ws.url}/v1/auth/oidc-start`);
+      await queryClient.resetQueries();
+      window.location.assign(`${ws.url}/v1/auth/oidc-start`);
     } catch {
       setSwitching(null);
       toast.error(`Could not switch to ${ws.name}. Please try again.`);

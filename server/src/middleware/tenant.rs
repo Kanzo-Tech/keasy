@@ -9,6 +9,7 @@ use axum::body::Body;
 use thiserror::Error;
 
 use crate::AppState;
+use crate::db::org_members::MemberRole;
 use crate::error::error_body;
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::tenant::OrgId;
@@ -208,8 +209,8 @@ pub async fn tenant_context_required(
     let role = if org.role == "promotor" {
         TenantRole::Promotor
     } else {
-        match member.role.as_str() {
-            "admin" => TenantRole::OrgAdmin,
+        match member.role.parse::<MemberRole>() {
+            Ok(MemberRole::Admin) => TenantRole::OrgAdmin,
             _ => TenantRole::OrgUser,
         }
     };

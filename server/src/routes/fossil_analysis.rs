@@ -28,9 +28,9 @@ pub async fn analyze(
     State(state): State<AppState>,
     Json(payload): Json<AnalyzeRequest>,
 ) -> impl IntoResponse {
-    let cursor_offset = payload.cursor_offset;
+    let AnalyzeRequest { script, cursor_offset } = payload;
 
-    let resolved = match rewrite::resolve(&payload.script, &ctx.org_id.0, &state.db).await {
+    let resolved = match rewrite::resolve(&script, &ctx.org_id.0, &state.db).await {
         Ok(r) => r,
         Err(err) => {
             return (
@@ -62,7 +62,9 @@ pub async fn analyze(
         };
 
         let analysis = host.analyze(&source, gcx);
-        let completions = host.completions(&source, cursor_offset);
+        // Use original script (pre-rewrite) for cursor context — the rewrite
+        // changes string lengths (@conn → "url"), shifting character offsets.
+        let completions = host.completions(&script, cursor_offset);
 
         // Put it back.
         {

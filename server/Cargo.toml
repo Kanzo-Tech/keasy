@@ -71,14 +71,6 @@ tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
 tempfile = "3"
 
-# TODO: remove [patch] once fossil-lsp is pushed to ikigai-core
-[patch."https://github.com/angelip2303/fossil-lang.git"]
-fossil-lsp = { path = "../../../ikigai-core/lib/fossil-lsp", features = ["utoipa"] }
-fossil-lang = { path = "../../../ikigai-core/lib/fossil-lang" }
-fossil-stdlib = { path = "../../../ikigai-core/lib/fossil-stdlib" }
-fossil-providers = { path = "../../../ikigai-core/lib/fossil-providers" }
-fossil-ifc = { path = "../../../ikigai-core/lib/fossil-ifc" }
-
 [profile.release]
 lto = "thin"
 panic = "abort"

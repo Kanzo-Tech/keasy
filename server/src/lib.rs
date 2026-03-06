@@ -29,6 +29,22 @@ use secrecy::SecretString;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
+/// Hash a string using the default hasher (for cache keys, not cryptography).
+pub fn hash_str(s: &str) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    s.hash(&mut h);
+    h.finish()
+}
+
+/// Per-org fossil analysis state: compilation host + resolved script cache.
+/// Stored together in a single LRU so eviction is consistent.
+pub struct OrgAnalysisState {
+    pub host: Arc<Mutex<fossil_lsp::AnalysisHost>>,
+    /// Cached resolved script: (source_hash, resolved).
+    pub resolved: Option<(u64, Arc<crate::jobs::rewrite::ResolvedScript>)>,
+}
+
 #[derive(Clone)]
 pub struct AppState {
     pub db: Database,
@@ -38,9 +54,8 @@ pub struct AppState {
     pub base_url: String,
     pub auth: AuthServices,
     pub gaia_x: GaiaXServices,
-    /// Per-org analysis hosts for fossil editor support.
-    /// LRU-cached last successful compilation per org for error-tolerant completions.
-    pub analysis_hosts: Arc<Mutex<lru::LruCache<String, fossil_lsp::AnalysisHost>>>,
+    /// Per-org fossil analysis state (compilation host + resolve cache).
+    pub org_analysis: Arc<Mutex<lru::LruCache<String, OrgAnalysisState>>>,
 }
 
 /// Authentication and identity services (Keycloak / OIDC).

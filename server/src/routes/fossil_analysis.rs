@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use fossil_lsp::{CompletionItem, DiagnosticItem};
 use serde::{Deserialize, Serialize};
 
-use crate::AppState;
+use crate::{AppState, OrgAnalysisState, hash_str};
 use crate::jobs::rewrite;
 use crate::jobs::script;
 use crate::middleware::tenant::RequireParticipant;
@@ -29,48 +31,77 @@ pub async fn analyze(
     Json(payload): Json<AnalyzeRequest>,
 ) -> impl IntoResponse {
     let AnalyzeRequest { script, cursor_offset } = payload;
+    let script_hash = hash_str(&script);
+    let org_id = ctx.org_id.0.clone();
 
-    let resolved = match rewrite::resolve(&script, &ctx.org_id.0, &state.db).await {
-        Ok(r) => r,
-        Err(err) => {
-            return (
-                StatusCode::OK,
-                Json(AnalyzeResponse {
-                    completions: vec![],
-                    diagnostics: vec![DiagnosticItem {
-                        from: err.from,
-                        to: err.to,
-                        severity: "error",
-                        message: err.message,
-                    }],
-                }),
-            );
+    // Check resolve cache: skip DB queries if the script hasn't changed.
+    let cached = {
+        let mut guard = state.org_analysis.lock().unwrap_or_else(|e| e.into_inner());
+        guard.get(&org_id).and_then(|s| {
+            s.resolved.as_ref().and_then(|(hash, resolved)| {
+                if *hash == script_hash { Some(Arc::clone(resolved)) } else { None }
+            })
+        })
+    };
+
+    let resolved = if let Some(r) = cached {
+        r
+    } else {
+        match rewrite::resolve(&script, &org_id, &state.db).await {
+            Ok(r) => {
+                let r = Arc::new(r);
+                let mut guard = state.org_analysis.lock().unwrap_or_else(|e| e.into_inner());
+                let entry = guard.get_or_insert_mut(org_id.clone(), || OrgAnalysisState {
+                    host: Arc::new(std::sync::Mutex::new(fossil_lsp::AnalysisHost::default())),
+                    resolved: None,
+                });
+                entry.resolved = Some((script_hash, Arc::clone(&r)));
+                r
+            }
+            Err(err) => {
+                return (
+                    StatusCode::OK,
+                    Json(AnalyzeResponse {
+                        completions: vec![],
+                        diagnostics: vec![DiagnosticItem {
+                            from: err.from,
+                            to: err.to,
+                            severity: "error",
+                            message: err.message,
+                        }],
+                    }),
+                );
+            }
         }
     };
 
-    let org_id = ctx.org_id.0.clone();
-    let hosts = state.analysis_hosts.clone();
+    let org_analysis = state.org_analysis.clone();
 
     let result = tokio::task::spawn_blocking(move || {
-        let source = resolved.script;
-        let gcx = script::init_context(resolved.storage);
+        let gcx = script::init_context(resolved.storage.clone());
 
-        // Take the host out of the LRU so we don't hold the mutex during compilation.
-        let mut host = {
-            let mut guard = hosts.lock().unwrap_or_else(|e| e.into_inner());
-            guard.pop(&org_id).unwrap_or_default()
+        // Get or create a per-org host behind its own mutex.
+        let host_arc = {
+            let mut guard = org_analysis.lock().unwrap_or_else(|e| e.into_inner());
+            guard.get_or_insert_mut(org_id, || OrgAnalysisState {
+                host: Arc::new(std::sync::Mutex::new(fossil_lsp::AnalysisHost::default())),
+                resolved: None,
+            }).host.clone()
         };
 
-        let analysis = host.analyze(&source, gcx);
+        let mut host = host_arc.lock().unwrap_or_else(|e| e.into_inner());
+        let analysis = host.analyze(&resolved.script, gcx, Some(script_hash));
         // Use original script (pre-rewrite) for cursor context — the rewrite
         // changes string lengths (@conn → "url"), shifting character offsets.
         let completions = host.completions(&script, cursor_offset);
 
-        // Put it back.
-        {
-            let mut guard = hosts.lock().unwrap_or_else(|e| e.into_inner());
-            guard.put(org_id, host);
-        }
+        tracing::debug!(
+            cursor_offset,
+            completions = completions.len(),
+            first_kind = completions.first().map(|c| c.kind).unwrap_or("none"),
+            diagnostics = analysis.diagnostics.len(),
+            "fossil/analyze"
+        );
 
         AnalyzeResponse {
             completions,

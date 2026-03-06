@@ -172,7 +172,7 @@ async fn main() {
         base_url: config.base_url,
         auth,
         gaia_x,
-        analysis_hosts: Arc::new(std::sync::Mutex::new(
+        org_analysis: Arc::new(std::sync::Mutex::new(
             lru::LruCache::new(std::num::NonZeroUsize::new(64).unwrap()),
         )),
     };

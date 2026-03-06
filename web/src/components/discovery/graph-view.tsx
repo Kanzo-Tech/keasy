@@ -187,61 +187,69 @@ export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
       {/* Search bar */}
       <div className="relative mb-4">
         <div className="flex items-center gap-2">
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            value={selectorMode}
-            onValueChange={(v) => {
-              if (!v) return;
-              setSelectorMode(v as "search" | "uri");
-              setQuery("");
-              setShowResults(false);
-            }}
-          >
-            <ToggleGroupItem value="search" aria-label="Search by label">
-              <Search size={14} />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="uri" aria-label="Enter URI">
-              <Link size={14} />
-            </ToggleGroupItem>
-          </ToggleGroup>
-
-          <div className="relative flex-1">
-            {selectorMode === "search" && (
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              />
-            )}
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key !== "Enter") return;
-                e.preventDefault();
-                if (selectorMode === "search") {
-                  if (results.length > 0) handleSelectResult(results[0]);
-                } else {
-                  if (query.trim()) {
-                    handleSelectResult({
-                      id: query.trim(),
-                      label: query.trim(),
-                      group: "resource",
-                      description: null,
-                    });
-                  }
-                }
+          <div className="flex items-stretch flex-1 h-9 rounded-md border border-input shadow-xs focus-within:border-ring focus-within:outline-ring/50 focus-within:outline-[3px]">
+            <ToggleGroup
+              type="single"
+              size="default"
+              value={selectorMode}
+              onValueChange={(v) => {
+                if (!v) return;
+                setSelectorMode(v as "search" | "uri");
+                setQuery("");
+                setShowResults(false);
               }}
-              placeholder={
-                selectorMode === "search"
-                  ? "Search nodes by label..."
-                  : "Enter a full URI and press Enter..."
-              }
-              className={`${selectorMode === "search" ? "pl-9" : ""} h-9 focus-visible:ring-1`}
-              onFocus={selectorMode === "search" ? () => setShowResults(true) : undefined}
-              onBlur={selectorMode === "search" ? () => setTimeout(() => setShowResults(false), 200) : undefined}
-            />
+            >
+              <ToggleGroupItem
+                value="search"
+                aria-label="Search by label"
+                className="h-full rounded-none rounded-l-[calc(var(--radius-md)-1px)] border-0"
+              >
+                <Search size={14} />
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="uri"
+                aria-label="Enter URI"
+                className="h-full !rounded-none border-0 border-r border-input"
+              >
+                <Link size={14} />
+              </ToggleGroupItem>
+            </ToggleGroup>
+            <div className="relative flex-1">
+              {selectorMode === "search" && (
+                <Search
+                  size={14}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              )}
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter") return;
+                  e.preventDefault();
+                  if (selectorMode === "search") {
+                    if (results.length > 0) handleSelectResult(results[0]);
+                  } else {
+                    if (query.trim()) {
+                      handleSelectResult({
+                        id: query.trim(),
+                        label: query.trim(),
+                        group: "resource",
+                        description: null,
+                      });
+                    }
+                  }
+                }}
+                placeholder={
+                  selectorMode === "search"
+                    ? "Search nodes by label..."
+                    : "Enter a full URI and press Enter..."
+                }
+                className={`${selectorMode === "search" ? "pl-9" : "pl-3"} h-full border-0 shadow-none rounded-l-none focus-visible:outline-none`}
+                onFocus={selectorMode === "search" ? () => setShowResults(true) : undefined}
+                onBlur={selectorMode === "search" ? () => setTimeout(() => setShowResults(false), 200) : undefined}
+              />
+            </div>
           </div>
           {!graph.isEmpty && (
             <Button

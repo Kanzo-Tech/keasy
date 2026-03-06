@@ -187,7 +187,7 @@ export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
       {/* Search bar */}
       <div className="relative mb-4">
         <div className="flex items-center gap-2">
-          <div className="flex items-stretch flex-1 h-9 rounded-md border border-input shadow-xs focus-within:border-ring focus-within:outline-ring/50 focus-within:outline-[3px]">
+          <div className="flex items-stretch flex-1 h-9 rounded-md border border-input shadow-xs overflow-hidden focus-within:border-ring focus-within:outline-ring/50 focus-within:outline-[3px]">
             <ToggleGroup
               type="single"
               size="default"
@@ -202,7 +202,7 @@ export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
               <ToggleGroupItem
                 value="search"
                 aria-label="Search by label"
-                className="h-full rounded-none rounded-l-[calc(var(--radius-md)-1px)] border-0"
+                className="h-full !rounded-none border-0"
               >
                 <Search size={14} />
               </ToggleGroupItem>

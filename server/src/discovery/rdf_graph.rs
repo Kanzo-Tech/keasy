@@ -11,9 +11,16 @@ use oxrdf::{GraphName, NamedNode, Quad, Triple};
 use oxrdfio::{RdfFormat, RdfParser, RdfSerializer};
 
 use super::convert::{self, GraphData};
-use super::graph_types::{KeasyTriple, SearchResult, TabularData, TermValue};
+use super::graph_types::{SearchResult, TabularData};
 use super::rdf_format::RdfExportFormat;
+use super::vocab;
 use crate::ai::profiler::GraphProfile;
+
+const MAX_EXPAND_TRIPLES: usize = 500;
+
+fn resolve_graph(name: Option<&str>) -> Option<GraphNameRef<'_>> {
+    name.map(|n| GraphNameRef::NamedNode(NamedNodeRef::new_unchecked(n)))
+}
 
 pub struct RdfGraph {
     store: Store,
@@ -38,45 +45,6 @@ impl RdfGraph {
             })
             .map_err(|e| e.to_string())
     }
-}
-
-fn to_oxrdf_triple(kt: &KeasyTriple) -> Triple {
-    let subject = match &kt.subject {
-        TermValue::Iri(iri) => oxrdf::NamedOrBlankNode::NamedNode(NamedNode::new_unchecked(iri)),
-        TermValue::BlankNode(id) => {
-            oxrdf::NamedOrBlankNode::BlankNode(oxrdf::BlankNode::new_unchecked(id))
-        }
-        TermValue::Literal { .. } => unreachable!("subject cannot be a literal"),
-    };
-
-    let predicate = NamedNode::new_unchecked(&kt.predicate);
-
-    let object = match &kt.object {
-        TermValue::Iri(iri) => oxrdf::Term::NamedNode(NamedNode::new_unchecked(iri)),
-        TermValue::BlankNode(id) => {
-            oxrdf::Term::BlankNode(oxrdf::BlankNode::new_unchecked(id))
-        }
-        TermValue::Literal {
-            value,
-            datatype,
-            language,
-        } => {
-            if let Some(lang) = language {
-                oxrdf::Term::Literal(oxrdf::Literal::new_language_tagged_literal_unchecked(
-                    value, lang,
-                ))
-            } else if let Some(dt) = datatype {
-                oxrdf::Term::Literal(oxrdf::Literal::new_typed_literal(
-                    value,
-                    NamedNode::new_unchecked(dt),
-                ))
-            } else {
-                oxrdf::Term::Literal(oxrdf::Literal::new_simple_literal(value))
-            }
-        }
-    };
-
-    Triple::new(subject, predicate, object)
 }
 
 impl RdfGraph {
@@ -119,8 +87,8 @@ impl RdfGraph {
         loader.commit().map_err(|e| e.to_string())
     }
 
-    pub(crate) fn insert_oxrdf_triples(&self, graph_name: Option<&str>, triples: &[Triple]) {
-        let graph = graph_name.map(|n| GraphNameRef::NamedNode(NamedNodeRef::new_unchecked(n)));
+    pub fn insert_triples(&self, graph_name: Option<&str>, triples: &[Triple]) {
+        let graph = resolve_graph(graph_name);
         for triple in triples {
             let quad = QuadRef::new(
                 triple.subject.as_ref(),
@@ -143,11 +111,6 @@ impl RdfGraph {
 }
 
 impl RdfGraph {
-    pub fn insert_triples(&self, graph_name: Option<&str>, triples: &[KeasyTriple]) {
-        let oxrdf_triples: Vec<Triple> = triples.iter().map(to_oxrdf_triple).collect();
-        self.insert_oxrdf_triples(graph_name, &oxrdf_triples);
-    }
-
     pub fn clear(&self) {
         let _ = self.store.clear();
     }
@@ -173,14 +136,14 @@ impl RdfGraph {
     }
 
     pub fn triple_count(&self, graph_name: Option<&str>) -> usize {
-        let graph = graph_name.map(|n| GraphNameRef::NamedNode(NamedNodeRef::new_unchecked(n)));
+        let graph = resolve_graph(graph_name);
         self.store
             .quads_for_pattern(None, None, None, graph)
             .count()
     }
 
     pub fn get_graph(&self, graph_name: Option<&str>) -> GraphData {
-        let graph = graph_name.map(|n| GraphNameRef::NamedNode(NamedNodeRef::new_unchecked(n)));
+        let graph = resolve_graph(graph_name);
         let triples: Vec<_> = self
             .store
             .quads_for_pattern(None, None, None, graph)
@@ -190,88 +153,90 @@ impl RdfGraph {
         convert::triples_to_graph_data(&triples)
     }
 
+    fn first_literal(
+        &self,
+        subj: &NamedNode,
+        pred_iri: &str,
+        graph: Option<GraphNameRef<'_>>,
+    ) -> Option<String> {
+        let pred = NamedNodeRef::new_unchecked(pred_iri);
+        self.store
+            .quads_for_pattern(Some(subj.as_ref().into()), Some(pred), None, graph)
+            .flatten()
+            .find_map(|q| match q.object {
+                oxrdf::Term::Literal(l) => Some(l.value().to_string()),
+                _ => None,
+            })
+    }
+
+    fn first_type(
+        &self,
+        subj: &NamedNode,
+        graph: Option<GraphNameRef<'_>>,
+    ) -> String {
+        let type_pred = NamedNodeRef::new_unchecked(vocab::RDF_TYPE);
+        self.store
+            .quads_for_pattern(Some(subj.as_ref().into()), Some(type_pred), None, graph)
+            .flatten()
+            .find_map(|q| match q.object {
+                oxrdf::Term::NamedNode(n) => Some(convert::shorten_iri(n.as_str())),
+                _ => None,
+            })
+            .unwrap_or_else(|| "resource".to_string())
+    }
+
     pub fn search_nodes(&self, graph_name: Option<&str>, query: &str, limit: usize) -> Vec<SearchResult> {
-        let filter_clause = if query.trim().is_empty() {
-            String::new()
-        } else {
-            let escaped = query.replace('\\', "\\\\").replace('"', "\\\"");
-            format!(
-                r#"FILTER(
-                CONTAINS(LCASE(STR(?s)), LCASE("{escaped}"))
-                || CONTAINS(LCASE(COALESCE(STR(?titleVal), "")), LCASE("{escaped}"))
-                || CONTAINS(LCASE(COALESCE(STR(?nameVal), "")), LCASE("{escaped}"))
-              )"#
-            )
-        };
-
-        let graph_clause = match graph_name {
-            Some(g) => format!("GRAPH <{g}>"),
-            None => "GRAPH ?g".to_string(),
-        };
-
-        let sparql = format!(
-            r#"
-            PREFIX dct: <http://purl.org/dc/terms/>
-            PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            SELECT DISTINCT ?s (SAMPLE(?lbl) AS ?label) (SAMPLE(?t) AS ?type) WHERE {{
-              {graph_clause} {{
-                ?s ?p ?o .
-                OPTIONAL {{ ?s dct:title ?titleVal }}
-                OPTIONAL {{ ?s foaf:name ?nameVal }}
-                BIND(COALESCE(?titleVal, ?nameVal) AS ?lbl)
-                OPTIONAL {{ ?s rdf:type ?t }}
-                {filter_clause}
-              }}
-            }}
-            GROUP BY ?s
-            LIMIT {limit}
-            "#
-        );
+        let graph = resolve_graph(graph_name);
+        let label_pred = NamedNodeRef::new_unchecked(vocab::RDFS_LABEL);
+        let query_lower = query.trim().to_lowercase();
 
         let mut results = Vec::new();
-        if let Ok(QueryResults::Solutions(solutions)) = self.evaluate_query(&sparql) {
-            for solution in solutions.flatten() {
-                let id = match solution.get("s") {
-                    Some(oxrdf::Term::NamedNode(n)) => n.as_str().to_string(),
-                    _ => continue,
-                };
-                let group = match solution.get("type") {
-                    Some(oxrdf::Term::NamedNode(n)) => convert::shorten_iri(n.as_str()),
-                    _ => "resource".to_string(),
-                };
-                let label = match solution.get("label") {
-                    Some(oxrdf::Term::Literal(l)) => l.value().to_string(),
-                    _ => convert::shorten_iri(&id),
-                };
-                results.push(SearchResult { id, label, group });
+
+        for quad in self.store.quads_for_pattern(None, Some(label_pred), None, graph).flatten() {
+            let oxrdf::NamedOrBlankNode::NamedNode(ref subj) = quad.subject else { continue };
+            let oxrdf::Term::Literal(ref lit) = quad.object else { continue };
+
+            if !query_lower.is_empty() && !lit.value().to_lowercase().contains(&query_lower) {
+                continue;
             }
+
+            results.push(SearchResult {
+                id: subj.as_str().to_string(),
+                label: lit.value().to_string(),
+                group: self.first_type(subj, graph),
+                description: self.first_literal(subj, vocab::RDFS_COMMENT, graph),
+            });
+            if results.len() >= limit { break; }
         }
         results
     }
 
     pub fn expand_node(&self, graph_name: Option<&str>, node_iri: &str) -> GraphData {
-        let escaped = node_iri.replace('\\', "\\\\").replace('"', "\\\"");
-
-        let graph_clause = match graph_name {
-            Some(g) => format!("GRAPH <{g}>"),
-            None => "GRAPH ?g".to_string(),
-        };
-
-        let sparql = format!(
-            "CONSTRUCT {{ ?s ?p ?o }} WHERE {{ \
-               {graph_clause} {{ \
-                 {{ BIND(<{escaped}> AS ?s) ?s ?p ?o }} \
-                 UNION \
-                 {{ BIND(<{escaped}> AS ?o) ?s ?p ?o }} \
-               }} \
-             }} LIMIT 500"
-        );
-
+        let graph = resolve_graph(graph_name);
+        let node = NamedNodeRef::new_unchecked(node_iri);
         let mut triples = Vec::new();
-        if let Ok(QueryResults::Graph(iter)) = self.evaluate_query(&sparql) {
-            triples.extend(iter.flatten());
+
+        // Outgoing — GSPO range scan
+        for quad in self.store
+            .quads_for_pattern(Some(node.into()), None, None, graph)
+            .flatten()
+            .take(MAX_EXPAND_TRIPLES)
+        {
+            triples.push(Triple::new(quad.subject, quad.predicate, quad.object));
         }
+
+        // Incoming — GOSP range scan
+        let remaining = MAX_EXPAND_TRIPLES.saturating_sub(triples.len());
+        if remaining > 0 {
+            for quad in self.store
+                .quads_for_pattern(None, None, Some(node.into()), graph)
+                .flatten()
+                .take(remaining)
+            {
+                triples.push(Triple::new(quad.subject, quad.predicate, quad.object));
+            }
+        }
+
         convert::triples_to_graph_data(&triples)
     }
 
@@ -410,7 +375,7 @@ impl RdfGraph {
     }
 
     pub fn serialize_graph(&self, graph_name: Option<&str>, format: RdfExportFormat) -> Result<String, String> {
-        let graph = graph_name.map(|n| GraphNameRef::NamedNode(NamedNodeRef::new_unchecked(n)));
+        let graph = resolve_graph(graph_name);
 
         const PREFIXES: &[(&str, &str)] = &[
             ("dcat", "http://www.w3.org/ns/dcat#"),

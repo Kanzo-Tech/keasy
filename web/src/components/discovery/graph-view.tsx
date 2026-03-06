@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Link, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { ForceGraph } from "@/components/discovery/force-graph";
@@ -61,6 +62,7 @@ export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
   });
   const showSkeleton = useDelayedLoading(isLoading);
 
+  const [selectorMode, setSelectorMode] = useState<"search" | "uri">("search");
   const [query, setQuery] = useState("");
   const [allNodes, setAllNodes] = useState<SearchResult[]>([]);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -85,6 +87,8 @@ export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
       setResults(allNodes);
       return;
     }
+    if (selectorMode !== "search") return;
+
     const q = query.toLowerCase();
     const local = allNodes.filter(
       (r) =>
@@ -109,7 +113,7 @@ export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
     return () => {
       if (searchTimeout.current) clearTimeout(searchTimeout.current);
     };
-  }, [query, allNodes, jobId]);
+  }, [query, allNodes, jobId, selectorMode]);
 
   async function handleSelectResult(result: SearchResult) {
     setShowResults(false);
@@ -183,20 +187,60 @@ export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
       {/* Search bar */}
       <div className="relative mb-4">
         <div className="flex items-center gap-2">
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={selectorMode}
+            onValueChange={(v) => {
+              if (!v) return;
+              setSelectorMode(v as "search" | "uri");
+              setQuery("");
+              setShowResults(false);
+            }}
+          >
+            <ToggleGroupItem value="search" aria-label="Search by label">
+              <Search size={14} />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="uri" aria-label="Enter URI">
+              <Link size={14} />
+            </ToggleGroupItem>
+          </ToggleGroup>
+
           <div className="relative flex-1">
-            <Search
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
+            {selectorMode === "search" && (
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+            )}
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search nodes by label or IRI..."
-              className="pl-9 h-9 focus-visible:ring-1"
-              onFocus={() => setShowResults(true)}
-              onBlur={() => {
-                setTimeout(() => setShowResults(false), 200);
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                if (selectorMode === "search") {
+                  if (results.length > 0) handleSelectResult(results[0]);
+                } else {
+                  if (query.trim()) {
+                    handleSelectResult({
+                      id: query.trim(),
+                      label: query.trim(),
+                      group: "resource",
+                      description: null,
+                    });
+                  }
+                }
               }}
+              placeholder={
+                selectorMode === "search"
+                  ? "Search nodes by label..."
+                  : "Enter a full URI and press Enter..."
+              }
+              className={`${selectorMode === "search" ? "pl-9" : ""} h-9 focus-visible:ring-1`}
+              onFocus={selectorMode === "search" ? () => setShowResults(true) : undefined}
+              onBlur={selectorMode === "search" ? () => setTimeout(() => setShowResults(false), 200) : undefined}
             />
           </div>
           {!graph.isEmpty && (
@@ -213,7 +257,7 @@ export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
         </div>
 
         {/* Search results dropdown */}
-        {showResults && results.length > 0 && (
+        {selectorMode === "search" && showResults && results.length > 0 && (
           <div className="absolute z-10 top-full mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
             {results.map((r) => (
               <button
@@ -244,7 +288,7 @@ export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
           </div>
         )}
 
-        {showResults && results.length === 0 && !searching && (
+        {selectorMode === "search" && showResults && results.length === 0 && !searching && (
           <div className="absolute z-10 top-full mt-1 w-full bg-popover border border-border rounded-md shadow-lg p-3">
             <p className="text-sm text-muted-foreground">
               {allNodes.length === 0
@@ -294,7 +338,9 @@ export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
           <p className="text-sm text-muted-foreground">
             {allNodes.length === 0
               ? "No RDF nodes found in the output data."
-              : "Select a node from the dropdown to start exploring."}
+              : selectorMode === "uri"
+                ? "Enter a URI above to start exploring."
+                : "Search for a node to start exploring."}
           </p>
         </div>
       )}

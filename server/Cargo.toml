@@ -56,6 +56,7 @@ fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git" }
 fossil-stdlib = { git = "https://github.com/angelip2303/fossil-lang.git" }
 fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git" }
 fossil-ifc = { git = "https://github.com/angelip2303/fossil-lang.git" }
+fossil-lsp = { git = "https://github.com/angelip2303/fossil-lang.git", features = ["utoipa"] }
 base64 = "0.22"
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "jwk"] }
 x509-parser = { version = "0.16", features = ["verify"] }
@@ -69,6 +70,14 @@ utoipa = { version = "5", features = ["axum_extras"] }
 tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
 tempfile = "3"
+
+# TODO: remove [patch] once fossil-lsp is pushed to ikigai-core
+[patch."https://github.com/angelip2303/fossil-lang.git"]
+fossil-lsp = { path = "../../../ikigai-core/lib/fossil-lsp", features = ["utoipa"] }
+fossil-lang = { path = "../../../ikigai-core/lib/fossil-lang" }
+fossil-stdlib = { path = "../../../ikigai-core/lib/fossil-stdlib" }
+fossil-providers = { path = "../../../ikigai-core/lib/fossil-providers" }
+fossil-ifc = { path = "../../../ikigai-core/lib/fossil-ifc" }
 
 [profile.release]
 lto = "thin"

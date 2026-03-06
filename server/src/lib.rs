@@ -27,7 +27,7 @@ pub use jobs::runner::JobRunner;
 
 use secrecy::SecretString;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -38,6 +38,9 @@ pub struct AppState {
     pub base_url: String,
     pub auth: AuthServices,
     pub gaia_x: GaiaXServices,
+    /// Per-org analysis hosts for fossil editor support.
+    /// LRU-cached last successful compilation per org for error-tolerant completions.
+    pub analysis_hosts: Arc<Mutex<lru::LruCache<String, fossil_lsp::AnalysisHost>>>,
 }
 
 /// Authentication and identity services (Keycloak / OIDC).

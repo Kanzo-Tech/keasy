@@ -51,6 +51,9 @@ async fn test_router() -> axum::Router {
             base_domain: None,
             caddy_certs_dir: None,
         },
+        analysis_hosts: std::sync::Arc::new(std::sync::Mutex::new(
+            lru::LruCache::new(std::num::NonZeroUsize::new(64).unwrap()),
+        )),
     };
 
     let session_secret = SecretString::from("test-session-secret-at-least-32-chars-long");

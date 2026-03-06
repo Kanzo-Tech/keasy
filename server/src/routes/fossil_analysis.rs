@@ -38,10 +38,10 @@ pub async fn analyze(
                 Json(AnalyzeResponse {
                     completions: vec![],
                     diagnostics: vec![DiagnosticItem {
-                        from: 0,
-                        to: 0,
+                        from: err.from,
+                        to: err.to,
                         severity: "error",
-                        message: err,
+                        message: err.message,
                     }],
                 }),
             );

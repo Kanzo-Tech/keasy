@@ -11,6 +11,7 @@ import {
   CompletionContext,
   type CompletionResult,
 } from "@codemirror/autocomplete";
+import { linter, type Diagnostic } from "@codemirror/lint";
 import { cn } from "@/lib/utils";
 import {
   lightHighlight, darkHighlight,
@@ -18,11 +19,11 @@ import {
   editorLayout, useIsDark,
 } from "@/lib/codemirror-theme";
 import { api } from "@/lib/api";
-import type { Connection, FileEntry, ProviderInfo } from "@/lib/types";
+import type { Connection, FileEntry, FossilCompletionItem, ProviderInfo } from "@/lib/types";
 
 function fossilLanguage() {
-  return StreamLanguage.define({
-    token(stream) {
+  return StreamLanguage.define<{ afterDot: boolean }>({
+    token(stream, state) {
       if (stream.match(/^\/\/.*/)) return "comment";
       if (stream.match(/^"(?:[^"\\]|\\.)*"/)) return "string";
       if (stream.match(/^#\[/)) {
@@ -32,28 +33,35 @@ function fossilLanguage() {
           if (ch === "[") depth++;
           else if (ch === "]") depth--;
         }
-        return "meta";
+        return "comment";
       }
       if (stream.match(/^@[a-zA-Z0-9_-]+\/[a-zA-Z0-9_./-]+/)) return "special(string)";
       if (stream.match(/^(?:type|do|end|let|each|join|on|ref|if|else|match|fn|use|import|export|pub|mod)\b/)) return "keyword";
       if (stream.match(/^(?:true|false)\b/)) return "bool";
       if (stream.match(/^(?:string|int|float|bool)\b/)) return "typeName";
       if (stream.match(/^\w+!/)) return "keyword";
-      if (stream.match(/^(?:Rdf|Report|String|Math|List|Map)\b/)) return "typeName";
+      if (stream.match(/^(?:Rdf|Report|String|Math|List|Map)\b/)) { state.afterDot = false; return "typeName"; }
       if (stream.match(/^[+-]?\d+(\.\d+)?([eE][+-]?\d+)?/)) return "number";
+      if (stream.match(/^\?\?/)) return "operator";
       if (stream.match(/^\.\./)) return "operator";
       if (stream.match(/^\|>/)) return "operator";
       if (stream.match(/^\+>/)) return "operator";
       if (stream.match(/^->/)) return "operator";
       if (stream.match(/^[=<>!]+/)) return "operator";
-      if (stream.match(/^[{}()\[\];,.:]/)) return "punctuation";
+      if (stream.eat(".")) { state.afterDot = true; return "punctuation"; }
+      if (stream.match(/^[{}()\[\];,:]/)) return "punctuation";
       if (stream.match(/^\$\{/)) return "operator";
-      if (stream.match(/^[A-Z]\w*/)) return "typeName";
-      if (stream.match(/^[a-z_]\w*/)) return "variableName";
+      if (stream.match(/^[A-Z]\w*/)) { state.afterDot = false; return "typeName"; }
+      if (stream.match(/^[a-z_]\w*/)) {
+        if (state.afterDot) { state.afterDot = false; return "propertyName"; }
+        state.afterDot = false;
+        return "variableName";
+      }
       stream.next();
+      state.afterDot = false;
       return null;
     },
-    startState() { return {}; },
+    startState() { return { afterDot: false }; },
   });
 }
 
@@ -168,6 +176,66 @@ function connectionCompletion(
   };
 }
 
+/** Completion source that calls the server for `row.` / `Module.` completions. */
+function fossilCompletion(
+  cacheRef: React.RefObject<{ source: string; items: FossilCompletionItem[] } | null>,
+) {
+  let pending: Promise<FossilCompletionItem[]> | null = null;
+
+  return async (context: CompletionContext): Promise<CompletionResult | null> => {
+    const match = context.matchBefore(/\w+\.\w*/);
+    if (!match) return null;
+
+    const source = context.state.doc.toString();
+    let items: FossilCompletionItem[];
+
+    if (cacheRef.current && cacheRef.current.source === source) {
+      items = cacheRef.current.items;
+    } else {
+      if (!pending) {
+        pending = api.fossil.analyze(source, context.pos).then((r) => {
+          cacheRef.current = { source, items: r.completions };
+          pending = null;
+          return r.completions;
+        });
+      }
+      items = await pending;
+    }
+
+    if (items.length === 0) return null;
+
+    const dotIdx = match.text.indexOf(".");
+    return {
+      from: match.from + dotIdx + 1,
+      options: items.map((item) => ({
+        label: item.label,
+        type: item.kind === "field" ? "property" : item.kind === "function" ? "function" : "variable",
+        detail: item.detail || undefined,
+      })),
+    };
+  };
+}
+
+/** CodeMirror linter that calls the server for diagnostics on each change. */
+function fossilLinter() {
+  return linter(async (view): Promise<Diagnostic[]> => {
+    const source = view.state.doc.toString();
+    if (!source.trim()) return [];
+
+    try {
+      const result = await api.fossil.analyze(source, 0);
+      return result.diagnostics.map((d) => ({
+        from: Math.min(d.from, source.length),
+        to: Math.min(d.to, source.length),
+        severity: d.severity === "warning" ? "warning" as const : "error" as const,
+        message: d.message,
+      }));
+    } catch {
+      return [];
+    }
+  }, { delay: 500 });
+}
+
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -196,6 +264,7 @@ export function CodeEditor({
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const fileCacheRef = useRef(new Map<string, FileEntry[]>());
+  const completionCacheRef = useRef<{ source: string; items: FossilCompletionItem[] } | null>(null);
   const isDark = useIsDark();
 
   const createExtensions = useCallback((): Extension[] => {
@@ -221,20 +290,27 @@ export function CodeEditor({
           backgroundColor: "oklch(var(--cm-active-bg) / 5%)",
         },
       }),
+      fossilLinter(),
     ];
 
     if (placeholder) {
       exts.push(cmPlaceholder(placeholder));
     }
 
+    const completionSources = [
+      fossilCompletion(completionCacheRef),
+    ];
     if (connections.length > 0) {
-      exts.push(
-        autocompletion({
-          override: [connectionCompletion(connections, providers, fileCacheRef.current)],
-          activateOnTyping: true,
-        }),
+      completionSources.unshift(
+        connectionCompletion(connections, providers, fileCacheRef.current),
       );
     }
+    exts.push(
+      autocompletion({
+        override: completionSources,
+        activateOnTyping: true,
+      }),
+    );
 
     return exts;
   }, [isDark, connections, providers, placeholder]);

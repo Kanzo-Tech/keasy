@@ -12,6 +12,12 @@ pub struct ResolvedScript {
     pub storage: StorageConfig,
 }
 
+pub struct RewriteError {
+    pub message: String,
+    pub from: usize,
+    pub to: usize,
+}
+
 struct ConnectionRef {
     connection_name: String,
 }
@@ -24,7 +30,7 @@ static STRING_LITERAL: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#""([^"\\]|\\.)*""#).unwrap()
 });
 
-pub async fn resolve(script: &str, org_id: &str, db: &Database) -> Result<ResolvedScript, String> {
+pub async fn resolve(script: &str, org_id: &str, db: &Database) -> Result<ResolvedScript, RewriteError> {
     validate_no_direct_paths(script)?;
 
     let refs = parse_refs(script);
@@ -72,7 +78,7 @@ fn parse_refs(script: &str) -> Vec<ConnectionRef> {
 fn rewrite(
     script: &str,
     connections: &HashMap<String, Connection>,
-) -> Result<String, String> {
+) -> Result<String, RewriteError> {
     let rewritten = REF_PATTERN.replace_all(script, |caps: &regex::Captures| {
         let connection_name = &caps[1];
         let path = &caps[2];
@@ -102,21 +108,41 @@ fn rewrite(
         .collect();
 
     if !missing.is_empty() {
-        let unique: Vec<String> = missing.into_iter().collect::<HashSet<_>>().into_iter().collect();
-        return Err(format!("Unknown connection references: {}", unique.join(", ")));
+        let unique: HashSet<String> = missing.into_iter().collect();
+        // Find span of first missing ref in original script
+        let (from, to) = REF_PATTERN.captures_iter(script)
+            .find(|cap| unique.contains(&cap[1].to_string()))
+            .map(|cap| {
+                let m = cap.get(0).unwrap();
+                (m.start(), m.end())
+            })
+            .unwrap_or_else(|| {
+                debug_assert!(false, "missing ref not found in original script");
+                (0, 0)
+            });
+        let names: Vec<&str> = unique.iter().map(|s| s.as_str()).collect();
+        return Err(RewriteError {
+            message: format!("Unknown connection references: {}", names.join(", ")),
+            from,
+            to,
+        });
     }
 
     Ok(rewritten.into_owned())
 }
 
-fn validate_no_direct_paths(script: &str) -> Result<(), String> {
+fn validate_no_direct_paths(script: &str) -> Result<(), RewriteError> {
     for m in STRING_LITERAL.find_iter(script) {
         let content = &m.as_str()[1..m.as_str().len() - 1];
         if crate::cloud::is_data_path(content) {
-            return Err(format!(
-                "Direct file paths are not supported. Use @connection/path syntax instead: {}",
-                m.as_str()
-            ));
+            return Err(RewriteError {
+                message: format!(
+                    "Direct file paths are not supported. Use @connection/path syntax instead: {}",
+                    m.as_str()
+                ),
+                from: m.start(),
+                to: m.end(),
+            });
         }
     }
     Ok(())

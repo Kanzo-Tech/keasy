@@ -77,7 +77,7 @@ pub async fn create_job(
     let dcat_enabled = payload.dcat_enabled.unwrap_or(false);
 
     let resolved = rewrite::resolve(&payload.script, &ctx.org_id.0, &state.db).await
-        .map_err(JobApiError::RewriteFailed)?;
+        .map_err(|e| JobApiError::RewriteFailed(e.message))?;
 
     let job = Job {
         id: id.clone(),

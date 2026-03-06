@@ -29,7 +29,7 @@ pub async fn validate_script(
                 Json(ValidationResult {
                     valid: false,
                     pipeline: PipelineSummary::default(),
-                    errors: vec![err],
+                    errors: vec![err.message],
                 }),
             );
         }

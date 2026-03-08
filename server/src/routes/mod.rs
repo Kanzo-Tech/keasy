@@ -1,4 +1,5 @@
 pub mod admin;
+pub mod fossil_analysis;
 pub mod health;
 pub mod org;
 pub mod providers;
@@ -137,6 +138,10 @@ pub fn build_router(
             axum::routing::post(scripts::validate_script),
         )
         .route(
+            "/v1/fossil/analyze",
+            axum::routing::post(fossil_analysis::analyze),
+        )
+        .route(
             "/v1/settings/organization",
             axum::routing::get(crate::settings::routes::get_org_settings)
                 .put(crate::settings::routes::save_org_settings),
@@ -230,7 +235,21 @@ pub fn build_router(
         )
         .route(
             "/v1/connections/{id}/files",
-            axum::routing::get(crate::connections::routes::list_connection_files),
+            axum::routing::get(crate::connections::routes::list_connection_files)
+                .put(crate::connections::routes::upload_file),
+        )
+        .route(
+            "/v1/connections/{id}/schema",
+            axum::routing::get(crate::connections::routes::get_file_schema),
+        )
+        // Assistant
+        .route(
+            "/v1/assistant/suggest",
+            axum::routing::post(crate::assistant::routes::suggest_cqs),
+        )
+        .route(
+            "/v1/assistant/generate",
+            axum::routing::post(crate::assistant::routes::generate_script),
         )
         // Admin routes — promotor only
         .route(

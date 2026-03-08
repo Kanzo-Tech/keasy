@@ -132,6 +132,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/assistant/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["generate_script"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assistant/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["suggest_cqs"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/invite-info": {
         parameters: {
             query?: never;
@@ -279,6 +311,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["list_connection_files"];
+        put: operations["upload_file"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connections/{id}/schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_file_schema"];
         put?: never;
         post?: never;
         delete?: never;
@@ -831,12 +879,17 @@ export interface components {
         };
         AskResponse: {
             answer: string;
-            code: string;
+            code: components["schemas"]["AskResultCode"];
             conversation_id?: string | null;
             data?: null | components["schemas"]["TabularData"];
             reasoning?: string | null;
             sparql?: string | null;
         };
+        /**
+         * @description Result code for AI ask responses — replaces raw string literals.
+         * @enum {string}
+         */
+        AskResultCode: "success" | "parse_failed" | "sparql_failed" | "insufficient_credits" | "llm_failed";
         CatalogResponse: {
             catalog: string;
         };
@@ -854,6 +907,15 @@ export interface components {
             id: string;
             name: string;
             provider_id: string;
+        };
+        ColumnInfo: {
+            data_type: string;
+            name: string;
+        };
+        CompetencyQuestion: {
+            id: string;
+            question: string;
+            rationale: string;
         };
         ComplianceCredential: {
             issued_at: string;
@@ -1004,6 +1066,23 @@ export interface components {
             path: string;
             /** Format: int64 */
             size: number;
+        };
+        FileSchema: {
+            columns: components["schemas"]["ColumnInfo"][];
+            connection_name: string;
+            file_path: string;
+        };
+        FileSchemaResponse: {
+            columns: components["schemas"]["ColumnInfo"][];
+        };
+        GenerateRequest: {
+            competency_questions: string[];
+            domain: string;
+            schemas: components["schemas"]["FileSchema"][];
+        };
+        GenerateResponse: {
+            script: string;
+            shex: string;
         };
         GraphData: {
             links: components["schemas"]["GraphLink"][];
@@ -1206,6 +1285,7 @@ export interface components {
             query?: string | null;
         };
         SearchResult: {
+            description?: string | null;
             group: string;
             id: string;
             label: string;
@@ -1224,6 +1304,13 @@ export interface components {
             errors: components["schemas"]["ShapeValidationError"][];
             valid: boolean;
             valid_nodes: string[];
+        };
+        SuggestRequest: {
+            domain: string;
+            schemas: components["schemas"]["FileSchema"][];
+        };
+        SuggestResponse: {
+            competency_questions: components["schemas"]["CompetencyQuestion"][];
         };
         TabularData: {
             column_types: {
@@ -1259,6 +1346,10 @@ export interface components {
         };
         UpdateUserRoleRequest: {
             role: string;
+        };
+        UploadFileRequest: {
+            content: string;
+            path: string;
         };
         ValidateRequest: {
             script: string;
@@ -1564,6 +1655,68 @@ export interface operations {
             };
             /** @description Insufficient role */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    generate_script: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Generated Fossil script */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerateResponse"];
+                };
+            };
+            /** @description AI provider not configured */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    suggest_cqs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuggestRequest"];
+            };
+        };
+        responses: {
+            /** @description Suggested competency questions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestResponse"];
+                };
+            };
+            /** @description AI provider not configured */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1965,6 +2118,92 @@ export interface operations {
                 };
             };
             /** @description File listing not supported */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Connection not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    upload_file: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Connection ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadFileRequest"];
+            };
+        };
+        responses: {
+            /** @description File uploaded */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Upload not supported */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Connection not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Upload failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_file_schema: {
+        parameters: {
+            query: {
+                /** @description Relative file path within the connection */
+                path: string;
+            };
+            header?: never;
+            path: {
+                /** @description Connection ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description File schema */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSchemaResponse"];
+                };
+            };
+            /** @description Schema inference failed or unsupported file type */
             400: {
                 headers: {
                     [name: string]: unknown;

@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FormField, FormActions } from "@/components/shared/form-layout";
+import { FormField } from "@/components/shared/form-layout";
+import { PageShell } from "@/components/layout/page-shell";
+import { UnsavedChangesGuard } from "@/components/shared/unsaved-changes-guard";
 import { getProviderIcon } from "@/lib/provider-icons";
 import { cn } from "@/lib/utils";
 import type { ProviderSchema, FieldSchema, CloudAccountSummary } from "@/lib/types";
@@ -82,6 +84,10 @@ export function CloudAccountForm({ schema, account, onSubmit }: CloudAccountForm
       return (val && val.trim()) || f.default_value;
     });
 
+  const isDirty = isEdit
+    ? name !== (account?.name ?? "") && !saving
+    : !!(name || selectedId) && !saving;
+
   async function handleSubmit() {
     setSaving(true);
     try {
@@ -97,92 +103,95 @@ export function CloudAccountForm({ schema, account, onSubmit }: CloudAccountForm
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {isEdit ? (
-        <Badge variant="secondary" className="w-fit">{selected?.label ?? selectedId}</Badge>
-      ) : (
-        <RadioGroup
-          value={selectedId}
-          onValueChange={(v) => {
-            setFieldsMap({});
-            setSelectedId(v);
-            setAuthMethod("");
-          }}
-          className="grid grid-cols-3 gap-3"
-        >
-          {schema.map((p) => {
-            const Icon = getProviderIcon(p.icon);
-            return (
-              <Label
-                key={p.id}
-                htmlFor={`provider-${p.id}`}
-                className={cn(
-                  "flex flex-col items-center justify-center text-center gap-2 py-4 px-3 rounded-md border cursor-pointer transition-colors",
-                  selectedId === p.id
-                    ? "border-primary bg-accent"
-                    : "border-border hover:bg-accent/50",
+    <PageShell>
+      <UnsavedChangesGuard isDirty={isDirty} />
+      <PageShell.Content className="space-y-4">
+        {isEdit ? (
+          <Badge variant="secondary" className="w-fit">{selected?.label ?? selectedId}</Badge>
+        ) : (
+          <RadioGroup
+            value={selectedId}
+            onValueChange={(v) => {
+              setFieldsMap({});
+              setSelectedId(v);
+              setAuthMethod("");
+            }}
+            className="grid grid-cols-3 gap-3"
+          >
+            {schema.map((p) => {
+              const Icon = getProviderIcon(p.icon);
+              return (
+                <Label
+                  key={p.id}
+                  htmlFor={`provider-${p.id}`}
+                  className={cn(
+                    "flex flex-col items-center justify-center text-center gap-2 py-4 px-3 rounded-md border cursor-pointer transition-colors",
+                    selectedId === p.id
+                      ? "border-primary bg-accent"
+                      : "border-border hover:bg-accent/50",
+                  )}
+                >
+                  <RadioGroupItem value={p.id} id={`provider-${p.id}`} className="sr-only" />
+                  <Icon className="h-6 w-6 text-muted-foreground" />
+                  <span className="text-xs font-medium">{p.label}</span>
+                </Label>
+              );
+            })}
+          </RadioGroup>
+        )}
+
+        <FormField label="Name" required>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Production Azure"
+            className="h-8 text-sm"
+          />
+        </FormField>
+
+        {selected && (
+          <>
+            {hasAuthMethods && (
+              <FormField label="Auth Method">
+                <ToggleGroup
+                  type="single"
+                  variant="outline"
+                  value={authMethod}
+                  onValueChange={(v) => { if (v) setAuthMethod(v); }}
+                  className="w-full"
+                >
+                  {selected.auth_methods.map((a) => (
+                    <ToggleGroupItem key={a.name} value={a.name} className="flex-1">
+                      {a.label}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </FormField>
+            )}
+
+            {allActiveFields.map((f) => (
+              <FormField key={f.name} label={f.label} optional={f.optional}>
+                {f.secret ? (
+                  <SecretInput
+                    hasStoredValue={isEdit}
+                    value={fields[f.name] ?? ""}
+                    onChange={(e) => setField(f.name, e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                ) : (
+                  <Input
+                    value={fields[f.name] ?? ""}
+                    onChange={(e) => setField(f.name, e.target.value)}
+                    className="h-8 text-sm"
+                  />
                 )}
-              >
-                <RadioGroupItem value={p.id} id={`provider-${p.id}`} className="sr-only" />
-                <Icon className="h-6 w-6 text-muted-foreground" />
-                <span className="text-xs font-medium">{p.label}</span>
-              </Label>
-            );
-          })}
-        </RadioGroup>
-      )}
+              </FormField>
+            ))}
+          </>
+        )}
+      </PageShell.Content>
 
-      <FormField label="Name" required>
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Production Azure"
-          className="h-8 text-sm"
-        />
-      </FormField>
-
-      {selected && (
-        <>
-          {hasAuthMethods && (
-            <FormField label="Auth Method">
-              <ToggleGroup
-                type="single"
-                variant="outline"
-                value={authMethod}
-                onValueChange={(v) => { if (v) setAuthMethod(v); }}
-                className="w-full"
-              >
-                {selected.auth_methods.map((a) => (
-                  <ToggleGroupItem key={a.name} value={a.name} className="flex-1">
-                    {a.label}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </FormField>
-          )}
-
-          {allActiveFields.map((f) => (
-            <FormField key={f.name} label={f.label} optional={f.optional}>
-              {f.secret ? (
-                <SecretInput
-                  hasStoredValue={isEdit}
-                  value={fields[f.name] ?? ""}
-                  onChange={(e) => setField(f.name, e.target.value)}
-                  className="h-8 text-sm"
-                />
-              ) : (
-                <Input
-                  value={fields[f.name] ?? ""}
-                  onChange={(e) => setField(f.name, e.target.value)}
-                  className="h-8 text-sm"
-                />
-              )}
-            </FormField>
-          ))}
-        </>
-      )}
-
-      <FormActions>
+      <PageShell.Footer>
         <div />
         <Button
           size="sm"
@@ -191,7 +200,7 @@ export function CloudAccountForm({ schema, account, onSubmit }: CloudAccountForm
         >
           {saving ? "Saving..." : isEdit ? "Save" : "Create"}
         </Button>
-      </FormActions>
-    </div>
+      </PageShell.Footer>
+    </PageShell>
   );
 }

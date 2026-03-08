@@ -15,6 +15,13 @@ import {
 } from "@tanstack/react-table"
 import { ArrowUpDown, MoreHorizontal, Settings2 } from "lucide-react"
 
+declare module '@tanstack/react-table' {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TData, TValue> {
+    fixedWidth?: boolean
+  }
+}
+
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -68,6 +75,8 @@ export function selectColumn<T>(): ColumnDef<T> {
     ),
     enableSorting: false,
     enableHiding: false,
+    size: 40,
+    meta: { fixedWidth: true },
   }
 }
 
@@ -98,6 +107,8 @@ export function actionsColumn<T>(
     id: "actions",
     enableSorting: false,
     enableHiding: false,
+    size: 48,
+    meta: { fixedWidth: true },
     cell: ({ row }) => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -223,7 +234,13 @@ export function DataTable<TData, TValue>({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
+                <TableHead
+                  key={header.id}
+                  style={header.column.columnDef.meta?.fixedWidth
+                    ? { width: `${header.getSize()}px` }
+                    : undefined
+                  }
+                >
                   {header.isPlaceholder
                     ? null
                     : flexRender(header.column.columnDef.header, header.getContext())}
@@ -242,7 +259,13 @@ export function DataTable<TData, TValue>({
                 onClick={() => onRowClick?.(row.original)}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell
+                    key={cell.id}
+                    style={cell.column.columnDef.meta?.fixedWidth
+                      ? { width: `${cell.column.getSize()}px` }
+                      : undefined
+                    }
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}

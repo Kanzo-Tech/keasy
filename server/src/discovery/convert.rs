@@ -5,6 +5,8 @@ use std::collections::hash_map::DefaultHasher;
 use oxrdf::{Term, Triple};
 use serde::Serialize;
 
+use super::vocab;
+
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct GraphData {
     pub nodes: Vec<GraphNode>,
@@ -96,11 +98,9 @@ fn ensure_node(
 }
 
 pub fn triples_to_graph_data(triples: &[Triple]) -> GraphData {
-    let rdf_type = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
-
     let mut type_map: HashMap<String, String> = HashMap::new();
     for triple in triples {
-        if triple.predicate.as_str() == rdf_type
+        if triple.predicate.as_str() == vocab::RDF_TYPE
             && let Term::NamedNode(obj) = &triple.object
         {
             let subj = clean_id(&triple.subject.to_string());
@@ -140,7 +140,7 @@ pub fn triples_to_graph_data(triples: &[Triple]) -> GraphData {
         let pred = triple.predicate.as_str();
         let subj = clean_id(&triple.subject.to_string());
 
-        if pred == rdf_type {
+        if pred == vocab::RDF_TYPE {
             ensure_node(&mut all_nodes, &subj, &label_map, &type_map, &mut props_map);
             continue;
         }

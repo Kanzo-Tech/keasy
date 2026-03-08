@@ -3,6 +3,7 @@
 // This lib.rs re-exports what integration tests need.
 
 pub mod ai;
+pub mod assistant;
 pub mod auth;
 pub mod cloud;
 pub mod config;

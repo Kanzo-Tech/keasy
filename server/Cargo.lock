@@ -2306,6 +2306,7 @@ dependencies = [
  "aes-gcm",
  "axum",
  "base64 0.22.1",
+ "csv",
  "fossil-ifc",
  "fossil-lang",
  "fossil-lsp",

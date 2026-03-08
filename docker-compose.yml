@@ -19,8 +19,7 @@ services:
       retries: 5
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.1
-    platform: linux/amd64
+    image: quay.io/keycloak/keycloak:26.2
     command: ["start-dev", "--import-realm"]
     environment:
       KC_DB: postgres
@@ -49,8 +48,8 @@ services:
         ]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 60s
+      retries: 10
+      start_period: 300s
 
   # ── Application ─────────────────────────────────────────────────────────────
 

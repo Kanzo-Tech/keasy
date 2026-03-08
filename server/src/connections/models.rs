@@ -100,6 +100,23 @@ impl CreateConnectionRequest {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct ColumnInfo {
+    pub name: String,
+    pub data_type: String,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct FileSchemaResponse {
+    pub columns: Vec<ColumnInfo>,
+}
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct UploadFileRequest {
+    pub path: String,
+    pub content: String,
+}
+
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct UpdateConnectionRequest {
     pub name: Option<String>,

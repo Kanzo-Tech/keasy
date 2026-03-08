@@ -13,6 +13,7 @@ import {
 } from "@codemirror/autocomplete";
 import { linter, type Diagnostic } from "@codemirror/lint";
 import { cn } from "@/lib/utils";
+import { formatSize } from "@/lib/formatters";
 import {
   lightHighlight, darkHighlight,
   lightTheme, darkTheme,
@@ -178,33 +179,34 @@ function connectionCompletion(
 
 /** Completion source that calls the server for `row.` / `Module.` completions. */
 function fossilCompletion(
-  cacheRef: React.RefObject<{ source: string; items: FossilCompletionItem[] } | null>,
+  cacheRef: React.RefObject<{ source: string; receiver: string; items: FossilCompletionItem[] } | null>,
 ) {
-  let pending: Promise<FossilCompletionItem[]> | null = null;
+  let pending: { source: string; receiver: string; promise: Promise<FossilCompletionItem[]> } | null = null;
 
   return async (context: CompletionContext): Promise<CompletionResult | null> => {
     const match = context.matchBefore(/\w+\.\w*/);
     if (!match) return null;
 
     const source = context.state.doc.toString();
+    const dotIdx = match.text.indexOf(".");
+    const receiver = match.text.slice(0, dotIdx);
     let items: FossilCompletionItem[];
 
-    if (cacheRef.current && cacheRef.current.source === source) {
+    if (cacheRef.current && cacheRef.current.source === source && cacheRef.current.receiver === receiver) {
       items = cacheRef.current.items;
+    } else if (pending && pending.receiver === receiver && pending.source === source) {
+      items = await pending.promise;
     } else {
-      if (!pending) {
-        pending = api.fossil.analyze(source, context.pos).then((r) => {
-          cacheRef.current = { source, items: r.completions };
-          pending = null;
-          return r.completions;
-        });
-      }
-      items = await pending;
+      const promise = api.fossil.analyze(source, context.pos).then((r) => {
+        cacheRef.current = { source, receiver, items: r.completions };
+        return r.completions;
+      }).finally(() => { pending = null; });
+      pending = { source, receiver, promise };
+      items = await promise;
     }
 
     if (items.length === 0) return null;
 
-    const dotIdx = match.text.indexOf(".");
     return {
       from: match.from + dotIdx + 1,
       options: items.map((item) => ({
@@ -236,17 +238,40 @@ function fossilLinter() {
   }, { delay: 500 });
 }
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+// ── Composable Fossil extensions ────────────────────────────────────────
+
+export { fossilLanguage };
+
+export function fossilAutocomplete(
+  connections: Connection[],
+  providers: ProviderInfo[],
+  fileCacheRef: React.RefObject<Map<string, FileEntry[]>>,
+  completionCacheRef: React.RefObject<{ source: string; receiver: string; items: FossilCompletionItem[] } | null>,
+): Extension {
+  const completionSources = [
+    fossilCompletion(completionCacheRef),
+  ];
+  if (connections.length > 0) {
+    completionSources.unshift(
+      connectionCompletion(connections, providers, fileCacheRef.current),
+    );
+  }
+  return autocompletion({
+    override: completionSources,
+    activateOnTyping: true,
+  });
 }
+
+export function fossilLinterExtension(): Extension {
+  return fossilLinter();
+}
+
+// ── Generic CodeEditor ──────────────────────────────────────────────────
 
 interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
-  connections?: Connection[];
-  providers?: ProviderInfo[];
+  extensions?: Extension[];
   placeholder?: string;
   className?: string;
 }
@@ -254,8 +279,7 @@ interface CodeEditorProps {
 export function CodeEditor({
   value,
   onChange,
-  connections = [],
-  providers = [],
+  extensions: extraExtensions,
   placeholder,
   className,
 }: CodeEditorProps) {
@@ -263,8 +287,6 @@ export function CodeEditor({
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
-  const fileCacheRef = useRef(new Map<string, FileEntry[]>());
-  const completionCacheRef = useRef<{ source: string; items: FossilCompletionItem[] } | null>(null);
   const isDark = useIsDark();
 
   const createExtensions = useCallback((): Extension[] => {
@@ -275,7 +297,6 @@ export function CodeEditor({
       keymap.of([...defaultKeymap, indentWithTab]),
       isDark ? darkTheme : lightTheme,
       syntaxHighlighting(isDark ? darkHighlight : lightHighlight),
-      fossilLanguage(),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           onChangeRef.current(update.state.doc.toString());
@@ -290,30 +311,18 @@ export function CodeEditor({
           backgroundColor: "oklch(var(--cm-active-bg) / 5%)",
         },
       }),
-      fossilLinter(),
     ];
 
     if (placeholder) {
       exts.push(cmPlaceholder(placeholder));
     }
 
-    const completionSources = [
-      fossilCompletion(completionCacheRef),
-    ];
-    if (connections.length > 0) {
-      completionSources.unshift(
-        connectionCompletion(connections, providers, fileCacheRef.current),
-      );
+    if (extraExtensions) {
+      exts.push(...extraExtensions);
     }
-    exts.push(
-      autocompletion({
-        override: completionSources,
-        activateOnTyping: true,
-      }),
-    );
 
     return exts;
-  }, [isDark, connections, providers, placeholder]);
+  }, [isDark, placeholder, extraExtensions]);
 
   useEffect(() => {
     if (!containerRef.current) return;

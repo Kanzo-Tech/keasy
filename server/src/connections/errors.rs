@@ -8,6 +8,10 @@ pub enum ConnectionError {
     InvalidConnection(String),
     #[error("failed to list files: {0}")]
     ListFilesFailed(String),
+    #[error("schema inference failed: {0}")]
+    SchemaInferenceFailed(String),
+    #[error("upload failed: {0}")]
+    UploadFailed(String),
     #[error("internal: {0}")]
     Internal(String),
 }
@@ -33,6 +37,16 @@ impl ConnectionError {
             ConnectionError::ListFilesFailed(msg) => (
                 axum::http::StatusCode::BAD_GATEWAY,
                 "list_files_failed",
+                msg.clone(),
+            ),
+            ConnectionError::SchemaInferenceFailed(msg) => (
+                axum::http::StatusCode::BAD_REQUEST,
+                "schema_inference_failed",
+                msg.clone(),
+            ),
+            ConnectionError::UploadFailed(msg) => (
+                axum::http::StatusCode::BAD_GATEWAY,
+                "upload_failed",
                 msg.clone(),
             ),
             ConnectionError::Internal(msg) => {

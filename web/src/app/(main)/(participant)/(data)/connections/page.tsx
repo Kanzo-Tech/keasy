@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 
+import { PageContent } from "@/components/layout/page-content";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -124,6 +125,7 @@ function ConnectionsContent() {
   );
 
   return (
+    <PageContent className="flex flex-col gap-4 overflow-hidden">
     <Tabs value={tab} onValueChange={handleTabChange}>
       <TabsList>
         <TabsTrigger value="data" className="gap-1.5">
@@ -168,5 +170,6 @@ function ConnectionsContent() {
           />
         )}
     </Tabs>
+    </PageContent>
   );
 }

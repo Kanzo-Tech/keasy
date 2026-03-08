@@ -4,6 +4,7 @@ import type {
   ProviderSchema,
   ProviderInfo,
   ComplyEvent,
+  FossilAnalysis,
   JobEvent,
   TabularData,
 } from "./types";
@@ -98,6 +99,18 @@ export const api = {
       unwrap(await client.GET("/v1/connections/{id}/files", {
         params: { path: { id } },
       })),
+
+    schema: async (id: string, path: string) =>
+      unwrap(await client.GET("/v1/connections/{id}/schema", {
+        params: { path: { id }, query: { path } },
+      })),
+
+    upload: async (id: string, path: string, content: string) => {
+      await client.PUT("/v1/connections/{id}/files", {
+        params: { path: { id } },
+        body: { path, content },
+      });
+    },
   },
 
   // ── Cloud Accounts ────────────────────────────────────────────────────
@@ -324,10 +337,33 @@ export const api = {
       unwrap(await client.GET("/v1/status")),
   },
 
+  // ── Assistant ──────────────────────────────────────────────────────────
+  assistant: {
+    suggest: async (req: Schemas["SuggestRequest"]) =>
+      unwrap(await client.POST("/v1/assistant/suggest", { body: req })),
+
+    generate: async (req: Schemas["GenerateRequest"]) =>
+      unwrap(await client.POST("/v1/assistant/generate", { body: req })),
+  },
+
   // ── Scripts ───────────────────────────────────────────────────────────
   scripts: {
     validate: async (script: string) =>
       unwrap(await client.POST("/v1/scripts/validate", { body: { script } })),
+  },
+
+  // ── Fossil Analysis ────────────────────────────────────────────────────
+  fossil: {
+    analyze: async (script: string, cursorOffset: number) => {
+      const res = await fetch("/v1/fossil/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ script, cursor_offset: cursorOffset }),
+      });
+      if (!res.ok) return { completions: [], diagnostics: [] } as FossilAnalysis;
+      return (await res.json()) as FossilAnalysis;
+    },
   },
 
   // ── Validation ────────────────────────────────────────────────────────

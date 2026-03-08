@@ -7,6 +7,7 @@ use crate::db::Database;
 use crate::connections::models::Connection;
 use crate::tenant::{OrgId, TenantScoped};
 
+#[derive(Clone)]
 pub struct ResolvedScript {
     pub script: String,
     pub storage: StorageConfig,

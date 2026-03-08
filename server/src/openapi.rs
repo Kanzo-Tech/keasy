@@ -28,6 +28,8 @@ use utoipa::OpenApi;
         crate::connections::routes::update_connection,
         crate::connections::routes::delete_connection,
         crate::connections::routes::list_connection_files,
+        crate::connections::routes::upload_file,
+        crate::connections::routes::get_file_schema,
         // Cloud Accounts
         crate::cloud::routes::list_accounts,
         crate::cloud::routes::create_account,
@@ -89,6 +91,9 @@ use utoipa::OpenApi;
         crate::ai::routes::get_conversation_messages,
         crate::ai::routes::rename_conversation,
         crate::ai::routes::delete_conversation,
+        // Assistant
+        crate::assistant::routes::suggest_cqs,
+        crate::assistant::routes::generate_script,
         // Dashboard Layout
         crate::jobs::routes::get_dashboard_layout,
         crate::jobs::routes::save_dashboard_layout,
@@ -118,6 +123,9 @@ use utoipa::OpenApi;
         crate::connections::models::LocationType,
         crate::connections::models::CreateConnectionRequest,
         crate::connections::models::UpdateConnectionRequest,
+        crate::connections::models::UploadFileRequest,
+        crate::connections::models::ColumnInfo,
+        crate::connections::models::FileSchemaResponse,
         // Cloud Accounts
         crate::cloud::models::CloudAccountSummary,
         crate::cloud::models::CreateCloudAccountRequest,
@@ -192,6 +200,13 @@ use utoipa::OpenApi;
         crate::ai::routes::RenameConversationRequest,
         crate::ai::models::Conversation,
         crate::ai::models::ConversationMessage,
+        // Assistant
+        crate::assistant::models::FileSchema,
+        crate::assistant::models::SuggestRequest,
+        crate::assistant::models::SuggestResponse,
+        crate::assistant::models::CompetencyQuestion,
+        crate::assistant::models::GenerateRequest,
+        crate::assistant::models::GenerateResponse,
         // Cloud files
         crate::cloud::reader::FileEntry,
     ))

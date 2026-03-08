@@ -9,7 +9,9 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { getProviderIcon } from "@/lib/provider-icons";
-import { FormField, FormActions } from "@/components/shared/form-layout";
+import { FormField } from "@/components/shared/form-layout";
+import { PageShell } from "@/components/layout/page-shell";
+import { UnsavedChangesGuard } from "@/components/shared/unsaved-changes-guard";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
@@ -23,7 +25,6 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { ComingSoon } from "@/components/shared/coming-soon";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { ConnectionKind, LocationType } from "@/lib/types";
 
@@ -101,6 +102,7 @@ export function ConnectionEditor() {
         url: fullUrl,
       });
       toast.success("Connection created");
+      queryClient.invalidateQueries({ queryKey: queryKeys.connections.all() });
       queryClient.invalidateQueries({ queryKey: ["connections-init"] });
       router.push(`/connections?type=${connectionKind}`);
     } catch (err) {
@@ -112,9 +114,12 @@ export function ConnectionEditor() {
     }
   }
 
+  const isDirty = !!(name || url || selectedAccount) && !saving;
+
   return (
-    <ScrollArea className="flex-1 min-h-0">
-      <div className="space-y-4">
+    <PageShell>
+      <UnsavedChangesGuard isDirty={isDirty} />
+      <PageShell.Content className="space-y-4">
       <FormField
         label="Name"
         description="Used as identifier in @references (e.g. @my-connection/file.csv)"
@@ -291,13 +296,13 @@ export function ConnectionEditor() {
         </FormField>
       )}
 
-      <FormActions>
+      </PageShell.Content>
+      <PageShell.Footer>
         <div />
         <Button size="sm" disabled={!canSave || saving} onClick={handleSubmit}>
           {saving ? "Creating..." : "Create"}
         </Button>
-      </FormActions>
-      </div>
-    </ScrollArea>
+      </PageShell.Footer>
+    </PageShell>
   );
 }

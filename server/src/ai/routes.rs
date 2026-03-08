@@ -474,7 +474,7 @@ pub struct AskResponse {
     pub reasoning: Option<String>,
 }
 
-fn strip_markdown_fences(raw: &str) -> &str {
+pub fn strip_markdown_fences(raw: &str) -> &str {
     let mid = raw
         .strip_prefix("```json")
         .or_else(|| raw.strip_prefix("```"))

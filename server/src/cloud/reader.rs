@@ -46,6 +46,20 @@ pub async fn list_files(
     Ok(entries)
 }
 
+pub async fn upload(
+    url: &str,
+    content: Vec<u8>,
+    creds: &HashMap<String, String>,
+) -> Result<(), String> {
+    let (store, path) = super::build_store(url, creds).map_err(|e| e.to_string())?;
+    let payload = object_store::PutPayload::from(content);
+    store
+        .put(&path, payload)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 pub async fn download(
     url: &str,
     creds: &HashMap<String, String>,

@@ -28,14 +28,3 @@ export function FormField({
     </div>
   );
 }
-
-export function FormActions({ children, sticky }: { children: React.ReactNode; sticky?: boolean }) {
-  return (
-    <div className={cn(
-      "flex items-center justify-between pt-2",
-      sticky && "sticky bottom-0 bg-background py-4",
-    )}>
-      {children}
-    </div>
-  );
-}

@@ -2,24 +2,6 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
-pub enum TermValue {
-    Iri(String),
-    Literal {
-        value: String,
-        datatype: Option<String>,
-        language: Option<String>,
-    },
-    BlankNode(String),
-}
-
-#[derive(Debug, Clone)]
-pub struct KeasyTriple {
-    pub subject: TermValue,
-    pub predicate: String,
-    pub object: TermValue,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct TabularData {
     pub columns: Vec<String>,
@@ -33,4 +15,5 @@ pub struct SearchResult {
     pub id: String,
     pub label: String,
     pub group: String,
+    pub description: Option<String>,
 }

@@ -6,30 +6,17 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { MetaItem } from "@/components/shared/meta-item";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { PageShell } from "@/components/layout/page-shell";
+import { FileExplorer } from "@/components/connections/file-explorer";
 import { getProviderIcon } from "@/lib/provider-icons";
 
 function ProviderIcon({ icon }: { icon: string }) {
   return createElement(getProviderIcon(icon), {
     className: "h-4 w-4 text-muted-foreground",
   });
-}
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function ConnectionDetail({ id }: { id: string }) {
@@ -82,7 +69,7 @@ export function ConnectionDetail({ id }: { id: string }) {
   }
 
   return (
-    <ScrollArea className="flex-1 min-h-0">
+    <PageShell.Content>
       <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
         {connection.location_type === "cloud" && (
           <div className="space-y-0.5">
@@ -103,62 +90,14 @@ export function ConnectionDetail({ id }: { id: string }) {
       </div>
 
       {connection.location_type === "cloud" && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium">Files</h3>
-          {filesLoading ? (
-            <div className="border rounded-md p-3 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-4 w-full" />
-              ))}
-            </div>
-          ) : files.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No files found.</p>
-          ) : (
-            (() => {
-              const supportedExts = providers
-                .filter((p) =>
-                  connection.kind === "data"
-                    ? p.kind === "data" || p.kind === "both"
-                    : p.kind === "schema" || p.kind === "both",
-                )
-                .flatMap((p) => p.extensions);
-              const filtered =
-                supportedExts.length > 0
-                  ? files.filter((f) => {
-                      const ext = f.path.split(".").pop()?.toLowerCase() ?? "";
-                      return supportedExts.includes(ext);
-                    })
-                  : files;
-              return filtered.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  No supported files found.
-                </p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Path</TableHead>
-                      <TableHead className="w-24 text-right">Size</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map((f) => (
-                      <TableRow key={f.path}>
-                        <TableCell className="font-mono text-xs">
-                          {f.path}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground text-right">
-                          {formatSize(f.size)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              );
-            })()
-          )}
-        </div>
+        <FileExplorer
+          connectionName={connection.name}
+          connectionKind={connection.kind}
+          files={files}
+          isLoading={filesLoading}
+          providers={providers}
+        />
       )}
-    </ScrollArea>
+    </PageShell.Content>
   );
 }

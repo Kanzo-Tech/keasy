@@ -65,6 +65,7 @@ urlencoding = "2"
 rcgen = "0.13"
 rand_core06 = { package = "rand_core", version = "0.6", features = ["getrandom"] }
 utoipa = { version = "5", features = ["axum_extras"] }
+csv = "1"
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

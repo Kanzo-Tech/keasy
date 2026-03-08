@@ -235,7 +235,6 @@ export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
                         id: query.trim(),
                         label: query.trim(),
                         group: "resource",
-                        description: null,
                       });
                     }
                   }

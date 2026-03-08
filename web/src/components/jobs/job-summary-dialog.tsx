@@ -2,12 +2,9 @@
 
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { MetaItem } from "@/components/shared/meta-item";
+import { PageShell } from "@/components/layout/page-shell";
 import { PipelineSection } from "@/components/pipeline-flow/pipeline-section";
-import { Section } from "@/components/shared/section";
-import { cn } from "@/lib/utils";
 import { reverseMapUrl, reverseMapPipeline } from "@/lib/formatters";
 import type { RunMode, ValidationResult, Connection } from "@/lib/types";
 
@@ -19,8 +16,6 @@ interface JobSummaryPanelProps {
   mode: RunMode;
   validation: ValidationResult;
   dcatEnabled: boolean;
-  onDcatToggle: (enabled: boolean) => void;
-  orgConfigured: boolean;
   connections?: Connection[];
 }
 
@@ -52,8 +47,6 @@ export function JobSummaryPanel({
   mode,
   validation,
   dcatEnabled,
-  onDcatToggle,
-  orgConfigured,
   connections = [],
 }: JobSummaryPanelProps) {
   const rawDests = [
@@ -74,60 +67,32 @@ export function JobSummaryPanel({
   const mappedPipeline = reverseMapPipeline(validation.pipeline, connections);
 
   return (
-    <div className="flex flex-col gap-5 flex-1 min-h-0">
-      {/* Job info */}
-      <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetaItem label="Name" value={jobName || "Unnamed"} />
-        <MetaItem label="Mode" value={mode} capitalize />
-        {destinations.length > 0 && (
-          <MetaItem label="Destination" value={destinations.join(", ")} mono />
-        )}
-        {formats.length > 0 && (
-          <MetaItem label="Format" value={formats.join(", ")} />
-        )}
-      </div>
-
-      {/* Pipeline */}
-      {(mappedPipeline.inputs.length > 0 || mappedPipeline.outputs.length > 0) ? (
-        <PipelineSection pipeline={mappedPipeline} className="flex-1 min-h-0 flex flex-col" />
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          No data connections or outputs detected in the script.
-        </p>
-      )}
-
-      {/* DCAT toggle card — always visible, disabled when org not configured */}
-      <Section label="Options">
-        <div
-          className={cn(
-            "flex items-center justify-between rounded-lg border p-3 transition-colors",
-            !orgConfigured
-              ? "border-border opacity-50"
-              : dcatEnabled
-                ? "border-primary/50 bg-primary/5"
-                : "border-border"
+    <PageShell>
+      <PageShell.Content className="flex flex-col space-y-5">
+        {/* Job info */}
+        <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+          <MetaItem label="Name" value={jobName || "Unnamed"} />
+          <MetaItem label="Mode" value={mode} capitalize />
+          <MetaItem label="DCAT Catalog" value={dcatEnabled ? "Enabled" : "Disabled"} />
+          {destinations.length > 0 && (
+            <MetaItem label="Destination" value={destinations.join(", ")} mono />
           )}
-        >
-          <div className="space-y-0.5">
-            <Label htmlFor="dcat-toggle" className="text-sm font-medium">
-              DCAT-AP Catalog
-            </Label>
-            <p className="text-xs text-muted-foreground">
-              {orgConfigured
-                ? "Generate a DCAT-AP metadata record for the published datasets"
-                : "Requires organization identity to be configured"}
-            </p>
-          </div>
-          <Switch
-            id="dcat-toggle"
-            checked={dcatEnabled && orgConfigured}
-            onCheckedChange={(checked) => onDcatToggle(checked)}
-            disabled={!orgConfigured}
-          />
+          {formats.length > 0 && (
+            <MetaItem label="Format" value={formats.join(", ")} />
+          )}
         </div>
-      </Section>
 
-      <div className="flex items-center justify-between pt-2">
+        {/* Pipeline */}
+        {(mappedPipeline.inputs.length > 0 || mappedPipeline.outputs.length > 0) ? (
+          <PipelineSection pipeline={mappedPipeline} className="flex-1 min-h-0 flex flex-col" />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No data connections or outputs detected in the script.
+          </p>
+        )}
+      </PageShell.Content>
+
+      <PageShell.Footer>
         <Button
           variant="ghost"
           size="sm"
@@ -140,7 +105,7 @@ export function JobSummaryPanel({
         <Button onClick={onConfirm} disabled={submitting}>
           {submitting ? "Creating..." : "Confirm"}
         </Button>
-      </div>
-    </div>
+      </PageShell.Footer>
+    </PageShell>
   );
 }

@@ -25,7 +25,17 @@ export type LocationType = S["LocationType"];
 export type Connection = S["Connection"];
 export type CreateConnectionRequest = S["CreateConnectionRequest"];
 export type UpdateConnectionRequest = S["UpdateConnectionRequest"];
+export type ColumnInfo = S["ColumnInfo"];
+export type FileSchemaResponse = S["FileSchemaResponse"];
 export type AiSettings = S["AiSettingsPayload"];
+
+// Assistant types
+export type FileSchema = S["FileSchema"];
+export type CompetencyQuestion = S["CompetencyQuestion"];
+export type SuggestRequest = S["SuggestRequest"];
+export type SuggestResponse = S["SuggestResponse"];
+export type GenerateRequest = S["GenerateRequest"];
+export type GenerateResponse = S["GenerateResponse"];
 
 // Alias: server calls it JobRuntimeError, frontend used JobError
 export type JobError = S["JobRuntimeError"];
@@ -65,6 +75,12 @@ export type InviteInfoResponse = S["InviteInfoResponse"];
 export type LogoutResponse = S["LogoutResponse"];
 export type CreateOrgInviteResponse = S["CreateOrgInviteResponse"];
 export type CatalogResponse = S["CatalogResponse"];
+
+// ---------------------------------------------------------------------------
+// UI-only union types
+// ---------------------------------------------------------------------------
+
+export type CreationMode = "studio" | "assistant";
 
 // ---------------------------------------------------------------------------
 // Types NOT in the OpenAPI spec — remain manually defined (UI/static config)
@@ -114,6 +130,28 @@ export type WorkspacesResponse = S["WorkspacesResponse"];
 export type ComplianceCredential = S["ComplianceCredential"];
 export type ComplyEvent = S["ComplyEvent"];
 export type JobEvent = S["JobEvent"];
+
+// ---------------------------------------------------------------------------
+// Fossil Analysis types (editor completions/diagnostics)
+// ---------------------------------------------------------------------------
+
+export interface FossilCompletionItem {
+  label: string;
+  kind: "property" | "method" | "function" | "variable" | "type" | "keyword" | "text" | "field";
+  detail: string;
+}
+
+export interface FossilDiagnosticItem {
+  from: number;
+  to: number;
+  severity: "error" | "warning" | "info" | "hint";
+  message: string;
+}
+
+export interface FossilAnalysis {
+  completions: FossilCompletionItem[];
+  diagnostics: FossilDiagnosticItem[];
+}
 
 // ---------------------------------------------------------------------------
 // Admin types — re-exported from schema

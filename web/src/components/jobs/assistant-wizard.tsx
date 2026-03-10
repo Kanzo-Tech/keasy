@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   type ColumnDef,
@@ -273,9 +273,8 @@ function StepConnections({
         </TableHeader>
         <TableBody>
           {table.getRowModel().rows.map((row) => (
-            <>
+            <Fragment key={row.id}>
               <TableRow
-                key={row.id}
                 className="cursor-pointer"
                 onClick={() => row.toggleSelected()}
               >
@@ -296,7 +295,7 @@ function StepConnections({
                   onSupportedCount={(count) => onSupportedCount(row.id, count)}
                 />
               )}
-            </>
+            </Fragment>
           ))}
         </TableBody>
       </Table>

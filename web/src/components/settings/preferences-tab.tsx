@@ -7,8 +7,7 @@ import { usePreferences } from "@/components/providers/preferences-provider";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { PageShell } from "@/components/layout/page-shell";
 import { FormField } from "@/components/shared/form-layout";
-import { RadioCardGroup } from "@/components/shared/radio-card-group";
-import type { RadioCardOption } from "@/components/shared/radio-card-group";
+import { RadioCardGroup, type RadioCardOption } from "@/components/shared/radio-card-group";
 import {
   Select,
   SelectContent,

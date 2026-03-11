@@ -23,7 +23,6 @@ interface RadioCardGroupProps {
   onValueChange: (v: string) => void;
   options: readonly RadioCardOption[];
   disabled?: boolean;
-  columns?: number;
 }
 
 export function RadioCardGroup({
@@ -32,14 +31,13 @@ export function RadioCardGroup({
   onValueChange,
   options,
   disabled,
-  columns = 3,
 }: RadioCardGroupProps) {
   return (
     <RadioGroup
       value={value}
       onValueChange={onValueChange}
       disabled={disabled}
-      className={cn("grid gap-3", `grid-cols-${columns}`)}
+      className="grid grid-cols-3 gap-3"
     >
       {options.map((opt) => {
         const id = `rc-${name}-${opt.value}`;

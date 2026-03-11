@@ -190,6 +190,10 @@ pub fn build_router(
             axum::routing::post(crate::discovery::routes::chart_discover),
         )
         .route(
+            "/v1/jobs/{id}/discover/field-stats",
+            axum::routing::get(crate::discovery::routes::field_stats),
+        )
+        .route(
             "/v1/jobs/{id}/discover/export",
             axum::routing::get(crate::discovery::routes::export_discover),
         )

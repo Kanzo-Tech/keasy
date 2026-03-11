@@ -1559,6 +1559,43 @@
         }
       }
     },
+    "/v1/jobs/{id}/discover/field-stats": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "operationId": "field_stats",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Field statistics from graph profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FieldStats"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Job not ready"
+          }
+        }
+      }
+    },
     "/v1/jobs/{id}/discover/load": {
       "post": {
         "tags": [
@@ -2298,6 +2335,15 @@
           }
         }
       },
+      "Aggregation": {
+        "type": "string",
+        "enum": [
+          "count",
+          "sum",
+          "avg",
+          "none"
+        ]
+      },
       "AiSettingsPayload": {
         "type": "object",
         "required": [
@@ -2418,25 +2464,59 @@
       "ChartRequest": {
         "type": "object",
         "required": [
-          "x_predicate"
+          "x"
         ],
         "properties": {
           "aggregation": {
-            "type": "string"
+            "$ref": "#/components/schemas/Aggregation"
           },
-          "group_predicate": {
-            "type": [
-              "string",
-              "null"
+          "group": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FieldRef",
+                "description": "Group-by / split-by field reference"
+              }
             ]
           },
-          "x_predicate": {
-            "type": "string"
+          "group_top_n": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Limit split-by categories to top N (rest collapsed into \"Other\")",
+            "minimum": 0
           },
-          "y_predicate": {
+          "rdf_type": {
             "type": [
               "string",
               "null"
+            ],
+            "description": "RDF type IRI to scope the query to a single entity type"
+          },
+          "top_n": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Limit x-axis categories to top N (rest collapsed into \"Other\")",
+            "minimum": 0
+          },
+          "x": {
+            "$ref": "#/components/schemas/FieldRef",
+            "description": "X-axis field reference"
+          },
+          "y": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FieldRef",
+                "description": "Y-axis field reference (optional — omit for count-only)"
+              }
             ]
           }
         }
@@ -3063,6 +3143,105 @@
             "type": "string"
           },
           "target": {
+            "type": "string"
+          }
+        }
+      },
+      "FieldRef": {
+        "type": "object",
+        "description": "A reference to a field, including the traversal path from the anchor subject.",
+        "required": [
+          "predicate"
+        ],
+        "properties": {
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Object property IRIs to traverse from the root subject (empty = direct field)"
+          },
+          "predicate": {
+            "type": "string",
+            "description": "Predicate IRI of the target field"
+          }
+        }
+      },
+      "FieldStats": {
+        "type": "object",
+        "required": [
+          "predicate",
+          "short_name",
+          "count",
+          "distinct",
+          "is_numeric",
+          "is_object_property"
+        ],
+        "properties": {
+          "avg": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "distinct": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "is_numeric": {
+            "type": "boolean"
+          },
+          "is_object_property": {
+            "type": "boolean"
+          },
+          "max": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "min": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "predicate": {
+            "type": "string"
+          },
+          "short_name": {
+            "type": "string"
+          },
+          "top_values": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/FieldTopValue"
+            }
+          }
+        }
+      },
+      "FieldTopValue": {
+        "type": "object",
+        "required": [
+          "value",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "value": {
             "type": "string"
           }
         }

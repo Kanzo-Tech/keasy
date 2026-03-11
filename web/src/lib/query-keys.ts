@@ -67,8 +67,9 @@ export const queryKeys = {
     load: (jobId: string) => ["discovery", jobId] as const,
     explorer: (jobId?: string) => ["explorer", jobId ?? "all"] as const,
     db: (jobId: string) => ["discovery-db", jobId] as const,
-    chart: (jobId: string, xAxis: string, yAxis: string, groupBy: string, type: string, agg: string) =>
-      ["chart", jobId, xAxis, yAxis, groupBy, type, agg] as const,
+    chart: (jobId: string, xAxis: string, yAxis: string, groupBy: string, type: string, agg: string, rdfType = "") =>
+      ["chart", jobId, xAxis, yAxis, groupBy, type, agg, rdfType] as const,
+    fieldStats: (jobId: string) => ["discovery", jobId, "field-stats"] as const,
   },
 
   // Conversations

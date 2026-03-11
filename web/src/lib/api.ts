@@ -12,6 +12,8 @@ import type {
 export { ApiError };
 export type { ServiceStatus } from "./types";
 
+export type FieldStatsItem = Schemas["FieldStats"];
+
 async function* parseSseStream<T>(reader: ReadableStreamDefaultReader<Uint8Array>): AsyncGenerator<T> {
   const decoder = new TextDecoder();
   let buf = "";
@@ -145,6 +147,11 @@ export const api = {
         params: { path: { id } },
         body: request,
       })) as TabularData, // Override: rows type differs from schema
+
+    fieldStats: async (id: string) =>
+      unwrap(await client.GET("/v1/jobs/{id}/discover/field-stats", {
+        params: { path: { id } },
+      })) as FieldStatsItem[],
 
     ask: async (id: string, question: string, conversationId?: string, provider?: string) =>
       unwrap(await client.POST("/v1/jobs/{id}/discover/ask", {

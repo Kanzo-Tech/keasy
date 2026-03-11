@@ -19,12 +19,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageShell } from "@/components/layout/page-shell";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   ChartWidget,
   CHART_RULES,
-  isNumeric,
   isChartAvailable,
   defaultAxesForType,
 } from "@/components/discovery/chart-widget";
@@ -36,16 +34,14 @@ import {
   type ChartWidget as ChartWidgetType,
   type DashboardColumns,
 } from "@/lib/dashboard-store";
-import type { PipelineOutput } from "@/lib/types";
+import {
+  buildAnalyticalSchema,
+  defaultAnchorType,
+  type AnalyticalSchema,
+} from "@/lib/analytical-schema";
 
 interface DashboardBuilderProps {
   jobId: string;
-}
-
-export interface FieldSchema {
-  name: string;
-  type: string;
-  iri: string;
 }
 
 const CHART_TYPE_ICONS: Record<ChartType, LucideIcon> = {
@@ -60,23 +56,6 @@ const ALL_CHART_TYPES = (Object.keys(CHART_RULES) as ChartType[]).map((value) =>
   value,
   icon: CHART_TYPE_ICONS[value],
 }));
-
-function buildSchema(outputs: PipelineOutput[]): FieldSchema[] {
-  const seen = new Set<string>();
-  const fields: FieldSchema[] = [];
-  for (const o of outputs) {
-    for (const field of o.fields) {
-      if (!field.uri || seen.has(field.name)) continue;
-      seen.add(field.name);
-      fields.push({
-        name: field.name,
-        type: field.type,
-        iri: field.uri,
-      });
-    }
-  }
-  return fields;
-}
 
 export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
   const queryClient = useQueryClient();
@@ -98,15 +77,23 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
 
   const graphReady = discovery != null;
 
+  const { data: fieldStats } = useQuery({
+    queryKey: queryKeys.discovery.fieldStats(jobId),
+    queryFn: () => api.discovery.fieldStats(jobId),
+    enabled: graphReady,
+  });
+
   const pipelineOutputs = job?.pipeline?.outputs;
-  const schema = useMemo(() => {
-    if (!pipelineOutputs) return [];
-    return buildSchema(pipelineOutputs);
-  }, [pipelineOutputs]);
+  const schema = useMemo<AnalyticalSchema | null>(() => {
+    if (!pipelineOutputs) return null;
+    return buildAnalyticalSchema(pipelineOutputs, fieldStats);
+  }, [pipelineOutputs, fieldStats]);
+
+  const allFields = schema?.allFields ?? [];
 
   const availableChartTypes = useMemo(
-    () => ALL_CHART_TYPES.filter((t) => isChartAvailable(t.value, schema)),
-    [schema],
+    () => ALL_CHART_TYPES.filter((t) => isChartAvailable(t.value, allFields)),
+    [allFields],
   );
 
   function persist(updated: ChartWidgetType[], cols: DashboardColumns = effectiveColumns) {
@@ -121,10 +108,20 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
   }
 
   function addChart(type: ChartType) {
-    const { xAxis, yAxis } = defaultAxesForType(type, schema);
+    if (!schema) return;
+    const anchor = defaultAnchorType(schema);
+    const fields = schema.reachableFrom(anchor.typeName);
+    const { xAxis, yAxis } = defaultAxesForType(type, fields, anchor.typeName);
     persist([
       ...effectiveWidgets,
-      { id: crypto.randomUUID(), type, title: `Chart ${effectiveWidgets.length + 1}`, xAxis, yAxis },
+      {
+        id: crypto.randomUUID(),
+        type,
+        title: `Chart ${effectiveWidgets.length + 1}`,
+        entityType: anchor.typeName,
+        xAxis,
+        yAxis,
+      },
     ]);
   }
 
@@ -137,10 +134,15 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
   }
 
   const summaryText = useMemo(() => {
-    if (schema.length === 0) return "";
-    const numericCount = schema.filter((f) => isNumeric(f.type)).length;
-    return `${schema.length} fields (${numericCount} numeric, ${schema.length - numericCount} categorical)`;
-  }, [schema]);
+    if (allFields.length === 0) return "";
+    const measures = allFields.filter((f) => f.role === "measure").length;
+    const dimensions = allFields.filter((f) => f.role === "dimension").length;
+    const identifiers = allFields.filter((f) => f.role === "identifier").length;
+    const parts = [`${measures} measure`, `${dimensions} dimension`];
+    if (identifiers > 0) parts.push(`${identifiers} identifier`);
+    const typeCount = schema?.types.length ?? 0;
+    return `${typeCount} types, ${allFields.length} fields (${parts.join(", ")})`;
+  }, [allFields, schema?.types.length]);
 
   if (isLoading || layoutLoading) {
     return showSkeleton ? (
@@ -175,7 +177,7 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
     );
   }
 
-  if (!graphReady || schema.length === 0) {
+  if (!graphReady || allFields.length === 0) {
     return (
       <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
         No schema available for charting.
@@ -217,7 +219,7 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
         </div>
 
         <div className={`grid gap-4 auto-rows-[minmax(340px,auto)] ${gridColsClass}`}>
-          {effectiveWidgets.map((w) => (
+          {schema && effectiveWidgets.map((w) => (
             <ChartWidget
               key={w.id}
               widget={w}

@@ -47,7 +47,9 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -57,13 +59,18 @@ import type {
   ChartWidget as ChartWidgetType,
   ChartType,
 } from "@/lib/dashboard-store";
-import type { FieldSchema } from "@/components/discovery/dashboard-builder";
+import {
+  type FieldSchema,
+  type AnalyticalSchema,
+  fieldKey,
+} from "@/lib/analytical-schema";
 
 interface RenderContext {
   widget: ChartWidgetType;
   data: Record<string, string | number>[];
   yKey: string;
   groupKeys: string[];
+  xDataKey: string;
 }
 
 interface ChartRule {
@@ -76,13 +83,9 @@ interface ChartRule {
   render: (ctx: RenderContext) => ReactNode;
 }
 
-export function isNumeric(type: string): boolean {
-  return type === "Int" || type === "Float";
-}
-
-export function isCategorical(type: string): boolean {
-  return type === "String" || type === "Bool";
-}
+const DEFAULT_TOP_N = 20;
+const DEFAULT_GROUP_TOP_N = 10;
+const NONE_VALUE = "__none__" as const;
 
 function sanitizeKey(key: string): string {
   return key.replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -109,14 +112,14 @@ function cartesian(
   Series: any,
   seriesProps: (color: string) => Record<string, unknown>,
 ): ChartRule["render"] {
-  return function CartesianRenderer({ widget, data, yKey, groupKeys }) {
+  return function CartesianRenderer({ data, yKey, groupKeys, xDataKey }) {
     const legend = groupKeys.length > 1 && (
       <ChartLegend content={<ChartLegendContent />} />
     );
     return (
       <Wrapper data={data} margin={CHART_MARGIN}>
         <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-        <XAxis dataKey={widget.xAxis} tick={{ fontSize: 11 }} />
+        <XAxis dataKey={xDataKey} tick={{ fontSize: 11 }} />
         <YAxis tick={{ fontSize: 11 }} />
         <ChartTooltip content={<ChartTooltipContent />} />
         {renderSeries(yKey, groupKeys, (key, color) => (
@@ -153,15 +156,15 @@ function renderPie({ data }: RenderContext): ReactNode {
   );
 }
 
-function renderScatter({ widget, data, yKey }: RenderContext): ReactNode {
+function renderScatter({ data, yKey, xDataKey }: RenderContext): ReactNode {
   return (
     <ScatterChart data={data} margin={CHART_MARGIN}>
       <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
       <XAxis
         type="number"
-        dataKey={widget.xAxis}
+        dataKey={xDataKey}
         tick={{ fontSize: 11 }}
-        name={widget.xAxis}
+        name={xDataKey}
       />
       <YAxis type="number" dataKey={yKey} tick={{ fontSize: 11 }} name={yKey} />
       <ChartTooltip content={<ChartTooltipContent />} />
@@ -232,8 +235,8 @@ export function xColumnsForType(
   schema: FieldSchema[],
 ): FieldSchema[] {
   return CHART_RULES[type].xAxis === "numeric"
-    ? schema.filter((f) => isNumeric(f.type))
-    : schema;
+    ? schema.filter((f) => f.role === "measure")
+    : schema.filter((f) => f.role !== "identifier");
 }
 
 export function isChartAvailable(
@@ -241,30 +244,82 @@ export function isChartAvailable(
   schema: FieldSchema[],
 ): boolean {
   if (schema.length === 0) return false;
-  const numericCount = schema.filter((f) => isNumeric(f.type)).length;
-  return numericCount >= CHART_RULES[type].minNumeric;
+  const measureCount = schema.filter((f) => f.role === "measure").length;
+  return measureCount >= CHART_RULES[type].minNumeric;
 }
 
 export function defaultAxesForType(
   type: ChartType,
-  schema: FieldSchema[],
+  fields: FieldSchema[],
+  anchor: string,
 ): { xAxis: string; yAxis?: string } {
   const rule = CHART_RULES[type];
-  const numeric = schema.filter((f) => isNumeric(f.type));
-  const categorical = schema.filter((f) => isCategorical(f.type));
+  const measures = fields.filter((f) => f.role === "measure");
+  const dimensions = fields.filter((f) => f.role === "dimension");
 
-  const xAxis =
+  const xRaw =
     rule.xAxis === "numeric"
-      ? (numeric[0]?.name ?? "")
-      : (categorical[0]?.name ?? schema[0]?.name ?? "");
+      ? measures[0]
+      : (dimensions[0] ?? fields.filter((f) => f.role !== "identifier")[0]);
 
+  const xAxis = xRaw ? `${anchor}::${xRaw.name}` : "";
   if (!rule.defaultYField) return { xAxis };
 
-  const yAxis = numeric.find((f) => f.name !== xAxis)?.name;
+  const yRaw = measures.find((f) => f !== xRaw);
+  const yAxis = yRaw ? `${anchor}::${yRaw.name}` : undefined;
   return { xAxis, yAxis };
 }
 
-const MEASURE_OPTIONS = [
+function FieldLabel({ field }: { field: FieldSchema }) {
+  return (
+    <span className="flex items-center gap-2">
+      {field.name}
+      <span className={`text-[10px] ${
+        field.role === "identifier" ? "text-amber-500" : "text-muted-foreground"
+      }`}>
+        {field.distinct != null ? `${field.distinct} vals` : field.type}
+      </span>
+    </span>
+  );
+}
+
+function GroupedFieldItems({
+  fields,
+  anchor,
+  schema,
+}: {
+  fields: FieldSchema[];
+  anchor: string;
+  schema: AnalyticalSchema;
+}) {
+  const grouped = Map.groupBy(fields, (f) => f.sourceType);
+  const entries = [...grouped.entries()];
+
+  if (entries.length <= 1) {
+    return fields.map((f) => (
+      <SelectItem key={fieldKey(f)} value={fieldKey(f)}>
+        <FieldLabel field={f} />
+      </SelectItem>
+    ));
+  }
+
+  return entries.map(([type, typeFields]) => {
+    const edge = schema.edgeBetween(anchor, type);
+    const label = type === anchor ? "Direct" : `via ${edge?.predicateName ?? type}`;
+    return (
+      <SelectGroup key={type}>
+        <SelectLabel className="text-[10px] text-muted-foreground">{label}</SelectLabel>
+        {typeFields.map((f) => (
+          <SelectItem key={fieldKey(f)} value={fieldKey(f)}>
+            <FieldLabel field={f} />
+          </SelectItem>
+        ))}
+      </SelectGroup>
+    );
+  });
+}
+
+const MEASURE_OPTIONS: { value: "count" | "sum" | "avg"; label: string }[] = [
   { value: "count", label: "Count" },
   { value: "sum", label: "Sum" },
   { value: "avg", label: "Average" },
@@ -284,7 +339,7 @@ const COLORS = [
 interface ChartWidgetProps {
   widget: ChartWidgetType;
   jobId: string;
-  schema: FieldSchema[];
+  schema: AnalyticalSchema;
   onChange: (updated: ChartWidgetType) => void;
   onRemove: () => void;
 }
@@ -296,45 +351,48 @@ export function ChartWidget({
   onChange,
   onRemove,
 }: ChartWidgetProps) {
+  const anchor = widget.entityType ?? schema.types[0]?.typeName ?? "";
+  const activeET = schema.types.find((et) => et.typeName === anchor) ?? schema.types[0];
+
+  const reachable = useMemo(
+    () => schema.reachableFrom(anchor),
+    [schema, anchor],
+  );
+
+  function handleEntityTypeChange(typeName: string) {
+    const fields = schema.reachableFrom(typeName);
+    const { xAxis, yAxis } = defaultAxesForType(widget.type, fields, typeName);
+    onChange({ ...widget, entityType: typeName, xAxis, yAxis, groupBy: undefined });
+  }
+
   const rule = CHART_RULES[widget.type];
 
-  const fieldMap = useMemo(() => {
-    const m: Record<string, FieldSchema> = {};
-    for (const f of schema) m[f.name] = f;
-    return m;
-  }, [schema]);
-
   const xColumns = useMemo(
-    () => xColumnsForType(widget.type, schema),
-    [schema, widget.type],
+    () => xColumnsForType(widget.type, reachable),
+    [reachable, widget.type],
   );
 
   const yColumns = useMemo(
-    () => schema.filter((f) => isNumeric(f.type)),
-    [schema],
+    () => reachable.filter((f) => f.role === "measure"),
+    [reachable],
   );
+
+  const xField = schema.fieldByKey(widget.xAxis);
+  const yField = widget.yAxis ? schema.fieldByKey(widget.yAxis) : undefined;
+  const groupField = widget.groupBy ? schema.fieldByKey(widget.groupBy) : undefined;
 
   const groupByColumns = useMemo(
-    () =>
-      schema.filter((f) => isCategorical(f.type) && f.name !== widget.xAxis),
-    [schema, widget.xAxis],
+    () => schema.splitCandidates(anchor, widget.xAxis),
+    [schema, anchor, widget.xAxis],
   );
 
-  const measureType = rule.rawAxes
-    ? "none"
-    : !widget.yAxis
-      ? "count"
-      : widget.aggregation === "count"
-        ? "sum"
-        : (widget.aggregation ?? "sum");
-
-  function handleMeasureChange(type: string) {
+  function handleMeasureChange(type: "count" | "sum" | "avg") {
     if (type === "count") {
       onChange({ ...widget, yAxis: undefined, aggregation: "count" });
     } else {
       onChange({
         ...widget,
-        yAxis: widget.yAxis ?? yColumns[0]?.name,
+        yAxis: widget.yAxis ?? (yColumns[0] ? fieldKey(yColumns[0]) : undefined),
         aggregation: type,
       });
     }
@@ -347,21 +405,36 @@ export function ChartWidget({
     return widget.aggregation ?? "sum";
   }, [rule.rawAxes, widget.yAxis, widget.aggregation]);
 
-  const xField = fieldMap[widget.xAxis];
-  const yField = widget.yAxis ? fieldMap[widget.yAxis] : undefined;
-  const groupField = widget.groupBy ? fieldMap[widget.groupBy] : undefined;
+  const xRef = useMemo(
+    () => xField ? schema.resolve(anchor, xField) : undefined,
+    [xField, schema, anchor],
+  );
+  const yRef = useMemo(
+    () => yField ? schema.resolve(anchor, yField) : undefined,
+    [yField, schema, anchor],
+  );
+  const groupRef = useMemo(
+    () => groupField ? schema.resolve(anchor, groupField) : undefined,
+    [groupField, schema, anchor],
+  );
 
   const { data: rawResult, isLoading: queryLoading } = useQuery({
-    queryKey: queryKeys.discovery.chart(jobId, widget.xAxis, widget.yAxis ?? "", widget.groupBy ?? "", widget.type, effectiveAggregation),
+    queryKey: queryKeys.discovery.chart(jobId, widget.xAxis, widget.yAxis ?? "", widget.groupBy ?? "", widget.type, effectiveAggregation, activeET?.rdfType ?? ""),
     queryFn: () =>
       api.discovery.chart(jobId, {
-        x_predicate: xField!.iri,
-        y_predicate: yField?.iri,
-        group_predicate: groupField?.iri,
+        x: xRef!,
+        y: yRef,
+        group: groupRef,
         aggregation: effectiveAggregation,
+        top_n: xField!.role === "dimension" ? DEFAULT_TOP_N : undefined,
+        group_top_n: groupField ? DEFAULT_GROUP_TOP_N : undefined,
+        rdf_type: activeET?.rdfType,
       }),
-    enabled: !!xField,
+    enabled: !!xField && !!xRef,
   });
+
+  const xDisplayName = xField?.name ?? widget.xAxis;
+  const yDisplayName = yField?.name ?? widget.yAxis ?? "value";
 
   const chartData = useMemo<Record<string, string | number>[]>(() => {
     if (!rawResult) return [];
@@ -376,7 +449,7 @@ export function ChartWidget({
       }
       const data: Record<string, string | number>[] = [];
       for (const [x, gm] of groups) {
-        const point: Record<string, string | number> = { [widget.xAxis]: x };
+        const point: Record<string, string | number> = { [xDisplayName]: x };
         for (const [g, v] of gm) point[sanitizeKey(g)] = v;
         data.push(point);
       }
@@ -390,30 +463,30 @@ export function ChartWidget({
     }
     return rawResult.rows.map((r) => {
       const point: Record<string, string | number> = {
-        [widget.xAxis]: r.x ?? "",
+        [xDisplayName]: r.x ?? "",
       };
       if (widget.yAxis) {
-        point[sanitizeKey(widget.yAxis)] = r.y ?? r.value ?? "";
+        point[sanitizeKey(yDisplayName)] = r.y ?? r.value ?? "";
       } else if (r.value != null) {
         point.value = Number(r.value);
       }
       return point;
     });
-  }, [rawResult, widget.groupBy, widget.type, widget.xAxis, widget.yAxis]);
+  }, [rawResult, widget.groupBy, widget.yAxis, widget.type, xDisplayName, yDisplayName]);
 
   const groupKeys = useMemo(() => {
     if (!widget.groupBy || chartData.length === 0) return [];
     const keys = new Set<string>();
     for (const row of chartData) {
       for (const k of Object.keys(row)) {
-        if (k !== widget.xAxis) keys.add(k);
+        if (k !== xDisplayName) keys.add(k);
       }
     }
     return [...keys];
-  }, [chartData, widget.groupBy, widget.xAxis]);
+  }, [chartData, widget.groupBy, xDisplayName]);
 
   const yKey = widget.yAxis
-    ? sanitizeKey(widget.yAxis)
+    ? sanitizeKey(yDisplayName)
     : groupKeys.length > 0
       ? sanitizeKey(groupKeys[0])
       : "value";
@@ -435,25 +508,26 @@ export function ChartWidget({
         };
       });
     } else {
-      const key = widget.yAxis ?? "value";
+      const key = yDisplayName;
       config[sanitizeKey(key)] = { label: key, color: COLORS[0] };
     }
     return config;
-  }, [widget.type, widget.yAxis, groupKeys, chartData]);
+  }, [widget.type, yDisplayName, groupKeys, chartData]);
 
+  const groupDisplayName = groupField?.name;
   const configParts: string[] = [];
   if (rule.rawAxes) {
-    if (widget.xAxis) configParts.push(`X: ${widget.xAxis}`);
-    if (widget.yAxis) configParts.push(`Y: ${widget.yAxis}`);
+    if (xField) configParts.push(`X: ${xDisplayName}`);
+    if (yField) configParts.push(`Y: ${yDisplayName}`);
   } else {
-    if (widget.xAxis) configParts.push(`Category: ${widget.xAxis}`);
+    if (xField) configParts.push(`Category: ${xDisplayName}`);
     if (!widget.yAxis) {
       configParts.push("Measure: Count");
     } else {
       const label = effectiveAggregation === "avg" ? "Avg" : "Sum";
-      configParts.push(`Measure: ${label} of ${widget.yAxis}`);
+      configParts.push(`Measure: ${label} of ${yDisplayName}`);
     }
-    if (widget.groupBy) configParts.push(`Split by: ${widget.groupBy}`);
+    if (groupDisplayName) configParts.push(`Split by: ${groupDisplayName}`);
   }
 
   return (
@@ -476,6 +550,31 @@ export function ChartWidget({
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-72 space-y-4">
+              {schema.types.length > 1 && (
+                <div className="space-y-2">
+                  <Label className="text-xs">Anchor type</Label>
+                  <Select
+                    value={activeET?.typeName ?? ""}
+                    onValueChange={handleEntityTypeChange}
+                  >
+                    <SelectTrigger className="w-full text-xs">
+                      <SelectValue placeholder="Select type..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {schema.types.map((et) => (
+                        <SelectItem key={et.typeName} value={et.typeName}>
+                          <span className="flex items-center gap-2">
+                            {et.typeName}
+                            <span className="text-[10px] text-muted-foreground">
+                              {et.fields.length} fields
+                            </span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               {rule.rawAxes ? (
                 <>
                   <div className="space-y-2">
@@ -488,16 +587,7 @@ export function ChartWidget({
                         <SelectValue placeholder="Select column..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {xColumns.map((f) => (
-                          <SelectItem key={f.name} value={f.name}>
-                            <span className="flex items-center gap-2">
-                              {f.name}
-                              <span className="text-[10px] text-muted-foreground">
-                                {f.type}
-                              </span>
-                            </span>
-                          </SelectItem>
-                        ))}
+                        <GroupedFieldItems fields={xColumns} anchor={anchor} schema={schema} />
                       </SelectContent>
                     </Select>
                   </div>
@@ -511,16 +601,7 @@ export function ChartWidget({
                         <SelectValue placeholder="Select column..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {yColumns.map((f) => (
-                          <SelectItem key={f.name} value={f.name}>
-                            <span className="flex items-center gap-2">
-                              {f.name}
-                              <span className="text-[10px] text-muted-foreground">
-                                {f.type}
-                              </span>
-                            </span>
-                          </SelectItem>
-                        ))}
+                        <GroupedFieldItems fields={yColumns} anchor={anchor} schema={schema} />
                       </SelectContent>
                     </Select>
                   </div>
@@ -537,16 +618,7 @@ export function ChartWidget({
                         <SelectValue placeholder="Select column..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {xColumns.map((f) => (
-                          <SelectItem key={f.name} value={f.name}>
-                            <span className="flex items-center gap-2">
-                              {f.name}
-                              <span className="text-[10px] text-muted-foreground">
-                                {f.type}
-                              </span>
-                            </span>
-                          </SelectItem>
-                        ))}
+                        <GroupedFieldItems fields={xColumns} anchor={anchor} schema={schema} />
                       </SelectContent>
                     </Select>
                   </div>
@@ -555,7 +627,7 @@ export function ChartWidget({
                     <Label className="text-xs">Measure</Label>
                     <div className="flex gap-2">
                       <Select
-                        value={measureType}
+                        value={effectiveAggregation}
                         onValueChange={handleMeasureChange}
                       >
                         <SelectTrigger className="w-24 text-xs">
@@ -569,7 +641,7 @@ export function ChartWidget({
                           ))}
                         </SelectContent>
                       </Select>
-                      {measureType !== "count" && (
+                      {effectiveAggregation !== "count" && (
                         <Select
                           value={widget.yAxis ?? ""}
                           onValueChange={(v) =>
@@ -580,11 +652,7 @@ export function ChartWidget({
                             <SelectValue placeholder="Field..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {yColumns.map((f) => (
-                              <SelectItem key={f.name} value={f.name}>
-                                {f.name}
-                              </SelectItem>
-                            ))}
+                            <GroupedFieldItems fields={yColumns} anchor={anchor} schema={schema} />
                           </SelectContent>
                         </Select>
                       )}
@@ -595,11 +663,11 @@ export function ChartWidget({
                     <div className="space-y-2">
                       <Label className="text-xs">Split by</Label>
                       <Select
-                        value={widget.groupBy ?? "__none__"}
+                        value={widget.groupBy ?? NONE_VALUE}
                         onValueChange={(v) =>
                           onChange({
                             ...widget,
-                            groupBy: v === "__none__" ? undefined : v,
+                            groupBy: v === NONE_VALUE ? undefined : v,
                           })
                         }
                       >
@@ -607,17 +675,8 @@ export function ChartWidget({
                           <SelectValue placeholder="Select column..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="__none__">(none)</SelectItem>
-                          {groupByColumns.map((f) => (
-                            <SelectItem key={f.name} value={f.name}>
-                              <span className="flex items-center gap-2">
-                                {f.name}
-                                <span className="text-[10px] text-muted-foreground">
-                                  {f.type}
-                                </span>
-                              </span>
-                            </SelectItem>
-                          ))}
+                          <SelectItem value={NONE_VALUE}>(none)</SelectItem>
+                          <GroupedFieldItems fields={groupByColumns} anchor={anchor} schema={schema} />
                         </SelectContent>
                       </Select>
                     </div>
@@ -651,6 +710,7 @@ export function ChartWidget({
                 data: chartData,
                 yKey,
                 groupKeys,
+                xDataKey: xDisplayName,
               }) as React.ReactElement
             }
           </ChartContainer>

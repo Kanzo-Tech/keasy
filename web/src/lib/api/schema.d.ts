@@ -559,6 +559,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/jobs/{id}/discover/field-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["field_stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/jobs/{id}/discover/load": {
         parameters: {
             query?: never;
@@ -865,6 +881,8 @@ export interface components {
             org_name: string;
             token: string;
         };
+        /** @enum {string} */
+        Aggregation: "count" | "sum" | "avg" | "none";
         AiSettingsPayload: {
             api_key: string;
             /** Format: int32 */
@@ -894,10 +912,17 @@ export interface components {
             catalog: string;
         };
         ChartRequest: {
-            aggregation?: string;
-            group_predicate?: string | null;
-            x_predicate: string;
-            y_predicate?: string | null;
+            aggregation?: components["schemas"]["Aggregation"];
+            group?: null | components["schemas"]["FieldRef"];
+            /** @description Limit split-by categories to top N (rest collapsed into "Other") */
+            group_top_n?: number | null;
+            /** @description RDF type IRI to scope the query to a single entity type */
+            rdf_type?: string | null;
+            /** @description Limit x-axis categories to top N (rest collapsed into "Other") */
+            top_n?: number | null;
+            /** @description X-axis field reference */
+            x: components["schemas"]["FieldRef"];
+            y?: null | components["schemas"]["FieldRef"];
         };
         CloudAccountSummary: {
             auth_method?: string | null;
@@ -1060,6 +1085,32 @@ export interface components {
         FieldMapping: {
             source: string;
             target: string;
+        };
+        /** @description A reference to a field, including the traversal path from the anchor subject. */
+        FieldRef: {
+            /** @description Object property IRIs to traverse from the root subject (empty = direct field) */
+            path?: string[];
+            /** @description Predicate IRI of the target field */
+            predicate: string;
+        };
+        FieldStats: {
+            /** Format: double */
+            avg?: number | null;
+            count: number;
+            distinct: number;
+            is_numeric: boolean;
+            is_object_property: boolean;
+            /** Format: double */
+            max?: number | null;
+            /** Format: double */
+            min?: number | null;
+            predicate: string;
+            short_name: string;
+            top_values?: components["schemas"]["FieldTopValue"][] | null;
+        };
+        FieldTopValue: {
+            count: number;
+            value: string;
         };
         FileEntry: {
             last_modified?: string | null;
@@ -2760,6 +2811,36 @@ export interface operations {
         responses: {
             /** @description RDF file download */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    field_stats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Field statistics from graph profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldStats"][];
+                };
+            };
+            /** @description Job not ready */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

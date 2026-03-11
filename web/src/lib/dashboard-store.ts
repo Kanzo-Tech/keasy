@@ -6,10 +6,11 @@ export interface ChartWidget {
   id: string;
   type: ChartType;
   title: string;
+  entityType?: string;
   xAxis: string;
   yAxis?: string;
   groupBy?: string;
-  aggregation?: string;
+  aggregation?: "count" | "sum" | "avg" | "none";
 }
 
 export type DashboardColumns = 1 | 2 | 3;

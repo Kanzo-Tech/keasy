@@ -14,6 +14,28 @@ function PageShellRoot({
   );
 }
 
+function Header({
+  title,
+  description,
+  actions,
+}: {
+  title: string;
+  description?: string;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <h1 className="text-lg font-semibold">{title}</h1>
+        {description && (
+          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+        )}
+      </div>
+      {actions}
+    </div>
+  );
+}
+
 function Content({
   children,
   className,
@@ -22,7 +44,7 @@ function Content({
   className?: string;
 }) {
   return (
-    <div className={cn("flex-1 overflow-auto p-4", className)}>
+    <div className={cn("flex-1 flex flex-col gap-4 overflow-auto p-4", className)}>
       {children}
     </div>
   );
@@ -44,4 +66,4 @@ function Footer({
   );
 }
 
-export const PageShell = Object.assign(PageShellRoot, { Content, Footer });
+export const PageShell = Object.assign(PageShellRoot, { Header, Content, Footer });

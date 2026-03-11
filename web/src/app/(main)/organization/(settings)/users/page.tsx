@@ -34,7 +34,8 @@ import {
   actionsColumn,
 } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
-import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
+import { SettingsSection } from "@/components/settings/settings-section";
+import { PageShell } from "@/components/layout/page-shell";
 import { useOrgUsers } from "@/hooks/use-org-users";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
@@ -173,7 +174,8 @@ export default function OrgUsersPage() {
   }
 
   return (
-    <SettingsPage>
+    <PageShell>
+    <PageShell.Content className="gap-8">
       <SettingsSection
         title="Users"
         description="Manage users in your organization."
@@ -348,6 +350,7 @@ export default function OrgUsersPage() {
         </DialogContent>
       </Dialog>
       </SettingsSection>
-    </SettingsPage>
+    </PageShell.Content>
+    </PageShell>
   );
 }

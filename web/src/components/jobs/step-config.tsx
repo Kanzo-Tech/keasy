@@ -39,7 +39,7 @@ export function StepConfig({
 }: StepConfigProps) {
   return (
     <PageShell>
-      <PageShell.Content className="space-y-4">
+      <PageShell.Content>
         <FormField label="Job Name" optional>
           <Input
             type="text"

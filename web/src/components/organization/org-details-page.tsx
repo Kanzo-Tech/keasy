@@ -4,10 +4,8 @@ import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  SettingsPage,
-  SettingsSection,
-} from "@/components/settings/settings-section";
+import { SettingsSection } from "@/components/settings/settings-section";
+import { PageShell } from "@/components/layout/page-shell";
 import { OrgDetailsCard, type OrgDetailsCardHandle } from "@/components/organization/org-details-card";
 import { ComplianceSection, useComply } from "@/components/compliance/compliance-section";
 import { api } from "@/lib/api";
@@ -36,7 +34,8 @@ export function OrgDetailsPage() {
       : "Fill in the organization identity above to become Gaia-X compliant.";
 
   return (
-    <SettingsPage>
+    <PageShell>
+    <PageShell.Content className="gap-8">
       <SettingsSection
         title="Organization Identity"
         description={
@@ -83,6 +82,7 @@ export function OrgDetailsPage() {
       >
         <ComplianceSection identity={identityData} identityLoading={identityLoading} comply={comply} />
       </SettingsSection>
-    </SettingsPage>
+    </PageShell.Content>
+    </PageShell>
   );
 }

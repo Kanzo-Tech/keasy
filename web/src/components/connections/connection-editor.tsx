@@ -119,7 +119,7 @@ export function ConnectionEditor() {
   return (
     <PageShell>
       <UnsavedChangesGuard isDirty={isDirty} />
-      <PageShell.Content className="space-y-4">
+      <PageShell.Content>
       <FormField
         label="Name"
         description="Used as identifier in @references (e.g. @my-connection/file.csv)"

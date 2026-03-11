@@ -68,7 +68,7 @@ export function JobSummaryPanel({
 
   return (
     <PageShell>
-      <PageShell.Content className="flex flex-col space-y-5">
+      <PageShell.Content className="gap-5">
         {/* Job info */}
         <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
           <MetaItem label="Name" value={jobName || "Unnamed"} />

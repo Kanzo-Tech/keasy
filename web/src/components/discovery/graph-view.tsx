@@ -168,7 +168,7 @@ export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
   if (isLoading) {
     return showSkeleton ? (
       <PageShell>
-        <PageShell.Content className="flex flex-col flex-1 min-h-0">
+        <PageShell.Content>
           <Skeleton className="h-4 w-48 mb-3" />
           <Skeleton className="h-9 w-full mb-4" />
           <Skeleton className="flex-1 min-h-[300px] rounded-md" />

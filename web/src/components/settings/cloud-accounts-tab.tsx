@@ -111,7 +111,7 @@ export function CloudAccountsTab() {
   if (isLoading) {
     return showSkeleton ? (
       <PageShell>
-        <PageShell.Content className="space-y-4 max-w-2xl">
+        <PageShell.Content className="max-w-2xl">
           <Skeleton className="h-4 w-48" />
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
@@ -122,7 +122,7 @@ export function CloudAccountsTab() {
 
   return (
     <PageShell>
-    <PageShell.Content className="space-y-8">
+    <PageShell.Content className="gap-8">
       <SettingsSection
         title="Cloud accounts"
         description="Manage credentials for cloud storage providers. Accounts are used by sources to access data."

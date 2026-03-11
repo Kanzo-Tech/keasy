@@ -8,6 +8,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { reverseMapUrl, reverseMapPipeline } from "@/lib/formatters";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageShell } from "@/components/layout/page-shell";
 import {
   OverviewContent,
   CatalogView,
@@ -127,7 +128,7 @@ export function JobDetailView({ id }: { id: string }) {
 
   return (
     <Tabs defaultValue="overview" className="flex-1 min-h-0">
-      <TabsList>
+      <TabsList className="mx-4 mt-4">
         <TabsTrigger value="overview">Overview</TabsTrigger>
         {hasCatalog && <TabsTrigger value="catalog">Catalog</TabsTrigger>}
         {hasDestinations && (
@@ -139,23 +140,31 @@ export function JobDetailView({ id }: { id: string }) {
       </TabsList>
 
       <TabsContent value="overview">
-        <OverviewContent
-          job={job}
-          dests={dests}
-          hasPipeline={hasPipeline}
-          progress={progress}
-        />
+        <PageShell>
+          <PageShell.Content>
+            <OverviewContent
+              job={job}
+              dests={dests}
+              hasPipeline={hasPipeline}
+              progress={progress}
+            />
+          </PageShell.Content>
+        </PageShell>
       </TabsContent>
 
       <TabsContent value="catalog">
-        <CatalogView
-          id={id}
-          catalog={job.catalog!}
-          dcatFormat={dcatFormat}
-          setDcatFormat={setDcatFormat}
-          catalogContent={catalogContent}
-          catalogLoading={catalogLoading}
-        />
+        <PageShell>
+          <PageShell.Content>
+            <CatalogView
+              id={id}
+              catalog={job.catalog!}
+              dcatFormat={dcatFormat}
+              setDcatFormat={setDcatFormat}
+              catalogContent={catalogContent}
+              catalogLoading={catalogLoading}
+            />
+          </PageShell.Content>
+        </PageShell>
       </TabsContent>
 
       <TabsContent value="validation">
@@ -164,7 +173,11 @@ export function JobDetailView({ id }: { id: string }) {
 
       {hasDestinations && (
         <TabsContent value="discover">
-          <DiscoveryView jobId={id} />
+          <PageShell>
+            <PageShell.Content>
+              <DiscoveryView jobId={id} />
+            </PageShell.Content>
+          </PageShell>
         </TabsContent>
       )}
     </Tabs>

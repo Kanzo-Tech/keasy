@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { PageContent } from "@/components/layout/page-content";
+import { PageShell } from "@/components/layout/page-shell";
 import type { OrgEntry, AdminInvite } from "@/lib/types";
 import { api, ApiError } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
@@ -143,7 +143,8 @@ export default function ParticipantsPage() {
   };
 
   return (
-    <PageContent>
+    <PageShell>
+    <PageShell.Content>
     <div className="space-y-8">
       {/* Organizations table */}
       {!orgs?.length ? (
@@ -300,6 +301,7 @@ export default function ParticipantsPage() {
         </DialogContent>
       </Dialog>
     </div>
-    </PageContent>
+    </PageShell.Content>
+    </PageShell>
   );
 }

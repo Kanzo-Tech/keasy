@@ -762,7 +762,7 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
 
   return (
     <PageShell>
-      <PageShell.Content className="flex flex-col">
+      <PageShell.Content>
         <StepIndicator steps={STEPS} current={step} />
 
         <div className="flex-1 min-h-0 flex flex-col mt-4">

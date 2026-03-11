@@ -105,11 +105,3 @@ function SectionActionButton({ action }: { action: SectionAction }) {
     </TooltipProvider>
   );
 }
-
-export function SettingsPage({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex-1 overflow-auto p-4">
-      <div className="space-y-8">{children}</div>
-    </div>
-  );
-}

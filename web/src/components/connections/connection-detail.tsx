@@ -57,7 +57,7 @@ export function ConnectionDetail({ id }: { id: string }) {
   if (isLoading) {
     return showSkeleton ? (
       <PageShell>
-        <PageShell.Content className="space-y-6">
+        <PageShell.Content className="gap-6">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-4 w-64" />
           <Skeleton className="h-40 w-full" />

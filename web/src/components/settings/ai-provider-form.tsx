@@ -60,7 +60,7 @@ export function AiProviderForm({ provider, allProviders, disabledProviders, onSu
   return (
     <PageShell>
       <UnsavedChangesGuard isDirty={isDirty} />
-      <PageShell.Content className="space-y-4">
+      <PageShell.Content>
         {isEdit ? (
           <Badge variant="secondary" className="w-fit">
             {displayProvider?.label ?? provider?.provider}
@@ -68,9 +68,7 @@ export function AiProviderForm({ provider, allProviders, disabledProviders, onSu
         ) : (
           <RadioGroup
             value={selectedId}
-            onValueChange={(v) => {
-              if (!disabledProviders?.has(v)) setSelectedId(v);
-            }}
+            onValueChange={setSelectedId}
             className="grid grid-cols-3 gap-3"
           >
             {allProviders.map((p) => {

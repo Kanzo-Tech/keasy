@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 
-import { PageContent } from "@/components/layout/page-content";
+import { PageShell } from "@/components/layout/page-shell";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { hasRunningJobs } from "@/lib/utils";
@@ -120,7 +120,8 @@ export default function JobsPage() {
   );
 
   return (
-    <PageContent className="flex flex-col gap-4 overflow-hidden">
+    <PageShell>
+    <PageShell.Content className="overflow-hidden">
     {!jobs?.length ? (
     <EmptyState
       icon={Briefcase}
@@ -151,6 +152,7 @@ export default function JobsPage() {
       }
     />
     )}
-    </PageContent>
+    </PageShell.Content>
+    </PageShell>
   );
 }

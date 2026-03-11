@@ -71,7 +71,7 @@ export function StepScript({
 
   return (
     <PageShell>
-      <PageShell.Content className="flex flex-col gap-3">
+      <PageShell.Content className="gap-3">
         <div className="flex items-center gap-2 shrink-0">
           <ToggleGroup
             type="single"

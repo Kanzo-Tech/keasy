@@ -6,6 +6,7 @@ import { toastError } from "@/lib/toast-error";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
+import { PageShell } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -111,7 +112,8 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
     !!selectedDest && !!selectedConnection && !!selectedFile && !validating;
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 space-y-4">
+    <PageShell>
+    <PageShell.Content>
       {/* Step 1 — Output data */}
       <div className="flex gap-4">
         <div className="flex flex-col items-center">
@@ -177,14 +179,6 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Validate */}
-      <div className="flex justify-end">
-        <Button disabled={!canValidate} onClick={handleValidate}>
-          {validating ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
-          {validating ? "Validating..." : "Validate"}
-        </Button>
       </div>
 
       {/* Results */}
@@ -264,6 +258,14 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
           </ScrollArea>
         </div>
       )}
-    </div>
+    </PageShell.Content>
+    <PageShell.Footer>
+      <div />
+      <Button disabled={!canValidate} onClick={handleValidate}>
+        {validating ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
+        {validating ? "Validating..." : "Validate"}
+      </Button>
+    </PageShell.Footer>
+    </PageShell>
   );
 }

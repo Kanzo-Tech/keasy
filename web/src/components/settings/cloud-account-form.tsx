@@ -105,7 +105,7 @@ export function CloudAccountForm({ schema, account, onSubmit }: CloudAccountForm
   return (
     <PageShell>
       <UnsavedChangesGuard isDirty={isDirty} />
-      <PageShell.Content className="space-y-4">
+      <PageShell.Content>
         {isEdit ? (
           <Badge variant="secondary" className="w-fit">{selected?.label ?? selectedId}</Badge>
         ) : (

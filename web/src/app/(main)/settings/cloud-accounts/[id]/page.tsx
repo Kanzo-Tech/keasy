@@ -35,7 +35,7 @@ export default function EditCloudAccountPage({
   if (isLoading) {
     return showSkeleton ? (
       <PageShell>
-        <PageShell.Content className="space-y-4">
+        <PageShell.Content>
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-40 w-full" />
         </PageShell.Content>

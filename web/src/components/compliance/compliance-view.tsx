@@ -5,7 +5,8 @@ import type { ComplianceCredential } from "@/lib/types";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CredentialGrid } from "@/components/compliance/credential-grid";
-import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
+import { SettingsSection } from "@/components/settings/settings-section";
+import { PageShell } from "@/components/layout/page-shell";
 import { formatDate } from "@/lib/formatters";
 
 interface ComplianceViewProps {
@@ -20,7 +21,8 @@ export function ComplianceView({ status }: ComplianceViewProps) {
   const isConformant = status.compliant;
 
   return (
-    <SettingsPage>
+    <PageShell>
+    <PageShell.Content className="gap-8">
       <SettingsSection title="Compliance Status">
       <Card>
         <CardHeader>
@@ -51,6 +53,7 @@ export function ComplianceView({ status }: ComplianceViewProps) {
       >
         <CredentialGrid credentials={status.credentials} />
       </SettingsSection>
-    </SettingsPage>
+    </PageShell.Content>
+    </PageShell>
   );
 }

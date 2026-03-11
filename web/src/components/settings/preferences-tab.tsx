@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { usePreferences } from "@/components/providers/preferences-provider";
-import { SettingsSection, SettingsPage } from "@/components/settings/settings-section";
+import { SettingsSection } from "@/components/settings/settings-section";
+import { PageShell } from "@/components/layout/page-shell";
 import { FormField } from "@/components/shared/form-layout";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -114,7 +115,8 @@ export function PreferencesTab() {
   }
 
   return (
-    <SettingsPage>
+    <PageShell>
+    <PageShell.Content className="gap-8">
       <SettingsSection
         title="Appearance"
         description="Control the look and feel of the interface."
@@ -203,6 +205,7 @@ export function PreferencesTab() {
           </FormField>
         </div>
       </SettingsSection>
-    </SettingsPage>
+    </PageShell.Content>
+    </PageShell>
   );
 }

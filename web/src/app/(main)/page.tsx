@@ -1,5 +1,5 @@
 import { getEffectiveRole } from "@/lib/auth-check";
-import { PageContent } from "@/components/layout/page-content";
+import { PageShell } from "@/components/layout/page-shell";
 import { PromotorDashboard } from "./(promotor)/promotor-dashboard";
 import { ParticipantDashboard } from "./(participant)/participant-dashboard";
 
@@ -8,15 +8,19 @@ export default async function HomePage() {
 
   if (role === "promotor") {
     return (
-      <PageContent>
-        <PromotorDashboard />
-      </PageContent>
+      <PageShell>
+        <PageShell.Content>
+          <PromotorDashboard />
+        </PageShell.Content>
+      </PageShell>
     );
   }
 
   return (
-    <PageContent>
-      <ParticipantDashboard />
-    </PageContent>
+    <PageShell>
+      <PageShell.Content>
+        <ParticipantDashboard />
+      </PageShell.Content>
+    </PageShell>
   );
 }

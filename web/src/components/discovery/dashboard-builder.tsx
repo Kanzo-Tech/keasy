@@ -148,7 +148,7 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
   if (isLoading || layoutLoading) {
     return showSkeleton ? (
       <PageShell>
-        <PageShell.Content className="space-y-4">
+        <PageShell.Content>
           <Skeleton className="h-8 w-48" />
           <div className="grid gap-4 lg:grid-cols-2">
             <Skeleton className="h-[260px] rounded-lg" />

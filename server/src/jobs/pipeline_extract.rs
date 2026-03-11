@@ -45,17 +45,23 @@ pub fn extract_summary(program: &fossil_lang::passes::IrProgram) -> ValidationRe
             StmtKind::Let { name, value } => {
                 let result = classify_expr(&pq, *value, &source_labels);
                 if result.outputs.is_empty() && result.operations.is_empty() {
-                    let (input_name, fields) = match pq.resolve_type_name(*value) {
-                        Some((type_name, def_id)) => {
-                            (type_name, pq.lookup_fields_by_def(def_id))
+                    if let Some(ref label) = result.source_type {
+                        // Expression references a known input (e.g. CleanData.clean(data))
+                        // — map this binding to the same source.
+                        source_labels.insert(*name, label.clone());
+                    } else {
+                        let (input_name, fields) = match pq.resolve_type_name(*value) {
+                            Some((type_name, def_id)) => {
+                                (type_name, pq.lookup_fields_by_def(def_id))
+                            }
+                            None => {
+                                (extract_source_name(&pq, *value), pq.resolve_fields(*value))
+                            }
+                        };
+                        if !fields.is_empty() && seen_inputs.insert(input_name.clone()) {
+                            source_labels.insert(*name, input_name.clone());
+                            inputs.push(PipelineInput { name: input_name, fields });
                         }
-                        None => {
-                            (extract_source_name(&pq, *value), pq.resolve_fields(*value))
-                        }
-                    };
-                    if !fields.is_empty() && seen_inputs.insert(input_name.clone()) {
-                        source_labels.insert(*name, input_name.clone());
-                        inputs.push(PipelineInput { name: input_name, fields });
                     }
                 } else {
                     operations.extend(result.operations);

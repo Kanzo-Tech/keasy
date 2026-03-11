@@ -27,12 +27,6 @@ export function buildPipelineGraph(pipeline: PipelineSummary): {
 } {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
-  const edgeIds = new Set<string>();
-  function pushEdge(edge: Edge) {
-    if (edgeIds.has(edge.id)) return;
-    edgeIds.add(edge.id);
-    edges.push(edge);
-  }
   const inputIds = new Map<string, string>();
 
   for (const input of pipeline.inputs) {
@@ -113,7 +107,7 @@ export function buildPipelineGraph(pipeline: PipelineSummary): {
       data: { url },
     });
     for (const outId of outIds) {
-      pushEdge({
+      edges.push({
         id: `e-${outId}-${destId}`,
         source: outId,
         sourceHandle: "dest",
@@ -144,14 +138,15 @@ export function buildPipelineGraph(pipeline: PipelineSummary): {
     const op = pipeline.operations[i];
     const opId = `op-${i}`;
     const remap = pairRemap.get(opId);
-    for (const input of op.inputs) {
+    for (let k = 0; k < op.inputs.length; k++) {
+      const input = op.inputs[k];
       const sourceNodeId =
         prevOpInChain.get(input.source) ?? inputIds.get(input.source);
       if (!sourceNodeId) continue;
       for (const field of input.key_fields ?? []) {
         const targetField = remap?.get(field) ?? field;
-        pushEdge({
-          id: `e-${sourceNodeId}-${field}-${opId}`,
+        edges.push({
+          id: `e-${sourceNodeId}-${field}-${opId}-${k}`,
           source: sourceNodeId,
           sourceHandle: `field-${field}`,
           target: opId,
@@ -195,7 +190,7 @@ export function buildPipelineGraph(pipeline: PipelineSummary): {
       const srcField = srcFieldSet.has(m.source) ? m.source : null;
       if (srcField && outFieldSet.has(m.target)) {
         const mappedSrc = remap?.get(srcField) ?? srcField;
-        pushEdge({
+        edges.push({
           id: `ef-${sourceNodeId}-${srcField}-${outId}-${m.target}`,
           source: sourceNodeId,
           sourceHandle: `field-${mappedSrc}`,

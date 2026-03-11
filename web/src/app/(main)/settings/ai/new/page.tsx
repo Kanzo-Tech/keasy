@@ -7,17 +7,21 @@ import { toastError } from "@/lib/toast-error";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
-import { CloudAccountForm } from "@/components/settings/cloud-account-form";
+import { AI_PROVIDERS } from "@/lib/ai-providers";
+import { AiProviderForm } from "@/components/settings/ai-provider-form";
 import { PageShell } from "@/components/layout/page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function NewCloudAccountPage() {
+export default function NewAiProviderPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: schema, isLoading } = useQuery({ queryKey: queryKeys.settings.schema, queryFn: api.settings.schema });
+  const { data: existing = [], isLoading } = useQuery({
+    queryKey: queryKeys.ai.providers,
+    queryFn: api.ai.providers,
+  });
   const showSkeleton = useDelayedLoading(isLoading);
 
-  if (isLoading || !schema) {
+  if (isLoading) {
     return showSkeleton ? (
       <PageShell>
         <PageShell.Content className="space-y-4">
@@ -28,15 +32,18 @@ export default function NewCloudAccountPage() {
     ) : null;
   }
 
+  const configuredIds = new Set(existing.map((p) => p.provider));
+
   return (
-    <CloudAccountForm
-      schema={schema}
-      onSubmit={async (data) => {
+    <AiProviderForm
+      allProviders={AI_PROVIDERS}
+      disabledProviders={configuredIds}
+      onSubmit={async (providerId, data) => {
         try {
-          await api.cloud.create(data);
-          toast.success("Cloud account created");
-          queryClient.invalidateQueries({ queryKey: queryKeys.cloud.accounts });
-          router.push("/settings/cloud-accounts");
+          await api.ai.saveProvider(providerId, data);
+          toast.success("AI provider created");
+          queryClient.invalidateQueries({ queryKey: queryKeys.ai.providers });
+          router.push("/settings/ai");
         } catch (err) {
           toastError(err instanceof Error ? err.message : "Failed to create");
           throw err;

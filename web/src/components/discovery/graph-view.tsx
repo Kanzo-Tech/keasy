@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageShell } from "@/components/layout/page-shell";
 import { api } from "@/lib/api";
 import { ForceGraph } from "@/components/discovery/force-graph";
 import { useGraphModel } from "@/hooks/use-graph-model";
@@ -166,11 +167,13 @@ export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
 
   if (isLoading) {
     return showSkeleton ? (
-      <div className="flex flex-col flex-1 min-h-0">
-        <Skeleton className="h-4 w-48 mb-3" />
-        <Skeleton className="h-9 w-full mb-4" />
-        <Skeleton className="flex-1 min-h-[300px] rounded-md" />
-      </div>
+      <PageShell>
+        <PageShell.Content className="flex flex-col flex-1 min-h-0">
+          <Skeleton className="h-4 w-48 mb-3" />
+          <Skeleton className="h-9 w-full mb-4" />
+          <Skeleton className="flex-1 min-h-[300px] rounded-md" />
+        </PageShell.Content>
+      </PageShell>
     ) : null;
   }
 

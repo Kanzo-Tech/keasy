@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageShell } from "@/components/layout/page-shell";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   ChartWidget,
@@ -146,13 +147,15 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
 
   if (isLoading || layoutLoading) {
     return showSkeleton ? (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Skeleton className="h-[260px] rounded-lg" />
-          <Skeleton className="h-[260px] rounded-lg" />
-        </div>
-      </div>
+      <PageShell>
+        <PageShell.Content className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Skeleton className="h-[260px] rounded-lg" />
+            <Skeleton className="h-[260px] rounded-lg" />
+          </div>
+        </PageShell.Content>
+      </PageShell>
     ) : null;
   }
 

@@ -19,7 +19,8 @@ import {
   actionsColumn,
 } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
-import { SettingsSection, SettingsPage } from "@/components/settings/settings-section";
+import { SettingsSection } from "@/components/settings/settings-section";
+import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { CloudAccountSummary, ProviderSchema } from "@/lib/types";
@@ -109,16 +110,19 @@ export function CloudAccountsTab() {
 
   if (isLoading) {
     return showSkeleton ? (
-      <div className="space-y-4 max-w-2xl">
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-      </div>
+      <PageShell>
+        <PageShell.Content className="space-y-4 max-w-2xl">
+          <Skeleton className="h-4 w-48" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </PageShell.Content>
+      </PageShell>
     ) : null;
   }
 
   return (
-    <SettingsPage>
+    <PageShell>
+    <PageShell.Content className="space-y-8">
       <SettingsSection
         title="Cloud accounts"
         description="Manage credentials for cloud storage providers. Accounts are used by sources to access data."
@@ -156,6 +160,7 @@ export function CloudAccountsTab() {
           />
         )}
       </SettingsSection>
-    </SettingsPage>
+    </PageShell.Content>
+    </PageShell>
   );
 }

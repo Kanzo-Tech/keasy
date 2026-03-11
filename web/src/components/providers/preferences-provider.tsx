@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Preferences } from "@/lib/types";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
@@ -50,6 +50,8 @@ function applyToDOM(prefs: Preferences) {
 }
 
 export function PreferencesProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
+
   const { data: preferences = defaultPreferences } = useQuery({
     queryKey: queryKeys.settings.preferences,
     queryFn: async () => {
@@ -62,6 +64,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   const { mutateAsync, isPending } = useMutation({
     mutationFn: api.settings.savePreferences,
     onSuccess: (saved) => {
+      queryClient.setQueryData(queryKeys.settings.preferences, saved);
       applyToDOM(saved);
     },
   });

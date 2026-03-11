@@ -1,18 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SecretInput } from "@/components/ui/secret-input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FormField } from "@/components/shared/form-layout";
+import { RadioCardGroup } from "@/components/shared/radio-card-group";
+import type { RadioCardOption } from "@/components/shared/radio-card-group";
 import { PageShell } from "@/components/layout/page-shell";
 import { UnsavedChangesGuard } from "@/components/shared/unsaved-changes-guard";
 import { getProviderIcon } from "@/lib/provider-icons";
-import { cn } from "@/lib/utils";
 import type { ProviderSchema, FieldSchema, CloudAccountSummary } from "@/lib/types";
 
 interface CloudAccountFormProps {
@@ -39,6 +38,16 @@ export function CloudAccountForm({ schema, account, onSubmit }: CloudAccountForm
   const fields = fieldsMap[selectedId] ?? {};
   const selected = schema.find((s) => s.id === selectedId);
   const hasAuthMethods = (selected?.auth_methods.length ?? 0) > 0;
+
+  const providerOptions: RadioCardOption[] = useMemo(
+    () =>
+      schema.map((p) => ({
+        value: p.id,
+        label: p.label,
+        icon: getProviderIcon(p.icon),
+      })),
+    [schema],
+  );
 
   useEffect(() => {
     if (selected && hasAuthMethods && !authMethod) {
@@ -109,35 +118,16 @@ export function CloudAccountForm({ schema, account, onSubmit }: CloudAccountForm
         {isEdit ? (
           <Badge variant="secondary" className="w-fit">{selected?.label ?? selectedId}</Badge>
         ) : (
-          <RadioGroup
+          <RadioCardGroup
+            name="cloud-provider"
             value={selectedId}
             onValueChange={(v) => {
               setFieldsMap({});
               setSelectedId(v);
               setAuthMethod("");
             }}
-            className="grid grid-cols-3 gap-3"
-          >
-            {schema.map((p) => {
-              const Icon = getProviderIcon(p.icon);
-              return (
-                <Label
-                  key={p.id}
-                  htmlFor={`provider-${p.id}`}
-                  className={cn(
-                    "flex flex-col items-center justify-center text-center gap-2 py-4 px-3 rounded-md border cursor-pointer transition-colors",
-                    selectedId === p.id
-                      ? "border-primary bg-accent"
-                      : "border-border hover:bg-accent/50",
-                  )}
-                >
-                  <RadioGroupItem value={p.id} id={`provider-${p.id}`} className="sr-only" />
-                  <Icon className="h-6 w-6 text-muted-foreground" />
-                  <span className="text-xs font-medium">{p.label}</span>
-                </Label>
-              );
-            })}
-          </RadioGroup>
+            options={providerOptions}
+          />
         )}
 
         <FormField label="Name" required>

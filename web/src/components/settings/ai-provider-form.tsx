@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SecretInput } from "@/components/ui/secret-input";
 import { FormField } from "@/components/shared/form-layout";
+import { RadioCardGroup } from "@/components/shared/radio-card-group";
+import type { RadioCardOption } from "@/components/shared/radio-card-group";
 import { PageShell } from "@/components/layout/page-shell";
 import { UnsavedChangesGuard } from "@/components/shared/unsaved-changes-guard";
-import { cn } from "@/lib/utils";
 import type { AiSettings } from "@/lib/types";
 import type { AiProviderOption } from "@/lib/ai-providers";
 
@@ -35,6 +34,18 @@ export function AiProviderForm({ provider, allProviders, disabledProviders, onSu
   const [saving, setSaving] = useState(false);
 
   const displayProvider = allProviders.find((p) => p.id === (selectedId || provider?.provider));
+
+  const providerOptions: RadioCardOption[] = useMemo(
+    () =>
+      allProviders.map((p) => ({
+        value: p.id,
+        label: p.label,
+        icon: p.icon,
+        disabled: disabledProviders?.has(p.id),
+        badge: disabledProviders?.has(p.id) ? "Configured" : undefined,
+      })),
+    [allProviders, disabledProviders],
+  );
 
   const isDirty = isEdit
     ? !!(apiKey || model !== (provider?.model ?? "") || maxTokens !== (provider?.max_tokens?.toString() ?? "")) && !saving
@@ -66,37 +77,12 @@ export function AiProviderForm({ provider, allProviders, disabledProviders, onSu
             {displayProvider?.label ?? provider?.provider}
           </Badge>
         ) : (
-          <RadioGroup
+          <RadioCardGroup
+            name="ai-provider"
             value={selectedId}
             onValueChange={setSelectedId}
-            className="grid grid-cols-3 gap-3"
-          >
-            {allProviders.map((p) => {
-              const Icon = p.icon;
-              const isDisabled = disabledProviders?.has(p.id);
-              return (
-                <Label
-                  key={p.id}
-                  htmlFor={`provider-${p.id}`}
-                  className={cn(
-                    "flex flex-col items-center justify-center text-center gap-2 py-4 px-3 rounded-md border transition-colors",
-                    isDisabled
-                      ? "opacity-50 cursor-not-allowed"
-                      : "cursor-pointer",
-                    !isDisabled && selectedId === p.id
-                      ? "border-primary bg-accent"
-                      : "border-border",
-                    !isDisabled && selectedId !== p.id && "hover:bg-accent/50",
-                  )}
-                >
-                  <RadioGroupItem value={p.id} id={`provider-${p.id}`} className="sr-only" disabled={isDisabled} />
-                  <Icon className="h-6 w-6 text-muted-foreground" />
-                  <span className="text-xs font-medium">{p.label}</span>
-                  {isDisabled && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Configured</Badge>}
-                </Label>
-              );
-            })}
-          </RadioGroup>
+            options={providerOptions}
+          />
         )}
 
         {(selectedId || isEdit) && (

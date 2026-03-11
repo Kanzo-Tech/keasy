@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
+import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -54,6 +55,8 @@ export function FileExplorer({
       : files;
   }, [files, providers, connectionKind]);
 
+  const showSkeleton = useDelayedLoading(isLoading);
+
   function copyRef(path: string) {
     navigator.clipboard.writeText(`@${connectionName}/${path}`);
     toast.success("Reference copied");
@@ -64,11 +67,26 @@ export function FileExplorer({
       <h3 className="text-sm font-medium">Files</h3>
 
       {isLoading ? (
-        <div className="border rounded-md p-3 space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-4 w-full" />
-          ))}
-        </div>
+        showSkeleton ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Path</TableHead>
+                <TableHead className="w-24 text-right">Size</TableHead>
+                <TableHead style={{ width: "48px" }} />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton loading className="block"><span className="font-mono text-xs">example/file.csv</span></Skeleton></TableCell>
+                  <TableCell className="text-right"><Skeleton loading className="block"><span className="text-xs">1.2 KB</span></Skeleton></TableCell>
+                  <TableCell />
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : null
       ) : files.length === 0 ? (
         <p className="text-xs text-muted-foreground">No files found.</p>
       ) : filtered.length === 0 ? (

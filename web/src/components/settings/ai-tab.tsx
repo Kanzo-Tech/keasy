@@ -24,7 +24,7 @@ import { SettingsSection } from "@/components/settings/settings-section";
 import { PageShell } from "@/components/layout/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SettingsSectionSkeleton } from "@/components/settings/settings-section-skeleton";
 import type { AiSettings } from "@/lib/types";
 
 function aiColumns(
@@ -104,20 +104,18 @@ export function AiTab() {
 
   const handleDelete = useCallback(
     (providerId: string) => { deleteMutation.mutate(providerId); },
-    [deleteMutation],
+    [deleteMutation.mutate],
   );
 
   const columns = useMemo(() => aiColumns(handleDelete), [handleDelete]);
 
   if (isLoading) {
     return showSkeleton ? (
-      <PageShell>
-        <PageShell.Content className="max-w-2xl">
-          <Skeleton className="h-4 w-48" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </PageShell.Content>
-      </PageShell>
+      <SettingsSectionSkeleton
+        title="AI Providers"
+        description="Configure AI provider credentials for intelligent features."
+        searchPlaceholder="Search providers..."
+      />
     ) : null;
   }
 

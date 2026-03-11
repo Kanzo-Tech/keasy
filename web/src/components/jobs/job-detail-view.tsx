@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toastError } from "@/lib/toast-error";
+import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { reverseMapUrl, reverseMapPipeline } from "@/lib/formatters";
@@ -63,17 +64,7 @@ export function JobDetailView({ id }: { id: string }) {
   });
 
   const progress = useJobStream(id, job?.status);
-
-  const [dcatFormat, setDcatFormat] = useState("turtle");
-
-  const catalogEnabled = !!job?.catalog && dcatFormat !== "turtle";
-  const { data: fetchedCatalog, isLoading: catalogLoading } = useQuery({
-    queryKey: queryKeys.jobs.catalog(id, dcatFormat),
-    queryFn: () => api.jobs.catalog(id, dcatFormat),
-    enabled: catalogEnabled,
-  });
-  const catalogContent =
-    dcatFormat === "turtle" ? (job?.catalog ?? null) : (fetchedCatalog ?? null);
+  const showSkeleton = useDelayedLoading(isLoading);
 
   const toastShown = useRef(false);
   useEffect(() => {
@@ -84,19 +75,24 @@ export function JobDetailView({ id }: { id: string }) {
   }, [job?.status, job?.error]);
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="space-y-1">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-5 w-28" />
-            </div>
-          ))}
+    return showSkeleton ? (
+      <div className="flex-1 min-h-0">
+        <div className="mx-4 mt-4">
+          <Skeleton loading className="inline-flex"><span className="px-3 py-1.5 text-sm">Overview</span></Skeleton>
+        </div>
+        <div className="p-4 space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {["ID", "Created", "Run", "Destination"].map((label) => (
+              <div key={label} className="space-y-1">
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <Skeleton loading className="block"><p className="text-sm font-medium">placeholder</p></Skeleton>
+              </div>
+            ))}
+          </div>
+          <Skeleton className="h-40 w-full" />
         </div>
       </div>
-    );
+    ) : null;
   }
 
   if (!job) {
@@ -155,14 +151,7 @@ export function JobDetailView({ id }: { id: string }) {
       <TabsContent value="catalog">
         <PageShell>
           <PageShell.Content>
-            <CatalogView
-              id={id}
-              catalog={job.catalog!}
-              dcatFormat={dcatFormat}
-              setDcatFormat={setDcatFormat}
-              catalogContent={catalogContent}
-              catalogLoading={catalogLoading}
-            />
+            <CatalogView id={id} catalog={job.catalog!} />
           </PageShell.Content>
         </PageShell>
       </TabsContent>

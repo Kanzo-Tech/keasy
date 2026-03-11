@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   BarChart3,
   TrendingUp,
@@ -12,7 +12,7 @@ import {
   Square,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,7 @@ function buildSchema(outputs: PipelineOutput[]): FieldSchema[] {
 }
 
 export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
+  const queryClient = useQueryClient();
   const { data: job } = useQuery({ queryKey: queryKeys.jobs.detail(jobId), queryFn: () => api.jobs.get(jobId) });
 
   const { data: savedLayout, isLoading: layoutLoading } = useQuery({
@@ -86,11 +87,8 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
     queryFn: () => loadDashboard(jobId),
   });
 
-  const [widgets, setWidgets] = useState<ChartWidgetType[] | null>(null);
-  const [columns, setColumns] = useState<DashboardColumns | null>(null);
-
-  const effectiveWidgets = widgets ?? savedLayout?.widgets ?? [];
-  const effectiveColumns = columns ?? savedLayout?.columns ?? 2;
+  const effectiveWidgets = savedLayout?.widgets ?? [];
+  const effectiveColumns = savedLayout?.columns ?? 2;
 
   const { data: discovery, isLoading, error } = useQuery({
     queryKey: queryKeys.discovery.db(jobId),
@@ -112,15 +110,14 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
   );
 
   function persist(updated: ChartWidgetType[], cols: DashboardColumns = effectiveColumns) {
-    setWidgets(updated);
-    saveDashboard(jobId, { widgets: updated, columns: cols });
+    const layout = { widgets: updated, columns: cols };
+    queryClient.setQueryData(queryKeys.dashboard(jobId), layout);
+    saveDashboard(jobId, layout);
   }
 
   function handleColumnsChange(value: string) {
     if (!value) return;
-    const cols = Number(value) as DashboardColumns;
-    setColumns(cols);
-    saveDashboard(jobId, { widgets: effectiveWidgets, columns: cols });
+    persist(effectiveWidgets, Number(value) as DashboardColumns);
   }
 
   function addChart(type: ChartType) {
@@ -147,15 +144,26 @@ export function DashboardBuilder({ jobId }: DashboardBuilderProps) {
 
   if (isLoading || layoutLoading) {
     return showSkeleton ? (
-      <PageShell>
-        <PageShell.Content>
-          <Skeleton className="h-8 w-48" />
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Skeleton className="h-[260px] rounded-lg" />
-            <Skeleton className="h-[260px] rounded-lg" />
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Skeleton loading>
+              <ToggleGroup type="single" variant="outline" size="sm" value="2">
+                <ToggleGroupItem value="1" aria-label="1 column"><Square size={14} /></ToggleGroupItem>
+                <ToggleGroupItem value="2" aria-label="2 columns"><Columns2 size={14} /></ToggleGroupItem>
+                <ToggleGroupItem value="3" aria-label="3 columns"><Columns3 size={14} /></ToggleGroupItem>
+              </ToggleGroup>
+            </Skeleton>
+            <span className="flex-1" />
+            <Skeleton loading><span className="text-xs text-muted-foreground">0 fields (0 numeric, 0 categorical)</span></Skeleton>
           </div>
-        </PageShell.Content>
-      </PageShell>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Skeleton key={i} className="min-h-[340px] rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </ScrollArea>
     ) : null;
   }
 

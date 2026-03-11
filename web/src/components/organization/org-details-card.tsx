@@ -3,6 +3,7 @@
 import { useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
 import {
@@ -72,8 +73,22 @@ export const OrgDetailsCard = forwardRef<OrgDetailsCardHandle, OrgDetailsCardPro
 
     useImperativeHandle(ref, () => ({ save: handleSave }));
 
+    const showSkeleton = useDelayedLoading(isLoading);
+
     if (isLoading) {
-      return <Skeleton className="h-24 w-full" />;
+      return showSkeleton ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField label="Legal Name" description="Official registered name">
+            <Skeleton loading className="block w-full"><Input disabled placeholder="" /></Skeleton>
+          </FormField>
+          <FormField label="Country" description="Subdivision is optional">
+            <Skeleton loading className="block w-full"><Input disabled placeholder="" /></Skeleton>
+          </FormField>
+          <FormField label="Registration Number" description="VAT ID, LEI Code, or EORI">
+            <Skeleton loading className="block w-full"><Input disabled placeholder="" /></Skeleton>
+          </FormField>
+        </div>
+      ) : null;
     }
 
     const canEdit = !readOnly && editing && form;

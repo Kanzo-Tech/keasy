@@ -365,9 +365,9 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
             <MessageEntry key={msg.id} msg={msg} />
           ))}
           {loading && (
-            <div className="space-y-3">
-              <Skeleton className="h-3 w-3/4" />
-              <Skeleton className="h-3 w-1/2" />
+            <div className="space-y-2 min-w-0">
+              <Skeleton loading className="block w-3/4"><p className="text-sm leading-relaxed">Analyzing your data...</p></Skeleton>
+              <Skeleton loading className="block w-1/2"><p className="text-sm leading-relaxed">Generating query</p></Skeleton>
               <Skeleton className="h-20 w-full rounded-md" />
             </div>
           )}

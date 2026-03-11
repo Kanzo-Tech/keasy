@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CredentialGrid } from "@/components/compliance/credential-grid";
@@ -109,9 +110,12 @@ export function ComplianceSection({ identityLoading, comply }: ComplianceSection
 
   const isGaiaX = compliance?.compliant === true;
   const loading = identityLoading || complianceLoading;
+  const showSkeleton = useDelayedLoading(loading);
 
   if (loading) {
-    return <Skeleton className="h-32 w-full" />;
+    return showSkeleton ? (
+      <Skeleton className="h-32 w-full" />
+    ) : null;
   }
 
   // Compliant — show credential cards

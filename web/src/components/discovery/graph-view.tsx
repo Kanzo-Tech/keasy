@@ -167,13 +167,16 @@ export function InteractiveGraphView({ jobId }: InteractiveGraphViewProps) {
 
   if (isLoading) {
     return showSkeleton ? (
-      <PageShell>
-        <PageShell.Content>
-          <Skeleton className="h-4 w-48 mb-3" />
-          <Skeleton className="h-9 w-full mb-4" />
-          <Skeleton className="flex-1 min-h-[300px] rounded-md" />
-        </PageShell.Content>
-      </PageShell>
+      <div className="flex flex-col flex-1 min-h-0">
+        <div className="relative mb-4">
+          <Skeleton loading className="block w-full">
+            <div className="flex items-stretch h-9 rounded-md border border-input">
+              <Input disabled placeholder="Search nodes..." className="border-0 shadow-none" />
+            </div>
+          </Skeleton>
+        </div>
+        <Skeleton className="flex-1 min-h-[300px] w-full rounded-md" />
+      </div>
     ) : null;
   }
 

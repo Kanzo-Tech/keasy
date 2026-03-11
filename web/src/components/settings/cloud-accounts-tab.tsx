@@ -22,7 +22,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SettingsSectionSkeleton } from "@/components/settings/settings-section-skeleton";
 import type { CloudAccountSummary, ProviderSchema } from "@/lib/types";
 
 function cloudAccountColumns(
@@ -100,7 +100,7 @@ export function CloudAccountsTab() {
 
   const handleDelete = useCallback(
     (id: string) => { deleteMutation.mutate(id); },
-    [deleteMutation],
+    [deleteMutation.mutate],
   );
 
   const columns = useMemo(
@@ -110,13 +110,11 @@ export function CloudAccountsTab() {
 
   if (isLoading) {
     return showSkeleton ? (
-      <PageShell>
-        <PageShell.Content className="max-w-2xl">
-          <Skeleton className="h-4 w-48" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </PageShell.Content>
-      </PageShell>
+      <SettingsSectionSkeleton
+        title="Cloud accounts"
+        description="Manage credentials for cloud storage providers."
+        searchPlaceholder="Search accounts..."
+      />
     ) : null;
   }
 

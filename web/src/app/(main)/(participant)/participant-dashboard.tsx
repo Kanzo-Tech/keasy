@@ -1,20 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
   Cloud,
   Database,
   ShieldCheck,
   FileText,
-  type LucideIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { hasRunningJobs } from "@/lib/utils";
 import { queryKeys } from "@/lib/query-keys";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { SummaryCard } from "@/components/shared/summary-card";
 
 export function ParticipantDashboard() {
   const { data: jobs, isLoading: jobsLoading } = useQuery({
@@ -55,7 +53,7 @@ export function ParticipantDashboard() {
             Dataspace Readiness
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <ReadinessCard
+            <SummaryCard
               href="/settings/cloud-accounts"
               icon={Cloud}
               title="Cloud Accounts"
@@ -67,7 +65,7 @@ export function ParticipantDashboard() {
               }
               ok={loading ? undefined : accountCount > 0}
             />
-            <ReadinessCard
+            <SummaryCard
               href="/connections"
               icon={Database}
               title="Connections"
@@ -79,7 +77,7 @@ export function ParticipantDashboard() {
               }
               ok={loading ? undefined : connectionCount > 0}
             />
-            <ReadinessCard
+            <SummaryCard
               href="/organization/details"
               icon={ShieldCheck}
               title="Compliance"
@@ -93,7 +91,7 @@ export function ParticipantDashboard() {
               }
               ok={loading ? undefined : isCompliant}
             />
-            <ReadinessCard
+            <SummaryCard
               href="/jobs"
               icon={FileText}
               title="DCAT Catalogs"
@@ -132,67 +130,12 @@ export function ParticipantDashboard() {
   );
 }
 
-function ReadinessCard({
-  href,
-  icon: Icon,
-  title,
-  value,
-  description,
-  ok,
-}: {
-  href: string;
-  icon: LucideIcon;
-  title: string;
-  value: React.ReactNode;
-  description: string;
-  ok?: boolean;
-}) {
-  return (
-    <Link href={href} className="group block h-full">
-      <Card className="px-5 py-4 gap-0 rounded-lg shadow-none transition-colors group-hover:border-primary/40 h-full grid grid-rows-[auto_1fr_auto]">
-        <div className="flex items-center gap-2 min-w-0">
-          <div
-            className={cn(
-              "rounded-full p-1.5 shrink-0",
-              ok === true && "bg-green-500/10",
-              ok === false && "bg-amber-500/10",
-              ok === undefined && "bg-muted",
-            )}
-          >
-            <Icon
-              size={14}
-              className={cn(
-                ok === true && "text-green-500",
-                ok === false && "text-amber-500",
-                ok === undefined && "text-muted-foreground",
-              )}
-            />
-          </div>
-          <span className="text-sm font-medium text-muted-foreground min-w-0 truncate">
-            {title}
-          </span>
-        </div>
-        <div className="flex items-end pt-3">
-          {value === undefined ? (
-            <Skeleton className="h-8 w-10" />
-          ) : (
-            <p className="text-2xl font-semibold tracking-tight">{value}</p>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground pt-1">{description}</p>
-      </Card>
-    </Link>
-  );
-}
-
 function StatCard({ label, value }: { label: string; value?: number }) {
   return (
     <Card className="p-4 gap-0 rounded-lg shadow-none text-center">
-      {value === undefined ? (
-        <Skeleton className="h-8 w-10 mx-auto" />
-      ) : (
-        <p className="text-2xl font-semibold">{value}</p>
-      )}
+      <Skeleton loading={value === undefined}>
+        <p className="text-2xl font-semibold">{value ?? 0}</p>
+      </Skeleton>
       <p className="text-xs text-muted-foreground mt-1">{label}</p>
     </Card>
   );

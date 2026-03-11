@@ -56,13 +56,23 @@ export function ConnectionDetail({ id }: { id: string }) {
 
   if (isLoading) {
     return showSkeleton ? (
-      <PageShell>
-        <PageShell.Content className="gap-6">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-64" />
-          <Skeleton className="h-40 w-full" />
-        </PageShell.Content>
-      </PageShell>
+      <PageShell.Content>
+        <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
+          {["Cloud Account", "URL", "Location"].map((label) => (
+            <div key={label} className="min-w-0">
+              <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
+              <Skeleton loading className="block"><p className="text-sm">placeholder-value</p></Skeleton>
+            </div>
+          ))}
+        </div>
+        <FileExplorer
+          connectionName=""
+          connectionKind="data"
+          files={[]}
+          isLoading
+          providers={[]}
+        />
+      </PageShell.Content>
     ) : null;
   }
 

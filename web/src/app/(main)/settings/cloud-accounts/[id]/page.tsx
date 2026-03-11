@@ -9,8 +9,7 @@ import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { CloudAccountForm } from "@/components/settings/cloud-account-form";
-import { PageShell } from "@/components/layout/page-shell";
-import { Skeleton } from "@/components/ui/skeleton";
+import { FormPageSkeleton } from "@/components/settings/form-page-skeleton";
 
 export default function EditCloudAccountPage({
   params,
@@ -33,14 +32,7 @@ export default function EditCloudAccountPage({
   const showSkeleton = useDelayedLoading(isLoading);
 
   if (isLoading) {
-    return showSkeleton ? (
-      <PageShell>
-        <PageShell.Content>
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-40 w-full" />
-        </PageShell.Content>
-      </PageShell>
-    ) : null;
+    return showSkeleton ? <FormPageSkeleton /> : null;
   }
 
   if (!account) {

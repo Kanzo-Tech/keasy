@@ -257,7 +257,7 @@ fn validate_iri(iri: &str) -> Result<(), String> {
     if iri.is_empty() {
         return Err("IRI cannot be empty".into());
     }
-    if iri.contains(|c: char| "<>{|}\\^`".contains(c) || c.is_control()) {
+    if iri.contains(|c: char| "<>\"{|}\\^` ".contains(c) || c.is_control()) {
         return Err(format!("Invalid IRI characters in: {}", iri));
     }
     Ok(())

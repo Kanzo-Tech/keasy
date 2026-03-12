@@ -208,7 +208,7 @@ pub async fn upload_file(
 ) -> Result<impl IntoResponse, ConnectionError> {
     let (connection, creds) = resolve_cloud_connection(&state, &ctx, id.as_str()).await?;
     let url = join_connection_path(&connection.url, &req.path)
-        .map_err(|e| ConnectionError::InvalidConnection(e))?;
+        .map_err(ConnectionError::InvalidConnection)?;
     reader::upload(&url, req.content.into_bytes(), &creds)
         .await
         .map_err(ConnectionError::UploadFailed)?;
@@ -247,7 +247,7 @@ pub async fn get_file_schema(
         .ok_or(ConnectionError::NotFound)?;
 
     let url = join_connection_path(&connection.url, &query.path)
-        .map_err(|e| ConnectionError::InvalidConnection(e))?;
+        .map_err(ConnectionError::InvalidConnection)?;
 
     let bytes = if connection.location_type == LocationType::Cloud {
         let (_, creds) = resolve_cloud_connection(&state, &ctx, id.as_str()).await?;

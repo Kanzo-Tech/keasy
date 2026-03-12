@@ -365,21 +365,25 @@ pub fn build_router(
         .finish()
         .unwrap();
 
+    // Rate-limited routes (excludes health checks so LB probes don't eat the budget)
+    let rated_routes = Router::new()
+        .merge(public_api_routes)
+        .merge(auth_routes)
+        .merge(session_auth_routes)
+        .merge(api_routes)
+        .layer(tower_governor::GovernorLayer::new(governor_conf));
+
     // IMPORTANT: session_layer MUST be outermost (applied after all merges).
     // In axum, layers applied last wrap outermost. session_required middleware
     // (applied inside api_routes) can access Session because session_layer
     // processes the request first.
     Router::new()
         .merge(health_routes)
-        .merge(public_api_routes)
-        .merge(auth_routes)
-        .merge(session_auth_routes)
-        .merge(api_routes)
+        .merge(rated_routes)
         .layer(axum::middleware::from_fn(crate::middleware::audit::audit_log))
         .layer(session_layer)
         .layer(cors)
         .layer(security_headers)
-        .layer(tower_governor::GovernorLayer::new(governor_conf))
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024))
         .layer(TraceLayer::new_for_http())
 }

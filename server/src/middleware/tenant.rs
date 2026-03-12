@@ -114,41 +114,33 @@ pub trait Policy: sealed::Sealed + Send + Sync + 'static {
     fn is_allowed(role: &TenantRole) -> bool;
 }
 
-/// Any authenticated user with a tenant context (promotor, admin, or user).
-pub struct AnyRole;
-impl sealed::Sealed for AnyRole {}
-impl Policy for AnyRole {
-    fn is_allowed(_role: &TenantRole) -> bool {
-        true
-    }
+macro_rules! define_policy {
+    ($(#[$meta:meta])* $name:ident, |$role:ident| $body:expr) => {
+        $(#[$meta])*
+        pub struct $name;
+        impl sealed::Sealed for $name {}
+        impl Policy for $name {
+            fn is_allowed($role: &TenantRole) -> bool { $body }
+        }
+    };
 }
 
-/// Promotor only — Metadata Broker role (IDS-RAM 4.0).
-pub struct IsPromotor;
-impl sealed::Sealed for IsPromotor {}
-impl Policy for IsPromotor {
-    fn is_allowed(role: &TenantRole) -> bool {
-        *role == TenantRole::Promotor
-    }
-}
-
-/// Any participant user (OrgAdmin or OrgUser). Rejects promotor.
-pub struct IsParticipant;
-impl sealed::Sealed for IsParticipant {}
-impl Policy for IsParticipant {
-    fn is_allowed(role: &TenantRole) -> bool {
-        matches!(role, TenantRole::OrgAdmin | TenantRole::OrgUser)
-    }
-}
-
-/// Participant org admin only. Rejects promotor and OrgUser.
-pub struct IsAdmin;
-impl sealed::Sealed for IsAdmin {}
-impl Policy for IsAdmin {
-    fn is_allowed(role: &TenantRole) -> bool {
-        *role == TenantRole::OrgAdmin
-    }
-}
+define_policy!(
+    /// Any authenticated user with a tenant context (promotor, admin, or user).
+    AnyRole, |_role| true
+);
+define_policy!(
+    /// Promotor only — Metadata Broker role (IDS-RAM 4.0).
+    IsPromotor, |role| *role == TenantRole::Promotor
+);
+define_policy!(
+    /// Any participant user (OrgAdmin or OrgUser). Rejects promotor.
+    IsParticipant, |role| matches!(role, TenantRole::OrgAdmin | TenantRole::OrgUser)
+);
+define_policy!(
+    /// Participant org admin only. Rejects promotor and OrgUser.
+    IsAdmin, |role| *role == TenantRole::OrgAdmin
+);
 
 /// Generic policy-based extractor. Replaces `RequirePromotor`, `RequireParticipant`,
 /// and `RequireOrgAdmin` with a single `Require<P>` type.

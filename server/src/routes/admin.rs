@@ -15,7 +15,7 @@ use crate::db::dataspaces::Dataspace;
 use crate::db::organizations::{Organization, generate_unique_slug};
 use crate::error::data_response;
 use crate::middleware::session_auth::AuthenticatedUser;
-use crate::middleware::tenant::{RbacError, RequirePromotor};
+use crate::middleware::tenant::{IsPromotor, RbacError, Require};
 
 // ---------------------------------------------------------------------------
 // Response types
@@ -65,7 +65,7 @@ pub struct AdminInviteResult {
     responses((status = 200, description = "List all organizations", body = Vec<Organization>))
 )]
 pub async fn list_all_orgs(
-    RequirePromotor(_ctx): RequirePromotor,
+    _ctx: Require<IsPromotor>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
     let orgs = state.db.list_organizations().await;
@@ -89,7 +89,7 @@ pub struct CreateOrgAndInviteRequest {
     )
 )]
 pub async fn create_org_and_invite(
-    RequirePromotor(_ctx): RequirePromotor,
+    _ctx: Require<IsPromotor>,
     axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
     State(state): State<AppState>,
     Json(payload): Json<CreateOrgAndInviteRequest>,
@@ -173,7 +173,7 @@ pub struct RegisterOidcClientRequest {
     )
 )]
 pub async fn register_dataspace(
-    RequirePromotor(_ctx): RequirePromotor,
+    _ctx: Require<IsPromotor>,
     State(state): State<AppState>,
     Json(payload): Json<RegisterOidcClientRequest>,
 ) -> Result<impl IntoResponse, RbacError> {
@@ -247,7 +247,7 @@ pub async fn register_dataspace(
     responses((status = 200, description = "List of registered OIDC clients", body = Vec<Dataspace>))
 )]
 pub async fn list_dataspaces(
-    RequirePromotor(_ctx): RequirePromotor,
+    _ctx: Require<IsPromotor>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
     let clients = state.db.list_dataspaces().await;
@@ -262,7 +262,7 @@ pub async fn list_dataspaces(
     responses((status = 200, description = "List all invite tokens", body = Vec<AdminInviteEntry>))
 )]
 pub async fn list_invites(
-    RequirePromotor(_ctx): RequirePromotor,
+    _ctx: Require<IsPromotor>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
     let tokens = state.db.list_invite_tokens().await;
@@ -306,7 +306,7 @@ pub struct CreateInviteRequest {
     )
 )]
 pub async fn create_invite(
-    RequirePromotor(_ctx): RequirePromotor,
+    _ctx: Require<IsPromotor>,
     axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
     State(state): State<AppState>,
     Json(payload): Json<CreateInviteRequest>,
@@ -384,7 +384,7 @@ pub async fn create_invite(
     )
 )]
 pub async fn revoke_invite(
-    RequirePromotor(_ctx): RequirePromotor,
+    _ctx: Require<IsPromotor>,
     axum::extract::Path(token): axum::extract::Path<String>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {

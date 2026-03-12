@@ -22,7 +22,7 @@ use crate::AppState;
 use crate::error::{bad_request_response, data_response, error_body, internal_error_response};
 use crate::gaia_x::{ComplyEvent, ComplyRequest, ComplyResponse, GaiaxState, cert, credentials, db, did_web, did_web_key, keys, signing, vp, well_known_url};
 use crate::gaia_x::gxdch::MockGxdch;
-use crate::middleware::tenant::RequireParticipant;
+use crate::middleware::tenant::{IsParticipant, Require};
 
 use axum::http::StatusCode;
 use axum::response::Response;
@@ -102,7 +102,7 @@ async fn resolve_org_id_from_request(
     )
 )]
 pub async fn comply(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Json(payload): Json<ComplyRequest>,
 ) -> Response {
@@ -315,7 +315,7 @@ pub async fn comply(
     responses((status = 200, description = "Compliance status and credentials", body = ComplianceStatus))
 )]
 pub async fn get_compliance_status(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
 ) -> Response {
     let org_id = ctx.org_id.0.clone();

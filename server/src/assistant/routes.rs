@@ -8,7 +8,7 @@ use std::fmt::Write as FmtWrite;
 use crate::ai::client::ask_llm;
 use crate::ai::routes::strip_markdown_fences;
 use crate::error::data_response;
-use crate::middleware::tenant::RequireParticipant;
+use crate::middleware::tenant::{IsParticipant, Require};
 use crate::AppState;
 
 use super::models::*;
@@ -188,7 +188,7 @@ The ShEx shapes must define types that the script references via shex!()."#;
     )
 )]
 pub async fn suggest_cqs(
-    RequireParticipant(_ctx): RequireParticipant,
+    _ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Json(req): Json<SuggestRequest>,
 ) -> Result<impl IntoResponse, ErrorResponse> {
@@ -225,7 +225,7 @@ pub async fn suggest_cqs(
     )
 )]
 pub async fn generate_script(
-    RequireParticipant(_ctx): RequireParticipant,
+    _ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Json(req): Json<GenerateRequest>,
 ) -> Result<impl IntoResponse, ErrorResponse> {

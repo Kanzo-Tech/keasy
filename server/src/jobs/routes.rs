@@ -17,7 +17,7 @@ use crate::discovery::rdf_format::RdfExportFormat;
 use crate::jobs::models::{CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601};
 use super::rewrite;
 use super::runner::JobEvent;
-use crate::middleware::tenant::RequireParticipant;
+use crate::middleware::tenant::{IsParticipant, Require};
 
 use super::errors::JobApiError;
 
@@ -32,7 +32,7 @@ pub struct CatalogResponse {
     )
 )]
 pub async fn list_jobs(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, JobApiError> {
     let jobs = state.db.list_jobs(&ctx.as_ctx()).await;
@@ -47,7 +47,7 @@ pub async fn list_jobs(
     )
 )]
 pub async fn create_job(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -131,7 +131,7 @@ pub async fn create_job(
     )
 )]
 pub async fn get_job(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -151,7 +151,7 @@ pub async fn get_job(
     )
 )]
 pub async fn update_job(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateJobRequest>,
@@ -181,7 +181,7 @@ pub async fn update_job(
     )
 )]
 pub async fn stream_job(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<Response, JobApiError> {
@@ -242,7 +242,7 @@ pub async fn stream_job(
     )
 )]
 pub async fn delete_job(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -280,7 +280,7 @@ pub struct CatalogQuery {
     )
 )]
 pub async fn get_job_catalog(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Query(query): Query<CatalogQuery>,
@@ -315,7 +315,7 @@ pub async fn get_job_catalog(
     )
 )]
 pub async fn get_job_graph(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -334,7 +334,7 @@ pub async fn get_job_graph(
     responses((status = 200, description = "Dashboard layout"), (status = 204, description = "No layout saved"))
 )]
 pub async fn get_dashboard_layout(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -352,7 +352,7 @@ pub async fn get_dashboard_layout(
     responses((status = 200, description = "Layout saved"))
 )]
 pub async fn save_dashboard_layout(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(body): Json<serde_json::Value>,

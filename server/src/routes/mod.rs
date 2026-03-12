@@ -7,8 +7,12 @@ pub mod scripts;
 
 use axum::{middleware, Router};
 use axum::extract::DefaultBodyLimit;
+use axum::http::HeaderValue;
+use axum::http::header::{self, HeaderName};
 use secrecy::ExposeSecret;
+use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::TraceLayer;
 use tower_sessions::{cookie::{Key, SameSite}, SessionManagerLayer};
 
@@ -327,13 +331,39 @@ pub fn build_router(
                 .allow_headers(Any)
         }
         None => {
-            tracing::warn!("CORS configured to allow all origins — set KEASY_CORS_ORIGINS in production");
-            CorsLayer::new()
-                .allow_origin(Any)
-                .allow_methods(Any)
-                .allow_headers(Any)
+            if cfg!(debug_assertions) {
+                tracing::warn!("CORS: allowing all origins (dev mode)");
+                CorsLayer::permissive()
+            } else {
+                panic!("KEASY_CORS_ORIGINS must be set in production");
+            }
         }
     };
+
+    let security_headers = ServiceBuilder::new()
+        .layer(SetResponseHeaderLayer::overriding(
+            header::X_CONTENT_TYPE_OPTIONS,
+            HeaderValue::from_static("nosniff"),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            header::X_FRAME_OPTIONS,
+            HeaderValue::from_static("DENY"),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            HeaderName::from_static("x-xss-protection"),
+            HeaderValue::from_static("1; mode=block"),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            header::STRICT_TRANSPORT_SECURITY,
+            HeaderValue::from_static("max-age=31536000; includeSubDomains"),
+        ));
+
+    // Rate limiting (10 req/s per IP, burst of 30)
+    let governor_conf = tower_governor::governor::GovernorConfigBuilder::default()
+        .per_second(10)
+        .burst_size(30)
+        .finish()
+        .unwrap();
 
     // IMPORTANT: session_layer MUST be outermost (applied after all merges).
     // In axum, layers applied last wrap outermost. session_required middleware
@@ -345,8 +375,11 @@ pub fn build_router(
         .merge(auth_routes)
         .merge(session_auth_routes)
         .merge(api_routes)
+        .layer(axum::middleware::from_fn(crate::middleware::audit::audit_log))
         .layer(session_layer)
         .layer(cors)
+        .layer(security_headers)
+        .layer(tower_governor::GovernorLayer::new(governor_conf))
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024))
         .layer(TraceLayer::new_for_http())
 }

@@ -8,6 +8,7 @@ use secrecy::{ExposeSecret, SecretString};
 
 use crate::AppState;
 use crate::error::{data_response, error_body};
+use crate::middleware::tenant::{AnyRole, IsAdmin, IsParticipant, Require};
 use crate::settings::ai::{AiSettings, AiSettingsPayload};
 use crate::settings::org::OrgSettings;
 use crate::settings::preferences::Preferences;
@@ -28,7 +29,7 @@ pub async fn get_schema() -> impl IntoResponse {
         (status = 204, description = "No settings configured"),
     )
 )]
-pub async fn get_org_settings(State(state): State<AppState>) -> Response {
+pub async fn get_org_settings(_ctx: Require<IsParticipant>, State(state): State<AppState>) -> Response {
     match state.db.get_org_settings().await {
         Some(settings) => data_response(settings).into_response(),
         None => StatusCode::NO_CONTENT.into_response(),
@@ -43,6 +44,7 @@ pub async fn get_org_settings(State(state): State<AppState>) -> Response {
     )
 )]
 pub async fn save_org_settings(
+    _ctx: Require<IsAdmin>,
     State(state): State<AppState>,
     Json(payload): Json<OrgSettings>,
 ) -> Response {
@@ -59,7 +61,7 @@ pub async fn save_org_settings(
 #[utoipa::path(get, path = "/v1/settings/preferences", tag = "Settings",
     responses((status = 200, description = "UI preferences", body = Preferences))
 )]
-pub async fn get_preferences(State(state): State<AppState>) -> impl IntoResponse {
+pub async fn get_preferences(_ctx: Require<AnyRole>, State(state): State<AppState>) -> impl IntoResponse {
     data_response(state.db.get_preferences().await)
 }
 
@@ -71,6 +73,7 @@ pub async fn get_preferences(State(state): State<AppState>) -> impl IntoResponse
     )
 )]
 pub async fn save_preferences(
+    _ctx: Require<AnyRole>,
     State(state): State<AppState>,
     Json(payload): Json<Preferences>,
 ) -> Response {
@@ -95,7 +98,7 @@ pub async fn save_preferences(
 #[utoipa::path(get, path = "/v1/settings/ai/providers", tag = "Settings",
     responses((status = 200, description = "List of AI providers", body = Vec<AiSettingsPayload>))
 )]
-pub async fn list_ai_providers(State(state): State<AppState>) -> impl IntoResponse {
+pub async fn list_ai_providers(_ctx: Require<IsParticipant>, State(state): State<AppState>) -> impl IntoResponse {
     let providers = state.db.list_ai_providers().await;
     let payloads: Vec<AiSettingsPayload> = providers.iter().map(to_payload).collect();
     data_response(payloads)
@@ -110,6 +113,7 @@ pub async fn list_ai_providers(State(state): State<AppState>) -> impl IntoRespon
     )
 )]
 pub async fn save_ai_provider(
+    _ctx: Require<IsAdmin>,
     State(state): State<AppState>,
     Path(provider_id): Path<String>,
     Json(payload): Json<AiSettingsPayload>,
@@ -148,6 +152,7 @@ pub async fn save_ai_provider(
     )
 )]
 pub async fn delete_ai_provider(
+    _ctx: Require<IsAdmin>,
     State(state): State<AppState>,
     Path(provider_id): Path<String>,
 ) -> Response {

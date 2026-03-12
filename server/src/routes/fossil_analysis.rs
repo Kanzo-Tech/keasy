@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::{AppState, OrgAnalysisState, hash_str};
 use crate::jobs::rewrite;
 use crate::jobs::script;
-use crate::middleware::tenant::RequireParticipant;
+use crate::middleware::tenant::{IsParticipant, Require};
 
 #[derive(Deserialize, utoipa::ToSchema)]
 pub struct AnalyzeRequest {
@@ -26,7 +26,7 @@ pub struct AnalyzeResponse {
     responses((status = 200, description = "Analysis result", body = AnalyzeResponse))
 )]
 pub async fn analyze(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Json(payload): Json<AnalyzeRequest>,
 ) -> impl IntoResponse {

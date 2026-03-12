@@ -14,7 +14,7 @@ use super::client::{AiError, Message, ask_llm, ask_llm_multi};
 use super::context::build_semantic_context;
 use super::models::{AskResultCode, Conversation, ConversationMessage};
 use crate::error::data_response;
-use crate::middleware::tenant::RequireParticipant;
+use crate::middleware::tenant::{IsParticipant, Require};
 
 #[utoipa::path(post, path = "/v1/jobs/{id}/discover/ask", tag = "Discovery",
     params(("id" = String, Path, description = "Job ID")),
@@ -22,7 +22,7 @@ use crate::middleware::tenant::RequireParticipant;
     responses((status = 200, description = "AI answer with optional SPARQL results", body = AskResponse))
 )]
 pub async fn ask_discover(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<AskRequest>,
@@ -363,7 +363,7 @@ pub struct CreateConversationRequest {
     responses((status = 201, description = "Conversation created", body = crate::ai::models::Conversation))
 )]
 pub async fn create_conversation(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(job_id): Path<String>,
     Json(req): Json<CreateConversationRequest>,
@@ -384,7 +384,7 @@ pub async fn create_conversation(
     responses((status = 200, description = "List of conversations", body = Vec<crate::ai::models::Conversation>))
 )]
 pub async fn list_conversations(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(job_id): Path<String>,
 ) -> impl IntoResponse {
@@ -400,7 +400,7 @@ pub async fn list_conversations(
     )
 )]
 pub async fn get_conversation_messages(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
 ) -> Response {
@@ -426,7 +426,7 @@ pub struct RenameConversationRequest {
     responses((status = 204, description = "Conversation renamed"))
 )]
 pub async fn rename_conversation(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
     Json(req): Json<RenameConversationRequest>,
@@ -447,7 +447,7 @@ pub async fn rename_conversation(
     responses((status = 204, description = "Conversation deleted"))
 )]
 pub async fn delete_conversation(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
 ) -> impl IntoResponse {

@@ -1,3 +1,6 @@
+use std::marker::PhantomData;
+use std::ops::Deref;
+
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum::http::StatusCode;
@@ -100,60 +103,68 @@ impl IntoResponse for RbacError {
     }
 }
 
-/// Extractor: requires the org to be Promotor of the instance.
-/// Rejects: OrgAdmin, OrgUser.
-#[allow(dead_code)]
-pub struct RequirePromotor(pub TenantContext);
+// ── Sealed Policy trait system ─────────────────────────────────────────────
 
-impl<S> FromRequestParts<S> for RequirePromotor
-where
-    S: Send + Sync,
-{
-    type Rejection = RbacError;
+mod sealed {
+    pub trait Sealed {}
+}
 
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        let ctx = parts
-            .extensions
-            .get::<TenantContext>()
-            .cloned()
-            .ok_or(RbacError::AuthRequired)?;
-        if ctx.role == TenantRole::Promotor {
-            Ok(Self(ctx))
-        } else {
-            Err(RbacError::InsufficientRole)
-        }
+/// A policy that determines whether a `TenantRole` is allowed.
+pub trait Policy: sealed::Sealed + Send + Sync + 'static {
+    fn is_allowed(role: &TenantRole) -> bool;
+}
+
+/// Any authenticated user with a tenant context (promotor, admin, or user).
+pub struct AnyRole;
+impl sealed::Sealed for AnyRole {}
+impl Policy for AnyRole {
+    fn is_allowed(_role: &TenantRole) -> bool {
+        true
     }
 }
 
-/// Extractor: any participant user (admin or regular). Rejects promotor.
-#[allow(dead_code)]
-pub struct RequireParticipant(pub TenantContext);
-
-impl<S> FromRequestParts<S> for RequireParticipant
-where
-    S: Send + Sync,
-{
-    type Rejection = RbacError;
-
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        let ctx = parts
-            .extensions
-            .get::<TenantContext>()
-            .cloned()
-            .ok_or(RbacError::AuthRequired)?;
-        if ctx.role == TenantRole::Promotor {
-            Err(RbacError::InsufficientRole)
-        } else {
-            Ok(Self(ctx))
-        }
+/// Promotor only — Metadata Broker role (IDS-RAM 4.0).
+pub struct IsPromotor;
+impl sealed::Sealed for IsPromotor {}
+impl Policy for IsPromotor {
+    fn is_allowed(role: &TenantRole) -> bool {
+        *role == TenantRole::Promotor
     }
 }
 
-/// Extractor: participant org admin only. Rejects promotor and OrgUser.
-#[allow(dead_code)]
-pub struct RequireOrgAdmin(pub TenantContext);
+/// Any participant user (OrgAdmin or OrgUser). Rejects promotor.
+pub struct IsParticipant;
+impl sealed::Sealed for IsParticipant {}
+impl Policy for IsParticipant {
+    fn is_allowed(role: &TenantRole) -> bool {
+        matches!(role, TenantRole::OrgAdmin | TenantRole::OrgUser)
+    }
+}
 
-impl<S> FromRequestParts<S> for RequireOrgAdmin
+/// Participant org admin only. Rejects promotor and OrgUser.
+pub struct IsAdmin;
+impl sealed::Sealed for IsAdmin {}
+impl Policy for IsAdmin {
+    fn is_allowed(role: &TenantRole) -> bool {
+        *role == TenantRole::OrgAdmin
+    }
+}
+
+/// Generic policy-based extractor. Replaces `RequirePromotor`, `RequireParticipant`,
+/// and `RequireOrgAdmin` with a single `Require<P>` type.
+pub struct Require<P: Policy> {
+    ctx: TenantContext,
+    _p: PhantomData<P>,
+}
+
+impl<P: Policy> Deref for Require<P> {
+    type Target = TenantContext;
+    fn deref(&self) -> &Self::Target {
+        &self.ctx
+    }
+}
+
+impl<S, P: Policy> FromRequestParts<S> for Require<P>
 where
     S: Send + Sync,
 {
@@ -165,8 +176,8 @@ where
             .get::<TenantContext>()
             .cloned()
             .ok_or(RbacError::AuthRequired)?;
-        if ctx.role == TenantRole::OrgAdmin {
-            Ok(Self(ctx))
+        if P::is_allowed(&ctx.role) {
+            Ok(Self { ctx, _p: PhantomData })
         } else {
             Err(RbacError::InsufficientRole)
         }

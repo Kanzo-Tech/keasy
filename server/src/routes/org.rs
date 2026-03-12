@@ -18,7 +18,7 @@ use crate::db::invite_tokens::InviteToken;
 use crate::db::org_members::{MemberRole, OrgMember};
 use crate::error::{data_response, error_body};
 use crate::middleware::session_auth::AuthenticatedUser;
-use crate::middleware::tenant::{RbacError, RequireOrgAdmin, RequireParticipant};
+use crate::middleware::tenant::{IsAdmin, IsParticipant, RbacError, Require};
 
 static SUBDIVISION_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[A-Z]{2}-[A-Z0-9]{1,3}$").unwrap());
@@ -27,7 +27,7 @@ static SUBDIVISION_RE: LazyLock<Regex> =
     responses((status = 200, description = "List of users in the org", body = Vec<OrgMember>))
 )]
 pub async fn list_users(
-    RequireOrgAdmin(ctx): RequireOrgAdmin,
+    ctx: Require<IsAdmin>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
     let users = state.db.list_org_members(&ctx.org_id.0).await;
@@ -48,7 +48,7 @@ pub struct UpdateUserRoleRequest {
     )
 )]
 pub async fn update_user_role(
-    RequireOrgAdmin(ctx): RequireOrgAdmin,
+    ctx: Require<IsAdmin>,
     State(state): State<AppState>,
     Path(user_id): Path<String>,
     Json(payload): Json<UpdateUserRoleRequest>,
@@ -71,7 +71,7 @@ pub async fn update_user_role(
     )
 )]
 pub async fn remove_user(
-    RequireOrgAdmin(ctx): RequireOrgAdmin,
+    ctx: Require<IsAdmin>,
     State(state): State<AppState>,
     Path(user_id): Path<String>,
 ) -> Result<impl IntoResponse, RbacError> {
@@ -110,7 +110,7 @@ pub struct UpdateOrgIdentityPayload {
     )
 )]
 pub async fn get_org_identity(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     let org = state.db.get_organization(&ctx.org_id.0).await;
@@ -139,7 +139,7 @@ pub async fn get_org_identity(
     )
 )]
 pub async fn update_org_identity(
-    RequireOrgAdmin(ctx): RequireOrgAdmin,
+    ctx: Require<IsAdmin>,
     State(state): State<AppState>,
     Json(payload): Json<UpdateOrgIdentityPayload>,
 ) -> Result<impl IntoResponse, RbacError> {
@@ -235,7 +235,7 @@ pub struct CreateOrgInviteResponse {
     )
 )]
 pub async fn create_org_invite(
-    RequireOrgAdmin(ctx): RequireOrgAdmin,
+    ctx: Require<IsAdmin>,
     axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
     State(state): State<AppState>,
     Json(payload): Json<CreateOrgInviteRequest>,
@@ -280,7 +280,7 @@ pub async fn create_org_invite(
     responses((status = 200, description = "List of org invite tokens", body = Vec<OrgInviteEntry>))
 )]
 pub async fn list_org_invites(
-    RequireOrgAdmin(ctx): RequireOrgAdmin,
+    ctx: Require<IsAdmin>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
     let tokens = state.db.list_invite_tokens_for_org(&ctx.org_id.0).await;
@@ -309,7 +309,7 @@ pub async fn list_org_invites(
     )
 )]
 pub async fn revoke_org_invite(
-    RequireOrgAdmin(ctx): RequireOrgAdmin,
+    ctx: Require<IsAdmin>,
     Path(token): Path<String>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {

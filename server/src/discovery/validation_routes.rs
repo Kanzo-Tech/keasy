@@ -8,7 +8,7 @@ use shex_ast::ShExFormat;
 use crate::cloud::reader;
 use crate::connections::models::LocationType;
 use crate::error::{data_response, error_body};
-use crate::middleware::tenant::RequireParticipant;
+use crate::middleware::tenant::{IsParticipant, Require};
 use super::validation_types::{ShapeFormat, ShapeValidationResult, ValidationRequest};
 use super::validation::ValidatableGraph;
 use crate::AppState;
@@ -37,7 +37,7 @@ fn detect_shape_format(path: &str) -> Option<ShapeFormat> {
     )
 )]
 pub async fn validate_job(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Json(req): Json<ValidationRequest>,
 ) -> Response {

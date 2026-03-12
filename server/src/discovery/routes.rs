@@ -10,7 +10,7 @@ use crate::AppState;
 use crate::error::{AppError, data_response, error_body};
 use crate::jobs::models::JobStatus;
 use super::rdf_format::RdfExportFormat;
-use crate::middleware::tenant::{RequireParticipant, TenantContext};
+use crate::middleware::tenant::{AnyRole, IsParticipant, Require, TenantContext, TenantRole};
 
 // ── Field Stats (generic graph statistics endpoint) ──────────────────────
 
@@ -42,7 +42,7 @@ pub struct FieldStats {
     )
 )]
 pub async fn field_stats(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
@@ -100,7 +100,7 @@ pub struct ExpandRequest {
     responses((status = 200, description = "Graph search results", body = Vec<crate::discovery::graph_types::SearchResult>))
 )]
 pub async fn search_nodes(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<AnyRole>,
     State(state): State<AppState>,
     Json(req): Json<SearchRequest>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -108,7 +108,7 @@ pub async fn search_nodes(
     let query = req.query.unwrap_or_default();
 
     if let Some(job_id) = &req.job_id {
-        let graph_name = match require_output_ready(&state, &ctx, job_id).await {
+        let graph_name = match resolve_graph(&state, &ctx, job_id).await {
             Ok(g) => g,
             Err(r) => return Ok(r),
         };
@@ -123,12 +123,12 @@ pub async fn search_nodes(
     responses((status = 200, description = "Expanded node data", body = crate::discovery::convert::GraphData))
 )]
 pub async fn expand_node(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<AnyRole>,
     State(state): State<AppState>,
     Json(req): Json<ExpandRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     if let Some(job_id) = &req.job_id {
-        let graph_name = match require_output_ready(&state, &ctx, job_id).await {
+        let graph_name = match resolve_graph(&state, &ctx, job_id).await {
             Ok(g) => g,
             Err(r) => return Ok(r),
         };
@@ -152,11 +152,17 @@ pub struct QueryRequest {
     )
 )]
 pub async fn query_discover(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<QueryRequest>,
 ) -> Response {
+    if req.sparql.len() > 10_000 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("sparql_error", "Query too large (max 10KB)")),
+        ).into_response();
+    }
     let graph_name = match require_output_ready(&state, &ctx, &id).await {
         Ok(g) => g,
         Err(r) => return r,
@@ -217,7 +223,7 @@ pub struct ChartRequest {
     responses((status = 200, description = "Chart data", body = crate::discovery::graph_types::TabularData))
 )]
 pub async fn chart_discover(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<ChartRequest>,
@@ -226,7 +232,13 @@ pub async fn chart_discover(
         Ok(g) => g,
         Err(r) => return r,
     };
-    let sparql = build_chart_sparql(&req);
+    let sparql = match build_chart_sparql(&req) {
+        Ok(s) => s,
+        Err(msg) => return (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("invalid_iri", msg)),
+        ).into_response(),
+    };
     match state.graph_store.sparql_select(&sparql, Some(&graph_name)) {
         Ok(data) => {
             let data = apply_top_n(data, req.top_n, req.group_top_n);
@@ -239,12 +251,28 @@ pub async fn chart_discover(
     }
 }
 
+/// Validates that a string is safe to interpolate as an IRI in SPARQL.
+/// Rejects characters that could break out of `<...>` delimiters.
+fn validate_iri(iri: &str) -> Result<(), String> {
+    if iri.is_empty() {
+        return Err("IRI cannot be empty".into());
+    }
+    if iri.contains(|c: char| "<>{|}\\^`".contains(c) || c.is_control()) {
+        return Err(format!("Invalid IRI characters in: {}", iri));
+    }
+    Ok(())
+}
+
 /// Generate SPARQL triple patterns that traverse `field.path` hops then bind the target predicate
 /// to `?{var}`. For a direct field (empty path), emits `?s <pred> ?var .`
 /// For a 1-hop path `[hopIri]`, emits `?s <hopIri> ?_var_0 . ?_var_0 <pred> ?var .`
-fn field_pattern(field: &FieldRef, var: &str) -> String {
+fn field_pattern(field: &FieldRef, var: &str) -> Result<String, String> {
+    validate_iri(&field.predicate)?;
+    for hop in &field.path {
+        validate_iri(hop)?;
+    }
     if field.path.is_empty() {
-        return format!("?s <{}> ?{var} .", field.predicate);
+        return Ok(format!("?s <{}> ?{var} .", field.predicate));
     }
     let mut patterns = Vec::new();
     let mut prev = "s".to_string();
@@ -254,11 +282,15 @@ fn field_pattern(field: &FieldRef, var: &str) -> String {
         prev = next;
     }
     patterns.push(format!("?{prev} <{}> ?{var}", field.predicate));
-    patterns.join(" . ") + " ."
+    Ok(patterns.join(" . ") + " .")
 }
 
-fn build_chart_sparql(req: &ChartRequest) -> String {
-    let x_pat = field_pattern(&req.x, "x");
+fn build_chart_sparql(req: &ChartRequest) -> Result<String, String> {
+    let x_pat = field_pattern(&req.x, "x")?;
+
+    if let Some(ref t) = req.rdf_type {
+        validate_iri(t)?;
+    }
     let type_filter = req.rdf_type.as_ref()
         .map(|t| format!("?s a <{t}> . "))
         .unwrap_or_default();
@@ -270,17 +302,18 @@ fn build_chart_sparql(req: &ChartRequest) -> String {
                 Aggregation::Avg => "(AVG(?y) AS ?value)",
                 _ => "(COUNT(*) AS ?value)",
             };
-            let y_pattern = req.y.as_ref()
-                .map(|y| format!(" {}", field_pattern(y, "y")))
-                .unwrap_or_default();
-            let group_pat = field_pattern(group, "group");
-            format!(
+            let y_pattern = match req.y.as_ref() {
+                Some(y) => format!(" {}", field_pattern(y, "y")?),
+                None => String::new(),
+            };
+            let group_pat = field_pattern(group, "group")?;
+            Ok(format!(
                 "SELECT ?x ?group {agg} WHERE {{ {type_filter}{x_pat}{y_pattern} {group_pat} }} GROUP BY ?x ?group ORDER BY ?x"
-            )
+            ))
         }
         (Some(y), None) if matches!(req.aggregation, Aggregation::None) => {
-            let y_pat = field_pattern(y, "y");
-            format!("SELECT ?x ?y WHERE {{ {type_filter}{x_pat} {y_pat} }} ORDER BY ?x")
+            let y_pat = field_pattern(y, "y")?;
+            Ok(format!("SELECT ?x ?y WHERE {{ {type_filter}{x_pat} {y_pat} }} ORDER BY ?x"))
         }
         (Some(y), None) => {
             let agg = match req.aggregation {
@@ -288,15 +321,15 @@ fn build_chart_sparql(req: &ChartRequest) -> String {
                 Aggregation::Avg => "(AVG(?y) AS ?value)".to_string(),
                 _ => "(COUNT(*) AS ?value)".to_string(),
             };
-            let y_pat = field_pattern(y, "y");
-            format!(
+            let y_pat = field_pattern(y, "y")?;
+            Ok(format!(
                 "SELECT ?x {agg} WHERE {{ {type_filter}{x_pat} {y_pat} }} GROUP BY ?x ORDER BY ?x"
-            )
+            ))
         }
         (None, None) => {
-            format!(
+            Ok(format!(
                 "SELECT ?x (COUNT(*) AS ?value) WHERE {{ {type_filter}{x_pat} }} GROUP BY ?x ORDER BY DESC(?value)"
-            )
+            ))
         }
     }
 }
@@ -412,7 +445,7 @@ pub struct ExportQuery {
     responses((status = 200, description = "RDF file download"))
 )]
 pub async fn export_discover(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     axum::extract::Query(query): axum::extract::Query<ExportQuery>,
@@ -463,7 +496,7 @@ pub struct LoadDiscoverResponse {
     )
 )]
 pub async fn load_discover(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
@@ -484,6 +517,31 @@ pub async fn load_discover(
         loaded,
         triple_count,
     }).into_response()
+}
+
+/// Role-based graph resolution (IDS-RAM 4.0):
+/// - Promotor (Broker): accesses DCAT catalogs (`urn:keasy:job:*`), cross-org.
+/// - Participant: accesses outputs (`urn:keasy:output:*`), scoped to their org.
+async fn resolve_graph(
+    state: &AppState,
+    ctx: &TenantContext,
+    job_id: &str,
+) -> Result<String, Response> {
+    match ctx.role {
+        TenantRole::Promotor => {
+            let name = format!("urn:keasy:job:{job_id}");
+            if state.graph_store.graph_exists(&name) {
+                Ok(name)
+            } else {
+                Err((
+                    StatusCode::NOT_FOUND,
+                    Json(error_body("not_found", "Catalog not found")),
+                )
+                    .into_response())
+            }
+        }
+        _ => require_output_ready(state, ctx, job_id).await,
+    }
 }
 
 /// Returns Ok(graph_name) if the output is ready to query, or Err(Response) with the right error.

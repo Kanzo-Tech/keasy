@@ -10,7 +10,7 @@ use crate::connections::models::{
     UpdateConnectionRequest, UploadFileRequest,
 };
 use crate::error::data_response;
-use crate::middleware::tenant::RequireParticipant;
+use crate::middleware::tenant::{IsParticipant, Require};
 use crate::AppState;
 
 use super::errors::ConnectionError;
@@ -51,12 +51,15 @@ async fn resolve_cloud_connection(
     Ok((connection, creds))
 }
 
-fn join_connection_path(base: &str, path: &str) -> String {
-    format!(
+fn join_connection_path(base: &str, path: &str) -> Result<String, String> {
+    if path.contains("..") {
+        return Err("Path traversal not allowed".into());
+    }
+    Ok(format!(
         "{}/{}",
         base.trim_end_matches('/'),
         path.trim_start_matches('/')
-    )
+    ))
 }
 
 #[derive(Deserialize)]
@@ -75,7 +78,7 @@ pub struct SchemaQuery {
     responses((status = 200, description = "List of connections", body = Vec<Connection>))
 )]
 pub async fn list_connections(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Query(query): Query<ListConnectionsQuery>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -91,7 +94,7 @@ pub async fn list_connections(
     )
 )]
 pub async fn create_connection(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Json(req): Json<CreateConnectionRequest>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -120,7 +123,7 @@ pub async fn create_connection(
     )
 )]
 pub async fn get_connection(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -140,7 +143,7 @@ pub async fn get_connection(
     )
 )]
 pub async fn update_connection(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<UpdateConnectionRequest>,
@@ -158,7 +161,7 @@ pub async fn update_connection(
     )
 )]
 pub async fn delete_connection(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -176,7 +179,7 @@ pub async fn delete_connection(
     )
 )]
 pub async fn list_connection_files(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -198,13 +201,14 @@ pub async fn list_connection_files(
     )
 )]
 pub async fn upload_file(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<UploadFileRequest>,
 ) -> Result<impl IntoResponse, ConnectionError> {
     let (connection, creds) = resolve_cloud_connection(&state, &ctx, id.as_str()).await?;
-    let url = join_connection_path(&connection.url, &req.path);
+    let url = join_connection_path(&connection.url, &req.path)
+        .map_err(|e| ConnectionError::InvalidConnection(e))?;
     reader::upload(&url, req.content.into_bytes(), &creds)
         .await
         .map_err(ConnectionError::UploadFailed)?;
@@ -224,7 +228,7 @@ pub async fn upload_file(
     )
 )]
 pub async fn get_file_schema(
-    RequireParticipant(ctx): RequireParticipant,
+    ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Query(query): Query<SchemaQuery>,
@@ -242,7 +246,8 @@ pub async fn get_file_schema(
         .await
         .ok_or(ConnectionError::NotFound)?;
 
-    let url = join_connection_path(&connection.url, &query.path);
+    let url = join_connection_path(&connection.url, &query.path)
+        .map_err(|e| ConnectionError::InvalidConnection(e))?;
 
     let bytes = if connection.location_type == LocationType::Cloud {
         let (_, creds) = resolve_cloud_connection(&state, &ctx, id.as_str()).await?;

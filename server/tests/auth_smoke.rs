@@ -6,7 +6,7 @@ use secrecy::SecretString;
 use std::sync::Arc;
 use tower::ServiceExt; // for oneshot
 
-use keasy_server::{AppState, AuthServices, Database, GaiaXServices, JobRunner, RdfGraph};
+use keasy_server::{AppState, AuthServices, Database, GaiaXServices, JobRunner};
 
 /// Helper: build a test router backed by a temp directory SQLite DB.
 async fn test_router() -> axum::Router {
@@ -29,14 +29,14 @@ async fn test_router() -> axum::Router {
         .await
         .expect("failed to migrate session store");
 
-    let graph_store = Arc::new(RdfGraph::new());
-    let runner = Arc::new(JobRunner::new(db.clone(), graph_store.clone(), 1, 30));
+    let runner = Arc::new(JobRunner::new(db.clone(), 1, 30));
     let api_key = SecretString::from("test-api-key");
+    let catalog_store = Arc::new(keasy_server::graph::catalog::CatalogStore::new(None));
 
     let state = AppState {
         db,
         runner,
-        graph_store,
+        fragment_resolver: Arc::new(keasy_server::FragmentResolver::new()),
         api_key,
         base_url: "http://localhost:3000".to_string(),
         auth: AuthServices {
@@ -51,7 +51,8 @@ async fn test_router() -> axum::Router {
             base_domain: None,
             caddy_certs_dir: None,
         },
-        analysis_hosts: std::sync::Arc::new(std::sync::Mutex::new(
+        catalog_store,
+        org_analysis: std::sync::Arc::new(std::sync::Mutex::new(
             lru::LruCache::new(std::num::NonZeroUsize::new(64).unwrap()),
         )),
     };
@@ -61,10 +62,12 @@ async fn test_router() -> axum::Router {
     keasy_server::routes::build_router(
         state,
         None,
-        session_store,
-        session_secret,
-        "sid".to_string(),
-        false,
+        keasy_server::routes::SessionConfig {
+            store: session_store,
+            secret: session_secret,
+            cookie_name: "sid".to_string(),
+            secure: false,
+        },
     )
 }
 

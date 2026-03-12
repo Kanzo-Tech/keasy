@@ -8,9 +8,117 @@ use serde::{Deserialize, Serialize};
 
 use crate::AppState;
 use crate::error::{AppError, data_response, error_body};
+use crate::graph::dataset::Dataset;
+use crate::graph::format::RdfExportFormat;
+use crate::graph::fragment::FragmentDataset;
 use crate::jobs::models::JobStatus;
-use super::rdf_format::RdfExportFormat;
 use crate::middleware::tenant::{AnyRole, IsParticipant, Require, TenantContext, TenantRole};
+
+// ── Shared helper: load a FragmentDataset for a completed job ────────────
+
+async fn resolve_dataset(
+    state: &AppState,
+    ctx: &TenantContext,
+    job_id: &str,
+) -> Result<FragmentDataset, Response> {
+    let job = state
+        .db
+        .get_job(&ctx.scoped(job_id))
+        .await
+        .ok_or_else(|| {
+            (
+                StatusCode::NOT_FOUND,
+                Json(error_body("not_found", "Job not found")),
+            )
+                .into_response()
+        })?;
+
+    if job.status != JobStatus::Completed {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(error_body("not_completed", "Job is not completed yet")),
+        )
+            .into_response());
+    }
+
+    let base_url = match &job.fragment_base {
+        Some(u) => u.clone(),
+        None => {
+            // Completed but no fragments — return empty dataset
+            return Ok(FragmentDataset::empty());
+        }
+    };
+
+    let creds = state
+        .db
+        .build_storage_config(&ctx.scoped(()), &ctx.org_id.0, &job.connection_ids)
+        .await;
+
+    state
+        .fragment_resolver
+        .resolve_dataset(&base_url, &creds)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(error_body("fragment_error", e)),
+            )
+                .into_response()
+        })
+}
+
+/// Role-based dataset resolution (IDS-RAM 4.0):
+/// - Promotor (Broker): accesses DCAT catalogs — Oxigraph first, SQLite fallback.
+/// - Participant: accesses outputs via fragment dataset.
+async fn resolve_role_dataset(
+    state: &AppState,
+    ctx: &TenantContext,
+    job_id: &str,
+) -> Result<FragmentDataset, Response> {
+    match ctx.role {
+        TenantRole::Promotor => {
+            state.catalog_store.get_dataset(job_id).await
+                .ok_or_else(|| {
+                    (
+                        StatusCode::NOT_FOUND,
+                        Json(error_body("not_found", "Catalog not found")),
+                    )
+                        .into_response()
+                })
+        }
+        _ => resolve_dataset(state, ctx, job_id).await,
+    }
+}
+
+/// Checks that output is ready and returns Ok(()) or appropriate error.
+/// Used by routes that need to confirm readiness but load their own dataset.
+pub(crate) async fn require_output_ready(
+    state: &AppState,
+    ctx: &TenantContext,
+    job_id: &str,
+) -> Result<(), Response> {
+    let job = state
+        .db
+        .get_job(&ctx.scoped(job_id))
+        .await
+        .ok_or_else(|| {
+            (
+                StatusCode::NOT_FOUND,
+                Json(error_body("not_found", "Job not found")),
+            )
+                .into_response()
+        })?;
+
+    if job.status != JobStatus::Completed {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(error_body("not_completed", "Job is not completed yet")),
+        )
+            .into_response());
+    }
+
+    Ok(())
+}
 
 // ── Field Stats (generic graph statistics endpoint) ──────────────────────
 
@@ -46,11 +154,11 @@ pub async fn field_stats(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    let graph_name = match require_output_ready(&state, &ctx, &id).await {
-        Ok(g) => g,
+    let dataset = match resolve_dataset(&state, &ctx, &id).await {
+        Ok(ds) => ds,
         Err(r) => return r,
     };
-    let profile = state.graph_store.get_profile(&graph_name);
+    let profile = crate::ai::profiler::GraphProfile::build_from_dataset(&dataset, &id);
     let stats: Vec<FieldStats> = profile
         .predicates
         .iter()
@@ -97,7 +205,7 @@ pub struct ExpandRequest {
 
 #[utoipa::path(post, path = "/v1/graph/search", tag = "Graph",
     request_body = SearchRequest,
-    responses((status = 200, description = "Graph search results", body = Vec<crate::discovery::graph_types::SearchResult>))
+    responses((status = 200, description = "Graph search results", body = Vec<crate::graph::types::SearchResult>))
 )]
 pub async fn search_nodes(
     ctx: Require<AnyRole>,
@@ -107,35 +215,41 @@ pub async fn search_nodes(
     let limit = req.limit.unwrap_or(50).min(200);
     let query = req.query.unwrap_or_default();
 
-    if let Some(job_id) = &req.job_id {
-        let graph_name = match resolve_graph(&state, &ctx, job_id).await {
-            Ok(g) => g,
-            Err(r) => return Ok(r),
-        };
-        Ok(data_response(state.graph_store.search_nodes(Some(&graph_name), &query, limit)).into_response())
-    } else {
-        Ok(data_response(state.graph_store.search_nodes(None, &query, limit)).into_response())
+    let job_id = req.job_id.as_deref().unwrap_or("");
+    if job_id.is_empty() {
+        // No job specified — return empty results (no global graph store anymore)
+        return Ok(data_response(Vec::<crate::graph::types::SearchResult>::new()).into_response());
     }
+
+    let dataset = match resolve_role_dataset(&state, &ctx, job_id).await {
+        Ok(ds) => ds,
+        Err(r) => return Ok(r),
+    };
+    Ok(data_response(crate::graph::dataset::search_nodes(&dataset, &query, limit)).into_response())
 }
 
 #[utoipa::path(post, path = "/v1/graph/expand", tag = "Graph",
     request_body = ExpandRequest,
-    responses((status = 200, description = "Expanded node data", body = crate::discovery::convert::GraphData))
+    responses((status = 200, description = "Expanded node data", body = crate::graph::convert::GraphData))
 )]
 pub async fn expand_node(
     ctx: Require<AnyRole>,
     State(state): State<AppState>,
     Json(req): Json<ExpandRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    if let Some(job_id) = &req.job_id {
-        let graph_name = match resolve_graph(&state, &ctx, job_id).await {
-            Ok(g) => g,
-            Err(r) => return Ok(r),
-        };
-        Ok(data_response(state.graph_store.expand_node(Some(&graph_name), &req.node_id)).into_response())
-    } else {
-        Ok(data_response(state.graph_store.expand_node(None, &req.node_id)).into_response())
+    let job_id = req.job_id.as_deref().unwrap_or("");
+    if job_id.is_empty() {
+        return Ok(data_response(crate::graph::convert::GraphData {
+            nodes: vec![],
+            links: vec![],
+        }).into_response());
     }
+
+    let dataset = match resolve_role_dataset(&state, &ctx, job_id).await {
+        Ok(ds) => ds,
+        Err(r) => return Ok(r),
+    };
+    Ok(data_response(crate::graph::dataset::expand_node(&dataset, &req.node_id)).into_response())
 }
 
 #[derive(Deserialize, utoipa::ToSchema)]
@@ -147,7 +261,7 @@ pub struct QueryRequest {
     params(("id" = String, Path, description = "Job ID")),
     request_body = QueryRequest,
     responses(
-        (status = 200, description = "SPARQL query results", body = crate::discovery::graph_types::TabularData),
+        (status = 200, description = "SPARQL query results", body = crate::graph::types::TabularData),
         (status = 400, description = "SPARQL error"),
     )
 )]
@@ -163,11 +277,11 @@ pub async fn query_discover(
             Json(error_body("sparql_error", "Query too large (max 10KB)")),
         ).into_response();
     }
-    let graph_name = match require_output_ready(&state, &ctx, &id).await {
-        Ok(g) => g,
+    let dataset = match resolve_dataset(&state, &ctx, &id).await {
+        Ok(ds) => ds,
         Err(r) => return r,
     };
-    match state.graph_store.sparql_select(&req.sparql, Some(&graph_name)) {
+    match dataset.sparql_select(&req.sparql) {
         Ok(data) => data_response(data).into_response(),
         Err(msg) => (
             StatusCode::BAD_REQUEST,
@@ -220,7 +334,7 @@ pub struct ChartRequest {
 #[utoipa::path(post, path = "/v1/jobs/{id}/discover/chart", tag = "Discovery",
     params(("id" = String, Path, description = "Job ID")),
     request_body = ChartRequest,
-    responses((status = 200, description = "Chart data", body = crate::discovery::graph_types::TabularData))
+    responses((status = 200, description = "Chart data", body = crate::graph::types::TabularData))
 )]
 pub async fn chart_discover(
     ctx: Require<IsParticipant>,
@@ -228,8 +342,8 @@ pub async fn chart_discover(
     Path(id): Path<String>,
     Json(req): Json<ChartRequest>,
 ) -> Response {
-    let graph_name = match require_output_ready(&state, &ctx, &id).await {
-        Ok(g) => g,
+    let dataset = match resolve_dataset(&state, &ctx, &id).await {
+        Ok(ds) => ds,
         Err(r) => return r,
     };
     let sparql = match build_chart_sparql(&req) {
@@ -239,7 +353,7 @@ pub async fn chart_discover(
             Json(error_body("invalid_iri", msg)),
         ).into_response(),
     };
-    match state.graph_store.sparql_select(&sparql, Some(&graph_name)) {
+    match dataset.sparql_select(&sparql) {
         Ok(data) => {
             let data = apply_top_n(data, req.top_n, req.group_top_n);
             data_response(data).into_response()
@@ -337,10 +451,10 @@ fn build_chart_sparql(req: &ChartRequest) -> Result<String, String> {
 /// Collapse low-frequency x-axis and/or group categories into an "Other" bucket.
 /// Operates on the already-computed `TabularData` rows in Rust (post-processing).
 fn apply_top_n(
-    mut data: super::graph_types::TabularData,
+    mut data: crate::graph::types::TabularData,
     top_n: Option<usize>,
     group_top_n: Option<usize>,
-) -> super::graph_types::TabularData {
+) -> crate::graph::types::TabularData {
     use serde_json::Value;
 
     fn str_val(row: &BTreeMap<String, Value>, key: &str) -> String {
@@ -450,8 +564,8 @@ pub async fn export_discover(
     Path(id): Path<String>,
     axum::extract::Query(query): axum::extract::Query<ExportQuery>,
 ) -> Response {
-    let graph_name = match require_output_ready(&state, &ctx, &id).await {
-        Ok(g) => g,
+    let dataset = match resolve_dataset(&state, &ctx, &id).await {
+        Ok(ds) => ds,
         Err(r) => return r,
     };
 
@@ -465,21 +579,20 @@ pub async fn export_discover(
         Err(err) => return (StatusCode::BAD_REQUEST, Json(error_body("invalid_format", err))).into_response(),
     };
 
-    match state.graph_store.serialize_graph(Some(&graph_name), format) {
-        Ok(body) => {
-            let filename = format!("discover-{}.{}", &id[..8.min(id.len())], format.extension());
-            (
-                StatusCode::OK,
-                [
-                    ("Content-Type", format.content_type().to_string()),
-                    ("Content-Disposition", format!("attachment; filename=\"{filename}\"")),
-                ],
-                body,
-            )
-                .into_response()
-        }
-        Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("serialization_error", err))).into_response(),
-    }
+    let body = match dataset.serialize(format) {
+        Ok(b) => b,
+        Err(err) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("serialization_error", err))).into_response(),
+    };
+    let filename = format!("discover-{}.{}", &id[..8.min(id.len())], format.extension());
+    (
+        StatusCode::OK,
+        [
+            ("Content-Type", format.content_type().to_string()),
+            ("Content-Disposition", format!("attachment; filename=\"{filename}\"")),
+        ],
+        body,
+    )
+        .into_response()
 }
 
 #[derive(Serialize, utoipa::ToSchema)]
@@ -509,9 +622,8 @@ pub async fn load_discover(
         return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
     }
 
-    let graph_name = format!("urn:keasy:output:{id}");
-    let triple_count = state.graph_store.triple_count(Some(&graph_name));
-    let loaded = triple_count > 0;
+    let loaded = job.fragment_base.is_some();
+    let triple_count = if loaded { 1 } else { 0 }; // Actual count requires downloading; signal presence only
 
     data_response(LoadDiscoverResponse {
         loaded,
@@ -519,45 +631,104 @@ pub async fn load_discover(
     }).into_response()
 }
 
-/// Role-based graph resolution (IDS-RAM 4.0):
-/// - Promotor (Broker): accesses DCAT catalogs (`urn:keasy:job:*`), cross-org.
-/// - Participant: accesses outputs (`urn:keasy:output:*`), scoped to their org.
-async fn resolve_graph(
-    state: &AppState,
-    ctx: &TenantContext,
-    job_id: &str,
-) -> Result<String, Response> {
-    match ctx.role {
-        TenantRole::Promotor => {
-            let name = format!("urn:keasy:job:{job_id}");
-            if state.graph_store.graph_exists(&name) {
-                Ok(name)
-            } else {
-                Err((
-                    StatusCode::NOT_FOUND,
-                    Json(error_body("not_found", "Catalog not found")),
-                )
-                    .into_response())
-            }
-        }
-        _ => require_output_ready(state, ctx, job_id).await,
-    }
+// ── Triple Pattern Fragments (TPF) ─────────────────────────────────────
+
+const TPF_PAGE_SIZE: usize = 100;
+
+#[derive(Deserialize, utoipa::IntoParams)]
+pub struct TpfQuery {
+    pub subject: Option<String>,
+    pub predicate: Option<String>,
+    pub object: Option<String>,
+    #[serde(default = "default_page")]
+    pub page: usize,
 }
 
-/// Returns Ok(graph_name) if the output is ready to query, or Err(Response) with the right error.
-/// Fast path: graph already has triples → no DB lookup needed.
-/// Slow path: graph empty → check job status to distinguish "not completed" from "completed but no outputs".
-pub(crate) async fn require_output_ready(state: &AppState, ctx: &TenantContext, job_id: &str) -> Result<String, Response> {
-    let graph_name = format!("urn:keasy:output:{job_id}");
-    if state.graph_store.graph_exists(&graph_name) {
-        return Ok(graph_name);
+fn default_page() -> usize { 1 }
+
+#[derive(Serialize, utoipa::ToSchema)]
+pub struct TpfResponse {
+    pub triples: Vec<TpfTriple>,
+    pub total: usize,
+    pub page: usize,
+    pub page_size: usize,
+}
+
+#[derive(Serialize, utoipa::ToSchema)]
+pub struct TpfTriple {
+    pub subject: String,
+    pub predicate: String,
+    pub object: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub datatype: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lang: Option<String>,
+}
+
+#[utoipa::path(get, path = "/v1/tpf/{id}", tag = "Discovery",
+    params(
+        ("id" = String, Path, description = "Job ID"),
+        TpfQuery,
+    ),
+    responses(
+        (status = 200, description = "Triple Pattern Fragment results", body = TpfResponse),
+        (status = 404, description = "No fragments for this job"),
+    )
+)]
+pub async fn tpf_query(
+    ctx: Require<IsParticipant>,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    axum::extract::Query(query): axum::extract::Query<TpfQuery>,
+) -> Response {
+    // Look up job and check it has fragments
+    let job = match state.db.get_job(&ctx.scoped(id.as_str())).await {
+        Some(j) => j,
+        None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
+    };
+
+    if job.status != JobStatus::Completed {
+        return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
     }
-    match state.db.get_job(&ctx.scoped(job_id)).await {
-        None => Err((StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response()),
-        Some(j) if j.status != JobStatus::Completed => Err((
-            StatusCode::BAD_REQUEST,
-            Json(error_body("not_completed", "Job is not completed yet")),
-        ).into_response()),
-        Some(_) => Ok(graph_name), // completed but no outputs — queries will return empty results
-    }
+
+    let base_url = match &job.fragment_base {
+        Some(u) => u.clone(),
+        None => return (StatusCode::NOT_FOUND, Json(error_body("no_fragments", "Job has no fragment output"))).into_response(),
+    };
+
+    // Get cloud credentials from the job's connections
+    let creds = state.db.build_storage_config(&ctx.scoped(()), &ctx.org_id.0, &job.connection_ids).await;
+
+    let dataset = match state.fragment_resolver.resolve_dataset(&base_url, &creds).await {
+        Ok(ds) => ds,
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("fragment_error", e))).into_response(),
+    };
+
+    // Pattern match and paginate
+    let all: Vec<TpfTriple> = dataset
+        .triples(
+            query.subject.as_deref(),
+            query.predicate.as_deref(),
+            query.object.as_deref(),
+        )
+        .map(|t| TpfTriple {
+            subject: t.subject,
+            predicate: t.predicate,
+            object: t.object,
+            datatype: t.object_datatype,
+            lang: t.object_lang,
+        })
+        .collect();
+
+    let total = all.len();
+    let page = query.page.max(1);
+    let start = (page - 1) * TPF_PAGE_SIZE;
+    let triples: Vec<TpfTriple> = all.into_iter().skip(start).take(TPF_PAGE_SIZE).collect();
+
+    data_response(TpfResponse {
+        triples,
+        total,
+        page,
+        page_size: TPF_PAGE_SIZE,
+    }).into_response()
 }

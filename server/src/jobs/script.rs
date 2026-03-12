@@ -1,14 +1,14 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use fossil_lang::compiler::{CompileResult, Compiler, CompilerInput};
 use fossil_lang::passes::GlobalContext;
 use fossil_lang::runtime::executor::{ExecutionConfig, IrExecutor};
-use fossil_lang::runtime::storage::StorageConfig;
 use fossil_lang::traits::provider::LocalFileReader;
 
 use crate::cloud::reader::CloudReader;
 
-pub fn compile(name: &str, source: &str, storage: StorageConfig) -> Result<CompileResult, Vec<String>> {
+pub fn compile(name: &str, source: &str, storage: HashMap<String, String>) -> Result<CompileResult, Vec<String>> {
     let gcx = init_context(storage);
     let compiler = Compiler::with_context(gcx);
     compiler
@@ -25,10 +25,10 @@ pub fn execute(result: CompileResult, config: ExecutionConfig) -> Result<(), Str
     Ok(())
 }
 
-pub fn init_context(storage: StorageConfig) -> GlobalContext {
+pub fn init_context(storage: HashMap<String, String>) -> GlobalContext {
     let reader = Arc::new(CloudReader::new(
         Box::new(LocalFileReader),
-        storage.as_map().clone(),
+        storage.clone(),
     ));
     let mut gcx = GlobalContext { storage, file_reader: reader, ..Default::default() };
     fossil_providers::init(&mut gcx);

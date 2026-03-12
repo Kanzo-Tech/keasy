@@ -59,9 +59,9 @@ CREATE TABLE IF NOT EXISTS jobs (
     completed_at    TEXT,
     error           TEXT,
     pipeline        TEXT NOT NULL DEFAULT '{\"inputs\":[],\"operations\":[],\"outputs\":[]}',
-    catalog         TEXT,
     connection_ids  TEXT NOT NULL DEFAULT '[]',
-    script          TEXT
+    script          TEXT,
+    fragment_base   TEXT
 );
 
 CREATE TABLE IF NOT EXISTS conversations (

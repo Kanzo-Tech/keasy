@@ -8,18 +8,16 @@ use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
 use fossil_lang::runtime::executor::ExecutionConfig;
-use fossil_lang::runtime::storage::StorageConfig;
 
 use super::errors::{JobRuntimeError, classify_error};
 use super::models::{JobStatus, now_iso8601};
 use crate::cloud::resolver::CloudOutputResolver;
-use crate::cloud::tee_resolver::{CapturedOutput, TeeOutputResolver};
 use crate::db::Database;
-use crate::discovery::dcat_extract::extract_dcat_input;
-use crate::discovery::dcat_generator::{build_catalog_triples, generate_dcat_catalog};
-use crate::discovery::dcat_types::DcatInput;
-use crate::discovery::rdf_format::RdfExportFormat;
-use crate::discovery::rdf_graph::RdfGraph;
+use crate::graph::dcat::extract::extract_dcat_input;
+use crate::graph::dcat::generator::generate_dcat_catalog;
+use crate::graph::dcat::types::DcatInput;
+use crate::graph::catalog::CatalogStore;
+use crate::graph::format::RdfExportFormat;
 use super::pipeline_types::PipelineOutput;
 use super::script;
 use crate::settings::org::OrgSettings;
@@ -41,19 +39,21 @@ pub struct SpawnParams {
     pub org_id: String,
     pub job_id: String,
     pub script: String,
-    pub storage: StorageConfig,
+    pub storage: HashMap<String, String>,
     pub org_settings: Option<OrgSettings>,
     pub dcat_enabled: bool,
-    pub dcat_format: Option<String>,
+    pub catalog_store: Arc<CatalogStore>,
 }
 
 const TOTAL_PHASES: u8 = 5;
 
 /// Value returned by [`run_job`] after successful script execution.
 struct JobResult {
-    catalog: Option<String>,
+    /// N-Triples catalog for CatalogStore persistence.
+    catalog_nt: Option<String>,
     dcat_input: Option<DcatInput>,
-    captured: Vec<CapturedOutput>,
+    /// Detected fragment base URL (present when `Rdf.fragments()` was used).
+    fragment_base: Option<String>,
 }
 
 /// Flattened error from the three failure modes of job execution:
@@ -88,7 +88,6 @@ impl JobFailure {
 
 pub struct JobRunner {
     db: Database,
-    graph_store: Arc<RdfGraph>,
     semaphore: Arc<Semaphore>,
     job_timeout: Duration,
     tasks: std::sync::Mutex<JoinSet<()>>,
@@ -98,13 +97,11 @@ pub struct JobRunner {
 impl JobRunner {
     pub fn new(
         db: Database,
-        graph_store: Arc<RdfGraph>,
         max_concurrent: usize,
         job_timeout_secs: u64,
     ) -> Self {
         Self {
             db,
-            graph_store,
             semaphore: Arc::new(Semaphore::new(max_concurrent)),
             job_timeout: Duration::from_secs(job_timeout_secs),
             tasks: std::sync::Mutex::new(JoinSet::new()),
@@ -126,10 +123,9 @@ impl JobRunner {
     /// Spawn a job execution task.
     /// `params.org_id` is the organization that owns this job.
     pub fn spawn(&self, params: SpawnParams) {
-        let SpawnParams { org_id, job_id, script, storage, org_settings, dcat_enabled, dcat_format } = params;
+        let SpawnParams { org_id, job_id, script, storage, org_settings, dcat_enabled, catalog_store } = params;
         let db = self.db.clone();
         let semaphore = self.semaphore.clone();
-        let graph_store = self.graph_store.clone();
         let job_timeout = self.job_timeout;
         let progress = self.progress.clone();
 
@@ -191,7 +187,6 @@ impl JobRunner {
                         if dcat_enabled { org_settings.as_ref() } else { None },
                         job_name.as_deref(),
                         &outputs,
-                        dcat_format.as_deref(),
                         &tx_blocking,
                     )
                 }),
@@ -202,30 +197,20 @@ impl JobRunner {
             .and_then(|r| r.map_err(JobFailure::Execution));
 
             match result {
-                Ok(JobResult { catalog, dcat_input, captured }) => {
-                    // Phase 3: finalizing — load outputs into graph store
+                Ok(JobResult { catalog_nt, dcat_input, fragment_base }) => {
+                    // Phase 3: finalizing
                     let _ = tx.send(JobEvent { phase: "finalizing".into(), index: 3, total: TOTAL_PHASES, error: None });
 
-                    if let Some(input) = &dcat_input {
-                        let graph_name = format!("urn:keasy:job:{job_id}");
-                        let triples = build_catalog_triples(input);
-                        graph_store.insert_triples(Some(&graph_name), &triples);
-                    }
-
-                    let output_graph = format!("urn:keasy:output:{job_id}");
-                    if !graph_store.graph_exists(&output_graph) {
-                        for output in &captured {
-                            if let Err(e) = graph_store.bulk_load_bytes(Some(&output_graph), &output.bytes, &output.url) {
-                                warn!(job_id = %job_id, url = %output.url, error = %e, "Failed to load captured output");
-                            }
-                        }
+                    // Persist catalog via CatalogStore (Oxigraph + SQLite fallback)
+                    if let Some(nt) = &catalog_nt {
+                        catalog_store.store(&job_id, &org_id, nt).await;
                     }
 
                     if let Err(e) = db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Completed;
                         job.completed_at = Some(now_iso8601());
-                        job.catalog = catalog;
                         job.dcat_input = dcat_input;
+                        job.fragment_base = fragment_base;
                     }).await {
                         error!(job_id = %job_id, error = %e, "failed to update job");
                     }
@@ -282,11 +267,10 @@ impl JobRunner {
 fn run_job(
     job_id: &str,
     script: &str,
-    storage: StorageConfig,
+    storage: HashMap<String, String>,
     org: Option<&OrgSettings>,
     job_name: Option<&str>,
     outputs: &[PipelineOutput],
-    dcat_format: Option<&str>,
     tx: &broadcast::Sender<JobEvent>,
 ) -> Result<JobResult, String> {
     // Phase 1: compiling
@@ -304,26 +288,23 @@ fn run_job(
     let _ = tx.send(JobEvent { phase: "executing".into(), index: 2, total: TOTAL_PHASES, error: None });
 
     let handle = tokio::runtime::Handle::current();
-    let creds_snapshot = storage.as_map().clone();
-    let cloud_resolver = Arc::new(CloudOutputResolver::new(handle, creds_snapshot));
-    let tee_resolver = Arc::new(TeeOutputResolver::new(cloud_resolver));
+    let cloud_resolver = Arc::new(CloudOutputResolver::new(handle, storage.clone()));
     let config = ExecutionConfig {
-        output_resolver: tee_resolver.clone(),
+        output_resolver: cloud_resolver.clone(),
         storage,
     };
 
     script::execute(compiled, config)?;
 
-    let captured = tee_resolver.take_captured();
+    // Detect fragment_base from committed outputs
+    let fragment_base = cloud_resolver.committed_urls().iter().find_map(|url| {
+        url.strip_suffix("/manifest.json").map(|base| base.to_string())
+    });
 
-    let format = dcat_format
-        .map(RdfExportFormat::from_name)
-        .transpose()?
-        .unwrap_or(RdfExportFormat::Turtle);
-
-    let catalog = dcat_input
-        .as_ref()
-        .map(|input| generate_dcat_catalog(input, format))
-        .transpose()?;
-    Ok(JobResult { catalog, dcat_input, captured })
+    // Generate N-Triples for CatalogStore persistence
+    let catalog_nt = match &dcat_input {
+        Some(input) => Some(generate_dcat_catalog(input, RdfExportFormat::NTriples)?),
+        None => None,
+    };
+    Ok(JobResult { catalog_nt, dcat_input, fragment_base })
 }

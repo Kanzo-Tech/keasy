@@ -2,7 +2,7 @@ use rusqlite::params;
 
 use crate::db::Database;
 use crate::jobs::models::now_iso8601;
-use crate::discovery::graph_types::TabularData;
+use crate::graph::types::TabularData;
 use crate::tenant::TenantScoped;
 
 use super::models::{Conversation, ConversationMessage};

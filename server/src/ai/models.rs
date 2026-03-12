@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::discovery::graph_types::TabularData;
+use crate::graph::types::TabularData;
 
 /// Result code for AI ask responses — replaces raw string literals.
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]

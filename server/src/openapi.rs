@@ -83,8 +83,9 @@ use utoipa::OpenApi;
         crate::discovery::routes::field_stats,
         crate::discovery::routes::load_discover,
         crate::discovery::routes::export_discover,
+        crate::discovery::routes::tpf_query,
         // Validation
-        crate::discovery::validation_routes::validate_job,
+        crate::validation::routes::validate_job,
         // AI / Conversations
         crate::ai::routes::ask_discover,
         crate::ai::routes::create_conversation,
@@ -188,14 +189,16 @@ use utoipa::OpenApi;
         crate::discovery::routes::FieldStats,
         crate::discovery::routes::FieldTopValue,
         crate::discovery::routes::LoadDiscoverResponse,
-        crate::discovery::graph_types::TabularData,
-        crate::discovery::graph_types::SearchResult,
-        crate::discovery::convert::GraphData,
-        crate::discovery::convert::GraphNode,
-        crate::discovery::convert::GraphLink,
+        crate::discovery::routes::TpfResponse,
+        crate::discovery::routes::TpfTriple,
+        crate::graph::types::TabularData,
+        crate::graph::types::SearchResult,
+        crate::graph::convert::GraphData,
+        crate::graph::convert::GraphNode,
+        crate::graph::convert::GraphLink,
         // Validation
-        crate::discovery::validation_types::ShapeValidationResult,
-        crate::discovery::validation_types::ShapeValidationError,
+        crate::validation::types::ShapeValidationResult,
+        crate::validation::types::ShapeValidationError,
         // Providers
         crate::routes::providers::ProviderEntry,
         // AI / Conversations

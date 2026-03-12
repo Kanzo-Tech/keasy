@@ -127,7 +127,7 @@ export function JobDetailView({ id }: { id: string }) {
       <TabsList className="mx-4 mt-4">
         <TabsTrigger value="overview">Overview</TabsTrigger>
         {hasCatalog && <TabsTrigger value="catalog">Catalog</TabsTrigger>}
-        {hasDestinations && (
+        {job.status === "completed" && (
           <TabsTrigger value="validation">Quality</TabsTrigger>
         )}
         {hasDestinations && (
@@ -157,7 +157,7 @@ export function JobDetailView({ id }: { id: string }) {
       </TabsContent>
 
       <TabsContent value="validation">
-        <ValidationTab destinations={rawDests} />
+        <ValidationTab jobId={id} />
       </TabsContent>
 
       {hasDestinations && (

@@ -1407,7 +1407,7 @@ export interface components {
         };
         ValidationRequest: {
             connection_id: string;
-            data_url: string;
+            job_id: string;
             shape_path: string;
         };
         ValidationResult: {

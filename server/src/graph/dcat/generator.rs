@@ -1,9 +1,8 @@
-use oxrdf::{Literal, NamedNode, Triple};
+use crate::graph::dataset::RdfTriple;
+use crate::graph::format::RdfExportFormat;
+use crate::graph::vocab;
 
-use super::dcat_types::{DatasetInfo, DcatInput, DistributionInfo};
-use super::rdf_format::RdfExportFormat;
-use super::rdf_graph::RdfGraph;
-use super::vocab;
+use super::types::{DatasetInfo, DcatInput, DistributionInfo};
 
 const DCAT_CATALOG: &str = "http://www.w3.org/ns/dcat#Catalog";
 const DCAT_DATASET: &str = "http://www.w3.org/ns/dcat#Dataset";
@@ -31,20 +30,34 @@ const VCARD_HAS_EMAIL: &str = "http://www.w3.org/2006/vcard/ns#hasEmail";
 
 const XSD_DATETIME: &str = "http://www.w3.org/2001/XMLSchema#dateTime";
 
-fn nn(iri: &str) -> NamedNode {
-    NamedNode::new_unchecked(iri)
+fn triple_ii(s: &str, p: &str, o: &str) -> RdfTriple {
+    RdfTriple {
+        subject: s.to_string(),
+        predicate: p.to_string(),
+        object: o.to_string(),
+        object_datatype: None,
+        object_lang: None,
+    }
 }
 
-fn triple_ii(s: &str, p: &str, o: &str) -> Triple {
-    Triple::new(nn(s), nn(p), nn(o))
+fn triple_il(s: &str, p: &str, value: &str) -> RdfTriple {
+    RdfTriple {
+        subject: s.to_string(),
+        predicate: p.to_string(),
+        object: value.to_string(),
+        object_datatype: None,
+        object_lang: None,
+    }
 }
 
-fn triple_il(s: &str, p: &str, value: &str) -> Triple {
-    Triple::new(nn(s), nn(p), Literal::new_simple_literal(value))
-}
-
-fn triple_ilt(s: &str, p: &str, value: &str, datatype: &str) -> Triple {
-    Triple::new(nn(s), nn(p), Literal::new_typed_literal(value, nn(datatype)))
+fn triple_ilt(s: &str, p: &str, value: &str, datatype: &str) -> RdfTriple {
+    RdfTriple {
+        subject: s.to_string(),
+        predicate: p.to_string(),
+        object: value.to_string(),
+        object_datatype: Some(datatype.to_string()),
+        object_lang: None,
+    }
 }
 
 fn job_urn(kind: &str, job_id: &str, name: &str) -> String {
@@ -75,12 +88,10 @@ fn slug(s: &str) -> String {
 
 pub fn generate_dcat_catalog(input: &DcatInput, format: RdfExportFormat) -> Result<String, String> {
     let triples = build_catalog_triples(input);
-    let graph = RdfGraph::new();
-    graph.insert_triples(None, &triples);
-    graph.serialize_to_format(format)
+    serialize_triples(&triples, format)
 }
 
-pub fn build_catalog_triples(input: &DcatInput) -> Vec<Triple> {
+pub fn build_catalog_triples(input: &DcatInput) -> Vec<RdfTriple> {
     let mut triples = Vec::new();
 
     let catalog = job_urn("catalog", &input.job_id, "");
@@ -130,7 +141,7 @@ pub fn build_catalog_triples(input: &DcatInput) -> Vec<Triple> {
 }
 
 fn build_dataset_triples(
-    triples: &mut Vec<Triple>,
+    triples: &mut Vec<RdfTriple>,
     dataset: &DatasetInfo,
     job_id: &str,
     dataset_uri: &str,
@@ -155,7 +166,7 @@ fn build_dataset_triples(
 }
 
 fn build_distribution_triples(
-    triples: &mut Vec<Triple>,
+    triples: &mut Vec<RdfTriple>,
     dist: &DistributionInfo,
     dist_uri: &str,
 ) {
@@ -183,4 +194,64 @@ fn encode_uri_component(s: &str) -> String {
     s.replace(' ', "%20")
         .replace('<', "%3C")
         .replace('>', "%3E")
+}
+
+/// Serialize a list of RdfTriple in the given format using oxrdfio.
+pub fn serialize_triples(triples: &[RdfTriple], format: RdfExportFormat) -> Result<String, String> {
+    use oxrdf::{GraphNameRef, Literal, LiteralRef, NamedNodeRef, QuadRef};
+    use oxrdfio::RdfSerializer;
+
+    let rdf_format = format.to_rdf_format();
+    let mut writer = RdfSerializer::from_format(rdf_format).for_writer(Vec::new());
+
+    for t in triples {
+        let subject = NamedNodeRef::new(&t.subject).map_err(|e| format!("bad subject IRI: {e}"))?;
+        let predicate =
+            NamedNodeRef::new(&t.predicate).map_err(|e| format!("bad predicate IRI: {e}"))?;
+
+        let object_is_iri = t.object.starts_with("http://")
+            || t.object.starts_with("https://")
+            || t.object.starts_with("urn:")
+            || t.object.starts_with("mailto:");
+
+        if object_is_iri {
+            let object =
+                NamedNodeRef::new(&t.object).map_err(|e| format!("bad object IRI: {e}"))?;
+            writer
+                .serialize_quad(QuadRef::new(
+                    subject,
+                    predicate,
+                    object,
+                    GraphNameRef::DefaultGraph,
+                ))
+                .map_err(|e| e.to_string())?;
+        } else {
+            let literal: Literal = if let Some(ref lang) = t.object_lang {
+                Literal::new_language_tagged_literal(&t.object, lang)
+                    .map_err(|e| format!("bad language tag: {e}"))?
+            } else if let Some(ref dt) = t.object_datatype {
+                let dt_node =
+                    NamedNodeRef::new(dt).map_err(|e| format!("bad datatype IRI: {e}"))?;
+                Literal::new_typed_literal(&t.object, dt_node)
+            } else {
+                Literal::new_simple_literal(&t.object)
+            };
+            writer
+                .serialize_quad(QuadRef::new(
+                    subject,
+                    predicate,
+                    LiteralRef::from(&literal),
+                    GraphNameRef::DefaultGraph,
+                ))
+                .map_err(|e| e.to_string())?;
+        }
+    }
+
+    let bytes = writer.finish().map_err(|e| e.to_string())?;
+    String::from_utf8(bytes).map_err(|e| format!("non-UTF8 output: {e}"))
+}
+
+/// Serialize a list of RdfTriple as N-Triples text (convenience wrapper).
+pub fn serialize_ntriples(triples: &[RdfTriple]) -> String {
+    serialize_triples(triples, RdfExportFormat::NTriples).unwrap_or_default()
 }

@@ -1,4 +1,8 @@
-use crate::discovery::rdf_graph::RdfGraph;
+use std::collections::{BTreeMap, HashMap, HashSet};
+
+use crate::graph::convert::shorten_iri;
+use crate::graph::dataset::{Dataset, RdfTriple};
+use crate::graph::vocab::RDF_TYPE;
 
 #[derive(Debug, Clone)]
 pub struct PredicateStats {
@@ -23,40 +27,89 @@ pub struct GraphProfile {
     pub predicates: Vec<PredicateStats>,
 }
 
+/// Returns true if the object value looks like a named node (IRI) or blank node.
+fn is_resource(s: &str) -> bool {
+    s.starts_with("http://") || s.starts_with("https://") || s.starts_with("urn:") || s.starts_with("_:")
+}
+
 impl GraphProfile {
-    pub fn build(graph: &RdfGraph, graph_name: &str) -> Self {
-        let triple_count = graph.triple_count(Some(graph_name));
-        let subject_count = Self::query_subject_count(graph, graph_name);
-        let type_distribution = Self::query_type_distribution(graph, graph_name);
-        let predicate_inventory = Self::query_predicate_inventory(graph, graph_name);
+    /// Build a profile by scanning all triples in a dataset.
+    pub fn build_from_dataset(ds: &dyn Dataset, graph_name: &str) -> Self {
+        let all_triples: Vec<RdfTriple> = ds.triples(None, None, None).collect();
+        Self::build_from_triples(&all_triples, graph_name)
+    }
+
+    pub fn build_from_triples(triples: &[RdfTriple], graph_name: &str) -> Self {
+        let triple_count = triples.len();
+
+        // Count unique subjects
+        let subjects: HashSet<&str> = triples.iter().map(|t| t.subject.as_str()).collect();
+        let subject_count = subjects.len();
+
+        // Type distribution: count distinct subjects per rdf:type
+        let mut type_counts: BTreeMap<String, HashSet<String>> = BTreeMap::new();
+        for t in triples {
+            if t.predicate == RDF_TYPE && is_resource(&t.object) {
+                type_counts
+                    .entry(t.object.clone())
+                    .or_default()
+                    .insert(t.subject.clone());
+            }
+        }
+        let mut type_distribution: Vec<(String, usize)> = type_counts
+            .into_iter()
+            .map(|(ty, subs)| (ty, subs.len()))
+            .collect();
+        type_distribution.sort_by(|a, b| b.1.cmp(&a.1));
+
+        // Predicate inventory: group triples by predicate (excluding rdf:type)
+        let mut pred_triples: BTreeMap<String, Vec<&RdfTriple>> = BTreeMap::new();
+        for t in triples {
+            if t.predicate != RDF_TYPE {
+                pred_triples.entry(t.predicate.clone()).or_default().push(t);
+            }
+        }
 
         let mut predicates = Vec::new();
-        for (pred, total, distinct, is_object) in predicate_inventory {
-            let short = shorten_uri(&pred);
+        // Sort by count descending
+        let mut pred_entries: Vec<_> = pred_triples.into_iter().collect();
+        pred_entries.sort_by(|a, b| b.1.len().cmp(&a.1.len()));
 
+        for (pred, group) in pred_entries {
+            let total = group.len();
+            let distinct_values: HashSet<&str> = group.iter().map(|t| t.object.as_str()).collect();
+            let distinct = distinct_values.len();
+
+            // Check if this is an object property (first value is IRI/blank node)
+            let is_object = group.first().is_some_and(|t| is_resource(&t.object));
+
+            // Numeric stats
             let (min, max, avg) = if !is_object {
-                Self::query_numeric_stats(graph, graph_name, &pred)
+                compute_numeric_stats(&group)
             } else {
                 (None, None, None)
             };
 
             let is_numeric = min.is_some();
 
+            // Top values (for categorical literals with <= 50 distinct values)
             let top_values = if !is_numeric && !is_object && distinct <= 50 {
-                Some(Self::query_top_values(graph, graph_name, &pred))
+                Some(compute_top_values(&group))
             } else {
                 None
             };
 
+            // Samples (for non-numeric, non-categorical literals)
             let samples = if top_values.is_none() && !is_object && !is_numeric {
-                Self::query_samples(graph, graph_name, &pred)
+                group.iter().map(|t| t.object.as_str()).collect::<HashSet<_>>()
+                    .into_iter().take(5).map(String::from).collect()
             } else {
                 Vec::new()
             };
 
             predicates.push(PredicateStats {
+                short_name: shorten_iri(&pred),
                 predicate: pred,
-                short_name: short,
                 count: total,
                 distinct,
                 min,
@@ -76,231 +129,37 @@ impl GraphProfile {
             predicates,
         }
     }
-
-    fn query_subject_count(graph: &RdfGraph, graph_name: &str) -> usize {
-        let sparql = "SELECT (COUNT(DISTINCT ?s) AS ?count) WHERE { ?s ?p ?o }";
-        if let Ok(rows) = graph.sparql_solutions_raw(sparql, Some(graph_name)) {
-            for row in rows {
-                for (var, term) in row {
-                    if var == "count"
-                        && let oxrdf::Term::Literal(lit) = term
-                        && let Ok(n) = lit.value().parse::<usize>()
-                    {
-                        return n;
-                    }
-                }
-            }
-        }
-        0
-    }
-
-    fn query_type_distribution(graph: &RdfGraph, graph_name: &str) -> Vec<(String, usize)> {
-        let sparql = "\
-            SELECT ?type (COUNT(DISTINCT ?s) AS ?count) \
-            WHERE { ?s a ?type } \
-            GROUP BY ?type \
-            ORDER BY DESC(?count)";
-        let mut result = Vec::new();
-        if let Ok(rows) = graph.sparql_solutions_raw(sparql, Some(graph_name)) {
-            for row in rows {
-                let mut type_iri = String::new();
-                let mut count: usize = 0;
-                for (var, term) in row {
-                    match var.as_str() {
-                        "type" => {
-                            if let oxrdf::Term::NamedNode(n) = term {
-                                type_iri = n.as_str().to_string();
-                            }
-                        }
-                        "count" => {
-                            if let oxrdf::Term::Literal(lit) = term {
-                                count = lit.value().parse().unwrap_or(0);
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                if !type_iri.is_empty() {
-                    result.push((type_iri, count));
-                }
-            }
-        }
-        result
-    }
-
-    /// Returns (predicate_uri, total_count, distinct_count, is_object_property).
-    fn query_predicate_inventory(
-        graph: &RdfGraph,
-        graph_name: &str,
-    ) -> Vec<(String, usize, usize, bool)> {
-        let sparql = "\
-            SELECT ?p (COUNT(*) AS ?total) (COUNT(DISTINCT ?o) AS ?distinct) \
-            WHERE { ?s ?p ?o \
-            FILTER(?p != <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>) } \
-            GROUP BY ?p \
-            ORDER BY DESC(?total)";
-        let mut result = Vec::new();
-        if let Ok(rows) = graph.sparql_solutions_raw(sparql, Some(graph_name)) {
-            for row in rows {
-                let mut pred = String::new();
-                let mut total: usize = 0;
-                let mut distinct: usize = 0;
-                for (var, term) in &row {
-                    match var.as_str() {
-                        "p" => {
-                            if let oxrdf::Term::NamedNode(n) = term {
-                                pred = n.as_str().to_string();
-                            }
-                        }
-                        "total" => {
-                            if let oxrdf::Term::Literal(lit) = term {
-                                total = lit.value().parse().unwrap_or(0);
-                            }
-                        }
-                        "distinct" => {
-                            if let oxrdf::Term::Literal(lit) = term {
-                                distinct = lit.value().parse().unwrap_or(0);
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                if !pred.is_empty() {
-                    let is_object = Self::check_is_object_property(graph, graph_name, &pred);
-                    result.push((pred, total, distinct, is_object));
-                }
-            }
-        }
-        result
-    }
-
-    fn check_is_object_property(graph: &RdfGraph, graph_name: &str, pred: &str) -> bool {
-        let sparql = format!(
-            "SELECT ?o WHERE {{ ?s <{pred}> ?o }} LIMIT 1"
-        );
-        if let Ok(rows) = graph.sparql_solutions_raw(&sparql, Some(graph_name))
-            && let Some(row) = rows.into_iter().next()
-            && let Some((_, term)) = row.into_iter().next()
-        {
-            return matches!(term, oxrdf::Term::NamedNode(_) | oxrdf::Term::BlankNode(_));
-        }
-        false
-    }
-
-    fn query_numeric_stats(
-        graph: &RdfGraph,
-        graph_name: &str,
-        pred: &str,
-    ) -> (Option<f64>, Option<f64>, Option<f64>) {
-        let sparql = format!(
-            "SELECT (MIN(xsd:double(?o)) AS ?min) (MAX(xsd:double(?o)) AS ?max) \
-                    (AVG(xsd:double(?o)) AS ?avg) \
-             WHERE {{ ?s <{pred}> ?o }}"
-        );
-        if let Ok(rows) = graph.sparql_solutions_raw(&sparql, Some(graph_name)) {
-            for row in rows {
-                let mut min = None;
-                let mut max = None;
-                let mut avg = None;
-                for (var, term) in row {
-                    if let oxrdf::Term::Literal(lit) = &term {
-                        let val = lit.value().parse::<f64>().ok();
-                        match var.as_str() {
-                            "min" => min = val,
-                            "max" => max = val,
-                            "avg" => avg = val,
-                            _ => {}
-                        }
-                    }
-                }
-                if min.is_some() || max.is_some() {
-                    return (min, max, avg);
-                }
-            }
-        }
-        (None, None, None)
-    }
-
-    fn query_top_values(graph: &RdfGraph, graph_name: &str, pred: &str) -> Vec<(String, usize)> {
-        let sparql = format!(
-            "SELECT (STR(?o) AS ?val) (COUNT(*) AS ?cnt) \
-             WHERE {{ ?s <{pred}> ?o }} \
-             GROUP BY ?o \
-             ORDER BY DESC(?cnt) \
-             LIMIT 10"
-        );
-        let mut result = Vec::new();
-        if let Ok(rows) = graph.sparql_solutions_raw(&sparql, Some(graph_name)) {
-            for row in rows {
-                let mut val = String::new();
-                let mut cnt: usize = 0;
-                for (var, term) in row {
-                    match var.as_str() {
-                        "val" => {
-                            if let oxrdf::Term::Literal(lit) = term {
-                                val = lit.value().to_string();
-                            }
-                        }
-                        "cnt" => {
-                            if let oxrdf::Term::Literal(lit) = term {
-                                cnt = lit.value().parse().unwrap_or(0);
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                if !val.is_empty() {
-                    result.push((val, cnt));
-                }
-            }
-        }
-        result
-    }
-
-    fn query_samples(graph: &RdfGraph, graph_name: &str, pred: &str) -> Vec<String> {
-        let sparql = format!(
-            "SELECT DISTINCT (STR(?o) AS ?val) \
-             WHERE {{ ?s <{pred}> ?o }} \
-             LIMIT 5"
-        );
-        let mut result = Vec::new();
-        if let Ok(rows) = graph.sparql_solutions_raw(&sparql, Some(graph_name)) {
-            for row in rows {
-                for (var, term) in row {
-                    if var == "val"
-                        && let oxrdf::Term::Literal(lit) = term
-                    {
-                        result.push(lit.value().to_string());
-                    }
-                }
-            }
-        }
-        result
-    }
 }
 
-fn shorten_uri(uri: &str) -> String {
-    const PREFIXES: &[(&str, &str)] = &[
-        ("http://schema.org/", "schema:"),
-        ("http://www.w3.org/ns/dcat#", "dcat:"),
-        ("http://purl.org/dc/terms/", "dct:"),
-        ("http://xmlns.com/foaf/0.1/", "foaf:"),
-        ("http://www.w3.org/2006/vcard/ns#", "vcard:"),
-        ("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:"),
-        ("http://www.w3.org/2001/XMLSchema#", "xsd:"),
-        ("http://www.w3.org/2000/01/rdf-schema#", "rdfs:"),
-        ("http://www.w3.org/2002/07/owl#", "owl:"),
-        ("http://www.w3.org/ns/org#", "org:"),
-        ("http://www.w3.org/ns/adms#", "adms:"),
-        ("http://www.w3.org/2004/02/skos/core#", "skos:"),
-    ];
-    for (full, short) in PREFIXES {
-        if let Some(local) = uri.strip_prefix(full) {
-            return format!("{short}{local}");
+fn compute_numeric_stats(triples: &[&RdfTriple]) -> (Option<f64>, Option<f64>, Option<f64>) {
+    let mut values = Vec::new();
+    for t in triples {
+        if let Ok(v) = t.object.parse::<f64>() {
+            if v.is_finite() {
+                values.push(v);
+            }
         }
     }
-    // Fall back to last segment
-    uri.rsplit_once('/').or_else(|| uri.rsplit_once('#'))
-        .map(|(_, local)| local.to_string())
-        .unwrap_or_else(|| uri.to_string())
+    if values.is_empty() {
+        return (None, None, None);
+    }
+    let min = values.iter().copied().reduce(f64::min);
+    let max = values.iter().copied().reduce(f64::max);
+    let avg = Some(values.iter().sum::<f64>() / values.len() as f64);
+    (min, max, avg)
 }
+
+fn compute_top_values(triples: &[&RdfTriple]) -> Vec<(String, usize)> {
+    let mut counts: HashMap<&str, usize> = HashMap::new();
+    for t in triples {
+        *counts.entry(t.object.as_str()).or_default() += 1;
+    }
+    let mut sorted: Vec<(String, usize)> = counts
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), v))
+        .collect();
+    sorted.sort_by(|a, b| b.1.cmp(&a.1));
+    sorted.truncate(10);
+    sorted
+}
+

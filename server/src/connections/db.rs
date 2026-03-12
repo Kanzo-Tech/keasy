@@ -168,7 +168,7 @@ impl Database {
         &self,
         ctx: &TenantScoped<()>,
         connection_ids: &[String],
-    ) -> fossil_lang::runtime::storage::StorageConfig {
+    ) -> std::collections::HashMap<String, String> {
         let account_ids = self.resolve_cloud_account_ids(ctx, connection_ids).await;
         self.build_storage_config(ctx, ctx.org_id().as_str(), &account_ids).await
     }

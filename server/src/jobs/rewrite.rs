@@ -1,4 +1,3 @@
-use fossil_lang::runtime::storage::StorageConfig;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 use std::sync::LazyLock;
@@ -10,7 +9,7 @@ use crate::tenant::{OrgId, TenantScoped};
 #[derive(Clone)]
 pub struct ResolvedScript {
     pub script: String,
-    pub storage: StorageConfig,
+    pub storage: HashMap<String, String>,
 }
 
 pub struct RewriteError {

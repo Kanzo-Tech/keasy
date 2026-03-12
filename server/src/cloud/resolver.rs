@@ -10,6 +10,8 @@ pub struct CloudOutputResolver {
     runtime_handle: tokio::runtime::Handle,
     creds: Arc<HashMap<String, String>>,
     writers: Mutex<Vec<Arc<Mutex<Option<WriteMultipart>>>>>,
+    /// URLs of all outputs resolved during execution.
+    urls: Mutex<Vec<String>>,
 }
 
 impl CloudOutputResolver {
@@ -21,7 +23,15 @@ impl CloudOutputResolver {
             runtime_handle,
             creds: Arc::new(creds),
             writers: Mutex::new(Vec::new()),
+            urls: Mutex::new(Vec::new()),
         }
+    }
+}
+
+impl CloudOutputResolver {
+    /// URLs of all outputs written during execution.
+    pub fn committed_urls(&self) -> Vec<String> {
+        self.urls.lock().expect("urls lock poisoned").clone()
     }
 }
 
@@ -56,6 +66,8 @@ impl OutputResolver for CloudOutputResolver {
             .lock()
             .expect("writers lock poisoned")
             .push(Arc::clone(&writer.multipart));
+
+        self.urls.lock().expect("urls lock poisoned").push(destination.to_string());
 
         Ok(OutputDestination {
             writer: Box::new(writer),

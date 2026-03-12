@@ -1,7 +1,7 @@
 use axum::response::IntoResponse;
 use serde::Serialize;
 
-use fossil_lang::runtime::storage::StorageConfig;
+use std::collections::HashMap;
 
 use crate::error::data_response;
 use crate::jobs::script::init_context;
@@ -18,7 +18,7 @@ pub struct ProviderEntry {
     responses((status = 200, description = "List of available data providers", body = Vec<ProviderEntry>))
 )]
 pub async fn list_providers() -> impl IntoResponse {
-    let gcx = init_context(StorageConfig::default());
+    let gcx = init_context(HashMap::new());
     let providers: Vec<ProviderEntry> = gcx
         .list_providers()
         .into_iter()

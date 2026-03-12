@@ -166,7 +166,7 @@ pub fn build_router(
         )
         .route(
             "/v1/validate",
-            axum::routing::post(crate::discovery::validation_routes::validate_job),
+            axum::routing::post(crate::validation::routes::validate_job),
         )
         .route(
             "/v1/graph/search",
@@ -200,6 +200,10 @@ pub fn build_router(
         .route(
             "/v1/jobs/{id}/discover/export",
             axum::routing::get(crate::discovery::routes::export_discover),
+        )
+        .route(
+            "/v1/tpf/{id}",
+            axum::routing::get(crate::discovery::routes::tpf_query),
         )
         .route(
             "/v1/jobs/{id}/discover/ask",

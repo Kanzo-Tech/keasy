@@ -1,7 +1,7 @@
 use rusqlite::types::{FromSql, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use serde::{Deserialize, Serialize};
 
-use crate::discovery::dcat_types::DcatInput;
+use crate::graph::dcat::types::DcatInput;
 use super::pipeline_types::PipelineSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
@@ -86,8 +86,6 @@ pub struct Job {
     pub error: Option<super::errors::JobRuntimeError>,
     pub mode: RunMode,
     pub pipeline: PipelineSummary,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub catalog: Option<String>,
     #[serde(skip)]
     #[schema(ignore)]
     pub dcat_input: Option<DcatInput>,
@@ -95,6 +93,9 @@ pub struct Job {
     pub connection_ids: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,
+    /// Base URL for RDF fragment storage (set when job uses Rdf::fragments).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fragment_base: Option<String>,
 }
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -104,7 +105,6 @@ pub struct CreateJobRequest {
     pub mode: Option<RunMode>,
     pub pipeline: Option<PipelineSummary>,
     pub dcat_enabled: Option<bool>,
-    pub dcat_format: Option<String>,
     #[serde(default)]
     pub connection_ids: Vec<String>,
     #[serde(default)]

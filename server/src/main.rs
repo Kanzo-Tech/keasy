@@ -1,4 +1,4 @@
-use keasy_server::{AppState, AuthServices, GaiaXServices, Database, JobRunner, RdfGraph};
+use keasy_server::{AppState, AuthServices, GaiaXServices, Database, JobRunner};
 use keasy_server::config::ServerConfig;
 use keasy_server::routes::{build_router, SessionConfig};
 use secrecy::ExposeSecret;
@@ -60,14 +60,6 @@ async fn main() {
         std::process::exit(1);
     }
 
-    let graph_path = config.data_dir.join("graph.db");
-    let graph_store = Arc::new(RdfGraph::open(&graph_path).unwrap_or_else(|e| {
-        eprintln!("FATAL: Cannot open graph store: {e}");
-        std::process::exit(1)
-    }));
-
-    info!(path = %graph_path.display(), "Graph store opened");
-
     // Session store — separate tokio-rusqlite connection (safe in WAL mode).
     // tower-sessions-rusqlite-store manages its own schema via migrate().
     // Access tokio_rusqlite through the re-export from tower-sessions-rusqlite-store.
@@ -92,7 +84,6 @@ async fn main() {
 
     let runner = Arc::new(JobRunner::new(
         db.clone(),
-        graph_store.clone(),
         config.max_concurrent_jobs,
         config.job_timeout_secs,
     ));
@@ -164,14 +155,21 @@ async fn main() {
         base_domain: config.base_domain,
         caddy_certs_dir: config.caddy_certs_dir,
     };
+    let oxigraph = config.oxigraph_url.map(|url| {
+        info!(url = %url, "Oxigraph SPARQL endpoint configured");
+        Arc::new(keasy_server::graph::oxigraph_client::OxigraphClient::new(url))
+    });
+    let has_oxigraph = oxigraph.is_some();
+    let catalog_store = Arc::new(keasy_server::graph::catalog::CatalogStore::new(oxigraph));
     let state = AppState {
         db,
         runner: runner.clone(),
-        graph_store,
+        fragment_resolver: Arc::new(keasy_server::FragmentResolver::new()),
         api_key: config.api_key,
         base_url: config.base_url,
         auth,
         gaia_x,
+        catalog_store,
         org_analysis: Arc::new(std::sync::Mutex::new(
             lru::LruCache::new(std::num::NonZeroUsize::new(64).unwrap()),
         )),
@@ -180,6 +178,7 @@ async fn main() {
         oidc = if state.auth.oidc_state.is_some() { "ready" } else { "not configured" },
         gxdch = %state.gaia_x.gxdch,
         base_domain = state.gaia_x.base_domain.as_deref().unwrap_or("not configured"),
+        oxigraph = if has_oxigraph { "ready" } else { "not configured" },
         "External services"
     );
 

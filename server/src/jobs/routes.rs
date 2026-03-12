@@ -2,18 +2,16 @@ use std::convert::Infallible;
 
 use axum::{
     Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     response::sse::{Event, KeepAlive, Sse},
 };
-use serde::Deserialize;
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
 
 use crate::AppState;
 use crate::error::data_response;
-use crate::discovery::rdf_format::RdfExportFormat;
 use crate::jobs::models::{CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601};
 use super::rewrite;
 use super::runner::JobEvent;
@@ -64,10 +62,10 @@ pub async fn create_job(
             error: None,
             mode: payload.mode.unwrap_or(RunMode::Integrated),
             pipeline: payload.pipeline.unwrap_or_default(),
-            catalog: None,
             dcat_input: None,
             connection_ids: payload.connection_ids.clone(),
             script: Some(payload.script),
+            fragment_base: None,
         };
         state.db.insert_job(&ctx.as_ctx(), &job).await
             .map_err(JobApiError::Internal)?;
@@ -89,10 +87,10 @@ pub async fn create_job(
         error: None,
         mode: payload.mode.unwrap_or(RunMode::Integrated),
         pipeline: payload.pipeline.unwrap_or_default(),
-        catalog: None,
         dcat_input: None,
         connection_ids: payload.connection_ids.clone(),
         script: None,
+        fragment_base: None,
     };
 
     state.db.insert_job(&ctx.as_ctx(), &job).await
@@ -117,7 +115,7 @@ pub async fn create_job(
         storage: resolved.storage,
         org_settings,
         dcat_enabled,
-        dcat_format: payload.dcat_format,
+        catalog_store: state.catalog_store.clone(),
     });
 
     Ok((StatusCode::ACCEPTED, data_response(job)).into_response())
@@ -253,10 +251,8 @@ pub async fn delete_job(
         return Err(JobApiError::StillRunning);
     }
 
-    let cat_graph = format!("urn:keasy:job:{id}");
-    let out_graph = format!("urn:keasy:output:{id}");
-    state.graph_store.clear_named_graph(&cat_graph);
-    state.graph_store.clear_named_graph(&out_graph);
+    // Drop the job's catalog from all stores (best-effort)
+    state.catalog_store.remove(&id).await;
 
     state.db.remove_job(&ctx.scoped(id.as_str())).await
         .map_err(JobApiError::Internal)?;
@@ -264,18 +260,10 @@ pub async fn delete_job(
     Ok(StatusCode::NO_CONTENT.into_response())
 }
 
-#[derive(Deserialize)]
-pub struct CatalogQuery {
-    pub format: Option<String>,
-}
-
 #[utoipa::path(get, path = "/v1/jobs/{id}/catalog", tag = "Jobs",
-    params(
-        ("id" = String, Path, description = "Job ID"),
-        ("format" = Option<String>, Query, description = "RDF export format"),
-    ),
+    params(("id" = String, Path, description = "Job ID")),
     responses(
-        (status = 200, description = "DCAT catalog", body = CatalogResponse),
+        (status = 200, description = "DCAT catalog (N-Triples)", body = CatalogResponse),
         (status = 404, description = "Job or catalog not found"),
     )
 )]
@@ -283,34 +271,23 @@ pub async fn get_job_catalog(
     ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
-    Query(query): Query<CatalogQuery>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    if state.db.get_job(&ctx.scoped(id.as_str())).await.is_none() {
-        return Err(JobApiError::NotFound);
-    }
+    // Verify job exists
+    state.db.get_job(&ctx.scoped(id.as_str())).await
+        .ok_or(JobApiError::NotFound)?;
 
-    let format = query
-        .format
-        .as_deref()
-        .map(RdfExportFormat::from_name)
-        .transpose()
-        .map_err(JobApiError::InvalidFormat)?
-        .unwrap_or(RdfExportFormat::Turtle);
-
-    let graph_name = format!("urn:keasy:job:{id}");
-    match state.graph_store.serialize_graph(Some(&graph_name), format) {
-        Ok(catalog) if !catalog.trim().is_empty() => {
+    match state.catalog_store.get_raw(&id).await {
+        Some(catalog) if !catalog.trim().is_empty() => {
             Ok(data_response(CatalogResponse { catalog }).into_response())
         }
-        Ok(_) => Err(JobApiError::NoCatalog),
-        Err(err) => Err(JobApiError::Serialization(err)),
+        _ => Err(JobApiError::NoCatalog),
     }
 }
 
 #[utoipa::path(get, path = "/v1/jobs/{id}/graph", tag = "Jobs",
     params(("id" = String, Path, description = "Job ID")),
     responses(
-        (status = 200, description = "Job knowledge graph", body = crate::discovery::convert::GraphData),
+        (status = 200, description = "Job knowledge graph", body = crate::graph::convert::GraphData),
         (status = 404, description = "Job not found"),
     )
 )]
@@ -319,13 +296,15 @@ pub async fn get_job_graph(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    match state.db.get_job(&ctx.scoped(id.as_str())).await {
-        Some(_) => {
-            let graph_name = format!("urn:keasy:job:{id}");
-            let graph_data = state.graph_store.get_graph(Some(&graph_name));
-            Ok(data_response(graph_data).into_response())
-        }
-        None => Err(JobApiError::NotFound),
+    state.db.get_job(&ctx.scoped(id.as_str())).await
+        .ok_or(JobApiError::NotFound)?;
+
+    match state.catalog_store.get_dataset(&id).await {
+        Some(ds) => Ok(data_response(crate::graph::dataset::get_graph(&ds)).into_response()),
+        None => Ok(data_response(crate::graph::convert::GraphData {
+            nodes: vec![],
+            links: vec![],
+        }).into_response()),
     }
 }
 

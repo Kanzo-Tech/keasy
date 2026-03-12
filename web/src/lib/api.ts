@@ -375,11 +375,11 @@ export const api = {
 
   // ── Validation ────────────────────────────────────────────────────────
   validation: {
-    validate: async (dataUrl: string, sourceId: string, shapePath: string) =>
+    validate: async (jobId: string, connectionId: string, shapePath: string) =>
       unwrap(await client.POST("/v1/validate", {
         body: {
-          data_url: dataUrl,
-          connection_id: sourceId,
+          job_id: jobId,
+          connection_id: connectionId,
           shape_path: shapePath,
         },
       })),

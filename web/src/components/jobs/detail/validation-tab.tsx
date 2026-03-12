@@ -27,14 +27,13 @@ import type {
   ShapeValidationResult,
 } from "@/lib/types";
 
+const SHEX_EXTENSIONS = ["shex", "shexj"];
+
 interface ValidationTabProps {
-  destinations: string[];
+  jobId: string;
 }
 
-export function ValidationTab({ destinations }: ValidationTabProps) {
-  const [selectedDest, setSelectedDest] = useState(
-    destinations.length === 1 ? destinations[0] : "",
-  );
+export function ValidationTab({ jobId }: ValidationTabProps) {
   const [selectedConnection, setSelectedConnection] = useState("");
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [selectedFile, setSelectedFile] = useState("");
@@ -47,22 +46,6 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
     queryKey: queryKeys.vocab.connections,
     queryFn: () => api.connections.list("vocab"),
   });
-  const { data: providers } = useQuery({
-    queryKey: queryKeys.settings.providers,
-    queryFn: api.settings.providers,
-  });
-
-  const schemaProviders = (providers ?? []).filter(
-    (p) => p.kind === "schema" || p.kind === "both",
-  );
-  const schemaExtensions = schemaProviders.flatMap((p) => p.extensions);
-
-  /** Match a file extension to the provider name for badge display. */
-  function matchProviderName(path: string): string | null {
-    const ext = path.split(".").pop()?.toLowerCase() ?? "";
-    const match = schemaProviders.find((p) => p.extensions.includes(ext));
-    return match?.name ?? null;
-  }
 
   useEffect(() => {
     if (!selectedConnection) {
@@ -76,22 +59,21 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
     api.connections.files(selectedConnection)
       .then((f) => setFiles(f.filter((e) => {
         const ext = e.path.split(".").pop()?.toLowerCase() ?? "";
-        return schemaExtensions.includes(ext);
+        return SHEX_EXTENSIONS.includes(ext);
       })))
       .catch(() => {
         toastError("Failed to list files");
         setFiles([]);
       })
       .finally(() => setFilesLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- re-filter when providers load
-  }, [selectedConnection, providers]);
+  }, [selectedConnection]);
 
   async function handleValidate() {
-    if (!selectedDest || !selectedConnection || !selectedFile) return;
+    if (!selectedConnection || !selectedFile) return;
     setValidating(true);
     setResult(null);
     try {
-      const r = await api.validation.validate(selectedDest, selectedConnection, selectedFile);
+      const r = await api.validation.validate(jobId, selectedConnection, selectedFile);
       setResult(r);
     } catch (err) {
       toastError(err instanceof Error ? err.message : "Validation failed");
@@ -100,85 +82,47 @@ export function ValidationTab({ destinations }: ValidationTabProps) {
     }
   }
 
-  if (destinations.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground py-4">
-        This job has no cloud output destinations to validate.
-      </p>
-    );
-  }
-
-  const canValidate =
-    !!selectedDest && !!selectedConnection && !!selectedFile && !validating;
+  const canValidate = !!selectedConnection && !!selectedFile && !validating;
 
   return (
     <PageShell>
     <PageShell.Content>
-      {/* Step 1 — Output data */}
-      <div className="flex gap-4">
-        <div className="flex flex-col items-center">
-          <Badge variant="secondary" className="size-6 p-0 justify-center text-xs shrink-0">1</Badge>
-          <div className="flex-1 w-px bg-border mt-2" />
-        </div>
-        <div className="flex-1 pb-6 space-y-3">
-          <p className="text-sm font-medium leading-6">Select the output data</p>
-          <p className="text-xs text-muted-foreground">Choose which output destination to validate against a shape.</p>
-          <Combobox
-            options={destinations.map((d) => ({ value: d, label: d }))}
-            value={selectedDest}
-            onValueChange={setSelectedDest}
-            placeholder="Select destination..."
-            searchPlaceholder="Search destinations..."
-            emptyMessage="No destinations found."
-            mono
-          />
-        </div>
-      </div>
-
-      {/* Step 2 — Shape from vocab source */}
-      <div className="flex gap-4">
-        <div className="flex flex-col items-center">
-          <Badge variant="secondary" className="size-6 p-0 justify-center text-xs shrink-0">2</Badge>
-        </div>
-        <div className="flex-1 pb-6 space-y-3">
-          <p className="text-sm font-medium leading-6">Select the shape</p>
-          <p className="text-xs text-muted-foreground">Pick a vocabulary connection and a ShEx/SHACL file to validate the output.</p>
-          {(vocabConnections ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No vocabulary connections configured.</p>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              <FormField label="Vocab Connection">
-                <Combobox
-                  options={(vocabConnections ?? []).map((s) => ({ value: s.id, label: s.name }))}
-                  value={selectedConnection}
-                  onValueChange={setSelectedConnection}
-                  placeholder="Select connection..."
-                  searchPlaceholder="Search connections..."
-                  emptyMessage="No vocab connections found."
-                />
-              </FormField>
-              <FormField label="Shape file">
-                <Combobox
-                  options={files.map((f) => {
-                    const name = matchProviderName(f.path);
-                    return {
-                      value: f.path,
-                      label: f.path,
-                      suffix: name ? <Badge variant="outline" className="text-[10px] px-1.5 py-0">{name}</Badge> : undefined,
-                    };
-                  })}
-                  value={selectedFile}
-                  onValueChange={setSelectedFile}
-                  placeholder={filesLoading ? "Loading..." : "Select shape..."}
-                  searchPlaceholder="Search shapes..."
-                  emptyMessage="No shape files found."
-                  disabled={!selectedConnection || filesLoading}
-                  mono
-                />
-              </FormField>
-            </div>
-          )}
-        </div>
+      {/* Shape selection */}
+      <div className="space-y-3">
+        <p className="text-sm font-medium">Select a ShEx shape to validate this job's output</p>
+        <p className="text-xs text-muted-foreground">Pick a vocabulary connection and a ShEx file (.shex or .shexj).</p>
+        {(vocabConnections ?? []).length === 0 ? (
+          <p className="text-sm text-muted-foreground">No vocabulary connections configured.</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Vocab Connection">
+              <Combobox
+                options={(vocabConnections ?? []).map((s) => ({ value: s.id, label: s.name }))}
+                value={selectedConnection}
+                onValueChange={setSelectedConnection}
+                placeholder="Select connection..."
+                searchPlaceholder="Search connections..."
+                emptyMessage="No vocab connections found."
+              />
+            </FormField>
+            <FormField label="Shape file">
+              <Combobox
+                options={files.map((f) => ({
+                  value: f.path,
+                  label: f.path,
+                  suffix: <Badge variant="outline" className="text-[10px] px-1.5 py-0">ShEx</Badge>,
+                }))}
+                value={selectedFile}
+                onValueChange={setSelectedFile}
+                placeholder={filesLoading ? "Loading..." : "Select shape..."}
+                searchPlaceholder="Search shapes..."
+                emptyMessage="No ShEx files found."
+                disabled={!selectedConnection || filesLoading}
+                mono
+              />
+            </FormField>
+          </div>
+        )}
       </div>
 
       {/* Results */}

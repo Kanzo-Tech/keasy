@@ -13,6 +13,7 @@ pub mod db;
 pub mod discovery;
 pub mod error;
 pub mod gaia_x;
+pub mod graph;
 pub mod jobs;
 pub mod keycloak;
 pub mod middleware;
@@ -20,10 +21,11 @@ pub mod openapi;
 pub mod routes;
 pub mod settings;
 pub mod tenant;
+pub mod validation;
 
 // Re-export types integration tests need
 pub use db::Database;
-pub use discovery::rdf_graph::RdfGraph;
+pub use graph::fragment::FragmentResolver;
 pub use jobs::runner::JobRunner;
 
 use secrecy::SecretString;
@@ -50,11 +52,13 @@ pub struct OrgAnalysisState {
 pub struct AppState {
     pub db: Database,
     pub runner: Arc<JobRunner>,
-    pub graph_store: Arc<RdfGraph>,
+    pub fragment_resolver: Arc<FragmentResolver>,
     pub api_key: SecretString,
     pub base_url: String,
     pub auth: AuthServices,
     pub gaia_x: GaiaXServices,
+    /// Domain service for DCAT catalog persistence (Oxigraph + SQLite fallback).
+    pub catalog_store: Arc<crate::graph::catalog::CatalogStore>,
     /// Per-org fossil analysis state (compilation host + resolve cache).
     pub org_analysis: Arc<Mutex<lru::LruCache<String, OrgAnalysisState>>>,
 }

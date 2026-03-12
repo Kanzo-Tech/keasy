@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use fossil_lang::runtime::storage::StorageConfig;
 use rusqlite::params;
 use secrecy::{ExposeSecret, SecretString};
 use tracing::{info, warn};
@@ -175,7 +174,7 @@ impl Database {
         .collect()
     }
 
-    pub async fn build_storage_config(&self, ctx: &TenantScoped<()>, org_id: &str, account_ids: &[String]) -> StorageConfig {
+    pub async fn build_storage_config(&self, ctx: &TenantScoped<()>, org_id: &str, account_ids: &[String]) -> HashMap<String, String> {
         let mut env = HashMap::new();
         for id in account_ids {
             let scoped = TenantScoped::new(OrgId(org_id.to_string()), id.as_str());
@@ -200,11 +199,11 @@ impl Database {
             let keys: Vec<&str> = env.keys().map(|k| k.as_str()).collect();
             info!(count = env.len(), ?keys, "built storage config from cloud accounts");
         }
-        StorageConfig::new(env)
+        env
     }
 
     pub async fn env_snapshot(&self, ctx: &TenantScoped<()>, account_ids: &[String]) -> HashMap<String, String> {
-        self.build_storage_config(ctx, ctx.org_id().as_str(), account_ids).await.as_map().clone()
+        self.build_storage_config(ctx, ctx.org_id().as_str(), account_ids).await
     }
 
     async fn decrypt_secrets_for_account(&self, id: &str) -> HashMap<String, SecretString> {

@@ -103,12 +103,12 @@ data
     name = row.name,
     age = row.age
 }
-|> Rdf.serialize(@connection_name/output/people.nq)
+|> Rdf.fragments(@connection_name/output/people)
 ```
 - `each row -> ...` iterates over every row
 - Constructor call: `TypeName("subject_iri") { field = value, ... }`
 - Constructor args come from the CSV data rows, not from ShEx
-- `Rdf.serialize(...)` writes the RDF graph
+- `Rdf.fragments(...)` writes RDF fragments to cloud storage
 
 ### Pipe operator
 ```
@@ -136,7 +136,7 @@ people
     name = row.name,
     department = row.dept_id
 }
-|> Rdf.serialize(@my_connection/output/people.nq)
+|> Rdf.fragments(@my_connection/output/people)
 ```
 
 ## ShEx Compact Syntax (ShExC)

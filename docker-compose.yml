@@ -51,6 +51,17 @@ services:
       retries: 10
       start_period: 300s
 
+  oxigraph:
+    image: ghcr.io/oxigraph/oxigraph:latest
+    volumes:
+      - oxigraph-data:/data
+    command: serve --location /data --bind 0.0.0.0:7878
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7878/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ── Application ─────────────────────────────────────────────────────────────
 
   server:
@@ -68,10 +79,13 @@ services:
       KEASY_OIDC_CLIENT_ID: keasy-server
       KEASY_OIDC_CLIENT_SECRET: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
       KEASY_OIDC_INTERNAL_BASE_URL: http://keycloak:8080
+      KEASY_OXIGRAPH_URL: http://oxigraph:7878
     volumes:
       - keasy-data:/var/lib/keasy
     depends_on:
       keycloak:
+        condition: service_healthy
+      oxigraph:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/healthz/live"]
@@ -100,3 +114,4 @@ services:
 volumes:
   keasy-data:
   keycloak-postgres-data:
+  oxigraph-data:

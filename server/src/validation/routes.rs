@@ -8,23 +8,22 @@ use shex_ast::ShExFormat;
 use crate::cloud::reader;
 use crate::connections::models::LocationType;
 use crate::error::{data_response, error_body};
+use crate::graph::format::RdfExportFormat;
+use crate::jobs::models::JobStatus;
 use crate::middleware::tenant::{IsParticipant, Require};
-use super::validation_types::{ShapeFormat, ShapeValidationResult, ValidationRequest};
-use super::validation::ValidatableGraph;
+use super::types::{ShapeValidationResult, ValidationRequest};
+use super::logic::ValidatableGraph;
 use crate::AppState;
 
-/// Supported ShEx formats for detection (ShExR/RDF is niche — defer).
+/// Supported ShEx formats for detection.
 const SUPPORTED_SHEX_FORMATS: &[ShExFormat] = &[ShExFormat::ShExC, ShExFormat::ShExJ];
 
-fn detect_shape_format(path: &str) -> Option<ShapeFormat> {
+fn detect_shex_format(path: &str) -> Option<ShExFormat> {
     let ext = path.rsplit('.').next()?.to_lowercase();
     for fmt in SUPPORTED_SHEX_FORMATS {
         if fmt.extensions().contains(&ext.as_str()) {
-            return Some(ShapeFormat::ShEx(fmt.clone()));
+            return Some(fmt.clone());
         }
-    }
-    if ext == "ttl" {
-        return Some(ShapeFormat::Shacl);
     }
     None
 }
@@ -41,6 +40,35 @@ pub async fn validate_job(
     State(state): State<AppState>,
     Json(req): Json<ValidationRequest>,
 ) -> Response {
+    // Look up the job and load its fragment dataset
+    let job = match state.db.get_job(&ctx.scoped(req.job_id.as_str())).await {
+        Some(j) => j,
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(error_body("not_found", "Job not found")),
+            ).into_response()
+        }
+    };
+
+    if job.status != JobStatus::Completed {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("not_completed", "Job is not completed yet")),
+        ).into_response();
+    }
+
+    let fragment_base = match &job.fragment_base {
+        Some(u) => u.clone(),
+        None => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(error_body("no_fragments", "Job has no fragment output to validate")),
+            ).into_response()
+        }
+    };
+
+    // Load the connection for the shape file
     let connection = match state.db.get_connection(&ctx.scoped(req.connection_id.as_str())).await {
         Some(s) => s,
         None => {
@@ -70,16 +98,7 @@ pub async fn validate_job(
 
     let creds = state.db.env_snapshot(&ctx.as_ctx(), std::slice::from_ref(&account_id)).await;
 
-    let data_bytes = match reader::download(&req.data_url, &creds).await {
-        Ok(bytes) => bytes,
-        Err(msg) => {
-            return (
-                StatusCode::BAD_GATEWAY,
-                Json(error_body("cloud_error", format!("Failed to download output data: {msg}"))),
-            ).into_response()
-        }
-    };
-
+    // Download shape file from the vocab connection
     let shape_url = format!(
         "{}/{}",
         connection.url.trim_end_matches('/'),
@@ -105,24 +124,49 @@ pub async fn validate_job(
         }
     };
 
-    let shape_format = match detect_shape_format(&req.shape_path) {
+    let shex_format = match detect_shex_format(&req.shape_path) {
         Some(fmt) => fmt,
         None => {
             return (
                 StatusCode::BAD_REQUEST,
-                Json(error_body("unsupported_format", "Unsupported shape file extension. Use .shex/.shexj for ShEx or .ttl for SHACL.")),
+                Json(error_body("unsupported_format", "Unsupported shape file extension. Use .shex for ShExC or .shexj for ShExJ.")),
             ).into_response();
         }
     };
 
-    let data_format = rdf_format_from_url(&req.data_url);
+    // Load fragment dataset and serialize to N-Triples for validation
+    let job_creds = state
+        .db
+        .build_storage_config(&ctx.scoped(()), &ctx.org_id.0, &job.connection_ids)
+        .await;
+
+    let dataset = match state
+        .fragment_resolver
+        .resolve_dataset(&fragment_base, &job_creds)
+        .await
+    {
+        Ok(ds) => ds,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(error_body("fragment_error", e)),
+            ).into_response()
+        }
+    };
+
+    let nt_bytes = match dataset.serialize(RdfExportFormat::NTriples) {
+        Ok(b) => b.into_bytes(),
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(error_body("serialization_error", e)),
+            ).into_response()
+        }
+    };
 
     let result = tokio::task::spawn_blocking(move || {
-        let graph = ValidatableGraph::from_bytes(&data_bytes, &data_format)?;
-        match shape_format {
-            ShapeFormat::ShEx(fmt) => graph.validate_shex(&shape_content, &fmt),
-            ShapeFormat::Shacl => graph.validate_shacl(&shape_content),
-        }
+        let graph = ValidatableGraph::from_bytes(&nt_bytes, &RDFFormat::NTriples)?;
+        graph.validate_shex(&shape_content, &shex_format)
     })
     .await;
 
@@ -136,18 +180,5 @@ pub async fn validate_job(
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(error_body("internal_error", format!("Validation task panicked: {e}"))),
         ).into_response(),
-    }
-}
-
-fn rdf_format_from_url(url: &str) -> RDFFormat {
-    let path = url.split('?').next().unwrap_or(url);
-    match path.rsplit('.').next() {
-        Some("nt") | Some("ntriples") => RDFFormat::NTriples,
-        Some("ttl") | Some("turtle") => RDFFormat::Turtle,
-        Some("rdf") | Some("xml") => RDFFormat::Rdfxml,
-        Some("nq") | Some("nquads") => RDFFormat::NQuads,
-        Some("trig") => RDFFormat::TriG,
-        Some("n3") => RDFFormat::N3,
-        _ => RDFFormat::Turtle,
     }
 }

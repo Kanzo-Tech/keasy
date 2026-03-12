@@ -20,7 +20,7 @@ impl Database {
 
         let conn = self.write().await;
         conn.execute(
-            "INSERT INTO jobs (id, organization_id, name, status, mode, created_at, started_at, completed_at, error, pipeline, catalog, connection_ids, script)
+            "INSERT INTO jobs (id, organization_id, name, status, mode, created_at, started_at, completed_at, error, pipeline, connection_ids, script, fragment_base)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
             params![
                 job.id,
@@ -33,9 +33,9 @@ impl Database {
                 job.completed_at,
                 error_json,
                 pipeline_json,
-                job.catalog,
                 account_ids_json,
                 job.script,
+                job.fragment_base,
             ],
         )
         .map_err(|e| format!("failed to insert job: {e}"))?;
@@ -46,7 +46,7 @@ impl Database {
     pub async fn get_job(&self, ctx: &TenantScoped<&str>) -> Option<Job> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, pipeline, catalog, connection_ids, script
+            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, pipeline, connection_ids, script, fragment_base
              FROM jobs WHERE id = ?1 AND organization_id = ?2",
             params![ctx.inner(), ctx.org_id().as_str()],
             |row| Ok(row_to_job(row)),
@@ -72,7 +72,7 @@ impl Database {
 
         let conn = self.write().await;
         conn.execute(
-            "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, error = ?5, pipeline = ?6, catalog = ?7, connection_ids = ?8, script = ?9
+            "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, error = ?5, pipeline = ?6, connection_ids = ?7, script = ?8, fragment_base = ?9
              WHERE id = ?10 AND organization_id = ?11",
             params![
                 job.name,
@@ -81,9 +81,9 @@ impl Database {
                 job.completed_at,
                 error_json,
                 pipeline_json,
-                job.catalog,
                 account_ids_json,
                 job.script,
+                job.fragment_base,
                 ctx.inner(),
                 ctx.org_id().as_str(),
             ],
@@ -97,7 +97,7 @@ impl Database {
         let (_permit, conn) = self.read().await;
         let mut stmt = conn
             .prepare(
-                "SELECT id, name, status, mode, created_at, started_at, completed_at, error, pipeline, catalog, connection_ids, script
+                "SELECT id, name, status, mode, created_at, started_at, completed_at, error, pipeline, connection_ids, script, fragment_base
                  FROM jobs WHERE organization_id = ?1 ORDER BY created_at DESC",
             )
             .expect("prepare list jobs");
@@ -106,20 +106,6 @@ impl Database {
             .filter_map(|r| r.ok())
             .collect()
     }
-
-    pub async fn completed_catalogs(&self, ctx: &TenantScoped<()>) -> Vec<(String, String)> {
-        let (_permit, conn) = self.read().await;
-        let mut stmt = conn
-            .prepare(
-                "SELECT id, catalog FROM jobs WHERE status = 'completed' AND catalog IS NOT NULL AND organization_id = ?1",
-            )
-            .expect("prepare completed_catalogs");
-        stmt.query_map([ctx.org_id().as_str()], |row| Ok((row.get(0)?, row.get(1)?)))
-            .expect("query completed_catalogs")
-            .filter_map(|r| r.ok())
-            .collect()
-    }
-
 
     pub async fn remove_job(&self, ctx: &TenantScoped<&str>) -> Result<(), String> {
         let conn = self.write().await;
@@ -152,10 +138,10 @@ fn row_to_job(row: &rusqlite::Row) -> Job {
         completed_at: row.get("completed_at").unwrap_or(None),
         error: error_json.and_then(|j| serde_json::from_str::<JobRuntimeError>(&j).ok()),
         pipeline: serde_json::from_str::<PipelineSummary>(&pipeline_json).unwrap_or_default(),
-        catalog: row.get("catalog").unwrap_or(None),
         dcat_input: None,
         connection_ids: serde_json::from_str::<Vec<String>>(&account_ids_json)
             .unwrap_or_default(),
         script,
+        fragment_base: row.get("fragment_base").unwrap_or(None),
     }
 }

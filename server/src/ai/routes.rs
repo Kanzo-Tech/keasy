@@ -10,6 +10,7 @@ use std::fmt::Write as FmtWrite;
 use tracing::{debug, warn};
 
 use crate::AppState;
+use crate::graph::dataset::Dataset;
 use super::client::{AiError, Message, ask_llm, ask_llm_multi};
 use super::context::build_semantic_context;
 use super::models::{AskResultCode, Conversation, ConversationMessage};
@@ -27,10 +28,9 @@ pub async fn ask_discover(
     Path(id): Path<String>,
     Json(req): Json<AskRequest>,
 ) -> Response {
-    let output_graph = match crate::discovery::routes::require_output_ready(&state, &ctx, &id).await {
-        Ok(g) => g,
-        Err(r) => return r,
-    };
+    if let Err(r) = crate::discovery::routes::require_output_ready(&state, &ctx, &id).await {
+        return r;
+    }
 
     let ai_settings = if let Some(pid) = &req.provider {
         state.db.get_ai_provider(pid).await
@@ -62,8 +62,23 @@ pub async fn ask_discover(
         }
     };
 
-    // Build data-aware semantic context
-    let profile = state.graph_store.get_profile(&output_graph);
+    // Load fragment dataset and build profile
+    let dataset = {
+        let base_url = job.fragment_base.as_deref().unwrap_or("");
+        if base_url.is_empty() {
+            crate::graph::fragment::FragmentDataset::empty()
+        } else {
+            let creds = state.db.build_storage_config(&ctx.scoped(()), &ctx.org_id.0, &job.connection_ids).await;
+            match state.fragment_resolver.resolve_dataset(base_url, &creds).await {
+                Ok(ds) => ds,
+                Err(e) => {
+                    warn!("Failed to load fragment dataset: {e}");
+                    crate::graph::fragment::FragmentDataset::empty()
+                }
+            }
+        }
+    };
+    let profile = crate::ai::profiler::GraphProfile::build_from_dataset(&dataset, &id);
     let semantic_context = build_semantic_context(&job.pipeline, &profile);
     debug!("--- Semantic Context ---\n{semantic_context}\n--- End Context ---");
 
@@ -154,7 +169,7 @@ pub async fn ask_discover(
 
     let mut last_error: Option<String> = None;
     let mut parsed: Option<LlmResponse> = None;
-    let mut validated_data: Option<crate::discovery::graph_types::TabularData> = None;
+    let mut validated_data: Option<crate::graph::types::TabularData> = None;
 
     for attempt in 0..=1 {
         // If retrying, inject error feedback
@@ -222,7 +237,7 @@ pub async fn ask_discover(
 
         let sparql = format_sparql(&llm_resp.sparql);
 
-        match state.graph_store.sparql_select(&sparql, Some(&output_graph)) {
+        match dataset.sparql_select(&sparql) {
             Ok(result) => {
                 debug!("SPARQL OK ({} rows)\n--- Generated SPARQL ---\n{sparql}\n--- End SPARQL ---", result.rows.len());
                 validated_data = Some(result);
@@ -466,7 +481,7 @@ pub struct AskRequest {
 pub struct AskResponse {
     pub answer: String,
     pub sparql: Option<String>,
-    pub data: Option<crate::discovery::graph_types::TabularData>,
+    pub data: Option<crate::graph::types::TabularData>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conversation_id: Option<String>,
     pub code: AskResultCode,
@@ -509,7 +524,7 @@ fn format_sparql(sparql: &str) -> String {
     out
 }
 
-fn summarize_results_for_llm(data: &crate::discovery::graph_types::TabularData) -> String {
+fn summarize_results_for_llm(data: &crate::graph::types::TabularData) -> String {
     let total = data.rows.len();
     let preview_rows = &data.rows[..total.min(20)];
     let mut out = String::new();

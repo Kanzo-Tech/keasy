@@ -58,7 +58,7 @@ pub async fn validate_job(
         ).into_response();
     }
 
-    let fragment_base = match &job.fragment_base {
+    let rdf_base = match &job.rdf_base {
         Some(u) => u.clone(),
         None => {
             return (
@@ -142,7 +142,7 @@ pub async fn validate_job(
 
     let dataset = match state
         .fragment_resolver
-        .resolve_dataset(&fragment_base, &job_creds)
+        .resolve_dataset(&rdf_base, &job_creds)
         .await
     {
         Ok(ds) => ds,

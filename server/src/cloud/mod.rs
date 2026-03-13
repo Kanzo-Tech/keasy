@@ -3,7 +3,6 @@ pub mod errors;
 pub mod db;
 pub mod routes;
 pub mod reader;
-pub mod resolver;
 
 use std::collections::HashMap;
 

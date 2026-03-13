@@ -7,11 +7,10 @@ use tokio::sync::{Semaphore, broadcast};
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
-use fossil_lang::runtime::executor::ExecutionConfig;
+use fossil_lang::runtime::executor::{ExecutionConfig, OutputKind};
 
 use super::errors::{JobRuntimeError, classify_error};
 use super::models::{JobStatus, now_iso8601};
-use crate::cloud::resolver::CloudOutputResolver;
 use crate::db::Database;
 use crate::graph::dcat::extract::extract_dcat_input;
 use crate::graph::dcat::generator::generate_dcat_catalog;
@@ -53,7 +52,7 @@ struct JobResult {
     catalog_nt: Option<String>,
     dcat_input: Option<DcatInput>,
     /// Detected fragment base URL (present when `Rdf.fragments()` was used).
-    fragment_base: Option<String>,
+    rdf_base: Option<String>,
 }
 
 /// Flattened error from the three failure modes of job execution:
@@ -197,7 +196,7 @@ impl JobRunner {
             .and_then(|r| r.map_err(JobFailure::Execution));
 
             match result {
-                Ok(JobResult { catalog_nt, dcat_input, fragment_base }) => {
+                Ok(JobResult { catalog_nt, dcat_input, rdf_base }) => {
                     // Phase 3: finalizing
                     let _ = tx.send(JobEvent { phase: "finalizing".into(), index: 3, total: TOTAL_PHASES, error: None });
 
@@ -210,7 +209,7 @@ impl JobRunner {
                         job.status = JobStatus::Completed;
                         job.completed_at = Some(now_iso8601());
                         job.dcat_input = dcat_input;
-                        job.fragment_base = fragment_base;
+                        job.rdf_base = rdf_base;
                     }).await {
                         error!(job_id = %job_id, error = %e, "failed to update job");
                     }
@@ -287,18 +286,16 @@ fn run_job(
     // Phase 2: executing
     let _ = tx.send(JobEvent { phase: "executing".into(), index: 2, total: TOTAL_PHASES, error: None });
 
-    let handle = tokio::runtime::Handle::current();
-    let cloud_resolver = Arc::new(CloudOutputResolver::new(handle, storage.clone()));
-    let config = ExecutionConfig {
-        output_resolver: cloud_resolver.clone(),
-        storage,
-    };
+    let config = ExecutionConfig { storage };
+    let result = script::execute(compiled, config)?;
 
-    script::execute(compiled, config)?;
-
-    // Detect fragment_base from committed outputs
-    let fragment_base = cloud_resolver.committed_urls().iter().find_map(|url| {
-        url.strip_suffix("/manifest.json").map(|base| base.to_string())
+    // Detect rdf_base from RdfParquet outputs
+    let rdf_base = result.outputs.iter().find_map(|o| {
+        if o.kind == OutputKind::RdfParquet {
+            Some(o.path.clone())
+        } else {
+            None
+        }
     });
 
     // Generate N-Triples for CatalogStore persistence
@@ -306,5 +303,5 @@ fn run_job(
         Some(input) => Some(generate_dcat_catalog(input, RdfExportFormat::NTriples)?),
         None => None,
     };
-    Ok(JobResult { catalog_nt, dcat_input, fragment_base })
+    Ok(JobResult { catalog_nt, dcat_input, rdf_base })
 }

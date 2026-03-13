@@ -65,7 +65,7 @@ pub async fn create_job(
             dcat_input: None,
             connection_ids: payload.connection_ids.clone(),
             script: Some(payload.script),
-            fragment_base: None,
+            rdf_base: None,
         };
         state.db.insert_job(&ctx.as_ctx(), &job).await
             .map_err(JobApiError::Internal)?;
@@ -90,7 +90,7 @@ pub async fn create_job(
         dcat_input: None,
         connection_ids: payload.connection_ids.clone(),
         script: None,
-        fragment_base: None,
+        rdf_base: None,
     };
 
     state.db.insert_job(&ctx.as_ctx(), &job).await

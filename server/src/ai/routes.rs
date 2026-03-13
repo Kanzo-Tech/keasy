@@ -64,7 +64,7 @@ pub async fn ask_discover(
 
     // Load fragment dataset and build profile
     let dataset = {
-        let base_url = job.fragment_base.as_deref().unwrap_or("");
+        let base_url = job.rdf_base.as_deref().unwrap_or("");
         if base_url.is_empty() {
             crate::graph::fragment::FragmentDataset::empty()
         } else {

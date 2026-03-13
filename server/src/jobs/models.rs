@@ -93,9 +93,9 @@ pub struct Job {
     pub connection_ids: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,
-    /// Base URL for RDF fragment storage (set when job uses Rdf::fragments).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub fragment_base: Option<String>,
+    /// Base URL for RDF Parquet storage (set when job uses Rdf output).
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "fragment_base")]
+    pub rdf_base: Option<String>,
 }
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]

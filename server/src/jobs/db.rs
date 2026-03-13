@@ -35,7 +35,7 @@ impl Database {
                 pipeline_json,
                 account_ids_json,
                 job.script,
-                job.fragment_base,
+                job.rdf_base,
             ],
         )
         .map_err(|e| format!("failed to insert job: {e}"))?;
@@ -83,7 +83,7 @@ impl Database {
                 pipeline_json,
                 account_ids_json,
                 job.script,
-                job.fragment_base,
+                job.rdf_base,
                 ctx.inner(),
                 ctx.org_id().as_str(),
             ],
@@ -142,6 +142,6 @@ fn row_to_job(row: &rusqlite::Row) -> Job {
         connection_ids: serde_json::from_str::<Vec<String>>(&account_ids_json)
             .unwrap_or_default(),
         script,
-        fragment_base: row.get("fragment_base").unwrap_or(None),
+        rdf_base: row.get("fragment_base").unwrap_or(None),
     }
 }

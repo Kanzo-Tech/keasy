@@ -41,7 +41,7 @@ async fn resolve_dataset(
             .into_response());
     }
 
-    let base_url = match &job.fragment_base {
+    let base_url = match &job.rdf_base {
         Some(u) => u.clone(),
         None => {
             // Completed but no fragments — return empty dataset
@@ -622,7 +622,7 @@ pub async fn load_discover(
         return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
     }
 
-    let loaded = job.fragment_base.is_some();
+    let loaded = job.rdf_base.is_some();
     let triple_count = if loaded { 1 } else { 0 }; // Actual count requires downloading; signal presence only
 
     data_response(LoadDiscoverResponse {
@@ -691,7 +691,7 @@ pub async fn tpf_query(
         return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
     }
 
-    let base_url = match &job.fragment_base {
+    let base_url = match &job.rdf_base {
         Some(u) => u.clone(),
         None => return (StatusCode::NOT_FOUND, Json(error_body("no_fragments", "Job has no fragment output"))).into_response(),
     };

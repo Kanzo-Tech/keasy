@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use fossil_lang::compiler::{CompileResult, Compiler, CompilerInput};
 use fossil_lang::passes::GlobalContext;
-use fossil_lang::runtime::executor::{ExecutionConfig, IrExecutor};
+use fossil_lang::runtime::executor::{ExecutionConfig, ExecutionResult, IrExecutor};
 use fossil_lang::traits::provider::LocalFileReader;
 
 use crate::cloud::reader::CloudReader;
@@ -19,10 +19,9 @@ pub fn compile(name: &str, source: &str, storage: HashMap<String, String>) -> Re
         .map_err(|errors| errors.0.into_iter().map(|e| e.to_string()).collect())
 }
 
-pub fn execute(result: CompileResult, config: ExecutionConfig) -> Result<(), String> {
+pub fn execute(result: CompileResult, config: ExecutionConfig) -> Result<ExecutionResult, String> {
     IrExecutor::execute_with_config(result.program, config)
-        .map_err(|e| e.to_string())?;
-    Ok(())
+        .map_err(|e| e.to_string())
 }
 
 pub fn init_context(storage: HashMap<String, String>) -> GlobalContext {

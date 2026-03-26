@@ -31,6 +31,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { isError } from "@/lib/error-codes";
+import { createDiscoveryAskStore as createAskStore } from "./discovery-ask-store";
 import type { ConversationMessage } from "@/lib/types";
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -149,11 +150,16 @@ interface DiscoveryAskProps {
 export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema, onShowOnGraph }: DiscoveryAskProps) {
   const coordinator = useCoordinator();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<AskMessage[]>([]);
-  const [loading, setLoading] = useState(false);
   const [input, setInput] = useState("");
-  const [selectedProvider, setSelectedProvider] = useState("");
+
+  // Zustand store — persistent across re-renders, scoped per component instance
+  const storeRef = useRef<ReturnType<typeof createAskStore>>(undefined);
+  if (!storeRef.current) storeRef.current = createAskStore();
+  const store = storeRef.current;
+  const messages = store((s) => s.messages);
+  const loading = store((s) => s.loading);
+  const conversationId = store((s) => s.conversationId);
+  const selectedProvider = store((s) => s.selectedProvider);
 
   const { data: aiProviders, isLoading: loadingAiProviders } = useQuery({ queryKey: queryKeys.ai.providers, queryFn: api.ai.providers });
   const connectedProviders = useMemo(
@@ -164,8 +170,8 @@ export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema, onShowOnG
   const suggestions = useMemo(() => generateSuggestions(graphSchema), [graphSchema]);
 
   useEffect(() => {
-    if (connectedProviders.length > 0 && !selectedProvider) setSelectedProvider(connectedProviders[0].id);
-  }, [connectedProviders, selectedProvider]);
+    if (connectedProviders.length > 0 && !selectedProvider) store.getState().setSelectedProvider(connectedProviders[0].id);
+  }, [connectedProviders, selectedProvider, store]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -174,18 +180,13 @@ export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema, onShowOnG
 
   async function handleSend(q: string) {
     if (!q.trim() || loading) return;
-    setLoading(true);
+    const s = store.getState();
+    s.setLoading(true);
     setInput("");
 
-    const userMsg: AskMessage = { id: crypto.randomUUID(), conversation_id: conversationId ?? "", role: "user", content: q, created_at: new Date().toISOString() };
-    const assistantId = crypto.randomUUID();
-    const placeholder: AskMessage = { id: assistantId, conversation_id: conversationId ?? "", role: "assistant", content: "", created_at: new Date().toISOString(), phase: "generating" };
-
-    setMessages((prev) => [...prev, userMsg, placeholder]);
-
-    const update = (patch: Partial<AskMessage>) => {
-      setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, ...patch } : m));
-    };
+    s.addUserMessage(q);
+    const assistantId = s.addPlaceholder();
+    const update = (patch: Record<string, unknown>) => s.updateMessage(assistantId, patch);
 
     let convId = conversationId;
 
@@ -197,7 +198,7 @@ export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema, onShowOnG
       })) {
         if (event === "conversation") {
           const { conversation_id: newId } = JSON.parse(data);
-          if (!conversationId && newId) { convId = newId; setConversationId(newId); }
+          if (!conversationId && newId) { convId = newId; store.getState().setConversationId(newId); }
         } else if (event === "complete") {
           const result = JSON.parse(data) as { sql?: string; answer: string; conversation_id: string; reasoning?: string; code: string };
           update({ sql: result.sql, content: result.answer, code: result.code, reasoning: result.reasoning, phase: "executing" });
@@ -236,7 +237,7 @@ export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema, onShowOnG
     } catch (err) {
       update({ content: err instanceof Error ? err.message : "Ask failed", code: err instanceof ApiError ? err.code : "UNKNOWN", phase: "done" });
     } finally {
-      setLoading(false);
+      store.getState().setLoading(false);
     }
   }
 

@@ -28,8 +28,9 @@ import {
 } from "@/components/ui/table";
 import { selectColumn } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
+import { CodeView } from "@/components/discovery/code-view";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Database, Loader2, MoreHorizontal, Plus, Wand2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Database, Loader2, MoreHorizontal, Plus, Wand2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -684,9 +685,8 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
           .map((r) => r.question),
         schemas: fileSchemas,
       }),
-    onComplete: (data) => {
-      onComplete(data.script);
-      toast.success("Script generated — review before submitting");
+    onComplete: () => {
+      // Don't auto-transition — let user review the script first
     },
   });
 
@@ -752,8 +752,24 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
               streamText={suggest.streamText}
             />
           )}
-          {step === 3 && generate.loading && (
-            <StreamingPreview label="Generating Fossil script..." text={generate.streamText} />
+          {step === 3 && (
+            generate.loading ? (
+              <StreamingPreview label="Generating Fossil script..." text={generate.streamText} />
+            ) : generate.error ? (
+              <EmptyState
+                icon={AlertCircle}
+                title="Generation failed"
+                description={generate.error.message}
+                action={<Button variant="outline" size="sm" onClick={() => generate.start()}>Retry</Button>}
+              />
+            ) : generate.result ? (
+              <div className="flex-1 flex flex-col gap-3 min-h-0">
+                <p className="text-xs text-muted-foreground">Review the generated script before accepting.</p>
+                <div className="flex-1 min-h-0 overflow-auto rounded-md border">
+                  <CodeView code={generate.result.script} lang="fossil" />
+                </div>
+              </div>
+            ) : null
           )}
         </div>
       </PageShell.Content>
@@ -768,7 +784,7 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
           <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
           Back
         </Button>
-        {step < 3 && (
+        {step < 3 ? (
           <Button size="sm" onClick={() => store.nextStep()} disabled={!canNext}>
             {step === 2 ? (
               <>
@@ -782,7 +798,16 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
               </>
             )}
           </Button>
-        )}
+        ) : !generate.loading && generate.result ? (
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => generate.start()}>
+              Regenerate
+            </Button>
+            <Button size="sm" onClick={() => onComplete(generate.result!.script)}>
+              Accept & Edit
+            </Button>
+          </div>
+        ) : null}
       </PageShell.Footer>
     </PageShell>
   );

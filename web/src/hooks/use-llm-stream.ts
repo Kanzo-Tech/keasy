@@ -9,12 +9,13 @@ interface UseLLMStreamOptions<T> {
   onEvent?: (event: string, data: string) => void;
 }
 
-interface UseLLMStreamReturn {
+interface UseLLMStreamReturn<T> {
   start: () => void;
   abort: () => void;
   streamText: string;
   loading: boolean;
   error: { code: string; message: string } | null;
+  result: T | null;
 }
 
 /**
@@ -28,12 +29,11 @@ export function useLLMStream<T>({
   onComplete,
   onError,
   onEvent,
-}: UseLLMStreamOptions<T>): UseLLMStreamReturn {
+}: UseLLMStreamOptions<T>): UseLLMStreamReturn<T> {
   const [streamText, setStreamText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<{ code: string; message: string } | null>(
-    null,
-  );
+  const [error, setError] = useState<{ code: string; message: string } | null>(null);
+  const [result, setResult] = useState<T | null>(null);
 
   // Store callbacks in refs to always use the latest version
   const onCompleteRef = useRef(onComplete);
@@ -59,6 +59,7 @@ export function useLLMStream<T>({
     abortRef.current = false;
     setStreamText("");
     setError(null);
+    setResult(null);
     setLoading(true);
 
     (async () => {
@@ -78,8 +79,9 @@ export function useLLMStream<T>({
               });
             }
           } else if (event === "complete") {
-            const result = JSON.parse(data) as T;
-            onCompleteRef.current(result);
+            const parsed = JSON.parse(data) as T;
+            setResult(parsed);
+            onCompleteRef.current(parsed);
           } else if (event === "error") {
             const err = JSON.parse(data) as {
               code: string;
@@ -105,5 +107,5 @@ export function useLLMStream<T>({
     })();
   }, []); // stable — reads everything from refs
 
-  return { start, abort, streamText, loading, error };
+  return { start, abort, streamText, loading, error, result };
 }

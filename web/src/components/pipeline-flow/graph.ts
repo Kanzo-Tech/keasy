@@ -49,9 +49,11 @@ export function buildPipelineGraph(pipeline: PipelineSummary): {
 
     let keyPairs: KeyPair[] | undefined;
     if (op.inputs.length >= 2) {
-      keyPairs = op.inputs[0].key_fields.map((left, j) => ({
+      const leftKeys = op.inputs[0].key_fields ?? [];
+      const rightKeys = op.inputs[1].key_fields ?? [];
+      keyPairs = leftKeys.map((left, j) => ({
         left,
-        right: op.inputs[1].key_fields[j],
+        right: rightKeys[j],
       }));
     }
 
@@ -64,7 +66,7 @@ export function buildPipelineGraph(pipeline: PipelineSummary): {
         fields: op.fields,
         handleSide: "right",
         variant: "operation",
-        dualHandleKeys: op.inputs.flatMap((inp) => inp.key_fields),
+        dualHandleKeys: op.inputs.flatMap((inp) => inp.key_fields ?? []),
         keyPairs,
       } satisfies FieldNodeData,
     });
@@ -122,8 +124,10 @@ export function buildPipelineGraph(pipeline: PipelineSummary): {
     const op = pipeline.operations[i];
     if (op.inputs.length >= 2) {
       const remap = new Map<string, string>();
-      for (let j = 0; j < op.inputs[0].key_fields.length; j++) {
-        remap.set(op.inputs[1].key_fields[j], op.inputs[0].key_fields[j]);
+      const leftKeys = op.inputs[0].key_fields ?? [];
+      const rightKeys = op.inputs[1].key_fields ?? [];
+      for (let j = 0; j < leftKeys.length; j++) {
+        remap.set(rightKeys[j], leftKeys[j]);
       }
       pairRemap.set(`op-${i}`, remap);
     }
@@ -134,14 +138,15 @@ export function buildPipelineGraph(pipeline: PipelineSummary): {
     const op = pipeline.operations[i];
     const opId = `op-${i}`;
     const remap = pairRemap.get(opId);
-    for (const input of op.inputs) {
+    for (let k = 0; k < op.inputs.length; k++) {
+      const input = op.inputs[k];
       const sourceNodeId =
         prevOpInChain.get(input.source) ?? inputIds.get(input.source);
       if (!sourceNodeId) continue;
-      for (const field of input.key_fields) {
+      for (const field of input.key_fields ?? []) {
         const targetField = remap?.get(field) ?? field;
         edges.push({
-          id: `e-${sourceNodeId}-${field}-${opId}`,
+          id: `e-${sourceNodeId}-${field}-${opId}-${k}`,
           source: sourceNodeId,
           sourceHandle: `field-${field}`,
           target: opId,

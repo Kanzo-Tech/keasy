@@ -1,0 +1,10 @@
+# Demo overlay — release build for fast runtime, no hot-reload.
+# Layers on top of dev (same seeds, mock GXDCH, keycloak).
+# Usage: make demo
+
+services:
+  server:
+    command: ["cargo", "run", "--release"]
+    environment:
+      RUST_LOG: info
+      KEASY_CORS_ORIGINS: "http://localhost:3000"

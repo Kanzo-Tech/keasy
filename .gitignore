@@ -33,6 +33,7 @@ tmp
 
 # CLAUDE-related files
 .claude
+.planning
 CLAUDE.md
 
 # RDF files
@@ -49,3 +50,6 @@ CLAUDE.md
 
 # runtime data
 data/
+
+# next.js
+.next/

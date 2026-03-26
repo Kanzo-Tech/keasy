@@ -1,91 +1,96 @@
-export type JobStatus = "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
+import type { components } from "./api/schema";
 
-export type RunMode = "integrated" | "scheduled";
+// ---------------------------------------------------------------------------
+// Re-export types generated from the OpenAPI spec (source of truth: server)
+// ---------------------------------------------------------------------------
 
-export interface JobError {
-  code: string;
-  message: string;
-  detail?: string;
-}
+type S = components["schemas"];
 
-export interface Job {
-  id: string;
-  status: JobStatus;
-  name?: string;
-  created_at: string;
-  started_at?: string;
-  completed_at?: string;
-  error?: JobError;
-  mode: RunMode;
-  pipeline?: PipelineSummary;
-  catalog?: string | null;
-  connection_ids?: string[];
-  script?: string;
-}
+export type JobStatus = S["JobStatus"];
+export type RunMode = S["RunMode"];
+export type Job = S["Job"];
+export type CreateJobRequest = S["CreateJobRequest"];
+export type UpdateJobRequest = S["UpdateJobRequest"];
+export type Field = S["Field"];
+export type PipelineOutput = S["PipelineOutput"];
+export type PipelineSummary = S["PipelineSummary"];
+export type ValidationResult = S["ValidationResult"];
+export type CloudAccountSummary = S["CloudAccountSummary"];
+export type CreateCloudAccountRequest = S["CreateCloudAccountRequest"];
+export type UpdateCloudAccountRequest = S["UpdateCloudAccountRequest"];
+export type OrgSettings = S["OrgSettings"];
+export type Preferences = S["Preferences"];
+export type ConnectionKind = S["ConnectionKind"];
+export type LocationType = S["LocationType"];
+export type Connection = S["Connection"];
+export type CreateConnectionRequest = S["CreateConnectionRequest"];
+export type UpdateConnectionRequest = S["UpdateConnectionRequest"];
+export type ColumnInfo = S["ColumnInfo"];
+export type FileSchemaResponse = S["FileSchemaResponse"];
+export type AiSettings = S["AiSettingsPayload"];
 
-export interface CreateJobRequest {
-  script: string;
-  name?: string;
-  mode?: RunMode;
-  pipeline?: PipelineSummary;
-  dcat_enabled?: boolean;
-  connection_ids?: string[];
-  draft?: boolean;
-}
+// Assistant types
+export type FileSchema = S["FileSchema"];
+export type CompetencyQuestion = S["CompetencyQuestion"];
+export type SuggestRequest = S["SuggestRequest"];
+export type SuggestResponse = S["SuggestResponse"];
+export type GenerateRequest = S["GenerateRequest"];
+export type GenerateResponse = S["GenerateResponse"];
 
-export interface UpdateJobRequest {
-  script?: string;
-  name?: string;
-}
+// Alias: server calls it JobRuntimeError, frontend used JobError
+export type JobError = S["JobRuntimeError"];
 
-export interface Field {
-  name: string;
-  type: string;
-  uri?: string;
-}
+// Org types — re-exported from schema with frontend aliases
+export type OrgIdentity = S["OrgIdentityResponse"];
+export type OrgUser = S["OrgMember"];
+export type OrgEntry = S["Organization"];
 
-export interface PipelineInput {
-  name: string;
-  fields: Field[];
-}
+// ---------------------------------------------------------------------------
+// Types now in OpenAPI spec — re-exported from schema
+// ---------------------------------------------------------------------------
 
-export interface FieldMapping {
-  target: string;
-  source: string;
-}
+// GraphAr manifest types (from OpenAPI schema)
+export type DataManifest = S["DataManifest"];
+export type TypeManifest = S["TypeManifest"];
+export type EdgeManifest = S["EdgeManifest"];
+export type ColumnStat = S["ColumnStat"];
 
-export interface OperationInput {
-  source: string;
-  key_fields: string[];
-}
+export type SearchResult = S["SearchResult"];
+// Override rows type — server uses serde_json::Value per cell, schema generates Record<string,never>
+export type TabularData = Omit<S["TabularData"], "rows"> & {
+  rows: Record<string, string | number | null>[];
+};
+export type GraphData = S["GraphData"];
+export type GraphNode = S["GraphNode"];
+export type GraphLink = S["GraphLink"];
+export type Conversation = S["Conversation"];
+// Override data type — schema generates rows: Record<string,never>[], we use Record<string, string|number|null>[]
+// Add explanation field (populated by the explain stream, not yet in the OpenAPI spec)
+export type ConversationMessage = Omit<S["ConversationMessage"], "data"> & {
+  data?: TabularData | null;
+  explanation?: string | null;
+};
+export type FileEntry = S["FileEntry"];
+export type AskResponse = S["AskResponse"];
 
-export interface PipelineOperation {
-  kind: string;
-  label: string;
-  fields: Field[];
-  inputs: OperationInput[];
-}
 
-export interface PipelineOutput {
-  type_name: string;
-  fields: Field[];
-  mappings?: FieldMapping[];
-  source?: string;
-  destination?: string;
-  rdf_type?: string;
-}
+// Aliases for renamed/new response types
+export type OrgInvite = S["OrgInviteEntry"];
+export type ServiceStatus = S["ServiceStatusResponse"];
+export type InviteInfoResponse = S["InviteInfoResponse"];
+export type LogoutResponse = S["LogoutResponse"];
+export type CreateOrgInviteResponse = S["CreateOrgInviteResponse"];
+export type CatalogResponse = S["CatalogResponse"];
 
-export interface PipelineSummary {
-  inputs: PipelineInput[];
-  operations: PipelineOperation[];
-  outputs: PipelineOutput[];
-}
+// ---------------------------------------------------------------------------
+// UI-only union types
+// ---------------------------------------------------------------------------
 
-export interface ValidationResult {
-  valid: boolean;
-  pipeline: PipelineSummary;
-  errors: string[];
-}
+export type CreationMode = "studio" | "assistant";
+
+// ---------------------------------------------------------------------------
+// Types NOT in the OpenAPI spec — remain manually defined (UI/static config)
+// ---------------------------------------------------------------------------
 
 export interface FieldSchema {
   name: string;
@@ -110,153 +115,53 @@ export interface ProviderSchema {
   auth_methods: AuthMethodSchema[];
 }
 
-export interface CloudAccountSummary {
-  id: string;
-  name: string;
-  provider_id: string;
-  auth_method?: string;
-  fields: Record<string, string>;
-}
-
-export interface CreateCloudAccountRequest {
-  name: string;
-  provider_id: string;
-  auth_method?: string;
-  fields: Record<string, string>;
-}
-
-export interface UpdateCloudAccountRequest {
-  name?: string;
-  auth_method?: string;
-  fields?: Record<string, string>;
-}
-
-export interface OrgSettings {
-  publisher_name: string;
-  publisher_uri?: string;
-  contact_email?: string;
-  license_uri?: string;
-  catalog_description?: string;
-}
-
-export interface Preferences {
-  accent_color: string;
-  font_family: string;
-  mono_font_family: string;
-  font_size: string;
-  mono_font_size: string;
-}
-
-export type ConnectionKind = "data" | "vocab";
-export type LocationType = "cloud" | "local";
-
-export interface Connection {
-  id: string;
-  name: string;
-  kind: ConnectionKind;
-  location_type: LocationType;
-  cloud_account_id?: string;
-  url: string;
-}
-
-export interface CreateConnectionRequest {
-  name: string;
-  kind: ConnectionKind;
-  location_type: LocationType;
-  cloud_account_id?: string;
-  url: string;
-}
-
-export interface UpdateConnectionRequest {
-  name?: string;
-  kind?: ConnectionKind;
-  location_type?: LocationType;
-  cloud_account_id?: string;
-  url?: string;
-}
-
-export interface FileEntry {
-  path: string;
-  size: number;
-  last_modified?: string;
-}
-
-export interface ShapeValidationResult {
-  valid: boolean;
-  errors: ShapeValidationError[];
-  valid_nodes: string[];
-}
-
-export interface ShapeValidationError {
-  node: string;
-  message: string;
-}
-
-export interface SearchResult {
-  id: string;
-  label: string;
-  group: string;
-}
-
-export interface TabularData {
-  columns: string[];
-  rows: Record<string, string | number>[];
-  column_types: Record<string, "numeric" | "string">;
-}
-
-export interface AiSettings {
-  provider: string;
-  api_key: string;
-  model?: string;
-  max_tokens?: number;
-}
-
-export interface AskResponse {
-  answer: string;
-  sparql?: string;
-  data?: TabularData;
-  conversation_id?: string;
-  code: string;
-}
-
-export interface Conversation {
-  id: string;
-  job_id: string;
-  created_at: string;
-  title?: string;
-}
-
-export interface ConversationMessage {
-  id: string;
-  conversation_id: string;
-  role: "user" | "assistant";
-  content: string;
-  sparql?: string;
-  data?: TabularData;
-  code?: string;
-  created_at: string;
-}
-
 export interface ProviderInfo {
   name: string;
   extensions: string[];
   kind: "schema" | "data" | "both";
 }
 
-export interface GraphNode {
-  id: string;
+// ---------------------------------------------------------------------------
+// Auth types — re-exported from schema
+// ---------------------------------------------------------------------------
+
+export type MeResponse = S["MeResponse"];
+export type Workspace = S["Workspace"];
+export type WorkspacesResponse = S["WorkspacesResponse"];
+
+// ---------------------------------------------------------------------------
+// Gaia-X Compliance types — re-exported from schema
+// ---------------------------------------------------------------------------
+
+export type ComplianceCredential = S["ComplianceCredential"];
+export type ComplyEvent = S["ComplyEvent"];
+export type JobEvent = S["JobEvent"];
+
+// ---------------------------------------------------------------------------
+// Fossil Analysis types (editor completions/diagnostics)
+// ---------------------------------------------------------------------------
+
+export interface FossilCompletionItem {
   label: string;
-  group: string;
-  properties?: Record<string, string>;
+  kind: "property" | "method" | "function" | "variable" | "type" | "keyword" | "text" | "field";
+  detail: string;
 }
 
-export interface GraphLink {
-  source: string;
-  target: string;
-  label: string;
+export interface FossilDiagnosticItem {
+  from: number;
+  to: number;
+  severity: "error" | "warning" | "info" | "hint";
+  message: string;
 }
 
-export interface GraphData {
-  nodes: GraphNode[];
-  links: GraphLink[];
+export interface FossilAnalysis {
+  completions: FossilCompletionItem[];
+  diagnostics: FossilDiagnosticItem[];
 }
+
+// ---------------------------------------------------------------------------
+// Admin types — re-exported from schema
+// ---------------------------------------------------------------------------
+
+export type AdminInvite = S["AdminInviteEntry"];
+export type AdminInviteResult = S["AdminInviteResult"];

@@ -1,120 +1,164 @@
 "use client";
 
+import { useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Cloud, Plus } from "lucide-react";
 import { toast } from "sonner";
-import useSWR from "swr";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
+
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { fetchSchema, fetchCloudAccounts, deleteCloudAccount } from "@/lib/api";
-import { getProviderIcon } from "@/lib/provider-icons";
-import { DeleteButton } from "@/components/delete-button";
-import { EmptyState } from "@/components/empty-state";
-import { SettingsSection, SettingsPage } from "@/components/settings/settings-section";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  DataTable,
+  ActionItem,
+  selectColumn,
+  sortableHeader,
+  actionsColumn,
+} from "@/components/ui/data-table";
+import { EmptyState } from "@/components/shared/empty-state";
+import { SettingsSection } from "@/components/settings/settings-section";
+import { PageShell } from "@/components/layout/page-shell";
+import { Button } from "@/components/ui/button";
+import { SettingsSectionSkeleton } from "@/components/settings/settings-section-skeleton";
+import type { CloudAccountSummary, ProviderSchema } from "@/lib/types";
+
+function cloudAccountColumns(
+  onDelete: (id: string) => void,
+  schema: ProviderSchema[],
+): ColumnDef<CloudAccountSummary>[] {
+  return [
+    selectColumn<CloudAccountSummary>(),
+    {
+      accessorKey: "name",
+      header: sortableHeader("Name"),
+      cell: ({ getValue }) => (
+        <span className="font-medium">{getValue<string>()}</span>
+      ),
+    },
+    {
+      id: "provider",
+      header: "Provider",
+      cell: ({ row }) => {
+        const provider = schema.find((s) => s.id === row.original.provider_id);
+        return (
+          <span className="text-muted-foreground">
+            {provider?.label ?? row.original.provider_id}
+          </span>
+        );
+      },
+    },
+    {
+      id: "auth_method",
+      header: "Auth method",
+      cell: ({ row }) => {
+        const provider = schema.find((s) => s.id === row.original.provider_id);
+        const label = provider?.auth_methods.find(
+          (a) => a.name === row.original.auth_method,
+        )?.label;
+        return <span className="text-muted-foreground">{label ?? "\u2014"}</span>;
+      },
+    },
+    actionsColumn<CloudAccountSummary>((account) => (
+      <ActionItem
+        variant="destructive"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(account.id);
+        }}
+      >
+        Delete
+      </ActionItem>
+    )),
+  ];
+}
 
 export function CloudAccountsTab() {
   const router = useRouter();
-  const { data, isLoading, mutate } = useSWR(
-    "cloud-init",
-    () => Promise.all([fetchSchema(), fetchCloudAccounts()]),
-  );
+  const queryClient = useQueryClient();
+  const { data: schema = [], isLoading: schemaLoading } = useQuery({
+    queryKey: queryKeys.settings.schema,
+    queryFn: api.settings.schema,
+  });
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+    queryKey: queryKeys.cloud.accounts,
+    queryFn: api.cloud.list,
+  });
+  const isLoading = schemaLoading || accountsLoading;
   const showSkeleton = useDelayedLoading(isLoading);
 
-  const [schema, accounts] = data ?? [[], []];
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.cloud.remove(id),
+    onSuccess: () => {
+      toast.success("Cloud account deleted");
+      queryClient.invalidateQueries({ queryKey: queryKeys.cloud.accounts });
+    },
+    onError: () => toast.error("Failed to delete cloud account"),
+  });
+
+  const handleDelete = useCallback(
+    (id: string) => { deleteMutation.mutate(id); },
+    [deleteMutation.mutate],
+  );
+
+  const columns = useMemo(
+    () => cloudAccountColumns(handleDelete, schema),
+    [handleDelete, schema],
+  );
 
   if (isLoading) {
     return showSkeleton ? (
-      <div className="space-y-4 max-w-2xl">
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-      </div>
+      <SettingsSectionSkeleton
+        title="Cloud accounts"
+        description="Manage credentials for cloud storage providers."
+        searchPlaceholder="Search accounts..."
+      />
     ) : null;
   }
 
   return (
-    <SettingsPage>
+    <PageShell>
+    <PageShell.Content className="gap-8">
       <SettingsSection
         title="Cloud accounts"
         description="Manage credentials for cloud storage providers. Accounts are used by sources to access data."
-        action={
-          <Button size="sm" asChild>
-            <Link href="/settings/cloud-accounts/new">
-              <Plus size={14} />
-              Add account
-            </Link>
-          </Button>
-        }
       >
         {accounts.length === 0 ? (
           <EmptyState
             icon={Cloud}
             title="No cloud accounts"
-            description="Add a cloud account to start creating sources."
+            description={
+              <>
+                <Link href="/settings/cloud-accounts/new" className="underline underline-offset-4 hover:text-foreground">
+                  Add a cloud account
+                </Link>{" "}
+                to start creating data connections.
+              </>
+            }
           />
         ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead>Auth method</TableHead>
-                  <TableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {accounts.map((account) => {
-                  const provider = schema.find((s) => s.id === account.provider_id);
-                  const Icon = provider ? getProviderIcon(provider.icon) : null;
-                  const authLabel = provider?.auth_methods.find(
-                    (a) => a.name === account.auth_method
-                  )?.label;
-
-                  return (
-                    <TableRow
-                      key={account.id}
-                      className="cursor-pointer"
-                      onClick={() => router.push(`/settings/cloud-accounts/${account.id}`)}
-                    >
-                      <TableCell className="font-medium">{account.name}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          {Icon && <Icon className="h-4 w-4 shrink-0" />}
-                          <span>{provider?.label ?? account.provider_id}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {authLabel ?? "\u2014"}
-                      </TableCell>
-                      <TableCell>
-                        <DeleteButton
-                          iconOnly
-                          title="Delete cloud account"
-                          description={`This will permanently delete "${account.name}". Sources using this account will stop working.`}
-                          onConfirm={async () => {
-                            await deleteCloudAccount(account.id);
-                            toast.success("Cloud account deleted");
-                            mutate();
-                          }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+          <DataTable
+            columns={columns}
+            data={accounts}
+            searchKey="name"
+            searchPlaceholder="Search accounts..."
+            onRowClick={(account) =>
+              router.push(`/settings/cloud-accounts/${account.id}`)
+            }
+            toolbarActions={
+              <Button size="sm" asChild>
+                <Link href="/settings/cloud-accounts/new">
+                  <Plus size={14} />
+                  Add account
+                </Link>
+              </Button>
+            }
+          />
         )}
       </SettingsSection>
-    </SettingsPage>
+    </PageShell.Content>
+    </PageShell>
   );
 }

@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct FieldSchema {
     pub name: &'static str,
     pub label: &'static str,
@@ -19,14 +19,14 @@ fn is_false(v: &bool) -> bool {
     !v
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct AuthMethodSchema {
     pub name: &'static str,
     pub label: &'static str,
     pub fields: &'static [FieldSchema],
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct ProviderSchema {
     pub id: &'static str,
     pub label: &'static str,

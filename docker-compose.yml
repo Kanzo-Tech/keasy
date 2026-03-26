@@ -1,7 +1,59 @@
+# Base compose — shared config for all environments.
+# Use with an overlay: docker compose -f docker-compose.yml -f docker-compose.{dev,prod}.yml up
+
 services:
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+
+  keycloak-postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD:-changeme}
+    volumes:
+      - keycloak-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-changeme}
+      KC_HOSTNAME: http://localhost:3000/auth
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-changeme}
+      KC_PROXY_HEADERS: xforwarded
+      KEASY_OIDC_CLIENT_SECRET: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
+    volumes:
+      - ./infra/keycloak/realm-import:/opt/keycloak/data/import
+    depends_on:
+      keycloak-postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nhost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 300s
+
+  # ── Application ─────────────────────────────────────────────────────────────
+
   server:
-    build:
-      context: ./server
     ports:
       - "8080:8080"
     environment:
@@ -10,21 +62,41 @@ services:
       KEASY_MAX_CONCURRENT_JOBS: "4"
       KEASY_DATA_DIR: /var/lib/keasy
       KEASY_SECRET_KEY: ${KEASY_SECRET_KEY:-change-me-in-production}
-      RUST_LOG: debug
+      KEASY_SESSION_SECRET: "8VVnhO7zkhlc+oelkbjrKnlpkz4S2+HCQLOnz9/gnR/Rwlc2/8gZe+W7EURQDUa53j8oP+miZ5MpMuL4ZLvjoA=="
+      KEASY_BASE_URL: http://localhost:3000
+      KEASY_OIDC_ISSUER_URL: http://localhost:3000/auth/realms/keasy
+      KEASY_OIDC_CLIENT_ID: keasy-server
+      KEASY_OIDC_CLIENT_SECRET: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
+      KEASY_OIDC_INTERNAL_BASE_URL: http://keycloak:8080
     volumes:
       - keasy-data:/var/lib/keasy
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz/live"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
 
   web:
-    build:
-      context: ./web
-    ports:
-      - "3000:3000"
     environment:
       KEASY_API_URL: http://server:8080
-      KEASY_API_KEY: dev-key
     depends_on:
       server:
         condition: service_healthy
 
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
 volumes:
   keasy-data:
+  keycloak-postgres-data:

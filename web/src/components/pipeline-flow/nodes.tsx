@@ -11,8 +11,8 @@ import { Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { BaseNode, BaseNodeHeader } from "@/components/base-node";
-import { BaseHandle } from "@/components/base-handle";
+import { BaseNode, BaseNodeHeader } from "@/components/pipeline-flow/base-node";
+import { BaseHandle } from "@/components/pipeline-flow/base-handle";
 import type { FieldNodeData } from "./types";
 
 function FieldNode({ data }: NodeProps<Node<FieldNodeData>>) {

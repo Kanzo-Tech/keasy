@@ -74,6 +74,12 @@ export const lightTheme = EditorView.theme({
     textDecoration: "none",
     fontWeight: "600",
   },
+  ".cm-diagnostic-error": {
+    borderLeftColor: "oklch(0.577 0.245 27.325)",
+  },
+  ".cm-diagnostic-warning": {
+    borderLeftColor: "oklch(0.768 0.165 54.13)",
+  },
 });
 
 export const darkTheme = EditorView.theme({
@@ -109,6 +115,12 @@ export const darkTheme = EditorView.theme({
     textDecoration: "none",
     fontWeight: "600",
   },
+  ".cm-diagnostic-error": {
+    borderLeftColor: "oklch(0.704 0.191 22.216)",
+  },
+  ".cm-diagnostic-warning": {
+    borderLeftColor: "oklch(0.768 0.165 54.13)",
+  },
 });
 
 export const editorLayout = EditorView.theme({
@@ -128,6 +140,10 @@ export const editorLayout = EditorView.theme({
   },
   "&.cm-focused": {
     outline: "none",
+  },
+  ".cm-diagnostic": {
+    padding: "3px 6px 3px 8px",
+    fontSize: "0.75rem",
   },
 });
 

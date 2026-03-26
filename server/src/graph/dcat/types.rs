@@ -9,6 +9,9 @@ pub struct DcatInput {
     pub completed_at: String,
     pub org: OrgSettings,
     pub datasets: Vec<DatasetInfo>,
+    /// Language tag for the catalog (e.g. "en", "es"). Defaults to "en".
+    #[serde(default)]
+    pub language: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -19,6 +22,8 @@ pub struct DatasetInfo {
     pub rdf_type: Option<String>,
     pub fields: Vec<FieldInfo>,
     pub distributions: Vec<DistributionInfo>,
+    #[serde(default)]
+    pub keywords: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

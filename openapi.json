@@ -96,6 +96,26 @@
         }
       }
     },
+    "/v1/admin/catalog/graph": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "operationId": "get_federated_catalog_graph",
+        "responses": {
+          "200": {
+            "description": "Federated catalog graph (all organizations)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/invites": {
       "get": {
         "tags": [
@@ -442,6 +462,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WorkspacesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/catalog/graph": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "operationId": "get_org_catalog_graph",
+        "responses": {
+          "200": {
+            "description": "Organization catalog graph",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphData"
                 }
               }
             }
@@ -987,6 +1027,36 @@
         }
       }
     },
+    "/v1/fossil/analyze": {
+      "post": {
+        "tags": [
+          "Fossil"
+        ],
+        "operationId": "analyze",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Analysis result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/gaia-x/compliance": {
       "get": {
         "tags": [
@@ -1036,69 +1106,6 @@
           },
           "400": {
             "description": "Prerequisites missing"
-          }
-        }
-      }
-    },
-    "/v1/graph/expand": {
-      "post": {
-        "tags": [
-          "Graph"
-        ],
-        "operationId": "expand_node",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ExpandRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Expanded node data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GraphData"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/graph/search": {
-      "post": {
-        "tags": [
-          "Graph"
-        ],
-        "operationId": "search_nodes",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SearchRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Graph search results",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SearchResult"
-                  }
-                }
-              }
-            }
           }
         }
       }
@@ -1286,20 +1293,11 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "format",
-            "in": "query",
-            "description": "RDF export format",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "DCAT catalog",
+            "description": "DCAT catalog (N-Triples)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1406,7 +1404,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Dashboard layout"
+            "description": "Dashboard layout",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           },
           "204": {
             "description": "No layout saved"
@@ -1473,7 +1476,7 @@
         },
         "responses": {
           "200": {
-            "description": "AI answer with optional SPARQL results",
+            "description": "AI answer with DuckDB SQL query",
             "content": {
               "application/json": {
                 "schema": {
@@ -1485,86 +1488,12 @@
         }
       }
     },
-    "/v1/jobs/{id}/discover/chart": {
-      "post": {
-        "tags": [
-          "Discovery"
-        ],
-        "operationId": "chart_discover",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChartRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Chart data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TabularData"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/discover/export": {
+    "/v1/jobs/{id}/discover/urls": {
       "get": {
         "tags": [
           "Discovery"
         ],
-        "operationId": "export_discover",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "format",
-            "in": "query",
-            "description": "Export format (turtle, ntriples, rdfxml, etc.)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "RDF file download"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/discover/field-stats": {
-      "get": {
-        "tags": [
-          "Discovery"
-        ],
-        "operationId": "field_stats",
+        "operationId": "resolve_discover_urls",
         "parameters": [
           {
             "name": "id",
@@ -1578,98 +1507,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Field statistics from graph profile",
+            "description": "Signed URLs for direct Parquet access",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FieldStats"
-                  }
+                  "$ref": "#/components/schemas/ResolveResponse"
                 }
               }
             }
           },
-          "400": {
-            "description": "Job not ready"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/discover/load": {
-      "post": {
-        "tags": [
-          "Discovery"
-        ],
-        "operationId": "load_discover",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Discovery data status",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LoadDiscoverResponse"
-                }
-              }
-            }
-          },
-          "202": {
-            "description": "Job output not yet available"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/discover/query": {
-      "post": {
-        "tags": [
-          "Discovery"
-        ],
-        "operationId": "query_discover",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueryRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "SPARQL query results",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TabularData"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "SPARQL error"
+          "404": {
+            "description": "Job not found or no output"
           }
         }
       }
@@ -2220,7 +2068,17 @@
         "operationId": "get_schema",
         "responses": {
           "200": {
-            "description": "Provider registry schema"
+            "description": "Provider registry schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderSchema"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2241,39 +2099,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/v1/validate": {
-      "post": {
-        "tags": [
-          "Validation"
-        ],
-        "operationId": "validate_job",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ValidationRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Validation result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ShapeValidationResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request"
           }
         }
       }
@@ -2335,15 +2160,6 @@
           }
         }
       },
-      "Aggregation": {
-        "type": "string",
-        "enum": [
-          "count",
-          "sum",
-          "avg",
-          "none"
-        ]
-      },
       "AiSettingsPayload": {
         "type": "object",
         "required": [
@@ -2373,6 +2189,43 @@
           }
         }
       },
+      "AnalyzeRequest": {
+        "type": "object",
+        "required": [
+          "script",
+          "cursor_offset"
+        ],
+        "properties": {
+          "cursor_offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "script": {
+            "type": "string"
+          }
+        }
+      },
+      "AnalyzeResponse": {
+        "type": "object",
+        "required": [
+          "completions",
+          "diagnostics"
+        ],
+        "properties": {
+          "completions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompletionItem"
+            }
+          },
+          "diagnostics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiagnosticItem"
+            }
+          }
+        }
+      },
       "AskRequest": {
         "type": "object",
         "required": [
@@ -2385,6 +2238,10 @@
               "null"
             ]
           },
+          "explain": {
+            "type": "boolean",
+            "description": "When true, the LLM acts as a data analyst explaining query results\ninstead of generating SQL. The question should contain the original\nquestion, SQL, and result rows."
+          },
           "provider": {
             "type": [
               "string",
@@ -2393,6 +2250,13 @@
           },
           "question": {
             "type": "string"
+          },
+          "schema": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "DuckDB table schema from the frontend (column names, types, sample values).\nWhen provided, this is used as context for SQL generation instead of the\npipeline summary."
           }
         }
       },
@@ -2415,27 +2279,18 @@
               "null"
             ]
           },
-          "data": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/TabularData"
-              }
-            ]
-          },
           "reasoning": {
             "type": [
               "string",
               "null"
             ]
           },
-          "sparql": {
+          "sql": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "DuckDB SQL query generated by the LLM (executed client-side via DuckDB-WASM)."
           }
         }
       },
@@ -2445,10 +2300,32 @@
         "enum": [
           "success",
           "parse_failed",
-          "sparql_failed",
+          "query_failed",
           "insufficient_credits",
           "llm_failed"
         ]
+      },
+      "AuthMethodSchema": {
+        "type": "object",
+        "required": [
+          "name",
+          "label",
+          "fields"
+        ],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldSchema"
+            }
+          },
+          "label": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
       },
       "CatalogResponse": {
         "type": "object",
@@ -2458,66 +2335,6 @@
         "properties": {
           "catalog": {
             "type": "string"
-          }
-        }
-      },
-      "ChartRequest": {
-        "type": "object",
-        "required": [
-          "x"
-        ],
-        "properties": {
-          "aggregation": {
-            "$ref": "#/components/schemas/Aggregation"
-          },
-          "group": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/FieldRef",
-                "description": "Group-by / split-by field reference"
-              }
-            ]
-          },
-          "group_top_n": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "description": "Limit split-by categories to top N (rest collapsed into \"Other\")",
-            "minimum": 0
-          },
-          "rdf_type": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "RDF type IRI to scope the query to a single entity type"
-          },
-          "top_n": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "description": "Limit x-axis categories to top N (rest collapsed into \"Other\")",
-            "minimum": 0
-          },
-          "x": {
-            "$ref": "#/components/schemas/FieldRef",
-            "description": "X-axis field reference"
-          },
-          "y": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/FieldRef",
-                "description": "Y-axis field reference (optional — omit for count-only)"
-              }
-            ]
           }
         }
       },
@@ -2571,6 +2388,59 @@
           }
         }
       },
+      "ColumnStat": {
+        "type": "object",
+        "description": "Per-column statistics for a vertex property.",
+        "required": [
+          "name",
+          "iri",
+          "datatype",
+          "count",
+          "n_unique"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "datatype": {
+            "type": "string",
+            "description": "Data type: \"string\", \"int64\", \"double\", \"boolean\", \"date\"."
+          },
+          "iri": {
+            "type": "string",
+            "description": "Full predicate IRI."
+          },
+          "max": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "min": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "n_unique": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string",
+            "description": "Short label used as Parquet column name."
+          },
+          "samples": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "CompetencyQuestion": {
         "type": "object",
         "required": [
@@ -2586,6 +2456,25 @@
             "type": "string"
           },
           "rationale": {
+            "type": "string"
+          }
+        }
+      },
+      "CompletionItem": {
+        "type": "object",
+        "required": [
+          "label",
+          "kind",
+          "detail"
+        ],
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "label": {
             "type": "string"
           }
         }
@@ -2936,12 +2825,6 @@
               "null"
             ]
           },
-          "dcat_format": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "draft": {
             "type": "boolean"
           },
@@ -3032,6 +2915,27 @@
           }
         }
       },
+      "DataManifest": {
+        "type": "object",
+        "description": "GraphAr-compatible manifest describing a property graph stored as Parquet files.",
+        "required": [
+          "types"
+        ],
+        "properties": {
+          "edges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EdgeManifest"
+            }
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TypeManifest"
+            }
+          }
+        }
+      },
       "DataResponse_Value": {
         "type": "object",
         "description": "Typed envelope for successful API responses: `{ \"data\": T }`.",
@@ -3085,20 +2989,72 @@
           }
         }
       },
-      "ExpandRequest": {
+      "DiagnosticItem": {
         "type": "object",
         "required": [
-          "node_id"
+          "from",
+          "to",
+          "severity",
+          "message"
         ],
         "properties": {
-          "job_id": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "from": {
+            "type": "integer",
+            "minimum": 0
           },
-          "node_id": {
+          "message": {
             "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "to": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "EdgeManifest": {
+        "type": "object",
+        "description": "Manifest for an edge type (GraphAr v1 ordered adjacency lists).",
+        "required": [
+          "name",
+          "iri",
+          "source_type",
+          "target_type",
+          "by_source",
+          "by_target",
+          "count"
+        ],
+        "properties": {
+          "by_source": {
+            "type": "string",
+            "description": "CSR-ordered edge parquet (ordered by source vertex)."
+          },
+          "by_target": {
+            "type": "string",
+            "description": "CSC-ordered edge parquet (ordered by target vertex)."
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "iri": {
+            "type": "string",
+            "description": "Full predicate IRI."
+          },
+          "name": {
+            "type": "string",
+            "description": "Short edge label (e.g. \"knows\")."
+          },
+          "source_type": {
+            "type": "string",
+            "description": "Source vertex type name."
+          },
+          "target_type": {
+            "type": "string",
+            "description": "Target vertex type name."
           }
         }
       },
@@ -3147,102 +3103,37 @@
           }
         }
       },
-      "FieldRef": {
-        "type": "object",
-        "description": "A reference to a field, including the traversal path from the anchor subject.",
-        "required": [
-          "predicate"
-        ],
-        "properties": {
-          "path": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Object property IRIs to traverse from the root subject (empty = direct field)"
-          },
-          "predicate": {
-            "type": "string",
-            "description": "Predicate IRI of the target field"
-          }
-        }
-      },
-      "FieldStats": {
+      "FieldSchema": {
         "type": "object",
         "required": [
-          "predicate",
-          "short_name",
-          "count",
-          "distinct",
-          "is_numeric",
-          "is_object_property"
+          "name",
+          "label",
+          "secret"
         ],
         "properties": {
-          "avg": {
+          "default_value": {
             "type": [
-              "number",
+              "string",
               "null"
-            ],
-            "format": "double"
+            ]
           },
-          "count": {
-            "type": "integer",
-            "minimum": 0
+          "env_var": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
-          "distinct": {
-            "type": "integer",
-            "minimum": 0
+          "label": {
+            "type": "string"
           },
-          "is_numeric": {
+          "name": {
+            "type": "string"
+          },
+          "optional": {
             "type": "boolean"
           },
-          "is_object_property": {
+          "secret": {
             "type": "boolean"
-          },
-          "max": {
-            "type": [
-              "number",
-              "null"
-            ],
-            "format": "double"
-          },
-          "min": {
-            "type": [
-              "number",
-              "null"
-            ],
-            "format": "double"
-          },
-          "predicate": {
-            "type": "string"
-          },
-          "short_name": {
-            "type": "string"
-          },
-          "top_values": {
-            "type": [
-              "array",
-              "null"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/FieldTopValue"
-            }
-          }
-        }
-      },
-      "FieldTopValue": {
-        "type": "object",
-        "required": [
-          "value",
-          "count"
-        ],
-        "properties": {
-          "count": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "value": {
-            "type": "string"
           }
         }
       },
@@ -3333,14 +3224,10 @@
       "GenerateResponse": {
         "type": "object",
         "required": [
-          "script",
-          "shex"
+          "script"
         ],
         "properties": {
           "script": {
-            "type": "string"
-          },
-          "shex": {
             "type": "string"
           }
         }
@@ -3465,12 +3352,6 @@
           "pipeline"
         ],
         "properties": {
-          "catalog": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "completed_at": {
             "type": [
               "string",
@@ -3499,6 +3380,17 @@
           "id": {
             "type": "string"
           },
+          "manifest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataManifest",
+                "description": "GraphAr manifest with vertex/edge file paths and column statistics."
+              }
+            ]
+          },
           "mode": {
             "$ref": "#/components/schemas/RunMode"
           },
@@ -3510,6 +3402,13 @@
           },
           "pipeline": {
             "$ref": "#/components/schemas/PipelineSummary"
+          },
+          "rdf_base": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Base URL for RDF Parquet storage (set when job uses Rdf output)."
           },
           "script": {
             "type": [
@@ -3590,22 +3489,6 @@
           "failed",
           "cancelled"
         ]
-      },
-      "LoadDiscoverResponse": {
-        "type": "object",
-        "required": [
-          "loaded",
-          "triple_count"
-        ],
-        "properties": {
-          "loaded": {
-            "type": "boolean"
-          },
-          "triple_count": {
-            "type": "integer",
-            "minimum": 0
-          }
-        }
       },
       "LocationType": {
         "type": "string",
@@ -4059,13 +3942,35 @@
           }
         }
       },
-      "QueryRequest": {
+      "ProviderSchema": {
         "type": "object",
         "required": [
-          "sparql"
+          "id",
+          "label",
+          "icon",
+          "common_fields",
+          "auth_methods"
         ],
         "properties": {
-          "sparql": {
+          "auth_methods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuthMethodSchema"
+            }
+          },
+          "common_fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldSchema"
+            }
+          },
+          "icon": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "label": {
             "type": "string"
           }
         }
@@ -4147,36 +4052,30 @@
           }
         }
       },
+      "ResolveResponse": {
+        "type": "object",
+        "required": [
+          "files"
+        ],
+        "properties": {
+          "files": {
+            "type": "object",
+            "description": "Map of logical file name → signed URL for direct cloud access.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "RunMode": {
         "type": "string",
         "enum": [
           "integrated",
           "scheduled"
         ]
-      },
-      "SearchRequest": {
-        "type": "object",
-        "properties": {
-          "job_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "limit": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "minimum": 0
-          },
-          "query": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
       },
       "SearchResult": {
         "type": "object",
@@ -4225,46 +4124,6 @@
           },
           "oidc": {
             "type": "boolean"
-          }
-        }
-      },
-      "ShapeValidationError": {
-        "type": "object",
-        "required": [
-          "node",
-          "message"
-        ],
-        "properties": {
-          "message": {
-            "type": "string"
-          },
-          "node": {
-            "type": "string"
-          }
-        }
-      },
-      "ShapeValidationResult": {
-        "type": "object",
-        "required": [
-          "valid",
-          "errors",
-          "valid_nodes"
-        ],
-        "properties": {
-          "errors": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ShapeValidationError"
-            }
-          },
-          "valid": {
-            "type": "boolean"
-          },
-          "valid_nodes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           }
         }
       },
@@ -4328,6 +4187,42 @@
             "items": {
               "type": "object"
             }
+          }
+        }
+      },
+      "TypeManifest": {
+        "type": "object",
+        "description": "Manifest for a vertex type (one Parquet file per type).",
+        "required": [
+          "name",
+          "iri",
+          "vertex_file",
+          "entity_count",
+          "columns"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ColumnStat"
+            }
+          },
+          "entity_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "iri": {
+            "type": "string",
+            "description": "Full RDF type IRI."
+          },
+          "name": {
+            "type": "string",
+            "description": "Short type name (e.g. \"person\")."
+          },
+          "vertex_file": {
+            "type": "string",
+            "description": "Relative path to vertex Parquet file."
           }
         }
       },
@@ -4486,25 +4381,6 @@
         ],
         "properties": {
           "script": {
-            "type": "string"
-          }
-        }
-      },
-      "ValidationRequest": {
-        "type": "object",
-        "required": [
-          "data_url",
-          "connection_id",
-          "shape_path"
-        ],
-        "properties": {
-          "connection_id": {
-            "type": "string"
-          },
-          "data_url": {
-            "type": "string"
-          },
-          "shape_path": {
             "type": "string"
           }
         }

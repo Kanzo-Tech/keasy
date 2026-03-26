@@ -514,14 +514,13 @@ pub async fn oidc_callback(
     };
 
     // 8b. Store raw id_token JWT for use in OIDC RP-Initiated Logout (id_token_hint).
-    if let Ok(raw) = serde_json::to_value(id_token) {
-        if let Some(jwt_str) = raw.as_str() {
+    if let Ok(raw) = serde_json::to_value(id_token)
+        && let Some(jwt_str) = raw.as_str() {
             session
                 .insert("id_token", jwt_str)
                 .await
                 .map_err(|e| AuthError::Internal(format!("session insert id_token: {e}")))?;
         }
-    }
 
     // 9. Extract subject (Keycloak user UUID).
     let subject = claims.subject().to_string();
@@ -665,8 +664,8 @@ async fn accept_invite_for_user(
     if let (Some(kc_admin), Some(client_id)) = (
         &state.auth.keycloak_admin,
         &state.auth.oidc_client_id,
-    ) {
-        if let Err(e) = kc_admin.add_user_workspace(user_id, client_id).await {
+    )
+        && let Err(e) = kc_admin.add_user_workspace(user_id, client_id).await {
             tracing::warn!(
                 error = %e,
                 user_id = %user_id,
@@ -674,7 +673,6 @@ async fn accept_invite_for_user(
                 "Failed to update Keycloak dataspaces attribute"
             );
         }
-    }
 
     tracing::info!(
         user_id = %user_id,

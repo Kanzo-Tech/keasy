@@ -31,11 +31,11 @@ export function useOrgUsers() {
   });
 
   function handleRoleChange(userId: string, newRole: string) {
-    roleChangeMutation.mutate({ userId, newRole });
+    if (!roleChangeMutation.isPending) roleChangeMutation.mutate({ userId, newRole });
   }
 
   function handleRemoveUser(userId: string, userName: string) {
-    removeUserMutation.mutate({ userId, userName });
+    if (!removeUserMutation.isPending) removeUserMutation.mutate({ userId, userName });
   }
 
   return {
@@ -44,5 +44,7 @@ export function useOrgUsers() {
     error,
     handleRoleChange,
     handleRemoveUser,
+    roleChangePending: roleChangeMutation.isPending,
+    removePending: removeUserMutation.isPending,
   };
 }

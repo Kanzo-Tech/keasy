@@ -1,33 +1,22 @@
 import client, { ApiError, unwrap } from "./api/client";
 import type { Schemas } from "./api/client";
+import { fetchSSE, fetchSSEJson } from "./api/sse";
 import type {
   ProviderSchema,
   ProviderInfo,
   ComplyEvent,
   FossilAnalysis,
-  JobEvent,
-  TabularData,
+  GraphData,
 } from "./types";
 
 export { ApiError };
 export type { ServiceStatus } from "./types";
 
-export type FieldStatsItem = Schemas["FieldStats"];
-
-async function* parseSseStream<T>(reader: ReadableStreamDefaultReader<Uint8Array>): AsyncGenerator<T> {
-  const decoder = new TextDecoder();
-  let buf = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const parts = buf.split("\n\n");
-    buf = parts.pop()!;
-    for (const part of parts) {
-      const dataLine = part.split("\n").find((l) => l.startsWith("data:"));
-      if (dataLine) yield JSON.parse(dataLine.slice(5).trim()) as T;
-    }
-  }
+async function fetchJson<T>(endpoint: string): Promise<T> {
+  const res = await fetch(endpoint, { credentials: "same-origin" });
+  if (!res.ok) throw new ApiError("request_error", `Request failed (${res.status})`);
+  const json = await res.json();
+  return (json?.data ?? json) as T;
 }
 
 export const api = {
@@ -45,26 +34,14 @@ export const api = {
     update: async (id: string, req: Schemas["UpdateJobRequest"]) =>
       unwrap(await client.PUT("/v1/jobs/{id}", { params: { path: { id } }, body: req })),
 
-    stream: async function* (id: string, signal?: AbortSignal): AsyncGenerator<JobEvent> {
-      const res = await fetch(`/v1/jobs/${id}/stream`, { credentials: "same-origin", signal });
-      if (!res.ok) return;
-      yield* parseSseStream<JobEvent>(res.body!.getReader());
-    },
-
     remove: async (id: string) => {
       unwrap(await client.DELETE("/v1/jobs/{id}", { params: { path: { id } } }));
     },
 
-    graph: async (id: string) =>
-      unwrap(await client.GET("/v1/jobs/{id}/graph", { params: { path: { id } } })),
-
-    catalog: async (id: string, format: string): Promise<string> => {
-      const data = unwrap(
-        await client.GET("/v1/jobs/{id}/catalog", {
-          params: { path: { id }, query: { format } },
-        }),
-      );
-      return data.catalog;
+    catalog: async (id: string): Promise<string> => {
+      const res = await fetch(`/v1/jobs/${id}/catalog`, { credentials: "same-origin" });
+      if (!res.ok) throw new Error("Failed to fetch catalog");
+      return res.text();
     },
 
     dashboardLayout: async (id: string) =>
@@ -139,39 +116,18 @@ export const api = {
 
   // ── Discovery ─────────────────────────────────────────────────────────
   discovery: {
-    load: async (id: string) =>
-      unwrap(await client.POST("/v1/jobs/{id}/discover/load", { params: { path: { id } } })),
-
-    chart: async (id: string, request: Schemas["ChartRequest"]) =>
-      unwrap(await client.POST("/v1/jobs/{id}/discover/chart", {
-        params: { path: { id } },
-        body: request,
-      })) as TabularData, // Override: rows type differs from schema
-
-    fieldStats: async (id: string) =>
-      unwrap(await client.GET("/v1/jobs/{id}/discover/field-stats", {
-        params: { path: { id } },
-      })) as FieldStatsItem[],
-
-    ask: async (id: string, question: string, conversationId?: string, provider?: string) =>
-      unwrap(await client.POST("/v1/jobs/{id}/discover/ask", {
-        params: { path: { id } },
-        body: {
-          question,
-          conversation_id: conversationId,
-          ...(provider ? { provider } : {}),
-        },
-      })),
-
-    search: async (query: string, jobId?: string) =>
-      unwrap(await client.POST("/v1/graph/search", {
-        body: { query, job_id: jobId },
-      })),
-
-    expand: async (nodeId: string, jobId?: string) =>
-      unwrap(await client.POST("/v1/graph/expand", {
-        body: { node_id: nodeId, job_id: jobId },
-      })),
+    askStream: (
+      id: string,
+      question: string,
+      opts?: { conversationId?: string; provider?: string; schema?: string; explain?: boolean },
+    ) =>
+      fetchSSE(`/v1/jobs/${id}/discover/ask-stream`, {
+        question,
+        conversation_id: opts?.conversationId,
+        ...(opts?.provider ? { provider: opts.provider } : {}),
+        ...(opts?.schema ? { schema: opts.schema } : {}),
+        ...(opts?.explain ? { explain: opts.explain } : {}),
+      }),
   },
 
   // ── Conversations ─────────────────────────────────────────────────────
@@ -221,6 +177,28 @@ export const api = {
 
     savePreferences: async (prefs: Schemas["Preferences"]) =>
       unwrap(await client.PUT("/v1/settings/preferences", { body: prefs })),
+
+    catalogStorage: async (): Promise<{ cloud_account_id: string; base_url: string } | null> => {
+      const res = await fetch("/v1/settings/catalog-storage", { credentials: "same-origin" });
+      if (res.status === 204 || !res.ok) return null;
+      const json = await res.json();
+      return json?.data ?? json;
+    },
+
+    saveCatalogStorage: async (data: { cloud_account_id: string; base_url: string }) => {
+      const res = await fetch("/v1/settings/catalog-storage", {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new ApiError(body?.error ?? "unknown", body?.message ?? "Failed to save");
+      }
+      const json = await res.json();
+      return json?.data ?? json;
+    },
   },
 
   // ── AI Providers ──────────────────────────────────────────────────────
@@ -303,20 +281,10 @@ export const api = {
         unwrap(await client.GET("/v1/gaia-x/compliance")),
     },
 
-    complyStream: async function* (certChainPem?: string): AsyncGenerator<ComplyEvent> {
-      const res = await fetch("/v1/gaia-x/comply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ cert_chain_pem: certChainPem ?? null }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        const msg = body?.error?.message ?? body?.message ?? `Request failed (${res.status})`;
-        throw new ApiError(String(body?.error?.code ?? "unknown"), msg);
-      }
-      yield* parseSseStream<ComplyEvent>(res.body!.getReader());
-    },
+    complyStream: (certChainPem?: string) =>
+      fetchSSEJson<ComplyEvent>("/v1/gaia-x/comply", {
+        cert_chain_pem: certChainPem ?? null,
+      }),
 
   },
 
@@ -336,6 +304,7 @@ export const api = {
         params: { path: { token } },
       }));
     },
+
   },
 
   // ── Status ────────────────────────────────────────────────────────────
@@ -344,13 +313,13 @@ export const api = {
       unwrap(await client.GET("/v1/status")),
   },
 
-  // ── Assistant ──────────────────────────────────────────────────────────
+  // ── Assistant (SSE streaming) ───────────────────────────────────────────
   assistant: {
-    suggest: async (req: Schemas["SuggestRequest"]) =>
-      unwrap(await client.POST("/v1/assistant/suggest", { body: req })),
+    suggestStream: (req: Schemas["SuggestRequest"]) =>
+      fetchSSE("/v1/assistant/suggest-stream", req),
 
-    generate: async (req: Schemas["GenerateRequest"]) =>
-      unwrap(await client.POST("/v1/assistant/generate", { body: req })),
+    generateStream: (req: Schemas["GenerateRequest"]) =>
+      fetchSSE("/v1/assistant/generate-stream", req),
   },
 
   // ── Scripts ───────────────────────────────────────────────────────────
@@ -373,15 +342,4 @@ export const api = {
     },
   },
 
-  // ── Validation ────────────────────────────────────────────────────────
-  validation: {
-    validate: async (jobId: string, connectionId: string, shapePath: string) =>
-      unwrap(await client.POST("/v1/validate", {
-        body: {
-          job_id: jobId,
-          connection_id: connectionId,
-          shape_path: shapePath,
-        },
-      })),
-  },
 };

@@ -17,7 +17,19 @@ function simplify(message: string): string {
   return msg.charAt(0).toUpperCase() + msg.slice(1);
 }
 
-export function toastError(message: string) {
+export function toastError(error: unknown, fallback: string): void;
+export function toastError(message: string): void;
+export function toastError(errorOrMessage: unknown, fallback?: string): void {
+  const message =
+    typeof errorOrMessage === "string"
+      ? errorOrMessage
+      : errorOrMessage instanceof Error
+        ? errorOrMessage.message
+        : fallback ?? "Something went wrong";
+  _toastError(message);
+}
+
+function _toastError(message: string) {
   const short = simplify(message);
   if (short.length <= MAX_LENGTH) {
     toast.error(short, short !== message ? { description: message } : undefined);

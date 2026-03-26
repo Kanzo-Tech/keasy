@@ -6,7 +6,7 @@
 /// - `get_did_document` — public .well-known/did.json
 /// - `get_cert_chain` — public .well-known/x509CertificateChain.pem
 use axum::response::IntoResponse;
-use axum::response::sse::{Event, KeepAlive, Sse};
+use axum::response::sse::Event;
 use axum::{Json, extract::State};
 use axum::http::HeaderMap;
 use axum::http::header::HOST;
@@ -14,7 +14,8 @@ use jiff::Timestamp;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::convert::Infallible;
-use tokio_stream::wrappers::ReceiverStream;
+
+use crate::ai::client::into_sse_response;
 
 use rusqlite::OptionalExtension;
 
@@ -67,11 +68,11 @@ async fn resolve_org_id_from_request(
     headers: &HeaderMap,
     params: &HashMap<String, String>,
 ) -> Result<String, Response> {
-    if let Some(base_domain) = &state.gaia_x.base_domain {
-        if let Some(host) = headers.get(HOST).and_then(|h| h.to_str().ok()) {
+    if let Some(base_domain) = &state.gaia_x.base_domain
+        && let Some(host) = headers.get(HOST).and_then(|h| h.to_str().ok()) {
             let host_no_port = host.split(':').next().unwrap_or(host);
-            if let Some(slug) = host_no_port.strip_suffix(&format!(".{}", base_domain)) {
-                if !slug.is_empty() && !slug.contains('.') {
+            if let Some(slug) = host_no_port.strip_suffix(&format!(".{}", base_domain))
+                && !slug.is_empty() && !slug.contains('.') {
                     if let Some(org) = state.db.get_organization_by_slug(slug).await {
                         return Ok(org.id);
                     }
@@ -80,9 +81,7 @@ async fn resolve_org_id_from_request(
                         Json(error_body("not_found", "Organization not found for subdomain")),
                     ).into_response());
                 }
-            }
         }
-    }
 
     params.get("org").cloned().ok_or_else(|| {
         (
@@ -118,7 +117,7 @@ pub async fn comply(
     if org.legal_name.trim().is_empty() { missing.push("legal_name"); }
     if org.country_subdivision_code.is_none() { missing.push("country_subdivision_code"); }
     if org.registration_number_type.is_none() { missing.push("registration_number_type"); }
-    if org.registration_number.as_ref().map_or(true, |s| s.is_empty()) { missing.push("registration_number"); }
+    if org.registration_number.as_ref().is_none_or(|s| s.is_empty()) { missing.push("registration_number"); }
     if !missing.is_empty() {
         return bad_request_response(format!("Missing required fields: {}", missing.join(", ")));
     }
@@ -305,8 +304,7 @@ pub async fn comply(
         });
     });
 
-    let stream: ReceiverStream<Result<Event, Infallible>> = ReceiverStream::new(rx);
-    Sse::new(stream).keep_alive(KeepAlive::default()).into_response()
+    into_sse_response(rx)
 }
 
 // ── GET /v1/gaia-x/compliance ─────────────────────────────────────────────
@@ -407,7 +405,7 @@ pub async fn get_did_document(
         match conn.query_row(
             "SELECT slug FROM organizations WHERE id = ?1",
             rusqlite::params![&org_id],
-            |row| Ok(row.get::<_, String>(0)?),
+            |row| row.get::<_, String>(0),
         ).optional() {
             Ok(Some(slug)) => format!("{}.{}", slug, base_domain),
             _ => return (

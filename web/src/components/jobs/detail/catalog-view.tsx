@@ -1,79 +1,57 @@
 "use client";
 
-import { useState } from "react";
-import { Code2, Network } from "lucide-react";
+import { useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Selection } from "@uwdata/mosaic-core";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
+import { buildGraphSchema } from "@/lib/graph-schema";
+import { Database, Loader2 } from "lucide-react";
 import { CodeView } from "@/components/discovery/code-view";
-import { GraphView } from "@/components/discovery/graph-view";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { GraphCanvas, DEFAULT_GRAPH_CONFIG } from "@/components/discovery/graph-view-v2";
+import { DiscoveryProvider } from "@/components/discovery/store";
+import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import type { CosmosGraphHandle } from "@/components/discovery/cosmos-graph";
+import type { DataManifest } from "@/lib/types";
 
 export type DcatFormat = "turtle" | "jsonld" | "rdfxml" | "ntriples" | "nquads";
 
 interface CatalogViewProps {
   id: string;
-  /** The default turtle catalog string from the job. */
-  catalog: string;
+  viewMode?: string;
+  catalogManifest?: DataManifest | null;
+  onNavigateToDiscovery?: (typeName: string) => void;
 }
 
-export function CatalogView({ id, catalog }: CatalogViewProps) {
-  const [viewMode, setViewMode] = useState<"serialized" | "graph">("graph");
-  const [dcatFormat, setDcatFormat] = useState<DcatFormat>("turtle");
+async function resolveCatalogUrls(jobId: string): Promise<Record<string, string>> {
+  const res = await fetch(`/v1/jobs/${jobId}/catalog/urls`, { credentials: "same-origin" });
+  if (!res.ok) throw new Error(`Failed to resolve catalog URLs (${res.status})`);
+  const { files } = (await res.json()) as { files: Record<string, string> };
+  return files;
+}
 
+export function CatalogView({ id, viewMode = "graph", catalogManifest, onNavigateToDiscovery }: CatalogViewProps) {
+  // Serialized view: fetch Turtle from server (download endpoint)
   const { data: fetchedCatalog, isLoading: catalogLoading } = useQuery({
-    queryKey: queryKeys.jobs.catalog(id, dcatFormat),
-    queryFn: () => api.jobs.catalog(id, dcatFormat),
-    enabled: dcatFormat !== "turtle",
+    queryKey: queryKeys.jobs.catalog(id, "turtle"),
+    queryFn: () => api.jobs.catalog(id),
+    enabled: viewMode === "serialized",
   });
-  const catalogContent = dcatFormat === "turtle" ? catalog : (fetchedCatalog ?? null);
-
   const showCatalogSkeleton = useDelayedLoading(catalogLoading);
 
-  return (
-    <div className="flex-1 flex flex-col min-h-0">
-      <div className="flex items-center gap-2 mb-3 h-7">
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          size="sm"
-          value={viewMode}
-          onValueChange={(v) => { if (v) setViewMode(v as "serialized" | "graph"); }}
-        >
-          <ToggleGroupItem value="graph" className="h-7 px-2">
-            <Network size={14} />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="serialized" className="h-7 px-2">
-            <Code2 size={14} />
-          </ToggleGroupItem>
-        </ToggleGroup>
-        <div className="flex-1" />
-        {viewMode === "serialized" && (
-          <Select value={dcatFormat} onValueChange={(v) => setDcatFormat(v as DcatFormat)}>
-            <SelectTrigger className="h-7 w-auto gap-1.5 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="turtle">Turtle</SelectItem>
-              <SelectItem value="jsonld">JSON-LD</SelectItem>
-              <SelectItem value="rdfxml">RDF/XML</SelectItem>
-              <SelectItem value="ntriples">N-Triples</SelectItem>
-              <SelectItem value="nquads">N-Quads</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-      </div>
-      {viewMode === "serialized" ? (
-        catalogLoading ? (
+  // Resolve signed URLs for catalog parquets
+  const { data: signedUrls, isLoading: urlsLoading } = useQuery({
+    queryKey: [...queryKeys.jobs.detail(id), "catalog-urls"],
+    queryFn: () => resolveCatalogUrls(id),
+    enabled: viewMode === "graph" && !!catalogManifest,
+  });
+
+  if (viewMode === "serialized") {
+    return (
+      <div className="flex-1 flex flex-col min-h-0">
+        {catalogLoading ? (
           showCatalogSkeleton ? (
             <div className="space-y-2 p-3">
               <Skeleton loading className="block w-full"><p className="text-sm font-mono">@prefix dcat: placeholder .</p></Skeleton>
@@ -82,14 +60,53 @@ export function CatalogView({ id, catalog }: CatalogViewProps) {
             </div>
           ) : null
         ) : (
-          <CodeView
-            code={catalogContent ?? catalog}
-            lang={dcatFormat === "jsonld" ? "json" : dcatFormat === "rdfxml" ? "xml" : "turtle"}
-          />
-        )
-      ) : (
-        <GraphView jobId={id} />
-      )}
+          <CodeView code={fetchedCatalog ?? ""} lang="turtle" />
+        )}
+      </div>
+    );
+  }
+
+  if (!catalogManifest) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <EmptyState
+          icon={Database}
+          title="No catalog data"
+          description="No catalog data available for this job."
+        />
+      </div>
+    );
+  }
+
+  if (urlsLoading || !signedUrls) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0">
+      <DiscoveryProvider manifest={catalogManifest} signedUrls={signedUrls}>
+        <CatalogGraphContent catalogManifest={catalogManifest} onNavigateToDiscovery={onNavigateToDiscovery} />
+      </DiscoveryProvider>
     </div>
+  );
+}
+
+function CatalogGraphContent({ catalogManifest, onNavigateToDiscovery }: { catalogManifest: DataManifest; onNavigateToDiscovery?: (typeName: string) => void }) {
+  const schema = useMemo(() => buildGraphSchema(catalogManifest), [catalogManifest]);
+  const graphRef = useRef<CosmosGraphHandle>(null);
+  const selection = useMemo(() => Selection.crossfilter(), []);
+
+  return (
+    <GraphCanvas
+      schema={schema}
+      graphConfig={DEFAULT_GRAPH_CONFIG}
+      graphRef={graphRef}
+      selection={selection}
+      onSelectVertex={() => {}}
+    />
   );
 }

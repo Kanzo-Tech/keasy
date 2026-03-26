@@ -8,7 +8,7 @@ use secrecy::{ExposeSecret, SecretString};
 
 use crate::AppState;
 use crate::error::{data_response, error_body};
-use crate::middleware::tenant::{AnyRole, IsAdmin, IsParticipant, Require};
+use crate::middleware::tenant::{AnyRole, IsAdmin, IsParticipant, IsPromotor, Require};
 use crate::settings::ai::{AiSettings, AiSettingsPayload};
 use crate::settings::org::OrgSettings;
 use crate::settings::preferences::Preferences;
@@ -17,7 +17,7 @@ use crate::settings::schema::PROVIDER_REGISTRY;
 const KNOWN_PROVIDERS: &[&str] = &["anthropic", "openai"];
 
 #[utoipa::path(get, path = "/v1/settings/schema", tag = "Settings",
-    responses((status = 200, description = "Provider registry schema"))
+    responses((status = 200, description = "Provider registry schema", body = Vec<crate::settings::schema::ProviderSchema>))
 )]
 pub async fn get_schema() -> impl IntoResponse {
     data_response(PROVIDER_REGISTRY)
@@ -173,4 +173,69 @@ fn to_payload(s: &AiSettings) -> AiSettingsPayload {
         model: s.model.clone(),
         max_tokens: s.max_tokens,
     }
+}
+
+// ── Catalog Storage (Promotor) ───────────────────────────────────────────
+
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
+pub struct CatalogStoragePayload {
+    pub cloud_account_id: String,
+    pub base_url: String,
+}
+
+#[utoipa::path(get, path = "/v1/settings/catalog-storage", tag = "Settings",
+    responses(
+        (status = 200, description = "Catalog storage config", body = CatalogStoragePayload),
+        (status = 204, description = "Not configured"),
+    )
+)]
+pub async fn get_catalog_storage(
+    _ctx: Require<IsPromotor>,
+    State(state): State<AppState>,
+) -> Response {
+    let settings = state.db.get_org_settings().await;
+    match settings {
+        Some(s) if s.catalog_cloud_account_id.is_some() && s.catalog_base_url.is_some() => {
+            data_response(CatalogStoragePayload {
+                cloud_account_id: s.catalog_cloud_account_id.unwrap(),
+                base_url: s.catalog_base_url.unwrap(),
+            }).into_response()
+        }
+        _ => StatusCode::NO_CONTENT.into_response(),
+    }
+}
+
+#[utoipa::path(put, path = "/v1/settings/catalog-storage", tag = "Settings",
+    request_body = CatalogStoragePayload,
+    responses(
+        (status = 200, description = "Catalog storage saved", body = CatalogStoragePayload),
+        (status = 400, description = "Validation error"),
+    )
+)]
+pub async fn save_catalog_storage(
+    ctx: Require<IsPromotor>,
+    State(state): State<AppState>,
+    Json(payload): Json<CatalogStoragePayload>,
+) -> Response {
+    if payload.cloud_account_id.trim().is_empty() || payload.base_url.trim().is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("validation_error", "cloud_account_id and base_url are required")),
+        ).into_response();
+    }
+
+    // Verify cloud account exists for the promotor's org
+    if state.db.get_cloud_account_summary(&ctx.scoped(payload.cloud_account_id.as_str())).await.is_none() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("validation_error", "Cloud account not found")),
+        ).into_response();
+    }
+
+    let mut settings = state.db.get_org_settings().await.unwrap_or_default();
+    settings.catalog_cloud_account_id = Some(payload.cloud_account_id.clone());
+    settings.catalog_base_url = Some(payload.base_url.clone());
+    state.db.set_org_settings(&settings).await;
+
+    data_response(payload).into_response()
 }

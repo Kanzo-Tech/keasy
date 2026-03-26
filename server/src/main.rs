@@ -44,14 +44,13 @@ async fn main() {
     info!(path = %db_path.display(), seed_file = ?config.seed_file, "Database opened");
 
     // Self-register in dataspaces so workspace picker can find this instance
-    if let Some(client_id) = &config.oidc_client_id {
-        if let Err(e) = db
+    if let Some(client_id) = &config.oidc_client_id
+        && let Err(e) = db
             .ensure_dataspace(client_id, "This Instance", &config.base_url)
             .await
         {
             warn!(error = %e, "Failed to self-register in dataspaces");
         }
-    }
 
     if !db.verify_secret_key().await {
         eprintln!("FATAL: KEASY_SECRET_KEY does not match the key used to encrypt stored secrets");
@@ -155,21 +154,13 @@ async fn main() {
         base_domain: config.base_domain,
         caddy_certs_dir: config.caddy_certs_dir,
     };
-    let oxigraph = config.oxigraph_url.map(|url| {
-        info!(url = %url, "Oxigraph SPARQL endpoint configured");
-        Arc::new(keasy_server::graph::oxigraph_client::OxigraphClient::new(url))
-    });
-    let has_oxigraph = oxigraph.is_some();
-    let catalog_store = Arc::new(keasy_server::graph::catalog::CatalogStore::new(oxigraph));
     let state = AppState {
         db,
         runner: runner.clone(),
-        fragment_resolver: Arc::new(keasy_server::FragmentResolver::new()),
         api_key: config.api_key,
         base_url: config.base_url,
         auth,
         gaia_x,
-        catalog_store,
         org_analysis: Arc::new(std::sync::Mutex::new(
             lru::LruCache::new(std::num::NonZeroUsize::new(64).unwrap()),
         )),
@@ -178,7 +169,6 @@ async fn main() {
         oidc = if state.auth.oidc_state.is_some() { "ready" } else { "not configured" },
         gxdch = %state.gaia_x.gxdch,
         base_domain = state.gaia_x.base_domain.as_deref().unwrap_or("not configured"),
-        oxigraph = if has_oxigraph { "ready" } else { "not configured" },
         "External services"
     );
 

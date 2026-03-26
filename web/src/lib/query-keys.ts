@@ -33,6 +33,7 @@ export const queryKeys = {
     providers: ["providers"] as const,
     org: ["settings-org"] as const,
     preferences: ["preferences"] as const,
+    catalogStorage: ["catalog-storage"] as const,
   },
 
   // Org
@@ -45,7 +46,6 @@ export const queryKeys = {
   // Admin
   admin: {
     orgs: ["admin-orgs"] as const,
-    orgsParticipants: ["admin-orgs-participants"] as const,
     invites: ["admin-invites"] as const,
   },
 
@@ -62,35 +62,14 @@ export const queryKeys = {
   // Services
   services: ["service-status"] as const,
 
-  // Discovery
-  discovery: {
-    load: (jobId: string) => ["discovery", jobId] as const,
-    explorer: (jobId?: string) => ["explorer", jobId ?? "all"] as const,
-    db: (jobId: string) => ["discovery-db", jobId] as const,
-    chart: (jobId: string, xAxis: string, yAxis: string, groupBy: string, type: string, agg: string, rdfType = "") =>
-      ["chart", jobId, xAxis, yAxis, groupBy, type, agg, rdfType] as const,
-    fieldStats: (jobId: string) => ["discovery", jobId, "field-stats"] as const,
-  },
-
   // Conversations
   conversations: {
     list: (jobId: string) => ["conversations", jobId] as const,
     messages: (conversationId: string) => ["messages", conversationId] as const,
   },
 
-  // Vocab
-  vocab: {
-    connections: ["vocab-connections"] as const,
-  },
-
-  // Graph
-  graph: {
-    job: (jobId: string) => ["graph", jobId] as const,
-  },
 
   // Dashboard
   dashboard: (jobId: string) => ["dashboard", jobId] as const,
 
-  // Validation
-  validation: ["validation"] as const,
 } as const;

@@ -20,7 +20,6 @@ use utoipa::OpenApi;
         crate::jobs::routes::delete_job,
         crate::jobs::routes::stream_job,
         crate::jobs::routes::get_job_catalog,
-        crate::jobs::routes::get_job_graph,
         // Connections
         crate::connections::routes::list_connections,
         crate::connections::routes::create_connection,
@@ -42,6 +41,8 @@ use utoipa::OpenApi;
         crate::settings::routes::save_org_settings,
         crate::settings::routes::get_preferences,
         crate::settings::routes::save_preferences,
+        crate::settings::routes::get_catalog_storage,
+        crate::settings::routes::save_catalog_storage,
         crate::settings::routes::list_ai_providers,
         crate::settings::routes::save_ai_provider,
         crate::settings::routes::delete_ai_provider,
@@ -76,16 +77,7 @@ use utoipa::OpenApi;
         crate::gaia_x::routes::get_did_document,
         crate::gaia_x::routes::get_cert_chain,
         // Discovery
-        crate::discovery::routes::search_nodes,
-        crate::discovery::routes::expand_node,
-        crate::discovery::routes::query_discover,
-        crate::discovery::routes::chart_discover,
-        crate::discovery::routes::field_stats,
-        crate::discovery::routes::load_discover,
-        crate::discovery::routes::export_discover,
-        crate::discovery::routes::tpf_query,
-        // Validation
-        crate::validation::routes::validate_job,
+        crate::discovery::routes::resolve_discover_urls,
         // AI / Conversations
         crate::ai::routes::ask_discover,
         crate::ai::routes::create_conversation,
@@ -94,13 +86,15 @@ use utoipa::OpenApi;
         crate::ai::routes::rename_conversation,
         crate::ai::routes::delete_conversation,
         // Assistant
-        crate::assistant::routes::suggest_cqs,
-        crate::assistant::routes::generate_script,
+        crate::assistant::routes::suggest_cqs_stream,
+        crate::assistant::routes::generate_script_stream,
         // Dashboard Layout
         crate::jobs::routes::get_dashboard_layout,
         crate::jobs::routes::save_dashboard_layout,
         // Auth (additional)
         crate::auth::routes::get_invite_info,
+        // Fossil Analysis
+        crate::routes::fossil_analysis::analyze,
     ),
     components(schemas(
         crate::error::DataResponse<serde_json::Value>,
@@ -110,6 +104,10 @@ use utoipa::OpenApi;
         crate::jobs::models::RunMode,
         crate::jobs::models::CreateJobRequest,
         crate::jobs::models::UpdateJobRequest,
+        fossil_lang::runtime::executor::DataManifest,
+        fossil_lang::runtime::executor::TypeManifest,
+        fossil_lang::runtime::executor::EdgeManifest,
+        fossil_lang::runtime::executor::ColumnStat,
         crate::jobs::errors::JobRuntimeError,
         crate::jobs::pipeline_types::PipelineSummary,
         crate::jobs::pipeline_types::PipelineInput,
@@ -180,25 +178,7 @@ use utoipa::OpenApi;
         crate::jobs::routes::CatalogResponse,
         crate::jobs::runner::JobEvent,
         // Discovery
-        crate::discovery::routes::SearchRequest,
-        crate::discovery::routes::ExpandRequest,
-        crate::discovery::routes::QueryRequest,
-        crate::discovery::routes::Aggregation,
-        crate::discovery::routes::FieldRef,
-        crate::discovery::routes::ChartRequest,
-        crate::discovery::routes::FieldStats,
-        crate::discovery::routes::FieldTopValue,
-        crate::discovery::routes::LoadDiscoverResponse,
-        crate::discovery::routes::TpfResponse,
-        crate::discovery::routes::TpfTriple,
         crate::graph::types::TabularData,
-        crate::graph::types::SearchResult,
-        crate::graph::convert::GraphData,
-        crate::graph::convert::GraphNode,
-        crate::graph::convert::GraphLink,
-        // Validation
-        crate::validation::types::ShapeValidationResult,
-        crate::validation::types::ShapeValidationError,
         // Providers
         crate::routes::providers::ProviderEntry,
         // AI / Conversations
@@ -217,6 +197,15 @@ use utoipa::OpenApi;
         crate::assistant::models::GenerateResponse,
         // Cloud files
         crate::cloud::reader::FileEntry,
+        // Settings schema
+        crate::settings::schema::ProviderSchema,
+        crate::settings::schema::FieldSchema,
+        crate::settings::schema::AuthMethodSchema,
+        // Fossil Analysis
+        crate::routes::fossil_analysis::AnalyzeRequest,
+        crate::routes::fossil_analysis::AnalyzeResponse,
+        fossil_lsp::CompletionItem,
+        fossil_lsp::DiagnosticItem,
     ))
 )]
 pub struct ApiDoc;

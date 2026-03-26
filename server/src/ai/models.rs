@@ -8,7 +8,7 @@ use crate::graph::types::TabularData;
 pub enum AskResultCode {
     Success,
     ParseFailed,
-    SparqlFailed,
+    QueryFailed,
     InsufficientCredits,
     LlmFailed,
 }
@@ -18,7 +18,7 @@ impl AskResultCode {
         match self {
             Self::Success => "success",
             Self::ParseFailed => "parse_failed",
-            Self::SparqlFailed => "sparql_failed",
+            Self::QueryFailed => "query_failed",
             Self::InsufficientCredits => "insufficient_credits",
             Self::LlmFailed => "llm_failed",
         }
@@ -40,10 +40,12 @@ pub struct ConversationMessage {
     pub role: String,
     pub content: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sparql: Option<String>,
+    pub sql: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<TabularData>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub explanation: Option<String>,
     pub created_at: String,
 }

@@ -1,5 +1,4 @@
 import {
-  Network,
   Bot,
   Building2,
   Database,
@@ -44,7 +43,6 @@ const ROUTES: Record<string, RouteDef> = {
   "/organization/compliance/wizard":  { name: "Compliance Wizard", icon: ShieldCheck },
   "/organization/users":              { name: "Users", icon: Users },
   "/participants":                { name: "Participants", icon: Users, sidebar: ["promotor"] },
-  "/graph":                       { name: "Graph", icon: Network, sidebar: ["promotor"] },
   "/settings":                    { name: "Settings", icon: Settings2 },
   "/settings/ai":                 { name: "AI Settings", icon: Bot },
   "/settings/cloud-accounts":     { name: "Cloud Accounts", icon: GalleryVerticalEnd },

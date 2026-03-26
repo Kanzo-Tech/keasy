@@ -134,10 +134,6 @@ pub fn build_router(
             axum::routing::get(crate::jobs::routes::get_job_catalog),
         )
         .route(
-            "/v1/jobs/{id}/graph",
-            axum::routing::get(crate::jobs::routes::get_job_graph),
-        )
-        .route(
             "/v1/scripts/validate",
             axum::routing::post(scripts::validate_script),
         )
@@ -149,6 +145,11 @@ pub fn build_router(
             "/v1/settings/organization",
             axum::routing::get(crate::settings::routes::get_org_settings)
                 .put(crate::settings::routes::save_org_settings),
+        )
+        .route(
+            "/v1/settings/catalog-storage",
+            axum::routing::get(crate::settings::routes::get_catalog_storage)
+                .put(crate::settings::routes::save_catalog_storage),
         )
         .route(
             "/v1/settings/preferences",
@@ -165,49 +166,25 @@ pub fn build_router(
                 .delete(crate::settings::routes::delete_ai_provider),
         )
         .route(
-            "/v1/validate",
-            axum::routing::post(crate::validation::routes::validate_job),
-        )
-        .route(
-            "/v1/graph/search",
-            axum::routing::post(crate::discovery::routes::search_nodes),
-        )
-        .route(
-            "/v1/graph/expand",
-            axum::routing::post(crate::discovery::routes::expand_node),
-        )
-        .route(
             "/v1/jobs/{id}/dashboard-layout",
             axum::routing::get(crate::jobs::routes::get_dashboard_layout)
                 .put(crate::jobs::routes::save_dashboard_layout),
         )
         .route(
-            "/v1/jobs/{id}/discover/load",
-            axum::routing::post(crate::discovery::routes::load_discover),
+            "/v1/jobs/{id}/discover/urls",
+            axum::routing::get(crate::discovery::routes::resolve_discover_urls),
         )
         .route(
-            "/v1/jobs/{id}/discover/query",
-            axum::routing::post(crate::discovery::routes::query_discover),
-        )
-        .route(
-            "/v1/jobs/{id}/discover/chart",
-            axum::routing::post(crate::discovery::routes::chart_discover),
-        )
-        .route(
-            "/v1/jobs/{id}/discover/field-stats",
-            axum::routing::get(crate::discovery::routes::field_stats),
-        )
-        .route(
-            "/v1/jobs/{id}/discover/export",
-            axum::routing::get(crate::discovery::routes::export_discover),
-        )
-        .route(
-            "/v1/tpf/{id}",
-            axum::routing::get(crate::discovery::routes::tpf_query),
+            "/v1/jobs/{id}/catalog/urls",
+            axum::routing::get(crate::discovery::routes::resolve_catalog_urls),
         )
         .route(
             "/v1/jobs/{id}/discover/ask",
             axum::routing::post(crate::ai::routes::ask_discover),
+        )
+        .route(
+            "/v1/jobs/{id}/discover/ask-stream",
+            axum::routing::post(crate::ai::routes::ask_discover_stream),
         )
         .route(
             "/v1/jobs/{id}/conversations",
@@ -254,14 +231,14 @@ pub fn build_router(
             "/v1/connections/{id}/schema",
             axum::routing::get(crate::connections::routes::get_file_schema),
         )
-        // Assistant
+        // Assistant (SSE streaming)
         .route(
-            "/v1/assistant/suggest",
-            axum::routing::post(crate::assistant::routes::suggest_cqs),
+            "/v1/assistant/suggest-stream",
+            axum::routing::post(crate::assistant::routes::suggest_cqs_stream),
         )
         .route(
-            "/v1/assistant/generate",
-            axum::routing::post(crate::assistant::routes::generate_script),
+            "/v1/assistant/generate-stream",
+            axum::routing::post(crate::assistant::routes::generate_script_stream),
         )
         // Admin routes — promotor only
         .route(
@@ -362,10 +339,11 @@ pub fn build_router(
             HeaderValue::from_static("max-age=31536000; includeSubDomains"),
         ));
 
-    // Rate limiting (10 req/s per IP, burst of 30)
+    // Rate limiting — relaxed in dev to support DuckDB concurrent range requests
+    let (rps, burst) = if cfg!(debug_assertions) { (100, 500) } else { (20, 100) };
     let governor_conf = tower_governor::governor::GovernorConfigBuilder::default()
-        .per_second(10)
-        .burst_size(30)
+        .per_second(rps)
+        .burst_size(burst)
         .finish()
         .unwrap();
 
@@ -394,6 +372,8 @@ pub fn build_router(
 
 /// Derive a 64-byte key from an arbitrary-length session secret using PBKDF2-SHA256.
 /// Key::from() requires at least 64 bytes; this ensures we always provide exactly 64.
+const PBKDF2_ITERATIONS: u32 = 100_000;
+
 fn derive_session_key(secret: &[u8]) -> [u8; 64] {
     use sha2::Sha256;
     use pbkdf2::hmac::Hmac;
@@ -401,7 +381,7 @@ fn derive_session_key(secret: &[u8]) -> [u8; 64] {
     let mut key = [0u8; 64];
     // Use a fixed salt — the secret itself provides uniqueness.
     // This is a deterministic KDF, not password hashing, so a fixed salt is acceptable.
-    pbkdf2::pbkdf2::<Hmac<Sha256>>(secret, b"keasy-session-key-derivation", 1, &mut key)
+    pbkdf2::pbkdf2::<Hmac<Sha256>>(secret, b"keasy-session-key-derivation", PBKDF2_ITERATIONS, &mut key)
         .expect("PBKDF2 key derivation must not fail for 64-byte output");
     key
 }

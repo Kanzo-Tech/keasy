@@ -45,21 +45,24 @@ async fn resolve_cloud_connection(
 
     let creds = state
         .db
-        .env_snapshot(&ctx.as_ctx(), std::slice::from_ref(&account_id))
+        .build_storage_config(&ctx.as_ctx(), std::slice::from_ref(&account_id))
         .await;
 
     Ok((connection, creds))
 }
 
 fn join_connection_path(base: &str, path: &str) -> Result<String, String> {
-    if path.contains("..") {
+    let base_canonical = std::path::PathBuf::from(base)
+        .canonicalize()
+        .map_err(|e| format!("Invalid base path: {e}"))?;
+    let full_path = base_canonical
+        .join(path)
+        .canonicalize()
+        .map_err(|e| format!("Invalid path: {e}"))?;
+    if !full_path.starts_with(&base_canonical) {
         return Err("Path traversal not allowed".into());
     }
-    Ok(format!(
-        "{}/{}",
-        base.trim_end_matches('/'),
-        path.trim_start_matches('/')
-    ))
+    Ok(full_path.to_string_lossy().to_string())
 }
 
 #[derive(Deserialize)]
@@ -101,7 +104,7 @@ pub async fn create_connection(
     if req.location_type == LocationType::Cloud
         && let Some(ref account_id) = req.cloud_account_id
     {
-        let creds = state.db.env_snapshot(&ctx.as_ctx(), std::slice::from_ref(account_id)).await;
+        let creds = state.db.build_storage_config(&ctx.as_ctx(), std::slice::from_ref(account_id)).await;
         if let Err(msg) = reader::list_files(&req.url, &creds).await {
             return Err(ConnectionError::ContainerNotFound(
                 format!("Cannot access container '{}': {msg}", req.url),
@@ -346,14 +349,13 @@ fn infer_field_type(value: &str) -> InferredType {
         return InferredType::Float;
     }
     // Simple date check: YYYY-MM-DD
-    if trimmed.len() >= 10 && trimmed.as_bytes()[4] == b'-' && trimmed.as_bytes()[7] == b'-' {
-        if trimmed[..4].parse::<u16>().is_ok()
+    if trimmed.len() >= 10 && trimmed.as_bytes()[4] == b'-' && trimmed.as_bytes()[7] == b'-'
+        && trimmed[..4].parse::<u16>().is_ok()
             && trimmed[5..7].parse::<u8>().is_ok()
             && trimmed[8..10].parse::<u8>().is_ok()
         {
             return InferredType::Date;
         }
-    }
     InferredType::String
 }
 

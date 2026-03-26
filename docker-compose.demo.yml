@@ -7,3 +7,4 @@ services:
     command: ["cargo", "run", "--release"]
     environment:
       RUST_LOG: info
+      KEASY_CORS_ORIGINS: "http://localhost:3000"

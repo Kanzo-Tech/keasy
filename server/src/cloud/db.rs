@@ -174,10 +174,10 @@ impl Database {
         .collect()
     }
 
-    pub async fn build_storage_config(&self, ctx: &TenantScoped<()>, org_id: &str, account_ids: &[String]) -> HashMap<String, String> {
+    pub async fn build_storage_config(&self, ctx: &TenantScoped<()>, account_ids: &[String]) -> HashMap<String, String> {
         let mut env = HashMap::new();
         for id in account_ids {
-            let scoped = TenantScoped::new(OrgId(org_id.to_string()), id.as_str());
+            let scoped = TenantScoped::new(OrgId(ctx.org_id().as_str().to_string()), id.as_str());
             if let Some(account) = self.get_cloud_account(&scoped).await
                 && let Some(schema) = find_provider(&account.provider_id)
             {
@@ -194,16 +194,11 @@ impl Database {
                 }
             }
         }
-        let _ = ctx;
         if !env.is_empty() {
             let keys: Vec<&str> = env.keys().map(|k| k.as_str()).collect();
             info!(count = env.len(), ?keys, "built storage config from cloud accounts");
         }
         env
-    }
-
-    pub async fn env_snapshot(&self, ctx: &TenantScoped<()>, account_ids: &[String]) -> HashMap<String, String> {
-        self.build_storage_config(ctx, ctx.org_id().as_str(), account_ids).await
     }
 
     async fn decrypt_secrets_for_account(&self, id: &str) -> HashMap<String, SecretString> {

@@ -160,26 +160,24 @@ pub async fn update_org_identity(
     }
 
     // Validate registration_number_type
-    if let Some(ref rnt) = payload.registration_number_type {
-        if !matches!(rnt.as_str(), "vatID" | "leiCode" | "EORI") {
+    if let Some(ref rnt) = payload.registration_number_type
+        && !matches!(rnt.as_str(), "vatID" | "leiCode" | "EORI") {
             return Ok((
                 StatusCode::BAD_REQUEST,
                 Json(error_body("bad_request", "registration_number_type must be vatID, leiCode, or EORI")),
             )
                 .into_response());
         }
-    }
 
     // Validate country_subdivision_code (ISO 3166-2: XX-YYY)
-    if let Some(ref csc) = payload.country_subdivision_code {
-        if !SUBDIVISION_RE.is_match(csc) {
+    if let Some(ref csc) = payload.country_subdivision_code
+        && !SUBDIVISION_RE.is_match(csc) {
             return Ok((
                 StatusCode::BAD_REQUEST,
                 Json(error_body("bad_request", "country_subdivision_code must match ISO 3166-2 (e.g. DE-BY)")),
             )
                 .into_response());
         }
-    }
 
     state
         .db

@@ -8,6 +8,7 @@ documentation = ""
 license = ""
 categories = ["database"]
 keywords = [""]
+default-run = "keasy-server"
 authors = ["Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>"]
 edition = "2024"
 rust-version = "1.90.0"
@@ -30,17 +31,14 @@ object_store = { version = "0.12", features = ["aws", "gcp", "azure"] }
 futures = "0.3"
 tokio-stream = { version = "0.1", features = ["sync"] }
 lru = "0.12"
-shex_ast = "0.1"
-shex_validation = "0.1"
-rudof_rdf = "0.1"
-iri_s = "0.1"
 url = "2"
 regex = "1"
 aes-gcm = "0.10"
+hmac = "0.12"
 pbkdf2 = { version = "0.12", features = ["hmac"] }
 sha2 = "0.10"
 getrandom = "0.2"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
 openidconnect = { version = "4.0", features = ["reqwest"] }
 oauth2 = "5.0"
 http = "1"
@@ -48,10 +46,10 @@ secrecy = { version = "0.10", features = ["serde"] }
 tower-sessions = { version = "0.14", features = ["signed"] }
 tower-sessions-rusqlite-store = "0.14.1"
 time = "0.3"
-fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git" }
+polars = { version = "0.52", features = ["cloud", "aws", "azure", "gcp", "round_series"] }
+fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git", features = ["utoipa"] }
 fossil-stdlib = { git = "https://github.com/angelip2303/fossil-lang.git" }
 fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git" }
-fossil-ifc = { git = "https://github.com/angelip2303/fossil-lang.git" }
 fossil-lsp = { git = "https://github.com/angelip2303/fossil-lang.git", features = ["utoipa"] }
 base64 = "0.22"
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "jwk"] }
@@ -64,8 +62,6 @@ utoipa = { version = "5", features = ["axum_extras"] }
 csv = "1"
 oxrdf = "0.3.3"
 oxrdfio = "0.2.3"
-spareval = "0.2.5"
-spargebra = "0.4.5"
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

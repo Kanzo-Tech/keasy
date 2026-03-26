@@ -1,287 +1,240 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
+  ArrowUp,
+  Copy,
   Loader2,
-  MessageSquarePlus,
-  Send,
-  Trash2,
+  Network,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useCoordinator } from "./use-discovery-store";
+import { PanelHeader } from "@/components/layout/workspace-layout";
 import { api, ApiError } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
+import { generateSuggestions } from "@/lib/schema-suggestions";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
-import { EditableText } from "@/components/ui/editable-text";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { InputGroup, InputGroupAddon, InputGroupTextarea } from "@/components/ui/input-group";
 import { CodeView } from "@/components/discovery/code-view";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { Markdown } from "@/components/ui/markdown";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { isError } from "@/lib/error-codes";
-import type {
-  Conversation,
-  ConversationMessage,
-  TabularData,
-} from "@/lib/types";
+import type { ConversationMessage } from "@/lib/types";
 
-interface DiscoveryAskProps {
-  jobId: string;
+// ── Types ────────────────────────────────────────────────────────────────
+
+interface AskMessage extends ConversationMessage {
+  reasoning?: string;
+  explanation?: string;
+  phase?: "generating" | "executing" | "explaining" | "done";
 }
 
-function MessageEntry({ msg }: { msg: ConversationMessage }) {
-  const [showSparql, setShowSparql] = useState(false);
+// ── ResultTable ──────────────────────────────────────────────────────────
 
-  if (msg.role === "user") {
-    return <div className="text-sm font-medium break-words">{msg.content}</div>;
-  }
+function ResultTable({ sql: sqlStr }: { sql: string }) {
+  const coordinator = useCoordinator();
+  const [data, setData] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    if (!coordinator || !sqlStr) return;
+    let cancelled = false;
+    setLoading(true);
+    coordinator.query(sqlStr, { type: "json" })
+      .then((result) => { if (!cancelled) setData((result as Record<string, unknown>[]) ?? []); })
+      .catch(() => { if (!cancelled) setData([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [coordinator, sqlStr]);
+
+  if (loading) return <Skeleton className="h-20 w-full" />;
+  if (data.length === 0) return <p className="text-xs text-muted-foreground py-1">No results</p>;
+
+  const columns = Object.keys(data[0]);
+  return (
+    <div className="max-h-48 overflow-auto rounded-sm border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {columns.map(col => <TableHead key={col} className="text-[10px] h-6 whitespace-nowrap">{col}</TableHead>)}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data.map((row, i) => (
+            <TableRow key={i}>
+              {columns.map(col => (
+                <TableCell key={col} className="text-[10px] py-0.5 whitespace-nowrap font-mono">
+                  {row[col] == null ? <span className="text-muted-foreground">null</span> : String(row[col])}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+// ── AssistantExtra ───────────────────────────────────────────────────────
+
+function AssistantExtra({ msg, onShowOnGraph }: { msg: AskMessage; onShowOnGraph?: (sql: string) => void }) {
   const hasError = isError(msg.code ?? undefined);
-  const hasData = msg.data && msg.data.rows.length > 0;
-  const hasEmptyData = msg.data && msg.data.rows.length === 0;
+  const hasExplanation = !!msg.explanation;
+  const hasSql = !!msg.sql;
+  const hasContent = hasExplanation || !!msg.content;
 
-  if (hasError) {
-    return <ErrorAlert code={msg.code!} />;
-  }
+  const defaultView = hasContent ? "explanation" : hasSql ? "results" : null;
+  const [view, setView] = useState(defaultView);
 
-  if (hasEmptyData) {
-    return (
-      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
-        <AlertCircle size={12} className="shrink-0" />
-        No matching data found. Try rephrasing your question.
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!view && hasContent) setView("explanation");
+    else if (!view && hasSql) setView("results");
+  }, [view, hasContent, hasSql]);
+
+  if (hasError) return <ErrorAlert code={msg.code!} />;
+  if (!hasContent && !hasSql) return null;
 
   return (
     <div className="space-y-2 min-w-0">
-      {msg.content && (
-        <Markdown className="text-sm leading-relaxed break-words">{msg.content}</Markdown>
+      <div className="flex items-center gap-1">
+        <ToggleGroup type="single" variant="outline" size="sm" value={view ?? ""} onValueChange={(v) => { if (v) setView(v); }}>
+          {hasContent && <ToggleGroupItem value="explanation" className="text-[10px] h-5 px-1.5">Explain</ToggleGroupItem>}
+          {hasSql && <ToggleGroupItem value="results" className="text-[10px] h-5 px-1.5">Results</ToggleGroupItem>}
+          {hasSql && <ToggleGroupItem value="query" className="text-[10px] h-5 px-1.5">SQL</ToggleGroupItem>}
+        </ToggleGroup>
+        {hasSql && onShowOnGraph && (
+          <button className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-0.5" onClick={() => onShowOnGraph(msg.sql!)}>
+            <Network size={10} /> graph
+          </button>
+        )}
+      </div>
+
+      {view === "explanation" && hasContent && (
+        <Markdown className="text-xs leading-relaxed break-words">{msg.explanation || msg.content}</Markdown>
       )}
-
-      {(hasData || msg.sparql) && (
-        <div className="space-y-1.5">
-          {hasData && msg.sparql && (
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              size="sm"
-              value={showSparql ? "sparql" : "results"}
-              onValueChange={(v) => { if (v) setShowSparql(v === "sparql"); }}
-            >
-              <ToggleGroupItem value="results" className="text-[11px] h-6 px-2">
-                Results
-              </ToggleGroupItem>
-              <ToggleGroupItem value="sparql" className="text-[11px] h-6 px-2">
-                SPARQL
-              </ToggleGroupItem>
-            </ToggleGroup>
-          )}
-
-          {!showSparql && hasData && (
-            <div className="max-h-60 overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {msg.data!.columns.map((col) => (
-                      <TableHead key={col} className="text-xs h-8">
-                        {col}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {msg.data!.rows.map((row, ri) => (
-                    <TableRow key={ri}>
-                      {msg.data!.columns.map((col) => (
-                        <TableCell key={col} className="text-xs py-1.5">
-                          {String(row[col] ?? "")}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-
-          {(showSparql || (!hasData && msg.sparql)) && msg.sparql && (
-            <CodeView code={msg.sparql} lang="sparql" />
-          )}
+      {view === "results" && hasSql && <ResultTable sql={msg.sql!} />}
+      {view === "query" && hasSql && (
+        <div className="relative">
+          <CodeView code={msg.sql!} lang="sql" />
+          <button className="absolute top-1 right-1 h-5 w-5 inline-flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground" onClick={() => { navigator.clipboard.writeText(msg.sql!); toast.success("Copied"); }}>
+            <Copy size={10} />
+          </button>
         </div>
       )}
     </div>
   );
 }
 
-export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
-  const queryClient = useQueryClient();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<
-    string | null
-  >(null);
-  const [messages, setMessages] = useState<ConversationMessage[]>([]);
-  const [question, setQuestion] = useState("");
+// ── Main component ───────────────────────────────────────────────────────
+
+interface DiscoveryAskProps {
+  jobId: string;
+  schema: string;
+  graphSchema: import("@/lib/graph-schema").GraphSchema;
+  onShowOnGraph?: (sql: string) => void;
+}
+
+export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema, onShowOnGraph }: DiscoveryAskProps) {
+  const coordinator = useCoordinator();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<AskMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<string>("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [input, setInput] = useState("");
+  const [selectedProvider, setSelectedProvider] = useState("");
 
   const { data: aiProviders, isLoading: loadingAiProviders } = useQuery({ queryKey: queryKeys.ai.providers, queryFn: api.ai.providers });
-  const connectedProviders = AI_PROVIDERS.filter((p) =>
-    aiProviders?.some((s) => s.provider === p.id && s.api_key),
+  const connectedProviders = useMemo(
+    () => AI_PROVIDERS.filter((p) => aiProviders?.some((s) => s.provider === p.id && s.api_key)),
+    [aiProviders],
   );
   const aiConfigured = connectedProviders.length > 0;
+  const suggestions = useMemo(() => generateSuggestions(graphSchema), [graphSchema]);
 
   useEffect(() => {
-    if (connectedProviders.length > 0 && !selectedProvider) {
-      setSelectedProvider(connectedProviders[0].id);
-    }
+    if (connectedProviders.length > 0 && !selectedProvider) setSelectedProvider(connectedProviders[0].id);
   }, [connectedProviders, selectedProvider]);
 
-  const { data: initialConversations, isLoading: loadingConversations } = useQuery({
-    queryKey: queryKeys.conversations.list(jobId),
-    queryFn: () => api.conversations.list(jobId),
-  });
-
+  // Auto-scroll on new messages
   useEffect(() => {
-    if (initialConversations) {
-      setConversations(initialConversations);
-      if (initialConversations.length > 0) {
-        setActiveConversationId((prev) => prev ?? initialConversations[0].id);
-      }
-    }
-  }, [initialConversations]);
-
-  const { data: loadedMessages } = useQuery({
-    queryKey: queryKeys.conversations.messages(activeConversationId ?? ""),
-    queryFn: () => api.conversations.messages(activeConversationId!),
-    enabled: !!activeConversationId,
-  });
-
-  useEffect(() => {
-    if (loadedMessages) setMessages(loadedMessages);
-    else if (!activeConversationId) setMessages([]);
-  }, [loadedMessages, activeConversationId]);
-
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  function startNewConversation() {
-    setActiveConversationId(null);
-    setMessages([]);
-  }
-
-  async function handleRenameBlur(conversationId: string, newTitle: string) {
-    const trimmed = newTitle.trim();
-    const prev = conversations.find((c) => c.id === conversationId);
-    if (!trimmed || trimmed === (prev?.title ?? "")) return;
-    setConversations((cs) =>
-      cs.map((c) => (c.id === conversationId ? { ...c, title: trimmed } : c)),
-    );
-    try {
-      await api.conversations.rename(conversationId, trimmed);
-    } catch {
-      setConversations((cs) =>
-        cs.map((c) => (c.id === conversationId ? { ...c, title: prev?.title } : c)),
-      );
-    }
-  }
-
-  async function handleDelete(conversationId: string) {
-    try {
-      await api.conversations.remove(conversationId);
-      setConversations((prev) => prev.filter((c) => c.id !== conversationId));
-      if (activeConversationId === conversationId) {
-        setActiveConversationId(null);
-        setMessages([]);
-      }
-    } catch {
-      toast.error("Failed to delete conversation");
-    }
-  }
-
-  async function handleAsk() {
-    const q = question.trim();
-    if (!q) return;
-    setQuestion("");
+  async function handleSend(q: string) {
+    if (!q.trim() || loading) return;
     setLoading(true);
+    setInput("");
 
-    const userMsg: ConversationMessage = {
-      id: crypto.randomUUID(),
-      conversation_id: activeConversationId ?? "",
-      role: "user",
-      content: q,
-      created_at: new Date().toISOString(),
+    const userMsg: AskMessage = { id: crypto.randomUUID(), conversation_id: conversationId ?? "", role: "user", content: q, created_at: new Date().toISOString() };
+    const assistantId = crypto.randomUUID();
+    const placeholder: AskMessage = { id: assistantId, conversation_id: conversationId ?? "", role: "assistant", content: "", created_at: new Date().toISOString(), phase: "generating" };
+
+    setMessages((prev) => [...prev, userMsg, placeholder]);
+
+    const update = (patch: Partial<AskMessage>) => {
+      setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, ...patch } : m));
     };
-    setMessages((prev) => [...prev, userMsg]);
+
+    let convId = conversationId;
 
     try {
-      const response = await api.discovery.ask(
-        jobId,
-        q,
-        activeConversationId ?? undefined,
-        selectedProvider || undefined,
-      );
-      if (!activeConversationId && response.conversation_id) {
-        setActiveConversationId(response.conversation_id);
-        setConversations((prev) => {
-          if (prev.find((c) => c.id === response.conversation_id)) return prev;
-          return [
-            {
-              id: response.conversation_id!,
-              job_id: jobId,
-              created_at: new Date().toISOString(),
-              title: q.slice(0, 60),
-            },
-            ...prev,
-          ];
-        });
-        queryClient.invalidateQueries({ queryKey: queryKeys.conversations.list(jobId) });
+      for await (const { event, data } of api.discovery.askStream(jobId, q, {
+        conversationId: conversationId ?? undefined,
+        provider: selectedProvider || undefined,
+        schema: duckSchema,
+      })) {
+        if (event === "conversation") {
+          const { conversation_id: newId } = JSON.parse(data);
+          if (!conversationId && newId) { convId = newId; setConversationId(newId); }
+        } else if (event === "complete") {
+          const result = JSON.parse(data) as { sql?: string; answer: string; conversation_id: string; reasoning?: string; code: string };
+          update({ sql: result.sql, content: result.answer, code: result.code, reasoning: result.reasoning, phase: "executing" });
+
+          if (result.sql && convId) {
+            update({ phase: "explaining" });
+            let sampleRows = "";
+            if (coordinator) {
+              try {
+                const rows = await coordinator.query(result.sql, { type: "json" });
+                const arr = (rows as Record<string, unknown>[]) ?? [];
+                sampleRows = JSON.stringify(arr.slice(0, 30));
+                if (sampleRows.length > 4000) sampleRows = sampleRows.slice(0, 4000) + "...";
+              } catch {}
+            }
+            if (sampleRows) {
+              const explainQ = `Original question: ${q}\n\nSQL executed:\n${result.sql}\n\nResults (showing first rows):\n${sampleRows}`;
+              let explainText = "";
+              let rafPending = false;
+              for await (const { event: ev, data: d } of api.discovery.askStream(jobId, explainQ, { conversationId: convId ?? undefined, provider: selectedProvider || undefined, explain: true })) {
+                if (ev === "delta") {
+                  explainText += d;
+                  if (!rafPending) { rafPending = true; requestAnimationFrame(() => { rafPending = false; update({ explanation: explainText }); }); }
+                } else if (ev === "complete") {
+                  const r = JSON.parse(d) as { answer: string };
+                  update({ explanation: r.answer, phase: "done" });
+                }
+              }
+            } else { update({ phase: "done" }); }
+          } else { update({ phase: "done" }); }
+        } else if (event === "error") {
+          const err = JSON.parse(data) as { code: string; answer: string };
+          update({ content: err.answer, code: err.code, phase: "done" });
+        }
       }
-      const assistantMsg: ConversationMessage = {
-        id: crypto.randomUUID(),
-        conversation_id: response.conversation_id ?? activeConversationId ?? "",
-        role: "assistant",
-        content: response.answer,
-        sparql: response.sparql,
-        data: response.data as TabularData | undefined,
-        code: response.code,
-        created_at: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {
-      const assistantMsg: ConversationMessage = {
-        id: crypto.randomUUID(),
-        conversation_id: activeConversationId ?? "",
-        role: "assistant",
-        content: err instanceof Error ? err.message : "Ask failed",
-        code: err instanceof ApiError ? err.code : "UNKNOWN",
-        created_at: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
+      update({ content: err instanceof Error ? err.message : "Ask failed", code: err instanceof ApiError ? err.code : "UNKNOWN", phase: "done" });
     } finally {
       setLoading(false);
     }
@@ -289,136 +242,75 @@ export function DiscoveryAsk({ jobId }: DiscoveryAskProps) {
 
   if (!loadingAiProviders && !aiConfigured) {
     return (
-      <EmptyState
-        icon={AlertCircle}
-        title="AI not configured"
-        description="An API key is required to use the Ask feature."
-        action={
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/settings/ai">Configure AI settings</Link>
-          </Button>
-        }
-      />
+      <div className="flex flex-col h-full">
+        <PanelHeader title="Ask" />
+        <EmptyState icon={AlertCircle} title="AI not configured" description="An API key is required." action={<Button variant="outline" size="sm" asChild><Link href="/settings/ai">Configure</Link></Button>} />
+      </div>
     );
   }
 
   return (
-    <div className="flex-1 flex min-h-0 gap-3">
-      <div className="w-48 shrink-0 flex flex-col min-h-0 border-r pr-3">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full mb-2 justify-start gap-2"
-          onClick={startNewConversation}
-        >
-          <MessageSquarePlus size={14} />
-          New chat
-        </Button>
-        <ScrollArea className="flex-1">
-          {loadingConversations && (
-            <div className="flex items-center justify-center py-4 text-muted-foreground">
-              <Loader2 size={14} className="animate-spin" />
-            </div>
-          )}
-          <div className="space-y-0.5">
-            {conversations.map((c) => (
-              <div
-                key={c.id}
-                className={`group flex items-center gap-1 rounded-md px-2 py-1.5 text-xs cursor-pointer hover:bg-muted ${
-                  activeConversationId === c.id
-                    ? "bg-muted font-medium"
-                    : "text-muted-foreground"
-                }`}
-                onClick={() => setActiveConversationId(c.id)}
-              >
-                <EditableText
-                  className="flex-1 min-w-0 text-xs truncate"
-                  value={c.title || new Date(c.created_at).toLocaleDateString()}
-                  onSave={(title) => handleRenameBlur(c.id, title)}
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-5 w-5 opacity-0 group-hover:opacity-100 shrink-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(c.id);
-                  }}
-                >
-                  <Trash2 size={12} />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-      </div>
+    <div className="flex flex-col h-full">
+      <PanelHeader title="Ask" />
 
-      <div className="flex-1 flex flex-col min-h-0 min-w-0">
-        <div className="flex-1 overflow-y-auto space-y-4 mb-3 min-w-0">
+      {/* Messages */}
+      <ScrollArea className="flex-1" ref={scrollRef}>
+        <div className="p-2 space-y-3">
           {messages.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground text-sm">
-              Ask a question about your data. The AI will generate a SPARQL
-              query and return results.
+            <div className="py-6 text-center space-y-3">
+              <Sparkles size={20} className="mx-auto text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">Ask about your data</p>
+              <div className="flex flex-wrap gap-1 justify-center">
+                {suggestions.slice(0, 4).map((s, i) => (
+                  <button key={i} className="text-[10px] px-2 py-0.5 rounded-full border text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => handleSend(s)}>
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {messages.map((msg) => (
-            <MessageEntry key={msg.id} msg={msg} />
-          ))}
-          {loading && (
-            <div className="space-y-2 min-w-0">
-              <Skeleton loading className="block w-3/4"><p className="text-sm leading-relaxed">Analyzing your data...</p></Skeleton>
-              <Skeleton loading className="block w-1/2"><p className="text-sm leading-relaxed">Generating query</p></Skeleton>
-              <Skeleton className="h-20 w-full rounded-md" />
+            <div key={msg.id} className={msg.role === "user" ? "flex justify-end" : ""}>
+              {msg.role === "user" ? (
+                <div className="bg-muted rounded-lg px-2.5 py-1.5 text-xs max-w-[85%]">{msg.content}</div>
+              ) : (
+                <div className="space-y-1.5">
+                  {msg.phase && msg.phase !== "done" && !msg.explanation && !msg.content && !msg.sql && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Loader2 size={12} className="animate-spin" />
+                      {msg.phase === "executing" ? "Executing..." : msg.phase === "explaining" ? "Analyzing..." : "Thinking..."}
+                    </div>
+                  )}
+                  <AssistantExtra msg={msg} onShowOnGraph={onShowOnGraph} />
+                </div>
+              )}
             </div>
-          )}
-          <div ref={messagesEndRef} />
+          ))}
         </div>
-        <form
-          className="flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleAsk();
-          }}
-        >
-          {connectedProviders.length > 0 && (
-            <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-              <SelectTrigger className="w-[160px] shrink-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {connectedProviders.map((p) => {
-                  const Icon = p.icon;
-                  return (
-                    <SelectItem key={p.id} value={p.id}>
-                      <span className="flex items-center gap-2">
-                        <Icon className="h-3.5 w-3.5" />
-                        {p.label}
-                      </span>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          )}
-          <Input
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
+      </ScrollArea>
+
+      {/* Input */}
+      <div className="shrink-0 px-2 py-1.5">
+        <InputGroup className="rounded-lg">
+          <InputGroupTextarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(input); } }}
             placeholder="Ask about your data..."
             disabled={loading}
-            className="flex-1"
+            rows={1}
           />
-          <Button
-            type="submit"
-            size="sm"
-            disabled={loading || !question.trim()}
-          >
-            {loading ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Send size={14} />
-            )}
-          </Button>
-        </form>
+          <InputGroupAddon align="block-end">
+            <Button
+              size="icon"
+              className="h-7 w-7 rounded-md"
+              disabled={!input.trim() || loading}
+              onClick={() => handleSend(input)}
+            >
+              <ArrowUp size={14} />
+            </Button>
+          </InputGroupAddon>
+        </InputGroup>
       </div>
     </div>
   );

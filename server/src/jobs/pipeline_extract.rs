@@ -163,10 +163,7 @@ fn classify_expr(pq: &ProgramQuery, expr_id: ExprId, source_labels: &HashMap<Sym
                 result.pending.extend(sub.pending);
             }
 
-            let callee_name = pq.resolve_callee_name(*callee);
-            if let Some(ref name) = callee_name
-                && (name.contains("serialize") || name.contains("write"))
-            {
+            if pq.is_sink_callee(*callee) {
                 let dest = args.iter().find_map(|arg| {
                     let arg_expr = pq.ir().exprs.get(arg.value());
                     if let ExprKind::Literal(fossil_lang::ir::Literal::String(s)) = &arg_expr.kind {
@@ -257,6 +254,49 @@ mod tests {
             })
             .expect("compilation failed");
         extract_summary(&result.program)
+    }
+
+    fn compile_with_stdlib(src: &str) -> super::super::ValidationResult {
+        use std::sync::Arc;
+        use fossil_lang::traits::resolver::PathResolver;
+
+        #[derive(Debug)]
+        struct NoopResolver;
+        impl PathResolver for NoopResolver {
+            fn resolve(&self, path: &str) -> Result<fossil_lang::traits::resolver::ResolvedPath, String> {
+                Ok(fossil_lang::traits::resolver::ResolvedPath {
+                    url: path.to_string(),
+                    cloud_options: None,
+                })
+            }
+        }
+
+        let gcx = crate::jobs::script::init_context(Arc::new(NoopResolver));
+        let compiler = fossil_lang::compiler::Compiler::with_context(gcx);
+        let result = compiler
+            .compile(fossil_lang::compiler::CompilerInput::Source {
+                name: "test".into(),
+                content: src.into(),
+            })
+            .expect("compilation failed");
+        extract_summary(&result.program)
+    }
+
+    #[test]
+    fn rdf_materialize_detected_as_sink() {
+        let result = compile_with_stdlib(
+            "type Wall do id: string, name: string end\n\
+             let w = Wall { id = \"1\", name = \"test\" }\n\
+             w |> each row -> Wall { id = row.id, name = row.name } |> Rdf.materialize(\"@ref/out\")",
+        );
+
+        assert!(result.valid);
+        assert!(
+            !result.pipeline.outputs.is_empty(),
+            "Rdf.materialize should produce outputs but got none"
+        );
+        let out = &result.pipeline.outputs[0];
+        assert_eq!(out.destination.as_deref(), Some("@ref/out"));
     }
 
     /// Verifies every condition the frontend needs to draw edges from

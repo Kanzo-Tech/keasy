@@ -61,7 +61,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     pipeline        TEXT NOT NULL DEFAULT '{\"inputs\":[],\"operations\":[],\"outputs\":[]}',
     connection_ids  TEXT NOT NULL DEFAULT '[]',
     script          TEXT,
-    fragment_base   TEXT
+    rdf_base        TEXT,
+    manifest        TEXT
 );
 
 CREATE TABLE IF NOT EXISTS conversations (
@@ -72,18 +73,21 @@ CREATE TABLE IF NOT EXISTS conversations (
     title           TEXT
 );
 
--- Unchanged tables
 CREATE TABLE IF NOT EXISTS messages (
     id              TEXT PRIMARY KEY,
     conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
     role            TEXT NOT NULL,
     content         TEXT NOT NULL,
-    sparql          TEXT,
+    sql             TEXT,
     data            TEXT,
     code            TEXT,
+    explanation     TEXT,
     created_at      TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_org ON conversations(organization_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_job_org ON conversations(job_id, organization_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_org ON jobs(organization_id);
 
 CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
@@ -148,5 +152,20 @@ CREATE TABLE IF NOT EXISTS dataspaces (
 pub fn apply(conn: &rusqlite::Connection) -> Result<(), String> {
     conn.execute_batch(SCHEMA)
         .map_err(|e| format!("schema creation failed: {e}"))?;
+
+    // Incremental migrations for existing databases
+    add_column_if_missing(conn, "jobs", "manifest", "TEXT");
+    add_column_if_missing(conn, "jobs", "catalog_manifest", "TEXT");
+    add_column_if_missing(conn, "jobs", "catalog_base", "TEXT");
+
     Ok(())
+}
+
+fn add_column_if_missing(conn: &rusqlite::Connection, table: &str, column: &str, col_type: &str) {
+    let has_col = conn
+        .prepare(&format!("SELECT {column} FROM {table} LIMIT 0"))
+        .is_ok();
+    if !has_col {
+        let _ = conn.execute_batch(&format!("ALTER TABLE {table} ADD COLUMN {column} {col_type}"));
+    }
 }

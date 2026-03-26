@@ -7,16 +7,14 @@ use tokio::sync::{Semaphore, broadcast};
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
-use fossil_lang::runtime::executor::{ExecutionConfig, OutputKind};
+use fossil_lang::runtime::executor::OutputKind;
+use fossil_lang::traits::resolver::PathResolver;
 
 use super::errors::{JobRuntimeError, classify_error};
 use super::models::{JobStatus, now_iso8601};
 use crate::db::Database;
 use crate::graph::dcat::extract::extract_dcat_input;
-use crate::graph::dcat::generator::generate_dcat_catalog;
 use crate::graph::dcat::types::DcatInput;
-use crate::graph::catalog::CatalogStore;
-use crate::graph::format::RdfExportFormat;
 use super::pipeline_types::PipelineOutput;
 use super::script;
 use crate::settings::org::OrgSettings;
@@ -38,21 +36,27 @@ pub struct SpawnParams {
     pub org_id: String,
     pub job_id: String,
     pub script: String,
-    pub storage: HashMap<String, String>,
+    pub path_resolver: Arc<dyn PathResolver>,
     pub org_settings: Option<OrgSettings>,
     pub dcat_enabled: bool,
-    pub catalog_store: Arc<CatalogStore>,
+    /// Pre-resolved catalog storage destination (promotor cloud).
+    /// None when catalog storage is not configured.
+    pub catalog_dest: Option<fossil_lang::traits::resolver::ResolvedPath>,
 }
 
 const TOTAL_PHASES: u8 = 5;
 
 /// Value returned by [`run_job`] after successful script execution.
 struct JobResult {
-    /// N-Triples catalog for CatalogStore persistence.
-    catalog_nt: Option<String>,
     dcat_input: Option<DcatInput>,
     /// Detected fragment base URL (present when `Rdf.fragments()` was used).
     rdf_base: Option<String>,
+    /// GraphAr manifest with vertex/edge file paths and column statistics.
+    manifest: Option<fossil_lang::runtime::executor::DataManifest>,
+    /// DCAT-AP catalog manifest (parquets in promotor storage).
+    catalog_manifest: Option<fossil_lang::runtime::executor::DataManifest>,
+    /// Base URL for catalog parquets.
+    catalog_base: Option<String>,
 }
 
 /// Flattened error from the three failure modes of job execution:
@@ -122,7 +126,7 @@ impl JobRunner {
     /// Spawn a job execution task.
     /// `params.org_id` is the organization that owns this job.
     pub fn spawn(&self, params: SpawnParams) {
-        let SpawnParams { org_id, job_id, script, storage, org_settings, dcat_enabled, catalog_store } = params;
+        let SpawnParams { org_id, job_id, script, path_resolver, org_settings, dcat_enabled, catalog_dest } = params;
         let db = self.db.clone();
         let semaphore = self.semaphore.clone();
         let job_timeout = self.job_timeout;
@@ -137,7 +141,7 @@ impl JobRunner {
 
         self.tasks.lock().expect("tasks lock poisoned").spawn(async move {
             // Emit initial queued event
-            let _ = tx.send(JobEvent { phase: "queued".into(), index: 0, total: TOTAL_PHASES, error: None });
+            if tx.send(JobEvent { phase: "queued".into(), index: 0, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
             let _permit = match semaphore.acquire_owned().await {
                 Ok(permit) => permit,
@@ -150,7 +154,7 @@ impl JobRunner {
                     }).await {
                         error!(job_id = %job_id, error = %e, "failed to update job");
                     }
-                    let _ = tx.send(JobEvent { phase: "error".into(), index: 0, total: TOTAL_PHASES, error: Some("Failed to acquire execution permit".into()) });
+                    if tx.send(JobEvent { phase: "error".into(), index: 0, total: TOTAL_PHASES, error: Some("Failed to acquire execution permit".into()) }).is_err() { warn!("SSE subscriber disconnected"); }
                     progress.lock().expect("progress lock poisoned").remove(&job_id);
                     return;
                 }
@@ -182,10 +186,11 @@ impl JobRunner {
                     run_job(
                         &job_id_clone,
                         &script,
-                        storage,
+                        path_resolver,
                         if dcat_enabled { org_settings.as_ref() } else { None },
                         job_name.as_deref(),
                         &outputs,
+                        catalog_dest.as_ref(),
                         &tx_blocking,
                     )
                 }),
@@ -196,25 +201,23 @@ impl JobRunner {
             .and_then(|r| r.map_err(JobFailure::Execution));
 
             match result {
-                Ok(JobResult { catalog_nt, dcat_input, rdf_base }) => {
+                Ok(JobResult { dcat_input, rdf_base, manifest, catalog_manifest, catalog_base }) => {
                     // Phase 3: finalizing
-                    let _ = tx.send(JobEvent { phase: "finalizing".into(), index: 3, total: TOTAL_PHASES, error: None });
-
-                    // Persist catalog via CatalogStore (Oxigraph + SQLite fallback)
-                    if let Some(nt) = &catalog_nt {
-                        catalog_store.store(&job_id, &org_id, nt).await;
-                    }
+                    if tx.send(JobEvent { phase: "finalizing".into(), index: 3, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
                     if let Err(e) = db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Completed;
                         job.completed_at = Some(now_iso8601());
                         job.dcat_input = dcat_input;
                         job.rdf_base = rdf_base;
+                        job.manifest = manifest;
+                        job.catalog_manifest = catalog_manifest;
+                        job.catalog_base = catalog_base;
                     }).await {
                         error!(job_id = %job_id, error = %e, "failed to update job");
                     }
                     info!(job_id = %job_id, "Job completed");
-                    let _ = tx.send(JobEvent { phase: "complete".into(), index: 4, total: TOTAL_PHASES, error: None });
+                    if tx.send(JobEvent { phase: "complete".into(), index: 4, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
                 }
                 Err(failure) => {
                     let msg = failure.message();
@@ -227,7 +230,7 @@ impl JobRunner {
                     }).await {
                         error!(job_id = %job_id, error = %e, "failed to update job");
                     }
-                    let _ = tx.send(JobEvent { phase: "error".into(), index: 4, total: TOTAL_PHASES, error: Some(msg.to_string()) });
+                    if tx.send(JobEvent { phase: "error".into(), index: 4, total: TOTAL_PHASES, error: Some(msg.to_string()) }).is_err() { warn!("SSE subscriber disconnected"); }
                 }
             }
 
@@ -266,16 +269,17 @@ impl JobRunner {
 fn run_job(
     job_id: &str,
     script: &str,
-    storage: HashMap<String, String>,
+    path_resolver: Arc<dyn PathResolver>,
     org: Option<&OrgSettings>,
     job_name: Option<&str>,
     outputs: &[PipelineOutput],
+    catalog_dest: Option<&fossil_lang::traits::resolver::ResolvedPath>,
     tx: &broadcast::Sender<JobEvent>,
 ) -> Result<JobResult, String> {
     // Phase 1: compiling
-    let _ = tx.send(JobEvent { phase: "compiling".into(), index: 1, total: TOTAL_PHASES, error: None });
+    if tx.send(JobEvent { phase: "compiling".into(), index: 1, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
-    let compiled = script::compile(&format!("job-{}", job_id), script, storage.clone())
+    let compiled = script::compile(&format!("job-{}", job_id), script, path_resolver)
         .map_err(|errors| errors.join("; "))?;
 
     let completed_at = now_iso8601();
@@ -284,24 +288,33 @@ fn run_job(
     });
 
     // Phase 2: executing
-    let _ = tx.send(JobEvent { phase: "executing".into(), index: 2, total: TOTAL_PHASES, error: None });
+    if tx.send(JobEvent { phase: "executing".into(), index: 2, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
-    let config = ExecutionConfig { storage };
-    let result = script::execute(compiled, config)?;
+    let result = script::execute(compiled)?;
 
-    // Detect rdf_base from RdfParquet outputs
-    let rdf_base = result.outputs.iter().find_map(|o| {
+    // Detect rdf_base and manifest from RdfParquet outputs
+    let (rdf_base, manifest) = result.outputs.iter().find_map(|o| {
         if o.kind == OutputKind::RdfParquet {
-            Some(o.path.clone())
+            Some((o.path.clone(), o.manifest.clone()))
         } else {
             None
         }
-    });
+    }).map(|(path, m)| (Some(path), m)).unwrap_or((None, None));
 
-    // Generate N-Triples for CatalogStore persistence
-    let catalog_nt = match &dcat_input {
-        Some(input) => Some(generate_dcat_catalog(input, RdfExportFormat::NTriples)?),
-        None => None,
+    // Materialize DCAT-AP catalog as parquets (if dcat + manifest + dest available)
+    let (catalog_manifest, catalog_base) = match (&dcat_input, &manifest, catalog_dest) {
+        (Some(input), Some(data_manifest), Some(dest)) => {
+            let dest_with_job = dest.join(&format!("{}/{job_id}", input.org.publisher_name));
+            match crate::graph::dcat::materializer::materialize_catalog(input, data_manifest, &dest_with_job) {
+                Ok(cat_manifest) => (Some(cat_manifest), Some(dest_with_job.to_str().to_string())),
+                Err(e) => {
+                    warn!("Catalog materialization failed (non-fatal): {e}");
+                    (None, None)
+                }
+            }
+        }
+        _ => (None, None),
     };
-    Ok(JobResult { catalog_nt, dcat_input, rdf_base })
+
+    Ok(JobResult { dcat_input, rdf_base, manifest, catalog_manifest, catalog_base })
 }

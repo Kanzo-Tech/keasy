@@ -15,6 +15,7 @@ services:
       KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-keasy.local}
       KEASY_GXDCH_MOCK: "true"
       RUST_LOG: debug
+      POLARS_MAX_THREADS: "2"
     healthcheck:
       interval: 10s
       retries: 30

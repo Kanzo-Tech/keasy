@@ -61,6 +61,7 @@ pub fn extract_dcat_input(
             rdf_type,
             fields: field_infos,
             distributions,
+            keywords: Vec::new(),
         });
     }
 
@@ -70,5 +71,6 @@ pub fn extract_dcat_input(
         completed_at: completed_at.to_string(),
         org: org.clone(),
         datasets,
+        language: None,
     }
 }

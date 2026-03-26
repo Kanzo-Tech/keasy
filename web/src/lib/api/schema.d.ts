@@ -68,6 +68,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/catalog/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_federated_catalog_graph"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/invites": {
         parameters: {
             query?: never;
@@ -239,6 +255,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/catalog/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_org_catalog_graph"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/cloud-accounts": {
         parameters: {
             query?: never;
@@ -367,6 +399,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/fossil/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["analyze"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/gaia-x/compliance": {
         parameters: {
             query?: never;
@@ -393,38 +441,6 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["comply"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/graph/expand": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["expand_node"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/graph/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["search_nodes"];
         delete?: never;
         options?: never;
         head?: never;
@@ -527,80 +543,16 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/discover/chart": {
+    "/v1/jobs/{id}/discover/urls": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
-        post: operations["chart_discover"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/discover/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["export_discover"];
+        get: operations["resolve_discover_urls"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/discover/field-stats": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["field_stats"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/discover/load": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["load_discover"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/discover/query": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["query_discover"];
         delete?: never;
         options?: never;
         head?: never;
@@ -847,22 +799,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/validate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["validate_job"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -881,8 +817,6 @@ export interface components {
             org_name: string;
             token: string;
         };
-        /** @enum {string} */
-        Aggregation: "count" | "sum" | "avg" | "none";
         AiSettingsPayload: {
             api_key: string;
             /** Format: int32 */
@@ -890,39 +824,51 @@ export interface components {
             model?: string | null;
             provider: string;
         };
+        AnalyzeRequest: {
+            cursor_offset: number;
+            script: string;
+        };
+        AnalyzeResponse: {
+            completions: components["schemas"]["CompletionItem"][];
+            diagnostics: components["schemas"]["DiagnosticItem"][];
+        };
         AskRequest: {
             conversation_id?: string | null;
+            /**
+             * @description When true, the LLM acts as a data analyst explaining query results
+             *     instead of generating SQL. The question should contain the original
+             *     question, SQL, and result rows.
+             */
+            explain?: boolean;
             provider?: string | null;
             question: string;
+            /**
+             * @description DuckDB table schema from the frontend (column names, types, sample values).
+             *     When provided, this is used as context for SQL generation instead of the
+             *     pipeline summary.
+             */
+            schema?: string | null;
         };
         AskResponse: {
             answer: string;
             code: components["schemas"]["AskResultCode"];
             conversation_id?: string | null;
-            data?: null | components["schemas"]["TabularData"];
             reasoning?: string | null;
-            sparql?: string | null;
+            /** @description DuckDB SQL query generated by the LLM (executed client-side via DuckDB-WASM). */
+            sql?: string | null;
         };
         /**
          * @description Result code for AI ask responses — replaces raw string literals.
          * @enum {string}
          */
-        AskResultCode: "success" | "parse_failed" | "sparql_failed" | "insufficient_credits" | "llm_failed";
+        AskResultCode: "success" | "parse_failed" | "query_failed" | "insufficient_credits" | "llm_failed";
+        AuthMethodSchema: {
+            fields: components["schemas"]["FieldSchema"][];
+            label: string;
+            name: string;
+        };
         CatalogResponse: {
             catalog: string;
-        };
-        ChartRequest: {
-            aggregation?: components["schemas"]["Aggregation"];
-            group?: null | components["schemas"]["FieldRef"];
-            /** @description Limit split-by categories to top N (rest collapsed into "Other") */
-            group_top_n?: number | null;
-            /** @description RDF type IRI to scope the query to a single entity type */
-            rdf_type?: string | null;
-            /** @description Limit x-axis categories to top N (rest collapsed into "Other") */
-            top_n?: number | null;
-            /** @description X-axis field reference */
-            x: components["schemas"]["FieldRef"];
-            y?: null | components["schemas"]["FieldRef"];
         };
         CloudAccountSummary: {
             auth_method?: string | null;
@@ -937,10 +883,31 @@ export interface components {
             data_type: string;
             name: string;
         };
+        /** @description Per-column statistics for a vertex property. */
+        ColumnStat: {
+            /** Format: int64 */
+            count: number;
+            /** @description Data type: "string", "int64", "double", "boolean", "date". */
+            datatype: string;
+            /** @description Full predicate IRI. */
+            iri: string;
+            max?: string | null;
+            min?: string | null;
+            /** Format: int64 */
+            n_unique: number;
+            /** @description Short label used as Parquet column name. */
+            name: string;
+            samples?: string[];
+        };
         CompetencyQuestion: {
             id: string;
             question: string;
             rationale: string;
+        };
+        CompletionItem: {
+            detail: string;
+            kind: string;
+            label: string;
         };
         ComplianceCredential: {
             issued_at: string;
@@ -1009,7 +976,7 @@ export interface components {
             data?: null | components["schemas"]["TabularData"];
             id: string;
             role: string;
-            sparql?: string | null;
+            sql?: string | null;
         };
         CreateCloudAccountRequest: {
             auth_method?: string | null;
@@ -1035,7 +1002,6 @@ export interface components {
         CreateJobRequest: {
             connection_ids?: string[];
             dcat_enabled?: boolean | null;
-            dcat_format?: string | null;
             draft?: boolean;
             mode?: null | components["schemas"]["RunMode"];
             name?: string | null;
@@ -1057,6 +1023,11 @@ export interface components {
             name: string;
             status: string;
         };
+        /** @description GraphAr-compatible manifest describing a property graph stored as Parquet files. */
+        DataManifest: {
+            edges?: components["schemas"]["EdgeManifest"][];
+            types: components["schemas"]["TypeManifest"][];
+        };
         /** @description Typed envelope for successful API responses: `{ "data": T }`. */
         DataResponse_Value: {
             data: unknown;
@@ -1071,9 +1042,28 @@ export interface components {
             updated_at: string;
             url: string;
         };
-        ExpandRequest: {
-            job_id?: string | null;
-            node_id: string;
+        DiagnosticItem: {
+            from: number;
+            message: string;
+            severity: string;
+            to: number;
+        };
+        /** @description Manifest for an edge type (GraphAr v1 ordered adjacency lists). */
+        EdgeManifest: {
+            /** @description CSR-ordered edge parquet (ordered by source vertex). */
+            by_source: string;
+            /** @description CSC-ordered edge parquet (ordered by target vertex). */
+            by_target: string;
+            /** Format: int64 */
+            count: number;
+            /** @description Full predicate IRI. */
+            iri: string;
+            /** @description Short edge label (e.g. "knows"). */
+            name: string;
+            /** @description Source vertex type name. */
+            source_type: string;
+            /** @description Target vertex type name. */
+            target_type: string;
         };
         Field: {
             name: string;
@@ -1086,31 +1076,13 @@ export interface components {
             source: string;
             target: string;
         };
-        /** @description A reference to a field, including the traversal path from the anchor subject. */
-        FieldRef: {
-            /** @description Object property IRIs to traverse from the root subject (empty = direct field) */
-            path?: string[];
-            /** @description Predicate IRI of the target field */
-            predicate: string;
-        };
-        FieldStats: {
-            /** Format: double */
-            avg?: number | null;
-            count: number;
-            distinct: number;
-            is_numeric: boolean;
-            is_object_property: boolean;
-            /** Format: double */
-            max?: number | null;
-            /** Format: double */
-            min?: number | null;
-            predicate: string;
-            short_name: string;
-            top_values?: components["schemas"]["FieldTopValue"][] | null;
-        };
-        FieldTopValue: {
-            count: number;
-            value: string;
+        FieldSchema: {
+            default_value?: string | null;
+            env_var?: string | null;
+            label: string;
+            name: string;
+            optional?: boolean;
+            secret: boolean;
         };
         FileEntry: {
             last_modified?: string | null;
@@ -1133,7 +1105,6 @@ export interface components {
         };
         GenerateResponse: {
             script: string;
-            shex: string;
         };
         GraphData: {
             links: components["schemas"]["GraphLink"][];
@@ -1164,15 +1135,21 @@ export interface components {
             token: string;
         };
         Job: {
-            catalog?: string | null;
             completed_at?: string | null;
             connection_ids?: string[];
             created_at: string;
             error?: null | components["schemas"]["JobRuntimeError"];
             id: string;
+            manifest?: null | components["schemas"]["DataManifest"];
             mode: components["schemas"]["RunMode"];
             name?: string | null;
             pipeline: components["schemas"]["PipelineSummary"];
+            /** @description Base URL for RDF Parquet storage (set when job uses Rdf output). */
+            rdf_base?: string | null;
+            /** @description DCAT-AP catalog manifest (parquets in promotor storage). */
+            catalog_manifest?: null | components["schemas"]["DataManifest"];
+            /** @description Base URL for catalog parquets in promotor storage. */
+            catalog_base?: string | null;
             script?: string | null;
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
@@ -1197,10 +1174,6 @@ export interface components {
         };
         /** @enum {string} */
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
-        LoadDiscoverResponse: {
-            loaded: boolean;
-            triple_count: number;
-        };
         /** @enum {string} */
         LocationType: "cloud" | "local";
         /** @description POST /v1/auth/logout */
@@ -1307,8 +1280,12 @@ export interface components {
             kind: string;
             name: string;
         };
-        QueryRequest: {
-            sparql: string;
+        ProviderSchema: {
+            auth_methods: components["schemas"]["AuthMethodSchema"][];
+            common_fields: components["schemas"]["FieldSchema"][];
+            icon: string;
+            id: string;
+            label: string;
         };
         RegisterDataspaceResponse: {
             client_id: string;
@@ -1328,13 +1305,14 @@ export interface components {
         RenameConversationRequest: {
             title: string;
         };
+        ResolveResponse: {
+            /** @description Map of logical file name → signed URL for direct cloud access. */
+            files: {
+                [key: string]: string;
+            };
+        };
         /** @enum {string} */
         RunMode: "integrated" | "scheduled";
-        SearchRequest: {
-            job_id?: string | null;
-            limit?: number | null;
-            query?: string | null;
-        };
         SearchResult: {
             description?: string | null;
             group: string;
@@ -1346,15 +1324,6 @@ export interface components {
             gxdch_compliance: boolean;
             gxdch_notary: boolean;
             oidc: boolean;
-        };
-        ShapeValidationError: {
-            message: string;
-            node: string;
-        };
-        ShapeValidationResult: {
-            errors: components["schemas"]["ShapeValidationError"][];
-            valid: boolean;
-            valid_nodes: string[];
         };
         SuggestRequest: {
             domain: string;
@@ -1369,6 +1338,18 @@ export interface components {
             };
             columns: string[];
             rows: Record<string, never>[];
+        };
+        /** @description Manifest for a vertex type (one Parquet file per type). */
+        TypeManifest: {
+            columns: components["schemas"]["ColumnStat"][];
+            /** Format: int64 */
+            entity_count: number;
+            /** @description Full RDF type IRI. */
+            iri: string;
+            /** @description Short type name (e.g. "person"). */
+            name: string;
+            /** @description Relative path to vertex Parquet file. */
+            vertex_file: string;
         };
         UpdateCloudAccountRequest: {
             auth_method?: string | null;
@@ -1404,11 +1385,6 @@ export interface components {
         };
         ValidateRequest: {
             script: string;
-        };
-        ValidationRequest: {
-            connection_id: string;
-            job_id: string;
-            shape_path: string;
         };
         ValidationResult: {
             errors: string[];
@@ -1529,6 +1505,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    get_federated_catalog_graph: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Federated catalog graph (all organizations) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphData"];
+                };
             };
         };
     };
@@ -1861,6 +1857,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkspacesResponse"];
+                };
+            };
+        };
+    };
+    get_org_catalog_graph: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Organization catalog graph */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphData"];
                 };
             };
         };
@@ -2346,6 +2362,30 @@ export interface operations {
             };
         };
     };
+    analyze: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalyzeRequest"];
+            };
+        };
+        responses: {
+            /** @description Analysis result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyzeResponse"];
+                };
+            };
+        };
+    };
     get_compliance_status: {
         parameters: {
             query?: never;
@@ -2394,54 +2434,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    expand_node: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExpandRequest"];
-            };
-        };
-        responses: {
-            /** @description Expanded node data */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GraphData"];
-                };
-            };
-        };
-    };
-    search_nodes: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SearchRequest"];
-            };
-        };
-        responses: {
-            /** @description Graph search results */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SearchResult"][];
-                };
             };
         };
     };
@@ -2606,10 +2598,7 @@ export interface operations {
     };
     get_job_catalog: {
         parameters: {
-            query?: {
-                /** @description RDF export format */
-                format?: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Job ID */
@@ -2619,7 +2608,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description DCAT catalog */
+            /** @description DCAT catalog (N-Triples) */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2704,7 +2693,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": unknown;
+                };
             };
             /** @description No layout saved */
             204: {
@@ -2756,7 +2747,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description AI answer with optional SPARQL results */
+            /** @description AI answer with DuckDB SQL query */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2767,58 +2758,7 @@ export interface operations {
             };
         };
     };
-    chart_discover: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ChartRequest"];
-            };
-        };
-        responses: {
-            /** @description Chart data */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TabularData"];
-                };
-            };
-        };
-    };
-    export_discover: {
-        parameters: {
-            query?: {
-                /** @description Export format (turtle, ntriples, rdfxml, etc.) */
-                format?: string;
-            };
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description RDF file download */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    field_stats: {
+    resolve_discover_urls: {
         parameters: {
             query?: never;
             header?: never;
@@ -2830,81 +2770,17 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Field statistics from graph profile */
+            /** @description Signed URLs for direct Parquet access */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FieldStats"][];
+                    "application/json": components["schemas"]["ResolveResponse"];
                 };
             };
-            /** @description Job not ready */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    load_discover: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Discovery data status */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LoadDiscoverResponse"];
-                };
-            };
-            /** @description Job output not yet available */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    query_discover: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["QueryRequest"];
-            };
-        };
-        responses: {
-            /** @description SPARQL query results */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TabularData"];
-                };
-            };
-            /** @description SPARQL error */
-            400: {
+            /** @description Job not found or no output */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3438,7 +3314,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProviderSchema"][];
+                };
             };
         };
     };
@@ -3459,37 +3337,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ServiceStatusResponse"];
                 };
-            };
-        };
-    };
-    validate_job: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ValidationRequest"];
-            };
-        };
-        responses: {
-            /** @description Validation result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ShapeValidationResult"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

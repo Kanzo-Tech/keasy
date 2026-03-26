@@ -141,6 +141,10 @@ define_policy!(
     /// Participant org admin only. Rejects promotor and OrgUser.
     IsAdmin, |role| *role == TenantRole::OrgAdmin
 );
+define_policy!(
+    /// Promotor or participant admin. Rejects OrgUser.
+    IsAdminOrPromotor, |role| matches!(role, TenantRole::OrgAdmin | TenantRole::Promotor)
+);
 
 /// Generic policy-based extractor. Replaces `RequirePromotor`, `RequireParticipant`,
 /// and `RequireOrgAdmin` with a single `Require<P>` type.

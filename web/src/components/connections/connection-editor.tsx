@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
@@ -57,7 +57,6 @@ export function ConnectionEditor() {
   const [selectedAccount, setSelectedAccount] = useState("");
   const [url, setUrl] = useState("");
   const [selectedScheme, setSelectedScheme] = useState("");
-  const [saving, setSaving] = useState(false);
 
   const selectedAccountObj = accounts.find((a) => a.id === selectedAccount);
   const schemes = selectedAccountObj
@@ -85,15 +84,13 @@ export function ConnectionEditor() {
     url.trim().length > 0 &&
     (locationType === "local" || !!selectedAccount);
 
-  async function handleSubmit() {
-    if (!canSave) return;
-    setSaving(true);
-    try {
+  const createMutation = useMutation({
+    mutationFn: () => {
       const fullUrl =
         locationType === "cloud" && selectedScheme
           ? `${selectedScheme}${url.trim()}`
           : url.trim();
-      await api.connections.create({
+      return api.connections.create({
         name: name.trim(),
         kind: connectionKind,
         location_type: locationType,
@@ -101,20 +98,19 @@ export function ConnectionEditor() {
           locationType === "cloud" ? selectedAccount : undefined,
         url: fullUrl,
       });
+    },
+    onSuccess: async () => {
       toast.success("Connection created");
-      queryClient.invalidateQueries({ queryKey: queryKeys.connections.all() });
-      queryClient.invalidateQueries({ queryKey: ["connections-init"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.connections.all() }),
+        queryClient.invalidateQueries({ queryKey: ["connections-init"] }),
+      ]);
       router.push(`/connections?type=${connectionKind}`);
-    } catch (err) {
-      toastError(
-        err instanceof Error ? err.message : "Failed to create connection",
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
+    },
+    onError: (err) => toastError(err, "Failed to create connection"),
+  });
 
-  const isDirty = !!(name || url || selectedAccount) && !saving;
+  const isDirty = !!(name || url || selectedAccount) && !createMutation.isPending;
 
   return (
     <PageShell>
@@ -166,7 +162,7 @@ export function ConnectionEditor() {
             <RadioGroupItem value="vocab" id="type-vocab" className="sr-only" />
             <p className="text-sm font-medium leading-none">Vocabulary</p>
             <p className="text-xs text-muted-foreground">
-              ShEx/SHACL shapes for validation
+              RDF vocabularies and ontologies
             </p>
           </Label>
         </RadioGroup>
@@ -299,8 +295,8 @@ export function ConnectionEditor() {
       </PageShell.Content>
       <PageShell.Footer>
         <div />
-        <Button size="sm" disabled={!canSave || saving} onClick={handleSubmit}>
-          {saving ? "Creating..." : "Create"}
+        <Button size="sm" disabled={!canSave || createMutation.isPending || createMutation.isSuccess} onClick={() => createMutation.mutate()}>
+          {createMutation.isPending || createMutation.isSuccess ? "Creating..." : "Create"}
         </Button>
       </PageShell.Footer>
     </PageShell>

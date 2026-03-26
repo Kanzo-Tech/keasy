@@ -37,5 +37,4 @@ pub struct GenerateRequest {
 #[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct GenerateResponse {
     pub script: String,
-    pub shex: String,
 }

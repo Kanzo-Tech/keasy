@@ -22,8 +22,15 @@ const registry: Record<string, ErrorInfo> = {
   parse_failed: {
     message: "Couldn't generate a valid query. Try rephrasing your question.",
   },
-  sparql_failed: {
-    message: "The generated query failed. Try rephrasing your question.",
+  ai_parse_failed: {
+    message: "Failed to parse AI response. Try rephrasing your request.",
+  },
+  ai_failed: {
+    message: "AI request failed. Check your AI provider settings.",
+    link: { label: "Go to AI Settings", href: "/settings/ai" },
+  },
+  query_failed: {
+    message: "Query execution failed. The AI may have generated invalid SQL. Try rephrasing your question.",
   },
   cloud_error: {
     message: "Cloud storage connection failed.",

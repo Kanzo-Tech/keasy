@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useState } from "react";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useRef, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/layout/page-shell";
@@ -20,23 +19,19 @@ interface StepScriptProps {
   creationMode: CreationMode;
   script: string;
   onScriptChange: (script: string) => void;
-  shex: string;
-  onShexChange: (shex: string) => void;
   connections: Connection[];
   providers: ProviderInfo[];
   onNext: () => void;
   onBack: () => void;
   savingDraft: boolean;
   onSaveDraft: () => void;
-  onAssistantComplete: (script: string, shex: string) => void;
+  onAssistantComplete: (script: string) => void;
 }
 
 export function StepScript({
   creationMode,
   script,
   onScriptChange,
-  shex,
-  onShexChange,
   connections,
   providers,
   onNext,
@@ -45,7 +40,6 @@ export function StepScript({
   onSaveDraft,
   onAssistantComplete,
 }: StepScriptProps) {
-  const [editorTab, setEditorTab] = useState<string>("script");
   const fileCacheRef = useRef(new Map<string, FileEntry[]>());
   const completionCacheRef = useRef<{
     source: string;
@@ -73,18 +67,8 @@ export function StepScript({
     <PageShell>
       <PageShell.Content className="gap-3">
         <div className="flex items-center gap-2 shrink-0">
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            value={editorTab}
-            onValueChange={(v) => { if (v) setEditorTab(v); }}
-          >
-            <ToggleGroupItem value="script">Script</ToggleGroupItem>
-            <ToggleGroupItem value="shapes">Shapes</ToggleGroupItem>
-          </ToggleGroup>
           <div className="flex items-center gap-2 ml-auto">
-            {editorTab === "script" && connections.length > 0 && (
+            {connections.length > 0 && (
               <span className="text-xs text-muted-foreground">
                 Type{" "}
                 <kbd className="rounded border px-1 py-0.5 text-[10px] font-mono">
@@ -114,22 +98,13 @@ export function StepScript({
           </div>
         </div>
 
-        {editorTab === "script" ? (
-          <CodeEditor
-            value={script}
-            onChange={onScriptChange}
-            extensions={fossilExtensions}
-            placeholder="Write your Fossil script here..."
-            className="flex-1"
-          />
-        ) : (
-          <CodeEditor
-            value={shex}
-            onChange={onShexChange}
-            placeholder="Write ShEx shapes here..."
-            className="flex-1"
-          />
-        )}
+        <CodeEditor
+          value={script}
+          onChange={onScriptChange}
+          extensions={fossilExtensions}
+          placeholder="Write your Fossil script here..."
+          className="flex-1"
+        />
       </PageShell.Content>
 
       <PageShell.Footer>

@@ -58,9 +58,6 @@ pub struct ServerConfig {
     /// Use mock GXDCH client (returns structurally valid JSON-LD, no network calls).
     /// Read from KEASY_GXDCH_MOCK. Default false.
     pub gxdch_mock: bool,
-    /// Oxigraph SPARQL endpoint URL for DCAT catalog storage.
-    /// Read from KEASY_OXIGRAPH_URL. Default: None (catalog stored in SQLite only).
-    pub oxigraph_url: Option<String>,
 }
 
 impl ServerConfig {
@@ -178,10 +175,6 @@ impl ServerConfig {
             .map(|v| v == "true" || v == "1")
             .unwrap_or(false);
 
-        let oxigraph_url = std::env::var("KEASY_OXIGRAPH_URL")
-            .ok()
-            .filter(|s| !s.trim().is_empty());
-
         Self {
             bind_addr,
             api_key: SecretString::from(api_key),
@@ -206,7 +199,6 @@ impl ServerConfig {
             session_cookie_name,
             caddy_certs_dir,
             gxdch_mock,
-            oxigraph_url,
         }
     }
 }

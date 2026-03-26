@@ -1,54 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { toastError } from "@/lib/toast-error";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { reverseMapUrl, reverseMapPipeline } from "@/lib/formatters";
+import { isTerminalStatus } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PageShell } from "@/components/layout/page-shell";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/components/ui/button";
+import { Code, Compass, Network } from "lucide-react";
+import Link from "next/link";
+
 import {
   OverviewContent,
   CatalogView,
-  DiscoveryView,
-  ValidationTab,
 } from "@/components/jobs/detail";
-import { isTerminalStatus } from "@/lib/utils";
-import type { JobStatus, JobEvent } from "@/lib/types";
-
-function useJobStream(id: string, status: JobStatus | undefined) {
-  const queryClient = useQueryClient();
-  const [progress, setProgress] = useState<JobEvent | null>(null);
-
-  useEffect(() => {
-    if (!status || isTerminalStatus(status)) return;
-
-    const controller = new AbortController();
-
-    (async () => {
-      try {
-        for await (const evt of api.jobs.stream(id, controller.signal)) {
-          if (controller.signal.aborted) break;
-          setProgress(evt);
-          if (evt.phase === "complete" || evt.phase === "error") break;
-        }
-      } catch {
-        // abort or network error
-      }
-      if (!controller.signal.aborted) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.jobs.detail(id) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
-      }
-    })();
-
-    return () => controller.abort();
-  }, [id, status, queryClient]);
-
-  return progress;
-}
 
 export function JobDetailView({ id }: { id: string }) {
   const {
@@ -57,21 +28,39 @@ export function JobDetailView({ id }: { id: string }) {
   } = useQuery({
     queryKey: queryKeys.jobs.detail(id),
     queryFn: () => api.jobs.get(id),
+    refetchInterval: (query) =>
+      query.state.data && !isTerminalStatus(query.state.data.status) ? 3000 : false,
   });
   const { data: connections } = useQuery({
     queryKey: queryKeys.connections.all(),
     queryFn: () => api.connections.list(),
   });
 
-  const progress = useJobStream(id, job?.status);
   const showSkeleton = useDelayedLoading(isLoading);
 
-  const toastShown = useRef(false);
+  // URL-persisted tab/mode state for deep linking
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const tab = searchParams.get("tab") ?? "overview";
+  const catalogMode = searchParams.get("catalogMode") ?? "graph";
+
+  const setParam = useCallback((key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set(key, value);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [searchParams, router, pathname]);
+
+  const setTab = useCallback((v: string) => setParam("tab", v), [setParam]);
+  const setCatalogMode = useCallback((v: string) => setParam("catalogMode", v), [setParam]);
+
+  const prevStatusRef = useRef(job?.status);
   useEffect(() => {
-    if (job?.status === "failed" && job.error && !toastShown.current) {
-      toastShown.current = true;
+    if (prevStatusRef.current !== "failed" && job?.status === "failed" && job.error) {
       toastError(job.error.message);
     }
+    prevStatusRef.current = job?.status;
   }, [job?.status, job?.error]);
 
   if (isLoading) {
@@ -107,11 +96,9 @@ export function JobDetailView({ id }: { id: string }) {
     pipeline != null &&
     (pipeline.inputs.length > 0 || pipeline.outputs.length > 0);
 
-  const hasCatalog = !!job.catalog && job.status !== "cancelled";
-
-  const hasDestinations =
-    job.status === "completed" &&
-    (pipeline?.outputs ?? []).some((o) => o.destination != null);
+  const isCompleted = job.status === "completed";
+  const hasCatalog = isCompleted && (!!job.rdf_base || !!job.catalog_manifest);
+  const hasManifest = isCompleted && !!job.manifest;
 
   const rawDests = [
     ...new Set(
@@ -123,52 +110,44 @@ export function JobDetailView({ id }: { id: string }) {
   const dests = rawDests.map((d) => reverseMapUrl(d, connections ?? []));
 
   return (
-    <Tabs defaultValue="overview" className="flex-1 min-h-0">
-      <TabsList className="mx-4 mt-4">
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        {hasCatalog && <TabsTrigger value="catalog">Catalog</TabsTrigger>}
-        {job.status === "completed" && (
-          <TabsTrigger value="validation">Quality</TabsTrigger>
-        )}
-        {hasDestinations && (
-          <TabsTrigger value="discover">Discovery</TabsTrigger>
-        )}
-      </TabsList>
+    <Tabs value={tab} onValueChange={setTab} className="flex-1 min-h-0">
+      <div className="flex items-center justify-between px-4 pt-4">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          {hasCatalog && <TabsTrigger value="catalog">Catalog</TabsTrigger>}
+        </TabsList>
 
-      <TabsContent value="overview">
-        <PageShell>
-          <PageShell.Content>
-            <OverviewContent
-              job={job}
-              dests={dests}
-              hasPipeline={hasPipeline}
-              progress={progress}
-            />
-          </PageShell.Content>
-        </PageShell>
+        <div className="flex items-center gap-2">
+          {tab === "catalog" && (
+            <ToggleGroup type="single" variant="outline" size="sm" value={catalogMode} onValueChange={(v) => { if (v) setCatalogMode(v); }}>
+              <ToggleGroupItem value="graph" className="h-7 px-2"><Network size={14} /></ToggleGroupItem>
+              <ToggleGroupItem value="serialized" className="h-7 px-2"><Code size={14} /></ToggleGroupItem>
+            </ToggleGroup>
+          )}
+          {hasManifest && (
+            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" asChild>
+              <Link href={`/jobs/${id}/discover`}>
+                <Compass size={14} />
+                Open Discovery
+              </Link>
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <TabsContent value="overview" className="gap-4 overflow-auto p-4">
+        <OverviewContent job={job} dests={dests} hasPipeline={hasPipeline} />
       </TabsContent>
 
-      <TabsContent value="catalog">
-        <PageShell>
-          <PageShell.Content>
-            <CatalogView id={id} catalog={job.catalog!} />
-          </PageShell.Content>
-        </PageShell>
+      <TabsContent value="catalog" className="gap-4 overflow-auto p-4">
+        <CatalogView
+          id={id}
+          viewMode={catalogMode}
+          catalogManifest={job.catalog_manifest}
+          onNavigateToDiscovery={hasManifest ? () => setTab("discover") : undefined}
+        />
       </TabsContent>
 
-      <TabsContent value="validation">
-        <ValidationTab jobId={id} />
-      </TabsContent>
-
-      {hasDestinations && (
-        <TabsContent value="discover">
-          <PageShell>
-            <PageShell.Content>
-              <DiscoveryView jobId={id} />
-            </PageShell.Content>
-          </PageShell>
-        </TabsContent>
-      )}
     </Tabs>
   );
 }

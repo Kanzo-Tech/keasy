@@ -6,7 +6,7 @@ pub mod runner;
 pub mod pipeline_extract;
 pub mod pipeline_types;
 pub mod script;
-pub mod rewrite;
+pub mod path_resolver;
 
 // Re-exports — callers used crate::pipeline::X
 pub use pipeline_types::*;
@@ -15,6 +15,7 @@ pub use pipeline_extract::extract_summary;
 use fossil_lang::context::{DefId, DefKind, Interner, Symbol};
 use fossil_lang::ir::{ExprId, ExprKind, Ir, PrimitiveType, TypeKind};
 use fossil_lang::passes::IrProgram;
+use fossil_lang::FunctionEffect;
 use fossil_stdlib::rdf::metadata::{primitive_to_xsd, RdfFieldAttrs, RdfTypeAttrs};
 
 pub struct ProgramQuery<'a> {
@@ -219,23 +220,19 @@ impl<'a> ProgramQuery<'a> {
         }
     }
 
-    pub fn resolve_callee_name(&self, callee: ExprId) -> Option<String> {
-        let callee_expr = self.ir().exprs.get(callee);
-        match &callee_expr.kind {
-            ExprKind::Identifier(path) => Some(path.display(self.interner())),
-            ExprKind::FieldAccess { expr: obj, field } => {
-                let obj_expr = self.ir().exprs.get(*obj);
-                match &obj_expr.kind {
-                    ExprKind::Identifier(path) => Some(format!(
-                        "{}.{}",
-                        path.display(self.interner()),
-                        self.interner().resolve(*field)
-                    )),
-                    _ => Some(self.interner().resolve(*field).to_string()),
-                }
-            }
-            _ => None,
-        }
+    pub fn is_sink_callee(&self, callee: ExprId) -> bool {
+        self.program
+            .resolutions
+            .expr_defs
+            .get(&callee)
+            .map(|def_id| {
+                self.program
+                    .gcx
+                    .definitions
+                    .function_effects(*def_id)
+                    .contains(&FunctionEffect::Sink)
+            })
+            .unwrap_or(false)
     }
 
     fn lookup_type_info(&self, name: Symbol) -> Option<&fossil_lang::ir::TypeDeclInfo> {

@@ -98,6 +98,29 @@ impl Database {
         result
     }
 
+    /// Returns (promotor_org_id, cloud_account_id, base_url) if the promotor
+    /// has configured catalog storage. Used by the job runner to resolve
+    /// `catalog_dest` for DCAT materialization.
+    pub async fn get_promotor_catalog_config(&self) -> Option<(String, String, String)> {
+        let (_permit, conn) = self.read().await;
+        let promotor_org_id: String = conn
+            .query_row(
+                "SELECT id FROM organizations WHERE role = 'promotor' LIMIT 1",
+                [],
+                |row| row.get(0),
+            )
+            .ok()?;
+        drop(_permit);
+
+        let settings: OrgSettings = self.get_setting("org_settings").await?;
+        let account_id = settings.catalog_cloud_account_id?;
+        let base_url = settings.catalog_base_url?;
+        if account_id.is_empty() || base_url.is_empty() {
+            return None;
+        }
+        Some((promotor_org_id, account_id, base_url))
+    }
+
     pub async fn get_dashboard_layout(&self, job_id: &str) -> Option<serde_json::Value> {
         self.get_setting(&format!("dashboard:{job_id}")).await
     }

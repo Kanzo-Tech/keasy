@@ -1,41 +1,17 @@
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use axum::response::Response;
 use axum::Json;
-use secrecy::ExposeSecret;
 use std::fmt::Write as FmtWrite;
 
-use crate::ai::client::ask_llm;
+use crate::ai::client::{require_ai_settings, stream_llm_to_sse};
 use crate::ai::routes::strip_markdown_fences;
-use crate::error::data_response;
 use crate::middleware::tenant::{IsParticipant, Require};
 use crate::AppState;
 
 use super::models::*;
 
 type ErrorResponse = (StatusCode, Json<serde_json::Value>);
-
-fn ai_error(e: impl std::fmt::Display) -> ErrorResponse {
-    (
-        StatusCode::BAD_REQUEST,
-        Json(crate::error::error_body("ai_failed", &e.to_string())),
-    )
-}
-
-fn load_ai_settings(
-    ai_settings: Option<crate::settings::ai::AiSettings>,
-) -> Result<crate::settings::ai::AiSettings, ErrorResponse> {
-    match ai_settings {
-        Some(s) if !s.api_key.expose_secret().is_empty() => Ok(s),
-        _ => Err((
-            StatusCode::BAD_REQUEST,
-            Json(crate::error::error_body(
-                "ai_not_configured",
-                "AI settings are not configured. Go to Settings > AI to add an API key.",
-            )),
-        )),
-    }
-}
 
 fn format_schemas_for_prompt(schemas: &[FileSchema]) -> String {
     let mut out = String::new();
@@ -77,37 +53,39 @@ const GENERATE_SYSTEM_PROMPT: &str = r#"You are an expert Fossil script generato
 
 Fossil uses **providers** (macros) to load data and extract schemas. Providers reference files via `@connection_name/path` (no quotes around the path).
 
-### Two invocation modes
-
-1. **Data mode** — loads rows from a file:
+### Data mode — loads rows from a file:
 ```
 let data = csv!(@connection_name/file.csv)
 ```
 
-2. **Schema mode** — extracts types only (no data loaded):
+### Schema mode — extracts types from file headers:
 ```
 type Input = csv!(@connection_name/file.csv)
-type { Person, Department } = shex!(@connection_name/shapes.shex)
 ```
 
-### shex!() provider
-
-`shex!()` is a **schema-only** provider. It reads ShEx shapes and auto-generates Fossil types with `#[rdf(...)]` and `#[validate(...)]` attributes. It can ONLY be used with `type`, never with `let`.
-
-Destructured names (`{ Person, Department }`) must match the number and order of shapes in the .shex file.
+### Inline type definitions with RDF attributes
+Define types manually with `#[rdf(...)]` attributes for ontology mapping:
+```
+#[rdf(type = "http://example.com/ontology/Person")]
+type Person(subject: string) do
+    #[rdf(uri = "http://xmlns.com/foaf/0.1/name")]
+    Name: string
+    #[rdf(uri = "http://example.com/ontology/age")]
+    Age: int?
+end
+```
 
 ### Mapping rows to instances
 ```
 data
 |> each row -> Person("http://example.com/person/${row.id}") {
-    name = row.name,
-    age = row.age
+    Name = row.name,
+    Age = row.age
 }
 |> Rdf.fragments(@connection_name/output/people)
 ```
 - `each row -> ...` iterates over every row
 - Constructor call: `TypeName("subject_iri") { field = value, ... }`
-- Constructor args come from the CSV data rows, not from ShEx
 - `Rdf.fragments(...)` writes RDF fragments to cloud storage
 
 ### Pipe operator
@@ -124,112 +102,89 @@ Chains operations. `x |> f` is equivalent to `f(x)`.
 ## Complete example
 
 ```fossil
-// Types from ShEx shapes (schema only — auto-generates #[rdf(...)] and #[validate(...)])
-type { Person, Department } = shex!(@my_connection/shapes.shex)
+// Define ontology types inline
+#[rdf(type = "http://example.com/ontology/Person")]
+type Person(subject: string) do
+    #[rdf(uri = "http://xmlns.com/foaf/0.1/name")]
+    Name: string
+    #[rdf(uri = "http://example.com/ontology/department")]
+    Department: string?
+end
 
-// Data from CSV
+// Load data from CSV
 let people = csv!(@my_connection/people.csv)
 
 // Map rows to typed instances
 people
 |> each row -> Person("http://example.com/person/${row.id}") {
-    name = row.name,
-    department = row.dept_id
+    Name = row.name,
+    Department = row.dept_id
 }
 |> Rdf.fragments(@my_connection/output/people)
 ```
 
-## ShEx Compact Syntax (ShExC)
-
-You must also generate the ShEx shapes file content. Use ShExC compact syntax:
-
-```
-PREFIX ex: <http://example.com/ontology/>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-
-ex:PersonShape {
-  a [ex:Person] ;
-  rdfs:label xsd:string ;
-  ex:name xsd:string ;
-  ex:age xsd:integer ?
-}
-```
-
-### ShEx rules
-- Every shape MUST include `rdfs:label xsd:string` — always
-- Include proper PREFIX declarations
-- Mark optional fields with `?`, repeatable with `*` or `+`
-- Use `xsd:string`, `xsd:integer`, `xsd:decimal`, `xsd:boolean` for literals
-- Use shape references (e.g., `@ex:DepartmentShape`) for object properties
-
 ## Rules
 1. Use `@connection_name/file_path` syntax for all file references (no quotes, never bare paths)
-2. Always use `shex!()` for types — never write manual `#[rdf(...)]` attributes
-3. Always use `let` with `csv!()` for data loading, `type` with `shex!()` for schema
+2. Define types inline with `#[rdf(...)]` attributes for ontology mapping
+3. Always use `let` with `csv!()` for data loading
 4. Choose meaningful ontology URIs based on the domain
 5. Create separate types for distinct entities (not one mega-type)
 6. Use string interpolation for subject IRIs that incorporate row data
 7. Map ALL relevant columns from the source files
 8. The script should answer the provided competency questions
-9. The .shex file is saved as `shapes.shex` on the first selected connection
-10. Return ONLY valid JSON with this structure (no markdown fences):
+9. Return ONLY valid JSON with this structure (no markdown fences):
 {
-  "script": "...the Fossil script using shex!() for types...",
-  "shex": "...the ShExC shapes content..."
-}
-The ShEx shapes must define types that the script references via shex!()."#;
+  "script": "...the Fossil script..."
+}"#;
 
-#[utoipa::path(post, path = "/v1/assistant/suggest", tag = "Assistant",
+#[utoipa::path(post, path = "/v1/assistant/suggest-stream", tag = "Assistant",
     request_body = SuggestRequest,
     responses(
-        (status = 200, description = "Suggested competency questions", body = SuggestResponse),
+        (status = 200, description = "SSE stream: delta events + complete with SuggestResponse"),
         (status = 400, description = "AI provider not configured"),
     )
 )]
-pub async fn suggest_cqs(
+pub async fn suggest_cqs_stream(
     _ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Json(req): Json<SuggestRequest>,
-) -> Result<impl IntoResponse, ErrorResponse> {
-    let ai_settings = load_ai_settings(state.db.list_ai_providers().await.into_iter().next())?;
+) -> Result<Response, ErrorResponse> {
+    let ai_settings = require_ai_settings(state.db.list_ai_providers().await.into_iter().next())?;
 
     let mut user_msg = format!("Domain: {}\n\n", req.domain);
     user_msg.push_str(&format_schemas_for_prompt(&req.schemas));
 
-    let response = ask_llm(&ai_settings, CQ_SYSTEM_PROMPT, &user_msg)
-        .await
-        .map_err(ai_error)?;
-
-    let json_str = strip_markdown_fences(&response);
-
-    let parsed: SuggestResponse = serde_json::from_str(json_str).map_err(|e| {
-        tracing::warn!(raw = %response, "Failed to parse CQ response: {e}");
-        (
-            StatusCode::BAD_REQUEST,
-            Json(crate::error::error_body(
-                "ai_parse_failed",
-                &format!("Failed to parse AI response: {e}"),
-            )),
-        )
-    })?;
-
-    Ok(data_response(parsed))
+    Ok(stream_llm_to_sse(
+        ai_settings,
+        CQ_SYSTEM_PROMPT.to_string(),
+        user_msg,
+        None,
+        |full_text| {
+            let json_str = strip_markdown_fences(full_text);
+            match serde_json::from_str::<SuggestResponse>(json_str) {
+                Ok(parsed) => serde_json::to_value(parsed).unwrap_or_default(),
+                Err(e) => {
+                    tracing::warn!(raw = %full_text, "Failed to parse CQ response: {e}");
+                    serde_json::json!({ "competency_questions": [] })
+                }
+            }
+        },
+    ))
 }
 
-#[utoipa::path(post, path = "/v1/assistant/generate", tag = "Assistant",
+#[utoipa::path(post, path = "/v1/assistant/generate-stream", tag = "Assistant",
     request_body = GenerateRequest,
     responses(
-        (status = 200, description = "Generated Fossil script", body = GenerateResponse),
+        (status = 200, description = "SSE stream: delta events + complete with GenerateResponse"),
         (status = 400, description = "AI provider not configured"),
     )
 )]
-pub async fn generate_script(
+pub async fn generate_script_stream(
     _ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Json(req): Json<GenerateRequest>,
-) -> Result<impl IntoResponse, ErrorResponse> {
-    let ai_settings = load_ai_settings(state.db.list_ai_providers().await.into_iter().next())?;
+) -> Result<Response, ErrorResponse> {
+    let ai_settings = require_ai_settings(state.db.list_ai_providers().await.into_iter().next())?;
 
     let mut user_msg = format!("Domain: {}\n\n", req.domain);
 
@@ -242,26 +197,26 @@ pub async fn generate_script(
     user_msg.push_str("Data Schemas:\n");
     user_msg.push_str(&format_schemas_for_prompt(&req.schemas));
 
-    let response = ask_llm(&ai_settings, GENERATE_SYSTEM_PROMPT, &user_msg)
-        .await
-        .map_err(ai_error)?;
-
-    let json_str = strip_markdown_fences(&response);
-
-    let parsed: GenerateResponse = serde_json::from_str(json_str).unwrap_or_else(|_| {
-        // Fallback: treat the whole response as a script (backwards compat with models that ignore JSON instruction)
-        let script = json_str
-            .strip_prefix("```fossil")
-            .or_else(|| json_str.strip_prefix("```"))
-            .and_then(|s| s.strip_suffix("```"))
-            .unwrap_or(json_str)
-            .trim()
-            .to_string();
-        GenerateResponse {
-            script,
-            shex: String::new(),
-        }
-    });
-
-    Ok(data_response(parsed))
+    Ok(stream_llm_to_sse(
+        ai_settings,
+        GENERATE_SYSTEM_PROMPT.to_string(),
+        user_msg,
+        None,
+        |full_text| {
+            let json_str = strip_markdown_fences(full_text);
+            match serde_json::from_str::<GenerateResponse>(json_str) {
+                Ok(parsed) => serde_json::to_value(parsed).unwrap_or_default(),
+                Err(_) => {
+                    // Fallback: treat the response as raw script
+                    let script = json_str
+                        .strip_prefix("```fossil")
+                        .or_else(|| json_str.strip_prefix("```"))
+                        .and_then(|s| s.strip_suffix("```"))
+                        .unwrap_or(json_str)
+                        .trim();
+                    serde_json::json!({ "script": script })
+                }
+            }
+        },
+    ))
 }

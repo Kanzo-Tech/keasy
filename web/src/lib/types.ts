@@ -49,6 +49,12 @@ export type OrgEntry = S["Organization"];
 // Types now in OpenAPI spec — re-exported from schema
 // ---------------------------------------------------------------------------
 
+// GraphAr manifest types (from OpenAPI schema)
+export type DataManifest = S["DataManifest"];
+export type TypeManifest = S["TypeManifest"];
+export type EdgeManifest = S["EdgeManifest"];
+export type ColumnStat = S["ColumnStat"];
+
 export type SearchResult = S["SearchResult"];
 // Override rows type — server uses serde_json::Value per cell, schema generates Record<string,never>
 export type TabularData = Omit<S["TabularData"], "rows"> & {
@@ -59,14 +65,14 @@ export type GraphNode = S["GraphNode"];
 export type GraphLink = S["GraphLink"];
 export type Conversation = S["Conversation"];
 // Override data type — schema generates rows: Record<string,never>[], we use Record<string, string|number|null>[]
+// Add explanation field (populated by the explain stream, not yet in the OpenAPI spec)
 export type ConversationMessage = Omit<S["ConversationMessage"], "data"> & {
   data?: TabularData | null;
+  explanation?: string | null;
 };
 export type FileEntry = S["FileEntry"];
 export type AskResponse = S["AskResponse"];
 
-// Shape validation — now in OpenAPI schema
-export type ShapeValidationResult = S["ShapeValidationResult"];
 
 // Aliases for renamed/new response types
 export type OrgInvite = S["OrgInviteEntry"];

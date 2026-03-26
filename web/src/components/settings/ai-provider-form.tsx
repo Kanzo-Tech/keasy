@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,17 +20,19 @@ interface AiProviderFormProps {
     api_key: string;
     model?: string;
     max_tokens?: number;
-  }) => Promise<void>;
+  }) => void;
+  isPending?: boolean;
 }
 
-export function AiProviderForm({ provider, allProviders, disabledProviders, onSubmit }: AiProviderFormProps) {
+export function AiProviderForm({ provider, allProviders, disabledProviders, onSubmit, isPending = false }: AiProviderFormProps) {
   const isEdit = !!provider;
 
-  const [selectedId, setSelectedId] = useState(provider?.provider ?? "");
+  const [selectedId, setSelectedId] = useState(
+    provider?.provider ?? allProviders.find((p) => !disabledProviders?.has(p.id))?.id ?? "",
+  );
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState(provider?.model ?? "");
   const [maxTokens, setMaxTokens] = useState(provider?.max_tokens?.toString() ?? "");
-  const [saving, setSaving] = useState(false);
 
   const displayProvider = allProviders.find((p) => p.id === (selectedId || provider?.provider));
 
@@ -47,24 +49,19 @@ export function AiProviderForm({ provider, allProviders, disabledProviders, onSu
   );
 
   const isDirty = isEdit
-    ? !!(apiKey || model !== (provider?.model ?? "") || maxTokens !== (provider?.max_tokens?.toString() ?? "")) && !saving
-    : !!(selectedId || apiKey) && !saving;
+    ? !!(apiKey || model !== (provider?.model ?? "") || maxTokens !== (provider?.max_tokens?.toString() ?? "")) && !isPending
+    : !!(selectedId || apiKey) && !isPending;
 
   const canSubmit = isEdit
     ? isDirty
     : !!(selectedId && apiKey.trim());
 
-  async function handleSubmit() {
-    setSaving(true);
-    try {
-      await onSubmit(selectedId, {
-        api_key: apiKey,
-        model: model.trim() || undefined,
-        max_tokens: maxTokens.trim() ? parseInt(maxTokens.trim(), 10) : undefined,
-      });
-    } finally {
-      setSaving(false);
-    }
+  function handleSubmit() {
+    onSubmit(selectedId, {
+      api_key: apiKey,
+      model: model.trim() || undefined,
+      max_tokens: maxTokens.trim() ? parseInt(maxTokens.trim(), 10) : undefined,
+    });
   }
 
   return (
@@ -132,10 +129,10 @@ export function AiProviderForm({ provider, allProviders, disabledProviders, onSu
         <div />
         <Button
           size="sm"
-          disabled={!canSubmit || saving}
+          disabled={!canSubmit || isPending}
           onClick={handleSubmit}
         >
-          {saving ? "Saving..." : isEdit ? "Save" : "Create"}
+          {isPending ? "Saving..." : isEdit ? "Save" : "Create"}
         </Button>
       </PageShell.Footer>
     </PageShell>

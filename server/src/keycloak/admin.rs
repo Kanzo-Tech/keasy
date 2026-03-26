@@ -99,11 +99,10 @@ impl KeycloakAdmin {
     async fn get_admin_token(&self) -> Result<String, String> {
         {
             let cache = self.token_cache.lock().await;
-            if let Some((ref token, issued_at)) = *cache {
-                if issued_at.elapsed() < std::time::Duration::from_secs(50) {
+            if let Some((ref token, issued_at)) = *cache
+                && issued_at.elapsed() < std::time::Duration::from_secs(50) {
                     return Ok(token.clone());
                 }
-            }
         }
 
         let token_url = format!(
@@ -201,7 +200,7 @@ impl KeycloakAdmin {
 
         let keycloak_uuid = location
             .split('/')
-            .last()
+            .next_back()
             .unwrap_or_default()
             .to_string();
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
 import { queryKeys } from "@/lib/query-keys";
@@ -13,7 +13,7 @@ import { StepConfig } from "@/components/jobs/step-config";
 import { JobSummaryPanel } from "@/components/jobs/job-summary-dialog";
 import { StepIndicator } from "@/components/shared/step-indicator";
 import { UnsavedChangesGuard } from "@/components/shared/unsaved-changes-guard";
-import type { RunMode, ValidationResult, CreationMode } from "@/lib/types";
+import { useJobEditorStore } from "./job-editor-store";
 
 const STEP_LABELS = ["Script", "Configure", "Review"] as const;
 
@@ -23,17 +23,8 @@ export function JobEditor() {
   const searchParams = useSearchParams();
   const draftId = searchParams.get("draft");
 
-  const [step, setStep] = useState(0); // 0=mode, 1=script, 2=config, 3=review
-  const [creationMode, setCreationMode] = useState<CreationMode | null>(null);
-  const [script, setScript] = useState("");
-  const [shex, setShex] = useState("");
-  const [name, setName] = useState("");
-  const [mode, setMode] = useState<RunMode>("integrated");
-  const [submitting, setSubmitting] = useState(false);
-  const [validating, setValidating] = useState(false);
-  const [savingDraft, setSavingDraft] = useState(false);
-  const [validation, setValidation] = useState<ValidationResult | null>(null);
-  const [dcatEnabled, setDcatEnabled] = useState(false);
+  // Zustand store — replaces 8 useState
+  const store = useJobEditorStore();
 
   const { data: orgIdentity } = useQuery({ queryKey: queryKeys.org.identity, queryFn: api.org.identity });
   const { data: connections = [] } = useQuery({ queryKey: queryKeys.connections.all(), queryFn: () => api.connections.list() });
@@ -42,7 +33,8 @@ export function JobEditor() {
   const orgConfigured = orgIdentity != null && !!orgIdentity.legal_name;
 
   useEffect(() => {
-    if (orgConfigured) setDcatEnabled(true);
+    if (orgConfigured) store.setDcatEnabled(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgConfigured]);
 
   const { data: draftJob } = useQuery({
@@ -51,149 +43,105 @@ export function JobEditor() {
     enabled: !!draftId,
   });
 
-  // Restore draft → skip mode picker, go to studio
+  // Restore draft
   useEffect(() => {
     if (!draftJob || draftJob.status !== "draft") return;
-    if (draftJob.script) setScript(draftJob.script);
-    if (draftJob.name) setName(draftJob.name);
-    setMode(draftJob.mode);
-    setCreationMode("studio");
-    setStep(1);
+    store.restoreDraft(draftJob.script ?? "", draftJob.name ?? "", draftJob.mode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftJob]);
+
+  // Reset store on unmount
+  useEffect(() => () => useJobEditorStore.getState().reset(), []);
 
   // ── Handlers ──────────────────────────────────────────────────────────
 
-  function handleModeSelect(m: CreationMode) {
-    setCreationMode(m);
-    setStep(1);
-  }
-
-  function handleAssistantComplete(generatedScript: string, generatedShex: string) {
-    setScript(generatedScript);
-    setShex(generatedShex);
-    setCreationMode("studio");
-    // stay on step 1, now in studio mode
-  }
-
-  function handleScriptNext() {
-    setStep(2);
-  }
-
-  function handleScriptBack() {
-    setCreationMode(null);
-    setStep(0);
-  }
-
   async function handleConfigReview() {
-    setValidating(true);
+    store.setValidating(true);
     try {
-      const result = await api.scripts.validate(script);
+      const result = await api.scripts.validate(store.script);
       if (!result.valid) {
         result.errors.forEach((err) => toastError(err));
         return;
       }
-      setValidation(result);
-      setStep(3);
+      store.goToReview(result);
     } catch (err) {
-      toastError(err instanceof Error ? err.message : "Failed to validate script");
+      toastError(err, "Failed to validate script");
     } finally {
-      setValidating(false);
+      store.setValidating(false);
     }
   }
 
-  function handleConfigBack() {
-    setStep(1);
-  }
-
-  function handleSummaryBack() {
-    setStep(2);
-    setValidation(null);
-  }
-
-  async function handleSaveDraft() {
-    setSavingDraft(true);
-    try {
+  const draftMutation = useMutation({
+    mutationFn: async () => {
       if (draftId) {
         await api.jobs.update(draftId, {
-          script,
-          name: name.trim() || undefined,
+          script: store.script,
+          name: store.name.trim() || undefined,
         });
-        toast.success("Draft updated");
+        return "updated";
       } else {
         const connectionIds = connections
-          .filter((s) => script.includes(`@${s.name}/`))
+          .filter((s) => store.script.includes(`@${s.name}/`))
           .map((s) => s.id);
         await api.jobs.create({
-          script,
-          name: name.trim() || undefined,
-          mode,
+          script: store.script,
+          name: store.name.trim() || undefined,
+          mode: store.mode,
           draft: true,
           connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
         });
-        toast.success("Draft saved");
+        return "created";
       }
-      queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
+    },
+    onSuccess: async (result) => {
+      toast.success(result === "updated" ? "Draft updated" : "Draft saved");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
       router.push("/jobs");
-    } catch (err) {
-      toastError(err instanceof Error ? err.message : "Failed to save draft");
-    } finally {
-      setSavingDraft(false);
-    }
-  }
+    },
+    onError: (err) => toastError(err, "Failed to save draft"),
+  });
 
-  async function handleConfirm() {
-    setSubmitting(true);
-    try {
-      const jobName = name.trim() || undefined;
+  const confirmMutation = useMutation({
+    mutationFn: async () => {
+      const jobName = store.name.trim() || undefined;
       const connectionIds = connections
-        .filter((s) => script.includes(`@${s.name}/`))
+        .filter((s) => store.script.includes(`@${s.name}/`))
         .map((s) => s.id);
 
-      // Upload shex to the connection referenced in the script (shex!(@conn/path))
-      const shexMatch = shex.trim() ? script.match(/shex!\(@([^/]+)\/([^)]+)\)/) : null;
-      const shexConn = shexMatch
-        ? connections.find((c) => c.name === shexMatch[1])
-        : null;
+      if (draftId) {
+        await api.jobs.remove(draftId).catch(() => {});
+      }
 
-      await Promise.all([
-        shexConn
-          ? api.connections.upload(shexConn.id, shexMatch![2], shex)
-          : undefined,
-        draftId ? api.jobs.remove(draftId).catch(() => {}) : undefined,
-      ]);
-
-      const job = await api.jobs.create({
-        script,
+      return api.jobs.create({
+        script: store.script,
         name: jobName,
-        mode,
-        pipeline: validation?.pipeline,
-        dcat_enabled: dcatEnabled || undefined,
+        mode: store.mode,
+        pipeline: store.validation?.pipeline,
+        dcat_enabled: store.dcatEnabled || undefined,
         connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
       });
-      queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
+    },
+    onSuccess: async (job) => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
       router.push(`/jobs/${job.id}`);
-    } catch (err) {
-      toastError(err instanceof Error ? err.message : "Failed to create job");
-      setSubmitting(false);
-    }
-  }
+    },
+    onError: (err) => toastError(err, "Failed to create job"),
+  });
 
-  const isDirty = !!(script || name) && !draftJob && !submitting && !savingDraft;
+  const isDirty = !!(store.script || store.name) && !draftJob && !confirmMutation.isPending && !draftMutation.isPending;
 
   // ── Render ────────────────────────────────────────────────────────────
 
-  // Step 0: Mode picker
-  if (step === 0) {
+  if (store.step === 0) {
     return (
       <div className="flex flex-col flex-1 min-h-0">
         <UnsavedChangesGuard isDirty={isDirty} />
-        <ModePicker onSelect={handleModeSelect} />
+        <ModePicker onSelect={store.selectMode} />
       </div>
     );
   }
 
-  // Step 3: Review
-  if (step === 3 && validation) {
+  if (store.step === 3 && store.validation) {
     return (
       <div className="flex flex-col flex-1 min-h-0">
         <UnsavedChangesGuard isDirty={isDirty} />
@@ -201,21 +149,20 @@ export function JobEditor() {
           <StepIndicator steps={STEP_LABELS} current={2} />
         </div>
         <JobSummaryPanel
-          onConfirm={handleConfirm}
-          onCancel={handleSummaryBack}
-          submitting={submitting}
-          jobName={name.trim()}
-          mode={mode}
-          validation={validation}
-          dcatEnabled={dcatEnabled}
+          onConfirm={() => { if (!draftMutation.isPending) confirmMutation.mutate(); }}
+          onCancel={store.goBack}
+          submitting={confirmMutation.isPending || confirmMutation.isSuccess}
+          jobName={store.name.trim()}
+          mode={store.mode}
+          validation={store.validation}
+          dcatEnabled={store.dcatEnabled}
           connections={connections}
         />
       </div>
     );
   }
 
-  // Step 2: Config
-  if (step === 2) {
+  if (store.step === 2) {
     return (
       <div className="flex flex-col flex-1 min-h-0">
         <UnsavedChangesGuard isDirty={isDirty} />
@@ -223,43 +170,40 @@ export function JobEditor() {
           <StepIndicator steps={STEP_LABELS} current={1} />
         </div>
         <StepConfig
-          name={name}
-          onNameChange={setName}
-          mode={mode}
-          onModeChange={setMode}
-          dcatEnabled={dcatEnabled}
-          onDcatToggle={setDcatEnabled}
+          name={store.name}
+          onNameChange={store.setName}
+          mode={store.mode}
+          onModeChange={store.setMode}
+          dcatEnabled={store.dcatEnabled}
+          onDcatToggle={store.setDcatEnabled}
           orgConfigured={orgConfigured}
-          onBack={handleConfigBack}
+          onBack={store.goBack}
           onReview={handleConfigReview}
-          validating={validating}
+          validating={store.validating}
         />
       </div>
     );
   }
 
-  // Step 1: Script (studio or assistant)
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <UnsavedChangesGuard isDirty={isDirty} />
-      {creationMode === "studio" && (
+      {store.creationMode === "studio" && (
         <div className="shrink-0 px-4 pt-4">
           <StepIndicator steps={STEP_LABELS} current={0} />
         </div>
       )}
       <StepScript
-        creationMode={creationMode!}
-        script={script}
-        onScriptChange={setScript}
-        shex={shex}
-        onShexChange={setShex}
+        creationMode={store.creationMode!}
+        script={store.script}
+        onScriptChange={store.setScript}
         connections={connections}
         providers={providers}
-        onNext={handleScriptNext}
-        onBack={handleScriptBack}
-        savingDraft={savingDraft}
-        onSaveDraft={handleSaveDraft}
-        onAssistantComplete={handleAssistantComplete}
+        onNext={store.goToConfig}
+        onBack={store.goBack}
+        savingDraft={draftMutation.isPending || draftMutation.isSuccess}
+        onSaveDraft={() => { if (!confirmMutation.isPending) draftMutation.mutate(); }}
+        onAssistantComplete={store.completeAssistant}
       />
     </div>
   );

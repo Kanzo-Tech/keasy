@@ -180,8 +180,8 @@ pub async fn list_workspaces(
         if cached_ids.contains(client_id) {
             continue;
         }
-        if let Some(kc_admin) = &state.auth.keycloak_admin {
-            if let Some(resolved) = kc_admin.resolve_client(client_id).await {
+        if let Some(kc_admin) = &state.auth.keycloak_admin
+            && let Some(resolved) = kc_admin.resolve_client(client_id).await {
                 let _ = state.db.ensure_dataspace(client_id, &resolved.name, &resolved.url).await;
                 workspaces.push(Workspace {
                     client_id: client_id.clone(),
@@ -189,7 +189,6 @@ pub async fn list_workspaces(
                     url: resolved.url,
                 });
             }
-        }
     }
 
     Ok(data_response(WorkspacesResponse { workspaces, current_client_id }))

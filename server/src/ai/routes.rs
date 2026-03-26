@@ -1,26 +1,32 @@
+use std::fmt::Write as FmtWrite;
+
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use axum::response::sse::Event;
 use axum::Json;
-use secrecy::ExposeSecret;
 use serde::{Deserialize, Serialize};
-
-use std::fmt::Write as FmtWrite;
-
 use tracing::{debug, warn};
 
 use crate::AppState;
-use crate::graph::dataset::Dataset;
-use super::client::{AiError, Message, ask_llm, ask_llm_multi};
-use super::context::build_semantic_context;
+use super::client::{AiError, Message, ask_llm_multi, ask_llm_stream, require_ai_settings, setup_sse_channels, into_sse_response};
 use super::models::{AskResultCode, Conversation, ConversationMessage};
 use crate::error::data_response;
 use crate::middleware::tenant::{IsParticipant, Require};
 
+#[derive(Deserialize)]
+struct LlmResponse {
+    #[serde(default)]
+    reasoning: String,
+    sql: String,
+    #[serde(default)]
+    explanation: String,
+}
+
 #[utoipa::path(post, path = "/v1/jobs/{id}/discover/ask", tag = "Discovery",
     params(("id" = String, Path, description = "Job ID")),
     request_body = AskRequest,
-    responses((status = 200, description = "AI answer with optional SPARQL results", body = AskResponse))
+    responses((status = 200, description = "AI answer with DuckDB SQL query", body = AskResponse))
 )]
 pub async fn ask_discover(
     ctx: Require<IsParticipant>,
@@ -32,147 +38,57 @@ pub async fn ask_discover(
         return r;
     }
 
-    let ai_settings = if let Some(pid) = &req.provider {
+    let raw = if let Some(pid) = &req.provider {
         state.db.get_ai_provider(pid).await
     } else {
         state.db.list_ai_providers().await.into_iter().next()
     };
-    let ai_settings = match ai_settings {
-        Some(s) if !s.api_key.expose_secret().is_empty() => s,
+    let ai_settings = match require_ai_settings(raw) {
+        Ok(s) => s,
+        Err(e) => return e.into_response(),
+    };
+
+    let schema_context = match &req.schema {
+        Some(s) if !s.is_empty() => s.clone(),
         _ => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(crate::error::error_body(
-                    "ai_not_configured",
-                    "AI settings are not configured. Go to Settings > AI to add an API key.",
-                )),
-            )
-                .into_response();
+            let job = match state.db.get_job(&ctx.scoped(id.as_str())).await {
+                Some(j) => j,
+                None => return (StatusCode::NOT_FOUND, Json(crate::error::error_body("not_found", "Job not found"))).into_response(),
+            };
+            build_pipeline_schema(&job.pipeline)
         }
     };
-
-    let job = match state.db.get_job(&ctx.scoped(id.as_str())).await {
-        Some(j) => j,
-        None => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(crate::error::error_body("not_found", "Job not found")),
-            )
-                .into_response();
-        }
-    };
-
-    // Load fragment dataset and build profile
-    let dataset = {
-        let base_url = job.rdf_base.as_deref().unwrap_or("");
-        if base_url.is_empty() {
-            crate::graph::fragment::FragmentDataset::empty()
-        } else {
-            let creds = state.db.build_storage_config(&ctx.scoped(()), &ctx.org_id.0, &job.connection_ids).await;
-            match state.fragment_resolver.resolve_dataset(base_url, &creds).await {
-                Ok(ds) => ds,
-                Err(e) => {
-                    warn!("Failed to load fragment dataset: {e}");
-                    crate::graph::fragment::FragmentDataset::empty()
-                }
-            }
-        }
-    };
-    let profile = crate::ai::profiler::GraphProfile::build_from_dataset(&dataset, &id);
-    let semantic_context = build_semantic_context(&job.pipeline, &profile);
-    debug!("--- Semantic Context ---\n{semantic_context}\n--- End Context ---");
 
     let conversation_id = match req.conversation_id {
         Some(cid) => cid,
         None => {
-            let conv = state.db.create_conversation(&ctx.as_ctx(), &id, None).await;
-            conv.id
+            match state.db.create_conversation(&ctx.as_ctx(), &id, None).await {
+                Ok(conv) => conv.id,
+                Err(e) => {
+                    warn!("Failed to create conversation: {e}");
+                    return (StatusCode::INTERNAL_SERVER_ERROR, Json(crate::error::error_body("db_error", "Failed to create conversation"))).into_response();
+                }
+            }
         }
     };
 
-    // Build conversation history BEFORE inserting the new message to avoid a
-    // write-then-read round-trip (we already have the question in memory).
     let history = state.db.get_messages(&conversation_id).await;
-    state.db.add_message(&conversation_id, "user", &req.question, None, None, None).await;
+    if let Err(e) = state.db.add_message(&conversation_id, "user", &req.question, None, None, None).await {
+        warn!("Failed to persist user message: {e}");
+    }
 
     let mut messages = build_conversation_messages(&history);
-    // Append the current question (we fetched history before insert)
     messages.push(Message {
         role: "user".to_string(),
         content: req.question.clone(),
     });
 
-    // If messages only has the current question (fresh conversation), ensure it's present
-    if messages.len() == 1 && messages[0].role != "user" {
-        messages.push(Message {
-            role: "user".to_string(),
-            content: req.question.clone(),
-        });
-    }
-
-    let sparql_system = format!(
-        "You are a SPARQL query assistant.\n\n\
-         The data was produced by Fossil, a statically typed data language.\n\
-         The schema below defines the types and their fields — treat it as the\n\
-         definitive source of truth for what exists in the data.\n\n\
-         ## Schema Guide\n\
-         - Each **Output Type** has a type name and optionally a graph URI in brackets.\n\
-           If a graph URI is shown (e.g. Type: Foo [<http://…>]):\n\
-             query with `?s a <graph_uri> .`\n\
-           If NO graph URI is shown: do NOT use `?s a <…>` — instead identify\n\
-             subjects solely by their field predicates.\n\
-         - Each **field** has a name, data type, required/optional status, and a predicate URI.\n\
-           To access a field: `?s <predicate_uri> ?variable .`\n\
-         - The **↳** lines show real data statistics collected from the graph:\n\
-             Numeric → count, coverage %, min–max range, average.\n\
-             Categorical → count, coverage %, distinct count, top values with frequencies.\n\
-             Text → count, coverage %, sample values.\n\n\
-         ## Before Writing SPARQL\n\
-         1. Identify which Output Type the question is about.\n\
-         2. Read ALL fields and their statistics for that type.\n\
-         3. For each concept in the question, find the matching field:\n\
-            - Categorical: pick the closest value from the top-values list\n\
-              (consider synonyms, translations, abbreviations).\n\
-              Use the exact casing shown in the statistics.\n\
-            - Numeric with vague qualifiers (\"tall\", \"heavy\", \"expensive\"):\n\
-              derive a threshold from the field's min/max/avg\n\
-              (typically top or bottom 15-20% of the range).\n\
-            - Composite or slang terms that imply multiple traits:\n\
-              decompose into individual field filters combined with AND.\n\
-         4. Only use predicate URIs from the schema — never invent URIs.\n\
-         5. Always include human-readable fields (name, label, title) in SELECT.\n\n\
-         ## SPARQL Patterns\n\
-         Always declare every PREFIX you use (e.g. PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>).\n\
-         - Numeric:  FILTER(xsd:double(?val) > N)\n\
-         - Exact:    FILTER(STR(?val) = \"Value\")\n\
-         - Contains: FILTER(CONTAINS(LCASE(STR(?val)), \"term\"))\n\
-         - Multi:    FILTER(xsd:double(?a) > X && xsd:double(?b) > Y)\n\
-         - Optional: OPTIONAL {{ ?s <pred> ?val }} FILTER(!BOUND(?val) || condition)\n\n\
-         {semantic_context}\n\n\
-         Return ONLY a JSON object with these three fields:\n\
-         - \"reasoning\": step-by-step explanation — which type and fields you chose,\n\
-           which values/thresholds you derived from the statistics, and why.\n\
-         - \"sparql\": a valid SPARQL SELECT query.\n\
-         - \"explanation\": one-sentence summary of what the query retrieves.\n\n\
-         No markdown fences. No extra text."
-    );
-
-    // Error recovery loop: up to 2 attempts
-    #[derive(Deserialize)]
-    struct LlmResponse {
-        #[serde(default)]
-        reasoning: String,
-        sparql: String,
-        #[serde(default)]
-        explanation: String,
-    }
+    let sql_system = build_system_prompt(&schema_context);
 
     let mut last_error: Option<String> = None;
     let mut parsed: Option<LlmResponse> = None;
-    let mut validated_data: Option<crate::graph::types::TabularData> = None;
 
     for attempt in 0..=1 {
-        // If retrying, inject error feedback
         if let Some(err_msg) = &last_error {
             messages.push(Message {
                 role: "user".to_string(),
@@ -180,7 +96,7 @@ pub async fn ask_discover(
             });
         }
 
-        let raw = match ask_llm_multi(&ai_settings, &sparql_system, &messages, Some(2048)).await {
+        let raw = match ask_llm_multi(&ai_settings, &sql_system, &messages, Some(2048)).await {
             Ok(s) => s.trim().to_string(),
             Err(e) => {
                 let (code, answer) = match &e {
@@ -194,11 +110,12 @@ pub async fn ask_discover(
                     ),
                 };
                 warn!("LLM call failed: {e}");
-                state.db.add_message(&conversation_id, "assistant", answer, None, None, Some(code.as_str())).await;
+                if let Err(e) = state.db.add_message(&conversation_id, "assistant", answer, None, None, Some(code.as_str())).await {
+                    warn!("Failed to persist error message: {e}");
+                }
                 return data_response(AskResponse {
                     answer: answer.to_string(),
-                    sparql: None,
-                    data: None,
+                    sql: None,
                     conversation_id: Some(conversation_id),
                     code,
                     reasoning: None,
@@ -208,14 +125,17 @@ pub async fn ask_discover(
 
         let json_str = strip_markdown_fences(&raw);
 
-        let llm_resp = match serde_json::from_str::<LlmResponse>(json_str) {
-            Ok(p) => p,
+        match serde_json::from_str::<LlmResponse>(json_str) {
+            Ok(resp) => {
+                debug!("SQL generated:\n{}", resp.sql);
+                parsed = Some(resp);
+                break;
+            }
             Err(e) => {
                 if attempt == 0 {
                     last_error = Some(format!(
-                        "Invalid JSON response: {e}. Return ONLY a valid JSON object with \"reasoning\", \"sparql\", and \"explanation\" fields."
+                        "Invalid JSON response: {e}. Return ONLY a valid JSON object with \"reasoning\", \"sql\", and \"explanation\" fields."
                     ));
-                    // Add the assistant's bad response to context
                     messages.push(Message {
                         role: "assistant".to_string(),
                         content: raw,
@@ -223,54 +143,15 @@ pub async fn ask_discover(
                     continue;
                 }
                 let answer = "I wasn't able to understand the data well enough to generate a query. Could you rephrase your question?".to_string();
-                state.db.add_message(&conversation_id, "assistant", &answer, None, None, Some(AskResultCode::ParseFailed.as_str())).await;
+                if let Err(e) = state.db.add_message(&conversation_id, "assistant", &answer, None, None, Some(AskResultCode::ParseFailed.as_str())).await {
+                    warn!("Failed to persist error message: {e}");
+                }
                 return data_response(AskResponse {
                     answer,
-                    sparql: None,
-                    data: None,
+                    sql: None,
                     conversation_id: Some(conversation_id),
                     code: AskResultCode::ParseFailed,
                     reasoning: None,
-                }).into_response();
-            }
-        };
-
-        let sparql = format_sparql(&llm_resp.sparql);
-
-        match dataset.sparql_select(&sparql) {
-            Ok(result) => {
-                debug!("SPARQL OK ({} rows)\n--- Generated SPARQL ---\n{sparql}\n--- End SPARQL ---", result.rows.len());
-                validated_data = Some(result);
-                parsed = Some(LlmResponse {
-                    reasoning: llm_resp.reasoning,
-                    sparql,
-                    explanation: llm_resp.explanation,
-                });
-                break;
-            }
-            Err(err) => {
-                if attempt == 0 {
-                    warn!("SPARQL execution failed (attempt 1): {err}\n--- Generated SPARQL ---\n{sparql}\n--- End SPARQL ---");
-                    // Add the assistant's response and error feedback
-                    messages.push(Message {
-                        role: "assistant".to_string(),
-                        content: raw,
-                    });
-                    last_error = Some(format!(
-                        "The SPARQL query failed with error: {err}. Please fix the query and try again."
-                    ));
-                    continue;
-                }
-                warn!("SPARQL execution failed (attempt 2): {err}\n--- Generated SPARQL ---\n{sparql}\n--- End SPARQL ---");
-                let answer = "I generated a query but it didn't work against your data. Try rephrasing your question.".to_string();
-                state.db.add_message(&conversation_id, "assistant", &answer, Some(&sparql), None, Some(AskResultCode::SparqlFailed.as_str())).await;
-                return data_response(AskResponse {
-                    answer,
-                    sparql: Some(sparql),
-                    data: None,
-                    conversation_id: Some(conversation_id),
-                    code: AskResultCode::SparqlFailed,
-                    reasoning: Some(llm_resp.reasoning),
                 }).into_response();
             }
         }
@@ -280,11 +161,12 @@ pub async fn ask_discover(
         Some(p) => p,
         None => {
             let answer = "I wasn't able to generate a working query. Could you rephrase your question?".to_string();
-            state.db.add_message(&conversation_id, "assistant", &answer, None, None, Some(AskResultCode::ParseFailed.as_str())).await;
+            if let Err(e) = state.db.add_message(&conversation_id, "assistant", &answer, None, None, Some(AskResultCode::ParseFailed.as_str())).await {
+                warn!("Failed to persist error message: {e}");
+            }
             return data_response(AskResponse {
                 answer,
-                sparql: None,
-                data: None,
+                sql: None,
                 conversation_id: Some(conversation_id),
                 code: AskResultCode::ParseFailed,
                 reasoning: None,
@@ -292,47 +174,237 @@ pub async fn ask_discover(
         }
     };
 
-    // Use the result from the validation loop (already executed successfully)
-    let data = validated_data;
-    let has_rows = data.as_ref().is_some_and(|d| !d.rows.is_empty());
-
-    let answer = if has_rows {
-        let table_text = summarize_results_for_llm(data.as_ref().unwrap());
-        let summary_system = format!(
-            "You are a data analyst assistant. The user asked a question about their data.\n\
-             A SPARQL query was executed and returned the results below.\n\n\
-             Summarize the results in clear, natural language. Be concise and direct.\n\
-             Do not include SPARQL or technical details — just a plain language answer.\n\n\
-             Results:\n{table_text}"
-        );
-        match ask_llm(&ai_settings, &summary_system, &req.question).await {
-            Ok(summary) => summary.trim().to_string(),
-            Err(_) => {
-                if parsed.explanation.is_empty() {
-                    "Here are the results from your query.".to_string()
-                } else {
-                    parsed.explanation.clone()
-                }
-            }
-        }
+    let answer = if parsed.explanation.is_empty() {
+        "Here is a query for your data.".to_string()
     } else {
-        "No data matched your query. Try rephrasing your question.".to_string()
+        parsed.explanation.clone()
     };
 
-    state.db.add_message(&conversation_id, "assistant", &answer, Some(&parsed.sparql), data.as_ref(), Some(AskResultCode::Success.as_str())).await;
+    if let Err(e) = state.db.add_message(&conversation_id, "assistant", &answer, Some(&parsed.sql), None, Some(AskResultCode::Success.as_str())).await {
+        warn!("Failed to persist assistant message: {e}");
+    }
 
     data_response(AskResponse {
         answer,
-        sparql: Some(parsed.sparql),
-        data,
+        sql: Some(parsed.sql),
         conversation_id: Some(conversation_id),
         code: AskResultCode::Success,
         reasoning: if parsed.reasoning.is_empty() { None } else { Some(parsed.reasoning) },
     }).into_response()
 }
 
+// ── Streaming endpoint ───────────────────────────────────────────────────
+
+#[utoipa::path(post, path = "/v1/jobs/{id}/discover/ask-stream", tag = "Discovery",
+    params(("id" = String, Path, description = "Job ID")),
+    request_body = AskRequest,
+    responses((status = 200, description = "SSE stream of LLM deltas", content_type = "text/event-stream"))
+)]
+pub async fn ask_discover_stream(
+    ctx: Require<IsParticipant>,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(req): Json<AskRequest>,
+) -> Response {
+    if let Err(r) = crate::discovery::routes::require_output_ready(&state, &ctx, &id).await {
+        return r;
+    }
+
+    let raw = if let Some(pid) = &req.provider {
+        state.db.get_ai_provider(pid).await
+    } else {
+        state.db.list_ai_providers().await.into_iter().next()
+    };
+    let ai_settings = match require_ai_settings(raw) {
+        Ok(s) => s,
+        Err(e) => return e.into_response(),
+    };
+
+    let schema_context = match &req.schema {
+        Some(s) if !s.is_empty() => s.clone(),
+        _ => {
+            let job = match state.db.get_job(&ctx.scoped(id.as_str())).await {
+                Some(j) => j,
+                None => return (StatusCode::NOT_FOUND, Json(crate::error::error_body("not_found", "Job not found"))).into_response(),
+            };
+            build_pipeline_schema(&job.pipeline)
+        }
+    };
+
+    let is_explain = req.explain;
+
+    let conversation_id = match req.conversation_id {
+        Some(cid) => cid,
+        None => {
+            match state.db.create_conversation(&ctx.as_ctx(), &id, None).await {
+                Ok(conv) => conv.id,
+                Err(e) => {
+                    warn!("Failed to create conversation: {e}");
+                    return (StatusCode::INTERNAL_SERVER_ERROR, Json(crate::error::error_body("db_error", "Failed to create conversation"))).into_response();
+                }
+            }
+        }
+    };
+
+    let history = state.db.get_messages(&conversation_id).await;
+
+    // Don't persist the explain prompt as a user message
+    if !is_explain {
+        if let Err(e) = state.db.add_message(&conversation_id, "user", &req.question, None, None, None).await {
+            warn!("Failed to persist user message: {e}");
+        }
+    }
+
+    // Explain is self-contained; don't load conversation history
+    let mut messages = if is_explain {
+        vec![]
+    } else {
+        build_conversation_messages(&history)
+    };
+    messages.push(Message { role: "user".to_string(), content: req.question.clone() });
+
+    let system_prompt = if is_explain {
+        build_explain_prompt()
+    } else {
+        build_system_prompt(&schema_context)
+    };
+
+    // Open SSE channel (shared infrastructure)
+    let ch = setup_sse_channels();
+    let sse_tx = ch.sse_tx;
+
+    // Send conversation_id immediately
+    let conv_id = conversation_id.clone();
+    let _ = sse_tx.send(Ok(
+        Event::default()
+            .event("conversation")
+            .data(serde_json::json!({"conversation_id": conv_id}).to_string())
+    )).await;
+
+    // Run LLM in background, then parse and send complete event
+    let max_tokens = if is_explain { Some(512) } else { Some(2048) };
+    let db = state.db.clone();
+    let delta_tx = ch.delta_tx;
+    tokio::spawn(async move {
+        let result = ask_llm_stream(&ai_settings, &system_prompt, &messages, max_tokens, delta_tx).await;
+
+        match result {
+            Ok(full_text) => {
+                if is_explain {
+                    let explanation = full_text.trim().to_string();
+                    let msgs = db.get_messages(&conversation_id).await;
+                    if let Some(last_assistant) = msgs.iter().rev().find(|m| m.role == "assistant") {
+                        if let Err(e) = db.update_message_explanation(&last_assistant.id, &explanation).await {
+                            warn!("Failed to update explanation: {e}");
+                        }
+                    }
+                    let complete = serde_json::json!({
+                        "answer": explanation,
+                        "conversation_id": conversation_id,
+                        "code": AskResultCode::Success.as_str(),
+                    });
+                    let _ = sse_tx.send(Ok(Event::default().event("complete").data(complete.to_string()))).await;
+                } else {
+                    let json_str = strip_markdown_fences(&full_text);
+                    let (sql, explanation, reasoning) = match serde_json::from_str::<LlmResponse>(json_str) {
+                        Ok(resp) => (Some(resp.sql.clone()), resp.explanation, resp.reasoning),
+                        Err(_) => (None, full_text.clone(), String::new()),
+                    };
+
+                    let answer = if explanation.is_empty() { "Here is a query for your data.".to_string() } else { explanation };
+                    if let Err(e) = db.add_message(&conversation_id, "assistant", &answer, sql.as_deref(), None, Some(AskResultCode::Success.as_str())).await {
+                        warn!("Failed to persist assistant message: {e}");
+                    }
+
+                    let complete = serde_json::json!({
+                        "sql": sql,
+                        "answer": answer,
+                        "conversation_id": conversation_id,
+                        "reasoning": if reasoning.is_empty() { None } else { Some(reasoning) },
+                        "code": AskResultCode::Success.as_str(),
+                    });
+                    let _ = sse_tx.send(Ok(Event::default().event("complete").data(complete.to_string()))).await;
+                }
+            }
+            Err(e) => {
+                let (code, msg) = match &e {
+                    AiError::InsufficientCredits(_) => (AskResultCode::InsufficientCredits.as_str(), "Insufficient credits."),
+                    AiError::Failed(_) => (AskResultCode::LlmFailed.as_str(), "LLM call failed."),
+                };
+                warn!("LLM stream failed: {e}");
+                if let Err(e) = db.add_message(&conversation_id, "assistant", msg, None, None, Some(code)).await {
+                    warn!("Failed to persist error message: {e}");
+                }
+                let err = serde_json::json!({"code": code, "answer": msg});
+                let _ = sse_tx.send(Ok(Event::default().event("error").data(err.to_string()))).await;
+            }
+        }
+    });
+
+    into_sse_response(ch.sse_rx)
+}
+
+/// Build the system prompt for the DuckDB SQL assistant.
+///
+/// The `schema_context` is expected to contain real DuckDB DDL (CREATE TABLE
+/// statements) and sample rows, sent by the frontend after querying DuckDB-WASM.
+fn build_system_prompt(schema_context: &str) -> String {
+    format!(
+        "You are a DuckDB SQL query assistant.\n\n\
+         The data is stored in Parquet files loaded into DuckDB as multiple tables.\n\
+         Each table represents an entity type (e.g. person, organization).\n\
+         The schema below shows CREATE TABLE statements, sample rows, and relationships.\n\n\
+         {schema_context}\n\n\
+         ## DuckDB SQL Rules\n\
+         - Always quote table and column names with double quotes: \"table\".\"column\"\n\
+         - Use LIMIT 100 by default unless the user asks for all results.\n\
+         - For top-N queries, use ORDER BY ... DESC LIMIT N.\n\
+         - Always include readable columns (name, label, title) in SELECT when available.\n\
+         - Use sample rows to understand the data format and choose appropriate filters.\n\
+         - String matching: \"col\" ILIKE '%term%'\n\
+         - Numeric filter: \"col\" > N, \"col\" BETWEEN a AND b\n\
+         - Aggregation: SELECT \"col\", COUNT(*) FROM \"table\" GROUP BY \"col\"\n\
+         - Date filter: \"col\" >= '2024-01-01'\n\
+         - Date extraction: EXTRACT(YEAR FROM \"col\"), DATE_TRUNC('month', \"col\")\n\
+         - CASE expressions: CASE WHEN ... THEN ... END\n\
+         - To join across entity types, use the edge tables shown in relationships.\n\n\
+         Return ONLY a JSON object with these three fields:\n\
+         - \"reasoning\": step-by-step explanation — which tables/columns you chose,\n\
+           which values/thresholds you derived from the sample data, and why.\n\
+         - \"sql\": a valid DuckDB SQL SELECT query.\n\
+         - \"explanation\": one-sentence summary of what the query retrieves.\n\n\
+         No markdown fences. No extra text."
+    )
+}
+
+/// Build the system prompt for the explain pass (data analyst mode).
+fn build_explain_prompt() -> String {
+    "You are a data analyst. The user will provide:\n\
+     1. Their original question\n\
+     2. The SQL query that was executed\n\
+     3. The query results (first rows as JSON)\n\n\
+     Write a concise natural-language summary of the findings in markdown.\n\
+     Focus on key numbers, patterns, anomalies, and what the data means.\n\
+     Be specific — reference actual values from the results.\n\
+     Do NOT return JSON. Do NOT repeat the SQL. Plain markdown only."
+        .to_string()
+}
+
+/// Build a minimal schema description from the pipeline summary (fallback when
+/// the frontend doesn't send a DuckDB schema).
+fn build_pipeline_schema(pipeline: &crate::jobs::PipelineSummary) -> String {
+    use std::fmt::Write;
+    let mut out = String::from("## Table: rdf\n\nColumns:\n");
+    for output in &pipeline.outputs {
+        for field in &output.fields {
+            let opt = if field.optional { " (nullable)" } else { "" };
+            let _ = writeln!(out, "- {}: {}{}", field.name, field.field_type, opt);
+        }
+    }
+    out
+}
+
 /// Build LLM message history from conversation messages.
-/// Condenses assistant messages to keep context manageable.
 fn build_conversation_messages(history: &[ConversationMessage]) -> Vec<Message> {
     let recent = if history.len() > 10 {
         &history[history.len() - 10..]
@@ -344,16 +416,12 @@ fn build_conversation_messages(history: &[ConversationMessage]) -> Vec<Message> 
         .iter()
         .map(|msg| {
             let content = if msg.role == "assistant" {
-                // Condense assistant messages
                 let mut condensed = String::new();
                 let answer_preview: String = msg.content.chars().take(200).collect();
                 let _ = write!(condensed, "[Answer: {answer_preview}]");
-                if let Some(sparql) = &msg.sparql {
-                    let sparql_preview: String = sparql.chars().take(200).collect();
-                    let _ = write!(condensed, " [SPARQL: {sparql_preview}]");
-                }
-                if let Some(data) = &msg.data {
-                    let _ = write!(condensed, " [Rows: {}]", data.rows.len());
+                if let Some(sql) = &msg.sql {
+                    let sql_preview: String = sql.chars().take(200).collect();
+                    let _ = write!(condensed, " [SQL: {sql_preview}]");
                 }
                 condensed
             } else {
@@ -390,8 +458,13 @@ pub async fn create_conversation(
         )
             .into_response();
     }
-    let conv = state.db.create_conversation(&ctx.as_ctx(), &job_id, req.title).await;
-    (StatusCode::CREATED, data_response(conv)).into_response()
+    match state.db.create_conversation(&ctx.as_ctx(), &job_id, req.title).await {
+        Ok(conv) => (StatusCode::CREATED, data_response(conv)).into_response(),
+        Err(e) => {
+            warn!("Failed to create conversation: {e}");
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(crate::error::error_body("db_error", "Failed to create conversation"))).into_response()
+        }
+    }
 }
 
 #[utoipa::path(get, path = "/v1/jobs/{id}/conversations", tag = "Conversations",
@@ -419,7 +492,6 @@ pub async fn get_conversation_messages(
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
 ) -> Response {
-    // Verify the conversation belongs to this org before returning messages
     if state.db.get_conversation(&conversation_id, ctx.org_id.as_str()).await.is_none() {
         return (
             StatusCode::NOT_FOUND,
@@ -453,7 +525,10 @@ pub async fn rename_conversation(
         )
             .into_response();
     }
-    state.db.rename_conversation(&conversation_id, ctx.org_id.as_str(), req.title.trim()).await;
+    if let Err(e) = state.db.rename_conversation(&conversation_id, ctx.org_id.as_str(), req.title.trim()).await {
+        warn!("Failed to rename conversation: {e}");
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(crate::error::error_body("db_error", "Failed to rename conversation"))).into_response();
+    }
     StatusCode::NO_CONTENT.into_response()
 }
 
@@ -465,9 +540,12 @@ pub async fn delete_conversation(
     ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
-) -> impl IntoResponse {
-    state.db.delete_conversation(&conversation_id, ctx.org_id.as_str()).await;
-    StatusCode::NO_CONTENT
+) -> Response {
+    if let Err(e) = state.db.delete_conversation(&conversation_id, ctx.org_id.as_str()).await {
+        warn!("Failed to delete conversation: {e}");
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(crate::error::error_body("db_error", "Failed to delete conversation"))).into_response();
+    }
+    StatusCode::NO_CONTENT.into_response()
 }
 
 #[derive(Deserialize, utoipa::ToSchema)]
@@ -475,13 +553,22 @@ pub struct AskRequest {
     pub question: String,
     pub conversation_id: Option<String>,
     pub provider: Option<String>,
+    /// DuckDB table schema from the frontend (column names, types, sample values).
+    /// When provided, this is used as context for SQL generation instead of the
+    /// pipeline summary.
+    pub schema: Option<String>,
+    /// When true, the LLM acts as a data analyst explaining query results
+    /// instead of generating SQL. The question should contain the original
+    /// question, SQL, and result rows.
+    #[serde(default)]
+    pub explain: bool,
 }
 
 #[derive(Serialize, utoipa::ToSchema)]
 pub struct AskResponse {
     pub answer: String,
-    pub sparql: Option<String>,
-    pub data: Option<crate::graph::types::TabularData>,
+    /// DuckDB SQL query generated by the LLM (executed client-side via DuckDB-WASM).
+    pub sql: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conversation_id: Option<String>,
     pub code: AskResultCode,
@@ -495,53 +582,4 @@ pub fn strip_markdown_fences(raw: &str) -> &str {
         .or_else(|| raw.strip_prefix("```"))
         .unwrap_or(raw);
     mid.strip_suffix("```").unwrap_or(mid).trim()
-}
-
-fn format_sparql(sparql: &str) -> String {
-    let collapsed: String = sparql.split_whitespace().collect::<Vec<_>>().join(" ");
-    let mut result = collapsed;
-    for kw in &["SELECT", "CONSTRUCT", "WHERE", "FILTER", "OPTIONAL", "UNION", "ORDER BY", "GROUP BY", "HAVING", "LIMIT", "OFFSET", "PREFIX", "BIND"] {
-        result = result.replace(&format!(" {kw}"), &format!("\n{kw}"));
-    }
-    let mut out = result.trim().to_string();
-
-    // Auto-inject common PREFIX declarations when used but not declared
-    const PREFIXES: &[(&str, &str)] = &[
-        ("xsd:", "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>"),
-        ("schema:", "PREFIX schema: <https://schema.org/>"),
-        ("rdf:", "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"),
-        ("rdfs:", "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"),
-        ("dcat:", "PREFIX dcat: <http://www.w3.org/ns/dcat#>"),
-        ("dct:", "PREFIX dct: <http://purl.org/dc/terms/>"),
-        ("foaf:", "PREFIX foaf: <http://xmlns.com/foaf/0.1/>"),
-    ];
-    for (short, decl) in PREFIXES {
-        if out.contains(short) && !out.contains(decl) {
-            out.insert_str(0, &format!("{decl}\n"));
-        }
-    }
-
-    out
-}
-
-fn summarize_results_for_llm(data: &crate::graph::types::TabularData) -> String {
-    let total = data.rows.len();
-    let preview_rows = &data.rows[..total.min(20)];
-    let mut out = String::new();
-    let _ = writeln!(out, "{total} row(s) returned. Columns: {}", data.columns.join(", "));
-    for row in preview_rows {
-        let cells: Vec<String> = data.columns.iter().map(|col| {
-            match row.get(col) {
-                Some(serde_json::Value::String(s)) => s.clone(),
-                Some(serde_json::Value::Number(n)) => n.to_string(),
-                Some(other) => other.to_string(),
-                None => String::new(),
-            }
-        }).collect();
-        let _ = writeln!(out, "  {}", cells.join(" | "));
-    }
-    if total > 20 {
-        let _ = writeln!(out, "  ... and {} more rows", total - 20);
-    }
-    out
 }

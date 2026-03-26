@@ -21,11 +21,10 @@ pub mod openapi;
 pub mod routes;
 pub mod settings;
 pub mod tenant;
-pub mod validation;
+
 
 // Re-export types integration tests need
 pub use db::Database;
-pub use graph::fragment::FragmentResolver;
 pub use jobs::runner::JobRunner;
 
 use secrecy::SecretString;
@@ -40,25 +39,20 @@ pub fn hash_str(s: &str) -> u64 {
     h.finish()
 }
 
-/// Per-org fossil analysis state: compilation host + resolved script cache.
-/// Stored together in a single LRU so eviction is consistent.
+/// Per-org fossil analysis state: compilation host cache.
+/// Stored in a single LRU so eviction is consistent.
 pub struct OrgAnalysisState {
     pub host: Arc<Mutex<fossil_lsp::AnalysisHost>>,
-    /// Cached resolved script: (source_hash, resolved).
-    pub resolved: Option<(u64, Arc<crate::jobs::rewrite::ResolvedScript>)>,
 }
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: Database,
     pub runner: Arc<JobRunner>,
-    pub fragment_resolver: Arc<FragmentResolver>,
     pub api_key: SecretString,
     pub base_url: String,
     pub auth: AuthServices,
     pub gaia_x: GaiaXServices,
-    /// Domain service for DCAT catalog persistence (Oxigraph + SQLite fallback).
-    pub catalog_store: Arc<crate::graph::catalog::CatalogStore>,
     /// Per-org fossil analysis state (compilation host + resolve cache).
     pub org_analysis: Arc<Mutex<lru::LruCache<String, OrgAnalysisState>>>,
 }

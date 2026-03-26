@@ -21,10 +21,11 @@ interface CloudAccountFormProps {
     provider_id: string;
     auth_method?: string;
     fields: Record<string, string>;
-  }) => Promise<void>;
+  }) => void;
+  isPending?: boolean;
 }
 
-export function CloudAccountForm({ schema, account, onSubmit }: CloudAccountFormProps) {
+export function CloudAccountForm({ schema, account, onSubmit, isPending = false }: CloudAccountFormProps) {
   const isEdit = !!account;
   const [name, setName] = useState(account?.name ?? "");
   const [selectedId, setSelectedId] = useState(account?.provider_id ?? "");
@@ -32,8 +33,6 @@ export function CloudAccountForm({ schema, account, onSubmit }: CloudAccountForm
   const [fieldsMap, setFieldsMap] = useState<Record<string, Record<string, string>>>(() =>
     account ? { [account.provider_id]: { ...account.fields } } : {},
   );
-  const [saving, setSaving] = useState(false);
-
   const fields = fieldsMap[selectedId] ?? {};
   const selected = schema.find((s) => s.id === selectedId);
   const hasAuthMethods = (selected?.auth_methods.length ?? 0) > 0;
@@ -93,21 +92,16 @@ export function CloudAccountForm({ schema, account, onSubmit }: CloudAccountForm
     });
 
   const isDirty = isEdit
-    ? name !== (account?.name ?? "") && !saving
-    : !!(name || selectedId) && !saving;
+    ? name !== (account?.name ?? "") && !isPending
+    : !!(name || selectedId) && !isPending;
 
-  async function handleSubmit() {
-    setSaving(true);
-    try {
-      await onSubmit({
-        name: name.trim(),
-        provider_id: selectedId,
-        auth_method: hasAuthMethods ? authMethod : undefined,
-        fields,
-      });
-    } finally {
-      setSaving(false);
-    }
+  function handleSubmit() {
+    onSubmit({
+      name: name.trim(),
+      provider_id: selectedId,
+      auth_method: hasAuthMethods ? authMethod : undefined,
+      fields,
+    });
   }
 
   return (
@@ -184,10 +178,10 @@ export function CloudAccountForm({ schema, account, onSubmit }: CloudAccountForm
         <div />
         <Button
           size="sm"
-          disabled={!selectedId || !name.trim() || !fieldsValid || saving}
+          disabled={!selectedId || !name.trim() || !fieldsValid || isPending}
           onClick={handleSubmit}
         >
-          {saving ? "Saving..." : isEdit ? "Save" : "Create"}
+          {isPending ? "Saving..." : isEdit ? "Save" : "Create"}
         </Button>
       </PageShell.Footer>
     </PageShell>

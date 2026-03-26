@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { Fragment, useCallback, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   type ColumnDef,
   type RowSelectionState,
@@ -10,9 +10,9 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { toast } from "sonner";
-import { toastError } from "@/lib/toast-error";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
+import { useLLMStream } from "@/hooks/use-llm-stream";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -46,9 +46,10 @@ import type {
 import { cn } from "@/lib/utils";
 import { formatSize } from "@/lib/formatters";
 import { StepIndicator } from "@/components/shared/step-indicator";
+import { useAssistantWizardStore, type ReqEntry } from "./assistant-wizard-store";
 
 interface AssistantWizardProps {
-  onComplete: (script: string, shex: string) => void;
+  onComplete: (script: string) => void;
   connections: Connection[];
   providers: ProviderInfo[];
 }
@@ -327,11 +328,27 @@ function StepDescribe({
   );
 }
 
+// ── Streaming preview (shared between step 2 & 3) ───────────────────────
+
+function StreamingPreview({ label, text }: { label: string; text: string }) {
+  return (
+    <div className="flex-1 flex flex-col gap-3 min-h-0">
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">{label}</p>
+      </div>
+      {text && (
+        <pre className="flex-1 min-h-0 overflow-auto text-xs font-mono text-muted-foreground bg-muted/30 rounded-md p-3 whitespace-pre-wrap">
+          {text}
+        </pre>
+      )}
+    </div>
+  );
+}
+
 // ── Step 3: Requirements ────────────────────────────────────────────────
 
-interface ReqEntry extends CompetencyQuestion {
-  enabled: boolean;
-}
+// ReqEntry imported from assistant-wizard-store.ts
 
 function StepRequirements({
   reqs,
@@ -340,17 +357,19 @@ function StepRequirements({
   schemasLoading,
   hasError,
   onRetry,
+  streamText,
 }: {
   reqs: ReqEntry[];
-  setReqs: React.Dispatch<React.SetStateAction<ReqEntry[]>>;
+  setReqs: (reqs: ReqEntry[]) => void;
   isLoading: boolean;
   schemasLoading: boolean;
   hasError: boolean;
   onRetry: () => void;
+  streamText: string;
 }) {
   const addCustom = () => {
-    setReqs((prev) => [
-      ...prev,
+    setReqs([
+      ...reqs,
       {
         id: `custom-${Date.now()}`,
         question: "",
@@ -361,11 +380,11 @@ function StepRequirements({
   };
 
   const updateQuestion = (id: string, question: string) => {
-    setReqs((prev) => prev.map((r) => (r.id === id ? { ...r, question } : r)));
+    setReqs(reqs.map((r) => (r.id === id ? { ...r, question } : r)));
   };
 
   const removeReq = (id: string) => {
-    setReqs((prev) => prev.filter((r) => r.id !== id));
+    setReqs(reqs.filter((r) => r.id !== id));
   };
 
   const rowSelection = useMemo(() => {
@@ -434,22 +453,22 @@ function StepRequirements({
     getRowId: (row) => row.id,
     onRowSelectionChange: (updater) => {
       const next = typeof updater === "function" ? updater(rowSelection) : updater;
-      setReqs((prev) =>
-        prev.map((r) => ({ ...r, enabled: !!next[r.id] })),
-      );
+      setReqs(reqs.map((r) => ({ ...r, enabled: !!next[r.id] })));
     },
     state: { rowSelection },
   });
 
-  if (isLoading || schemasLoading) {
+  if (schemasLoading) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">
-          {schemasLoading ? "Loading data schemas..." : "Generating requirements..."}
-        </p>
+        <p className="text-sm text-muted-foreground">Loading data schemas...</p>
       </div>
     );
+  }
+
+  if (isLoading) {
+    return <StreamingPreview label="Generating requirements..." text={streamText} />;
   }
 
   if (reqs.length === 0 || hasError) {
@@ -520,30 +539,20 @@ function StepRequirements({
   );
 }
 
-// ── Step 4: Generate ────────────────────────────────────────────────────
-
-function StepGenerate({ isLoading }: { isLoading: boolean }) {
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Generating Fossil script and ShEx shapes...</p>
-      </div>
-    );
-  }
-  return null;
-}
-
 // ── Main Wizard ─────────────────────────────────────────────────────────
 
 export function AssistantWizard({ onComplete, connections, providers }: AssistantWizardProps) {
-  const [step, setStep] = useState(0);
-  const [connRowSelection, setConnRowSelection] = useState<RowSelectionState>({});
-  const [fileSelection, setFileSelection] = useState<Map<string, Set<string>>>(new Map());
-  const [fileCounts, setFileCounts] = useState<Map<string, number>>(new Map());
-  const [schemas, setSchemas] = useState<Map<string, ColumnInfo[]>>(new Map());
-  const [domain, setDomain] = useState("");
-  const [reqs, setReqs] = useState<ReqEntry[]>([]);
+  // Zustand store — replaces 7 useState + sync effects
+  const store = useAssistantWizardStore();
+  const {
+    step, connRowSelection, fileSelection, fileCounts, schemas,
+    domain, reqs, setStep, setConnRowSelection, setDomain, setReqs,
+    toggleFile, selectAllFiles, setSupportedCount, setSchemas,
+    cleanupForDeselectedConnections, deselectEmptyConnections, reset,
+  } = store;
+
+  // Reset on unmount
+  useEffect(() => () => reset(), [reset]);
 
   const dataConnections = useMemo(
     () => connections.filter((c) => c.kind === "data"),
@@ -557,68 +566,25 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
 
   // Clean up file selection when connection is deselected
   useEffect(() => {
-    setFileSelection((prev) => {
-      let changed = false;
-      const next = new Map(prev);
-      for (const connId of next.keys()) {
-        if (!selectedConnectionIds.has(connId)) {
-          next.delete(connId);
-          changed = true;
-        }
-      }
-      return changed ? next : prev;
-    });
-  }, [selectedConnectionIds]);
+    cleanupForDeselectedConnections(selectedConnectionIds);
+  }, [selectedConnectionIds, cleanupForDeselectedConnections]);
 
   // Deselect connection when all its files are deselected
   useEffect(() => {
-    const toDeselect: string[] = [];
-    for (const connId of selectedConnectionIds) {
-      const total = fileCounts.get(connId);
-      const selected = fileSelection.get(connId);
-      // Only act once files have loaded (total known) and all are deselected
-      if (total !== undefined && total > 0 && selected !== undefined && selected.size === 0) {
-        toDeselect.push(connId);
-      }
-    }
-    if (toDeselect.length > 0) {
-      setConnRowSelection((prev) => {
-        const next = { ...prev };
-        for (const id of toDeselect) delete next[id];
-        return next;
-      });
-    }
-  }, [fileSelection, fileCounts, selectedConnectionIds]);
+    deselectEmptyConnections(selectedConnectionIds);
+  }, [fileSelection, fileCounts, selectedConnectionIds, deselectEmptyConnections]);
 
   const handleSupportedCount = useCallback((connId: string, count: number) => {
-    setFileCounts((prev) => {
-      if (prev.get(connId) === count) return prev;
-      const next = new Map(prev);
-      next.set(connId, count);
-      return next;
-    });
-  }, []);
+    setSupportedCount(connId, count);
+  }, [setSupportedCount]);
 
   const handleToggleFile = useCallback((connId: string, path: string) => {
-    setFileSelection((prev) => {
-      const next = new Map(prev);
-      const set = new Set(next.get(connId) ?? []);
-      if (set.has(path)) set.delete(path);
-      else set.add(path);
-      next.set(connId, set);
-      return next;
-    });
-  }, []);
+    toggleFile(connId, path);
+  }, [toggleFile]);
 
   const handleToggleAll = useCallback((connId: string, paths: string[]) => {
-    setFileSelection((prev) => {
-      const next = new Map(prev);
-      const set = new Set(next.get(connId) ?? []);
-      for (const p of paths) set.add(p);
-      next.set(connId, set);
-      return next;
-    });
-  }, []);
+    selectAllFiles(connId, paths);
+  }, [selectAllFiles]);
 
   // Determine supported extensions from providers
   const supportedExts = useMemo(
@@ -659,7 +625,6 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
             next.set(fetches[i].key, result.value.columns);
           }
         }
-        // Mark connections as visited
         for (const id of selectedConnectionIds) {
           if (!next.has(id)) next.set(id, []);
         }
@@ -701,49 +666,45 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
     return true;
   }, [selectedConnectionIds, connections, schemas]);
 
-  const suggestMutation = useMutation({
-    mutationFn: () =>
-      api.assistant.suggest({ domain, schemas: fileSchemas }),
-    onSuccess: (data) => {
-      setReqs(
-        data.competency_questions.map((cq: CompetencyQuestion) => ({
-          ...cq,
-          enabled: true,
-        })),
-      );
-    },
-    onError: (err) => {
-      toastError(err instanceof Error ? err.message : "Failed to suggest requirements");
+  // ── LLM streaming (callbacks read from refs — no useCallback needed) ──
+
+  const suggest = useLLMStream<{ competency_questions: CompetencyQuestion[] }>({
+    streamFn: () => api.assistant.suggestStream({ domain, schemas: fileSchemas }),
+    onComplete: (data) => {
+      setReqs(data.competency_questions.map((cq) => ({ ...cq, enabled: true })));
     },
   });
 
-  const generateMutation = useMutation({
-    mutationFn: () =>
-      api.assistant.generate({
+  const generate = useLLMStream<{ script: string }>({
+    streamFn: () =>
+      api.assistant.generateStream({
         domain,
-        competency_questions: reqs.filter((r) => r.enabled && r.question.trim()).map((r) => r.question),
+        competency_questions: reqs
+          .filter((r) => r.enabled && r.question.trim())
+          .map((r) => r.question),
         schemas: fileSchemas,
       }),
-    onSuccess: (data) => {
-      onComplete(data.script, data.shex);
+    onComplete: (data) => {
+      onComplete(data.script);
       toast.success("Script generated — review before submitting");
-    },
-    onError: (err) => {
-      toastError(err instanceof Error ? err.message : "Failed to generate script");
     },
   });
 
+  // Auto-trigger suggest when entering step 2
   useEffect(() => {
-    if (step === 2 && reqs.length === 0 && !suggestMutation.isPending && !suggestMutation.isError && schemasReady) {
-      suggestMutation.mutate();
+    if (step === 2 && reqs.length === 0 && !suggest.loading && !suggest.error && schemasReady) {
+      suggest.start();
     }
+    return suggest.abort;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, schemasReady]);
 
+  // Auto-trigger generate when entering step 3
   useEffect(() => {
-    if (step === 3 && !generateMutation.isPending && !generateMutation.isSuccess && !generateMutation.isError) {
-      generateMutation.mutate();
+    if (step === 3 && !generate.loading && !generate.error) {
+      generate.start();
     }
+    return generate.abort;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
@@ -784,13 +745,16 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
             <StepRequirements
               reqs={reqs}
               setReqs={setReqs}
-              isLoading={suggestMutation.isPending}
+              isLoading={suggest.loading}
               schemasLoading={!schemasReady}
-              hasError={suggestMutation.isError}
-              onRetry={() => suggestMutation.mutate()}
+              hasError={!!suggest.error}
+              onRetry={() => suggest.start()}
+              streamText={suggest.streamText}
             />
           )}
-          {step === 3 && <StepGenerate isLoading={generateMutation.isPending} />}
+          {step === 3 && generate.loading && (
+            <StreamingPreview label="Generating Fossil script..." text={generate.streamText} />
+          )}
         </div>
       </PageShell.Content>
 
@@ -798,14 +762,14 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setStep((s) => s - 1)}
+          onClick={() => store.prevStep()}
           disabled={step === 0}
         >
           <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
           Back
         </Button>
         {step < 3 && (
-          <Button size="sm" onClick={() => setStep((s) => s + 1)} disabled={!canNext}>
+          <Button size="sm" onClick={() => store.nextStep()} disabled={!canNext}>
             {step === 2 ? (
               <>
                 <Wand2 className="h-3.5 w-3.5 mr-1.5" />

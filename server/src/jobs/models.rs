@@ -2,6 +2,7 @@ use rusqlite::types::{FromSql, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use serde::{Deserialize, Serialize};
 
 use crate::graph::dcat::types::DcatInput;
+use fossil_lang::runtime::executor::DataManifest;
 use super::pipeline_types::PipelineSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
@@ -94,8 +95,17 @@ pub struct Job {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,
     /// Base URL for RDF Parquet storage (set when job uses Rdf output).
-    #[serde(default, skip_serializing_if = "Option::is_none", rename = "fragment_base")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rdf_base: Option<String>,
+    /// GraphAr manifest with vertex/edge file paths and column statistics.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub manifest: Option<DataManifest>,
+    /// DCAT-AP catalog manifest (parquets stored in promotor cloud).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub catalog_manifest: Option<DataManifest>,
+    /// Base URL for catalog parquets in promotor storage.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub catalog_base: Option<String>,
 }
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]

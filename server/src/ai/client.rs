@@ -14,6 +14,31 @@ use tracing::{debug, warn};
 
 use crate::settings::ai::AiSettings;
 
+// ── JSON extraction ──────────────────────────────────────────────────────
+
+/// Extract the first valid JSON object from LLM output.
+/// Handles markdown fences, preamble text, and raw JSON.
+pub fn extract_json(raw: &str) -> &str {
+    if let Some(start) = raw.find("```json") {
+        let after = &raw[start + 7..];
+        if let Some(end) = after.find("```") {
+            return after[..end].trim();
+        }
+    }
+    if let Some(start) = raw.find("```") {
+        let after = &raw[start + 3..];
+        if let Some(end) = after.find("```") {
+            return after[..end].trim();
+        }
+    }
+    if let Some(start) = raw.find('{') {
+        if let Some(end) = raw.rfind('}') {
+            return &raw[start..=end];
+        }
+    }
+    raw.trim()
+}
+
 // ── Constants ────────────────────────────────────────────────────────────
 
 const ANTHROPIC_API_VERSION: &str = "2024-10-22";

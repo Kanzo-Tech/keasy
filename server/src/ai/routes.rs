@@ -51,28 +51,7 @@ fn ask_tool() -> ToolDef {
     }
 }
 
-/// Extract JSON from LLM output — handles fences, preamble text, etc.
-/// Used as fallback when tool_use doesn't produce clean JSON.
-fn extract_json(raw: &str) -> &str {
-    if let Some(start) = raw.find("```json") {
-        let after = &raw[start + 7..];
-        if let Some(end) = after.find("```") {
-            return after[..end].trim();
-        }
-    }
-    if let Some(start) = raw.find("```") {
-        let after = &raw[start + 3..];
-        if let Some(end) = after.find("```") {
-            return after[..end].trim();
-        }
-    }
-    if let Some(start) = raw.find('{') {
-        if let Some(end) = raw.rfind('}') {
-            return &raw[start..=end];
-        }
-    }
-    raw.trim()
-}
+use super::client::extract_json;
 
 fn classify_error(e: &AiError) -> (AskResultCode, &'static str) {
     match e {

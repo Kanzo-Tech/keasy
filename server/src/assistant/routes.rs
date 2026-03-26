@@ -4,7 +4,7 @@ use axum::response::Response;
 use axum::Json;
 use std::fmt::Write as FmtWrite;
 
-use crate::ai::client::{require_ai_settings, stream_llm_to_sse, ToolDef};
+use crate::ai::client::{extract_json, require_ai_settings, stream_llm_to_sse, ToolDef};
 use crate::middleware::tenant::{IsParticipant, Require};
 use crate::AppState;
 
@@ -25,30 +25,6 @@ fn format_schemas_for_prompt(schemas: &[FileSchema]) -> String {
     out
 }
 
-/// Extract the first valid JSON object from LLM output (handles fences, preamble text, etc.)
-fn extract_json(raw: &str) -> &str {
-    // Try fenced json block anywhere
-    if let Some(start) = raw.find("```json") {
-        let after = &raw[start + 7..];
-        if let Some(end) = after.find("```") {
-            return after[..end].trim();
-        }
-    }
-    // Try generic fence
-    if let Some(start) = raw.find("```") {
-        let after = &raw[start + 3..];
-        if let Some(end) = after.find("```") {
-            return after[..end].trim();
-        }
-    }
-    // Try raw JSON object
-    if let Some(start) = raw.find('{') {
-        if let Some(end) = raw.rfind('}') {
-            return &raw[start..=end];
-        }
-    }
-    raw.trim()
-}
 
 const CQ_SYSTEM_PROMPT: &str = r#"You are an expert in knowledge graph ontology design and competency questions.
 

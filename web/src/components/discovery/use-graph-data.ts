@@ -136,18 +136,38 @@ export function useGraphData(schema: GraphSchema | null, typeName?: string): KGG
       }
     }
 
-    // Positions + colors
+    // Cluster assignments: each type → a cluster index
+    const clusterMap = new Map<string, number>();
+    for (const t of types) {
+      if (!clusterMap.has(t)) clusterMap.set(t, clusterMap.size);
+    }
+    const pointClusters: (number | undefined)[] = types.map((t) => clusterMap.get(t));
+
+    // Cluster centers distributed in circle, radius scales with sqrt(n)
+    const numClusters = clusterMap.size;
+    const clusterPositions: (number | undefined)[] = [];
+    const radius = Math.sqrt(n) * 3;
+    for (let ci = 0; ci < numClusters; ci++) {
+      const angle = (2 * Math.PI * ci) / numClusters;
+      clusterPositions.push(Math.cos(angle) * radius, Math.sin(angle) * radius);
+    }
+
+    // Positions: seed near cluster center with small hash-based offset
     const positions = new Float32Array(n * 2);
     const colors = new Float32Array(n * 4);
     const sizes = new Float32Array(n).fill(4);
 
     for (let i = 0; i < n; i++) {
-      const [x, y] = hashPos(ids[i]);
-      positions[i * 2] = x;
-      positions[i * 2 + 1] = y;
+      const ci = clusterMap.get(types[i]) ?? 0;
+      const cx = clusterPositions[ci * 2] as number;
+      const cy = clusterPositions[ci * 2 + 1] as number;
+      const [hx, hy] = hashPos(ids[i]);
+      // Small offset from cluster center — simulation refines from here
+      positions[i * 2] = cx + hx * 0.05;
+      positions[i * 2 + 1] = cy + hy * 0.05;
 
-      const ci = groupColorIdx.get(types[i]) ?? 0;
-      const [r, g, b] = COLORS[ci];
+      const colorIdx = groupColorIdx.get(types[i]) ?? 0;
+      const [r, g, b] = COLORS[colorIdx];
       colors[i * 4] = r / 255;
       colors[i * 4 + 1] = g / 255;
       colors[i * 4 + 2] = b / 255;
@@ -168,22 +188,6 @@ export function useGraphData(schema: GraphSchema | null, typeName?: string): KGG
           linkBuf[edgeIdx++] = ti;
         }
       }
-    }
-
-    // Cluster assignments: each type → a cluster index
-    const clusterMap = new Map<string, number>();
-    for (const t of types) {
-      if (!clusterMap.has(t)) clusterMap.set(t, clusterMap.size);
-    }
-    const pointClusters: (number | undefined)[] = types.map((t) => clusterMap.get(t));
-
-    // Cluster center positions distributed in a circle (radius = 300)
-    const numClusters = clusterMap.size;
-    const clusterPositions: (number | undefined)[] = [];
-    const radius = Math.min(300, numClusters * 60);
-    for (let i = 0; i < numClusters; i++) {
-      const angle = (2 * Math.PI * i) / numClusters;
-      clusterPositions.push(Math.cos(angle) * radius, Math.sin(angle) * radius);
     }
 
     return {

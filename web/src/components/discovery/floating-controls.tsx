@@ -13,8 +13,8 @@ export function FloatingControls({ graphRef, simulationRunning }: Props) {
   return (
     <div className="flex flex-col gap-0.5">
       {([
-        { key: "in", icon: Plus, label: "Zoom in", action: () => graphRef.current?.zoom(1.5, 300) },
-        { key: "out", icon: Minus, label: "Zoom out", action: () => graphRef.current?.zoom(0.5, 300) },
+        { key: "in", icon: Plus, label: "Zoom in", action: () => graphRef.current?.zoomIn() },
+        { key: "out", icon: Minus, label: "Zoom out", action: () => graphRef.current?.zoomOut() },
         { key: "fit", icon: Maximize, label: "Fit view (F)", action: () => graphRef.current?.fitView(500) },
       ] as const).map(({ key, icon: Icon, label, action }) => (
         <Tooltip key={key}>

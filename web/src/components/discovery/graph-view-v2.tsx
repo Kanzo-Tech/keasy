@@ -17,27 +17,53 @@ import type { GraphSchema } from "@/lib/graph-schema";
 import { useGraphData, GROUP_CSS_COLORS } from "./use-graph-data";
 import { useGraphCrossfilter } from "./use-graph-crossfilter";
 
-// ── Default config ───────────────────────────────────────────────────────
+// ── Adaptive config (continuous scaling, no breakpoints) ─────────────────
 
-export const DEFAULT_GRAPH_CONFIG: GraphConfigInterface = {
-  backgroundColor: "transparent",
-  pointSizeScale: 1.1,
-  renderHoveredPointRing: true,
-  scalePointsOnZoom: true,
-  renderLinks: true,
-  spaceSize: 4096,
-  simulationRepulsion: 0.5,
-  simulationFriction: 0.5,
-  simulationLinkSpring: 0.4,
-  simulationLinkDistance: 20,
-  simulationGravity: 0.25,
-  simulationDecay: 1000,
-  enableDrag: true,
-  fitViewOnInit: true,
-  fitViewDelay: 3000,
-  pointGreyoutOpacity: 0.3,
-  linkGreyoutOpacity: 0.1,
-};
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+const lerp = (a: number, b: number, t: number) => a + (b - a) * clamp(t, 0, 1);
+
+/** t = 0 at ~10 nodes, t = 1 at ~100k nodes (log10 scale) */
+function graphScale(n: number): number {
+  return clamp((Math.log10(Math.max(n, 1)) - 1) / 4, 0, 1);
+}
+
+/** Simulation params that scale continuously with node count. */
+export function getAdaptiveConfig(nodeCount: number): GraphConfigInterface {
+  const t = graphScale(nodeCount);
+  return {
+    // Visual (constant)
+    backgroundColor: "transparent",
+    enableDrag: true,
+    fitViewOnInit: false,
+    pointGreyoutOpacity: 0.3,
+    linkGreyoutOpacity: 0.1,
+    simulationLinkDistRandomVariationRange: [1, 1.3],
+
+    // Adaptive simulation
+    spaceSize:               lerp(2048, 8192, t),
+    simulationRepulsion:     lerp(1.2, 0.4, t),
+    simulationFriction:      lerp(0.7, 0.92, t),
+    simulationLinkSpring:    lerp(0.5, 0.25, t),
+    simulationLinkDistance:  lerp(30, 12, t),
+    simulationGravity:       lerp(0.35, 0.08, t),
+    simulationDecay:         lerp(800, 2500, t),
+    simulationCluster:       0.15,
+    simulationCenter:        lerp(0.1, 0.02, t),
+
+    // Adaptive rendering
+    pointSizeScale:          lerp(1.5, 0.5, t),
+    renderLinks:             nodeCount < 250_000,
+    scalePointsOnZoom:       nodeCount < 100_000,
+    renderHoveredPointRing:  nodeCount < 100_000,
+    ...(nodeCount > 5000 && {
+      linkVisibilityDistanceRange: [50, 200],
+      linkVisibilityMinTransparency: 0.05,
+    }),
+  };
+}
+
+/** Backwards-compatible export for components that need a static default. */
+export const DEFAULT_GRAPH_CONFIG: GraphConfigInterface = getAdaptiveConfig(500);
 
 // ── Props ────────────────────────────────────────────────────────────────
 
@@ -80,11 +106,11 @@ export function GraphCanvas({ schema, graphConfig, graphRef, selection, onSelect
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [graphRef, simulationRunning]);
 
-  // Config with click handler
+  // Config: adaptive base + user overrides + event handlers
   const nodeCount = graphData?.ids.length ?? 0;
   const config = useMemo((): GraphConfigInterface => ({
+    ...getAdaptiveConfig(nodeCount),
     ...graphConfig,
-    ...(nodeCount > 100_000 && { simulationGravity: 0.1, simulationRepulsion: 0.8, simulationFriction: 0.9, simulationDecay: 2000, scalePointsOnZoom: false }),
     onClick: (index: number | undefined) => {
       setSelectedIndex(index ?? null);
       if (index != null && graphData) {
@@ -95,8 +121,11 @@ export function GraphCanvas({ schema, graphConfig, graphRef, selection, onSelect
         onSelectVertex(null);
       }
     },
-    onSimulationEnd: () => setSimulationRunning(false),
-  }), [graphConfig, nodeCount, graphData, publishSelection, clearSelection, onSelectVertex]);
+    onSimulationEnd: () => {
+      setSimulationRunning(false);
+      graphRef.current?.fitView(500);
+    },
+  }), [graphConfig, nodeCount, graphData, publishSelection, clearSelection, onSelectVertex, graphRef]);
 
   // Group toggle
   const toggleGroup = useCallback((name: string) => {

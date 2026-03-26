@@ -34,7 +34,8 @@ export interface CosmosGraphProps {
 /** Imperative handle exposing cosmos.gl Graph methods to parent components. */
 export interface CosmosGraphHandle {
   graph: Graph | null;
-  zoom: (value: number, duration?: number) => void;
+  zoomIn: (duration?: number) => void;
+  zoomOut: (duration?: number) => void;
   fitView: (duration?: number) => void;
   start: () => void;
   pause: () => void;
@@ -56,7 +57,14 @@ export const CosmosGraph = forwardRef<CosmosGraphHandle, CosmosGraphProps>(
     // Expose typed handle to parent
     useImperativeHandle(ref, () => ({
       get graph() { return graphRef.current; },
-      zoom: (value: number, duration?: number) => graphRef.current?.zoom(value, duration),
+      zoomIn: (duration = 300) => {
+        const g = graphRef.current;
+        if (g) g.zoom(g.getZoomLevel() * 1.5, duration);
+      },
+      zoomOut: (duration = 300) => {
+        const g = graphRef.current;
+        if (g) g.zoom(g.getZoomLevel() / 1.5, duration);
+      },
       fitView: (duration?: number) => graphRef.current?.fitView(duration),
       start: () => graphRef.current?.start(),
       pause: () => graphRef.current?.pause(),

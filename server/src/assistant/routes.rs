@@ -4,8 +4,7 @@ use axum::response::Response;
 use axum::Json;
 use std::fmt::Write as FmtWrite;
 
-use crate::ai::client::{require_ai_settings, stream_llm_to_sse};
-use crate::ai::routes::strip_markdown_fences;
+use crate::ai::client::{require_ai_settings, stream_llm_to_sse, ToolDef};
 use crate::middleware::tenant::{IsParticipant, Require};
 use crate::AppState;
 
@@ -24,6 +23,31 @@ fn format_schemas_for_prompt(schemas: &[FileSchema]) -> String {
         writeln!(out).unwrap();
     }
     out
+}
+
+/// Extract the first valid JSON object from LLM output (handles fences, preamble text, etc.)
+fn extract_json(raw: &str) -> &str {
+    // Try fenced json block anywhere
+    if let Some(start) = raw.find("```json") {
+        let after = &raw[start + 7..];
+        if let Some(end) = after.find("```") {
+            return after[..end].trim();
+        }
+    }
+    // Try generic fence
+    if let Some(start) = raw.find("```") {
+        let after = &raw[start + 3..];
+        if let Some(end) = after.find("```") {
+            return after[..end].trim();
+        }
+    }
+    // Try raw JSON object
+    if let Some(start) = raw.find('{') {
+        if let Some(end) = raw.rfind('}') {
+            return &raw[start..=end];
+        }
+    }
+    raw.trim()
 }
 
 const CQ_SYSTEM_PROMPT: &str = r#"You are an expert in knowledge graph ontology design and competency questions.
@@ -80,44 +104,6 @@ end
 data
 |> each row -> Person("http://example.com/person/${row.id}") {
     Name = row.name,
-    Age = row.age
-}
-|> Rdf.fragments(@connection_name/output/people)
-```
-- `each row -> ...` iterates over every row
-- Constructor call: `TypeName("subject_iri") { field = value, ... }`
-- `Rdf.fragments(...)` writes RDF fragments to cloud storage
-
-### Pipe operator
-```
-expression |> function
-```
-Chains operations. `x |> f` is equivalent to `f(x)`.
-
-### String interpolation
-```
-"http://example.com/${row.field_name}"
-```
-
-## Complete example
-
-```fossil
-// Define ontology types inline
-#[rdf(type = "http://example.com/ontology/Person")]
-type Person(subject: string) do
-    #[rdf(uri = "http://xmlns.com/foaf/0.1/name")]
-    Name: string
-    #[rdf(uri = "http://example.com/ontology/department")]
-    Department: string?
-end
-
-// Load data from CSV
-let people = csv!(@my_connection/people.csv)
-
-// Map rows to typed instances
-people
-|> each row -> Person("http://example.com/person/${row.id}") {
-    Name = row.name,
     Department = row.dept_id
 }
 |> Rdf.fragments(@my_connection/output/people)
@@ -137,6 +123,47 @@ people
   "script": "...the Fossil script..."
 }"#;
 
+/// Tool definition for structured suggest output.
+fn suggest_tool() -> ToolDef {
+    ToolDef {
+        name: "suggest_requirements".into(),
+        description: "Suggest competency questions for a knowledge graph based on data schemas".into(),
+        input_schema: serde_json::json!({
+            "type": "object",
+            "properties": {
+                "competency_questions": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": { "type": "string" },
+                            "question": { "type": "string" },
+                            "rationale": { "type": "string" }
+                        },
+                        "required": ["id", "question", "rationale"]
+                    }
+                }
+            },
+            "required": ["competency_questions"]
+        }),
+    }
+}
+
+/// Tool definition for structured generate output.
+fn generate_tool() -> ToolDef {
+    ToolDef {
+        name: "generate_script".into(),
+        description: "Generate a Fossil script for building a knowledge graph".into(),
+        input_schema: serde_json::json!({
+            "type": "object",
+            "properties": {
+                "script": { "type": "string", "description": "The complete Fossil script" }
+            },
+            "required": ["script"]
+        }),
+    }
+}
+
 #[utoipa::path(post, path = "/v1/assistant/suggest-stream", tag = "Assistant",
     request_body = SuggestRequest,
     responses(
@@ -152,20 +179,25 @@ pub async fn suggest_cqs_stream(
     let ai_settings = require_ai_settings(state.db.list_ai_providers().await.into_iter().next())?;
 
     let mut user_msg = format!("Domain: {}\n\n", req.domain);
+    user_msg.push_str("<schema_context>\n");
     user_msg.push_str(&format_schemas_for_prompt(&req.schemas));
+    user_msg.push_str("</schema_context>");
 
     Ok(stream_llm_to_sse(
         ai_settings,
         CQ_SYSTEM_PROMPT.to_string(),
         user_msg,
         None,
+        Some(suggest_tool()),
         |full_text| {
-            let json_str = strip_markdown_fences(full_text);
+            // With tool_use, full_text is already valid JSON from the tool input
+            // Fallback to extract_json for text-mode responses
+            let json_str = extract_json(full_text);
             match serde_json::from_str::<SuggestResponse>(json_str) {
                 Ok(parsed) => serde_json::to_value(parsed).unwrap_or_default(),
                 Err(e) => {
                     tracing::warn!(raw = %full_text, "Failed to parse CQ response: {e}");
-                    serde_json::json!({ "competency_questions": [] })
+                    serde_json::json!({"code": "parse_failed", "message": format!("Failed to parse requirements: {e}")})
                 }
             }
         },
@@ -187,34 +219,27 @@ pub async fn generate_script_stream(
     let ai_settings = require_ai_settings(state.db.list_ai_providers().await.into_iter().next())?;
 
     let mut user_msg = format!("Domain: {}\n\n", req.domain);
-
     user_msg.push_str("Competency Questions:\n");
     for (i, cq) in req.competency_questions.iter().enumerate() {
         writeln!(user_msg, "{}. {}", i + 1, cq).unwrap();
     }
-    user_msg.push('\n');
-
-    user_msg.push_str("Data Schemas:\n");
+    user_msg.push_str("\n<schema_context>\n");
     user_msg.push_str(&format_schemas_for_prompt(&req.schemas));
+    user_msg.push_str("</schema_context>");
 
     Ok(stream_llm_to_sse(
         ai_settings,
         GENERATE_SYSTEM_PROMPT.to_string(),
         user_msg,
         None,
+        Some(generate_tool()),
         |full_text| {
-            let json_str = strip_markdown_fences(full_text);
+            let json_str = extract_json(full_text);
             match serde_json::from_str::<GenerateResponse>(json_str) {
                 Ok(parsed) => serde_json::to_value(parsed).unwrap_or_default(),
-                Err(_) => {
-                    // Fallback: treat the response as raw script
-                    let script = json_str
-                        .strip_prefix("```fossil")
-                        .or_else(|| json_str.strip_prefix("```"))
-                        .and_then(|s| s.strip_suffix("```"))
-                        .unwrap_or(json_str)
-                        .trim();
-                    serde_json::json!({ "script": script })
+                Err(e) => {
+                    tracing::warn!(raw = %full_text, "Failed to parse generate response: {e}");
+                    serde_json::json!({"code": "parse_failed", "message": format!("Failed to parse script: {e}")})
                 }
             }
         },

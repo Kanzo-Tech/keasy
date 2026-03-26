@@ -104,6 +104,10 @@ pub async fn ask_discover(
                         AskResultCode::InsufficientCredits,
                         "Your AI provider account has insufficient credits. Please check your billing settings.",
                     ),
+                    AiError::RateLimit(_) => (
+                        AskResultCode::LlmFailed,
+                        "Rate limited by AI provider. Please wait a moment and try again.",
+                    ),
                     AiError::Failed(_) => (
                         AskResultCode::LlmFailed,
                         "Something went wrong while generating a query. Please try again.",
@@ -286,7 +290,7 @@ pub async fn ask_discover_stream(
     let db = state.db.clone();
     let delta_tx = ch.delta_tx;
     tokio::spawn(async move {
-        let result = ask_llm_stream(&ai_settings, &system_prompt, &messages, max_tokens, delta_tx).await;
+        let result = ask_llm_stream(&ai_settings, &system_prompt, &messages, max_tokens, None, delta_tx).await;
 
         match result {
             Ok(full_text) => {
@@ -329,6 +333,7 @@ pub async fn ask_discover_stream(
             Err(e) => {
                 let (code, msg) = match &e {
                     AiError::InsufficientCredits(_) => (AskResultCode::InsufficientCredits.as_str(), "Insufficient credits."),
+                    AiError::RateLimit(_) => (AskResultCode::LlmFailed.as_str(), "Rate limited. Please wait and try again."),
                     AiError::Failed(_) => (AskResultCode::LlmFailed.as_str(), "LLM call failed."),
                 };
                 warn!("LLM stream failed: {e}");
@@ -576,10 +581,26 @@ pub struct AskResponse {
     pub reasoning: Option<String>,
 }
 
+/// Extract JSON from LLM output — handles fences, preamble text, etc.
 pub fn strip_markdown_fences(raw: &str) -> &str {
-    let mid = raw
-        .strip_prefix("```json")
-        .or_else(|| raw.strip_prefix("```"))
-        .unwrap_or(raw);
-    mid.strip_suffix("```").unwrap_or(mid).trim()
+    // Try fenced json block anywhere in text
+    if let Some(start) = raw.find("```json") {
+        let after = &raw[start + 7..];
+        if let Some(end) = after.find("```") {
+            return after[..end].trim();
+        }
+    }
+    if let Some(start) = raw.find("```") {
+        let after = &raw[start + 3..];
+        if let Some(end) = after.find("```") {
+            return after[..end].trim();
+        }
+    }
+    // Try raw JSON object
+    if let Some(start) = raw.find('{') {
+        if let Some(end) = raw.rfind('}') {
+            return &raw[start..=end];
+        }
+    }
+    raw.trim()
 }

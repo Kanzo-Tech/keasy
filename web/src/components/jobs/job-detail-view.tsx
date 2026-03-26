@@ -111,7 +111,7 @@ export function JobDetailView({ id }: { id: string }) {
 
   return (
     <Tabs value={tab} onValueChange={setTab} className="flex-1 min-h-0">
-      <div className="flex items-center justify-between px-4 pt-4">
+      <div className="flex items-center justify-between px-(--spacing-content) pt-(--spacing-content)">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           {hasCatalog && <TabsTrigger value="catalog">Catalog</TabsTrigger>}
@@ -135,11 +135,11 @@ export function JobDetailView({ id }: { id: string }) {
         </div>
       </div>
 
-      <TabsContent value="overview" className="gap-4 overflow-auto p-4">
+      <TabsContent value="overview" className="gap-(--spacing-section) overflow-auto p-(--spacing-content)">
         <OverviewContent job={job} dests={dests} hasPipeline={hasPipeline} />
       </TabsContent>
 
-      <TabsContent value="catalog" className="gap-4 overflow-auto p-4">
+      <TabsContent value="catalog" className="gap-(--spacing-section) overflow-auto p-(--spacing-content)">
         <CatalogView
           id={id}
           viewMode={catalogMode}

@@ -43,6 +43,15 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  /* Density tokens — referenced by shadcn components */
+  --size-control: var(--control);
+  --size-control-sm: var(--control-sm);
+  --size-control-lg: var(--control-lg);
+  --size-icon: var(--icon);
+  --spacing-content: var(--content-spacing);
+  --spacing-card: var(--card-spacing);
+  --spacing-section: var(--section-spacing);
+  --size-table-head: var(--table-head);
 }
 
 :root {
@@ -183,10 +192,43 @@
   --ring: oklch(0.645 0.246 16.439);
 }
 
-/* ── Font size presets ── */
+/* ── Density presets (font-size + spacing) ── */
 
-[data-font-size="compact"]     { font-size: 14px; }
-[data-font-size="comfortable"] { font-size: 18px; }
+/* Default: Zed-like density */
+:root {
+  --control: 2.25rem;
+  --control-sm: 1.75rem;
+  --control-lg: 2.75rem;
+  --icon: 2.25rem;
+  --content-spacing: 0.75rem;
+  --card-spacing: 0.75rem;
+  --section-spacing: 0.75rem;
+  --table-head: 2rem;
+}
+
+[data-font-size="compact"] {
+  font-size: 14px;
+  --control: 1.75rem;
+  --control-sm: 1.25rem;
+  --control-lg: 2.25rem;
+  --icon: 1.75rem;
+  --content-spacing: 0.5rem;
+  --card-spacing: 0.5rem;
+  --section-spacing: 0.5rem;
+  --table-head: 1.75rem;
+}
+
+[data-font-size="comfortable"] {
+  font-size: 18px;
+  --control: 2.5rem;
+  --control-sm: 2rem;
+  --control-lg: 3rem;
+  --icon: 2.5rem;
+  --content-spacing: 1rem;
+  --card-spacing: 1rem;
+  --section-spacing: 1rem;
+  --table-head: 2.5rem;
+}
 
 /* ── Font family presets — override --font-sans ── */
 

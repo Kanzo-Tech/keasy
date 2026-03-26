@@ -24,11 +24,11 @@ function Header({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center justify-between mb-(--spacing-section)">
       <div>
-        <h1 className="text-lg font-semibold">{title}</h1>
+        <h1 className="text-sm font-semibold">{title}</h1>
         {description && (
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
         )}
       </div>
       {actions}
@@ -44,7 +44,7 @@ function Content({
   className?: string;
 }) {
   return (
-    <div className={cn("flex-1 flex flex-col gap-4 overflow-auto p-4", className)}>
+    <div className={cn("flex-1 flex flex-col gap-(--spacing-section) overflow-auto p-(--spacing-content)", className)}>
       {children}
     </div>
   );
@@ -58,7 +58,7 @@ function Footer({
   className?: string;
 }) {
   return (
-    <div className={cn("shrink-0 border-t bg-background px-4 py-3", className)}>
+    <div className={cn("shrink-0 border-t bg-background px-(--spacing-content) py-2", className)}>
       <div className="flex items-center justify-between">
         {children}
       </div>

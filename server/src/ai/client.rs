@@ -176,10 +176,28 @@ pub async fn ask_llm_multi(
     let client = &*HTTP_CLIENT;
     let max_tokens = max_tokens_override.unwrap_or(settings.max_tokens.unwrap_or(2048));
 
-    match settings.provider.as_str() {
-        "openai" => ask_openai(client, settings, system, messages, max_tokens).await,
-        _ => ask_anthropic(client, settings, system, messages, max_tokens).await,
-    }
+    let backoff = ExponentialBackoffBuilder::default()
+        .with_initial_interval(Duration::from_millis(500))
+        .with_max_interval(Duration::from_secs(5))
+        .with_max_elapsed_time(Some(Duration::from_secs(30)))
+        .build();
+
+    let op = || async {
+        let result = match settings.provider.as_str() {
+            "openai" => ask_openai(client, settings, system, messages, max_tokens).await,
+            _ => ask_anthropic(client, settings, system, messages, max_tokens).await,
+        };
+        match result {
+            Ok(v) => Ok(v),
+            Err(e) if e.is_transient() => {
+                warn!("Transient LLM error, retrying: {e}");
+                Err(backoff::Error::transient(e))
+            }
+            Err(e) => Err(backoff::Error::permanent(e)),
+        }
+    };
+
+    backoff::future::retry(backoff, op).await
 }
 
 // ── Anthropic (non-streaming) ────────────────────────────────────────────

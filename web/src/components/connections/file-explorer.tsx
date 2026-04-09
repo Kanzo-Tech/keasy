@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
@@ -20,41 +19,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { FileEntry, ProviderInfo, ConnectionKind } from "@/lib/types";
+import type { FileEntry } from "@/lib/types";
 import { formatSize } from "@/lib/formatters";
 
 interface FileExplorerProps {
   connectionName: string;
-  connectionKind: ConnectionKind;
   files: FileEntry[];
   isLoading: boolean;
-  providers: ProviderInfo[];
 }
 
 export function FileExplorer({
   connectionName,
-  connectionKind,
   files,
   isLoading,
-  providers,
 }: FileExplorerProps) {
-  const filtered = useMemo(() => {
-    const supportedExts = providers
-      .filter((p) =>
-        connectionKind === "data"
-          ? p.kind === "data" || p.kind === "both"
-          : p.kind === "schema" || p.kind === "both",
-      )
-      .flatMap((p) => p.extensions);
-
-    return supportedExts.length > 0
-      ? files.filter((f) => {
-          const ext = f.path.split(".").pop()?.toLowerCase() ?? "";
-          return supportedExts.includes(ext);
-        })
-      : files;
-  }, [files, providers, connectionKind]);
-
   const showSkeleton = useDelayedLoading(isLoading);
 
   function copyRef(path: string) {
@@ -89,8 +67,6 @@ export function FileExplorer({
         ) : null
       ) : files.length === 0 ? (
         <p className="text-xs text-muted-foreground">No files found.</p>
-      ) : filtered.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No supported files found.</p>
       ) : (
         <Table>
           <TableHeader>
@@ -101,7 +77,7 @@ export function FileExplorer({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((f) => (
+            {files.map((f) => (
               <TableRow key={f.path}>
                 <TableCell className="font-mono text-xs">{f.path}</TableCell>
                 <TableCell className="text-xs text-muted-foreground text-right">

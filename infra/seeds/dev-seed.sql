@@ -60,27 +60,21 @@ VALUES
 -- Demo data: Promotor (Keasy)
 -- ══════════════════════════════════════════════════════════════════════════════
 
--- ── Cloud accounts ──────────────────────────────────────────────────────────
+-- ── Connectors ──────────────────────────────────────────────────────────────
 
-INSERT OR IGNORE INTO cloud_accounts
-  (id, organization_id, name, provider_id, fields)
-VALUES
-  ('dddddddd-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001',
-   'AWS Production', 's3', '{"region":"eu-west-1"}');
-
--- ── Connections ─────────────────────────────────────────────────────────────
-
-INSERT OR IGNORE INTO connections
-  (id, organization_id, name, kind, location_type, url)
+INSERT OR IGNORE INTO connectors
+  (id, organization_id, name, connector_type, direction, config, created_at, updated_at)
 VALUES
   ('eeeeeeee-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001',
-   'Product Catalog', 'data', 'local', 'file:///sample/products.csv');
+   'Product Catalog', 'local_fs', 'source', '{"base_path":"/sample/products.csv"}',
+   strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), strftime('%Y-%m-%dT%H:%M:%SZ', 'now'));
 
-INSERT OR IGNORE INTO connections
-  (id, organization_id, name, kind, location_type, url)
+INSERT OR IGNORE INTO connectors
+  (id, organization_id, name, connector_type, direction, config, created_at, updated_at)
 VALUES
   ('eeeeeeee-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001',
-   'Schema.org Vocab', 'vocab', 'local', 'https://schema.org');
+   'Schema.org Vocab', 'http', 'source', '{"url":"https://schema.org"}',
+   strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), strftime('%Y-%m-%dT%H:%M:%SZ', 'now'));
 
 -- ── Jobs ────────────────────────────────────────────────────────────────────
 
@@ -97,28 +91,21 @@ VALUES
 -- Demo data: Participant (ACME Corp)
 -- ══════════════════════════════════════════════════════════════════════════════
 
--- ── Cloud accounts ──────────────────────────────────────────────────────────
+-- ── Connectors ──────────────────────────────────────────────────────────────
 
-INSERT OR IGNORE INTO cloud_accounts
-  (id, organization_id, name, provider_id, fields)
-VALUES
-  ('dddddddd-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002',
-   'Google Cloud Dev', 'gcp', '{"project":"acme-dev"}');
-
--- ── Connections ─────────────────────────────────────────────────────────────
-
-INSERT OR IGNORE INTO connections
-  (id, organization_id, name, kind, location_type, cloud_account_id, url)
+INSERT OR IGNORE INTO connectors
+  (id, organization_id, name, connector_type, direction, config, created_at, updated_at)
 VALUES
   ('eeeeeeee-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002',
-   'Customer Data', 'data', 'cloud', 'dddddddd-0000-0000-0000-000000000002',
-   'gs://acme-dev/customers/');
+   'Customer Data', 'gcs', 'source', '{"bucket":"acme-dev","prefix":"customers/"}',
+   strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), strftime('%Y-%m-%dT%H:%M:%SZ', 'now'));
 
-INSERT OR IGNORE INTO connections
-  (id, organization_id, name, kind, location_type, url)
+INSERT OR IGNORE INTO connectors
+  (id, organization_id, name, connector_type, direction, config, created_at, updated_at)
 VALUES
   ('eeeeeeee-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002',
-   'Product Feed', 'data', 'local', 'file:///sample/products.csv');
+   'Product Feed', 'local_fs', 'source', '{"base_path":"/sample/products.csv"}',
+   strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), strftime('%Y-%m-%dT%H:%M:%SZ', 'now'));
 
 -- ── Jobs ────────────────────────────────────────────────────────────────────
 

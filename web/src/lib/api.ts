@@ -1,23 +1,14 @@
 import client, { ApiError, unwrap } from "./api/client";
 import type { Schemas } from "./api/client";
-import { fetchSSE, fetchSSEJson } from "./api/sse";
+import { fetchSSEJson } from "./api/sse";
 import type {
-  ProviderSchema,
   ProviderInfo,
   ComplyEvent,
   FossilAnalysis,
-  GraphData,
 } from "./types";
 
 export { ApiError };
 export type { ServiceStatus } from "./types";
-
-async function fetchJson<T>(endpoint: string): Promise<T> {
-  const res = await fetch(endpoint, { credentials: "same-origin" });
-  if (!res.ok) throw new ApiError("request_error", `Request failed (${res.status})`);
-  const json = await res.json();
-  return (json?.data ?? json) as T;
-}
 
 export const api = {
   // ── Jobs ──────────────────────────────────────────────────────────────
@@ -57,111 +48,47 @@ export const api = {
     },
   },
 
-  // ── Connections ────────────────────────────────────────────────────────
+  // ── Connections (backend: /v1/connectors) ─────────────────────────────
   connections: {
-    list: async (type?: string) =>
-      unwrap(await client.GET("/v1/connections", {
-        params: { query: type ? { type } : {} },
+    list: async (direction?: string) =>
+      unwrap(await client.GET("/v1/connectors", {
+        params: { query: direction ? { direction } : {} },
       })),
 
     get: async (id: string) =>
-      unwrap(await client.GET("/v1/connections/{id}", { params: { path: { id } } })),
+      unwrap(await client.GET("/v1/connectors/{id}", { params: { path: { id } } })),
 
-    create: async (req: Schemas["CreateConnectionRequest"]) =>
-      unwrap(await client.POST("/v1/connections", { body: req })),
+    create: async (req: Schemas["CreateConnectorRequest"]) =>
+      unwrap(await client.POST("/v1/connectors", { body: req })),
+
+    update: async (id: string, req: Schemas["UpdateConnectorRequest"]) =>
+      unwrap(await client.PUT("/v1/connectors/{id}", { params: { path: { id } }, body: req })),
 
     remove: async (id: string) => {
-      unwrap(await client.DELETE("/v1/connections/{id}", { params: { path: { id } } }));
+      unwrap(await client.DELETE("/v1/connectors/{id}", { params: { path: { id } } }));
     },
 
     files: async (id: string) =>
-      unwrap(await client.GET("/v1/connections/{id}/files", {
-        params: { path: { id } },
-      })),
+      unwrap(await client.GET("/v1/connectors/{id}/files", { params: { path: { id } } })),
 
-    schema: async (id: string, path: string) =>
-      unwrap(await client.GET("/v1/connections/{id}/schema", {
-        params: { path: { id }, query: { path } },
-      })),
+    types: async () =>
+      unwrap(await client.GET("/v1/connectors/types")),
 
-    upload: async (id: string, path: string, content: string) => {
-      await client.PUT("/v1/connections/{id}/files", {
-        params: { path: { id } },
-        body: { path, content },
+    schema: async (id: string, paths: string[]): Promise<Record<string, { columns: { name: string; type: string }[]; error?: string }>> => {
+      const res = await fetch(`/api/v1/connectors/${id}/schema`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paths }),
+        credentials: "include",
       });
-    },
-  },
-
-  // ── Cloud Accounts ────────────────────────────────────────────────────
-  cloud: {
-    list: async () =>
-      unwrap(await client.GET("/v1/cloud-accounts")),
-
-    get: async (id: string) =>
-      unwrap(await client.GET("/v1/cloud-accounts/{id}", { params: { path: { id } } })),
-
-    create: async (req: Schemas["CreateCloudAccountRequest"]) =>
-      unwrap(await client.POST("/v1/cloud-accounts", { body: req })),
-
-    update: async (id: string, req: Schemas["UpdateCloudAccountRequest"]) =>
-      unwrap(await client.PUT("/v1/cloud-accounts/{id}", {
-        params: { path: { id } },
-        body: req,
-      })),
-
-    remove: async (id: string) => {
-      unwrap(await client.DELETE("/v1/cloud-accounts/{id}", { params: { path: { id } } }));
-    },
-  },
-
-  // ── Discovery ─────────────────────────────────────────────────────────
-  discovery: {
-    askStream: (
-      id: string,
-      question: string,
-      opts?: { conversationId?: string; provider?: string; schema?: string; explain?: boolean },
-    ) =>
-      fetchSSE(`/v1/jobs/${id}/discover/ask-stream`, {
-        question,
-        conversation_id: opts?.conversationId,
-        ...(opts?.provider ? { provider: opts.provider } : {}),
-        ...(opts?.schema ? { schema: opts.schema } : {}),
-        ...(opts?.explain ? { explain: opts.explain } : {}),
-      }),
-  },
-
-  // ── Conversations ─────────────────────────────────────────────────────
-  conversations: {
-    list: async (id: string) =>
-      unwrap(await client.GET("/v1/jobs/{id}/conversations", {
-        params: { path: { id } },
-      })),
-
-    messages: async (id: string) =>
-      unwrap(await client.GET("/v1/conversations/{id}/messages", {
-        params: { path: { id } },
-      })),
-
-    rename: async (id: string, title: string) => {
-      unwrap(await client.PUT("/v1/conversations/{id}", {
-        params: { path: { id } },
-        body: { title },
-      }));
-    },
-
-    remove: async (id: string) => {
-      unwrap(await client.DELETE("/v1/conversations/{id}", {
-        params: { path: { id } },
-      }));
+      if (!res.ok) throw new Error(`Schema request failed: ${res.status}`);
+      const json = await res.json();
+      return json.data;
     },
   },
 
   // ── Settings ──────────────────────────────────────────────────────────
   settings: {
-    // TODO: add ProviderSchema to openapi spec
-    schema: async () =>
-      unwrap(await client.GET("/v1/settings/schema")) as unknown as ProviderSchema[],
-
     // TODO: add ProviderInfo to openapi spec
     providers: async () =>
       unwrap(await client.GET("/v1/providers")) as unknown as ProviderInfo[],
@@ -178,27 +105,14 @@ export const api = {
     savePreferences: async (prefs: Schemas["Preferences"]) =>
       unwrap(await client.PUT("/v1/settings/preferences", { body: prefs })),
 
-    catalogStorage: async (): Promise<{ cloud_account_id: string; base_url: string } | null> => {
-      const res = await fetch("/v1/settings/catalog-storage", { credentials: "same-origin" });
-      if (res.status === 204 || !res.ok) return null;
-      const json = await res.json();
-      return json?.data ?? json;
+    catalogStorage: async (): Promise<{ connector_id: string; base_url: string } | null> => {
+      const result = await client.GET("/v1/settings/catalog-storage");
+      if (result.data === undefined) return null;
+      return result.data as { connector_id: string; base_url: string } | null;
     },
 
-    saveCatalogStorage: async (data: { cloud_account_id: string; base_url: string }) => {
-      const res = await fetch("/v1/settings/catalog-storage", {
-        method: "PUT",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new ApiError(body?.error ?? "unknown", body?.message ?? "Failed to save");
-      }
-      const json = await res.json();
-      return json?.data ?? json;
-    },
+    saveCatalogStorage: async (data: { connector_id: string; base_url: string }) =>
+      unwrap(await client.PUT("/v1/settings/catalog-storage", { body: data })),
   },
 
   // ── AI Providers ──────────────────────────────────────────────────────
@@ -311,15 +225,6 @@ export const api = {
   status: {
     services: async () =>
       unwrap(await client.GET("/v1/status")),
-  },
-
-  // ── Assistant (SSE streaming) ───────────────────────────────────────────
-  assistant: {
-    suggestStream: (req: Schemas["SuggestRequest"]) =>
-      fetchSSE("/v1/assistant/suggest-stream", req),
-
-    generateStream: (req: Schemas["GenerateRequest"]) =>
-      fetchSSE("/v1/assistant/generate-stream", req),
   },
 
   // ── Scripts ───────────────────────────────────────────────────────────

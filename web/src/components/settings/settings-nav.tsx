@@ -1,6 +1,6 @@
 "use client";
 
-import { Paintbrush, Cloud, Sparkles, Database } from "lucide-react";
+import { Paintbrush, Sparkles, Database } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
@@ -24,7 +24,6 @@ export function SettingsNav() {
           {
             heading: "Integrations",
             items: [
-              { href: "/settings/cloud-accounts", label: "Cloud Accounts", icon: Cloud },
               { href: "/settings/ai", label: "AI", icon: Sparkles },
             ],
           },

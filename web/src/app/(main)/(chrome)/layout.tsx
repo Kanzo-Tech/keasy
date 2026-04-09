@@ -6,7 +6,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 export default function ChromeLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-(--spacing-content) z-10">
+      <header className="bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-3 z-10">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
         <DynamicBreadcrumbs />

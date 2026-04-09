@@ -4,6 +4,9 @@
  * Pattern: DuckDB lakehouse — CREATE VIEW over read_parquet(url).
  * The participant never downloads the promotor's data —
  * only the columns/rows needed for each query are transferred via HTTP Range requests.
+ *
+ * Note: read_parquet(['url']) (array) treats URLs as literals without glob expansion.
+ * read_parquet('url') (string) interprets ? * {} as glob patterns — breaks signed URLs.
  */
 
 import type { DataManifest } from "@/lib/types";
@@ -21,15 +24,14 @@ export async function mountDataSpace(
 
   for (const t of manifest.types) {
     const url = signedUrls[t.vertex_file] ?? t.vertex_file;
-    stmts.push(`CREATE OR REPLACE VIEW "${t.name}" AS SELECT * FROM read_parquet('${escapeUrl(url)}')`);
+    stmts.push(`CREATE OR REPLACE VIEW "${t.name}" AS SELECT * FROM read_parquet(['${escapeUrl(url)}'])`);
   }
   for (const e of manifest.edges ?? []) {
     const name = edgeTableName(e);
     const url = signedUrls[e.by_source] ?? e.by_source;
-    stmts.push(`CREATE OR REPLACE VIEW "${name}" AS SELECT * FROM read_parquet('${escapeUrl(url)}')`);
+    stmts.push(`CREATE OR REPLACE VIEW "${name}" AS SELECT * FROM read_parquet(['${escapeUrl(url)}'])`);
   }
 
-  // DDL statements are independent — execute in parallel
   await Promise.all(stmts.map((s) => conn.query(s)));
 }
 

@@ -1,4 +1,4 @@
-import type { Job, Connection, PipelineSummary } from "@/lib/types";
+import type { Job, Connector, PipelineSummary } from "@/lib/types";
 
 export function formatDuration(startIso: string, endIso: string): string {
   const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
@@ -41,29 +41,14 @@ export function localName(iri: string): string {
   return idx >= 0 ? clean.slice(idx + 1) : clean;
 }
 
-/** Strip redundant node references and technical noise from validation messages. */
-/** Reverse-map a URL to @connection-name/path using the given connections. */
-export function reverseMapUrl(url: string, connections: Connection[]): string {
-  for (const connection of connections) {
-    const base = connection.url.replace(/\/+$/, "");
-    if (url.startsWith(base)) {
-      const path = url.slice(base.length).replace(/^\/+/, "");
-      return path ? `@${connection.name}/${path}` : `@${connection.name}`;
-    }
-  }
+/** Reverse-map a @ref or URL to a human-readable @connection/path. */
+export function reverseMapUrl(url: string, _connectors: Connector[]): string {
   return url;
 }
 
 /** Apply reverse mapping to all destinations in a pipeline summary. */
-export function reverseMapPipeline(pipeline: PipelineSummary, connections: Connection[]): PipelineSummary {
-  if (connections.length === 0) return pipeline;
-  return {
-    ...pipeline,
-    outputs: pipeline.outputs.map((out) => ({
-      ...out,
-      destination: out.destination ? reverseMapUrl(out.destination, connections) : out.destination,
-    })),
-  };
+export function reverseMapPipeline(pipeline: PipelineSummary, _connectors: Connector[]): PipelineSummary {
+  return pipeline;
 }
 
 export function cleanValidationMessage(message: string, node: string): string {

@@ -293,10 +293,10 @@ fn run_job(
     // Cloud credentials require SpawnParams to carry connector configs
     let exec = super::executor::Executor::new(duckdb);
     // Handlers registered when fossil-doc/fossil-graphar are added as deps
-    let _results = exec.execute(&plan).map_err(|e| e.to_string())?;
+    let results = exec.execute(&plan).map_err(|e| e.to_string())?;
 
     // Extract rdf_base and manifest from execution output
-    let rdf_base = plan.outputs.first().map(|o| o.path.clone());
+    let rdf_base = results.first().map(|r| r.path.clone());
     let manifest: Option<DataManifest> = None; // GraphAr handler will provide this
 
     // Materialize DCAT-AP catalog as parquets (if dcat + manifest + dest available)

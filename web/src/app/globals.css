@@ -48,9 +48,6 @@
   --size-control-sm: var(--control-sm);
   --size-control-lg: var(--control-lg);
   --size-icon: var(--icon);
-  --spacing-content: var(--content-spacing);
-  --spacing-card: var(--card-spacing);
-  --spacing-section: var(--section-spacing);
   --size-table-head: var(--table-head);
 }
 
@@ -200,9 +197,6 @@
   --control-sm: 1.75rem;
   --control-lg: 2.75rem;
   --icon: 2.25rem;
-  --content-spacing: 0.75rem;
-  --card-spacing: 0.75rem;
-  --section-spacing: 0.75rem;
   --table-head: 2rem;
 }
 
@@ -212,9 +206,6 @@
   --control-sm: 1.25rem;
   --control-lg: 2.25rem;
   --icon: 1.75rem;
-  --content-spacing: 0.5rem;
-  --card-spacing: 0.5rem;
-  --section-spacing: 0.5rem;
   --table-head: 1.75rem;
 }
 
@@ -224,9 +215,6 @@
   --control-sm: 2rem;
   --control-lg: 3rem;
   --icon: 2.5rem;
-  --content-spacing: 1rem;
-  --card-spacing: 1rem;
-  --section-spacing: 1rem;
   --table-head: 2.5rem;
 }
 

@@ -100,7 +100,7 @@ function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: Data
       id: "ask",
       icon: MessageCircle,
       label: "Ask AI",
-      content: <DiscoveryAsk jobId={jobId} schema="" graphSchema={kgSchema} />,
+      content: <DiscoveryAsk schema="" graphSchema={kgSchema} />,
     },
     {
       id: "rules",

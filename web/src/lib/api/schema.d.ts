@@ -68,22 +68,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/admin/catalog/graph": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_federated_catalog_graph"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/admin/invites": {
         parameters: {
             query?: never;
@@ -142,38 +126,6 @@ export interface paths {
         get: operations["list_all_orgs"];
         put?: never;
         post: operations["create_org_and_invite"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/assistant/generate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["generate_script"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/assistant/suggest": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["suggest_cqs"];
         delete?: never;
         options?: never;
         head?: never;
@@ -255,14 +207,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/catalog/graph": {
+    "/v1/connectors": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["get_org_catalog_graph"];
+        get: operations["list_connectors"];
+        put?: never;
+        post: operations["create_connector"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connectors/types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_connector_types"];
         put?: never;
         post?: never;
         delete?: never;
@@ -271,94 +239,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/cloud-accounts": {
+    "/v1/connectors/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["list_accounts"];
-        put?: never;
-        post: operations["create_account"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/cloud-accounts/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_account"];
-        put: operations["update_account"];
+        get: operations["get_connector"];
+        put: operations["update_connector"];
         post?: never;
-        delete: operations["delete_account"];
+        delete: operations["delete_connector"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/connections": {
+    "/v1/connectors/{id}/files": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["list_connections"];
-        put?: never;
-        post: operations["create_connection"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/connections/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_connection"];
-        put: operations["update_connection"];
-        post?: never;
-        delete: operations["delete_connection"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/connections/{id}/files": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_connection_files"];
-        put: operations["upload_file"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/connections/{id}/schema": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_file_schema"];
+        get: operations["list_connector_files"];
         put?: never;
         post?: never;
         delete?: never;
@@ -367,7 +271,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/conversations/{id}": {
+    "/v1/connectors/{id}/test": {
         parameters: {
             query?: never;
             header?: never;
@@ -375,24 +279,8 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["rename_conversation"];
-        post?: never;
-        delete: operations["delete_conversation"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/conversations/{id}/messages": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_conversation_messages"];
         put?: never;
-        post?: never;
+        post: operations["test_connector"];
         delete?: never;
         options?: never;
         head?: never;
@@ -495,22 +383,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/conversations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_conversations"];
-        put?: never;
-        post: operations["create_conversation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/jobs/{id}/dashboard-layout": {
         parameters: {
             query?: never;
@@ -527,22 +399,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/discover/ask": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ask_discover"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/jobs/{id}/discover/urls": {
         parameters: {
             query?: never;
@@ -551,22 +407,6 @@ export interface paths {
             cookie?: never;
         };
         get: operations["resolve_discover_urls"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/graph": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_job_graph"];
         put?: never;
         post?: never;
         delete?: never;
@@ -735,6 +575,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/settings/catalog-storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_catalog_storage"];
+        put: operations["save_catalog_storage"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/settings/organization": {
         parameters: {
             query?: never;
@@ -760,22 +616,6 @@ export interface paths {
         };
         get: operations["get_preferences"];
         put: operations["save_preferences"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/settings/schema": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_schema"];
-        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -832,56 +672,12 @@ export interface components {
             completions: components["schemas"]["CompletionItem"][];
             diagnostics: components["schemas"]["DiagnosticItem"][];
         };
-        AskRequest: {
-            conversation_id?: string | null;
-            /**
-             * @description When true, the LLM acts as a data analyst explaining query results
-             *     instead of generating SQL. The question should contain the original
-             *     question, SQL, and result rows.
-             */
-            explain?: boolean;
-            provider?: string | null;
-            question: string;
-            /**
-             * @description DuckDB table schema from the frontend (column names, types, sample values).
-             *     When provided, this is used as context for SQL generation instead of the
-             *     pipeline summary.
-             */
-            schema?: string | null;
-        };
-        AskResponse: {
-            answer: string;
-            code: components["schemas"]["AskResultCode"];
-            conversation_id?: string | null;
-            reasoning?: string | null;
-            /** @description DuckDB SQL query generated by the LLM (executed client-side via DuckDB-WASM). */
-            sql?: string | null;
-        };
-        /**
-         * @description Result code for AI ask responses — replaces raw string literals.
-         * @enum {string}
-         */
-        AskResultCode: "success" | "parse_failed" | "query_failed" | "insufficient_credits" | "llm_failed";
-        AuthMethodSchema: {
-            fields: components["schemas"]["FieldSchema"][];
-            label: string;
-            name: string;
-        };
         CatalogResponse: {
             catalog: string;
         };
-        CloudAccountSummary: {
-            auth_method?: string | null;
-            fields: {
-                [key: string]: string;
-            };
-            id: string;
-            name: string;
-            provider_id: string;
-        };
-        ColumnInfo: {
-            data_type: string;
-            name: string;
+        CatalogStoragePayload: {
+            base_url: string;
+            connector_id: string;
         };
         /** @description Per-column statistics for a vertex property. */
         ColumnStat: {
@@ -898,11 +694,6 @@ export interface components {
             /** @description Short label used as Parquet column name. */
             name: string;
             samples?: string[];
-        };
-        CompetencyQuestion: {
-            id: string;
-            question: string;
-            rationale: string;
         };
         CompletionItem: {
             detail: string;
@@ -952,55 +743,36 @@ export interface components {
             /** @description PEM-encoded private key (auto-download on success). */
             private_key_pem?: string | null;
         };
-        Connection: {
-            cloud_account_id?: string | null;
+        Connector: {
+            config: unknown;
+            connector_type: string;
+            created_at: string;
+            direction: components["schemas"]["ConnectorDirection"];
             id: string;
-            kind: components["schemas"]["ConnectionKind"];
-            location_type: components["schemas"]["LocationType"];
             name: string;
-            url: string;
+            updated_at: string;
         };
         /** @enum {string} */
-        ConnectionKind: "data" | "vocab";
-        Conversation: {
-            created_at: string;
+        ConnectorDirection: "source" | "destination" | "both";
+        /** @description Metadata about a connector type (for API listing). */
+        ConnectorTypeInfo: {
+            description: string;
+            direction: components["schemas"]["ConnectorDirection"];
             id: string;
-            job_id: string;
-            title?: string | null;
-        };
-        ConversationMessage: {
-            code?: string | null;
-            content: string;
-            conversation_id: string;
-            created_at: string;
-            data?: null | components["schemas"]["TabularData"];
-            id: string;
-            role: string;
-            sql?: string | null;
-        };
-        CreateCloudAccountRequest: {
-            auth_method?: string | null;
-            fields: {
-                [key: string]: string;
-            };
             name: string;
-            provider_id: string;
+            secret_fields: string[];
         };
-        CreateConnectionRequest: {
-            cloud_account_id?: string | null;
-            kind: components["schemas"]["ConnectionKind"];
-            location_type: components["schemas"]["LocationType"];
+        CreateConnectorRequest: {
+            config?: unknown;
+            connector_type: string;
+            direction: components["schemas"]["ConnectorDirection"];
             name: string;
-            url: string;
-        };
-        CreateConversationRequest: {
-            title?: string | null;
         };
         CreateInviteRequest: {
             org_name: string;
         };
         CreateJobRequest: {
-            connection_ids?: string[];
+            connector_ids?: string[];
             dcat_enabled?: boolean | null;
             draft?: boolean;
             mode?: null | components["schemas"]["RunMode"];
@@ -1076,52 +848,11 @@ export interface components {
             source: string;
             target: string;
         };
-        FieldSchema: {
-            default_value?: string | null;
-            env_var?: string | null;
-            label: string;
-            name: string;
-            optional?: boolean;
-            secret: boolean;
-        };
         FileEntry: {
             last_modified?: string | null;
             path: string;
             /** Format: int64 */
             size: number;
-        };
-        FileSchema: {
-            columns: components["schemas"]["ColumnInfo"][];
-            connection_name: string;
-            file_path: string;
-        };
-        FileSchemaResponse: {
-            columns: components["schemas"]["ColumnInfo"][];
-        };
-        GenerateRequest: {
-            competency_questions: string[];
-            domain: string;
-            schemas: components["schemas"]["FileSchema"][];
-        };
-        GenerateResponse: {
-            script: string;
-        };
-        GraphData: {
-            links: components["schemas"]["GraphLink"][];
-            nodes: components["schemas"]["GraphNode"][];
-        };
-        GraphLink: {
-            label: string;
-            source: string;
-            target: string;
-        };
-        GraphNode: {
-            group: string;
-            id: string;
-            label: string;
-            properties?: {
-                [key: string]: string;
-            };
         };
         InviteInfoResponse: {
             valid: boolean;
@@ -1135,8 +866,11 @@ export interface components {
             token: string;
         };
         Job: {
+            /** @description Base URL for catalog parquets in promotor storage. */
+            catalog_base?: string | null;
+            catalog_manifest?: null | components["schemas"]["DataManifest"];
             completed_at?: string | null;
-            connection_ids?: string[];
+            connector_ids?: string[];
             created_at: string;
             error?: null | components["schemas"]["JobRuntimeError"];
             id: string;
@@ -1146,10 +880,6 @@ export interface components {
             pipeline: components["schemas"]["PipelineSummary"];
             /** @description Base URL for RDF Parquet storage (set when job uses Rdf output). */
             rdf_base?: string | null;
-            /** @description DCAT-AP catalog manifest (parquets in promotor storage). */
-            catalog_manifest?: null | components["schemas"]["DataManifest"];
-            /** @description Base URL for catalog parquets in promotor storage. */
-            catalog_base?: string | null;
             script?: string | null;
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
@@ -1174,8 +904,6 @@ export interface components {
         };
         /** @enum {string} */
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
-        /** @enum {string} */
-        LocationType: "cloud" | "local";
         /** @description POST /v1/auth/logout */
         LogoutResponse: {
             end_session_url?: string | null;
@@ -1226,6 +954,10 @@ export interface components {
             user_id: string;
         };
         OrgSettings: {
+            /** @description Base URL for catalog parquet storage (e.g. s3://promotor/catalogs/). */
+            catalog_base_url?: string | null;
+            /** @description Connector ID for catalog parquet storage (set by promotor). */
+            catalog_connector_id?: string | null;
             catalog_description?: string | null;
             contact_email?: string | null;
             license_uri?: string | null;
@@ -1280,13 +1012,6 @@ export interface components {
             kind: string;
             name: string;
         };
-        ProviderSchema: {
-            auth_methods: components["schemas"]["AuthMethodSchema"][];
-            common_fields: components["schemas"]["FieldSchema"][];
-            icon: string;
-            id: string;
-            label: string;
-        };
         RegisterDataspaceResponse: {
             client_id: string;
             client_secret: string;
@@ -1302,35 +1027,18 @@ export interface components {
             name: string;
             url: string;
         };
-        RenameConversationRequest: {
-            title: string;
-        };
         ResolveResponse: {
-            /** @description Map of logical file name → signed URL for direct cloud access. */
             files: {
                 [key: string]: string;
             };
         };
         /** @enum {string} */
         RunMode: "integrated" | "scheduled";
-        SearchResult: {
-            description?: string | null;
-            group: string;
-            id: string;
-            label: string;
-        };
         ServiceStatusResponse: {
             base_domain?: string | null;
             gxdch_compliance: boolean;
             gxdch_notary: boolean;
             oidc: boolean;
-        };
-        SuggestRequest: {
-            domain: string;
-            schemas: components["schemas"]["FileSchema"][];
-        };
-        SuggestResponse: {
-            competency_questions: components["schemas"]["CompetencyQuestion"][];
         };
         TabularData: {
             column_types: {
@@ -1351,19 +1059,11 @@ export interface components {
             /** @description Relative path to vertex Parquet file. */
             vertex_file: string;
         };
-        UpdateCloudAccountRequest: {
-            auth_method?: string | null;
-            fields?: {
-                [key: string]: string;
-            } | null;
+        UpdateConnectorRequest: {
+            config?: unknown;
+            connector_type?: string | null;
+            direction?: null | components["schemas"]["ConnectorDirection"];
             name?: string | null;
-        };
-        UpdateConnectionRequest: {
-            cloud_account_id?: string | null;
-            kind?: null | components["schemas"]["ConnectionKind"];
-            location_type?: null | components["schemas"]["LocationType"];
-            name?: string | null;
-            url?: string | null;
         };
         UpdateJobRequest: {
             name?: string | null;
@@ -1378,10 +1078,6 @@ export interface components {
         };
         UpdateUserRoleRequest: {
             role: string;
-        };
-        UploadFileRequest: {
-            content: string;
-            path: string;
         };
         ValidateRequest: {
             script: string;
@@ -1505,26 +1201,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    get_federated_catalog_graph: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Federated catalog graph (all organizations) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GraphData"];
-                };
             };
         };
     };
@@ -1709,68 +1385,6 @@ export interface operations {
             };
         };
     };
-    generate_script: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GenerateRequest"];
-            };
-        };
-        responses: {
-            /** @description Generated Fossil script */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GenerateResponse"];
-                };
-            };
-            /** @description AI provider not configured */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    suggest_cqs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SuggestRequest"];
-            };
-        };
-        responses: {
-            /** @description Suggested competency questions */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SuggestResponse"];
-                };
-            };
-            /** @description AI provider not configured */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     get_invite_info: {
         parameters: {
             query: {
@@ -1861,167 +1475,11 @@ export interface operations {
             };
         };
     };
-    get_org_catalog_graph: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Organization catalog graph */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GraphData"];
-                };
-            };
-        };
-    };
-    list_accounts: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of cloud accounts */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CloudAccountSummary"][];
-                };
-            };
-        };
-    };
-    create_account: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateCloudAccountRequest"];
-            };
-        };
-        responses: {
-            /** @description Cloud account created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CloudAccountSummary"];
-                };
-            };
-            /** @description Validation failed */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_account: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Cloud account ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cloud account details */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CloudAccountSummary"];
-                };
-            };
-            /** @description Cloud account not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    update_account: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Cloud account ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateCloudAccountRequest"];
-            };
-        };
-        responses: {
-            /** @description Cloud account updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CloudAccountSummary"];
-                };
-            };
-            /** @description Validation failed */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    delete_account: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Cloud account ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cloud account deleted */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    list_connections: {
+    list_connectors: {
         parameters: {
             query?: {
-                /** @description Filter by connection type */
-                type?: string;
+                /** @description Filter by direction */
+                direction?: string;
             };
             header?: never;
             path?: never;
@@ -2029,18 +1487,18 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description List of connections */
+            /** @description List of connectors */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Connection"][];
+                    "application/json": components["schemas"]["Connector"][];
                 };
             };
         };
     };
-    create_connection: {
+    create_connector: {
         parameters: {
             query?: never;
             header?: never;
@@ -2049,20 +1507,20 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateConnectionRequest"];
+                "application/json": components["schemas"]["CreateConnectorRequest"];
             };
         };
         responses: {
-            /** @description Connection created */
+            /** @description Connector created */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Connection"];
+                    "application/json": components["schemas"]["Connector"];
                 };
             };
-            /** @description Invalid connection or container not found */
+            /** @description Validation error */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2071,28 +1529,47 @@ export interface operations {
             };
         };
     };
-    get_connection: {
+    list_connector_types: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Available connector types */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorTypeInfo"][];
+                };
+            };
+        };
+    };
+    get_connector: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Connection ID */
                 id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Connection details */
+            /** @description Connector details */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Connection"];
+                    "application/json": components["schemas"]["Connector"];
                 };
             };
-            /** @description Connection not found */
+            /** @description Not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2101,39 +1578,31 @@ export interface operations {
             };
         };
     };
-    update_connection: {
+    update_connector: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Connection ID */
                 id: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateConnectionRequest"];
+                "application/json": components["schemas"]["UpdateConnectorRequest"];
             };
         };
         responses: {
-            /** @description Connection updated */
+            /** @description Connector updated */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Connection"];
+                    "application/json": components["schemas"]["Connector"];
                 };
             };
-            /** @description Invalid connection */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Connection not found */
+            /** @description Not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2142,40 +1611,45 @@ export interface operations {
             };
         };
     };
-    delete_connection: {
+    delete_connector: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Connection ID */
                 id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Connection deleted */
+            /** @description Connector deleted */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
-    list_connection_files: {
+    list_connector_files: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Connection ID */
                 id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description List of files in the connection */
+            /** @description Files in storage */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2184,14 +1658,7 @@ export interface operations {
                     "application/json": components["schemas"]["FileEntry"][];
                 };
             };
-            /** @description File listing not supported */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Connection not found */
+            /** @description Connector not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2200,158 +1667,30 @@ export interface operations {
             };
         };
     };
-    upload_file: {
+    test_connector: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Connection ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UploadFileRequest"];
-            };
-        };
-        responses: {
-            /** @description File uploaded */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Upload not supported */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Connection not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Upload failed */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_file_schema: {
-        parameters: {
-            query: {
-                /** @description Relative file path within the connection */
-                path: string;
-            };
-            header?: never;
-            path: {
-                /** @description Connection ID */
                 id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description File schema */
+            /** @description Connection test passed */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["FileSchemaResponse"];
-                };
+                content?: never;
             };
-            /** @description Schema inference failed or unsupported file type */
+            /** @description Connection test failed */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            /** @description Connection not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    rename_conversation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Conversation ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RenameConversationRequest"];
-            };
-        };
-        responses: {
-            /** @description Conversation renamed */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    delete_conversation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Conversation ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Conversation deleted */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_conversation_messages: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Conversation ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Conversation messages */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConversationMessage"][];
-                };
             };
             /** @description Not found */
             404: {
@@ -2608,14 +1947,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description DCAT catalog (N-Triples) */
+            /** @description DCAT-AP catalog as Turtle (download) */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["CatalogResponse"];
-                };
+                content?: never;
             };
             /** @description Job or catalog not found */
             404: {
@@ -2623,56 +1960,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    list_conversations: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of conversations */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Conversation"][];
-                };
-            };
-        };
-    };
-    create_conversation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateConversationRequest"];
-            };
-        };
-        responses: {
-            /** @description Conversation created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Conversation"];
-                };
             };
         };
     };
@@ -2731,33 +2018,6 @@ export interface operations {
             };
         };
     };
-    ask_discover: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AskRequest"];
-            };
-        };
-        responses: {
-            /** @description AI answer with DuckDB SQL query */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AskResponse"];
-                };
-            };
-        };
-    };
     resolve_discover_urls: {
         parameters: {
             query?: never;
@@ -2780,36 +2040,6 @@ export interface operations {
                 };
             };
             /** @description Job not found or no output */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_job_graph: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Job knowledge graph */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GraphData"];
-                };
-            };
-            /** @description Job not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -3191,6 +2421,64 @@ export interface operations {
             };
         };
     };
+    get_catalog_storage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Catalog storage config */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogStoragePayload"];
+                };
+            };
+            /** @description Not configured */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    save_catalog_storage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogStoragePayload"];
+            };
+        };
+        responses: {
+            /** @description Catalog storage saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogStoragePayload"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     get_org_settings: {
         parameters: {
             query?: never;
@@ -3297,26 +2585,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    get_schema: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Provider registry schema */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProviderSchema"][];
-                };
             };
         };
     };

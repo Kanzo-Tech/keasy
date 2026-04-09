@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useEffect, useImperativeHandle, forwardRef } from "react";
+import { useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
@@ -14,15 +17,44 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FormField } from "@/components/shared/form-layout";
+import {
+  Field,
+  FieldLabel,
+  FieldDescription,
+  FieldError,
+} from "@/components/ui/field";
 import { COUNTRY_OPTIONS, getCountryName } from "@/lib/countries";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
-import type { OrgIdentity } from "@/lib/types";
 
-export interface OrgDetailsCardHandle {
-  save: () => Promise<void>;
+/* ---------- Schema ---------- */
+
+const orgIdentitySchema = z.object({
+  legal_name: z.string().min(1, "Legal name is required"),
+  country: z.string().length(2, "Country code required"),
+  country_subdivision_code: z.string().nullable().optional(),
+  registration_number_type: z.enum(["vatID", "leiCode", "EORI"]).nullable().optional(),
+  registration_number: z.string().nullable().optional(),
+});
+
+type OrgIdentityFormValues = z.infer<typeof orgIdentitySchema>;
+
+/* ---------- Constants ---------- */
+
+const FORM_ID = "org-identity-form";
+
+/* ---------- Helpers ---------- */
+
+/** Extract subdivision suffix from a full ISO 3166-2 code (e.g. "DE-BY" -> "BY") */
+function subdivisionSuffix(code: string | null | undefined, country: string): string {
+  if (!code) return "";
+  const prefix = `${country}-`;
+  if (code.startsWith(prefix)) return code.slice(prefix.length);
+  const dash = code.indexOf("-");
+  return dash >= 0 ? code.slice(dash + 1) : code;
 }
+
+/* ---------- Component ---------- */
 
 interface OrgDetailsCardProps {
   readOnly?: boolean;
@@ -31,173 +63,255 @@ interface OrgDetailsCardProps {
   onSavingChange?: (saving: boolean) => void;
 }
 
-export const OrgDetailsCard = forwardRef<OrgDetailsCardHandle, OrgDetailsCardProps>(
-  function OrgDetailsCard({ readOnly, editing: editingProp, onEditingChange, onSavingChange }, ref) {
-    const queryClient = useQueryClient();
-    const { data, isLoading } = useQuery({ queryKey: queryKeys.org.identity, queryFn: api.org.identity });
-    const [editingInternal, setEditingInternal] = useState(false);
-    const editing = editingProp ?? editingInternal;
-    const setEditing = onEditingChange ?? setEditingInternal;
-    const [form, setForm] = useState<OrgIdentity | null>(null);
-    const [saving, setSaving] = useState(false);
+export { FORM_ID as ORG_IDENTITY_FORM_ID };
 
-    useEffect(() => {
-      if (editing && !form) {
-        setForm(data ?? { legal_name: "", country: "", registration_number: null, country_subdivision_code: null, registration_number_type: null });
-      }
-      if (!editing) {
-        setForm(null);
-      }
-    }, [editing, form, data]);
+export function OrgDetailsCard({
+  readOnly,
+  editing,
+  onEditingChange,
+  onSavingChange,
+}: OrgDetailsCardProps) {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.org.identity,
+    queryFn: api.org.identity,
+  });
 
-    function updateSaving(value: boolean) {
-      setSaving(value);
-      onSavingChange?.(value);
+  const form = useForm<OrgIdentityFormValues>({
+    resolver: zodResolver(orgIdentitySchema),
+    defaultValues: {
+      legal_name: "",
+      country: "",
+      country_subdivision_code: null,
+      registration_number_type: null,
+      registration_number: null,
+    },
+  });
+
+  const { formState: { isSubmitting } } = form;
+
+  // Sync saving state to parent
+  useEffect(() => {
+    onSavingChange?.(isSubmitting);
+  }, [isSubmitting, onSavingChange]);
+
+  // Reset form when entering edit mode
+  useEffect(() => {
+    if (editing && data) {
+      form.reset({
+        legal_name: data.legal_name ?? "",
+        country: data.country ?? "",
+        country_subdivision_code: data.country_subdivision_code ?? null,
+        registration_number_type: (data.registration_number_type as OrgIdentityFormValues["registration_number_type"]) ?? null,
+        registration_number: data.registration_number ?? null,
+      });
     }
+  }, [editing, data, form]);
 
-    async function handleSave() {
-      if (!form) return;
-      updateSaving(true);
-      try {
-        await api.org.saveIdentity(form);
-        await queryClient.invalidateQueries({ queryKey: queryKeys.org.identity });
-        toast.success("Organization details saved");
-        setEditing(false);
-        setForm(null);
-      } catch {
-        toast.error("Failed to save organization details");
-      } finally {
-        updateSaving(false);
-      }
+  async function handleSave(values: OrgIdentityFormValues) {
+    try {
+      await api.org.saveIdentity(values);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.org.identity });
+      toast.success("Organization details saved");
+      onEditingChange?.(false);
+    } catch {
+      toast.error("Failed to save organization details");
     }
+  }
 
-    useImperativeHandle(ref, () => ({ save: handleSave }));
+  const showSkeleton = useDelayedLoading(isLoading);
 
-    const showSkeleton = useDelayedLoading(isLoading);
-
-    if (isLoading) {
-      return showSkeleton ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField label="Legal Name" description="Official registered name">
-            <Skeleton loading className="block w-full"><Input disabled placeholder="" /></Skeleton>
-          </FormField>
-          <FormField label="Country" description="Subdivision is optional">
-            <Skeleton loading className="block w-full"><Input disabled placeholder="" /></Skeleton>
-          </FormField>
-          <FormField label="Registration Number" description="VAT ID, LEI Code, or EORI">
-            <Skeleton loading className="block w-full"><Input disabled placeholder="" /></Skeleton>
-          </FormField>
-        </div>
-      ) : null;
-    }
-
-    const canEdit = !readOnly && editing && form;
-
-    /** Extract subdivision suffix from a full ISO 3166-2 code (e.g. "DE-BY" → "BY") */
-    function subdivisionSuffix(code: string | null | undefined, country: string): string {
-      if (!code) return "";
-      const prefix = `${country}-`;
-      if (code.startsWith(prefix)) return code.slice(prefix.length);
-      const dash = code.indexOf("-");
-      return dash >= 0 ? code.slice(dash + 1) : code;
-    }
-
-    return (
+  if (isLoading) {
+    return showSkeleton ? (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <FormField label="Legal Name" description="Official registered name">
-          <Input
-            value={canEdit ? form.legal_name : data?.legal_name ?? ""}
-            onChange={(e) => canEdit && setForm({ ...form, legal_name: e.target.value })}
-            disabled={!canEdit || saving}
-            placeholder="Acme Corp GmbH"
-          />
-        </FormField>
-        <FormField label="Country" description="Subdivision is optional">
-          {canEdit ? (
-            <div className="grid grid-cols-1 xl:grid-cols-[1fr_5rem] gap-1.5 xl:gap-0">
-              <Combobox
-                options={COUNTRY_OPTIONS}
-                value={form.country}
-                onValueChange={(v) => {
-                  const updates: Partial<OrgIdentity> = { country: v };
-                  if (form.country_subdivision_code) {
-                    const suffix = subdivisionSuffix(form.country_subdivision_code, form.country);
-                    updates.country_subdivision_code = suffix ? `${v}-${suffix}` : null;
-                  }
-                  setForm({ ...form, ...updates });
-                }}
-                placeholder="Country..."
-                searchPlaceholder="Search countries..."
-                emptyMessage="No country found."
-                disabled={saving}
-                className="xl:rounded-r-none xl:border-r-0 xl:shadow-none"
-              />
-              <Input
-                value={subdivisionSuffix(form.country_subdivision_code, form.country)}
-                onChange={(e) => {
-                  const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-                  setForm({
-                    ...form,
-                    country_subdivision_code: val ? `${form.country}-${val}` : null,
-                  });
-                }}
-                disabled={!form.country || saving}
-                placeholder="BY"
-                className="font-mono xl:rounded-l-none"
-              />
-            </div>
-          ) : (
-            <Input
-              value={
-                data?.country
-                  ? `${getCountryName(data.country) ?? data.country} (${data.country_subdivision_code ?? data.country})`
-                  : ""
-              }
-              disabled
-              placeholder="Not set"
-            />
-          )}
-        </FormField>
-        <FormField label="Registration Number" description="VAT ID, LEI Code, or EORI">
-          {canEdit ? (
-            <div className="grid grid-cols-1 xl:grid-cols-[6rem_1fr] gap-1.5 xl:gap-0">
-              <Select
-                value={form.registration_number_type ?? ""}
-                onValueChange={(v) => setForm({ ...form, registration_number_type: v || null })}
-                disabled={saving}
-              >
-                <SelectTrigger className="w-full xl:rounded-r-none xl:border-r-0 xl:shadow-none">
-                  <SelectValue placeholder="Type..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="vatID">VAT ID</SelectItem>
-                  <SelectItem value="leiCode">LEI Code</SelectItem>
-                  <SelectItem value="EORI">EORI</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                value={form.registration_number ?? ""}
-                onChange={(e) =>
-                  setForm({ ...form, registration_number: e.target.value || null })
-                }
-                disabled={saving}
-                placeholder="HRB 12345"
-                className="font-mono xl:rounded-l-none"
-              />
-            </div>
-          ) : (
-            <Input
-              value={
-                data?.registration_number
-                  ? `${data.registration_number_type ? `${data.registration_number_type}: ` : ""}${data.registration_number}`
-                  : ""
-              }
-              disabled
-              placeholder="Not set"
-            />
-          )}
-        </FormField>
+        <Field>
+          <FieldLabel>Legal Name</FieldLabel>
+          <Skeleton loading className="block w-full"><Input disabled placeholder="" /></Skeleton>
+          <FieldDescription>Official registered name</FieldDescription>
+        </Field>
+        <Field>
+          <FieldLabel>Country</FieldLabel>
+          <Skeleton loading className="block w-full"><Input disabled placeholder="" /></Skeleton>
+          <FieldDescription>Subdivision is optional</FieldDescription>
+        </Field>
+        <Field>
+          <FieldLabel>Registration Number</FieldLabel>
+          <Skeleton loading className="block w-full"><Input disabled placeholder="" /></Skeleton>
+          <FieldDescription>VAT ID, LEI Code, or EORI</FieldDescription>
+        </Field>
       </div>
-    );
-  },
-);
+    ) : null;
+  }
+
+  const canEdit = !readOnly && editing;
+
+  return (
+    <form
+      id={FORM_ID}
+      onSubmit={form.handleSubmit(handleSave)}
+      className="grid grid-cols-1 md:grid-cols-3 gap-4"
+    >
+      {/* Legal Name */}
+      <Controller
+        control={form.control}
+        name="legal_name"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel>Legal Name</FieldLabel>
+            {canEdit ? (
+              <Input
+                {...field}
+                disabled={isSubmitting}
+                placeholder="Acme Corp GmbH"
+                aria-invalid={fieldState.invalid}
+              />
+            ) : (
+              <Input
+                value={data?.legal_name ?? ""}
+                disabled
+                placeholder="Not set"
+              />
+            )}
+            <FieldDescription>Official registered name</FieldDescription>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+
+      {/* Country */}
+      <Controller
+        control={form.control}
+        name="country"
+        render={({ fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel>Country</FieldLabel>
+            {canEdit ? (
+              <div className="grid grid-cols-1 xl:grid-cols-[1fr_5rem] gap-1.5 xl:gap-0">
+                <Controller
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <Combobox
+                      options={COUNTRY_OPTIONS}
+                      value={field.value}
+                      onValueChange={(v) => {
+                        field.onChange(v);
+                        // Rewrite subdivision prefix when country changes
+                        const currentSub = form.getValues("country_subdivision_code");
+                        if (currentSub) {
+                          const suffix = subdivisionSuffix(currentSub, field.value);
+                          form.setValue(
+                            "country_subdivision_code",
+                            suffix ? `${v}-${suffix}` : null,
+                          );
+                        }
+                      }}
+                      placeholder="Country..."
+                      searchPlaceholder="Search countries..."
+                      emptyMessage="No country found."
+                      disabled={isSubmitting}
+                      aria-invalid={fieldState.invalid}
+                      className="xl:rounded-r-none xl:border-r-0 xl:shadow-none"
+                    />
+                  )}
+                />
+                <Controller
+                  control={form.control}
+                  name="country_subdivision_code"
+                  render={({ field }) => {
+                    const country = form.watch("country");
+                    return (
+                      <Input
+                        value={subdivisionSuffix(field.value, country)}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+                          field.onChange(val ? `${country}-${val}` : null);
+                        }}
+                        disabled={!country || isSubmitting}
+                        placeholder="BY"
+                        className="font-mono xl:rounded-l-none"
+                      />
+                    );
+                  }}
+                />
+              </div>
+            ) : (
+              <Input
+                value={
+                  data?.country
+                    ? `${getCountryName(data.country) ?? data.country} (${data.country_subdivision_code ?? data.country})`
+                    : ""
+                }
+                disabled
+                placeholder="Not set"
+              />
+            )}
+            <FieldDescription>Subdivision is optional</FieldDescription>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+
+      {/* Registration Number */}
+      <Controller
+        control={form.control}
+        name="registration_number"
+        render={({ fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel>Registration Number</FieldLabel>
+            {canEdit ? (
+              <div className="grid grid-cols-1 xl:grid-cols-[6rem_1fr] gap-1.5 xl:gap-0">
+                <Controller
+                  control={form.control}
+                  name="registration_number_type"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ?? ""}
+                      onValueChange={(v) => field.onChange(v || null)}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger className="w-full xl:rounded-r-none xl:border-r-0 xl:shadow-none">
+                        <SelectValue placeholder="Type..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="vatID">VAT ID</SelectItem>
+                        <SelectItem value="leiCode">LEI Code</SelectItem>
+                        <SelectItem value="EORI">EORI</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <Controller
+                  control={form.control}
+                  name="registration_number"
+                  render={({ field }) => (
+                    <Input
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value || null)}
+                      disabled={isSubmitting}
+                      placeholder="HRB 12345"
+                      aria-invalid={fieldState.invalid}
+                      className="font-mono xl:rounded-l-none"
+                    />
+                  )}
+                />
+              </div>
+            ) : (
+              <Input
+                value={
+                  data?.registration_number
+                    ? `${data.registration_number_type ? `${data.registration_number_type}: ` : ""}${data.registration_number}`
+                    : ""
+                }
+                disabled
+                placeholder="Not set"
+              />
+            )}
+            <FieldDescription>VAT ID, LEI Code, or EORI</FieldDescription>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
+        )}
+      />
+    </form>
+  );
+}

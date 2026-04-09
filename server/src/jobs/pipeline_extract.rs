@@ -41,12 +41,3 @@ pub fn extract_summary_from_plan(
         errors: vec![],
     }
 }
-
-/// Legacy entry point — kept for API compatibility until all callers use extract_summary_from_plan.
-pub fn extract_summary(_program: &fossil_lang::passes::IrProgram) -> ValidationResult {
-    ValidationResult {
-        valid: true,
-        pipeline: PipelineSummary::default(),
-        errors: vec![],
-    }
-}

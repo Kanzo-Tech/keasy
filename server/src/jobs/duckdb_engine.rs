@@ -27,11 +27,21 @@ impl DuckDbConn {
         Self { conn: Mutex::new(conn) }
     }
 
+    /// Known DuckDB settings that may be configured for cloud access.
+    const ALLOWED_SETTINGS: &[&str] = &[
+        "s3_region", "s3_access_key_id", "s3_secret_access_key", "s3_endpoint", "s3_url_style",
+        "azure_storage_connection_string", "azure_account_name", "azure_account_key",
+    ];
+
     /// Configure cloud credentials for httpfs access (S3, Azure, GCS).
     pub fn configure_cloud(&self, config: &[(String, String)]) -> Result<(), duckdb::Error> {
         let conn = self.conn.lock().expect("duckdb lock poisoned");
         for (key, value) in config {
-            conn.execute(&format!("SET {key} = '{value}'"), [])?;
+            if !Self::ALLOWED_SETTINGS.contains(&key.as_str()) {
+                continue; // skip unknown settings
+            }
+            let escaped = value.replace('\'', "''");
+            conn.execute(&format!("SET {key} = '{escaped}'"), [])?;
         }
         Ok(())
     }
@@ -78,7 +88,8 @@ impl SqlEngine for DuckDbConn {
             .map(|_| "?")
             .collect::<Vec<_>>()
             .join(", ");
-        let sql = format!("INSERT INTO {table} ({cols}) VALUES ({placeholder_row})");
+        let sql = format!("INSERT INTO \"{table}\" ({cols}) VALUES ({placeholder_row})");
+        conn.execute_batch("BEGIN TRANSACTION")?;
         let mut stmt = conn.prepare(&sql)?;
         for row in rows {
             let params: Vec<&dyn duckdb::types::ToSql> = row
@@ -87,6 +98,7 @@ impl SqlEngine for DuckDbConn {
                 .collect();
             stmt.execute(params.as_slice())?;
         }
+        conn.execute_batch("COMMIT")?;
         Ok(())
     }
 }

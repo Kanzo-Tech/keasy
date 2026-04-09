@@ -6,7 +6,7 @@ import { MetaItem } from "@/components/shared/meta-item";
 import { PageShell } from "@/components/layout/page-shell";
 import { PipelineSection } from "@/components/pipeline-flow/pipeline-section";
 import { reverseMapUrl, reverseMapPipeline } from "@/lib/formatters";
-import type { RunMode, ValidationResult, Connection } from "@/lib/types";
+import type { RunMode, ValidationResult, Connector } from "@/lib/types";
 
 interface JobSummaryPanelProps {
   onConfirm: () => void;
@@ -16,7 +16,7 @@ interface JobSummaryPanelProps {
   mode: RunMode;
   validation: ValidationResult;
   dcatEnabled: boolean;
-  connections?: Connection[];
+  connectors?: Connector[];
 }
 
 const FORMAT_LABELS: Record<string, string> = {
@@ -47,7 +47,7 @@ export function JobSummaryPanel({
   mode,
   validation,
   dcatEnabled,
-  connections = [],
+  connectors = [],
 }: JobSummaryPanelProps) {
   const rawDests = [
     ...new Set(
@@ -56,7 +56,7 @@ export function JobSummaryPanel({
         .filter((d): d is string => d != null)
     ),
   ];
-  const destinations = rawDests.map((d) => reverseMapUrl(d, connections));
+  const destinations = rawDests.map((d) => reverseMapUrl(d, connectors));
   const formats = [
     ...new Set(
       rawDests
@@ -64,7 +64,7 @@ export function JobSummaryPanel({
         .filter((f): f is string => f !== null)
     ),
   ];
-  const mappedPipeline = reverseMapPipeline(validation.pipeline, connections);
+  const mappedPipeline = reverseMapPipeline(validation.pipeline, connectors);
 
   return (
     <PageShell>

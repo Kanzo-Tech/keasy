@@ -1,18 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { toast } from "sonner";
-import { Cloud } from "lucide-react";
+import { Database } from "lucide-react";
 import { toastError } from "@/lib/toast-error";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { PageShell } from "@/components/layout/page-shell";
-import { FormField } from "@/components/shared/form-layout";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Field,
+  FieldLabel,
+  FieldDescription,
+  FieldError,
+} from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -23,12 +31,19 @@ import {
 import { FormPageSkeleton } from "@/components/settings/form-page-skeleton";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 
+const schema = z.object({
+  connector_id: z.string().min(1, "Select a connection"),
+  base_url: z.string().min(1, "Base URL is required"),
+});
+
+type FormValues = z.infer<typeof schema>;
+
 export default function CatalogStoragePage() {
   const queryClient = useQueryClient();
 
-  const { data: accounts, isLoading: loadingAccounts } = useQuery({
-    queryKey: queryKeys.cloud.accounts,
-    queryFn: api.cloud.list,
+  const { data: connections, isLoading: loadingConnections } = useQuery({
+    queryKey: queryKeys.connections.all(),
+    queryFn: () => api.connections.list(),
   });
 
   const { data: config, isLoading: loadingConfig } = useQuery({
@@ -36,50 +51,54 @@ export default function CatalogStoragePage() {
     queryFn: api.settings.catalogStorage,
   });
 
-  const isLoading = loadingAccounts || loadingConfig;
+  const isLoading = loadingConnections || loadingConfig;
   const showSkeleton = useDelayedLoading(isLoading);
 
-  const [cloudAccountId, setCloudAccountId] = useState<string>("");
-  const [baseUrl, setBaseUrl] = useState<string>("");
-  const [initialized, setInitialized] = useState(false);
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { connector_id: "", base_url: "" },
+  });
 
-  // Sync form state once data arrives
-  if (!initialized && !isLoading && config !== undefined) {
+  // Sync form with loaded data
+  useEffect(() => {
     if (config) {
-      setCloudAccountId(config.cloud_account_id ?? "");
-      setBaseUrl(config.base_url ?? "");
+      form.reset({
+        connector_id: config.connector_id ?? "",
+        base_url: config.base_url ?? "",
+      });
     }
-    setInitialized(true);
-  }
+  }, [config, form]);
 
   const saveMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: FormValues) =>
       api.settings.saveCatalogStorage({
-        cloud_account_id: cloudAccountId,
-        base_url: baseUrl.trim(),
+        connector_id: values.connector_id,
+        base_url: values.base_url.trim(),
       }),
     onSuccess: async () => {
       toast.success("Catalog storage saved");
-      await queryClient.invalidateQueries({ queryKey: queryKeys.settings.catalogStorage });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.settings.catalogStorage,
+      });
     },
     onError: (err) => toastError(err, "Failed to save catalog storage"),
   });
 
-  if (isLoading || !initialized) {
+  if (isLoading) {
     return showSkeleton ? <FormPageSkeleton /> : null;
   }
 
-  if (!accounts || accounts.length === 0) {
+  if (!connections || connections.length === 0) {
     return (
       <PageShell>
         <PageShell.Content>
           <EmptyState
-            icon={Cloud}
-            title="No cloud accounts"
-            description="Add a cloud account first to configure catalog storage."
+            icon={Database}
+            title="No connections"
+            description="Add a connection first to configure catalog storage."
             action={
               <Button asChild size="sm" variant="outline">
-                <Link href="/settings/cloud-accounts">Go to Cloud Accounts</Link>
+                <Link href="/connections">Go to Connections</Link>
               </Button>
             }
           />
@@ -91,37 +110,64 @@ export default function CatalogStoragePage() {
   return (
     <PageShell>
       <PageShell.Content>
-        <FormField label="Cloud Account" required>
-          <Select value={cloudAccountId} onValueChange={setCloudAccountId}>
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="Select a cloud account" />
-            </SelectTrigger>
-            <SelectContent>
-              {accounts.map((a) => (
-                <SelectItem key={a.id} value={a.id}>
-                  {a.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormField>
-
-        <FormField label="Base URL" required description="Root path where catalog data will be stored (e.g. s3://my-bucket/catalog)">
-          <Input
-            value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder="s3://my-bucket/catalog"
-            className="h-8 text-sm"
+        <form
+          id="catalog-storage-form"
+          onSubmit={form.handleSubmit((values) => saveMutation.mutate(values))}
+          className="flex flex-col gap-6"
+        >
+          <Controller
+            control={form.control}
+            name="connector_id"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={!!fieldState.error || undefined}>
+                <FieldLabel>Connection</FieldLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="h-8 text-sm" aria-invalid={fieldState.invalid}>
+                    <SelectValue placeholder="Select a connection" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {connections.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FieldError errors={[fieldState.error]} />
+              </Field>
+            )}
           />
-        </FormField>
+
+          <Controller
+            control={form.control}
+            name="base_url"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={!!fieldState.error || undefined}>
+                <FieldLabel>Base URL</FieldLabel>
+                <Input
+                  {...field}
+                  placeholder="s3://my-bucket/catalog"
+                  className="h-8 text-sm"
+                  aria-invalid={fieldState.invalid}
+                />
+                <FieldDescription>
+                  Root path where catalog data will be stored (e.g.
+                  s3://my-bucket/catalog)
+                </FieldDescription>
+                <FieldError errors={[fieldState.error]} />
+              </Field>
+            )}
+          />
+        </form>
       </PageShell.Content>
 
       <PageShell.Footer>
         <div />
         <Button
+          type="submit"
+          form="catalog-storage-form"
           size="sm"
-          disabled={!cloudAccountId || !baseUrl.trim() || saveMutation.isPending || saveMutation.isSuccess}
-          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending || saveMutation.isSuccess}
         >
           {saveMutation.isPending ? "Saving..." : "Save"}
         </Button>

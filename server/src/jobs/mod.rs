@@ -12,4 +12,4 @@ pub mod path_resolver;
 
 // Re-exports
 pub use pipeline_types::*;
-pub use pipeline_extract::extract_summary;
+pub use pipeline_extract::extract_summary_from_plan;

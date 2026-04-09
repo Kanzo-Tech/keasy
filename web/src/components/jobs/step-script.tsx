@@ -12,14 +12,14 @@ import {
 } from "@/components/discovery/code-editor";
 import { AssistantWizard } from "@/components/jobs/assistant-wizard";
 import { ArrowLeft, ArrowRight, Save, Loader2 } from "lucide-react";
-import type { Connection, ProviderInfo, FileEntry, FossilCompletionItem, CreationMode } from "@/lib/types";
+import type { Connector, ProviderInfo, FileEntry, FossilCompletionItem, CreationMode } from "@/lib/types";
 import type { Extension } from "@codemirror/state";
 
 interface StepScriptProps {
   creationMode: CreationMode;
   script: string;
   onScriptChange: (script: string) => void;
-  connections: Connection[];
+  connectors: Connector[];
   providers: ProviderInfo[];
   onNext: () => void;
   onBack: () => void;
@@ -32,7 +32,7 @@ export function StepScript({
   creationMode,
   script,
   onScriptChange,
-  connections,
+  connectors,
   providers,
   onNext,
   onBack,
@@ -49,15 +49,15 @@ export function StepScript({
 
   const fossilExtensions = useMemo((): Extension[] => [
     fossilLanguage(),
-    fossilAutocomplete(connections, providers, fileCacheRef, completionCacheRef),
+    fossilAutocomplete(connectors, providers, fileCacheRef, completionCacheRef),
     fossilLinterExtension(),
-  ], [connections, providers]);
+  ], [connectors, providers]);
 
   if (creationMode === "assistant") {
     return (
       <AssistantWizard
         onComplete={onAssistantComplete}
-        connections={connections}
+        connectors={connectors}
         providers={providers}
       />
     );
@@ -68,7 +68,7 @@ export function StepScript({
       <PageShell.Content className="gap-3">
         <div className="flex items-center gap-2 shrink-0">
           <div className="flex items-center gap-2 ml-auto">
-            {connections.length > 0 && (
+            {connectors.length > 0 && (
               <span className="text-xs text-muted-foreground">
                 Type{" "}
                 <kbd className="rounded border px-1 py-0.5 text-[10px] font-mono">

@@ -11,7 +11,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
-import { AI_PROVIDERS } from "@/lib/ai-providers";
+import { providerRegistry } from "@/lib/ai/providers";
 import {
   DataTable,
   ActionItem,
@@ -37,13 +37,13 @@ function aiColumns(
       header: sortableHeader("Provider"),
       cell: ({ getValue }) => {
         const id = getValue<string>();
-        const provider = AI_PROVIDERS.find((p) => p.id === id);
+        const provider = providerRegistry[id];
         if (!provider) return <span className="font-medium">{id}</span>;
         const Icon = provider.icon;
         return (
           <span className="inline-flex items-center gap-2 font-medium">
             <Icon className="h-4 w-4" />
-            {provider.label}
+            {provider.name}
           </span>
         );
       },
@@ -52,12 +52,12 @@ function aiColumns(
       id: "model",
       header: "Model",
       cell: ({ row }) => {
-        const provider = AI_PROVIDERS.find((p) => p.id === row.original.provider);
+        const provider = providerRegistry[row.original.provider];
         const model = row.original.model;
         if (model) return <span className="text-muted-foreground">{model}</span>;
         return (
           <span className="text-muted-foreground">
-            Default: {provider?.defaultModel ?? "—"}
+            Default: {provider?.fields.find((f) => f.name === "model")?.placeholder ?? "—"}
           </span>
         );
       },

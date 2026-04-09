@@ -96,26 +96,6 @@
         }
       }
     },
-    "/v1/admin/catalog/graph": {
-      "get": {
-        "tags": [
-          "Catalog"
-        ],
-        "operationId": "get_federated_catalog_graph",
-        "responses": {
-          "200": {
-            "description": "Federated catalog graph (all organizations)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GraphData"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/admin/invites": {
       "get": {
         "tags": [
@@ -305,72 +285,6 @@
         }
       }
     },
-    "/v1/assistant/generate": {
-      "post": {
-        "tags": [
-          "Assistant"
-        ],
-        "operationId": "generate_script",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GenerateRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Generated Fossil script",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GenerateResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "AI provider not configured"
-          }
-        }
-      }
-    },
-    "/v1/assistant/suggest": {
-      "post": {
-        "tags": [
-          "Assistant"
-        ],
-        "operationId": "suggest_cqs",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SuggestRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Suggested competency questions",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SuggestResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "AI provider not configured"
-          }
-        }
-      }
-    },
     "/v1/auth/invite-info": {
       "get": {
         "tags": [
@@ -469,189 +383,17 @@
         }
       }
     },
-    "/v1/catalog/graph": {
+    "/v1/connectors": {
       "get": {
         "tags": [
-          "Catalog"
+          "Connectors"
         ],
-        "operationId": "get_org_catalog_graph",
-        "responses": {
-          "200": {
-            "description": "Organization catalog graph",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GraphData"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/cloud-accounts": {
-      "get": {
-        "tags": [
-          "Cloud Accounts"
-        ],
-        "operationId": "list_accounts",
-        "responses": {
-          "200": {
-            "description": "List of cloud accounts",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CloudAccountSummary"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Cloud Accounts"
-        ],
-        "operationId": "create_account",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateCloudAccountRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Cloud account created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CloudAccountSummary"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation failed"
-          }
-        }
-      }
-    },
-    "/v1/cloud-accounts/{id}": {
-      "get": {
-        "tags": [
-          "Cloud Accounts"
-        ],
-        "operationId": "get_account",
+        "operationId": "list_connectors",
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "description": "Cloud account ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Cloud account details",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CloudAccountSummary"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Cloud account not found"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Cloud Accounts"
-        ],
-        "operationId": "update_account",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Cloud account ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateCloudAccountRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Cloud account updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CloudAccountSummary"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation failed"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Cloud Accounts"
-        ],
-        "operationId": "delete_account",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Cloud account ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Cloud account deleted"
-          }
-        }
-      }
-    },
-    "/v1/connections": {
-      "get": {
-        "tags": [
-          "Connections"
-        ],
-        "operationId": "list_connections",
-        "parameters": [
-          {
-            "name": "type",
+            "name": "direction",
             "in": "query",
-            "description": "Filter by connection type",
+            "description": "Filter by direction",
             "required": false,
             "schema": {
               "type": "string"
@@ -660,13 +402,13 @@
         ],
         "responses": {
           "200": {
-            "description": "List of connections",
+            "description": "List of connectors",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Connection"
+                    "$ref": "#/components/schemas/Connector"
                   }
                 }
               }
@@ -676,14 +418,14 @@
       },
       "post": {
         "tags": [
-          "Connections"
+          "Connectors"
         ],
-        "operationId": "create_connection",
+        "operationId": "create_connector",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateConnectionRequest"
+                "$ref": "#/components/schemas/CreateConnectorRequest"
               }
             }
           },
@@ -691,32 +433,54 @@
         },
         "responses": {
           "201": {
-            "description": "Connection created",
+            "description": "Connector created",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Connection"
+                  "$ref": "#/components/schemas/Connector"
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid connection or container not found"
+            "description": "Validation error"
           }
         }
       }
     },
-    "/v1/connections/{id}": {
+    "/v1/connectors/types": {
       "get": {
         "tags": [
-          "Connections"
+          "Connectors"
         ],
-        "operationId": "get_connection",
+        "operationId": "list_connector_types",
+        "responses": {
+          "200": {
+            "description": "Available connector types",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConnectorTypeInfo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/connectors/{id}": {
+      "get": {
+        "tags": [
+          "Connectors"
+        ],
+        "operationId": "get_connector",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Connection ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -725,30 +489,29 @@
         ],
         "responses": {
           "200": {
-            "description": "Connection details",
+            "description": "Connector details",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Connection"
+                  "$ref": "#/components/schemas/Connector"
                 }
               }
             }
           },
           "404": {
-            "description": "Connection not found"
+            "description": "Not found"
           }
         }
       },
       "put": {
         "tags": [
-          "Connections"
+          "Connectors"
         ],
-        "operationId": "update_connection",
+        "operationId": "update_connector",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Connection ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -759,7 +522,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateConnectionRequest"
+                "$ref": "#/components/schemas/UpdateConnectorRequest"
               }
             }
           },
@@ -767,33 +530,29 @@
         },
         "responses": {
           "200": {
-            "description": "Connection updated",
+            "description": "Connector updated",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Connection"
+                  "$ref": "#/components/schemas/Connector"
                 }
               }
             }
           },
-          "400": {
-            "description": "Invalid connection"
-          },
           "404": {
-            "description": "Connection not found"
+            "description": "Not found"
           }
         }
       },
       "delete": {
         "tags": [
-          "Connections"
+          "Connectors"
         ],
-        "operationId": "delete_connection",
+        "operationId": "delete_connector",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Connection ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -802,22 +561,24 @@
         ],
         "responses": {
           "204": {
-            "description": "Connection deleted"
+            "description": "Connector deleted"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }
     },
-    "/v1/connections/{id}/files": {
+    "/v1/connectors/{id}/files": {
       "get": {
         "tags": [
-          "Connections"
+          "Connectors"
         ],
-        "operationId": "list_connection_files",
+        "operationId": "list_connector_files",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Connection ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -826,7 +587,7 @@
         ],
         "responses": {
           "200": {
-            "description": "List of files in the connection",
+            "description": "Files in storage",
             "content": {
               "application/json": {
                 "schema": {
@@ -838,76 +599,22 @@
               }
             }
           },
-          "400": {
-            "description": "File listing not supported"
-          },
           "404": {
-            "description": "Connection not found"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Connections"
-        ],
-        "operationId": "upload_file",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Connection ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UploadFileRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "File uploaded"
-          },
-          "400": {
-            "description": "Upload not supported"
-          },
-          "404": {
-            "description": "Connection not found"
-          },
-          "502": {
-            "description": "Upload failed"
+            "description": "Connector not found"
           }
         }
       }
     },
-    "/v1/connections/{id}/schema": {
-      "get": {
+    "/v1/connectors/{id}/test": {
+      "post": {
         "tags": [
-          "Connections"
+          "Connectors"
         ],
-        "operationId": "get_file_schema",
+        "operationId": "test_connector",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Connection ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "path",
-            "in": "query",
-            "description": "Relative file path within the connection",
             "required": true,
             "schema": {
               "type": "string"
@@ -916,110 +623,10 @@
         ],
         "responses": {
           "200": {
-            "description": "File schema",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FileSchemaResponse"
-                }
-              }
-            }
+            "description": "Connection test passed"
           },
           "400": {
-            "description": "Schema inference failed or unsupported file type"
-          },
-          "404": {
-            "description": "Connection not found"
-          }
-        }
-      }
-    },
-    "/v1/conversations/{id}": {
-      "put": {
-        "tags": [
-          "Conversations"
-        ],
-        "operationId": "rename_conversation",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Conversation ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RenameConversationRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "Conversation renamed"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Conversations"
-        ],
-        "operationId": "delete_conversation",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Conversation ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Conversation deleted"
-          }
-        }
-      }
-    },
-    "/v1/conversations/{id}/messages": {
-      "get": {
-        "tags": [
-          "Conversations"
-        ],
-        "operationId": "get_conversation_messages",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Conversation ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Conversation messages",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ConversationMessage"
-                  }
-                }
-              }
-            }
+            "description": "Connection test failed"
           },
           "404": {
             "description": "Not found"
@@ -1297,90 +904,10 @@
         ],
         "responses": {
           "200": {
-            "description": "DCAT catalog (N-Triples)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CatalogResponse"
-                }
-              }
-            }
+            "description": "DCAT-AP catalog as Turtle (download)"
           },
           "404": {
             "description": "Job or catalog not found"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/conversations": {
-      "get": {
-        "tags": [
-          "Conversations"
-        ],
-        "operationId": "list_conversations",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of conversations",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Conversation"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Conversations"
-        ],
-        "operationId": "create_conversation",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateConversationRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Conversation created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Conversation"
-                }
-              }
-            }
           }
         }
       }
@@ -1447,47 +974,6 @@
         }
       }
     },
-    "/v1/jobs/{id}/discover/ask": {
-      "post": {
-        "tags": [
-          "Discovery"
-        ],
-        "operationId": "ask_discover",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AskRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "AI answer with DuckDB SQL query",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/jobs/{id}/discover/urls": {
       "get": {
         "tags": [
@@ -1518,40 +1004,6 @@
           },
           "404": {
             "description": "Job not found or no output"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/graph": {
-      "get": {
-        "tags": [
-          "Jobs"
-        ],
-        "operationId": "get_job_graph",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Job knowledge graph",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GraphData"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Job not found"
           }
         }
       }
@@ -1955,6 +1407,60 @@
         }
       }
     },
+    "/v1/settings/catalog-storage": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "get_catalog_storage",
+        "responses": {
+          "200": {
+            "description": "Catalog storage config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogStoragePayload"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Not configured"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "save_catalog_storage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogStoragePayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Catalog storage saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogStoragePayload"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
     "/v1/settings/organization": {
       "get": {
         "tags": [
@@ -2056,29 +1562,6 @@
           },
           "400": {
             "description": "Validation error"
-          }
-        }
-      }
-    },
-    "/v1/settings/schema": {
-      "get": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "get_schema",
-        "responses": {
-          "200": {
-            "description": "Provider registry schema",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ProviderSchema"
-                  }
-                }
-              }
-            }
           }
         }
       }
@@ -2226,107 +1709,6 @@
           }
         }
       },
-      "AskRequest": {
-        "type": "object",
-        "required": [
-          "question"
-        ],
-        "properties": {
-          "conversation_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "explain": {
-            "type": "boolean",
-            "description": "When true, the LLM acts as a data analyst explaining query results\ninstead of generating SQL. The question should contain the original\nquestion, SQL, and result rows."
-          },
-          "provider": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "question": {
-            "type": "string"
-          },
-          "schema": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "DuckDB table schema from the frontend (column names, types, sample values).\nWhen provided, this is used as context for SQL generation instead of the\npipeline summary."
-          }
-        }
-      },
-      "AskResponse": {
-        "type": "object",
-        "required": [
-          "answer",
-          "code"
-        ],
-        "properties": {
-          "answer": {
-            "type": "string"
-          },
-          "code": {
-            "$ref": "#/components/schemas/AskResultCode"
-          },
-          "conversation_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "reasoning": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "sql": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "DuckDB SQL query generated by the LLM (executed client-side via DuckDB-WASM)."
-          }
-        }
-      },
-      "AskResultCode": {
-        "type": "string",
-        "description": "Result code for AI ask responses — replaces raw string literals.",
-        "enum": [
-          "success",
-          "parse_failed",
-          "query_failed",
-          "insufficient_credits",
-          "llm_failed"
-        ]
-      },
-      "AuthMethodSchema": {
-        "type": "object",
-        "required": [
-          "name",
-          "label",
-          "fields"
-        ],
-        "properties": {
-          "fields": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FieldSchema"
-            }
-          },
-          "label": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        }
-      },
       "CatalogResponse": {
         "type": "object",
         "required": [
@@ -2338,52 +1720,17 @@
           }
         }
       },
-      "CloudAccountSummary": {
+      "CatalogStoragePayload": {
         "type": "object",
         "required": [
-          "id",
-          "name",
-          "provider_id",
-          "fields"
+          "connector_id",
+          "base_url"
         ],
         "properties": {
-          "auth_method": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "fields": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          },
-          "id": {
+          "base_url": {
             "type": "string"
           },
-          "name": {
-            "type": "string"
-          },
-          "provider_id": {
-            "type": "string"
-          }
-        }
-      },
-      "ColumnInfo": {
-        "type": "object",
-        "required": [
-          "name",
-          "data_type"
-        ],
-        "properties": {
-          "data_type": {
-            "type": "string"
-          },
-          "name": {
+          "connector_id": {
             "type": "string"
           }
         }
@@ -2438,25 +1785,6 @@
             "items": {
               "type": "string"
             }
-          }
-        }
-      },
-      "CompetencyQuestion": {
-        "type": "object",
-        "required": [
-          "id",
-          "question",
-          "rationale"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "question": {
-            "type": "string"
-          },
-          "rationale": {
-            "type": "string"
           }
         }
       },
@@ -2611,188 +1939,95 @@
           }
         }
       },
-      "Connection": {
+      "Connector": {
         "type": "object",
         "required": [
           "id",
           "name",
-          "kind",
-          "location_type",
-          "url"
+          "connector_type",
+          "direction",
+          "config",
+          "created_at",
+          "updated_at"
         ],
         "properties": {
-          "cloud_account_id": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "config": {},
+          "connector_type": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/ConnectorDirection"
           },
           "id": {
             "type": "string"
           },
-          "kind": {
-            "$ref": "#/components/schemas/ConnectionKind"
-          },
-          "location_type": {
-            "$ref": "#/components/schemas/LocationType"
-          },
           "name": {
             "type": "string"
           },
-          "url": {
+          "updated_at": {
             "type": "string"
           }
         }
       },
-      "ConnectionKind": {
+      "ConnectorDirection": {
         "type": "string",
         "enum": [
-          "data",
-          "vocab"
+          "source",
+          "destination",
+          "both"
         ]
       },
-      "Conversation": {
+      "ConnectorTypeInfo": {
         "type": "object",
+        "description": "Metadata about a connector type (for API listing).",
         "required": [
           "id",
-          "job_id",
-          "created_at"
-        ],
-        "properties": {
-          "created_at": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "job_id": {
-            "type": "string"
-          },
-          "title": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "ConversationMessage": {
-        "type": "object",
-        "required": [
-          "id",
-          "conversation_id",
-          "role",
-          "content",
-          "created_at"
-        ],
-        "properties": {
-          "code": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "content": {
-            "type": "string"
-          },
-          "conversation_id": {
-            "type": "string"
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "data": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/TabularData"
-              }
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string"
-          },
-          "sparql": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "CreateCloudAccountRequest": {
-        "type": "object",
-        "required": [
           "name",
-          "provider_id",
-          "fields"
+          "description",
+          "direction",
+          "secret_fields"
         ],
         "properties": {
-          "auth_method": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "description": {
+            "type": "string"
           },
-          "fields": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
+          "direction": {
+            "$ref": "#/components/schemas/ConnectorDirection"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "secret_fields": {
+            "type": "array",
+            "items": {
               "type": "string"
             }
-          },
-          "name": {
-            "type": "string"
-          },
-          "provider_id": {
-            "type": "string"
           }
         }
       },
-      "CreateConnectionRequest": {
+      "CreateConnectorRequest": {
         "type": "object",
         "required": [
           "name",
-          "kind",
-          "location_type",
-          "url"
+          "connector_type",
+          "direction"
         ],
         "properties": {
-          "cloud_account_id": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "config": {},
+          "connector_type": {
+            "type": "string"
           },
-          "kind": {
-            "$ref": "#/components/schemas/ConnectionKind"
-          },
-          "location_type": {
-            "$ref": "#/components/schemas/LocationType"
+          "direction": {
+            "$ref": "#/components/schemas/ConnectorDirection"
           },
           "name": {
             "type": "string"
-          },
-          "url": {
-            "type": "string"
-          }
-        }
-      },
-      "CreateConversationRequest": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": [
-              "string",
-              "null"
-            ]
           }
         }
       },
@@ -2813,7 +2048,7 @@
           "script"
         ],
         "properties": {
-          "connection_ids": {
+          "connector_ids": {
             "type": "array",
             "items": {
               "type": "string"
@@ -3103,40 +2338,6 @@
           }
         }
       },
-      "FieldSchema": {
-        "type": "object",
-        "required": [
-          "name",
-          "label",
-          "secret"
-        ],
-        "properties": {
-          "default_value": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "env_var": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "label": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "optional": {
-            "type": "boolean"
-          },
-          "secret": {
-            "type": "boolean"
-          }
-        }
-      },
       "FileEntry": {
         "type": "object",
         "required": [
@@ -3157,146 +2358,6 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
-          }
-        }
-      },
-      "FileSchema": {
-        "type": "object",
-        "required": [
-          "connection_name",
-          "file_path",
-          "columns"
-        ],
-        "properties": {
-          "columns": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ColumnInfo"
-            }
-          },
-          "connection_name": {
-            "type": "string"
-          },
-          "file_path": {
-            "type": "string"
-          }
-        }
-      },
-      "FileSchemaResponse": {
-        "type": "object",
-        "required": [
-          "columns"
-        ],
-        "properties": {
-          "columns": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ColumnInfo"
-            }
-          }
-        }
-      },
-      "GenerateRequest": {
-        "type": "object",
-        "required": [
-          "domain",
-          "competency_questions",
-          "schemas"
-        ],
-        "properties": {
-          "competency_questions": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "domain": {
-            "type": "string"
-          },
-          "schemas": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FileSchema"
-            }
-          }
-        }
-      },
-      "GenerateResponse": {
-        "type": "object",
-        "required": [
-          "script"
-        ],
-        "properties": {
-          "script": {
-            "type": "string"
-          }
-        }
-      },
-      "GraphData": {
-        "type": "object",
-        "required": [
-          "nodes",
-          "links"
-        ],
-        "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GraphLink"
-            }
-          },
-          "nodes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GraphNode"
-            }
-          }
-        }
-      },
-      "GraphLink": {
-        "type": "object",
-        "required": [
-          "source",
-          "target",
-          "label"
-        ],
-        "properties": {
-          "label": {
-            "type": "string"
-          },
-          "source": {
-            "type": "string"
-          },
-          "target": {
-            "type": "string"
-          }
-        }
-      },
-      "GraphNode": {
-        "type": "object",
-        "required": [
-          "id",
-          "label",
-          "group"
-        ],
-        "properties": {
-          "group": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          },
-          "properties": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
           }
         }
       },
@@ -3352,13 +2413,31 @@
           "pipeline"
         ],
         "properties": {
+          "catalog_base": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Base URL for catalog parquets in promotor storage."
+          },
+          "catalog_manifest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataManifest",
+                "description": "DCAT-AP catalog manifest (parquets stored in promotor cloud)."
+              }
+            ]
+          },
           "completed_at": {
             "type": [
               "string",
               "null"
             ]
           },
-          "connection_ids": {
+          "connector_ids": {
             "type": "array",
             "items": {
               "type": "string"
@@ -3488,13 +2567,6 @@
           "completed",
           "failed",
           "cancelled"
-        ]
-      },
-      "LocationType": {
-        "type": "string",
-        "enum": [
-          "cloud",
-          "local"
         ]
       },
       "LogoutResponse": {
@@ -3690,6 +2762,20 @@
           "publisher_name"
         ],
         "properties": {
+          "catalog_base_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Base URL for catalog parquet storage (e.g. s3://promotor/catalogs/)."
+          },
+          "catalog_connector_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Connector ID for catalog parquet storage (set by promotor)."
+          },
           "catalog_description": {
             "type": [
               "string",
@@ -3942,39 +3028,6 @@
           }
         }
       },
-      "ProviderSchema": {
-        "type": "object",
-        "required": [
-          "id",
-          "label",
-          "icon",
-          "common_fields",
-          "auth_methods"
-        ],
-        "properties": {
-          "auth_methods": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AuthMethodSchema"
-            }
-          },
-          "common_fields": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FieldSchema"
-            }
-          },
-          "icon": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          }
-        }
-      },
       "RegisterDataspaceResponse": {
         "type": "object",
         "required": [
@@ -4041,17 +3094,6 @@
           }
         }
       },
-      "RenameConversationRequest": {
-        "type": "object",
-        "required": [
-          "title"
-        ],
-        "properties": {
-          "title": {
-            "type": "string"
-          }
-        }
-      },
       "ResolveResponse": {
         "type": "object",
         "required": [
@@ -4060,7 +3102,6 @@
         "properties": {
           "files": {
             "type": "object",
-            "description": "Map of logical file name → signed URL for direct cloud access.",
             "additionalProperties": {
               "type": "string"
             },
@@ -4076,31 +3117,6 @@
           "integrated",
           "scheduled"
         ]
-      },
-      "SearchResult": {
-        "type": "object",
-        "required": [
-          "id",
-          "label",
-          "group"
-        ],
-        "properties": {
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "group": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          }
-        }
       },
       "ServiceStatusResponse": {
         "type": "object",
@@ -4124,38 +3140,6 @@
           },
           "oidc": {
             "type": "boolean"
-          }
-        }
-      },
-      "SuggestRequest": {
-        "type": "object",
-        "required": [
-          "domain",
-          "schemas"
-        ],
-        "properties": {
-          "domain": {
-            "type": "string"
-          },
-          "schemas": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FileSchema"
-            }
-          }
-        }
-      },
-      "SuggestResponse": {
-        "type": "object",
-        "required": [
-          "competency_questions"
-        ],
-        "properties": {
-          "competency_questions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CompetencyQuestion"
-            }
           }
         }
       },
@@ -4226,71 +3210,27 @@
           }
         }
       },
-      "UpdateCloudAccountRequest": {
+      "UpdateConnectorRequest": {
         "type": "object",
         "properties": {
-          "auth_method": {
+          "config": {},
+          "connector_type": {
             "type": [
               "string",
               "null"
             ]
           },
-          "fields": {
-            "type": [
-              "object",
-              "null"
-            ],
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          },
-          "name": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "UpdateConnectionRequest": {
-        "type": "object",
-        "properties": {
-          "cloud_account_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "kind": {
+          "direction": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/ConnectionKind"
-              }
-            ]
-          },
-          "location_type": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/LocationType"
+                "$ref": "#/components/schemas/ConnectorDirection"
               }
             ]
           },
           "name": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "url": {
             "type": [
               "string",
               "null"
@@ -4355,21 +3295,6 @@
         ],
         "properties": {
           "role": {
-            "type": "string"
-          }
-        }
-      },
-      "UploadFileRequest": {
-        "type": "object",
-        "required": [
-          "path",
-          "content"
-        ],
-        "properties": {
-          "content": {
-            "type": "string"
-          },
-          "path": {
             "type": "string"
           }
         }

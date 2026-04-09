@@ -1,0 +1,5 @@
+[print_schema]
+file = "src/db/diesel_schema.rs"
+
+[migrations_directory]
+dir = "migrations"

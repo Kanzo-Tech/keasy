@@ -1,9 +1,10 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { WorkspaceStatusBar, type StatusBarPanelButton } from "./workspace-status-bar";
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -23,7 +24,6 @@ interface WorkspaceLayoutProps {
   statusLeft?: ReactNode;
   floatingControls?: ReactNode;
   defaultPanel?: string;
-  defaultWidth?: number;
   /** Called when active panel changes (for auto-open on node select) */
   onActivePanelChange?: (id: string | null) => void;
 }
@@ -51,25 +51,22 @@ export function PanelHeader({ title }: { title: string }) {
   );
 }
 
-// ── Persistence ──────────────────────────────────────────────────────────
+// ── Persistence (panel only — width handled by ResizablePanel autoSaveId) ─
 
-const STORAGE_KEY = "keasy:workspace";
+const STORAGE_KEY = "keasy:workspace:panel";
 
-function loadState(defaultWidth: number, defaultPanel?: string) {
-  if (typeof window === "undefined") return { width: defaultWidth, panel: defaultPanel ?? null };
+function loadPanel(defaultPanel?: string): string | null {
+  if (typeof window === "undefined") return defaultPanel ?? null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { width: defaultWidth, panel: defaultPanel ?? null };
-    const p = JSON.parse(raw);
-    return {
-      width: typeof p.width === "number" ? p.width : defaultWidth,
-      panel: typeof p.panel === "string" ? p.panel : (defaultPanel ?? null),
-    };
-  } catch { return { width: defaultWidth, panel: defaultPanel ?? null }; }
+    return localStorage.getItem(STORAGE_KEY) ?? (defaultPanel ?? null);
+  } catch { return defaultPanel ?? null; }
 }
 
-function saveState(width: number, panel: string | null) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ width, panel })); } catch {}
+function savePanel(panel: string | null) {
+  try {
+    if (panel) localStorage.setItem(STORAGE_KEY, panel);
+    else localStorage.removeItem(STORAGE_KEY);
+  } catch {}
 }
 
 // ── Component ────────────────────────────────────────────────────────────
@@ -82,87 +79,46 @@ export function WorkspaceLayout({
   statusLeft,
   floatingControls,
   defaultPanel = "info",
-  defaultWidth = 360,
   onActivePanelChange,
 }: WorkspaceLayoutProps) {
-  const [init] = useState(() => loadState(defaultWidth, defaultPanel));
-  const [activePanel, setActivePanel] = useState<string | null>(init.panel);
-  const [dockWidth, setDockWidth] = useState(init.width);
-  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
-  const saveTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [activePanel, setActivePanel] = useState<string | null>(() => loadPanel(defaultPanel));
 
-  const save = useCallback((w: number, p: string | null) => {
-    if (saveTimeout.current) clearTimeout(saveTimeout.current);
-    saveTimeout.current = setTimeout(() => saveState(w, p), 500);
-  }, []);
-
-  // Panel toggle (Zed logic)
   const togglePanel = useCallback((id: string) => {
     setActivePanel((prev) => {
       const next = prev === id ? null : id;
-      save(dockWidth, next);
+      savePanel(next);
       onActivePanelChange?.(next);
       return next;
     });
-  }, [dockWidth, save, onActivePanelChange]);
-
-  // Expose openPanel for external use (e.g., auto-open Info on node click)
-  const openPanel = useCallback((id: string) => {
-    setActivePanel(id);
-    save(dockWidth, id);
-    onActivePanelChange?.(id);
-  }, [dockWidth, save, onActivePanelChange]);
+  }, [onActivePanelChange]);
 
   const closePanel = useCallback(() => {
     setActivePanel(null);
-    save(dockWidth, null);
+    savePanel(null);
     onActivePanelChange?.(null);
-  }, [dockWidth, save, onActivePanelChange]);
+  }, [onActivePanelChange]);
 
-  // Resize
-  const onResizeDown = useCallback((e: React.PointerEvent) => {
-    e.preventDefault();
-    dragRef.current = { startX: e.clientX, startW: dockWidth };
-    const onMove = (ev: PointerEvent) => {
-      if (!dragRef.current) return;
-      const next = Math.max(280, Math.min(600, dragRef.current.startW + (dragRef.current.startX - ev.clientX)));
-      setDockWidth(next);
-    };
-    const onUp = () => {
-      if (dragRef.current) save(dockWidth, activePanel);
-      dragRef.current = null;
-      document.removeEventListener("pointermove", onMove);
-      document.removeEventListener("pointerup", onUp);
-    };
-    document.addEventListener("pointermove", onMove);
-    document.addEventListener("pointerup", onUp);
-  }, [dockWidth, activePanel, save]);
-
-  const onResizeDoubleClick = useCallback(() => {
-    setDockWidth(defaultWidth);
-    save(defaultWidth, activePanel);
-  }, [defaultWidth, activePanel, save]);
-
-  // Keyboard
+  // Keyboard shortcuts
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
         e.preventDefault();
         setActivePanel((prev) => {
           const next = prev ? null : (defaultPanel ?? panels[0]?.id ?? null);
-          save(dockWidth, next);
+          savePanel(next);
           return next;
         });
       }
-      if (e.key === "Escape" && activePanel) {
-        closePanel();
-      }
+      if (e.key === "Escape" && activePanel) closePanel();
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activePanel, dockWidth, defaultPanel, panels, save, closePanel]);
+  }, [activePanel, defaultPanel, panels, closePanel]);
 
-  const statusPanels: StatusBarPanelButton[] = panels.map(({ id, icon, label }) => ({ id, icon, label }));
+  const statusPanels = useMemo<StatusBarPanelButton[]>(
+    () => panels.map(({ id, icon, label }) => ({ id, icon, label })),
+    [panels],
+  );
   const activePanelContent = panels.find((p) => p.id === activePanel)?.content ?? null;
   const dockOpen = activePanel != null && activePanelContent != null;
 
@@ -171,52 +127,50 @@ export function WorkspaceLayout({
       <TooltipProvider delayDuration={300}>
         <div className="relative w-full h-full overflow-hidden flex flex-col bg-background">
           {/* Canvas + Dock area */}
-          <div className="relative flex-1 min-h-0">
-            {/* Canvas */}
-            <div className="absolute inset-0 z-0">{children}</div>
+          <div className="flex-1 min-h-0">
+            <ResizablePanelGroup orientation="horizontal">
+              <ResizablePanel>
+                <div className="relative w-full h-full">
+                  {children}
 
-            {/* Back button — icon only */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href={backHref}
-                  className="absolute top-3 left-3 z-30 h-7 w-7 inline-flex items-center justify-center rounded-sm bg-background/80 backdrop-blur-sm border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                  aria-label={backLabel}
-                >
-                  <ArrowLeft size={14} />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">{backLabel}</TooltipContent>
-            </Tooltip>
+                  {/* Back button */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={backHref}
+                        className="absolute top-3 left-3 z-30 h-7 w-7 inline-flex items-center justify-center rounded-sm bg-background/80 backdrop-blur-sm border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                        aria-label={backLabel}
+                      >
+                        <ArrowLeft size={14} />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-xs">{backLabel}</TooltipContent>
+                  </Tooltip>
 
-            {/* Floating controls — positioned dynamically */}
-            {floatingControls && (
-              <div
-                className="absolute z-30 bottom-3"
-                style={{ right: dockOpen ? dockWidth + 12 : 12 }}
-              >
-                {floatingControls}
-              </div>
-            )}
-
-            {/* Right dock */}
-            {dockOpen && (
-              <div
-                className="absolute top-0 right-0 bottom-0 z-20 flex"
-                style={{ width: dockWidth }}
-              >
-                <div
-                  className="w-1.5 shrink-0 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors"
-                  onPointerDown={onResizeDown}
-                  onDoubleClick={onResizeDoubleClick}
-                  role="separator"
-                  aria-orientation="vertical"
-                />
-                <div className="flex-1 flex flex-col min-w-0 bg-card border-l overflow-hidden">
-                  {activePanelContent}
+                  {/* Floating controls */}
+                  {floatingControls && (
+                    <div className="absolute z-30 bottom-3 right-3">
+                      {floatingControls}
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              </ResizablePanel>
+
+              {dockOpen && (
+                <>
+                  <ResizableHandle withHandle />
+                  <ResizablePanel
+                    defaultSize={360}
+                    collapsible
+                    onResize={(size) => { if (size.inPixels === 0) closePanel(); }}
+                  >
+                    <div className="flex flex-col h-full bg-card overflow-hidden">
+                      {activePanelContent}
+                    </div>
+                  </ResizablePanel>
+                </>
+              )}
+            </ResizablePanelGroup>
           </div>
 
           {/* Status bar */}

@@ -28,7 +28,7 @@ pub use jobs::runner::JobRunner;
 
 use secrecy::SecretString;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// Hash a string using the default hasher (for cache keys, not cryptography).
 pub fn hash_str(s: &str) -> u64 {
@@ -36,11 +36,6 @@ pub fn hash_str(s: &str) -> u64 {
     let mut h = std::collections::hash_map::DefaultHasher::new();
     s.hash(&mut h);
     h.finish()
-}
-
-/// Per-org fossil analysis state — Salsa-based incremental analysis (Phase 4).
-pub struct OrgAnalysisState {
-    _private: (),
 }
 
 #[derive(Clone)]
@@ -52,8 +47,6 @@ pub struct AppState {
     pub auth: AuthServices,
     pub gaia_x: GaiaXServices,
     pub connector_registry: Arc<connectors::types::ConnectorRegistry>,
-    /// Per-org fossil analysis state (compilation host + resolve cache).
-    pub org_analysis: Arc<Mutex<lru::LruCache<String, OrgAnalysisState>>>,
 }
 
 /// Authentication and identity services (Keycloak / OIDC).

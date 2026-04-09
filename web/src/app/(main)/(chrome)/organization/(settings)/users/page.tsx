@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Copy, Link2, Plus, Trash2, UserCircle } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
@@ -9,7 +12,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { FormField } from "@/components/shared/form-layout";
 import {
   Select,
   SelectContent,
@@ -33,6 +35,7 @@ import {
   sortableHeader,
   actionsColumn,
 } from "@/components/ui/data-table";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { PageShell } from "@/components/layout/page-shell";
@@ -40,6 +43,16 @@ import { useOrgUsers } from "@/hooks/use-org-users";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import type { OrgUser, OrgInvite } from "@/lib/types";
+
+/* ---------- Schema ---------- */
+
+const inviteSchema = z.object({
+  role: z.enum(["admin", "user"]),
+});
+
+type InviteFormValues = z.infer<typeof inviteSchema>;
+
+/* ---------- Column definitions ---------- */
 
 function orgUserColumns(
   onRoleChange: (userId: string, role: string) => void,
@@ -109,6 +122,8 @@ const inviteStatusVariant = (
   return "destructive";
 };
 
+/* ---------- Page ---------- */
+
 export default function OrgUsersPage() {
   const queryClient = useQueryClient();
   const { users, isLoading, handleRoleChange, handleRemoveUser } = useOrgUsers();
@@ -118,9 +133,27 @@ export default function OrgUsersPage() {
   });
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [inviteRole, setInviteRole] = useState("user");
-  const [isCreating, setIsCreating] = useState(false);
   const [createdInviteUrl, setCreatedInviteUrl] = useState<string | null>(null);
+
+  const form = useForm<InviteFormValues>({
+    resolver: zodResolver(inviteSchema),
+    defaultValues: { role: "user" },
+  });
+
+  const createInvite = useMutation({
+    mutationFn: (values: InviteFormValues) => api.org.createInvite(values.role),
+    onSuccess: async (data) => {
+      const inviteUrl =
+        data.invite_url ??
+        `${window.location.origin}/invite?token=${data.token}`;
+      setCreatedInviteUrl(inviteUrl);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.org.invites });
+      toast.success("Invite link created");
+    },
+    onError: () => {
+      toast.error("Failed to create invite");
+    },
+  });
 
   const columns = useMemo(
     () => orgUserColumns(handleRoleChange, handleRemoveUser),
@@ -128,32 +161,15 @@ export default function OrgUsersPage() {
   );
 
   function handleOpenDialog() {
-    setInviteRole("user");
+    form.reset({ role: "user" });
     setCreatedInviteUrl(null);
     setDialogOpen(true);
   }
 
   function handleCloseDialog() {
     setDialogOpen(false);
-    setInviteRole("user");
+    form.reset({ role: "user" });
     setCreatedInviteUrl(null);
-  }
-
-  async function handleCreateInvite() {
-    setIsCreating(true);
-    try {
-      const data = await api.org.createInvite(inviteRole);
-      const inviteUrl =
-        data.invite_url ??
-        `${window.location.origin}/invite?token=${data.token}`;
-      setCreatedInviteUrl(inviteUrl);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.org.invites });
-      toast.success("Invite link created");
-    } catch {
-      toast.error("Failed to create invite");
-    } finally {
-      setIsCreating(false);
-    }
   }
 
   async function handleRevokeInvite(token: string) {
@@ -310,24 +326,35 @@ export default function OrgUsersPage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
-              <FormField label="Role">
-                <ToggleGroup
-                  type="single"
-                  variant="outline"
-                  value={inviteRole}
-                  onValueChange={(v) => { if (v) setInviteRole(v); }}
-                  className="w-full"
-                >
-                  <ToggleGroupItem value="user" className="flex-1">
-                    User
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="admin" className="flex-1">
-                    Admin
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </FormField>
-            </div>
+            <form
+              id="invite-form"
+              onSubmit={form.handleSubmit((values) => createInvite.mutate(values))}
+              className="space-y-3"
+            >
+              <Field>
+                <FieldLabel>Role</FieldLabel>
+                <Controller
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <ToggleGroup
+                      type="single"
+                      variant="outline"
+                      value={field.value}
+                      onValueChange={(v) => { if (v) field.onChange(v); }}
+                      className="w-full"
+                    >
+                      <ToggleGroupItem value="user" className="flex-1">
+                        User
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="admin" className="flex-1">
+                        Admin
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  )}
+                />
+              </Field>
+            </form>
           )}
 
           <DialogFooter>
@@ -339,10 +366,11 @@ export default function OrgUsersPage() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleCreateInvite}
-                  disabled={isCreating}
+                  type="submit"
+                  form="invite-form"
+                  disabled={createInvite.isPending}
                 >
-                  {isCreating ? "Creating..." : "Create Invite"}
+                  {createInvite.isPending ? "Creating..." : "Create Invite"}
                 </Button>
               </>
             )}

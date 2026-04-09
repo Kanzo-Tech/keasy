@@ -6,7 +6,7 @@
 
 import { create } from "zustand";
 import type { RowSelectionState } from "@tanstack/react-table";
-import type { ColumnInfo, CompetencyQuestion } from "@/lib/types";
+import type { CompetencyQuestion } from "@/lib/types";
 
 export interface ReqEntry extends CompetencyQuestion {
   enabled: boolean;
@@ -17,7 +17,6 @@ interface AssistantWizardState {
   connRowSelection: RowSelectionState;
   fileSelection: Map<string, Set<string>>;
   fileCounts: Map<string, number>;
-  schemas: Map<string, ColumnInfo[]>;
   domain: string;
   reqs: ReqEntry[];
 
@@ -34,9 +33,6 @@ interface AssistantWizardState {
   selectAllFiles: (connId: string, paths: string[]) => void;
   setSupportedCount: (connId: string, count: number) => void;
 
-  // Schema management
-  setSchemas: (updater: (prev: Map<string, ColumnInfo[]>) => Map<string, ColumnInfo[]>) => void;
-
   // Sync: clean up file selection when connections change
   cleanupForDeselectedConnections: (selectedIds: Set<string>) => void;
   deselectEmptyConnections: (selectedIds: Set<string>) => void;
@@ -49,7 +45,6 @@ export const useAssistantWizardStore = create<AssistantWizardState>((set, get) =
   connRowSelection: {},
   fileSelection: new Map(),
   fileCounts: new Map(),
-  schemas: new Map(),
   domain: "",
   reqs: [],
 
@@ -84,8 +79,6 @@ export const useAssistantWizardStore = create<AssistantWizardState>((set, get) =
     return { fileCounts: next };
   }),
 
-  setSchemas: (updater) => set((s) => ({ schemas: updater(s.schemas) })),
-
   cleanupForDeselectedConnections: (selectedIds) => set((s) => {
     let changed = false;
     const next = new Map(s.fileSelection);
@@ -119,6 +112,6 @@ export const useAssistantWizardStore = create<AssistantWizardState>((set, get) =
 
   reset: () => set({
     step: 0, connRowSelection: {}, fileSelection: new Map(),
-    fileCounts: new Map(), schemas: new Map(), domain: "", reqs: [],
+    fileCounts: new Map(), domain: "", reqs: [],
   }),
 }));

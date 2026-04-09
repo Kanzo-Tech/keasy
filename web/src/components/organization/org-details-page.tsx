@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Pencil } from "lucide-react";
+import { Loader2, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { PageShell } from "@/components/layout/page-shell";
-import { OrgDetailsCard, type OrgDetailsCardHandle } from "@/components/organization/org-details-card";
+import { OrgDetailsCard, ORG_IDENTITY_FORM_ID } from "@/components/organization/org-details-card";
 import { ComplianceSection, useComply } from "@/components/compliance/compliance-section";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
@@ -18,7 +19,6 @@ export function OrgDetailsPage() {
   });
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const cardRef = useRef<OrgDetailsCardHandle>(null);
   const { data: compliance } = useQuery({
     queryKey: queryKeys.gx.compliance,
     queryFn: api.gaiax.compliance.status,
@@ -46,15 +46,44 @@ export function OrgDetailsPage() {
         action={
           isGaiaX
             ? undefined
-            : editing
-              ? [
-                  { label: "Save", onClick: () => cardRef.current?.save(), disabled: saving, loading: saving, loadingLabel: "Saving..." },
-                  { label: "Cancel", variant: "ghost" as const, onClick: () => setEditing(false), disabled: saving },
-                ]
-              : { label: "Edit", icon: <Pencil className="h-4 w-4 mr-1" />, onClick: () => setEditing(true) }
+            : !editing
+              ? { label: "Edit", icon: <Pencil className="h-4 w-4 mr-1" />, onClick: () => setEditing(true) }
+              : undefined
+        }
+        actionSlot={
+          isGaiaX || !editing
+            ? undefined
+            : (
+              <div className="flex items-center gap-2">
+                <Button
+                  type="submit"
+                  form={ORG_IDENTITY_FORM_ID}
+                  size="sm"
+                  variant="outline"
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save"
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={saving}
+                  onClick={() => setEditing(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )
         }
       >
-        <OrgDetailsCard ref={cardRef} readOnly={isGaiaX} editing={editing} onEditingChange={setEditing} onSavingChange={setSaving} />
+        <OrgDetailsCard readOnly={isGaiaX} editing={editing} onEditingChange={setEditing} onSavingChange={setSaving} />
       </SettingsSection>
 
       <SettingsSection
@@ -68,7 +97,7 @@ export function OrgDetailsPage() {
                 onClick: comply.comply,
                 disabled: !comply.ready || comply.isRunning,
                 loading: comply.isRunning,
-                loadingLabel: "Running…",
+                loadingLabel: "Running...",
                 tooltip: comply.ready
                   ? undefined
                   : `Missing: ${comply.missingFields.join(", ")}`,

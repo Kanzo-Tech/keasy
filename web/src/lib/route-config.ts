@@ -1,9 +1,8 @@
 import {
   Bot,
   Building2,
-  Database,
-  GalleryVerticalEnd,
   Home,
+  Plug,
   Settings2,
   ShieldCheck,
   Users,
@@ -36,7 +35,7 @@ export const ROLE_LABEL: Record<string, string> = {
  */
 const ROUTES: Record<string, RouteDef> = {
   "/":                            { name: "Dashboard", icon: Home, sidebar: ["promotor", "participant"] },
-  "/connections":                 { name: "Connections", icon: Database, sidebar: ["participant"] },
+  "/connections":                 { name: "Connections", icon: Plug, sidebar: ["participant"] },
   "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: ["participant"] },
   "/organization":                    { name: "Organization", icon: Building2 },
   "/organization/details":            { name: "Details" },
@@ -45,8 +44,6 @@ const ROUTES: Record<string, RouteDef> = {
   "/participants":                { name: "Participants", icon: Users, sidebar: ["promotor"] },
   "/settings":                    { name: "Settings", icon: Settings2 },
   "/settings/ai":                 { name: "AI Settings", icon: Bot },
-  "/settings/cloud-accounts":     { name: "Cloud Accounts", icon: GalleryVerticalEnd },
-  "/settings/cloud-accounts/new": { name: "New Cloud Account" },
   "/settings/preferences":        { name: "Preferences" },
   "/organization/compliance":     { name: "Compliance", icon: ShieldCheck },
 };

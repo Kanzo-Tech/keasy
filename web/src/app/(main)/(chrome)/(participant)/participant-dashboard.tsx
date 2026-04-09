@@ -2,7 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import {
-  Cloud,
   Database,
   ShieldCheck,
   FileText,
@@ -20,10 +19,6 @@ export function ParticipantDashboard() {
     queryFn: api.jobs.list,
     refetchInterval: (query) => (hasRunningJobs(query.state.data) ? 2000 : 0),
   });
-  const { data: accounts, isLoading: accountsLoading } = useQuery({
-    queryKey: queryKeys.cloud.accounts,
-    queryFn: api.cloud.list,
-  });
   const { data: connections, isLoading: connectionsLoading } = useQuery({
     queryKey: queryKeys.connections.all(),
     queryFn: () => api.connections.list(),
@@ -34,14 +29,13 @@ export function ParticipantDashboard() {
   });
 
   const loading =
-    jobsLoading || accountsLoading || connectionsLoading || complianceLoading;
+    jobsLoading || connectionsLoading || complianceLoading;
 
   const completedJobs = jobs?.filter((j) => j.status === "completed") ?? [];
   const failedJobs = jobs?.filter((j) => j.status === "failed") ?? [];
   const runningJobs =
     jobs?.filter((j) => j.status === "pending" || j.status === "running") ?? [];
 
-  const accountCount = accounts?.length ?? 0;
   const connectionCount = connections?.length ?? 0;
   const isCompliant = complianceStatus?.compliant ?? false;
   const catalogCount = completedJobs.filter((j) => j.rdf_base).length;
@@ -52,19 +46,7 @@ export function ParticipantDashboard() {
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
             Dataspace Readiness
           </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <SummaryCard
-              href="/settings/cloud-accounts"
-              icon={Cloud}
-              title="Cloud Accounts"
-              value={loading ? undefined : String(accountCount)}
-              description={
-                accountCount === 1
-                  ? "account configured"
-                  : "accounts configured"
-              }
-              ok={loading ? undefined : accountCount > 0}
-            />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <SummaryCard
               href="/connections"
               icon={Database}

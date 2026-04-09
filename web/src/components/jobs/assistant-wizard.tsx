@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   type ColumnDef,
   type RowSelectionState,
@@ -9,10 +9,11 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
-import { useLLMStream } from "@/hooks/use-llm-stream";
+import { competencyQuestionsSchema, generateScriptSchema } from "@/lib/ai/schemas";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -37,10 +38,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import type {
-  Connection,
-  ColumnInfo,
-  CompetencyQuestion,
+  Connector,
   FileSchema,
   ProviderInfo,
 } from "@/lib/types";
@@ -51,7 +52,7 @@ import { useAssistantWizardStore, type ReqEntry } from "./assistant-wizard-store
 
 interface AssistantWizardProps {
   onComplete: (script: string) => void;
-  connections: Connection[];
+  connectors: Connector[];
   providers: ProviderInfo[];
 }
 
@@ -106,19 +107,19 @@ function ConnectionFilesRow({
     onSupportedCount(supported.length);
   }, [supported, autoSelectedRef, onToggleAll, onSupportedCount]);
 
+  const showSkeleton = useDelayedLoading(isLoading);
   if (isLoading) {
-    return (
-      <TableRow className="bg-muted/30 hover:bg-muted/30">
-        <TableCell />
-        <TableCell className="py-1.5">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Loading files...
-          </div>
-        </TableCell>
-        <TableCell />
-      </TableRow>
-    );
+    return showSkeleton ? (
+      <>
+        {Array.from({ length: 2 }).map((_, i) => (
+          <TableRow key={i} className="bg-muted/30 hover:bg-muted/30">
+            <TableCell className="pl-6"><Skeleton className="h-4 w-4" /></TableCell>
+            <TableCell className="py-1.5"><Skeleton className="h-3 w-32" /></TableCell>
+            <TableCell className="text-right"><Skeleton className="h-3 w-12 ml-auto" /></TableCell>
+          </TableRow>
+        ))}
+      </>
+    ) : null;
   }
 
   if (supported.length === 0) {
@@ -169,7 +170,7 @@ function StepConnections({
   onToggleAll,
   onSupportedCount,
 }: {
-  connections: Connection[];
+  connections: Connector[];
   rowSelection: RowSelectionState;
   onRowSelectionChange: (s: RowSelectionState) => void;
   providers: ProviderInfo[];
@@ -179,7 +180,7 @@ function StepConnections({
   onToggleAll: (connId: string, paths: string[]) => void;
   onSupportedCount: (connId: string, count: number) => void;
 }) {
-  const columns: ColumnDef<Connection>[] = useMemo(() => [
+  const columns: ColumnDef<Connector>[] = useMemo(() => [
     {
       id: "select",
       header: ({ table }) => (
@@ -219,10 +220,10 @@ function StepConnections({
       cell: ({ getValue }) => <span className="font-medium">{getValue<string>()}</span>,
     },
     {
-      accessorKey: "url",
-      header: "URL",
+      accessorKey: "connector_type",
+      header: "Type",
       cell: ({ getValue }) => (
-        <span className="text-muted-foreground font-mono text-xs">{getValue<string>()}</span>
+        <span className="text-muted-foreground text-xs">{getValue<string>()}</span>
       ),
     },
   ], [fileSelection, fileCounts]);
@@ -286,7 +287,7 @@ function StepConnections({
                   </TableCell>
                 ))}
               </TableRow>
-              {row.getIsSelected() && row.original.location_type === "cloud" && (
+              {row.getIsSelected() && (
                 <ConnectionFilesRow
                   key={`${row.id}-files`}
                   connectionId={row.id}
@@ -348,8 +349,6 @@ function StreamingPreview({ label, text }: { label: string; text: string }) {
 }
 
 // ── Step 3: Requirements ────────────────────────────────────────────────
-
-// ReqEntry imported from assistant-wizard-store.ts
 
 function StepRequirements({
   reqs,
@@ -459,13 +458,22 @@ function StepRequirements({
     state: { rowSelection },
   });
 
+  const showSchemaSkeleton = useDelayedLoading(schemasLoading);
   if (schemasLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Loading data schemas...</p>
+    return showSchemaSkeleton ? (
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-4 w-48" />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <Skeleton className="h-4 w-4" />
+            <div className="flex-1 space-y-1">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-3 w-2/3" />
+            </div>
+          </div>
+        ))}
       </div>
-    );
+    ) : null;
   }
 
   if (isLoading) {
@@ -542,22 +550,22 @@ function StepRequirements({
 
 // ── Main Wizard ─────────────────────────────────────────────────────────
 
-export function AssistantWizard({ onComplete, connections, providers }: AssistantWizardProps) {
+export function AssistantWizard({ onComplete, connectors, providers }: AssistantWizardProps) {
   // Zustand store — replaces 7 useState + sync effects
   const store = useAssistantWizardStore();
   const {
-    step, connRowSelection, fileSelection, fileCounts, schemas,
+    step, connRowSelection, fileSelection, fileCounts,
     domain, reqs, setStep, setConnRowSelection, setDomain, setReqs,
-    toggleFile, selectAllFiles, setSupportedCount, setSchemas,
+    toggleFile, selectAllFiles, setSupportedCount,
     cleanupForDeselectedConnections, deselectEmptyConnections, reset,
   } = store;
 
   // Reset on unmount
   useEffect(() => () => reset(), [reset]);
 
-  const dataConnections = useMemo(
-    () => connections.filter((c) => c.kind === "data"),
-    [connections],
+  const sourceConnectors = useMemo(
+    () => connectors.filter((c) => c.direction === "source" || c.direction === "both"),
+    [connectors],
   );
 
   const selectedConnectionIds = useMemo(
@@ -575,136 +583,93 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
     deselectEmptyConnections(selectedConnectionIds);
   }, [fileSelection, fileCounts, selectedConnectionIds, deselectEmptyConnections]);
 
-  const handleSupportedCount = useCallback((connId: string, count: number) => {
-    setSupportedCount(connId, count);
-  }, [setSupportedCount]);
 
-  const handleToggleFile = useCallback((connId: string, path: string) => {
-    toggleFile(connId, path);
-  }, [toggleFile]);
-
-  const handleToggleAll = useCallback((connId: string, paths: string[]) => {
-    selectAllFiles(connId, paths);
-  }, [selectAllFiles]);
-
-  // Determine supported extensions from providers
-  const supportedExts = useMemo(
-    () =>
-      providers
-        .filter((p) => p.kind === "data" || p.kind === "both")
-        .flatMap((p) => p.extensions),
-    [providers],
-  );
-
-  // Fetch schemas for selected files (parallel per connection)
-  useEffect(() => {
-    if (selectedConnectionIds.size === 0) return;
-    let cancelled = false;
-    async function fetchSchemas() {
-      const fetches: { key: string; promise: Promise<{ columns: ColumnInfo[] }> }[] = [];
-      for (const id of selectedConnectionIds) {
-        if (schemas.has(id)) continue;
-        const conn = connections.find((c) => c.id === id);
-        if (!conn || conn.location_type !== "cloud") continue;
-        const selectedPaths = fileSelection.get(id);
-        if (!selectedPaths || selectedPaths.size === 0) continue;
-        for (const path of selectedPaths) {
-          const key = `${id}:${path}`;
-          if (schemas.has(key)) continue;
-          const ext = path.split(".").pop()?.toLowerCase() ?? "";
-          if (supportedExts.length > 0 && !supportedExts.includes(ext)) continue;
-          fetches.push({ key, promise: api.connections.schema(id, path) });
-        }
-      }
-      const results = await Promise.allSettled(fetches.map((f) => f.promise));
-      if (cancelled) return;
-      setSchemas((prev) => {
-        const next = new Map(prev);
-        for (let i = 0; i < fetches.length; i++) {
-          const result = results[i];
-          if (result.status === "fulfilled") {
-            next.set(fetches[i].key, result.value.columns);
-          }
-        }
-        for (const id of selectedConnectionIds) {
-          if (!next.has(id)) next.set(id, []);
-        }
-        return next;
-      });
-    }
-    fetchSchemas();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Batch schema fetch: 1 request per connector via React Query
+  const schemaQueryInputs = useMemo(() => {
+    return [...selectedConnectionIds]
+      .map((connId) => {
+        const paths = [...(fileSelection.get(connId) ?? [])];
+        return { connId, paths };
+      })
+      .filter((q) => q.paths.length > 0);
   }, [selectedConnectionIds, fileSelection]);
+
+  const schemaQueries = useQueries({
+    queries: schemaQueryInputs.map(({ connId, paths }) => ({
+      queryKey: queryKeys.connections.schema(connId, paths),
+      queryFn: () => api.connections.schema(connId, paths),
+      staleTime: Infinity,
+      enabled: paths.length > 0,
+    })),
+  });
 
   const fileSchemas: FileSchema[] = useMemo(() => {
     const result: FileSchema[] = [];
-    for (const [key, cols] of schemas) {
-      if (!key.includes(":")) continue;
-      const [connId, ...pathParts] = key.split(":");
-      if (!selectedConnectionIds.has(connId)) continue;
-      const filePath = pathParts.join(":");
-      const selectedPaths = fileSelection.get(connId);
-      if (selectedPaths && !selectedPaths.has(filePath)) continue;
-      const conn = connections.find((c) => c.id === connId);
+    for (let i = 0; i < schemaQueryInputs.length; i++) {
+      const { connId, paths } = schemaQueryInputs[i];
+      const query = schemaQueries[i];
+      if (!query.data) continue;
+      const conn = connectors.find((c) => c.id === connId);
       if (!conn) continue;
-      result.push({
-        connection_name: conn.name,
-        file_path: filePath,
-        columns: cols,
-      });
+      for (const path of paths) {
+        const entry = query.data[path];
+        if (entry?.columns?.length > 0) {
+          result.push({
+            connection_name: conn.name,
+            file_path: path,
+            columns: entry.columns,
+          });
+        }
+      }
     }
     return result;
-  }, [schemas, selectedConnectionIds, fileSelection, connections]);
+  }, [schemaQueryInputs, schemaQueries, connectors]);
 
-  // Schemas are "ready" when all selected cloud connections have been visited
-  const schemasReady = useMemo(() => {
-    if (selectedConnectionIds.size === 0) return false;
-    for (const id of selectedConnectionIds) {
-      const conn = connections.find((c) => c.id === id);
-      if (conn?.location_type === "cloud" && !schemas.has(id)) return false;
-    }
-    return true;
-  }, [selectedConnectionIds, connections, schemas]);
+  const schemasReady = selectedConnectionIds.size > 0
+    && schemaQueries.length > 0
+    && schemaQueries.every((q) => !q.isLoading);
 
-  // ── LLM streaming (callbacks read from refs — no useCallback needed) ──
-
-  const suggest = useLLMStream<{ competency_questions: CompetencyQuestion[] }>({
-    streamFn: () => api.assistant.suggestStream({ domain, schemas: fileSchemas }),
-    onComplete: (data) => {
-      setReqs(data.competency_questions.map((cq) => ({ ...cq, enabled: true })));
+  const suggest = useObject({
+    api: "/api/ai/suggest",
+    schema: competencyQuestionsSchema,
+    onFinish: ({ object }) => {
+      if (object?.competency_questions) {
+        setReqs(object.competency_questions.map((cq) => ({ ...cq, enabled: true })));
+      }
     },
   });
 
-  const generate = useLLMStream<{ script: string }>({
-    streamFn: () =>
-      api.assistant.generateStream({
-        domain,
-        competency_questions: reqs
-          .filter((r) => r.enabled && r.question.trim())
-          .map((r) => r.question),
-        schemas: fileSchemas,
-      }),
-    onComplete: () => {
-      // Don't auto-transition — let user review the script first
-    },
+  const generate = useObject({
+    api: "/api/ai/generate",
+    schema: generateScriptSchema,
   });
 
-  // Auto-trigger suggest when entering step 2
+  const generateRef = useRef(generate);
+  generateRef.current = generate;
+
+  const submitGenerate = useCallback(() => {
+    generateRef.current.submit({
+      domain,
+      competency_questions: reqs
+        .filter((r) => r.enabled && r.question.trim())
+        .map((r) => r.question),
+      schemas: fileSchemas,
+    });
+  }, [domain, reqs, fileSchemas]);
+
   useEffect(() => {
-    if (step === 2 && reqs.length === 0 && !suggest.loading && !suggest.error && schemasReady) {
-      suggest.start();
+    if (step === 2 && reqs.length === 0 && !suggest.isLoading && !suggest.error && schemasReady) {
+      suggest.submit({ domain, schemas: fileSchemas });
     }
-    return suggest.abort;
+    return suggest.stop;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, schemasReady]);
 
-  // Auto-trigger generate when entering step 3
   useEffect(() => {
-    if (step === 3 && !generate.loading && !generate.error) {
-      generate.start();
+    if (step === 3 && !generate.isLoading && !generate.error) {
+      submitGenerate();
     }
-    return generate.abort;
+    return generate.stop;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
@@ -729,15 +694,15 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
         <div className="flex-1 min-h-0 flex flex-col mt-4">
           {step === 0 && (
             <StepConnections
-              connections={dataConnections}
+              connections={sourceConnectors}
               rowSelection={connRowSelection}
               onRowSelectionChange={setConnRowSelection}
               providers={providers}
               fileSelection={fileSelection}
               fileCounts={fileCounts}
-              onToggleFile={handleToggleFile}
-              onToggleAll={handleToggleAll}
-              onSupportedCount={handleSupportedCount}
+              onToggleFile={toggleFile}
+              onToggleAll={selectAllFiles}
+              onSupportedCount={setSupportedCount}
             />
           )}
           {step === 1 && <StepDescribe domain={domain} onDomainChange={setDomain} />}
@@ -745,28 +710,28 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
             <StepRequirements
               reqs={reqs}
               setReqs={setReqs}
-              isLoading={suggest.loading}
+              isLoading={suggest.isLoading}
               schemasLoading={!schemasReady}
               hasError={!!suggest.error}
-              onRetry={() => suggest.start()}
-              streamText={suggest.streamText}
+              onRetry={() => suggest.submit({ domain, schemas: fileSchemas })}
+              streamText={suggest.object ? JSON.stringify(suggest.object, null, 2) : ""}
             />
           )}
           {step === 3 && (
-            generate.loading ? (
-              <StreamingPreview label="Generating Fossil script..." text={generate.streamText} />
+            generate.isLoading ? (
+              <StreamingPreview label="Generating Fossil script..." text={generate.object?.script ?? ""} />
             ) : generate.error ? (
               <EmptyState
                 icon={AlertCircle}
                 title="Generation failed"
                 description={generate.error.message}
-                action={<Button variant="outline" size="sm" onClick={() => generate.start()}>Retry</Button>}
+                action={<Button variant="outline" size="sm" onClick={submitGenerate}>Retry</Button>}
               />
-            ) : generate.result ? (
+            ) : generate.object?.script ? (
               <div className="flex-1 flex flex-col gap-3 min-h-0">
                 <p className="text-xs text-muted-foreground">Review the generated script before accepting.</p>
                 <div className="flex-1 min-h-0 overflow-auto rounded-md border">
-                  <CodeView code={generate.result.script} lang="fossil" />
+                  <CodeView code={generate.object.script} lang="fossil" />
                 </div>
               </div>
             ) : null
@@ -798,12 +763,12 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
               </>
             )}
           </Button>
-        ) : !generate.loading && generate.result ? (
+        ) : !generate.isLoading && generate.object?.script ? (
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => generate.start()}>
+            <Button size="sm" variant="outline" onClick={submitGenerate}>
               Regenerate
             </Button>
-            <Button size="sm" onClick={() => onComplete(generate.result!.script)}>
+            <Button size="sm" onClick={() => onComplete(generate.object!.script!)}>
               Accept & Edit
             </Button>
           </div>

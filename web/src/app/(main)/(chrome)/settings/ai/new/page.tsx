@@ -7,8 +7,8 @@ import { toastError } from "@/lib/toast-error";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
-import { AI_PROVIDERS } from "@/lib/ai-providers";
-import { AiProviderForm } from "@/components/settings/ai-provider-form";
+import { allProviders, toProviderPayload } from "@/lib/ai/providers";
+import { RegistryForm } from "@/lib/schemas/registry-form";
 import { FormPageSkeleton } from "@/components/settings/form-page-skeleton";
 
 export default function NewAiProviderPage() {
@@ -21,8 +21,8 @@ export default function NewAiProviderPage() {
   const showSkeleton = useDelayedLoading(isLoading);
 
   const saveMutation = useMutation({
-    mutationFn: ({ providerId, data }: { providerId: string; data: { api_key: string; model?: string; max_tokens?: number } }) =>
-      api.ai.saveProvider(providerId, data),
+    mutationFn: (data: { typeId: string; config: Record<string, string> }) =>
+      api.ai.saveProvider(data.typeId, toProviderPayload(data.config)),
     onSuccess: async () => {
       toast.success("AI provider created");
       await queryClient.invalidateQueries({ queryKey: queryKeys.ai.providers });
@@ -36,13 +36,19 @@ export default function NewAiProviderPage() {
   }
 
   const configuredIds = new Set(existing.map((p) => p.provider));
+  const availableProviders = allProviders.filter((p) => !configuredIds.has(p.id));
 
   return (
-    <AiProviderForm
-      allProviders={AI_PROVIDERS}
-      disabledProviders={configuredIds}
-      isPending={saveMutation.isPending || saveMutation.isSuccess}
-      onSubmit={(providerId, data) => saveMutation.mutate({ providerId, data })}
+    <RegistryForm
+      types={availableProviders}
+      typeLabel="AI Provider"
+      typeDescription="Choose an AI provider to configure"
+      showName={false}
+      onSubmit={(data) => saveMutation.mutate(data)}
+      isPending={saveMutation.isPending}
+      isSuccess={saveMutation.isSuccess}
+      submitLabel="Create"
+      backHref="/settings/ai"
     />
   );
 }

@@ -27,7 +27,7 @@ export function JobEditor() {
   const store = useJobEditorStore();
 
   const { data: orgIdentity } = useQuery({ queryKey: queryKeys.org.identity, queryFn: api.org.identity });
-  const { data: connections = [] } = useQuery({ queryKey: queryKeys.connections.all(), queryFn: () => api.connections.list() });
+  const { data: connectors = [] } = useQuery({ queryKey: queryKeys.connections.all(), queryFn: () => api.connections.list() });
   const { data: providers = [] } = useQuery({ queryKey: queryKeys.settings.providers, queryFn: api.settings.providers });
 
   const orgConfigured = orgIdentity != null && !!orgIdentity.legal_name;
@@ -80,7 +80,7 @@ export function JobEditor() {
         });
         return "updated";
       } else {
-        const connectionIds = connections
+        const connectorIds = connectors
           .filter((s) => store.script.includes(`@${s.name}/`))
           .map((s) => s.id);
         await api.jobs.create({
@@ -88,7 +88,7 @@ export function JobEditor() {
           name: store.name.trim() || undefined,
           mode: store.mode,
           draft: true,
-          connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
+          connector_ids: connectorIds.length > 0 ? connectorIds : undefined,
         });
         return "created";
       }
@@ -104,7 +104,7 @@ export function JobEditor() {
   const confirmMutation = useMutation({
     mutationFn: async () => {
       const jobName = store.name.trim() || undefined;
-      const connectionIds = connections
+      const connectorIds = connectors
         .filter((s) => store.script.includes(`@${s.name}/`))
         .map((s) => s.id);
 
@@ -118,7 +118,7 @@ export function JobEditor() {
         mode: store.mode,
         pipeline: store.validation?.pipeline,
         dcat_enabled: store.dcatEnabled || undefined,
-        connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
+        connector_ids: connectorIds.length > 0 ? connectorIds : undefined,
       });
     },
     onSuccess: async (job) => {
@@ -141,6 +141,7 @@ export function JobEditor() {
     );
   }
 
+
   if (store.step === 3 && store.validation) {
     return (
       <div className="flex flex-col flex-1 min-h-0">
@@ -156,7 +157,7 @@ export function JobEditor() {
           mode={store.mode}
           validation={store.validation}
           dcatEnabled={store.dcatEnabled}
-          connections={connections}
+          connectors={connectors}
         />
       </div>
     );
@@ -197,7 +198,7 @@ export function JobEditor() {
         creationMode={store.creationMode!}
         script={store.script}
         onScriptChange={store.setScript}
-        connections={connections}
+        connectors={connectors}
         providers={providers}
         onNext={store.goToConfig}
         onBack={store.goBack}

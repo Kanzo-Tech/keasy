@@ -20,7 +20,7 @@ import {
   editorLayout, useIsDark,
 } from "@/lib/codemirror-theme";
 import { api } from "@/lib/api";
-import type { Connection, FileEntry, FossilCompletionItem, ProviderInfo } from "@/lib/types";
+import type { Connector, FileEntry, FossilCompletionItem, ProviderInfo } from "@/lib/types";
 
 function fossilLanguage() {
   return StreamLanguage.define<{ afterDot: boolean }>({
@@ -80,26 +80,26 @@ function detectMacroContext(doc: string, pos: number, providers: ProviderInfo[])
   return null;
 }
 
-function connectionCompletion(
-  connections: Connection[],
+function connectorCompletion(
+  connectors: Connector[],
   providers: ProviderInfo[],
   fileCache: Map<string, FileEntry[]>,
 ) {
   return async (context: CompletionContext): Promise<CompletionResult | null> => {
-    // Try path completion first: @connectionName/partialPath
+    // Try path completion first: @connectorName/partialPath
     const pathMatch = context.matchBefore(/@[a-zA-Z0-9_-]+\/[a-zA-Z0-9_./-]*/);
     if (pathMatch) {
       const slashIdx = pathMatch.text.indexOf("/");
-      const connectionName = pathMatch.text.slice(1, slashIdx);
+      const connectorName = pathMatch.text.slice(1, slashIdx);
       const pathPrefix = pathMatch.text.slice(slashIdx + 1);
-      const connection = connections.find((s) => s.name === connectionName);
-      if (!connection) return null;
+      const connector = connectors.find((c) => c.name === connectorName);
+      if (!connector) return null;
 
-      let files = fileCache.get(connection.id);
+      let files = fileCache.get(connector.id);
       if (!files) {
         try {
-          files = await api.connections.files(connection.id);
-          fileCache.set(connection.id, files);
+          files = await api.connections.files(connector.id);
+          fileCache.set(connector.id, files);
         } catch {
           return null;
         }
@@ -135,37 +135,26 @@ function connectionCompletion(
       };
     }
 
-    // Connection name completion: @partialName
+    // Connector name completion: @partialName
     const nameMatch = context.matchBefore(/@[a-zA-Z0-9_-]*/);
     if (!nameMatch) return null;
 
     const prefix = nameMatch.text.slice(1);
 
-    // Filter by macro context
-    const macroKind = detectMacroContext(
-      context.state.doc.toString(),
-      context.pos,
-      providers,
+    const filtered = connectors.filter((c) =>
+      c.name.toLowerCase().includes(prefix.toLowerCase()),
     );
-    const filtered = connections.filter((s) => {
-      const matchesName = s.name.toLowerCase().includes(prefix.toLowerCase());
-      if (!macroKind) return matchesName;
-      if (macroKind === "data") return matchesName && s.kind === "data";
-      if (macroKind === "schema") return matchesName && s.kind === "vocab";
-      return matchesName;
-    });
 
     if (filtered.length === 0) return null;
 
     return {
       from: nameMatch.from,
-      options: filtered.map((s) => ({
-        label: `@${s.name}`,
-        type: s.kind === "data" ? "variable" : "class",
-        detail: s.kind === "data" ? "Data" : "Vocabulary",
-        info: s.url,
+      options: filtered.map((c) => ({
+        label: `@${c.name}`,
+        type: "variable",
+        detail: c.connector_type,
         apply: (view, _completion, from, to) => {
-          const insert = `@${s.name}/`;
+          const insert = `@${c.name}/`;
           view.dispatch({
             changes: { from, to, insert },
             selection: { anchor: from + insert.length },
@@ -243,7 +232,7 @@ function fossilLinter() {
 export { fossilLanguage };
 
 export function fossilAutocomplete(
-  connections: Connection[],
+  connectors: Connector[],
   providers: ProviderInfo[],
   fileCacheRef: React.RefObject<Map<string, FileEntry[]>>,
   completionCacheRef: React.RefObject<{ source: string; receiver: string; items: FossilCompletionItem[] } | null>,
@@ -251,9 +240,9 @@ export function fossilAutocomplete(
   const completionSources = [
     fossilCompletion(completionCacheRef),
   ];
-  if (connections.length > 0) {
+  if (connectors.length > 0) {
     completionSources.unshift(
-      connectionCompletion(connections, providers, fileCacheRef.current),
+      connectorCompletion(connectors, providers, fileCacheRef.current),
     );
   }
   return autocompletion({

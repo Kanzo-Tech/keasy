@@ -38,20 +38,14 @@ pub struct AnalyzeResponse {
 
 #[utoipa::path(post, path = "/v1/fossil/analyze", tag = "Fossil",
     request_body = AnalyzeRequest,
-    responses((status = 200, description = "Analysis result", body = AnalyzeResponse))
+    responses((status = 501, description = "Not implemented"))
 )]
 pub async fn analyze(
     _ctx: Require<IsParticipant>,
     State(_state): State<AppState>,
     Json(payload): Json<AnalyzeRequest>,
 ) -> impl IntoResponse {
-    // Salsa-based analysis (Phase 4)
+    // Salsa-based analysis (Phase 4) — not yet implemented
     let _ = payload;
-    (
-        StatusCode::OK,
-        Json(AnalyzeResponse {
-            completions: vec![],
-            diagnostics: vec![],
-        }),
-    )
+    StatusCode::NOT_IMPLEMENTED
 }

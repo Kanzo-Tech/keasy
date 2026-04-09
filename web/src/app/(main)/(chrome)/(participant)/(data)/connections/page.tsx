@@ -1,15 +1,15 @@
 "use client";
 
 import { Suspense, useCallback, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Database, BookOpen, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Database, Plus } from "lucide-react";
+import { getProviderIcon } from "@/lib/provider-icons";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { PageShell } from "@/components/layout/page-shell";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api";
@@ -22,15 +22,13 @@ import {
   actionsColumn,
 } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
-import type { Connection, CloudAccountSummary, ProviderSchema, ConnectionKind } from "@/lib/types";
+import type { Connector } from "@/lib/types";
 
-function connectionColumns(
+function connectorColumns(
   onDelete: (id: string) => void,
-  accounts: CloudAccountSummary[],
-  _schema: ProviderSchema[],
-): ColumnDef<Connection>[] {
+): ColumnDef<Connector>[] {
   return [
-    selectColumn<Connection>(),
+    selectColumn<Connector>(),
     {
       accessorKey: "name",
       header: sortableHeader("Name"),
@@ -39,29 +37,20 @@ function connectionColumns(
       ),
     },
     {
-      id: "location",
-      header: "Location",
-      cell: ({ row }) => {
-        const conn = row.original;
-        if (conn.location_type === "cloud" && conn.cloud_account_id) {
-          const account = accounts.find((a) => a.id === conn.cloud_account_id);
-          return (
-            <span className="text-muted-foreground">
-              {account?.name ?? conn.cloud_account_id}
-            </span>
-          );
-        }
-        return <Badge variant="outline">Local</Badge>;
+      accessorKey: "connector_type",
+      header: "Type",
+      cell: ({ getValue }) => {
+        const type = getValue<string>();
+        const Icon = getProviderIcon(type);
+        return (
+          <Badge variant="outline" className="gap-1.5">
+            <Icon className="h-3.5 w-3.5" />
+            {type}
+          </Badge>
+        );
       },
     },
-    {
-      accessorKey: "url",
-      header: "URL",
-      cell: ({ getValue }) => (
-        <span className="text-muted-foreground font-mono text-xs">{getValue<string>()}</span>
-      ),
-    },
-    actionsColumn<Connection>((conn) => (
+    actionsColumn<Connector>((conn) => (
       <ActionItem
         variant="destructive"
         onClick={(e) => {
@@ -85,34 +74,20 @@ export default function ConnectionsPage() {
 
 function ConnectionsContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const tab = (searchParams.get("type") as ConnectionKind) || "data";
 
   const { data: connections = [] } = useQuery({
-    queryKey: queryKeys.connections.all(tab),
-    queryFn: () => api.connections.list(tab),
-  });
-  const { data: schema = [] } = useQuery({
-    queryKey: queryKeys.settings.schema,
-    queryFn: () => api.settings.schema(),
-  });
-  const { data: accounts = [] } = useQuery({
-    queryKey: queryKeys.cloud.accounts,
-    queryFn: () => api.cloud.list(),
+    queryKey: queryKeys.connections.all(),
+    queryFn: () => api.connections.list(),
   });
 
   const deleteMutation = useMutation({
     mutationFn: api.connections.remove,
     onSuccess: () => {
       toast.success("Connection deleted");
-      queryClient.invalidateQueries({ queryKey: queryKeys.connections.all(tab) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.connections.all() });
     },
   });
-
-  function handleTabChange(value: string) {
-    router.push(`/connections?type=${value}`);
-  }
 
   const handleDelete = useCallback(
     (id: string) => deleteMutation.mutate(id),
@@ -120,34 +95,21 @@ function ConnectionsContent() {
   );
 
   const columns = useMemo(
-    () => connectionColumns(handleDelete, accounts, schema),
-    [handleDelete, accounts, schema],
+    () => connectorColumns(handleDelete),
+    [handleDelete],
   );
 
   return (
     <PageShell>
     <PageShell.Content className="overflow-hidden">
-    <Tabs value={tab} onValueChange={handleTabChange}>
-      <TabsList>
-        <TabsTrigger value="data" className="gap-1.5">
-          <Database size={14} />
-          Data
-        </TabsTrigger>
-
-        <TabsTrigger value="vocab" className="gap-1.5">
-          <BookOpen size={14} />
-          Vocabulary
-        </TabsTrigger>
-      </TabsList>
-
         {connections.length === 0 ? (
           <EmptyState
-            icon={tab === "data" ? Database : BookOpen}
-            title={`No ${tab === "data" ? "data" : "vocabulary"} connections`}
+            icon={Database}
+            title="No connections"
             description={
               <>
-                <Link href={`/connections/new?type=${tab}`} className="underline underline-offset-4 hover:text-foreground">
-                  Create a {tab === "data" ? "data" : "vocabulary"} connection
+                <Link href="/connections/new" className="underline underline-offset-4 hover:text-foreground">
+                  Create a connection
                 </Link>{" "}
                 to get started.
               </>
@@ -162,7 +124,7 @@ function ConnectionsContent() {
             onRowClick={(conn) => router.push(`/connections/${conn.id}`)}
             toolbarActions={
               <Button asChild size="sm">
-                <Link href={`/connections/new?type=${tab}`}>
+                <Link href="/connections/new">
                   <Plus size={14} className="mr-1" />
                   Create connection
                 </Link>
@@ -170,7 +132,6 @@ function ConnectionsContent() {
             }
           />
         )}
-    </Tabs>
     </PageShell.Content>
     </PageShell>
   );

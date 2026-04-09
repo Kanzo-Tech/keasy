@@ -158,9 +158,6 @@ async fn main() {
             registry.register("azure_blob", Arc::new(keasy_server::connectors::types::azure::AzureConnector));
             registry
         }),
-        org_analysis: Arc::new(std::sync::Mutex::new(
-            lru::LruCache::new(std::num::NonZeroUsize::new(64).unwrap()),
-        )),
     };
     info!(
         oidc = if state.auth.oidc_state.is_some() { "ready" } else { "not configured" },

@@ -5,8 +5,6 @@ export interface ErrorInfo {
 
 const FALLBACK: ErrorInfo = { message: "Something went wrong." };
 
-const cloudLink = { label: "Go to Cloud Accounts", href: "/settings/cloud-accounts" };
-
 const registry: Record<string, ErrorInfo> = {
   ai_not_configured: {
     message: "AI settings are not configured.",
@@ -34,15 +32,12 @@ const registry: Record<string, ErrorInfo> = {
   },
   cloud_error: {
     message: "Cloud storage connection failed.",
-    link: cloudLink,
   },
   cloud_invalid_credentials: {
     message: "Cloud storage credentials are invalid.",
-    link: cloudLink,
   },
   container_not_found: {
     message: "The specified bucket or container was not found.",
-    link: cloudLink,
   },
 "auth/oidc_not_configured": {
     message: "Single sign-on is not configured.",
@@ -53,8 +48,4 @@ const registry: Record<string, ErrorInfo> = {
 
 export function getErrorInfo(code: string): ErrorInfo {
   return registry[code] ?? FALLBACK;
-}
-
-export function isError(code: string | undefined): boolean {
-  return !!code && code !== "success";
 }

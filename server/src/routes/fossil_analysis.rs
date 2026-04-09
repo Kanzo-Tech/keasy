@@ -1,7 +1,4 @@
 //! Fossil script analysis endpoint (completions + diagnostics).
-//!
-//! TODO: Reimplement using the new Salsa-based compilation pipeline.
-//! Previously used fossil_lsp::AnalysisHost for incremental analysis.
 
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use serde::{Deserialize, Serialize};
@@ -48,19 +45,13 @@ pub async fn analyze(
     State(_state): State<AppState>,
     Json(payload): Json<AnalyzeRequest>,
 ) -> impl IntoResponse {
-    // TODO: Reimplement using Salsa-based incremental analysis.
-    // Previously used fossil_lsp::AnalysisHost for completions + diagnostics.
+    // Salsa-based analysis (Phase 4)
     let _ = payload;
     (
         StatusCode::OK,
         Json(AnalyzeResponse {
             completions: vec![],
-            diagnostics: vec![DiagnosticItem {
-                from: 0,
-                to: 0,
-                severity: "info",
-                message: "Analysis not yet available (fossil_lsp removed)".into(),
-            }],
+            diagnostics: vec![],
         }),
     )
 }

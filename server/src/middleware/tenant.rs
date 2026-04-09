@@ -40,14 +40,11 @@ pub struct TenantContext {
 }
 
 impl TenantContext {
-    /// Create a TenantScoped<T> from this context, scoped to the org.
-    pub fn scoped<T>(&self, inner: T) -> crate::tenant::TenantScoped<T> {
-        crate::tenant::TenantScoped::new(self.org_id.clone(), inner)
+    pub fn tenant(&self) -> crate::tenant::Tenant {
+        crate::tenant::Tenant { org_id: self.org_id.clone() }
     }
-
-    /// Create a TenantScoped<()> for list queries that only need org_id.
-    pub fn as_ctx(&self) -> crate::tenant::TenantScoped<()> {
-        crate::tenant::TenantScoped::new(self.org_id.clone(), ())
+    pub fn resource<'a>(&'a self, id: &'a str) -> crate::tenant::TenantResource<'a> {
+        crate::tenant::TenantResource { org_id: &self.org_id, id }
     }
 }
 
@@ -200,14 +197,14 @@ pub async fn tenant_context_required(
 
     // 2. Get org membership
     let member = state
-        .db
+        .repos
         .get_org_membership(&user.user_id)
         .await
         .ok_or(RbacError::NoMembership)?;
 
     // 3. Get the org to read its role (promotor/participant)
     let org = state
-        .db
+        .repos
         .get_organization(&member.org_id)
         .await
         .ok_or(RbacError::NoMembership)?;

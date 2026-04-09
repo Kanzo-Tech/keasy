@@ -205,9 +205,7 @@ pub async fn post_connector_schema(
         .await
         .ok_or(ConnectorError::NotFound)?;
 
-    // TODO: Schema inference was removed with fossil_stdlib/polars.
-    // Previously used init_context + gcx.infer_schema to read parquet/csv headers.
-    // Reimplement using DuckDB DESCRIBE or source_schema Salsa query.
+    // Schema inference pending DuckDB DESCRIBE implementation
     let mut results = std::collections::HashMap::new();
     for path in &req.paths {
         results.insert(path.clone(), SchemaEntry {

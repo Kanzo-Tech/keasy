@@ -1,40 +1,66 @@
+use diesel::prelude::*;
 use secrecy::SecretString;
 use serde::{Serialize, de::DeserializeOwned};
 
+use crate::db::diesel_schema::organizations as orgs_dsl;
+use crate::db::diesel_schema::settings::dsl;
 use crate::settings::ai::AiSettings;
 use crate::settings::org::OrgSettings;
 use crate::settings::preferences::Preferences;
 
-use crate::db::Database;
+use crate::db::Repos;
 
 const KNOWN_AI_PROVIDERS: &[&str] = &["anthropic", "openai"];
 
-impl Database {
+impl Repos {
     pub async fn get_setting<T: DeserializeOwned>(&self, key: &str) -> Option<T> {
-        let (_permit, conn) = self.read().await;
-        let json = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = ?1",
-                [key],
-                |row| row.get::<_, String>(0),
-            )
-            .ok()?;
+        let key = key.to_string();
+        let json: String = self
+            .diesel_pool
+            .get()
+            .await
+            .ok()?
+            .interact(move |conn| {
+                dsl::settings
+                    .filter(dsl::key.eq(&key))
+                    .select(dsl::value)
+                    .first::<String>(conn)
+                    .optional()
+            })
+            .await
+            .ok()?
+            .ok()??;
         serde_json::from_str(&json).ok()
     }
 
     pub async fn set_setting<T: Serialize>(&self, key: &str, value: &T) {
         let json = serde_json::to_string(value).expect("serialize setting");
-        let conn = self.write().await;
-        let _ = conn.execute(
-            "INSERT INTO settings (key, value) VALUES (?1, ?2)
-             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-            [key, &json],
-        );
+        let key = key.to_string();
+        let Ok(pool_conn) = self.diesel_pool.get().await else {
+            return;
+        };
+        let _ = pool_conn
+            .interact(move |conn| {
+                diesel::insert_into(dsl::settings)
+                    .values((dsl::key.eq(&key), dsl::value.eq(&json)))
+                    .on_conflict(dsl::key)
+                    .do_update()
+                    .set(dsl::value.eq(&json))
+                    .execute(conn)
+            })
+            .await;
     }
 
     pub async fn delete_setting(&self, key: &str) {
-        let conn = self.write().await;
-        let _ = conn.execute("DELETE FROM settings WHERE key = ?1", [key]);
+        let key = key.to_string();
+        let Ok(pool_conn) = self.diesel_pool.get().await else {
+            return;
+        };
+        let _ = pool_conn
+            .interact(move |conn| {
+                diesel::delete(dsl::settings.filter(dsl::key.eq(&key))).execute(conn)
+            })
+            .await;
     }
 
     pub async fn get_org_settings(&self) -> Option<OrgSettings> {
@@ -98,27 +124,33 @@ impl Database {
         result
     }
 
-    /// Returns (promotor_org_id, cloud_account_id, base_url) if the promotor
+    /// Returns (promotor_org_id, connector_id, base_url) if the promotor
     /// has configured catalog storage. Used by the job runner to resolve
     /// `catalog_dest` for DCAT materialization.
     pub async fn get_promotor_catalog_config(&self) -> Option<(String, String, String)> {
-        let (_permit, conn) = self.read().await;
-        let promotor_org_id: String = conn
-            .query_row(
-                "SELECT id FROM organizations WHERE role = 'promotor' LIMIT 1",
-                [],
-                |row| row.get(0),
-            )
-            .ok()?;
-        drop(_permit);
+        let promotor_org_id: String = self
+            .diesel_pool
+            .get()
+            .await
+            .ok()?
+            .interact(|conn| {
+                orgs_dsl::table
+                    .filter(orgs_dsl::role.eq("promotor"))
+                    .select(orgs_dsl::id)
+                    .first::<String>(conn)
+                    .optional()
+            })
+            .await
+            .ok()?
+            .ok()??;
 
         let settings: OrgSettings = self.get_setting("org_settings").await?;
-        let account_id = settings.catalog_cloud_account_id?;
+        let connector_id = settings.catalog_connector_id?;
         let base_url = settings.catalog_base_url?;
-        if account_id.is_empty() || base_url.is_empty() {
+        if connector_id.is_empty() || base_url.is_empty() {
             return None;
         }
-        Some((promotor_org_id, account_id, base_url))
+        Some((promotor_org_id, connector_id, base_url))
     }
 
     pub async fn get_dashboard_layout(&self, job_id: &str) -> Option<serde_json::Value> {

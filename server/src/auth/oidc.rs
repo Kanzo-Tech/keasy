@@ -554,7 +554,7 @@ pub async fn oidc_callback(
 
     // 11. Sync cached profile in org_members (no-op if user has no membership yet).
     let _ = state
-        .db
+        .repos
         .sync_member_profile(&subject, &email_str, &first_str, &last_str)
         .await;
 
@@ -610,7 +610,7 @@ pub async fn oidc_callback(
         .to_string();
 
     state
-        .db
+        .repos
         .upsert_user_session(&subject, &session_id)
         .await
         .map_err(|e| AuthError::Internal(format!("upsert_user_session failed: {e}")))?;
@@ -645,7 +645,7 @@ async fn accept_invite_for_user(
     invite_token: &str,
 ) -> Result<(), String> {
     let token = state
-        .db
+        .repos
         .get_invite_token(invite_token)
         .await
         .ok_or("invite token not found")?;
@@ -656,7 +656,7 @@ async fn accept_invite_for_user(
     }
 
     state
-        .db
+        .repos
         .upsert_org_member(user_id, &token.org_id, &token.role, email, first_name, last_name)
         .await?;
 

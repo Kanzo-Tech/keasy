@@ -108,8 +108,7 @@ pub trait ConnectorType: Send + Sync {
     fn base_url(&self, config: &serde_json::Value) -> String;
 
     /// Build cloud configuration key-value pairs from connector config.
-    /// TODO: Previously returned Polars CloudOptions; now returns raw pairs
-    /// for consumption by the new execution engine.
+    /// Returns raw pairs consumed by the DuckDB execution engine.
     fn cloud_config(&self, config: &serde_json::Value) -> Option<Vec<(String, String)>> {
         let _ = config;
         None

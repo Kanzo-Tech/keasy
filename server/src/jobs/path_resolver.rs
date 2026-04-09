@@ -5,8 +5,7 @@ use fossil_lang::traits::resolver::{PathResolver, ResolvedPath};
 #[derive(Debug)]
 struct ConnectionInfo {
     base_url: String,
-    /// Cloud configuration key-value pairs.
-    /// TODO: Previously stored Polars CloudOptions; now stores raw pairs.
+    /// Cloud configuration key-value pairs for the DuckDB engine.
     _cloud_config: Option<Vec<(String, String)>>,
 }
 
@@ -51,7 +50,6 @@ impl PathResolver for KeasyPathResolver {
             conn.base_url.trim_end_matches('/'),
             path.trim_start_matches('/')
         );
-        // TODO: ResolvedPath no longer wraps CloudOptions.
         Ok(ResolvedPath::new(&url, None))
     }
 }

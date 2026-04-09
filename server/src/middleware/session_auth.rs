@@ -42,7 +42,7 @@ pub async fn session_required(
             // The login handler upserts user_sessions with the new session_id,
             // so any previous session_id becomes stale.
             let current_session_id = session.id().map(|id| id.to_string());
-            let active_session_id = state.db.get_user_session_id(&user_id).await;
+            let active_session_id = state.repos.get_user_session_id(&user_id).await;
 
             match (current_session_id, active_session_id) {
                 (Some(current), Some(active)) if current == active => {

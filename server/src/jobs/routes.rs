@@ -115,7 +115,7 @@ pub async fn create_job(
                 let promotor_tenant = Tenant { org_id: OrgId(promotor_org_id) };
                 let res = crate::tenant::TenantResource { org_id: &promotor_tenant.org_id, id: &connector_id };
                 let connector = state.repos.get_connector_full(&res).await;
-                // TODO: cloud_config is available but ResolvedPath no longer wraps CloudOptions.
+                // ResolvedPath does not carry cloud credentials; they are configured at DuckDB engine level
                 let _ = connector;
                 Some(ResolvedPath::new(&base_url, None))
             }

@@ -1,8 +1,11 @@
-use rusqlite::params;
+use diesel::prelude::*;
 
-use super::Database;
+use crate::db::diesel_schema::dataspaces;
+use super::Repos;
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, Queryable, Selectable, Insertable, utoipa::ToSchema)]
+#[diesel(table_name = dataspaces)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Dataspace {
     pub id: String,
     pub client_id: String,
@@ -14,7 +17,9 @@ pub struct Dataspace {
     pub updated_at: String,
 }
 
-impl Database {
+use dataspaces::dsl;
+
+impl Repos {
     /// Idempotent upsert — registers a dataspace if it doesn't exist yet (by client_id).
     /// Used at startup to self-register and register federation peers.
     pub async fn ensure_dataspace(
@@ -23,60 +28,91 @@ impl Database {
         name: &str,
         url: &str,
     ) -> Result<(), String> {
-        let conn = self.write().await;
         let now = jiff::Timestamp::now().to_string();
         let id = uuid::Uuid::new_v4().to_string();
-        conn.execute(
-            "INSERT INTO dataspaces (id, client_id, name, url, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?5)
-             ON CONFLICT(client_id) DO UPDATE SET name = ?3, url = ?4, updated_at = ?5",
-            params![id, client_id, name, url, now],
-        )
-        .map_err(|e| format!("ensure_dataspace: {e}"))?;
+        let client_id = client_id.to_string();
+        let name = name.to_string();
+        let url = url.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                diesel::insert_into(dsl::dataspaces)
+                    .values((
+                        dsl::id.eq(&id),
+                        dsl::client_id.eq(&client_id),
+                        dsl::name.eq(&name),
+                        dsl::url.eq(&url),
+                        dsl::created_at.eq(&now),
+                        dsl::updated_at.eq(&now),
+                    ))
+                    .on_conflict(dsl::client_id)
+                    .do_update()
+                    .set((
+                        dsl::name.eq(&name),
+                        dsl::url.eq(&url),
+                        dsl::updated_at.eq(&now),
+                    ))
+                    .execute(conn)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map_err(|e| format!("ensure_dataspace: {e}"))?;
         Ok(())
     }
 
     pub async fn create_dataspace(&self, ds: &Dataspace) -> Result<(), String> {
-        let conn = self.write().await;
-        conn.execute(
-            "INSERT INTO dataspaces
-             (id, client_id, name, url, description, logo, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            params![
-                ds.id,
-                ds.client_id,
-                ds.name,
-                ds.url,
-                ds.description,
-                ds.logo,
-                ds.created_at,
-                ds.updated_at,
-            ],
-        )
-        .map_err(|e| format!("failed to insert dataspace: {e}"))?;
+        let ds = ds.clone();
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                diesel::insert_into(dsl::dataspaces)
+                    .values(&ds)
+                    .execute(conn)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map_err(|e| format!("failed to insert dataspace: {e}"))?;
         Ok(())
     }
 
     pub async fn get_dataspace(&self, id: &str) -> Option<Dataspace> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, client_id, name, url, description, logo, created_at, updated_at
-             FROM dataspaces WHERE id = ?1",
-            [id],
-            row_to_dataspace,
-        )
-        .ok()
+        let id = id.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .ok()?
+            .interact(move |conn| {
+                dsl::dataspaces
+                    .filter(dsl::id.eq(&id))
+                    .select(Dataspace::as_select())
+                    .first::<Dataspace>(conn)
+                    .optional()
+            })
+            .await
+            .ok()?
+            .ok()?
     }
 
     pub async fn get_dataspace_by_client_id(&self, client_id: &str) -> Option<Dataspace> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, client_id, name, url, description, logo, created_at, updated_at
-             FROM dataspaces WHERE client_id = ?1",
-            [client_id],
-            row_to_dataspace,
-        )
-        .ok()
+        let client_id = client_id.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .ok()?
+            .interact(move |conn| {
+                dsl::dataspaces
+                    .filter(dsl::client_id.eq(&client_id))
+                    .select(Dataspace::as_select())
+                    .first::<Dataspace>(conn)
+                    .optional()
+            })
+            .await
+            .ok()?
+            .ok()?
     }
 
     /// Batch lookup: returns all dataspaces whose client_id is in the given list.
@@ -84,48 +120,39 @@ impl Database {
         if client_ids.is_empty() {
             return Vec::new();
         }
-        let (_permit, conn) = self.read().await;
-        let placeholders: Vec<String> = (1..=client_ids.len()).map(|i| format!("?{i}")).collect();
-        let sql = format!(
-            "SELECT id, client_id, name, url, description, logo, created_at, updated_at
-             FROM dataspaces WHERE client_id IN ({})",
-            placeholders.join(", ")
-        );
-        let mut stmt = conn.prepare(&sql).expect("prepare batch dataspaces");
-        let params: Vec<&dyn rusqlite::types::ToSql> = client_ids
-            .iter()
-            .map(|s| s as &dyn rusqlite::types::ToSql)
-            .collect();
-        stmt.query_map(params.as_slice(), row_to_dataspace)
-            .expect("query batch dataspaces")
-            .filter_map(|r| r.ok())
-            .collect()
+        let ids: Vec<String> = client_ids.iter().map(|s| s.to_string()).collect();
+        let Ok(pc) = self.diesel_pool.get().await else {
+            return vec![];
+        };
+        let result = pc
+            .interact(move |conn| {
+                dsl::dataspaces
+                    .filter(dsl::client_id.eq_any(&ids))
+                    .select(Dataspace::as_select())
+                    .load::<Dataspace>(conn)
+            })
+            .await;
+        match result {
+            Ok(Ok(rows)) => rows,
+            _ => vec![],
+        }
     }
 
     pub async fn list_dataspaces(&self) -> Vec<Dataspace> {
-        let (_permit, conn) = self.read().await;
-        let mut stmt = conn
-            .prepare(
-                "SELECT id, client_id, name, url, description, logo, created_at, updated_at
-                 FROM dataspaces ORDER BY name",
-            )
-            .expect("prepare list dataspaces");
-        stmt.query_map([], row_to_dataspace)
-            .expect("query dataspaces")
-            .filter_map(|r| r.ok())
-            .collect()
+        let Ok(pc) = self.diesel_pool.get().await else {
+            return vec![];
+        };
+        let result = pc
+            .interact(|conn| {
+                dsl::dataspaces
+                    .order(dsl::name.asc())
+                    .select(Dataspace::as_select())
+                    .load::<Dataspace>(conn)
+            })
+            .await;
+        match result {
+            Ok(Ok(rows)) => rows,
+            _ => vec![],
+        }
     }
-}
-
-fn row_to_dataspace(row: &rusqlite::Row<'_>) -> rusqlite::Result<Dataspace> {
-    Ok(Dataspace {
-        id: row.get(0)?,
-        client_id: row.get(1)?,
-        name: row.get(2)?,
-        url: row.get(3)?,
-        description: row.get(4)?,
-        logo: row.get(5)?,
-        created_at: row.get(6)?,
-        updated_at: row.get(7)?,
-    })
 }

@@ -1,8 +1,9 @@
 use std::fmt;
 
-use rusqlite::params;
+use diesel::prelude::*;
 
-use super::Database;
+use crate::db::diesel_schema::org_members;
+use super::Repos;
 
 /// Role of a user within their organization.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -39,7 +40,9 @@ impl fmt::Display for MemberRole {
 
 /// An org member — a Keycloak user's membership in a Keasy organization.
 /// Profile fields (email, first_name, last_name) are cached from OIDC tokens.
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, Queryable, Selectable, Insertable, utoipa::ToSchema)]
+#[diesel(table_name = org_members)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct OrgMember {
     pub user_id: String,
     pub org_id: String,
@@ -50,7 +53,9 @@ pub struct OrgMember {
     pub joined_at: String,
 }
 
-impl Database {
+use org_members::dsl;
+
+impl Repos {
     /// Upsert an org membership when a user accepts an invite.
     /// Creates or updates the row for (user_id, org_id), setting role and profile fields.
     pub async fn upsert_org_member(
@@ -63,18 +68,35 @@ impl Database {
         last_name: &str,
     ) -> Result<(), String> {
         let now = jiff::Timestamp::now().to_string();
-        let conn = self.write().await;
-        conn.execute(
-            "INSERT INTO org_members (user_id, org_id, role, email, first_name, last_name, joined_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
-             ON CONFLICT(user_id, org_id) DO UPDATE SET
-               role = excluded.role,
-               email = excluded.email,
-               first_name = excluded.first_name,
-               last_name = excluded.last_name",
-            params![user_id, org_id, role, email, first_name, last_name, now],
-        )
-        .map_err(|e| format!("failed to upsert org member: {e}"))?;
+        let member = OrgMember {
+            user_id: user_id.to_string(),
+            org_id: org_id.to_string(),
+            role: role.to_string(),
+            email: email.to_string(),
+            first_name: first_name.to_string(),
+            last_name: last_name.to_string(),
+            joined_at: now,
+        };
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                diesel::insert_into(dsl::org_members)
+                    .values(&member)
+                    .on_conflict((dsl::user_id, dsl::org_id))
+                    .do_update()
+                    .set((
+                        dsl::role.eq(&member.role),
+                        dsl::email.eq(&member.email),
+                        dsl::first_name.eq(&member.first_name),
+                        dsl::last_name.eq(&member.last_name),
+                    ))
+                    .execute(conn)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map_err(|e| format!("failed to upsert org member: {e}"))?;
         Ok(())
     }
 
@@ -87,62 +109,67 @@ impl Database {
         first_name: &str,
         last_name: &str,
     ) -> Result<(), String> {
-        let conn = self.write().await;
-        conn.execute(
-            "UPDATE org_members SET email = ?1, first_name = ?2, last_name = ?3 WHERE user_id = ?4",
-            params![email, first_name, last_name, user_id],
-        )
-        .map_err(|e| format!("failed to sync member profile: {e}"))?;
+        let user_id = user_id.to_string();
+        let email = email.to_string();
+        let first_name = first_name.to_string();
+        let last_name = last_name.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                diesel::update(dsl::org_members.filter(dsl::user_id.eq(&user_id)))
+                    .set((
+                        dsl::email.eq(&email),
+                        dsl::first_name.eq(&first_name),
+                        dsl::last_name.eq(&last_name),
+                    ))
+                    .execute(conn)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map_err(|e| format!("failed to sync member profile: {e}"))?;
         Ok(())
     }
 
     /// Get the org membership for a user (single-org model — returns first match).
     pub async fn get_org_membership(&self, user_id: &str) -> Option<OrgMember> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT user_id, org_id, role, email, first_name, last_name, joined_at
-             FROM org_members WHERE user_id = ?1
-             LIMIT 1",
-            [user_id],
-            |row| {
-                Ok(OrgMember {
-                    user_id: row.get(0)?,
-                    org_id: row.get(1)?,
-                    role: row.get(2)?,
-                    email: row.get(3)?,
-                    first_name: row.get(4)?,
-                    last_name: row.get(5)?,
-                    joined_at: row.get(6)?,
-                })
-            },
-        )
-        .ok()
+        let user_id = user_id.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .ok()?
+            .interact(move |conn| {
+                dsl::org_members
+                    .filter(dsl::user_id.eq(&user_id))
+                    .select(OrgMember::as_select())
+                    .first::<OrgMember>(conn)
+                    .optional()
+            })
+            .await
+            .ok()?
+            .ok()?
     }
 
     /// List all members in an organization.
     pub async fn list_org_members(&self, org_id: &str) -> Vec<OrgMember> {
-        let (_permit, conn) = self.read().await;
-        let mut stmt = conn
-            .prepare(
-                "SELECT user_id, org_id, role, email, first_name, last_name, joined_at
-                 FROM org_members WHERE org_id = ?1
-                 ORDER BY email",
-            )
-            .expect("prepare list org members");
-        stmt.query_map([org_id], |row| {
-            Ok(OrgMember {
-                user_id: row.get(0)?,
-                org_id: row.get(1)?,
-                role: row.get(2)?,
-                email: row.get(3)?,
-                first_name: row.get(4)?,
-                last_name: row.get(5)?,
-                joined_at: row.get(6)?,
+        let org_id = org_id.to_string();
+        let Ok(pc) = self.diesel_pool.get().await else {
+            return vec![];
+        };
+        let result = pc
+            .interact(move |conn| {
+                dsl::org_members
+                    .filter(dsl::org_id.eq(&org_id))
+                    .order(dsl::email.asc())
+                    .select(OrgMember::as_select())
+                    .load::<OrgMember>(conn)
             })
-        })
-        .expect("query org members")
-        .filter_map(|r| r.ok())
-        .collect()
+            .await;
+        match result {
+            Ok(Ok(rows)) => rows,
+            _ => vec![],
+        }
     }
 
     /// Update a member's role within their organization.
@@ -152,23 +179,43 @@ impl Database {
         org_id: &str,
         new_role: &str,
     ) -> Result<(), String> {
-        let conn = self.write().await;
-        conn.execute(
-            "UPDATE org_members SET role = ?1 WHERE user_id = ?2 AND org_id = ?3",
-            params![new_role, user_id, org_id],
-        )
-        .map_err(|e| format!("failed to update member role: {e}"))?;
+        let user_id = user_id.to_string();
+        let org_id = org_id.to_string();
+        let new_role = new_role.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                diesel::update(
+                    dsl::org_members.filter(dsl::user_id.eq(&user_id).and(dsl::org_id.eq(&org_id))),
+                )
+                .set(dsl::role.eq(&new_role))
+                .execute(conn)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map_err(|e| format!("failed to update member role: {e}"))?;
         Ok(())
     }
 
     /// Remove a user from an organization.
     pub async fn remove_org_member(&self, user_id: &str, org_id: &str) -> Result<(), String> {
-        let conn = self.write().await;
-        conn.execute(
-            "DELETE FROM org_members WHERE user_id = ?1 AND org_id = ?2",
-            params![user_id, org_id],
-        )
-        .map_err(|e| format!("failed to remove org member: {e}"))?;
+        let user_id = user_id.to_string();
+        let org_id = org_id.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                diesel::delete(
+                    dsl::org_members.filter(dsl::user_id.eq(&user_id).and(dsl::org_id.eq(&org_id))),
+                )
+                .execute(conn)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map_err(|e| format!("failed to remove org member: {e}"))?;
         Ok(())
     }
 }

@@ -22,7 +22,7 @@ use crate::middleware::tenant::tenant_context_required;
 
 /// Session configuration — groups the 4 session-related params for `build_router`.
 pub struct SessionConfig {
-    pub store: tower_sessions_rusqlite_store::RusqliteStore,
+    pub store: crate::db::session_store::DieselStore,
     pub secret: secrecy::SecretString,
     pub cookie_name: String,
     pub secure: bool,
@@ -56,10 +56,6 @@ pub fn build_router(
     let public_api_routes = Router::new()
         .route("/openapi.json", axum::routing::get(crate::openapi::openapi_json))
         .route("/v1/status", axum::routing::get(health::service_status))
-        .route(
-            "/v1/settings/schema",
-            axum::routing::get(crate::settings::routes::get_schema),
-        )
         .route(
             "/v1/providers",
             axum::routing::get(providers::list_providers),
@@ -130,10 +126,6 @@ pub fn build_router(
             axum::routing::get(crate::jobs::routes::stream_job),
         )
         .route(
-            "/v1/jobs/{id}/catalog",
-            axum::routing::get(crate::jobs::routes::get_job_catalog),
-        )
-        .route(
             "/v1/scripts/validate",
             axum::routing::post(scripts::validate_script),
         )
@@ -155,6 +147,10 @@ pub fn build_router(
             "/v1/settings/preferences",
             axum::routing::get(crate::settings::routes::get_preferences)
                 .put(crate::settings::routes::save_preferences),
+        )
+        .route(
+            "/v1/internal/ai/resolve",
+            axum::routing::get(crate::settings::routes::resolve_ai_provider),
         )
         .route(
             "/v1/settings/ai/providers",
@@ -179,66 +175,31 @@ pub fn build_router(
             axum::routing::get(crate::discovery::routes::resolve_catalog_urls),
         )
         .route(
-            "/v1/jobs/{id}/discover/ask",
-            axum::routing::post(crate::ai::routes::ask_discover),
+            "/v1/connectors/types",
+            axum::routing::get(crate::connectors::routes::list_connector_types),
         )
         .route(
-            "/v1/jobs/{id}/discover/ask-stream",
-            axum::routing::post(crate::ai::routes::ask_discover_stream),
+            "/v1/connectors",
+            axum::routing::get(crate::connectors::routes::list_connectors)
+                .post(crate::connectors::routes::create_connector),
         )
         .route(
-            "/v1/jobs/{id}/conversations",
-            axum::routing::get(crate::ai::routes::list_conversations)
-                .post(crate::ai::routes::create_conversation),
+            "/v1/connectors/{id}",
+            axum::routing::get(crate::connectors::routes::get_connector)
+                .put(crate::connectors::routes::update_connector)
+                .delete(crate::connectors::routes::delete_connector),
         )
         .route(
-            "/v1/conversations/{id}/messages",
-            axum::routing::get(crate::ai::routes::get_conversation_messages),
+            "/v1/connectors/{id}/files",
+            axum::routing::get(crate::connectors::routes::list_connector_files),
         )
         .route(
-            "/v1/conversations/{id}",
-            axum::routing::put(crate::ai::routes::rename_conversation)
-                .delete(crate::ai::routes::delete_conversation),
+            "/v1/connectors/{id}/test",
+            axum::routing::post(crate::connectors::routes::test_connector),
         )
         .route(
-            "/v1/cloud-accounts",
-            axum::routing::get(crate::cloud::routes::list_accounts)
-                .post(crate::cloud::routes::create_account),
-        )
-        .route(
-            "/v1/cloud-accounts/{id}",
-            axum::routing::get(crate::cloud::routes::get_account)
-                .put(crate::cloud::routes::update_account)
-                .delete(crate::cloud::routes::delete_account),
-        )
-        .route(
-            "/v1/connections",
-            axum::routing::get(crate::connections::routes::list_connections)
-                .post(crate::connections::routes::create_connection),
-        )
-        .route(
-            "/v1/connections/{id}",
-            axum::routing::get(crate::connections::routes::get_connection)
-                .put(crate::connections::routes::update_connection)
-                .delete(crate::connections::routes::delete_connection),
-        )
-        .route(
-            "/v1/connections/{id}/files",
-            axum::routing::get(crate::connections::routes::list_connection_files)
-                .put(crate::connections::routes::upload_file),
-        )
-        .route(
-            "/v1/connections/{id}/schema",
-            axum::routing::get(crate::connections::routes::get_file_schema),
-        )
-        // Assistant (SSE streaming)
-        .route(
-            "/v1/assistant/suggest-stream",
-            axum::routing::post(crate::assistant::routes::suggest_cqs_stream),
-        )
-        .route(
-            "/v1/assistant/generate-stream",
-            axum::routing::post(crate::assistant::routes::generate_script_stream),
+            "/v1/connectors/{id}/schema",
+            axum::routing::post(crate::connectors::routes::post_connector_schema),
         )
         // Admin routes — promotor only
         .route(

@@ -8,29 +8,15 @@ impl OrgId {
     }
 }
 
-/// A value `T` scoped to a specific organization.
-/// DAL functions that list/detail resources MUST accept this type.
-/// Construction is unrestricted in Phase 1; Phase 4 middleware will
-/// be the sole constructor in production.
+/// Org-scoped context for list/create operations.
 #[derive(Debug, Clone)]
-pub struct TenantScoped<T> {
+pub struct Tenant {
     pub org_id: OrgId,
-    pub inner: T,
 }
 
-impl<T> TenantScoped<T> {
-    pub fn new(org_id: OrgId, inner: T) -> Self {
-        Self { org_id, inner }
-    }
-
-    pub fn org_id(&self) -> &OrgId {
-        &self.org_id
-    }
-
-    pub fn inner(&self) -> &T {
-        &self.inner
-    }
+/// Org-scoped context for single-resource operations.
+#[derive(Debug)]
+pub struct TenantResource<'a> {
+    pub org_id: &'a OrgId,
+    pub id: &'a str,
 }
-
-/// Re-export the real TenantContext from middleware::tenant.
-pub use crate::middleware::tenant::TenantContext;

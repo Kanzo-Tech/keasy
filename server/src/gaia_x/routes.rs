@@ -15,13 +15,11 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::convert::Infallible;
 
-use crate::ai::client::into_sse_response;
-
-use rusqlite::OptionalExtension;
+use crate::sse::into_sse_response;
 
 use crate::AppState;
 use crate::error::{bad_request_response, data_response, error_body, internal_error_response};
-use crate::gaia_x::{ComplyEvent, ComplyRequest, ComplyResponse, GaiaxState, cert, credentials, db, did_web, did_web_key, keys, signing, vp, well_known_url};
+use crate::gaia_x::{ComplyEvent, ComplyRequest, ComplyResponse, GaiaxState, cert, credentials, did_web, did_web_key, keys, signing, vp, well_known_url};
 use crate::gaia_x::gxdch::MockGxdch;
 use crate::middleware::tenant::{IsParticipant, Require};
 
@@ -73,7 +71,7 @@ async fn resolve_org_id_from_request(
             let host_no_port = host.split(':').next().unwrap_or(host);
             if let Some(slug) = host_no_port.strip_suffix(&format!(".{}", base_domain))
                 && !slug.is_empty() && !slug.contains('.') {
-                    if let Some(org) = state.db.get_organization_by_slug(slug).await {
+                    if let Some(org) = state.repos.get_organization_by_slug(slug).await {
                         return Ok(org.id);
                     }
                     return Err((
@@ -108,7 +106,7 @@ pub async fn comply(
     let org_id = ctx.org_id.0.clone();
 
     // ── Validate prerequisites synchronously (return JSON errors, not SSE) ──
-    let org = match state.db.get_organization(&org_id).await {
+    let org = match state.repos.get_organization(&org_id).await {
         Some(o) => o,
         None => return bad_request_response("Organization not found"),
     };
@@ -223,11 +221,8 @@ pub async fn comply(
             domain: Some(domain.clone()),
             updated_at: now_iso(),
         };
-        {
-            let conn = state.db.write().await;
-            if let Err(e) = db::upsert(&conn, &gx_state) {
-                fail_sse!(tx, "certificate", 1, format!("Failed to save gaiax state: {e}"), Some(private_key_pem));
-            }
+        if let Err(e) = state.repos.upsert_gaiax_state(&gx_state).await {
+            fail_sse!(tx, "certificate", 1, format!("Failed to save gaiax state: {e}"), Some(private_key_pem));
         }
 
         emit(&tx, ComplyEvent { phase: "certificate".into(), index: 1, error: None, data: None });
@@ -282,11 +277,8 @@ pub async fn comply(
         gx_state.tc_credential = Some(tc_str);
         gx_state.compliance_vc = Some(vc_str);
         gx_state.updated_at = now_iso();
-        {
-            let conn = state.db.write().await;
-            if let Err(e) = db::upsert(&conn, &gx_state) {
-                tracing::error!("failed to save final gaiax state: {e}");
-            }
+        if let Err(e) = state.repos.upsert_gaiax_state(&gx_state).await {
+            tracing::error!("failed to save final gaiax state: {e}");
         }
 
         // Phase 5: complete
@@ -317,9 +309,8 @@ pub async fn get_compliance_status(
     State(state): State<AppState>,
 ) -> Response {
     let org_id = ctx.org_id.0.clone();
-    let (_permit, conn) = state.db.read().await;
 
-    let gx = match db::get(&conn, &org_id) {
+    let gx = match state.repos.get_gaiax_state(&org_id).await {
         Ok(Some(w)) => w,
         Ok(None) => {
             return data_response(ComplianceStatus {
@@ -385,8 +376,7 @@ pub async fn get_did_document(
         Err(r) => return r,
     };
 
-    let (_permit, conn) = state.db.read().await;
-    let gx = match db::get(&conn, &org_id) {
+    let gx = match state.repos.get_gaiax_state(&org_id).await {
         Ok(Some(w)) => w,
         Ok(None) => {
             return (
@@ -402,13 +392,9 @@ pub async fn get_did_document(
     let domain = if let Some(d) = gx.domain.as_ref() {
         d.clone()
     } else if let Some(base_domain) = &state.gaia_x.base_domain {
-        match conn.query_row(
-            "SELECT slug FROM organizations WHERE id = ?1",
-            rusqlite::params![&org_id],
-            |row| row.get::<_, String>(0),
-        ).optional() {
-            Ok(Some(slug)) => format!("{}.{}", slug, base_domain),
-            _ => return (
+        match state.repos.get_organization(&org_id).await {
+            Some(org) => format!("{}.{}", org.slug, base_domain),
+            None => return (
                 StatusCode::NOT_FOUND,
                 Json(error_body("not_found", "Domain not configured")),
             ).into_response(),
@@ -487,8 +473,7 @@ pub async fn get_cert_chain(
         Err(r) => return r,
     };
 
-    let (_permit, conn) = state.db.read().await;
-    let gx = match db::get(&conn, &org_id) {
+    let gx = match state.repos.get_gaiax_state(&org_id).await {
         Ok(Some(w)) => w,
         Ok(None) => {
             return (StatusCode::NOT_FOUND, "Certificate chain not found".to_string())

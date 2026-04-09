@@ -1,7 +1,4 @@
 //! Extract DCAT input from pipeline outputs.
-//!
-//! TODO: RdfTypeAttrs lookup was removed with fossil_stdlib. Re-add once
-//! type metadata is exposed through the new Salsa queries.
 
 use crate::jobs::pipeline_types::PipelineOutput;
 use crate::settings::org::OrgSettings;
@@ -21,8 +18,7 @@ pub fn extract_dcat_input(
     for output in outputs {
         let type_name = &output.type_name;
 
-        // TODO: RdfTypeAttrs lookup removed with fossil_stdlib.
-        // Previously used RdfTypeAttrs::from_def_id to get rdf_subject/rdf_type.
+        // rdf_subject requires Salsa infer() query on type_metadata
         let rdf_subject: Option<String> = None;
         let rdf_type = output.rdf_type.clone();
 

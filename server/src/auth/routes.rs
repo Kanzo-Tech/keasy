@@ -53,7 +53,7 @@ pub async fn get_me(
     State(state): State<AppState>,
     axum::Extension(auth_user): axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
 ) -> Result<impl IntoResponse, AuthError> {
-    let membership = state.db.get_org_membership(&auth_user.user_id).await;
+    let membership = state.repos.get_org_membership(&auth_user.user_id).await;
 
     // Profile: prefer cached org_members data; fall back to session values set at login.
     let (email, first_name, last_name) = match &membership {
@@ -78,7 +78,7 @@ pub async fn get_me(
     };
 
     let org = match &membership {
-        Some(m) => state.db.get_organization(&m.org_id).await,
+        Some(m) => state.repos.get_organization(&m.org_id).await,
         None => None,
     };
 
@@ -125,7 +125,7 @@ pub async fn get_invite_info(
 ) -> impl IntoResponse {
     let now = jiff::Timestamp::now().to_string();
     let valid = state
-        .db
+        .repos
         .get_invite_token(&params.token)
         .await
         .map(|t| t.expires_at > now)
@@ -167,7 +167,7 @@ pub async fn list_workspaces(
 
     // Batch lookup: resolve all dataspaces in a single query
     let client_id_refs: Vec<&str> = dataspaces.iter().map(|s| s.as_str()).collect();
-    let cached = state.db.get_dataspaces_by_client_ids(&client_id_refs).await;
+    let cached = state.repos.get_dataspaces_by_client_ids(&client_id_refs).await;
     let cached_ids: std::collections::HashSet<String> = cached.iter().map(|d| d.client_id.clone()).collect();
 
     let mut workspaces: Vec<Workspace> = cached
@@ -182,7 +182,7 @@ pub async fn list_workspaces(
         }
         if let Some(kc_admin) = &state.auth.keycloak_admin
             && let Some(resolved) = kc_admin.resolve_client(client_id).await {
-                let _ = state.db.ensure_dataspace(client_id, &resolved.name, &resolved.url).await;
+                let _ = state.repos.ensure_dataspace(client_id, &resolved.name, &resolved.url).await;
                 workspaces.push(Workspace {
                     client_id: client_id.clone(),
                     name: resolved.name,
@@ -208,7 +208,7 @@ pub async fn logout(
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AuthError> {
     if let Ok(Some(user_id)) = session.get::<String>("user_id").await {
-        let _ = state.db.delete_user_session(&user_id).await;
+        let _ = state.repos.delete_user_session(&user_id).await;
     }
 
     let id_token: Option<String> = session.get("id_token").await.ok().flatten();

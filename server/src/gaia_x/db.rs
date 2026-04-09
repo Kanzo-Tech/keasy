@@ -1,24 +1,35 @@
 /// Gaia-X state CRUD — bridges GaiaxState (gaia_x layer) and OrgGaiax (DB layer).
-use rusqlite::{Connection, Error};
-
+use crate::db::Repos;
 use crate::db::org_gaiax::{OrgGaiax, get_org_gaiax, upsert_org_gaiax};
 use crate::gaia_x::GaiaxState;
 
-/// Fetch the Gaia-X state for the given org, or None if it doesn't exist yet.
-pub fn get(
-    conn: &Connection,
-    org_id: &str,
-) -> Result<Option<GaiaxState>, Error> {
-    let gaiax = get_org_gaiax(conn, org_id)?;
-    Ok(gaiax.map(from_gaiax))
-}
+impl Repos {
+    /// Fetch the Gaia-X state for the given org, or None if it doesn't exist yet.
+    pub async fn get_gaiax_state(&self, org_id: &str) -> Result<Option<GaiaxState>, String> {
+        let org_id = org_id.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| get_org_gaiax(conn, &org_id))
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map(|opt| opt.map(from_gaiax))
+            .map_err(|e| format!("db: {e}"))
+    }
 
-/// Insert or replace the Gaia-X state for an org.
-///
-/// `state.updated_at` should be set to the current UTC ISO8601 timestamp by the caller.
-pub fn upsert(conn: &Connection, state: &GaiaxState) -> Result<(), Error> {
-    let gaiax = to_gaiax(state);
-    upsert_org_gaiax(conn, &gaiax)
+    /// Insert or replace the Gaia-X state for an org.
+    pub async fn upsert_gaiax_state(&self, state: &GaiaxState) -> Result<(), String> {
+        let gaiax = to_gaiax(state);
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| upsert_org_gaiax(conn, &gaiax))
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map_err(|e| format!("db: {e}"))
+    }
 }
 
 fn from_gaiax(g: OrgGaiax) -> GaiaxState {

@@ -1,7 +1,11 @@
-use rusqlite::params;
-use super::Database;
+use diesel::prelude::*;
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+use crate::db::diesel_schema::{invite_tokens, user_sessions};
+use super::Repos;
+
+#[derive(Debug, Clone, serde::Serialize, Queryable, Selectable, Insertable, utoipa::ToSchema)]
+#[diesel(table_name = invite_tokens)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct InviteToken {
     pub token: String,
     pub org_id: String,
@@ -11,82 +15,82 @@ pub struct InviteToken {
     pub created_at: String,
 }
 
-impl Database {
+use invite_tokens::dsl as it_dsl;
+use user_sessions::dsl as us_dsl;
+
+impl Repos {
     /// Look up an invite token by its value.
     pub async fn get_invite_token(&self, token: &str) -> Option<InviteToken> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT token, org_id, role, created_by, expires_at, created_at
-             FROM invite_tokens WHERE token = ?1",
-            [token],
-            |row| {
-                Ok(InviteToken {
-                    token: row.get(0)?,
-                    org_id: row.get(1)?,
-                    role: row.get(2)?,
-                    created_by: row.get(3)?,
-                    expires_at: row.get(4)?,
-                    created_at: row.get(5)?,
-                })
-            },
-        )
-        .ok()
+        let token = token.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .ok()?
+            .interact(move |conn| {
+                it_dsl::invite_tokens
+                    .filter(it_dsl::token.eq(&token))
+                    .select(InviteToken::as_select())
+                    .first::<InviteToken>(conn)
+                    .optional()
+            })
+            .await
+            .ok()?
+            .ok()?
     }
 
     /// List all invite tokens ordered by created_at DESC.
     pub async fn list_invite_tokens(&self) -> Vec<InviteToken> {
-        let (_permit, conn) = self.read().await;
-        let mut stmt = conn
-            .prepare(
-                "SELECT token, org_id, role, created_by, expires_at, created_at
-                 FROM invite_tokens ORDER BY created_at DESC",
-            )
-            .expect("prepare list invite tokens");
-        stmt.query_map([], |row| {
-            Ok(InviteToken {
-                token: row.get(0)?,
-                org_id: row.get(1)?,
-                role: row.get(2)?,
-                created_by: row.get(3)?,
-                expires_at: row.get(4)?,
-                created_at: row.get(5)?,
+        let Ok(pc) = self.diesel_pool.get().await else {
+            return vec![];
+        };
+        let result = pc
+            .interact(|conn| {
+                it_dsl::invite_tokens
+                    .order(it_dsl::created_at.desc())
+                    .select(InviteToken::as_select())
+                    .load::<InviteToken>(conn)
             })
-        })
-        .expect("query invite tokens")
-        .filter_map(|r| r.ok())
-        .collect()
+            .await;
+        match result {
+            Ok(Ok(rows)) => rows,
+            _ => vec![],
+        }
     }
 
     /// List invite tokens for a specific org, ordered by created_at DESC.
     pub async fn list_invite_tokens_for_org(&self, org_id: &str) -> Vec<InviteToken> {
         let org_id = org_id.to_string();
-        let (_permit, conn) = self.read().await;
-        let mut stmt = conn
-            .prepare(
-                "SELECT token, org_id, role, created_by, expires_at, created_at
-                 FROM invite_tokens WHERE org_id = ?1 ORDER BY created_at DESC",
-            )
-            .expect("prepare list invite tokens for org");
-        stmt.query_map([&org_id], |row| {
-            Ok(InviteToken {
-                token: row.get(0)?,
-                org_id: row.get(1)?,
-                role: row.get(2)?,
-                created_by: row.get(3)?,
-                expires_at: row.get(4)?,
-                created_at: row.get(5)?,
+        let Ok(pc) = self.diesel_pool.get().await else {
+            return vec![];
+        };
+        let result = pc
+            .interact(move |conn| {
+                it_dsl::invite_tokens
+                    .filter(it_dsl::org_id.eq(&org_id))
+                    .order(it_dsl::created_at.desc())
+                    .select(InviteToken::as_select())
+                    .load::<InviteToken>(conn)
             })
-        })
-        .expect("query invite tokens for org")
-        .filter_map(|r| r.ok())
-        .collect()
+            .await;
+        match result {
+            Ok(Ok(rows)) => rows,
+            _ => vec![],
+        }
     }
 
     /// Delete an invite token by value.
     pub async fn delete_invite_token(&self, token: &str) -> Result<(), String> {
-        let conn = self.write().await;
-        let affected = conn
-            .execute("DELETE FROM invite_tokens WHERE token = ?1", [token])
+        let token = token.to_string();
+        let affected = self
+            .diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                diesel::delete(it_dsl::invite_tokens.filter(it_dsl::token.eq(&token))).execute(conn)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
             .map_err(|e| format!("failed to delete invite token: {e}"))?;
         if affected == 0 {
             return Err("invite token not found".to_string());
@@ -96,54 +100,76 @@ impl Database {
 
     /// Create a new invite token.
     pub async fn create_invite_token(&self, token: &InviteToken) -> Result<(), String> {
-        let conn = self.write().await;
-        conn.execute(
-            "INSERT INTO invite_tokens (token, org_id, role, created_by, expires_at, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![
-                token.token,
-                token.org_id,
-                token.role,
-                token.created_by,
-                token.expires_at,
-                token.created_at,
-            ],
-        )
-        .map_err(|e| format!("failed to insert invite token: {e}"))?;
+        let token = token.clone();
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                diesel::insert_into(it_dsl::invite_tokens)
+                    .values(&token)
+                    .execute(conn)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map_err(|e| format!("failed to insert invite token: {e}"))?;
         Ok(())
     }
 
     /// Store or update the active session for a user (single session enforcement).
     /// Uses INSERT OR REPLACE — if user already has a session, it's replaced atomically.
     /// Returns the previous session_id if one existed (so caller can delete from tower-sessions store).
-    pub async fn upsert_user_session(&self, user_id: &str, session_id: &str) -> Result<Option<String>, String> {
+    pub async fn upsert_user_session(
+        &self,
+        user_id: &str,
+        session_id: &str,
+    ) -> Result<Option<String>, String> {
         let now = jiff::Timestamp::now().to_string();
-        let conn = self.write().await;
-        // First get old session_id (if any) so caller can delete it from tower-sessions store
-        let old_session_id: Option<String> = conn
-            .query_row(
-                "SELECT session_id FROM user_sessions WHERE user_id = ?1",
-                [user_id],
-                |row| row.get(0),
-            )
-            .ok();
-        conn.execute(
-            "INSERT OR REPLACE INTO user_sessions (user_id, session_id, created_at)
-             VALUES (?1, ?2, ?3)",
-            params![user_id, session_id, now],
-        )
-        .map_err(|e| format!("failed to upsert user session: {e}"))?;
-        Ok(old_session_id)
+        let user_id = user_id.to_string();
+        let session_id = session_id.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                // First get old session_id (if any) so caller can delete it from tower-sessions store
+                let old_session_id: Option<String> = us_dsl::user_sessions
+                    .filter(us_dsl::user_id.eq(&user_id))
+                    .select(us_dsl::session_id)
+                    .first::<String>(conn)
+                    .optional()
+                    .map_err(|e| format!("query old session: {e}"))?;
+
+                // INSERT OR REPLACE
+                diesel::replace_into(us_dsl::user_sessions)
+                    .values((
+                        us_dsl::user_id.eq(&user_id),
+                        us_dsl::session_id.eq(&session_id),
+                        us_dsl::created_at.eq(&now),
+                    ))
+                    .execute(conn)
+                    .map_err(|e| format!("failed to upsert user session: {e}"))?;
+
+                Ok(old_session_id)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
     }
 
     /// Remove the user_sessions entry for a user (on logout).
     pub async fn delete_user_session(&self, user_id: &str) -> Result<(), String> {
-        let conn = self.write().await;
-        conn.execute(
-            "DELETE FROM user_sessions WHERE user_id = ?1",
-            [user_id],
-        )
-        .map_err(|e| format!("failed to delete user session: {e}"))?;
+        let user_id = user_id.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                diesel::delete(us_dsl::user_sessions.filter(us_dsl::user_id.eq(&user_id)))
+                    .execute(conn)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map_err(|e| format!("failed to delete user session: {e}"))?;
         Ok(())
     }
 
@@ -151,12 +177,20 @@ impl Database {
     /// Used by session_required middleware to enforce single active session:
     /// if the session_id in the request doesn't match, the session is stale/orphaned.
     pub async fn get_user_session_id(&self, user_id: &str) -> Option<String> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT session_id FROM user_sessions WHERE user_id = ?1",
-            [user_id],
-            |row| row.get(0),
-        )
-        .ok()
+        let user_id = user_id.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .ok()?
+            .interact(move |conn| {
+                us_dsl::user_sessions
+                    .filter(us_dsl::user_id.eq(&user_id))
+                    .select(us_dsl::session_id)
+                    .first::<String>(conn)
+                    .optional()
+            })
+            .await
+            .ok()?
+            .ok()?
     }
 }

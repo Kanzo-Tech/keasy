@@ -2,7 +2,6 @@ const SCHEMA: &str = "
 PRAGMA journal_mode=WAL;
 PRAGMA foreign_keys=ON;
 
--- New tenant entities
 CREATE TABLE IF NOT EXISTS organizations (
     id                  TEXT PRIMARY KEY,
     name                TEXT NOT NULL,
@@ -28,24 +27,16 @@ CREATE TABLE IF NOT EXISTS org_members (
     PRIMARY KEY (user_id, org_id)
 );
 
--- Existing resource tables with organization_id NOT NULL FK
-CREATE TABLE IF NOT EXISTS cloud_accounts (
-    id              TEXT PRIMARY KEY,
-    organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    name            TEXT NOT NULL,
-    provider_id     TEXT NOT NULL,
-    auth_method     TEXT,
-    fields          TEXT NOT NULL DEFAULT '{}'
-);
-
-CREATE TABLE IF NOT EXISTS connections (
+CREATE TABLE IF NOT EXISTS connectors (
     id               TEXT PRIMARY KEY,
     organization_id  TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    name             TEXT NOT NULL UNIQUE,
-    kind             TEXT NOT NULL CHECK(kind IN ('data', 'vocab')),
-    location_type    TEXT NOT NULL CHECK(location_type IN ('cloud', 'local')),
-    cloud_account_id TEXT REFERENCES cloud_accounts(id) ON DELETE SET NULL,
-    url              TEXT NOT NULL
+    name             TEXT NOT NULL,
+    connector_type   TEXT NOT NULL,
+    direction        TEXT NOT NULL CHECK(direction IN ('source', 'destination', 'both')),
+    config           TEXT NOT NULL DEFAULT '{}',
+    created_at       TEXT NOT NULL,
+    updated_at       TEXT NOT NULL,
+    UNIQUE(organization_id, name)
 );
 
 CREATE TABLE IF NOT EXISTS jobs (
@@ -59,34 +50,14 @@ CREATE TABLE IF NOT EXISTS jobs (
     completed_at    TEXT,
     error           TEXT,
     pipeline        TEXT NOT NULL DEFAULT '{\"inputs\":[],\"operations\":[],\"outputs\":[]}',
-    connection_ids  TEXT NOT NULL DEFAULT '[]',
+    connector_ids   TEXT NOT NULL DEFAULT '[]',
     script          TEXT,
     rdf_base        TEXT,
-    manifest        TEXT
+    manifest        TEXT,
+    catalog_manifest TEXT,
+    catalog_base    TEXT
 );
 
-CREATE TABLE IF NOT EXISTS conversations (
-    id              TEXT PRIMARY KEY,
-    organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    job_id          TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
-    created_at      TEXT NOT NULL,
-    title           TEXT
-);
-
-CREATE TABLE IF NOT EXISTS messages (
-    id              TEXT PRIMARY KEY,
-    conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-    role            TEXT NOT NULL,
-    content         TEXT NOT NULL,
-    sql             TEXT,
-    data            TEXT,
-    code            TEXT,
-    explanation     TEXT,
-    created_at      TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
-CREATE INDEX IF NOT EXISTS idx_conversations_org ON conversations(organization_id);
-CREATE INDEX IF NOT EXISTS idx_conversations_job_org ON conversations(job_id, organization_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_org ON jobs(organization_id);
 
 CREATE TABLE IF NOT EXISTS settings (
@@ -147,25 +118,18 @@ CREATE TABLE IF NOT EXISTS dataspaces (
     created_at  TEXT NOT NULL,
     updated_at  TEXT NOT NULL
 );
+
+-- tower-sessions: HTTP session storage (replaces tower-sessions-rusqlite-store)
+CREATE TABLE IF NOT EXISTS tower_sessions (
+    id          TEXT PRIMARY KEY NOT NULL,
+    data        BLOB NOT NULL,
+    expiry_date INTEGER NOT NULL
+);
+
 ";
 
-pub fn apply(conn: &rusqlite::Connection) -> Result<(), String> {
-    conn.execute_batch(SCHEMA)
-        .map_err(|e| format!("schema creation failed: {e}"))?;
-
-    // Incremental migrations for existing databases
-    add_column_if_missing(conn, "jobs", "manifest", "TEXT");
-    add_column_if_missing(conn, "jobs", "catalog_manifest", "TEXT");
-    add_column_if_missing(conn, "jobs", "catalog_base", "TEXT");
-
-    Ok(())
-}
-
-fn add_column_if_missing(conn: &rusqlite::Connection, table: &str, column: &str, col_type: &str) {
-    let has_col = conn
-        .prepare(&format!("SELECT {column} FROM {table} LIMIT 0"))
-        .is_ok();
-    if !has_col {
-        let _ = conn.execute_batch(&format!("ALTER TABLE {table} ADD COLUMN {column} {col_type}"));
-    }
+pub fn apply(conn: &mut diesel::SqliteConnection) -> Result<(), String> {
+    use diesel::connection::SimpleConnection;
+    conn.batch_execute(SCHEMA)
+        .map_err(|e| format!("schema creation failed: {e}"))
 }

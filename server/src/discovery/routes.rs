@@ -8,34 +8,13 @@ use axum::Json;
 use http::Method;
 use serde::Serialize;
 
-use fossil_lang::runtime::executor::DataManifest;
+use crate::graph::manifest::DataManifest;
 use crate::AppState;
 use crate::error::error_body;
-use crate::jobs::models::JobStatus;
+use crate::jobs::models::{Job, JobStatus};
 use crate::middleware::tenant::{IsParticipant, Require, TenantContext};
 
-/// Checks that output is ready and returns Ok(()) or appropriate error.
-pub(crate) async fn require_output_ready(
-    state: &AppState,
-    ctx: &TenantContext,
-    job_id: &str,
-) -> Result<(), Response> {
-    let job = state
-        .db
-        .get_job(&ctx.scoped(job_id))
-        .await
-        .ok_or_else(|| {
-            (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response()
-        })?;
-
-    if job.status != JobStatus::Completed {
-        return Err((StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response());
-    }
-
-    Ok(())
-}
-
-// ── Shared URL signing ──────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────
 
 const SIGNED_URL_EXPIRES: Duration = Duration::from_secs(300);
 
@@ -44,21 +23,31 @@ struct ResolveResponse {
     files: HashMap<String, String>,
 }
 
-/// Sign parquet URLs for a manifest. Shared by discover and catalog endpoints.
+/// Fetch a completed job or return an error response.
+async fn load_completed_job(
+    state: &AppState,
+    ctx: &TenantContext,
+    job_id: &str,
+) -> Result<Job, Response> {
+    let job = state.repos.get_job(&ctx.resource(job_id)).await
+        .ok_or_else(|| (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response())?;
+    if job.status != JobStatus::Completed {
+        return Err((StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response());
+    }
+    Ok(job)
+}
+
+/// Sign parquet URLs for a manifest.
 async fn sign_manifest_urls(
     state: &AppState,
     ctx: &TenantContext,
     base_url: &str,
     manifest: &DataManifest,
-    connection_ids: &[String],
+    connector_ids: &[String],
 ) -> Result<Response, Response> {
-    let creds = state
-        .db
-        .build_storage_config_from_connections(&ctx.scoped(()), connection_ids)
-        .await;
-
-    let (store, prefix) = crate::cloud::build_store(base_url, &creds)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("store_error", e.to_string()))).into_response())?;
+    let (store, prefix) = state.repos.build_signing_store_for_job(
+        &state.connector_registry, &ctx.tenant(), connector_ids, base_url
+    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("store_error", e))).into_response())?;
 
     let all_files: Vec<String> = manifest.types.iter().map(|t| t.vertex_file.clone())
         .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
@@ -96,13 +85,10 @@ pub async fn resolve_discover_urls(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    let job = match state.db.get_job(&ctx.scoped(id.as_str())).await {
-        Some(j) => j,
-        None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
+    let job = match load_completed_job(&state, &ctx, &id).await {
+        Ok(j) => j,
+        Err(resp) => return resp,
     };
-    if job.status != JobStatus::Completed {
-        return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
-    }
     let Some(base) = &job.rdf_base else {
         return (StatusCode::NOT_FOUND, Json(error_body("no_output", "Job has no RDF output"))).into_response();
     };
@@ -110,7 +96,7 @@ pub async fn resolve_discover_urls(
         return (StatusCode::NOT_FOUND, Json(error_body("no_manifest", "Job has no data manifest"))).into_response();
     };
 
-    match sign_manifest_urls(&state, &ctx, base, manifest, &job.connection_ids).await {
+    match sign_manifest_urls(&state, &ctx, base, manifest, &job.connector_ids).await {
         Ok(resp) => resp,
         Err(resp) => resp,
     }
@@ -130,13 +116,10 @@ pub async fn resolve_catalog_urls(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    let job = match state.db.get_job(&ctx.scoped(id.as_str())).await {
-        Some(j) => j,
-        None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
+    let job = match load_completed_job(&state, &ctx, &id).await {
+        Ok(j) => j,
+        Err(resp) => return resp,
     };
-    if job.status != JobStatus::Completed {
-        return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
-    }
     let Some(base) = &job.catalog_base else {
         return (StatusCode::NOT_FOUND, Json(error_body("no_catalog", "Job has no catalog output"))).into_response();
     };
@@ -144,7 +127,7 @@ pub async fn resolve_catalog_urls(
         return (StatusCode::NOT_FOUND, Json(error_body("no_catalog_manifest", "Job has no catalog manifest"))).into_response();
     };
 
-    match sign_manifest_urls(&state, &ctx, base, manifest, &job.connection_ids).await {
+    match sign_manifest_urls(&state, &ctx, base, manifest, &job.connector_ids).await {
         Ok(resp) => resp,
         Err(resp) => resp,
     }

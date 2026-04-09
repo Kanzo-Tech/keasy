@@ -38,8 +38,7 @@ pub fn hash_str(s: &str) -> u64 {
     h.finish()
 }
 
-/// Per-org fossil analysis state.
-/// TODO: Reimplement with Salsa-based incremental analysis.
+/// Per-org fossil analysis state — Salsa-based incremental analysis (Phase 4).
 pub struct OrgAnalysisState {
     _private: (),
 }

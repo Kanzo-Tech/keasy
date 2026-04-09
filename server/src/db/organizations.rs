@@ -1,8 +1,11 @@
-use rusqlite::params;
+use diesel::prelude::*;
 
-use super::Database;
+use crate::db::diesel_schema::organizations;
+use super::Repos;
 
-#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, serde::Serialize, Queryable, Selectable, Insertable, utoipa::ToSchema)]
+#[diesel(table_name = organizations)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Organization {
     pub id: String,
     pub name: String,
@@ -17,40 +20,53 @@ pub struct Organization {
     pub updated_at: String,
 }
 
-impl Database {
+#[derive(Debug, AsChangeset)]
+#[diesel(table_name = organizations)]
+struct OrgIdentityChangeset {
+    legal_name: String,
+    country: String,
+    registration_number: Option<String>,
+    country_subdivision_code: Option<String>,
+    registration_number_type: Option<String>,
+    updated_at: String,
+}
+
+use organizations::dsl;
+
+impl Repos {
     pub async fn create_organization(&self, org: &Organization) -> Result<(), String> {
-        let conn = self.write().await;
-        conn.execute(
-            "INSERT INTO organizations
-             (id, name, slug, legal_name, registration_number, country_subdivision_code, registration_number_type, country, role, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
-            params![
-                org.id,
-                org.name,
-                org.slug,
-                org.legal_name,
-                org.registration_number,
-                org.country_subdivision_code,
-                org.registration_number_type,
-                org.country,
-                org.role,
-                org.created_at,
-                org.updated_at,
-            ],
-        )
-        .map_err(|e| format!("failed to insert organization: {e}"))?;
+        let org = org.clone();
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                diesel::insert_into(dsl::organizations)
+                    .values(&org)
+                    .execute(conn)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map_err(|e| format!("failed to insert organization: {e}"))?;
         Ok(())
     }
 
     pub async fn get_organization(&self, id: &str) -> Option<Organization> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, name, slug, legal_name, registration_number, country_subdivision_code, registration_number_type, country, role, created_at, updated_at
-             FROM organizations WHERE id = ?1",
-            [id],
-            row_to_org,
-        )
-        .ok()
+        let id = id.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .ok()?
+            .interact(move |conn| {
+                dsl::organizations
+                    .filter(dsl::id.eq(&id))
+                    .select(Organization::as_select())
+                    .first::<Organization>(conn)
+                    .optional()
+            })
+            .await
+            .ok()?
+            .ok()?
     }
 
     /// Update an organization's identity fields.
@@ -62,55 +78,117 @@ impl Database {
         registration_number: Option<&str>,
         country_subdivision_code: Option<&str>,
         registration_number_type: Option<&str>,
-    ) -> Result<(), rusqlite::Error> {
-        let conn = self.write().await;
-        conn.execute(
-            "UPDATE organizations SET legal_name = ?1, country = ?2, registration_number = ?3, country_subdivision_code = ?4, registration_number_type = ?5, updated_at = datetime('now') WHERE id = ?6",
-            params![legal_name, country, registration_number, country_subdivision_code, registration_number_type, org_id],
-        )?;
+    ) -> Result<(), String> {
+        let changeset = OrgIdentityChangeset {
+            legal_name: legal_name.to_string(),
+            country: country.to_string(),
+            registration_number: registration_number.map(String::from),
+            country_subdivision_code: country_subdivision_code.map(String::from),
+            registration_number_type: registration_number_type.map(String::from),
+            updated_at: jiff::Timestamp::now().to_string(),
+        };
+        let org_id = org_id.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                diesel::update(dsl::organizations.filter(dsl::id.eq(&org_id)))
+                    .set(&changeset)
+                    .execute(conn)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map_err(|e| format!("update: {e}"))?;
         Ok(())
     }
 
     pub async fn list_organizations(&self) -> Vec<Organization> {
-        let (_permit, conn) = self.read().await;
-        let mut stmt = conn
-            .prepare(
-                "SELECT id, name, slug, legal_name, registration_number, country_subdivision_code, registration_number_type, country, role, created_at, updated_at
-                 FROM organizations ORDER BY name",
-            )
-            .expect("prepare list organizations");
-        stmt.query_map([], row_to_org)
-            .expect("query organizations")
-            .filter_map(|r| r.ok())
-            .collect()
+        let Ok(pc) = self.diesel_pool.get().await else {
+            return vec![];
+        };
+        let result = pc
+            .interact(|conn| {
+                dsl::organizations
+                    .order(dsl::name.asc())
+                    .select(Organization::as_select())
+                    .load::<Organization>(conn)
+            })
+            .await;
+        match result {
+            Ok(Ok(rows)) => rows,
+            _ => vec![],
+        }
     }
 
     pub async fn get_organization_by_slug(&self, slug: &str) -> Option<Organization> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, name, slug, legal_name, registration_number, country_subdivision_code, registration_number_type, country, role, created_at, updated_at
-             FROM organizations WHERE slug = ?1",
-            [slug],
-            row_to_org,
-        )
-        .ok()
+        let slug = slug.to_string();
+        self.diesel_pool
+            .get()
+            .await
+            .ok()?
+            .interact(move |conn| {
+                dsl::organizations
+                    .filter(dsl::slug.eq(&slug))
+                    .select(Organization::as_select())
+                    .first::<Organization>(conn)
+                    .optional()
+            })
+            .await
+            .ok()?
+            .ok()?
     }
-}
 
-fn row_to_org(row: &rusqlite::Row<'_>) -> rusqlite::Result<Organization> {
-    Ok(Organization {
-        id: row.get(0)?,
-        name: row.get(1)?,
-        slug: row.get(2)?,
-        legal_name: row.get(3)?,
-        registration_number: row.get(4)?,
-        country_subdivision_code: row.get(5)?,
-        registration_number_type: row.get(6)?,
-        country: row.get(7)?,
-        role: row.get(8)?,
-        created_at: row.get(9)?,
-        updated_at: row.get(10)?,
-    })
+    /// Generate a unique slug using the diesel pool, appending a numeric suffix if the base slug is taken.
+    pub async fn generate_unique_slug(&self, name: &str) -> String {
+        let base = generate_slug(name);
+        let base_clone = base.clone();
+        let Ok(pc) = self.diesel_pool.get().await else {
+            return base;
+        };
+        let result = pc
+            .interact(move |conn| {
+                // Check if base slug exists
+                let exists = dsl::organizations
+                    .filter(dsl::slug.eq(&base_clone))
+                    .select(dsl::id)
+                    .first::<String>(conn)
+                    .optional()
+                    .unwrap_or(None)
+                    .is_some();
+                if !exists {
+                    return base_clone;
+                }
+                for i in 2..100 {
+                    let candidate = format!("{}-{}", base_clone, i);
+                    let exists = dsl::organizations
+                        .filter(dsl::slug.eq(&candidate))
+                        .select(dsl::id)
+                        .first::<String>(conn)
+                        .optional()
+                        .unwrap_or(None)
+                        .is_some();
+                    if !exists {
+                        return candidate;
+                    }
+                }
+                // Fallback: random suffix
+                format!(
+                    "{}-{}",
+                    base_clone,
+                    uuid::Uuid::new_v4()
+                        .to_string()
+                        .split('-')
+                        .next()
+                        .unwrap()
+                )
+            })
+            .await;
+        match result {
+            Ok(slug) => slug,
+            Err(_) => base,
+        }
+    }
 }
 
 /// Generate a URL-safe slug from an organization name.
@@ -127,29 +205,4 @@ pub fn generate_slug(name: &str) -> String {
         .join("-");
     let truncated = if slug.len() > 63 { &slug[..63] } else { &slug };
     truncated.trim_end_matches('-').to_string()
-}
-
-/// Generate a unique slug, appending a numeric suffix if the base slug is taken.
-pub fn generate_unique_slug(conn: &rusqlite::Connection, name: &str) -> String {
-    let base = generate_slug(name);
-    if !slug_exists(conn, &base) {
-        return base;
-    }
-    for i in 2..100 {
-        let candidate = format!("{}-{}", base, i);
-        if !slug_exists(conn, &candidate) {
-            return candidate;
-        }
-    }
-    // Fallback: use a random suffix
-    format!("{}-{}", base, uuid::Uuid::new_v4().to_string().split('-').next().unwrap())
-}
-
-fn slug_exists(conn: &rusqlite::Connection, slug: &str) -> bool {
-    conn.query_row(
-        "SELECT 1 FROM organizations WHERE slug = ?1",
-        [slug],
-        |_| Ok(()),
-    )
-    .is_ok()
 }

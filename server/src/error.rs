@@ -96,10 +96,6 @@ pub enum AppError {
     #[error(transparent)]
     JobApi(#[from] crate::jobs::errors::JobApiError),
     #[error(transparent)]
-    Connection(#[from] crate::connections::errors::ConnectionError),
-    #[error(transparent)]
-    CloudAccount(#[from] crate::cloud::errors::CloudAccountError),
-    #[error(transparent)]
     Auth(#[from] crate::auth::errors::AuthError),
 }
 
@@ -150,8 +146,6 @@ impl IntoResponse for AppError {
             ).into_response(),
 
             AppError::JobApi(e) => e.into_response(),
-            AppError::Connection(e) => e.into_response(),
-            AppError::CloudAccount(e) => e.into_response(),
             AppError::Auth(e) => e.into_response(),
         }
     }

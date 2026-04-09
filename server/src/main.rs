@@ -1,4 +1,4 @@
-use keasy_server::{AppState, AuthServices, GaiaXServices, Database, JobRunner};
+use keasy_server::{AppState, AuthServices, GaiaXServices, Repos, JobRunner};
 use keasy_server::config::ServerConfig;
 use keasy_server::routes::{build_router, SessionConfig};
 use secrecy::ExposeSecret;
@@ -33,46 +33,35 @@ async fn main() {
     }
 
     let db_path = config.data_dir.join("keasy.db");
-    let db = match Database::open(&db_path, config.secret_key, config.seed_file.as_deref()) {
-        Ok(db) => db,
+    let repos = match Repos::open(&db_path, config.secret_key, config.seed_file.as_deref()) {
+        Ok(r) => r,
         Err(e) => {
             eprintln!("FATAL: Failed to open database: {e}");
             std::process::exit(1);
         }
     };
 
-    info!(path = %db_path.display(), seed_file = ?config.seed_file, "Database opened");
+    info!(path = %db_path.display(), seed_file = ?config.seed_file, "Repos opened");
 
     // Self-register in dataspaces so workspace picker can find this instance
     if let Some(client_id) = &config.oidc_client_id
-        && let Err(e) = db
+        && let Err(e) = repos
             .ensure_dataspace(client_id, "This Instance", &config.base_url)
             .await
         {
             warn!(error = %e, "Failed to self-register in dataspaces");
         }
 
-    if !db.verify_secret_key().await {
+    if !repos.verify_secret_key().await {
         eprintln!("FATAL: KEASY_SECRET_KEY does not match the key used to encrypt stored secrets");
         eprintln!("       Cloud account credentials will not be accessible.");
         eprintln!("       Set the correct KEASY_SECRET_KEY or remove the database to start fresh.");
         std::process::exit(1);
     }
 
-    // Session store — separate tokio-rusqlite connection (safe in WAL mode).
-    // tower-sessions-rusqlite-store manages its own schema via migrate().
-    // Access tokio_rusqlite through the re-export from tower-sessions-rusqlite-store.
-    let session_conn = tower_sessions_rusqlite_store::tokio_rusqlite::Connection::open(&db_path)
-        .await
-        .unwrap_or_else(|e| {
-            eprintln!("FATAL: Failed to open session store connection: {e}");
-            std::process::exit(1);
-        });
-    let session_store = tower_sessions_rusqlite_store::RusqliteStore::new(session_conn);
-    session_store.migrate().await.unwrap_or_else(|e| {
-        eprintln!("FATAL: Failed to migrate session store: {e}");
-        std::process::exit(1);
-    });
+    // Session store — shares the Diesel pool (no separate rusqlite connection needed).
+    // The tower_sessions table is created by schema::apply() during Repos::open().
+    let session_store = keasy_server::db::session_store::DieselStore::new(repos.diesel_pool.clone());
 
     // Background task: continuously delete expired sessions (every 60 seconds)
     let deletion_task = tokio::task::spawn(
@@ -82,7 +71,7 @@ async fn main() {
     );
 
     let runner = Arc::new(JobRunner::new(
-        db.clone(),
+        repos.clone(),
         config.max_concurrent_jobs,
         config.job_timeout_secs,
     ));
@@ -155,12 +144,20 @@ async fn main() {
         caddy_certs_dir: config.caddy_certs_dir,
     };
     let state = AppState {
-        db,
+        repos,
         runner: runner.clone(),
         api_key: config.api_key,
         base_url: config.base_url,
         auth,
         gaia_x,
+        connector_registry: Arc::new({
+            let mut registry = keasy_server::connectors::types::ConnectorRegistry::new();
+            registry.register("local_fs", Arc::new(keasy_server::connectors::types::local_fs::LocalFsConnector));
+            registry.register("s3", Arc::new(keasy_server::connectors::types::s3::S3Connector));
+            registry.register("gcs", Arc::new(keasy_server::connectors::types::gcs::GcsConnector));
+            registry.register("azure_blob", Arc::new(keasy_server::connectors::types::azure::AzureConnector));
+            registry
+        }),
         org_analysis: Arc::new(std::sync::Mutex::new(
             lru::LruCache::new(std::num::NonZeroUsize::new(64).unwrap()),
         )),

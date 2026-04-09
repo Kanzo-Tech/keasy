@@ -3,10 +3,6 @@
 //! Uses the configured AI provider (Anthropic/OpenAI) to perform:
 //! - Entity extraction via tool_use / structured output
 //! - Grounding validation via separate LLM call
-//!
-//! TODO: Previously implemented fossil_lang::traits::services::ExternalServices.
-//! That trait was removed with fossil_stdlib. The struct methods remain for
-//! potential direct use from keasy routes.
 
 use secrecy::{ExposeSecret, SecretString};
 

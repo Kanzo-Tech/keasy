@@ -12,7 +12,7 @@ use serde::Deserialize;
 use crate::AppState;
 use crate::db::invite_tokens::InviteToken;
 use crate::db::dataspaces::Dataspace;
-use crate::db::organizations::{Organization, generate_unique_slug};
+use crate::db::organizations::Organization;
 use crate::error::data_response;
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::middleware::tenant::{IsPromotor, RbacError, Require};
@@ -68,7 +68,7 @@ pub async fn list_all_orgs(
     _ctx: Require<IsPromotor>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let orgs = state.db.list_organizations().await;
+    let orgs = state.repos.list_organizations().await;
     Ok(data_response(orgs))
 }
 
@@ -97,10 +97,7 @@ pub async fn create_org_and_invite(
     let now = jiff::Timestamp::now().to_string();
 
     // 1. Create organization as participant
-    let slug = {
-        let (_permit, conn) = state.db.read().await;
-        generate_unique_slug(&conn, &payload.name)
-    };
+    let slug = state.repos.generate_unique_slug(&payload.name).await;
     let org = Organization {
         id: uuid::Uuid::new_v4().to_string(),
         name: payload.name.clone(),
@@ -115,7 +112,7 @@ pub async fn create_org_and_invite(
         updated_at: now.clone(),
     };
     state
-        .db
+        .repos
         .create_organization(&org)
         .await
         .map_err(RbacError::Internal)?;
@@ -137,7 +134,7 @@ pub async fn create_org_and_invite(
         created_at: now,
     };
     state
-        .db
+        .repos
         .create_invite_token(&invite)
         .await
         .map_err(RbacError::Internal)?;
@@ -219,7 +216,7 @@ pub async fn register_dataspace(
         updated_at: now,
     };
     state
-        .db
+        .repos
         .create_dataspace(&dataspace)
         .await
         .map_err(RbacError::Internal)?;
@@ -250,7 +247,7 @@ pub async fn list_dataspaces(
     _ctx: Require<IsPromotor>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let clients = state.db.list_dataspaces().await;
+    let clients = state.repos.list_dataspaces().await;
     Ok(data_response(clients))
 }
 
@@ -265,8 +262,8 @@ pub async fn list_invites(
     _ctx: Require<IsPromotor>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let tokens = state.db.list_invite_tokens().await;
-    let orgs = state.db.list_organizations().await;
+    let tokens = state.repos.list_invite_tokens().await;
+    let orgs = state.repos.list_organizations().await;
     let org_map: HashMap<String, String> = orgs
         .into_iter()
         .map(|o| (o.id.clone(), o.name.clone()))
@@ -314,10 +311,7 @@ pub async fn create_invite(
     let now = jiff::Timestamp::now().to_string();
 
     // 1. Create participant org
-    let slug = {
-        let (_permit, conn) = state.db.read().await;
-        generate_unique_slug(&conn, &payload.org_name)
-    };
+    let slug = state.repos.generate_unique_slug(&payload.org_name).await;
     let org = Organization {
         id: uuid::Uuid::new_v4().to_string(),
         name: payload.org_name.clone(),
@@ -332,7 +326,7 @@ pub async fn create_invite(
         updated_at: now.clone(),
     };
     state
-        .db
+        .repos
         .create_organization(&org)
         .await
         .map_err(RbacError::Internal)?;
@@ -354,7 +348,7 @@ pub async fn create_invite(
         created_at: now,
     };
     state
-        .db
+        .repos
         .create_invite_token(&invite)
         .await
         .map_err(RbacError::Internal)?;
@@ -389,7 +383,7 @@ pub async fn revoke_invite(
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
     state
-        .db
+        .repos
         .delete_invite_token(&token)
         .await
         .map_err(RbacError::Internal)?;

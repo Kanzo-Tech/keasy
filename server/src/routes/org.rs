@@ -30,7 +30,7 @@ pub async fn list_users(
     ctx: Require<IsAdmin>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let users = state.db.list_org_members(&ctx.org_id.0).await;
+    let users = state.repos.list_org_members(&ctx.org_id.0).await;
     Ok(data_response(users))
 }
 
@@ -56,7 +56,7 @@ pub async fn update_user_role(
     let role: MemberRole = payload.role.parse()
         .map_err(RbacError::Internal)?;
     state
-        .db
+        .repos
         .update_member_role(&user_id, &ctx.org_id.0, role.as_str())
         .await
         .map_err(RbacError::Internal)?;
@@ -76,7 +76,7 @@ pub async fn remove_user(
     Path(user_id): Path<String>,
 ) -> Result<impl IntoResponse, RbacError> {
     state
-        .db
+        .repos
         .remove_org_member(&user_id, &ctx.org_id.0)
         .await
         .map_err(RbacError::Internal)?;
@@ -113,7 +113,7 @@ pub async fn get_org_identity(
     ctx: Require<IsParticipant>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let org = state.db.get_organization(&ctx.org_id.0).await;
+    let org = state.repos.get_organization(&ctx.org_id.0).await;
     match org {
         Some(o) => data_response(OrgIdentityResponse {
             legal_name: o.legal_name,
@@ -180,7 +180,7 @@ pub async fn update_org_identity(
         }
 
     state
-        .db
+        .repos
         .update_org_identity(
             &ctx.org_id.0,
             &legal_name,
@@ -259,7 +259,7 @@ pub async fn create_org_invite(
         created_at: now,
     };
     state
-        .db
+        .repos
         .create_invite_token(&invite)
         .await
         .map_err(RbacError::Internal)?;
@@ -281,7 +281,7 @@ pub async fn list_org_invites(
     ctx: Require<IsAdmin>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let tokens = state.db.list_invite_tokens_for_org(&ctx.org_id.0).await;
+    let tokens = state.repos.list_invite_tokens_for_org(&ctx.org_id.0).await;
     let now = jiff::Timestamp::now().to_string();
     let result: Vec<OrgInviteEntry> = tokens
         .into_iter()
@@ -312,14 +312,14 @@ pub async fn revoke_org_invite(
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
     // Security: verify token belongs to this org before deleting
-    let invite = state.db.get_invite_token(&token).await.ok_or_else(|| {
+    let invite = state.repos.get_invite_token(&token).await.ok_or_else(|| {
         RbacError::Internal("invite token not found".to_string())
     })?;
     if invite.org_id != ctx.org_id.0 {
         return Err(RbacError::Internal("invite token not found".to_string()));
     }
     state
-        .db
+        .repos
         .delete_invite_token(&token)
         .await
         .map_err(RbacError::Internal)?;

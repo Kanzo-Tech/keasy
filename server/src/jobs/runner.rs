@@ -287,13 +287,18 @@ fn run_job(
     // Phase 2: executing
     if tx.send(JobEvent { phase: "executing".into(), index: 2, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
-    // TODO: Execute the plan via Executor<DuckDB>.
-    // For now, compilation succeeds but execution is not yet wired.
-    let _ = &plan;
+    // Execute the plan via Executor<DuckDB>
+    let duckdb = super::duckdb_engine::DuckDbConn::new()
+        .map_err(|e| format!("DuckDB init failed: {e}"))?;
+    // TODO: configure cloud credentials from path_resolver
+    let exec = super::executor::Executor::new(duckdb);
+    // TODO: register source handlers (.source(PdfHandler).source(DocxHandler))
+    // TODO: register output handlers (.output(GraphArHandler))
+    let results = exec.execute(&plan).map_err(|e| e.to_string())?;
 
-    // TODO: Extract rdf_base and manifest from execution output.
-    let rdf_base: Option<String> = None;
-    let manifest: Option<DataManifest> = None;
+    // Extract rdf_base and manifest from execution output
+    let rdf_base = plan.outputs.first().map(|o| o.path.clone());
+    let manifest: Option<DataManifest> = None; // TODO: build from execution results
 
     // Materialize DCAT-AP catalog as parquets (if dcat + manifest + dest available)
     let (catalog_manifest, catalog_base) = match (&dcat_input, &manifest, catalog_dest) {

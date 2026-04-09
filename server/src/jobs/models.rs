@@ -1,9 +1,12 @@
-use rusqlite::types::{FromSql, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
+use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::db::diesel_schema::jobs;
 use crate::graph::dcat::types::DcatInput;
-use fossil_lang::runtime::executor::DataManifest;
+use crate::graph::manifest::DataManifest;
 use super::pipeline_types::PipelineSummary;
+
+// ── RunMode enum (API-facing) ──────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
 #[serde(rename_all = "snake_case")]
@@ -12,25 +15,23 @@ pub enum RunMode {
     Scheduled,
 }
 
-impl ToSql for RunMode {
-    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
-        let s = match self {
+impl RunMode {
+    pub fn as_str(&self) -> &'static str {
+        match self {
             Self::Integrated => "integrated",
             Self::Scheduled => "scheduled",
-        };
-        Ok(s.into())
+        }
+    }
+
+    pub fn from_db(s: &str) -> Self {
+        match s {
+            "scheduled" => Self::Scheduled,
+            _ => Self::Integrated,
+        }
     }
 }
 
-impl FromSql for RunMode {
-    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        let s = value.as_str()?;
-        Ok(match s {
-            "scheduled" => Self::Scheduled,
-            _ => Self::Integrated,
-        })
-    }
-}
+// ── JobStatus enum (API-facing) ─────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
 #[serde(rename_all = "snake_case")]
@@ -43,24 +44,20 @@ pub enum JobStatus {
     Cancelled,
 }
 
-impl ToSql for JobStatus {
-    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
-        let s = match self {
+impl JobStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
             Self::Draft => "draft",
             Self::Pending => "pending",
             Self::Running => "running",
             Self::Completed => "completed",
             Self::Failed => "failed",
             Self::Cancelled => "cancelled",
-        };
-        Ok(s.into())
+        }
     }
-}
 
-impl FromSql for JobStatus {
-    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        let s = value.as_str()?;
-        Ok(match s {
+    pub fn from_db(s: &str) -> Self {
+        match s {
             "draft" => Self::Draft,
             "pending" => Self::Pending,
             "running" => Self::Running,
@@ -68,9 +65,77 @@ impl FromSql for JobStatus {
             "failed" => Self::Failed,
             "cancelled" => Self::Cancelled,
             _ => Self::Pending,
-        })
+        }
     }
 }
+
+// ── Diesel row model (what the DB returns) ──────────────────────────
+
+#[derive(Debug, Clone, Queryable, Selectable)]
+#[diesel(table_name = jobs)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct JobRow {
+    pub id: String,
+    pub organization_id: String,
+    pub name: Option<String>,
+    pub status: String,
+    pub mode: String,
+    pub created_at: String,
+    pub started_at: Option<String>,
+    pub completed_at: Option<String>,
+    pub error: Option<String>,
+    pub pipeline: String,
+    pub connector_ids: String,
+    pub script: Option<String>,
+    pub rdf_base: Option<String>,
+    pub manifest: Option<String>,
+    pub catalog_manifest: Option<String>,
+    pub catalog_base: Option<String>,
+}
+
+// ── Diesel insert model ─────────────────────────────────────────────
+
+#[derive(Debug, Insertable)]
+#[diesel(table_name = jobs)]
+pub struct NewJob {
+    pub id: String,
+    pub organization_id: String,
+    pub name: Option<String>,
+    pub status: String,
+    pub mode: String,
+    pub created_at: String,
+    pub started_at: Option<String>,
+    pub completed_at: Option<String>,
+    pub error: Option<String>,
+    pub pipeline: String,
+    pub connector_ids: String,
+    pub script: Option<String>,
+    pub rdf_base: Option<String>,
+    pub manifest: Option<String>,
+    pub catalog_manifest: Option<String>,
+    pub catalog_base: Option<String>,
+}
+
+// ── Diesel update changeset ─────────────────────────────────────────
+
+#[derive(Debug, Default, AsChangeset)]
+#[diesel(table_name = jobs)]
+pub struct JobChangeset {
+    pub name: Option<Option<String>>,
+    pub status: Option<String>,
+    pub started_at: Option<Option<String>>,
+    pub completed_at: Option<Option<String>>,
+    pub error: Option<Option<String>>,
+    pub pipeline: Option<String>,
+    pub connector_ids: Option<String>,
+    pub script: Option<Option<String>>,
+    pub rdf_base: Option<Option<String>>,
+    pub manifest: Option<Option<String>>,
+    pub catalog_manifest: Option<Option<String>>,
+    pub catalog_base: Option<Option<String>>,
+}
+
+// ── API-facing model ────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct Job {
@@ -90,8 +155,8 @@ pub struct Job {
     #[serde(skip)]
     #[schema(ignore)]
     pub dcat_input: Option<DcatInput>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub connection_ids: Vec<String>,
+    #[serde(default, alias = "connection_ids", skip_serializing_if = "Vec::is_empty")]
+    pub connector_ids: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,
     /// Base URL for RDF Parquet storage (set when job uses Rdf output).
@@ -108,6 +173,35 @@ pub struct Job {
     pub catalog_base: Option<String>,
 }
 
+// ── From<JobRow> for Job ────────────────────────────────────────────
+
+impl From<JobRow> for Job {
+    fn from(r: JobRow) -> Self {
+        let status = JobStatus::from_db(&r.status);
+        let is_draft = status == JobStatus::Draft;
+        Self {
+            id: r.id,
+            name: r.name,
+            status,
+            mode: RunMode::from_db(&r.mode),
+            created_at: r.created_at,
+            started_at: r.started_at,
+            completed_at: r.completed_at,
+            error: r.error.and_then(|j| serde_json::from_str(&j).ok()),
+            pipeline: serde_json::from_str(&r.pipeline).unwrap_or_default(),
+            dcat_input: None,
+            connector_ids: serde_json::from_str(&r.connector_ids).unwrap_or_default(),
+            script: if is_draft { r.script } else { None },
+            rdf_base: r.rdf_base,
+            manifest: r.manifest.and_then(|j| serde_json::from_str(&j).ok()),
+            catalog_manifest: r.catalog_manifest.and_then(|j| serde_json::from_str(&j).ok()),
+            catalog_base: r.catalog_base,
+        }
+    }
+}
+
+// ── API request types ───────────────────────────────────────────────
+
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CreateJobRequest {
     pub script: String,
@@ -115,8 +209,8 @@ pub struct CreateJobRequest {
     pub mode: Option<RunMode>,
     pub pipeline: Option<PipelineSummary>,
     pub dcat_enabled: Option<bool>,
-    #[serde(default)]
-    pub connection_ids: Vec<String>,
+    #[serde(default, alias = "connection_ids")]
+    pub connector_ids: Vec<String>,
     #[serde(default)]
     pub draft: bool,
 }

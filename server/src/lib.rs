@@ -2,12 +2,9 @@
 // The binary crate (main.rs) uses `mod` declarations for all modules.
 // This lib.rs re-exports what integration tests need.
 
-pub mod ai;
-pub mod assistant;
 pub mod auth;
-pub mod cloud;
 pub mod config;
-pub mod connections;
+pub mod connectors;
 pub mod crypto;
 pub mod db;
 pub mod discovery;
@@ -19,12 +16,14 @@ pub mod keycloak;
 pub mod middleware;
 pub mod openapi;
 pub mod routes;
+pub mod services;
 pub mod settings;
+pub mod sse;
 pub mod tenant;
 
 
 // Re-export types integration tests need
-pub use db::Database;
+pub use db::Repos;
 pub use jobs::runner::JobRunner;
 
 use secrecy::SecretString;
@@ -39,20 +38,21 @@ pub fn hash_str(s: &str) -> u64 {
     h.finish()
 }
 
-/// Per-org fossil analysis state: compilation host cache.
-/// Stored in a single LRU so eviction is consistent.
+/// Per-org fossil analysis state.
+/// TODO: Reimplement with Salsa-based incremental analysis.
 pub struct OrgAnalysisState {
-    pub host: Arc<Mutex<fossil_lsp::AnalysisHost>>,
+    _private: (),
 }
 
 #[derive(Clone)]
 pub struct AppState {
-    pub db: Database,
+    pub repos: Repos,
     pub runner: Arc<JobRunner>,
     pub api_key: SecretString,
     pub base_url: String,
     pub auth: AuthServices,
     pub gaia_x: GaiaXServices,
+    pub connector_registry: Arc<connectors::types::ConnectorRegistry>,
     /// Per-org fossil analysis state (compilation host + resolve cache).
     pub org_analysis: Arc<Mutex<lru::LruCache<String, OrgAnalysisState>>>,
 }

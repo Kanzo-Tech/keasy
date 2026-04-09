@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 
 use fossil_lang::traits::resolver::{PathResolver, ResolvedPath};
-use polars::prelude::cloud::CloudOptions;
-use polars::prelude::{PlPath, PlPathRef};
 
 #[derive(Debug)]
 struct ConnectionInfo {
     base_url: String,
-    cloud_options: Option<CloudOptions>,
-    credentials: HashMap<String, String>,
+    /// Cloud configuration key-value pairs.
+    /// TODO: Previously stored Polars CloudOptions; now stores raw pairs.
+    _cloud_config: Option<Vec<(String, String)>>,
 }
 
 /// Keasy-specific path resolver: resolves `@connection/path` references using
@@ -19,14 +18,13 @@ pub struct KeasyPathResolver {
 }
 
 impl KeasyPathResolver {
-    pub fn from_connections(
-        connections: Vec<(String, String, HashMap<String, String>)>,
+    pub fn from_connectors(
+        connections: Vec<(String, String, Option<Vec<(String, String)>>)>,
     ) -> Self {
         let map = connections
             .into_iter()
-            .map(|(name, base_url, credentials)| {
-                let cloud_options = build_cloud_options(&base_url, &credentials);
-                (name, ConnectionInfo { base_url, cloud_options, credentials })
+            .map(|(name, base_url, cloud_config)| {
+                (name, ConnectionInfo { base_url, _cloud_config: cloud_config })
             })
             .collect();
         Self { connections: map }
@@ -53,28 +51,7 @@ impl PathResolver for KeasyPathResolver {
             conn.base_url.trim_end_matches('/'),
             path.trim_start_matches('/')
         );
-        Ok(ResolvedPath::with_config(
-            &url,
-            conn.cloud_options.clone(),
-            conn.credentials.clone(),
-        ))
-    }
-}
-
-pub fn build_cloud_options(url: &str, config: &HashMap<String, String>) -> Option<CloudOptions> {
-    if config.is_empty() {
-        return None;
-    }
-    let path = PlPath::from_str(url);
-    match path.as_ref() {
-        PlPathRef::Local(_) => None,
-        PlPathRef::Cloud(cloud_path) => {
-            let scheme = cloud_path.scheme();
-            let pairs: Vec<(&str, &str)> = config
-                .iter()
-                .map(|(k, v)| (k.as_str(), v.as_str()))
-                .collect();
-            CloudOptions::from_untyped_config(Some(&scheme), pairs).ok()
-        }
+        // TODO: ResolvedPath no longer wraps CloudOptions.
+        Ok(ResolvedPath::new(&url, None))
     }
 }

@@ -1,221 +1,182 @@
-use rusqlite::params;
+use diesel::prelude::*;
 
-use crate::db::Database;
-use crate::tenant::TenantScoped;
+use crate::db::diesel_schema::jobs::dsl;
+use crate::db::Repos;
+use crate::tenant::{Tenant, TenantResource};
 
-use super::errors::JobRuntimeError;
-use super::models::{Job, JobStatus, RunMode};
-use super::pipeline_types::PipelineSummary;
+use super::models::{Job, JobChangeset, JobRow, NewJob};
 
-impl Database {
-    pub async fn insert_job(&self, ctx: &TenantScoped<()>, job: &Job) -> Result<(), String> {
-        let error_json = job.error.as_ref()
-            .map(serde_json::to_string)
-            .transpose()
-            .map_err(|e| format!("failed to serialize error: {e}"))?;
-        let pipeline_json = serde_json::to_string(&job.pipeline)
-            .map_err(|e| format!("failed to serialize pipeline: {e}"))?;
-        let account_ids_json = serde_json::to_string(&job.connection_ids)
-            .map_err(|e| format!("failed to serialize connection_ids: {e}"))?;
+/// Build a NewJob from a Job + organization_id, serializing JSON fields.
+fn to_new_job(job: &Job, org_id: &str) -> Result<NewJob, String> {
+    Ok(NewJob {
+        id: job.id.clone(),
+        organization_id: org_id.to_string(),
+        name: job.name.clone(),
+        status: job.status.as_str().to_string(),
+        mode: job.mode.as_str().to_string(),
+        created_at: job.created_at.clone(),
+        started_at: job.started_at.clone(),
+        completed_at: job.completed_at.clone(),
+        error: job.error.as_ref()
+            .map(serde_json::to_string).transpose()
+            .map_err(|e| format!("serialize error: {e}"))?,
+        pipeline: serde_json::to_string(&job.pipeline)
+            .map_err(|e| format!("serialize pipeline: {e}"))?,
+        connector_ids: serde_json::to_string(&job.connector_ids)
+            .map_err(|e| format!("serialize connector_ids: {e}"))?,
+        script: job.script.clone(),
+        rdf_base: job.rdf_base.clone(),
+        manifest: job.manifest.as_ref()
+            .map(serde_json::to_string).transpose()
+            .map_err(|e| format!("serialize manifest: {e}"))?,
+        catalog_manifest: job.catalog_manifest.as_ref()
+            .map(serde_json::to_string).transpose()
+            .map_err(|e| format!("serialize catalog_manifest: {e}"))?,
+        catalog_base: job.catalog_base.clone(),
+    })
+}
 
-        let manifest_json = job.manifest.as_ref()
-            .map(serde_json::to_string)
-            .transpose()
-            .map_err(|e| format!("failed to serialize manifest: {e}"))?;
-        let catalog_manifest_json = job.catalog_manifest.as_ref()
-            .map(serde_json::to_string)
-            .transpose()
-            .map_err(|e| format!("failed to serialize catalog_manifest: {e}"))?;
+/// Build a changeset from a Job, serializing JSON fields.
+fn to_changeset(job: &Job) -> Result<JobChangeset, String> {
+    Ok(JobChangeset {
+        name: Some(job.name.clone()),
+        status: Some(job.status.as_str().to_string()),
+        started_at: Some(job.started_at.clone()),
+        completed_at: Some(job.completed_at.clone()),
+        error: Some(job.error.as_ref()
+            .map(serde_json::to_string).transpose()
+            .map_err(|e| format!("serialize error: {e}"))?),
+        pipeline: Some(serde_json::to_string(&job.pipeline)
+            .map_err(|e| format!("serialize pipeline: {e}"))?),
+        connector_ids: Some(serde_json::to_string(&job.connector_ids)
+            .map_err(|e| format!("serialize connector_ids: {e}"))?),
+        script: Some(job.script.clone()),
+        rdf_base: Some(job.rdf_base.clone()),
+        manifest: Some(job.manifest.as_ref()
+            .map(serde_json::to_string).transpose()
+            .map_err(|e| format!("serialize manifest: {e}"))?),
+        catalog_manifest: Some(job.catalog_manifest.as_ref()
+            .map(serde_json::to_string).transpose()
+            .map_err(|e| format!("serialize catalog_manifest: {e}"))?),
+        catalog_base: Some(job.catalog_base.clone()),
+    })
+}
 
-        let conn = self.write().await;
-        conn.execute(
-            "INSERT INTO jobs (id, organization_id, name, status, mode, created_at, started_at, completed_at, error, pipeline, connection_ids, script, rdf_base, manifest, catalog_manifest, catalog_base)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
-            params![
-                job.id,
-                ctx.org_id().as_str(),
-                job.name,
-                job.status,
-                job.mode,
-                job.created_at,
-                job.started_at,
-                job.completed_at,
-                error_json,
-                pipeline_json,
-                account_ids_json,
-                job.script,
-                job.rdf_base,
-                manifest_json,
-                catalog_manifest_json,
-                job.catalog_base,
-            ],
-        )
-        .map_err(|e| format!("failed to insert job: {e}"))?;
+impl Repos {
+    pub async fn insert_job(&self, tenant: &Tenant, job: &Job) -> Result<(), String> {
+        let new = to_new_job(job, tenant.org_id.as_str())?;
+
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                diesel::insert_into(dsl::jobs)
+                    .values(&new)
+                    .execute(conn)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map_err(|e| format!("insert job: {e}"))?;
 
         Ok(())
     }
 
-    pub async fn get_job(&self, ctx: &TenantScoped<&str>) -> Option<Job> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, pipeline, connection_ids, script, rdf_base, manifest, catalog_manifest, catalog_base
-             FROM jobs WHERE id = ?1 AND organization_id = ?2",
-            params![ctx.inner(), ctx.org_id().as_str()],
-            |row| Ok(row_to_job(row)),
-        )
-        .ok()
+    pub async fn get_job(&self, resource: &TenantResource<'_>) -> Option<Job> {
+        let rid = resource.id.to_string();
+        let org = resource.org_id.as_str().to_string();
+
+        self.diesel_pool
+            .get()
+            .await
+            .ok()?
+            .interact(move |conn| {
+                dsl::jobs
+                    .filter(dsl::id.eq(&rid).and(dsl::organization_id.eq(&org)))
+                    .select(JobRow::as_select())
+                    .first::<JobRow>(conn)
+                    .optional()
+            })
+            .await
+            .ok()?
+            .ok()?
+            .map(Job::from)
     }
 
-    pub async fn update_job(&self, ctx: &TenantScoped<&str>, f: impl FnOnce(&mut Job)) -> Result<Option<Job>, String> {
-        let mut job = match self.get_job(ctx).await {
+    pub async fn update_job(
+        &self,
+        resource: &TenantResource<'_>,
+        f: impl FnOnce(&mut Job),
+    ) -> Result<Option<Job>, String> {
+        let mut job = match self.get_job(resource).await {
             Some(j) => j,
             None => return Ok(None),
         };
         f(&mut job);
 
-        let error_json = job.error.as_ref()
-            .map(serde_json::to_string)
-            .transpose()
-            .map_err(|e| format!("failed to serialize error: {e}"))?;
-        let pipeline_json = serde_json::to_string(&job.pipeline)
-            .map_err(|e| format!("failed to serialize pipeline: {e}"))?;
-        let account_ids_json = serde_json::to_string(&job.connection_ids)
-            .map_err(|e| format!("failed to serialize connection_ids: {e}"))?;
-        let manifest_json = job.manifest.as_ref()
-            .map(serde_json::to_string)
-            .transpose()
-            .map_err(|e| format!("failed to serialize manifest: {e}"))?;
-        let catalog_manifest_json = job.catalog_manifest.as_ref()
-            .map(serde_json::to_string)
-            .transpose()
-            .map_err(|e| format!("failed to serialize catalog_manifest: {e}"))?;
+        let changeset = to_changeset(&job)?;
+        let rid = resource.id.to_string();
+        let org = resource.org_id.as_str().to_string();
 
-        let conn = self.write().await;
-        conn.execute(
-            "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, error = ?5, pipeline = ?6, connection_ids = ?7, script = ?8, rdf_base = ?9, manifest = ?10, catalog_manifest = ?11, catalog_base = ?12
-             WHERE id = ?13 AND organization_id = ?14",
-            params![
-                job.name,
-                job.status,
-                job.started_at,
-                job.completed_at,
-                error_json,
-                pipeline_json,
-                account_ids_json,
-                job.script,
-                job.rdf_base,
-                manifest_json,
-                catalog_manifest_json,
-                job.catalog_base,
-                ctx.inner(),
-                ctx.org_id().as_str(),
-            ],
-        )
-        .map_err(|e| format!("failed to update job: {e}"))?;
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                diesel::update(
+                    dsl::jobs.filter(dsl::id.eq(&rid).and(dsl::organization_id.eq(&org))),
+                )
+                .set(&changeset)
+                .execute(conn)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map_err(|e| format!("update job: {e}"))?;
 
         Ok(Some(job))
     }
 
-    pub async fn list_jobs(&self, ctx: &TenantScoped<()>) -> Vec<Job> {
-        let (_permit, conn) = self.read().await;
-        let mut stmt = match conn.prepare(
-            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, pipeline, connection_ids, script, rdf_base, manifest, catalog_manifest, catalog_base
-             FROM jobs WHERE organization_id = ?1 ORDER BY created_at DESC",
-        ) {
-            Ok(s) => s,
-            Err(e) => {
-                tracing::error!(error = %e, "Failed to prepare list jobs");
-                return vec![];
-            }
+    pub async fn list_jobs(&self, tenant: &Tenant) -> Vec<Job> {
+        let org = tenant.org_id.as_str().to_string();
+
+        let Ok(pc) = self.diesel_pool.get().await else {
+            return vec![];
         };
-        match stmt.query_map([ctx.org_id().as_str()], |row| Ok(row_to_job(row))) {
-            Ok(rows) => rows.filter_map(|r| r.ok()).collect(),
-            Err(e) => {
-                tracing::error!(error = %e, "Failed to query jobs");
-                vec![]
-            }
+
+        let result = pc
+            .interact(move |conn| {
+                dsl::jobs
+                    .filter(dsl::organization_id.eq(&org))
+                    .order(dsl::created_at.desc())
+                    .select(JobRow::as_select())
+                    .load::<JobRow>(conn)
+            })
+            .await;
+
+        match result {
+            Ok(Ok(rows)) => rows.into_iter().map(Job::from).collect(),
+            _ => vec![],
         }
     }
 
-    pub async fn remove_job(&self, ctx: &TenantScoped<&str>) -> Result<(), String> {
-        let conn = self.write().await;
-        conn.execute(
-            "DELETE FROM jobs WHERE id = ?1 AND organization_id = ?2",
-            params![ctx.inner(), ctx.org_id().as_str()],
-        )
-        .map_err(|e| format!("failed to delete job: {e}"))?;
+    pub async fn remove_job(&self, resource: &TenantResource<'_>) -> Result<(), String> {
+        let rid = resource.id.to_string();
+        let org = resource.org_id.as_str().to_string();
+
+        self.diesel_pool
+            .get()
+            .await
+            .map_err(|e| format!("pool: {e}"))?
+            .interact(move |conn| {
+                diesel::delete(
+                    dsl::jobs.filter(dsl::id.eq(&rid).and(dsl::organization_id.eq(&org))),
+                )
+                .execute(conn)
+            })
+            .await
+            .map_err(|e| format!("interact: {e}"))?
+            .map_err(|e| format!("delete job: {e}"))?;
+
         Ok(())
-    }
-}
-
-fn row_to_job(row: &rusqlite::Row) -> Job {
-    let status: JobStatus = row.get("status").unwrap_or_else(|e| {
-        tracing::warn!(error = %e, "row_to_job: status type mismatch, defaulting to Pending");
-        JobStatus::Pending
-    });
-    let error_json: Option<String> = row.get("error").unwrap_or_else(|e| {
-        tracing::warn!(error = %e, "row_to_job: error column type mismatch");
-        None
-    });
-    let pipeline_json: String = row.get("pipeline").unwrap_or_else(|e| {
-        tracing::warn!(error = %e, "row_to_job: pipeline type mismatch, using empty pipeline");
-        r#"{"inputs":[],"operations":[],"outputs":[]}"#.to_string()
-    });
-    let account_ids_json: String = row.get("connection_ids").unwrap_or_else(|e| {
-        tracing::warn!(error = %e, "row_to_job: connection_ids type mismatch, using empty list");
-        "[]".to_string()
-    });
-    let script: Option<String> = row.get("script").unwrap_or_else(|e| {
-        tracing::warn!(error = %e, "row_to_job: script column type mismatch");
-        None
-    });
-    let script = if status == JobStatus::Draft { script } else { None };
-
-    let manifest_json: Option<String> = row.get("manifest").unwrap_or_else(|e| {
-        tracing::warn!(error = %e, "row_to_job: manifest column type mismatch");
-        None
-    });
-
-    Job {
-        id: row.get("id").unwrap_or_else(|e| {
-            tracing::warn!(error = %e, "row_to_job: id type mismatch");
-            String::new()
-        }),
-        name: row.get("name").unwrap_or_else(|e| {
-            tracing::warn!(error = %e, "row_to_job: name column type mismatch");
-            None
-        }),
-        status,
-        mode: row.get("mode").unwrap_or_else(|e| {
-            tracing::warn!(error = %e, "row_to_job: mode type mismatch, defaulting to Integrated");
-            RunMode::Integrated
-        }),
-        created_at: row.get("created_at").unwrap_or_else(|e| {
-            tracing::warn!(error = %e, "row_to_job: created_at type mismatch");
-            String::new()
-        }),
-        started_at: row.get("started_at").unwrap_or_else(|e| {
-            tracing::warn!(error = %e, "row_to_job: started_at column type mismatch");
-            None
-        }),
-        completed_at: row.get("completed_at").unwrap_or_else(|e| {
-            tracing::warn!(error = %e, "row_to_job: completed_at column type mismatch");
-            None
-        }),
-        error: error_json.and_then(|j| serde_json::from_str::<JobRuntimeError>(&j).ok()),
-        pipeline: serde_json::from_str::<PipelineSummary>(&pipeline_json).unwrap_or_default(),
-        dcat_input: None,
-        connection_ids: serde_json::from_str::<Vec<String>>(&account_ids_json)
-            .unwrap_or_default(),
-        script,
-        rdf_base: row.get("rdf_base").unwrap_or_else(|e| {
-            tracing::warn!(error = %e, "row_to_job: rdf_base column type mismatch");
-            None
-        }),
-        manifest: manifest_json.and_then(|j| serde_json::from_str::<fossil_lang::runtime::executor::DataManifest>(&j).ok()),
-        catalog_manifest: row.get::<_, Option<String>>("catalog_manifest")
-            .unwrap_or(None)
-            .and_then(|j| serde_json::from_str::<fossil_lang::runtime::executor::DataManifest>(&j).ok()),
-        catalog_base: row.get("catalog_base").unwrap_or(None),
     }
 }

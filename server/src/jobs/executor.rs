@@ -8,7 +8,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use fossil_lang::plan::{FossilPlan, OutputDef, OutputResult, SourceDef};
+use fossil_lang::plan::{FossilPlan, OutputResult};
 use fossil_lang::registry::{OutputHandler, SourceHandler, SqlEngine};
 
 /// Plan executor — runs FossilPlan steps against a SQL engine.

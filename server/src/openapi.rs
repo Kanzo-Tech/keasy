@@ -19,24 +19,7 @@ use utoipa::OpenApi;
         crate::jobs::routes::update_job,
         crate::jobs::routes::delete_job,
         crate::jobs::routes::stream_job,
-        crate::jobs::routes::get_job_catalog,
-        // Connections
-        crate::connections::routes::list_connections,
-        crate::connections::routes::create_connection,
-        crate::connections::routes::get_connection,
-        crate::connections::routes::update_connection,
-        crate::connections::routes::delete_connection,
-        crate::connections::routes::list_connection_files,
-        crate::connections::routes::upload_file,
-        crate::connections::routes::get_file_schema,
-        // Cloud Accounts
-        crate::cloud::routes::list_accounts,
-        crate::cloud::routes::create_account,
-        crate::cloud::routes::get_account,
-        crate::cloud::routes::update_account,
-        crate::cloud::routes::delete_account,
         // Settings
-        crate::settings::routes::get_schema,
         crate::settings::routes::get_org_settings,
         crate::settings::routes::save_org_settings,
         crate::settings::routes::get_preferences,
@@ -78,16 +61,6 @@ use utoipa::OpenApi;
         crate::gaia_x::routes::get_cert_chain,
         // Discovery
         crate::discovery::routes::resolve_discover_urls,
-        // AI / Conversations
-        crate::ai::routes::ask_discover,
-        crate::ai::routes::create_conversation,
-        crate::ai::routes::list_conversations,
-        crate::ai::routes::get_conversation_messages,
-        crate::ai::routes::rename_conversation,
-        crate::ai::routes::delete_conversation,
-        // Assistant
-        crate::assistant::routes::suggest_cqs_stream,
-        crate::assistant::routes::generate_script_stream,
         // Dashboard Layout
         crate::jobs::routes::get_dashboard_layout,
         crate::jobs::routes::save_dashboard_layout,
@@ -95,6 +68,16 @@ use utoipa::OpenApi;
         crate::auth::routes::get_invite_info,
         // Fossil Analysis
         crate::routes::fossil_analysis::analyze,
+        // Connectors
+        crate::connectors::routes::list_connectors,
+        crate::connectors::routes::create_connector,
+        crate::connectors::routes::get_connector,
+        crate::connectors::routes::update_connector,
+        crate::connectors::routes::delete_connector,
+        crate::connectors::routes::list_connector_files,
+        crate::connectors::routes::list_connector_types,
+        crate::connectors::routes::test_connector,
+        crate::connectors::routes::post_connector_schema,
     ),
     components(schemas(
         crate::error::DataResponse<serde_json::Value>,
@@ -104,10 +87,10 @@ use utoipa::OpenApi;
         crate::jobs::models::RunMode,
         crate::jobs::models::CreateJobRequest,
         crate::jobs::models::UpdateJobRequest,
-        fossil_lang::runtime::executor::DataManifest,
-        fossil_lang::runtime::executor::TypeManifest,
-        fossil_lang::runtime::executor::EdgeManifest,
-        fossil_lang::runtime::executor::ColumnStat,
+        crate::graph::manifest::DataManifest,
+        crate::graph::manifest::TypeManifest,
+        crate::graph::manifest::EdgeManifest,
+        crate::graph::manifest::ColumnStat,
         crate::jobs::errors::JobRuntimeError,
         crate::jobs::pipeline_types::PipelineSummary,
         crate::jobs::pipeline_types::PipelineInput,
@@ -117,19 +100,16 @@ use utoipa::OpenApi;
         crate::jobs::pipeline_types::Field,
         crate::jobs::pipeline_types::FieldMapping,
         crate::jobs::pipeline_types::ValidationResult,
-        // Connections
-        crate::connections::models::Connection,
-        crate::connections::models::ConnectionKind,
-        crate::connections::models::LocationType,
-        crate::connections::models::CreateConnectionRequest,
-        crate::connections::models::UpdateConnectionRequest,
-        crate::connections::models::UploadFileRequest,
-        crate::connections::models::ColumnInfo,
-        crate::connections::models::FileSchemaResponse,
-        // Cloud Accounts
-        crate::cloud::models::CloudAccountSummary,
-        crate::cloud::models::CreateCloudAccountRequest,
-        crate::cloud::models::UpdateCloudAccountRequest,
+        // Connectors
+        crate::connectors::models::Connector,
+        crate::connectors::models::ConnectorDirection,
+        crate::connectors::models::CreateConnectorRequest,
+        crate::connectors::models::UpdateConnectorRequest,
+        crate::connectors::types::ConnectorTypeInfo,
+        crate::connectors::storage::FileEntry,
+        crate::connectors::schema::SchemaRequest,
+        crate::connectors::schema::SchemaEntry,
+        crate::connectors::schema::ColumnInfo,
         // Settings
         crate::settings::org::OrgSettings,
         crate::settings::preferences::Preferences,
@@ -175,37 +155,16 @@ use utoipa::OpenApi;
         crate::routes::org::CreateOrgInviteResponse,
         crate::routes::org::OrgIdentityResponse,
         // Jobs
-        crate::jobs::routes::CatalogResponse,
         crate::jobs::runner::JobEvent,
         // Discovery
         crate::graph::types::TabularData,
         // Providers
         crate::routes::providers::ProviderEntry,
-        // AI / Conversations
-        crate::ai::routes::AskRequest,
-        crate::ai::routes::AskResponse,
-        crate::ai::routes::CreateConversationRequest,
-        crate::ai::routes::RenameConversationRequest,
-        crate::ai::models::Conversation,
-        crate::ai::models::ConversationMessage,
-        // Assistant
-        crate::assistant::models::FileSchema,
-        crate::assistant::models::SuggestRequest,
-        crate::assistant::models::SuggestResponse,
-        crate::assistant::models::CompetencyQuestion,
-        crate::assistant::models::GenerateRequest,
-        crate::assistant::models::GenerateResponse,
-        // Cloud files
-        crate::cloud::reader::FileEntry,
-        // Settings schema
-        crate::settings::schema::ProviderSchema,
-        crate::settings::schema::FieldSchema,
-        crate::settings::schema::AuthMethodSchema,
         // Fossil Analysis
         crate::routes::fossil_analysis::AnalyzeRequest,
         crate::routes::fossil_analysis::AnalyzeResponse,
-        fossil_lsp::CompletionItem,
-        fossil_lsp::DiagnosticItem,
+        crate::routes::fossil_analysis::CompletionItem,
+        crate::routes::fossil_analysis::DiagnosticItem,
     ))
 )]
 pub struct ApiDoc;

@@ -20,11 +20,6 @@ use crate::middleware::tenant::{IsParticipant, Require};
 
 use super::errors::JobApiError;
 
-#[derive(serde::Serialize, utoipa::ToSchema)]
-pub struct CatalogResponse {
-    pub catalog: String,
-}
-
 #[utoipa::path(get, path = "/v1/jobs", tag = "Jobs",
     responses(
         (status = 200, description = "List of jobs", body = Vec<Job>),
@@ -34,7 +29,7 @@ pub async fn list_jobs(
     ctx: Require<IsParticipant>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    let jobs = state.db.list_jobs(&ctx.as_ctx()).await;
+    let jobs = state.repos.list_jobs(&ctx.tenant()).await;
     Ok(data_response(jobs))
 }
 
@@ -64,24 +59,19 @@ pub async fn create_job(
             mode: payload.mode.unwrap_or(RunMode::Integrated),
             pipeline: payload.pipeline.unwrap_or_default(),
             dcat_input: None,
-            connection_ids: payload.connection_ids.clone(),
+            connector_ids: payload.connector_ids.clone(),
             script: Some(payload.script),
             rdf_base: None,
             manifest: None,
             catalog_manifest: None,
             catalog_base: None,
         };
-        state.db.insert_job(&ctx.as_ctx(), &job).await
+        state.repos.insert_job(&ctx.tenant(), &job).await
             .map_err(JobApiError::Internal)?;
         return Ok((StatusCode::CREATED, data_response(job)).into_response());
     }
 
     let dcat_enabled = payload.dcat_enabled.unwrap_or(false);
-
-    let resolver = state.db
-        .build_path_resolver(&ctx.as_ctx(), &payload.connection_ids)
-        .await
-        .map_err(|e| JobApiError::RewriteFailed(e))?;
 
     let job = Job {
         id: id.clone(),
@@ -94,7 +84,7 @@ pub async fn create_job(
         mode: payload.mode.unwrap_or(RunMode::Integrated),
         pipeline: payload.pipeline.unwrap_or_default(),
         dcat_input: None,
-        connection_ids: payload.connection_ids.clone(),
+        connector_ids: payload.connector_ids.clone(),
         script: None,
         rdf_base: None,
         manifest: None,
@@ -102,11 +92,11 @@ pub async fn create_job(
         catalog_base: None,
     };
 
-    state.db.insert_job(&ctx.as_ctx(), &job).await
+    state.repos.insert_job(&ctx.tenant(), &job).await
         .map_err(JobApiError::Internal)?;
 
     let org_settings = if dcat_enabled {
-        state.db.get_organization(&ctx.org_id.0).await.map(|org| {
+        state.repos.get_organization(&ctx.org_id.0).await.map(|org| {
             crate::settings::org::OrgSettings {
                 publisher_name: org.legal_name,
                 ..Default::default()
@@ -117,16 +107,17 @@ pub async fn create_job(
     };
 
     let catalog_dest = if dcat_enabled {
-        match state.db.get_promotor_catalog_config().await {
-            Some((promotor_org_id, account_id, base_url)) => {
-                use crate::tenant::{OrgId, TenantScoped};
-                use crate::jobs::path_resolver::build_cloud_options;
+        match state.repos.get_promotor_catalog_config().await {
+            Some((promotor_org_id, connector_id, base_url)) => {
+                use crate::tenant::{OrgId, Tenant};
                 use fossil_lang::traits::resolver::ResolvedPath;
 
-                let ctx = TenantScoped::new(OrgId(promotor_org_id), ());
-                let env = state.db.build_storage_config(&ctx, &[account_id]).await;
-                let cloud_opts = build_cloud_options(&base_url, &env);
-                Some(ResolvedPath::with_config(&base_url, cloud_opts, env))
+                let promotor_tenant = Tenant { org_id: OrgId(promotor_org_id) };
+                let res = crate::tenant::TenantResource { org_id: &promotor_tenant.org_id, id: &connector_id };
+                let connector = state.repos.get_connector_full(&res).await;
+                // TODO: cloud_config is available but ResolvedPath no longer wraps CloudOptions.
+                let _ = connector;
+                Some(ResolvedPath::new(&base_url, None))
             }
             None => None,
         }
@@ -139,7 +130,6 @@ pub async fn create_job(
         org_id: ctx.org_id.0.clone(),
         job_id: id,
         script: payload.script,
-        path_resolver: resolver,
         org_settings,
         dcat_enabled,
         catalog_dest,
@@ -160,7 +150,7 @@ pub async fn get_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    match state.db.get_job(&ctx.scoped(id.as_str())).await {
+    match state.repos.get_job(&ctx.resource(&id)).await {
         Some(job) => Ok(data_response(job).into_response()),
         None => {
             tracing::debug!(job_id = %id, org_id = %ctx.org_id.0, "job not found for tenant");
@@ -184,7 +174,7 @@ pub async fn update_job(
     Path(id): Path<String>,
     Json(payload): Json<UpdateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    match state.db.update_job(&ctx.scoped(id.as_str()), |job| {
+    match state.repos.update_job(&ctx.resource(&id), |job| {
         if job.status != JobStatus::Draft {
             return;
         }
@@ -213,7 +203,7 @@ pub async fn stream_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<Response, JobApiError> {
-    let job = state.db.get_job(&ctx.scoped(id.as_str())).await
+    let job = state.repos.get_job(&ctx.resource(&id)).await
         .ok_or(JobApiError::NotFound)?;
 
     fn is_terminal(status: &JobStatus) -> bool {
@@ -244,7 +234,7 @@ pub async fn stream_job(
         Some(rx) => rx,
         None => {
             // Channel gone — job may have finished between DB read and subscribe; refetch
-            let job = state.db.get_job(&ctx.scoped(id.as_str())).await
+            let job = state.repos.get_job(&ctx.resource(&id)).await
                 .ok_or(JobApiError::NotFound)?;
             let evt = terminal_event(&job);
             let stream = futures::stream::once(async move {
@@ -274,63 +264,18 @@ pub async fn delete_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    let job = state.db.get_job(&ctx.scoped(id.as_str())).await
+    let job = state.repos.get_job(&ctx.resource(&id)).await
         .ok_or(JobApiError::NotFound)?;
 
     if matches!(job.status, JobStatus::Pending | JobStatus::Running) {
         return Err(JobApiError::StillRunning);
     }
 
-    state.db.remove_job(&ctx.scoped(id.as_str())).await
+    state.repos.remove_job(&ctx.resource(&id)).await
         .map_err(JobApiError::Internal)?;
 
     Ok(StatusCode::NO_CONTENT.into_response())
 }
-
-#[utoipa::path(get, path = "/v1/jobs/{id}/catalog", tag = "Jobs",
-    params(("id" = String, Path, description = "Job ID")),
-    responses(
-        (status = 200, description = "DCAT-AP catalog as Turtle (download)"),
-        (status = 404, description = "Job or catalog not found"),
-    )
-)]
-pub async fn get_job_catalog(
-    ctx: Require<IsParticipant>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Result<impl IntoResponse, JobApiError> {
-    let job = state.db.get_job(&ctx.scoped(id.as_str())).await
-        .ok_or(JobApiError::NotFound)?;
-
-    let catalog_base = job.catalog_base.as_deref()
-        .ok_or(JobApiError::NoCatalog)?;
-    let catalog_manifest = job.catalog_manifest.as_ref()
-        .ok_or(JobApiError::NoCatalog)?;
-
-    // Resolve cloud credentials for reading catalog parquets
-    let creds = state.db
-        .build_storage_config_from_connections(&ctx.scoped(()), &job.connection_ids)
-        .await;
-
-    // Generate Turtle from parquets (single source of truth)
-    let turtle = tokio::task::spawn_blocking({
-        let base = catalog_base.to_string();
-        let manifest = catalog_manifest.clone();
-        move || crate::graph::dcat::generator::parquets_to_turtle(&base, &manifest, &creds)
-    })
-    .await
-    .map_err(|e| JobApiError::Internal(format!("blocking task failed: {e}")))?
-    .map_err(|e| JobApiError::Internal(format!("Turtle generation failed: {e}")))?;
-
-    Ok((
-        [
-            (axum::http::header::CONTENT_TYPE, "text/turtle; charset=utf-8"),
-            (axum::http::header::CONTENT_DISPOSITION, "attachment; filename=\"catalog.ttl\""),
-        ],
-        turtle,
-    ).into_response())
-}
-
 
 #[utoipa::path(get, path = "/v1/jobs/{id}/dashboard-layout", tag = "Jobs",
     params(("id" = String, Path, description = "Job ID")),
@@ -341,10 +286,10 @@ pub async fn get_dashboard_layout(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    if state.db.get_job(&ctx.scoped(id.as_str())).await.is_none() {
+    if state.repos.get_job(&ctx.resource(&id)).await.is_none() {
         return Err(JobApiError::NotFound);
     }
-    match state.db.get_dashboard_layout(&id).await {
+    match state.repos.get_dashboard_layout(&id).await {
         Some(layout) => Ok(data_response(layout).into_response()),
         None => Ok(StatusCode::NO_CONTENT.into_response()),
     }
@@ -361,9 +306,9 @@ pub async fn save_dashboard_layout(
     Path(id): Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    if state.db.get_job(&ctx.scoped(id.as_str())).await.is_none() {
+    if state.repos.get_job(&ctx.resource(&id)).await.is_none() {
         return Err(JobApiError::NotFound);
     }
-    state.db.set_dashboard_layout(&id, &body).await;
+    state.repos.set_dashboard_layout(&id, &body).await;
     Ok(StatusCode::OK.into_response())
 }

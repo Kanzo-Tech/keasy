@@ -49,13 +49,8 @@ tower-sessions-core = { version = "0.14", features = ["deletion-task"] }
 rmp-serde = "1"
 async-trait = "0.1"
 time = "0.3"
-polars = { version = "0.52", features = ["cloud", "aws", "azure", "gcp", "round_series"] }
+salsa = "0.26"
 fossil-lang = { path = "../../../ikigai-core/lib/fossil-lang", features = ["utoipa"] }
-fossil-rdf = { path = "../../../ikigai-core/lib/fossil-rdf", features = ["utoipa"] }
-fossil-stdlib = { path = "../../../ikigai-core/lib/fossil-stdlib" }
-fossil-providers = { path = "../../../ikigai-core/lib/fossil-providers" }
-fossil-lsp = { path = "../../../ikigai-core/lib/fossil-lsp", features = ["utoipa"] }
-fossil-doc = { path = "../../../ikigai-core/lib/fossil-doc" }
 base64 = "0.22"
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "jwk"] }
 x509-parser = { version = "0.16", features = ["verify"] }

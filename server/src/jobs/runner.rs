@@ -7,18 +7,17 @@ use tokio::sync::{Semaphore, broadcast};
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
-use fossil_lang::runtime::executor::OutputKind;
-use fossil_lang::traits::resolver::PathResolver;
+use crate::graph::manifest::DataManifest;
 
 use super::errors::{JobRuntimeError, classify_error};
 use super::models::{JobStatus, now_iso8601};
-use crate::db::Database;
+use crate::db::Repos;
 use crate::graph::dcat::extract::extract_dcat_input;
 use crate::graph::dcat::types::DcatInput;
 use super::pipeline_types::PipelineOutput;
 use super::script;
 use crate::settings::org::OrgSettings;
-use crate::tenant::{OrgId, TenantScoped};
+use crate::tenant::{OrgId, TenantResource};
 
 /// SSE event emitted by the job runner at each execution phase.
 #[derive(Clone, Serialize, utoipa::ToSchema)]
@@ -31,12 +30,10 @@ pub struct JobEvent {
 }
 
 /// Parameters for spawning a job execution task.
-/// Introduced to fix clippy::too_many_arguments on JobRunner::spawn().
 pub struct SpawnParams {
     pub org_id: String,
     pub job_id: String,
     pub script: String,
-    pub path_resolver: Arc<dyn PathResolver>,
     pub org_settings: Option<OrgSettings>,
     pub dcat_enabled: bool,
     /// Pre-resolved catalog storage destination (promotor cloud).
@@ -52,9 +49,9 @@ struct JobResult {
     /// Detected fragment base URL (present when `Rdf.fragments()` was used).
     rdf_base: Option<String>,
     /// GraphAr manifest with vertex/edge file paths and column statistics.
-    manifest: Option<fossil_lang::runtime::executor::DataManifest>,
+    manifest: Option<DataManifest>,
     /// DCAT-AP catalog manifest (parquets in promotor storage).
-    catalog_manifest: Option<fossil_lang::runtime::executor::DataManifest>,
+    catalog_manifest: Option<DataManifest>,
     /// Base URL for catalog parquets.
     catalog_base: Option<String>,
 }
@@ -90,7 +87,7 @@ impl JobFailure {
 }
 
 pub struct JobRunner {
-    db: Database,
+    db: Repos,
     semaphore: Arc<Semaphore>,
     job_timeout: Duration,
     tasks: std::sync::Mutex<JoinSet<()>>,
@@ -99,7 +96,7 @@ pub struct JobRunner {
 
 impl JobRunner {
     pub fn new(
-        db: Database,
+        db: Repos,
         max_concurrent: usize,
         job_timeout_secs: u64,
     ) -> Self {
@@ -126,13 +123,13 @@ impl JobRunner {
     /// Spawn a job execution task.
     /// `params.org_id` is the organization that owns this job.
     pub fn spawn(&self, params: SpawnParams) {
-        let SpawnParams { org_id, job_id, script, path_resolver, org_settings, dcat_enabled, catalog_dest } = params;
+        let SpawnParams { org_id, job_id, script, org_settings, dcat_enabled, catalog_dest } = params;
         let db = self.db.clone();
         let semaphore = self.semaphore.clone();
         let job_timeout = self.job_timeout;
         let progress = self.progress.clone();
 
-        // Create broadcast channel synchronously — guaranteed to exist when spawn() returns
+        // Create broadcast channel synchronously -- guaranteed to exist when spawn() returns
         let (tx, _) = broadcast::channel::<JobEvent>(16);
         {
             let mut map = progress.lock().expect("progress lock poisoned");
@@ -143,10 +140,12 @@ impl JobRunner {
             // Emit initial queued event
             if tx.send(JobEvent { phase: "queued".into(), index: 0, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
+            let org = OrgId(org_id.clone());
+
             let _permit = match semaphore.acquire_owned().await {
                 Ok(permit) => permit,
                 Err(_) => {
-                    let ctx = TenantScoped::new(OrgId(org_id.clone()), job_id.as_str());
+                    let ctx = TenantResource { org_id: &org, id: job_id.as_str() };
                     if let Err(e) = db.update_job(&ctx, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(JobRuntimeError::new("INTERNAL_ERROR", "Failed to acquire execution permit"));
@@ -160,7 +159,7 @@ impl JobRunner {
                 }
             };
 
-            let job_ctx = TenantScoped::new(OrgId(org_id.clone()), job_id.as_str());
+            let job_ctx = TenantResource { org_id: &org, id: job_id.as_str() };
 
             let (job_name, pipeline_outputs) = db
                 .get_job(&job_ctx)
@@ -186,7 +185,6 @@ impl JobRunner {
                     run_job(
                         &job_id_clone,
                         &script,
-                        path_resolver,
                         if dcat_enabled { org_settings.as_ref() } else { None },
                         job_name.as_deref(),
                         &outputs,
@@ -268,8 +266,7 @@ impl JobRunner {
 
 fn run_job(
     job_id: &str,
-    script: &str,
-    path_resolver: Arc<dyn PathResolver>,
+    script_source: &str,
     org: Option<&OrgSettings>,
     job_name: Option<&str>,
     outputs: &[PipelineOutput],
@@ -279,27 +276,24 @@ fn run_job(
     // Phase 1: compiling
     if tx.send(JobEvent { phase: "compiling".into(), index: 1, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
-    let compiled = script::compile(&format!("job-{}", job_id), script, path_resolver)
+    let plan = script::compile_to_plan(&format!("job-{}", job_id), script_source)
         .map_err(|errors| errors.join("; "))?;
 
     let completed_at = now_iso8601();
     let dcat_input = org.map(|org| {
-        extract_dcat_input(&compiled.program, job_id, job_name, &completed_at, org, outputs)
+        extract_dcat_input(job_id, job_name, &completed_at, org, outputs)
     });
 
     // Phase 2: executing
     if tx.send(JobEvent { phase: "executing".into(), index: 2, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
-    let result = script::execute(compiled)?;
+    // TODO: Execute the plan via Executor<DuckDB>.
+    // For now, compilation succeeds but execution is not yet wired.
+    let _ = &plan;
 
-    // Detect rdf_base and manifest from RdfParquet outputs
-    let (rdf_base, manifest) = result.outputs.iter().find_map(|o| {
-        if o.kind == OutputKind::RdfParquet {
-            Some((o.path.clone(), o.manifest.clone()))
-        } else {
-            None
-        }
-    }).map(|(path, m)| (Some(path), m)).unwrap_or((None, None));
+    // TODO: Extract rdf_base and manifest from execution output.
+    let rdf_base: Option<String> = None;
+    let manifest: Option<DataManifest> = None;
 
     // Materialize DCAT-AP catalog as parquets (if dcat + manifest + dest available)
     let (catalog_manifest, catalog_base) = match (&dcat_input, &manifest, catalog_dest) {

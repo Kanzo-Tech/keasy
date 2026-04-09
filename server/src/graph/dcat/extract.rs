@@ -1,6 +1,7 @@
-use fossil_lang::context::DefKind;
-use fossil_lang::passes::IrProgram;
-use fossil_stdlib::rdf::metadata::RdfTypeAttrs;
+//! Extract DCAT input from pipeline outputs.
+//!
+//! TODO: RdfTypeAttrs lookup was removed with fossil_stdlib. Re-add once
+//! type metadata is exposed through the new Salsa queries.
 
 use crate::jobs::pipeline_types::PipelineOutput;
 use crate::settings::org::OrgSettings;
@@ -9,30 +10,21 @@ use super::generator::media_type_from_extension;
 use super::types::{DatasetInfo, DcatInput, DistributionInfo, FieldInfo};
 
 pub fn extract_dcat_input(
-    program: &IrProgram,
     job_id: &str,
     job_name: Option<&str>,
     completed_at: &str,
     org: &OrgSettings,
     outputs: &[PipelineOutput],
 ) -> DcatInput {
-    let interner = &program.gcx.interner;
     let mut datasets = Vec::new();
 
     for output in outputs {
         let type_name = &output.type_name;
 
-        let type_sym = interner.lookup(type_name);
-        let def = type_sym.and_then(|sym| {
-            program
-                .gcx
-                .definitions
-                .find_by_symbol(sym, |k| matches!(k, DefKind::Type))
-        });
-
-        let rdf_attrs = def.and_then(|d| RdfTypeAttrs::from_def_id(d.id(), &program.gcx));
-        let rdf_subject = rdf_attrs.as_ref().and_then(|a| a.subject.clone());
-        let rdf_type = rdf_attrs.as_ref().and_then(|a| a.rdf_type.clone());
+        // TODO: RdfTypeAttrs lookup removed with fossil_stdlib.
+        // Previously used RdfTypeAttrs::from_def_id to get rdf_subject/rdf_type.
+        let rdf_subject: Option<String> = None;
+        let rdf_type = output.rdf_type.clone();
 
         let field_infos: Vec<FieldInfo> = output
             .fields

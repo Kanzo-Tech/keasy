@@ -1,27 +1,40 @@
-//! Plan executor — runs FossilPlan steps against a SQL engine.
+//! Plan executor — runs FossilPlan against DuckDB.
 //!
-//! The executor is generic over `C: SqlEngine` (static dispatch).
-//! Handlers (SourceHandler, OutputHandler) are registered via builder pattern.
-//!
-//! Reference: DataFusion SessionContext, dbt Adapter, Terraform Provider.
+//! Handlers are registered via builder pattern for extensibility.
+//! Reference: DataFusion SessionContext, dbt Adapter.
 
 use std::collections::HashMap;
 use std::sync::Arc;
 
 use fossil_lang::plan::{FossilPlan, OutputResult};
-use fossil_lang::registry::{OutputHandler, SourceHandler, SqlEngine};
 
-/// Plan executor — runs FossilPlan steps against a SQL engine.
-///
-/// Generic over C: SqlEngine for static dispatch. DuckDB is one impl.
-pub struct Executor<C: SqlEngine> {
-    conn: C,
-    sources: HashMap<String, Arc<dyn SourceHandler<C>>>,
-    outputs: HashMap<String, Arc<dyn OutputHandler<C>>>,
+use super::duckdb_engine::DuckDbConn;
+
+/// Loads external data into DuckDB before SQL execution.
+pub trait SourceHandler: Send + Sync {
+    fn name(&self) -> &str;
+    fn load(&self, conn: &DuckDbConn, def: &fossil_lang::plan::SourceDef) -> Result<(), String>;
 }
 
-impl<C: SqlEngine> Executor<C> {
-    pub fn new(conn: C) -> Self {
+/// Writes query results to external formats after SQL execution.
+pub trait OutputHandler: Send + Sync {
+    fn name(&self) -> &str;
+    fn write(
+        &self,
+        conn: &DuckDbConn,
+        def: &fossil_lang::plan::OutputDef,
+    ) -> Result<OutputResult, String>;
+}
+
+/// Plan executor — runs FossilPlan steps against DuckDB.
+pub struct Executor {
+    conn: DuckDbConn,
+    sources: HashMap<String, Arc<dyn SourceHandler>>,
+    outputs: HashMap<String, Arc<dyn OutputHandler>>,
+}
+
+impl Executor {
+    pub fn new(conn: DuckDbConn) -> Self {
         Self {
             conn,
             sources: HashMap::new(),
@@ -29,13 +42,13 @@ impl<C: SqlEngine> Executor<C> {
         }
     }
 
-    pub fn source(mut self, handler: impl SourceHandler<C> + 'static) -> Self {
+    pub fn source(mut self, handler: impl SourceHandler + 'static) -> Self {
         self.sources
             .insert(handler.name().to_string(), Arc::new(handler));
         self
     }
 
-    pub fn output(mut self, handler: impl OutputHandler<C> + 'static) -> Self {
+    pub fn output(mut self, handler: impl OutputHandler + 'static) -> Self {
         self.outputs
             .insert(handler.name().to_string(), Arc::new(handler));
         self
@@ -54,7 +67,7 @@ impl<C: SqlEngine> Executor<C> {
                 .map_err(ExecutionError::Handler)?;
         }
 
-        // Phase 2: Execute SQL (single query with CTEs)
+        // Phase 2: Execute SQL
         if !plan.sql.is_empty() {
             self.conn
                 .execute_batch(&plan.sql)
@@ -77,13 +90,11 @@ impl<C: SqlEngine> Executor<C> {
         Ok(results)
     }
 
-    /// Access the underlying connection (for DCAT catalog generation etc.)
-    pub fn conn(&self) -> &C {
+    pub fn conn(&self) -> &DuckDbConn {
         &self.conn
     }
 }
 
-/// Errors during plan execution.
 #[derive(Debug, thiserror::Error)]
 pub enum ExecutionError {
     #[error("unknown handler: {0}")]

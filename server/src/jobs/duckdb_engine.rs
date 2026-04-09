@@ -1,18 +1,10 @@
-//! DuckDB implementation of SqlEngine for the Executor.
-//!
-//! DuckDB's Connection uses RefCell internally (not Send+Sync).
-//! We wrap it in a Mutex for thread safety since the Executor runs
-//! in spawn_blocking (single-threaded, but Rust needs Send proof).
+//! DuckDB connection wrapper for the Executor.
 
 use std::sync::Mutex;
 
 use duckdb::Connection;
-use fossil_lang::registry::SqlEngine;
 
-/// DuckDB connection wrapper implementing SqlEngine.
-///
-/// Mutex provides Send+Sync. The executor runs in spawn_blocking
-/// so contention is not an issue.
+/// DuckDB connection wrapper (Mutex for Send+Sync in spawn_blocking).
 pub struct DuckDbConn {
     conn: Mutex<Connection>,
 }
@@ -20,25 +12,34 @@ pub struct DuckDbConn {
 impl DuckDbConn {
     pub fn new() -> Result<Self, duckdb::Error> {
         let conn = Connection::open_in_memory()?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     pub fn with_connection(conn: Connection) -> Self {
-        Self { conn: Mutex::new(conn) }
+        Self {
+            conn: Mutex::new(conn),
+        }
     }
 
     /// Known DuckDB settings that may be configured for cloud access.
     const ALLOWED_SETTINGS: &[&str] = &[
-        "s3_region", "s3_access_key_id", "s3_secret_access_key", "s3_endpoint", "s3_url_style",
-        "azure_storage_connection_string", "azure_account_name", "azure_account_key",
+        "s3_region",
+        "s3_access_key_id",
+        "s3_secret_access_key",
+        "s3_endpoint",
+        "s3_url_style",
+        "azure_storage_connection_string",
+        "azure_account_name",
+        "azure_account_key",
     ];
 
-    /// Configure cloud credentials for httpfs access (S3, Azure, GCS).
     pub fn configure_cloud(&self, config: &[(String, String)]) -> Result<(), duckdb::Error> {
-        let conn = self.conn.lock().expect("duckdb lock poisoned");
+        let conn = self.lock();
         for (key, value) in config {
             if !Self::ALLOWED_SETTINGS.contains(&key.as_str()) {
-                continue; // skip unknown settings
+                continue;
             }
             let escaped = value.replace('\'', "''");
             conn.execute(&format!("SET {key} = '{escaped}'"), [])?;
@@ -46,19 +47,11 @@ impl DuckDbConn {
         Ok(())
     }
 
-    fn lock(&self) -> std::sync::MutexGuard<'_, Connection> {
-        self.conn.lock().expect("duckdb lock poisoned")
-    }
-}
-
-impl SqlEngine for DuckDbConn {
-    type Error = duckdb::Error;
-
-    fn execute_batch(&self, sql: &str) -> Result<(), Self::Error> {
+    pub fn execute_batch(&self, sql: &str) -> Result<(), duckdb::Error> {
         self.lock().execute_batch(sql)
     }
 
-    fn query_rows(&self, sql: &str) -> Result<Vec<Vec<String>>, Self::Error> {
+    pub fn query_rows(&self, sql: &str) -> Result<Vec<Vec<String>>, duckdb::Error> {
         let conn = self.lock();
         let mut stmt = conn.prepare(sql)?;
         let column_count = stmt.column_count();
@@ -73,12 +66,12 @@ impl SqlEngine for DuckDbConn {
         rows.collect()
     }
 
-    fn insert_batch(
+    pub fn insert_batch(
         &self,
         table: &str,
         columns: &[&str],
         rows: &[Vec<String>],
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), duckdb::Error> {
         if rows.is_empty() {
             return Ok(());
         }
@@ -100,5 +93,9 @@ impl SqlEngine for DuckDbConn {
         }
         conn.execute_batch("COMMIT")?;
         Ok(())
+    }
+
+    fn lock(&self) -> std::sync::MutexGuard<'_, Connection> {
+        self.conn.lock().expect("duckdb lock poisoned")
     }
 }

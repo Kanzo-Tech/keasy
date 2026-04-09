@@ -21,7 +21,8 @@ axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["v4"] }
-rusqlite = { version = "0.37", features = ["bundled"] }
+diesel = { version = "2.2", features = ["sqlite", "r2d2", "returning_clauses_for_sqlite_3_35"] }
+deadpool-diesel = { version = "0.6", features = ["sqlite"] }
 tower-http = { version = "0.6", features = ["trace", "cors", "set-header"] }
 tower = { version = "0.5", features = ["util"] }
 tower_governor = "0.8"
@@ -44,13 +45,17 @@ oauth2 = "5.0"
 http = "1"
 secrecy = { version = "0.10", features = ["serde"] }
 tower-sessions = { version = "0.14", features = ["signed"] }
-tower-sessions-rusqlite-store = "0.14.1"
+tower-sessions-core = { version = "0.14", features = ["deletion-task"] }
+rmp-serde = "1"
+async-trait = "0.1"
 time = "0.3"
 polars = { version = "0.52", features = ["cloud", "aws", "azure", "gcp", "round_series"] }
-fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git", features = ["utoipa"] }
-fossil-stdlib = { git = "https://github.com/angelip2303/fossil-lang.git" }
-fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git" }
-fossil-lsp = { git = "https://github.com/angelip2303/fossil-lang.git", features = ["utoipa"] }
+fossil-lang = { path = "../../../ikigai-core/lib/fossil-lang", features = ["utoipa"] }
+fossil-rdf = { path = "../../../ikigai-core/lib/fossil-rdf", features = ["utoipa"] }
+fossil-stdlib = { path = "../../../ikigai-core/lib/fossil-stdlib" }
+fossil-providers = { path = "../../../ikigai-core/lib/fossil-providers" }
+fossil-lsp = { path = "../../../ikigai-core/lib/fossil-lsp", features = ["utoipa"] }
+fossil-doc = { path = "../../../ikigai-core/lib/fossil-doc" }
 base64 = "0.22"
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "jwk"] }
 x509-parser = { version = "0.16", features = ["verify"] }
@@ -62,7 +67,6 @@ utoipa = { version = "5", features = ["axum_extras"] }
 csv = "1"
 oxrdf = "0.3.3"
 oxrdfio = "0.2.3"
-backoff = { version = "0.4.0", features = ["tokio"] }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

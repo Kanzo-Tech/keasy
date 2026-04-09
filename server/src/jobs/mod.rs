@@ -1,6 +1,7 @@
 pub mod models;
 pub mod errors;
 pub mod db;
+pub mod executor;
 pub mod routes;
 pub mod runner;
 pub mod pipeline_extract;
@@ -16,7 +17,7 @@ use fossil_lang::context::{DefId, DefKind, Interner, Symbol};
 use fossil_lang::ir::{ExprId, ExprKind, Ir, PrimitiveType, TypeKind};
 use fossil_lang::passes::IrProgram;
 use fossil_lang::FunctionEffect;
-use fossil_stdlib::rdf::metadata::{primitive_to_xsd, RdfFieldAttrs, RdfTypeAttrs};
+use fossil_stdlib::rdf::attrs::{primitive_to_xsd, RdfFieldAttrs, RdfTypeAttrs};
 
 pub struct ProgramQuery<'a> {
     program: &'a IrProgram,

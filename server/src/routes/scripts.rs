@@ -18,11 +18,14 @@ pub struct ValidateRequest {
 )]
 pub async fn validate_script(
     _ctx: Require<IsParticipant>,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     Json(payload): Json<ValidateRequest>,
 ) -> impl IntoResponse {
+    let registry = state.fossil_registry.clone();
     let result = tokio::task::spawn_blocking(move || {
-        match script::compile_to_plan("validate", &payload.script) {
+        // Build a fresh FossilDb in this thread (Salsa storage is not Send+Sync).
+        let db = crate::jobs::fossil_sources::build_fossil_db(&registry);
+        match script::compile_to_plan(&db, "validate", &payload.script) {
             Ok(plan) => extract_summary_from_plan(&plan),
             Err(errors) => ValidationResult {
                 valid: false,

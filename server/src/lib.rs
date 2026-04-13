@@ -42,6 +42,11 @@ pub fn hash_str(s: &str) -> u64 {
 pub struct AppState {
     pub repos: Repos,
     pub runner: Arc<JobRunner>,
+    /// Fossil compiler registry with keasy data sources + language defaults.
+    /// Constructed once at server startup via `build_fossil_registry()`.
+    /// Send+Sync; each job thread builds its own FossilDb from this registry
+    /// (Salsa storage itself is not Send+Sync, so we share the registry, not the db).
+    pub fossil_registry: Arc<fossil_lang::FossilRegistry>,
     pub api_key: SecretString,
     pub base_url: String,
     pub auth: AuthServices,

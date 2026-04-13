@@ -38,7 +38,10 @@ pub struct SpawnParams {
     pub dcat_enabled: bool,
     /// Pre-resolved catalog storage destination (promotor cloud).
     /// None when catalog storage is not configured.
-    pub catalog_dest: Option<fossil_lang::traits::resolver::ResolvedPath>,
+    pub catalog_dest: Option<fossil_lang::resolver::ResolvedPath>,
+    /// Shared Fossil registry (sources + sinks + attribute ops). Send+Sync.
+    /// Each job thread builds its own FossilDb from this registry.
+    pub fossil_registry: Arc<fossil_lang::FossilRegistry>,
 }
 
 const TOTAL_PHASES: u8 = 5;
@@ -123,7 +126,7 @@ impl JobRunner {
     /// Spawn a job execution task.
     /// `params.org_id` is the organization that owns this job.
     pub fn spawn(&self, params: SpawnParams) {
-        let SpawnParams { org_id, job_id, script, org_settings, dcat_enabled, catalog_dest } = params;
+        let SpawnParams { org_id, job_id, script, org_settings, dcat_enabled, catalog_dest, fossil_registry } = params;
         let db = self.db.clone();
         let semaphore = self.semaphore.clone();
         let job_timeout = self.job_timeout;
@@ -179,11 +182,17 @@ impl JobRunner {
             let job_id_clone = job_id.clone();
             let outputs = pipeline_outputs;
             let tx_blocking = tx.clone();
+            let registry_blocking = fossil_registry.clone();
             let result = tokio::time::timeout(
                 job_timeout,
                 tokio::task::spawn_blocking(move || {
+                    // Build a fresh FossilDb per job thread (Salsa storage is not Send+Sync).
+                    // Cheap: clones the registry (~6 sources + defaults).
+                    let fossil_db =
+                        crate::jobs::fossil_sources::build_fossil_db(&registry_blocking);
                     run_job(
                         &job_id_clone,
+                        &fossil_db,
                         &script,
                         if dcat_enabled { org_settings.as_ref() } else { None },
                         job_name.as_deref(),
@@ -266,17 +275,18 @@ impl JobRunner {
 
 fn run_job(
     job_id: &str,
+    fossil_db: &fossil_lang::FossilDb,
     script_source: &str,
     org: Option<&OrgSettings>,
     job_name: Option<&str>,
     outputs: &[PipelineOutput],
-    catalog_dest: Option<&fossil_lang::traits::resolver::ResolvedPath>,
+    catalog_dest: Option<&fossil_lang::resolver::ResolvedPath>,
     tx: &broadcast::Sender<JobEvent>,
 ) -> Result<JobResult, String> {
     // Phase 1: compiling
     if tx.send(JobEvent { phase: "compiling".into(), index: 1, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
-    let plan = script::compile_to_plan(&format!("job-{}", job_id), script_source)
+    let plan = script::compile_to_plan(fossil_db, &format!("job-{}", job_id), script_source)
         .map_err(|errors| errors.join("; "))?;
 
     let completed_at = now_iso8601();

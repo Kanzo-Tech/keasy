@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use fossil_lang::traits::resolver::{PathResolver, ResolvedPath};
+use fossil_lang::resolver::{PathResolver, ResolvedPath};
 
 #[derive(Debug)]
 struct ConnectionInfo {

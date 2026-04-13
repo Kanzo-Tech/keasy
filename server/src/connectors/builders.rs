@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use diesel::prelude::*;
-use fossil_lang::traits::resolver::PathResolver;
+use fossil_lang::resolver::PathResolver;
 
 use crate::db::diesel_schema::connectors::dsl;
 use crate::db::Repos;

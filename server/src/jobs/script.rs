@@ -1,21 +1,29 @@
 //! Fossil script compilation (Salsa-based).
 //!
-//! The old Compiler + IrExecutor path is gone. Compilation now goes through
-//! the Salsa query graph: source -> parse -> lower -> infer -> rq -> plan.
+//! Pipeline: source → parse → lower → infer → rq (fossil-lang)
+//!           rq → plan (keasy, via DuckDbDialect)
 
-use fossil_lang::db::{FossilDb, SourceFile};
+use fossil_lang::db::SourceFile;
 use fossil_lang::plan::FossilPlan;
+use fossil_lang::FossilDb;
+
+use super::fossil_sources::DuckDbDialect;
 
 /// Compile a Fossil script to a FossilPlan (SQL + metadata).
-pub fn compile_to_plan(name: &str, source: &str) -> Result<FossilPlan, Vec<String>> {
-    let db = FossilDb::default();
-    let file = SourceFile::new(&db, source.into(), name.into());
+///
+/// `db` is the cached FossilDb constructed at server startup
+/// (see `AppState.fossil_db` / `build_fossil_db()`).
+pub fn compile_to_plan(
+    db: &FossilDb,
+    name: &str,
+    source: &str,
+) -> Result<FossilPlan, Vec<String>> {
+    let file = SourceFile::new(db, source.into(), name.into());
 
-    // Collect diagnostics accumulated by the Salsa query.
-    // plan::accumulated requires the tracked function module path.
-    let plan = fossil_lang::queries::plan(&db, file);
+    // Run compiler pipeline up to rq().
+    let rq = fossil_lang::queries::rq(db, file);
     let diagnostics =
-        fossil_lang::queries::plan::accumulated::<fossil_lang::db::Diagnostic>(&db, file);
+        fossil_lang::queries::rq::accumulated::<fossil_lang::db::Diagnostic>(db, file);
 
     let errors: Vec<String> = diagnostics
         .iter()
@@ -24,7 +32,7 @@ pub fn compile_to_plan(name: &str, source: &str) -> Result<FossilPlan, Vec<Strin
         .collect();
 
     if errors.is_empty() {
-        Ok(plan)
+        Ok(FossilPlan::from_rq(rq, &DuckDbDialect))
     } else {
         Err(errors)
     }

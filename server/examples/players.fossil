@@ -1,0 +1,165 @@
+let data = csv!("@fc-data/players.csv")
+
+#[rdf(subject = "http://example.org/player/{id}")]
+#[rdf(type = "http://schema.org/Person")]
+type Player(id: int) do
+  #[rdf(uri = "http://www.w3.org/2000/01/rdf-schema#label")]
+  label: string,
+  #[rdf(uri = "http://schema.org/identifier")]
+  identifier: int,
+  #[rdf(uri = "http://schema.org/givenName")]
+  givenName: string?,
+  #[rdf(uri = "http://schema.org/familyName")]
+  familyName: string,
+  #[rdf(uri = "http://schema.org/height")]
+  height: int?,
+  #[rdf(uri = "http://schema.org/birthDate")]
+  birthDate: string?,
+  #[rdf(uri = "http://schema.org/image")]
+  image: string?,
+  #[rdf(uri = "http://schema.org/url")]
+  url: string?,
+  #[rdf(uri = "http://example.org/ontology/goodLeg")]
+  goodLeg: string?,
+  #[rdf(uri = "http://schema.org/birthPlace")]
+  birthPlace: City?,
+  #[rdf(uri = "http://schema.org/nationality")]
+  nationality: Country?,
+  #[rdf(uri = "http://schema.org/hasOccupation")]
+  hasOccupation: Role,
+  #[rdf(uri = "http://schema.org/netWorth")]
+  netWorth: MonetaryAmount,
+  #[rdf(uri = "http://schema.org/contactPoint")]
+  contactPoint: EmploymentAgency?
+end
+
+#[rdf(subject = "http://example.org/city/{id|slug}")]
+#[rdf(type = "http://schema.org/City")]
+type City(id: string) do
+  #[rdf(uri = "http://www.w3.org/2000/01/rdf-schema#label")]
+  label: string,
+  #[rdf(uri = "http://schema.org/name")]
+  name: string,
+  #[rdf(uri = "http://schema.org/containedInPlace")]
+  containedInPlace: Country?
+end
+
+#[rdf(subject = "http://example.org/country/{id|slug}")]
+#[rdf(type = "http://schema.org/Country")]
+type Country(id: string) do
+  #[rdf(uri = "http://www.w3.org/2000/01/rdf-schema#label")]
+  label: string,
+  #[rdf(uri = "http://schema.org/name")]
+  name: string
+end
+
+#[rdf(subject = "http://example.org/role/{id}")]
+#[rdf(type = "http://schema.org/Role")]
+type Role(id: int) do
+  #[rdf(uri = "http://www.w3.org/2000/01/rdf-schema#label")]
+  label: string?,
+  #[rdf(uri = "http://schema.org/endDate")]
+  endDate: string?,
+  #[rdf(uri = "http://schema.org/roleName")]
+  roleName: string?
+end
+
+#[rdf(subject = "http://example.org/monetary-amount/{id}")]
+#[rdf(type = "http://schema.org/MonetaryAmount")]
+type MonetaryAmount(id: int) do
+  #[rdf(uri = "http://www.w3.org/2000/01/rdf-schema#label")]
+  label: string,
+  #[rdf(uri = "http://schema.org/value")]
+  value: int?,
+  #[rdf(uri = "http://schema.org/maxValue")]
+  maxValue: int?,
+  #[rdf(uri = "http://schema.org/priceCurrency")]
+  currency: string
+end
+
+#[rdf(subject = "http://example.org/employment-agency/{id|slug}")]
+#[rdf(type = "http://schema.org/EmploymentAgency")]
+type EmploymentAgency(id: string) do
+  #[rdf(uri = "http://www.w3.org/2000/01/rdf-schema#label")]
+  label: string,
+  #[rdf(uri = "http://schema.org/name")]
+  name: string
+end
+
+#[rdf(subject = "http://example.org/sports-team/{id}")]
+#[rdf(type = "http://schema.org/SportsTeam")]
+type SportsTeam(id: int) do
+  #[rdf(uri = "http://www.w3.org/2000/01/rdf-schema#label")]
+  label: string?,
+  #[rdf(uri = "http://schema.org/identifier")]
+  identifier: int?,
+  #[rdf(uri = "http://schema.org/name")]
+  name: string?,
+  #[rdf(uri = "http://schema.org/memberOf")]
+  memberOf: SportsOrganization?,
+  #[rdf(uri = "http://schema.org/athlete")]
+  athlete: Player
+end
+
+#[rdf(subject = "http://example.org/sports-organization/{id|slug}")]
+#[rdf(type = "http://schema.org/SportsOrganization")]
+type SportsOrganization(id: string) do
+  #[rdf(uri = "http://www.w3.org/2000/01/rdf-schema#label")]
+  label: string,
+  #[rdf(uri = "http://schema.org/identifier")]
+  identifier: string
+end
+
+data
+|> each row -> Player(row.player_id) {
+  label = row.last_name,
+  identifier = row.player_id,
+  givenName = row.first_name,
+  familyName = row.last_name,
+  height = row.height_in_cm,
+  birthDate = row.date_of_birth,
+  image = row.image_url,
+  url = row.url,
+  goodLeg = row.foot,
+  birthPlace = ref City(row.city_of_birth),
+  nationality = ref Country(row.country_of_citizenship),
+  hasOccupation = ref Role(row.player_id),
+  netWorth = ref MonetaryAmount(row.player_id),
+  contactPoint = ref EmploymentAgency(row.agent_name)
+}
++> each row -> City(row.city_of_birth) {
+  label = row.city_of_birth,
+  name = row.city_of_birth,
+  containedInPlace = ref Country(row.country_of_citizenship)
+}
++> each row -> Country(row.country_of_citizenship) {
+  label = row.country_of_citizenship,
+  name = row.country_of_citizenship
+}
++> each row -> Role(row.player_id) {
+  label = row.position,
+  endDate = row.contract_expiration_date,
+  roleName = row.position
+}
++> each row -> MonetaryAmount(row.player_id) {
+  label = "${row.market_value_in_eur} EUR",
+  value = row.market_value_in_eur,
+  maxValue = row.highest_market_value_in_eur,
+  currency = "EUR"
+}
++> each row -> EmploymentAgency(row.agent_name) {
+  label = row.agent_name,
+  name = row.agent_name
+}
++> each row -> SportsTeam(row.current_club_id) {
+  label = row.current_club_name,
+  identifier = row.current_club_id,
+  name = row.current_club_name,
+  memberOf = ref SportsOrganization(row.current_club_domestic_competition_id),
+  athlete = ref Player(row.player_id)
+}
++> each row -> SportsOrganization(row.current_club_domestic_competition_id) {
+  label = row.current_club_domestic_competition_id,
+  identifier = row.current_club_domestic_competition_id
+}
+|> Rdf.materialize("@fc-data/players")

@@ -9,6 +9,7 @@ pub mod pipeline_extract;
 pub mod pipeline_types;
 pub mod script;
 pub mod path_resolver;
+pub mod fossil_sources;
 
 // Re-exports
 pub use pipeline_types::*;

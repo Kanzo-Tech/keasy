@@ -110,7 +110,7 @@ pub async fn create_job(
         match state.repos.get_promotor_catalog_config().await {
             Some((promotor_org_id, connector_id, base_url)) => {
                 use crate::tenant::{OrgId, Tenant};
-                use fossil_lang::resolver::ResolvedPath;
+                use crate::jobs::path_resolver::ResolvedPath;
 
                 let promotor_tenant = Tenant { org_id: OrgId(promotor_org_id) };
                 let res = crate::tenant::TenantResource { org_id: &promotor_tenant.org_id, id: &connector_id };

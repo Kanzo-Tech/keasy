@@ -38,7 +38,7 @@ pub struct SpawnParams {
     pub dcat_enabled: bool,
     /// Pre-resolved catalog storage destination (promotor cloud).
     /// None when catalog storage is not configured.
-    pub catalog_dest: Option<fossil_lang::resolver::ResolvedPath>,
+    pub catalog_dest: Option<crate::jobs::path_resolver::ResolvedPath>,
     /// Shared Fossil registry (sources + sinks + attribute ops). Send+Sync.
     /// Each job thread builds its own FossilDb from this registry.
     pub fossil_registry: Arc<fossil_lang::FossilRegistry>,
@@ -280,7 +280,7 @@ fn run_job(
     org: Option<&OrgSettings>,
     job_name: Option<&str>,
     outputs: &[PipelineOutput],
-    catalog_dest: Option<&fossil_lang::resolver::ResolvedPath>,
+    catalog_dest: Option<&crate::jobs::path_resolver::ResolvedPath>,
     tx: &broadcast::Sender<JobEvent>,
 ) -> Result<JobResult, String> {
     // Phase 1: compiling
@@ -300,9 +300,16 @@ fn run_job(
     // Execute the plan via Executor<DuckDB>
     let duckdb = super::duckdb_engine::DuckDbConn::new()
         .map_err(|e| format!("DuckDB init failed: {e}"))?;
-    // Cloud credentials require SpawnParams to carry connector configs
-    let exec = super::executor::Executor::new(duckdb);
-    // Handlers registered when fossil-doc/fossil-graphar are added as deps
+    // Register one native DuckDB handler per format fossil-lang knows
+    // about. Each handler materialises `<alias>` as a DuckDB view reading
+    // from the corresponding table-valued function. pdf/docx handlers
+    // will be registered here when fossil-doc is wired in.
+    use super::fossil_sources::DuckDbNativeHandler;
+    let exec = super::executor::Executor::new(duckdb)
+        .source(DuckDbNativeHandler::new("csv"))
+        .source(DuckDbNativeHandler::new("parquet"))
+        .source(DuckDbNativeHandler::new("json"))
+        .source(DuckDbNativeHandler::new("excel"));
     let results = exec.execute(&plan).map_err(|e| e.to_string())?;
 
     // Extract rdf_base and manifest from execution output

@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
 use diesel::prelude::*;
-use fossil_lang::resolver::PathResolver;
-
 use crate::db::diesel_schema::connectors::dsl;
 use crate::db::Repos;
-use crate::jobs::path_resolver::KeasyPathResolver;
+use crate::jobs::path_resolver::{KeasyPathResolver, PathResolver};
 use crate::tenant::Tenant;
 
 use super::models::{Connector, ConnectorRow};

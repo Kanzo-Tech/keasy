@@ -15,7 +15,9 @@ pub fn extract_summary_from_plan(
                 type_name: proj.type_name.clone(),
                 fields: proj.fields.iter().map(|f| Field {
                     name: f.field_name.clone(),
-                    field_type: f.data_type.clone(),
+                    // Type comes from the DuckDB result set at runtime;
+                    // fossil-lang does not carry it in the compiled plan.
+                    field_type: String::new(),
                     uri: None,
                     xsd_datatype: None,
                     optional: false,

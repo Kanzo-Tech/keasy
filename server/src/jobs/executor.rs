@@ -11,8 +11,15 @@ use fossil_lang::plan::{FossilPlan, OutputResult};
 use super::duckdb_engine::DuckDbConn;
 
 /// Loads external data into DuckDB before SQL execution.
+///
+/// After fossil-lang's catalog-based refactor, every source referenced
+/// by a fossil script produces a `plan.sources` entry. The executor
+/// dispatches each entry to the handler registered for its `format`,
+/// which must make `def.alias` resolvable in DuckDB before the compiled
+/// SQL runs (typically via `CREATE OR REPLACE VIEW`).
 pub trait SourceHandler: Send + Sync {
-    fn name(&self) -> &str;
+    /// The source format this handler resolves (`csv`, `parquet`, `pdf`, …).
+    fn format(&self) -> &str;
     fn load(&self, conn: &DuckDbConn, def: &fossil_lang::plan::SourceDef) -> Result<(), String>;
 }
 
@@ -44,7 +51,7 @@ impl Executor {
 
     pub fn source(mut self, handler: impl SourceHandler + 'static) -> Self {
         self.sources
-            .insert(handler.name().to_string(), Arc::new(handler));
+            .insert(handler.format().to_string(), Arc::new(handler));
         self
     }
 
@@ -56,12 +63,12 @@ impl Executor {
 
     /// Execute a FossilPlan: sources → SQL → outputs.
     pub fn execute(&self, plan: &FossilPlan) -> Result<Vec<OutputResult>, ExecutionError> {
-        // Phase 1: Load sources (preprocessing)
+        // Phase 1: register each fossil source in the DuckDB catalog.
         for source_def in &plan.sources {
             let handler = self
                 .sources
-                .get(&source_def.handler)
-                .ok_or_else(|| ExecutionError::UnknownHandler(source_def.handler.clone()))?;
+                .get(&source_def.format)
+                .ok_or_else(|| ExecutionError::UnknownHandler(source_def.format.clone()))?;
             handler
                 .load(&self.conn, source_def)
                 .map_err(ExecutionError::Handler)?;

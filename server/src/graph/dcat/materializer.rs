@@ -1,6 +1,6 @@
 //! DCAT-AP catalog materializer — pending DuckDB-based rewrite.
 
-use fossil_lang::resolver::ResolvedPath;
+use crate::jobs::path_resolver::ResolvedPath;
 
 use crate::graph::manifest::DataManifest;
 use super::types::DcatInput;

@@ -13,11 +13,11 @@ use utoipa::OpenApi;
         crate::health::readiness,
         crate::health::service_status,
         // Jobs
-        crate::jobs::routes::list_jobs,
-        crate::jobs::routes::create_job,
-        crate::jobs::routes::get_job,
-        crate::jobs::routes::update_job,
-        crate::jobs::routes::delete_job,
+        crate::jobs::handlers::list_jobs,
+        crate::jobs::handlers::create_job,
+        crate::jobs::handlers::get_job,
+        crate::jobs::handlers::update_job,
+        crate::jobs::handlers::delete_job,
         // Settings
         crate::settings::routes::get_org_settings,
         crate::settings::routes::save_org_settings,
@@ -59,8 +59,8 @@ use utoipa::OpenApi;
         // Discovery
         crate::discovery::routes::resolve_discover_urls,
         // Dashboard Layout
-        crate::jobs::routes::get_dashboard_layout,
-        crate::jobs::routes::save_dashboard_layout,
+        crate::jobs::handlers::get_dashboard_layout,
+        crate::jobs::handlers::save_dashboard_layout,
         // Auth (additional)
         crate::auth::routes::get_invite_info,
         // Fossil Analysis

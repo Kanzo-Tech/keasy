@@ -172,11 +172,13 @@ impl Application {
             caddy_certs_dir: config.caddy_certs_dir,
         };
         let connector_repo = Arc::new(crate::connectors::db::DieselConnectorRepo::new(repos.clone()));
+        let job_repo = Arc::new(crate::jobs::db::DieselJobRepo::new(repos.clone()));
         let state = AppState {
             repos,
             runner: runner.clone(),
             fossil_registry,
             connectors: connector_repo,
+            jobs: job_repo,
             api_key: config.api_key,
             base_url: config.base_url,
             auth,

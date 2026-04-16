@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import { PageShell } from "@/components/layout/page-shell";
 import { ConnectionDetail } from "@/components/connections/connection-detail";
 
 export default function ConnectionDetailPage({
@@ -9,5 +10,9 @@ export default function ConnectionDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  return <ConnectionDetail id={id} />;
+  return (
+    <PageShell>
+      <ConnectionDetail id={id} />
+    </PageShell>
+  );
 }

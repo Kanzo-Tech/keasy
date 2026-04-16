@@ -145,7 +145,7 @@ export function ConnectorForm({
         }
       />
       <PageShell.Content>
-      <form onSubmit={handleSubmit} className="mx-auto max-w-xl space-y-8 pb-12">
+        <form onSubmit={handleSubmit} className="mx-auto max-w-xl space-y-8 pb-12">
         <FieldSet>
           <FieldLegend>Connector Type</FieldLegend>
           <FieldDescription>Choose the type of storage to connect to</FieldDescription>
@@ -228,7 +228,7 @@ export function ConnectorForm({
             {isPending ? "Creating..." : submitLabel}
           </Button>
         </div>
-      </form>
+        </form>
       </PageShell.Content>
     </PageShell>
   );

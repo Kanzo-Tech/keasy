@@ -75,9 +75,6 @@ impl Executor {
         Ok(results)
     }
 
-    pub fn conn(&self) -> &DuckDbConn {
-        &self.conn
-    }
 }
 
 #[derive(Debug, thiserror::Error)]

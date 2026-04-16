@@ -4,7 +4,7 @@ use std::sync::Mutex;
 
 use duckdb::Connection;
 
-use crate::connectors::types::DuckDbSecretSpec;
+use crate::connectors::config::DuckDbSecretSpec;
 
 /// DuckDB connection wrapper (Mutex for Send+Sync in spawn_blocking).
 pub struct DuckDbConn {

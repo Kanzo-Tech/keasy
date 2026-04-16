@@ -7,7 +7,7 @@ use crate::executor::path_resolver::{ConnectorEntry, KeasyPathResolver, PathReso
 use crate::tenant::Tenant;
 
 use crate::connectors::models::{Connector, ConnectorRow};
-use crate::connectors::secrets;
+use crate::connectors::db as connector_db;
 
 impl Repos {
     async fn resolve_connectors(
@@ -48,7 +48,7 @@ impl Repos {
         };
 
         for connector in &mut rows {
-            secrets::merge_from_db(self, connector).await;
+            connector_db::merge_secrets_from_db(self, connector).await;
         }
 
         for id in connector_ids {

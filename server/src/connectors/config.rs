@@ -390,6 +390,40 @@ impl ConnectorConfig {
         }
     }
 
+    pub fn merge_existing_secrets(self, existing: &Self) -> Self {
+        match (self, existing) {
+            (
+                Self::S3 { bucket, prefix, region, access_key_id, secret_access_key, session_token, endpoint, url_style },
+                Self::S3 { secret_access_key: old_sak, session_token: old_st, .. },
+            ) => Self::S3 {
+                bucket, prefix, region, access_key_id,
+                secret_access_key: secret_access_key.or_else(|| old_sak.clone()),
+                session_token: session_token.or_else(|| old_st.clone()),
+                endpoint, url_style,
+            },
+            (
+                Self::Gcs { bucket, prefix, service_account_json, hmac_key_id, hmac_secret },
+                Self::Gcs { service_account_json: old_sa, hmac_secret: old_hs, .. },
+            ) => Self::Gcs {
+                bucket, prefix,
+                service_account_json: service_account_json.or_else(|| old_sa.clone()),
+                hmac_key_id,
+                hmac_secret: hmac_secret.or_else(|| old_hs.clone()),
+            },
+            (
+                Self::Azure { container, prefix, connection_string },
+                Self::Azure { connection_string: old_cs, .. },
+            ) => {
+                let is_redacted = connection_string.expose_secret() == "[REDACTED]";
+                Self::Azure {
+                    container, prefix,
+                    connection_string: if is_redacted { old_cs.clone() } else { connection_string },
+                }
+            },
+            (new, _) => new,
+        }
+    }
+
     pub fn into_redacted(self) -> Self {
         match self {
             Self::S3 {

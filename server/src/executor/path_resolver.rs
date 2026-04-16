@@ -21,7 +21,7 @@
 
 use std::sync::Arc;
 
-use crate::connectors::types::{CloudStore, DuckDbSecretSpec};
+use crate::connectors::config::{CloudStore, DuckDbSecretSpec};
 
 /// One connector authorized for a job, with all its runtime state pre-built.
 pub struct ConnectorEntry {

@@ -66,13 +66,13 @@ use utoipa::OpenApi;
         // Fossil Analysis
         crate::executor::fossil_analysis::analyze,
         // Connectors
-        crate::connectors::routes::list_connectors,
-        crate::connectors::routes::create_connector,
-        crate::connectors::routes::get_connector,
-        crate::connectors::routes::update_connector,
-        crate::connectors::routes::delete_connector,
-        crate::connectors::routes::list_connector_kinds,
-        crate::connectors::routes::test_connector,
+        crate::connectors::handlers::list_connectors,
+        crate::connectors::handlers::create_connector,
+        crate::connectors::handlers::get_connector,
+        crate::connectors::handlers::update_connector,
+        crate::connectors::handlers::delete_connector,
+        crate::connectors::handlers::list_connector_kinds,
+        crate::connectors::handlers::test_connector,
     ),
     components(schemas(
         crate::error::DataResponse<serde_json::Value>,
@@ -98,10 +98,11 @@ use utoipa::OpenApi;
         // Connectors
         crate::connectors::models::Connector,
         crate::connectors::models::ConnectorDirection,
+        crate::connectors::models::ConnectorResponse,
         crate::connectors::models::CreateConnectorRequest,
         crate::connectors::models::UpdateConnectorRequest,
-        crate::connectors::types::ConnectorConfig,
-        crate::connectors::types::ConnectorKindInfo,
+        crate::connectors::config::ConnectorConfig,
+        crate::connectors::config::ConnectorKindInfo,
         // Settings
         crate::settings::org::OrgSettings,
         crate::settings::preferences::Preferences,

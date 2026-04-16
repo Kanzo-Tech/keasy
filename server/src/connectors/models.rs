@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::db::diesel_schema::connectors;
 
-use super::types::ConnectorConfig;
+use super::config::ConnectorConfig;
 
 // ── Direction enum (API-facing) ──────────────────────────────────────
 
@@ -104,22 +104,6 @@ impl From<ConnectorRow> for Connector {
 }
 
 impl Connector {
-    pub fn into_redacted(mut self) -> Self {
-        let config_val = std::mem::take(&mut self.config);
-        match serde_json::from_value::<ConnectorConfig>(config_val) {
-            Ok(cc) => {
-                if let Ok(v) = serde_json::to_value(&cc.into_redacted()) {
-                    self.config = v;
-                }
-            }
-            Err(e) => {
-                tracing::warn!(id = %self.id, error = %e, "failed to parse config for redaction, stripping entirely");
-                self.config = serde_json::json!({});
-            }
-        }
-        self
-    }
-
     pub fn parse_config(&self) -> Result<ConnectorConfig, String> {
         serde_json::from_value(self.config.clone())
             .map_err(|e| format!("invalid connector config: {e}"))
@@ -128,6 +112,40 @@ impl Connector {
     pub fn into_config(self) -> Result<ConnectorConfig, String> {
         serde_json::from_value(self.config)
             .map_err(|e| format!("invalid connector config: {e}"))
+    }
+}
+
+// ── API response type (always redacted) ─────────────────────────────
+
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
+pub struct ConnectorResponse {
+    pub id: String,
+    pub name: String,
+    pub connector_type: String,
+    pub direction: ConnectorDirection,
+    pub config: serde_json::Value,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+impl From<Connector> for ConnectorResponse {
+    fn from(c: Connector) -> Self {
+        let redacted = match serde_json::from_value::<ConnectorConfig>(c.config) {
+            Ok(cc) => serde_json::to_value(&cc.into_redacted()).unwrap_or_default(),
+            Err(e) => {
+                tracing::warn!(id = %c.id, error = %e, "failed to parse config for redaction");
+                serde_json::json!({})
+            }
+        };
+        Self {
+            id: c.id,
+            name: c.name,
+            connector_type: c.connector_type,
+            direction: c.direction,
+            config: redacted,
+            created_at: c.created_at,
+            updated_at: c.updated_at,
+        }
     }
 }
 
@@ -153,5 +171,5 @@ impl CreateConnectorRequest {
 pub struct UpdateConnectorRequest {
     pub name: Option<String>,
     pub direction: Option<ConnectorDirection>,
-    pub config: Option<serde_json::Value>,
+    pub config: Option<ConnectorConfig>,
 }

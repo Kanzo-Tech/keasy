@@ -3,25 +3,27 @@
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
-import { connectorRegistry } from "@/lib/connectors";
-import { RegistryForm } from "@/lib/schemas/registry-form";
-
-const connectorTypes = Object.values(connectorRegistry);
+import { ConnectorForm } from "./connector-form";
+import type { Schemas } from "@/lib/api/client";
 
 export function ConnectionEditor() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  const { data: kinds, isLoading } = useQuery({
+    queryKey: queryKeys.connections.kinds(),
+    queryFn: () => api.connections.kinds(),
+  });
+
   const createMutation = useMutation({
-    mutationFn: (data: { typeId: string; name: string; config: Record<string, string> }) =>
+    mutationFn: (data: { kind: string; name: string; config: Record<string, string> }) =>
       api.connections.create({
         name: data.name,
-        connector_type: data.typeId,
         direction: "both",
-        config: Object.keys(data.config).length > 0 ? data.config : undefined,
+        config: { kind: data.kind, ...data.config } as unknown as Schemas["ConnectorConfig"],
       }),
     onSuccess: async () => {
       toast.success("Connection created");
@@ -31,14 +33,11 @@ export function ConnectionEditor() {
     onError: (err) => toastError(err, "Failed to create connection"),
   });
 
+  if (isLoading || !kinds) return null;
+
   return (
-    <RegistryForm
-      types={connectorTypes}
-      typeLabel="Connector Type"
-      typeDescription="Choose the type of storage to connect to"
-      showName
-      namePlaceholder="e.g. hr-data"
-      nameDescription="Used as identifier in @references (e.g. @my-connection/file.csv)"
+    <ConnectorForm
+      kinds={kinds}
       onSubmit={(data) => createMutation.mutate(data)}
       isPending={createMutation.isPending}
       isSuccess={createMutation.isSuccess}

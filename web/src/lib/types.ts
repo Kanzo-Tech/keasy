@@ -84,7 +84,7 @@ export type ConnectorDirection = S["ConnectorDirection"];
 export type Connector = S["Connector"];
 export type CreateConnectorRequest = S["CreateConnectorRequest"];
 export type UpdateConnectorRequest = S["UpdateConnectorRequest"];
-export type ConnectorTypeDef = S["ConnectorTypeInfo"];
+export type ConnectorKindInfo = S["ConnectorKindInfo"];
 
 // ---------------------------------------------------------------------------
 // Types NOT in the OpenAPI spec — remain manually defined (UI/static config)
@@ -110,7 +110,6 @@ export type WorkspacesResponse = S["WorkspacesResponse"];
 
 export type ComplianceCredential = S["ComplianceCredential"];
 export type ComplyEvent = S["ComplyEvent"];
-export type JobEvent = S["JobEvent"];
 
 // ---------------------------------------------------------------------------
 // Fossil Analysis types (editor completions/diagnostics)

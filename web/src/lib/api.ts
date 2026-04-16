@@ -71,8 +71,8 @@ export const api = {
     files: async (id: string) =>
       unwrap(await client.GET("/v1/connectors/{id}/files", { params: { path: { id } } })),
 
-    types: async () =>
-      unwrap(await client.GET("/v1/connectors/types")),
+    kinds: async () =>
+      unwrap(await client.GET("/v1/connectors/kinds")),
 
     schema: async (id: string, paths: string[]): Promise<Record<string, { columns: { name: string; type: string }[]; error?: string }>> => {
       const res = await fetch(`/api/v1/connectors/${id}/schema`, {

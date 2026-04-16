@@ -223,14 +223,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/connectors/types": {
+    "/v1/connectors/kinds": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["list_connector_types"];
+        get: operations["list_connector_kinds"];
         put?: never;
         post?: never;
         delete?: never;
@@ -367,22 +367,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/catalog": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_job_catalog"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/jobs/{id}/dashboard-layout": {
         parameters: {
             query?: never;
@@ -407,22 +391,6 @@ export interface paths {
             cookie?: never;
         };
         get: operations["resolve_discover_urls"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["stream_job"];
         put?: never;
         post?: never;
         delete?: never;
@@ -672,9 +640,6 @@ export interface components {
             completions: components["schemas"]["CompletionItem"][];
             diagnostics: components["schemas"]["DiagnosticItem"][];
         };
-        CatalogResponse: {
-            catalog: string;
-        };
         CatalogStoragePayload: {
             base_url: string;
             connector_id: string;
@@ -683,20 +648,18 @@ export interface components {
         ColumnStat: {
             /** Format: int64 */
             count: number;
-            /** @description Data type: "string", "int64", "double", "boolean", "date". */
             datatype: string;
-            /** @description Full predicate IRI. */
-            iri: string;
+            iri?: string;
             max?: string | null;
             min?: string | null;
             /** Format: int64 */
             n_unique: number;
-            /** @description Short label used as Parquet column name. */
             name: string;
             samples?: string[];
         };
+        /** @description Completion item returned by the analysis endpoint. */
         CompletionItem: {
-            detail: string;
+            detail?: string | null;
             kind: string;
             label: string;
         };
@@ -752,19 +715,97 @@ export interface components {
             name: string;
             updated_at: string;
         };
+        ConnectorConfig: {
+            /**
+             * @description Access Key ID. Leave empty for IAM role / default credential chain.
+             * @example AKIAIOSFODNN7EXAMPLE
+             */
+            access_key_id?: string | null;
+            /**
+             * @description Bucket name.
+             * @example my-data-bucket
+             */
+            bucket: string;
+            /**
+             * @description S3-compatible endpoint. Leave empty for AWS S3; set for MinIO, R2, Wasabi.
+             * @example https://s3.eu-west-1.amazonaws.com
+             */
+            endpoint?: string | null;
+            /** @enum {string} */
+            kind: "s3";
+            /**
+             * @description Optional key prefix to scope access within the bucket.
+             * @example data/raw/
+             */
+            prefix?: string | null;
+            /**
+             * @description AWS region where the bucket lives.
+             * @example eu-west-1
+             */
+            region?: string | null;
+            /**
+             * Format: password
+             * @description Secret Access Key.
+             */
+            secret_access_key?: string | null;
+            /**
+             * Format: password
+             * @description Session Token for STS temporary credentials.
+             */
+            session_token?: string | null;
+            /** @description URL addressing style: "vhost" (default for AWS) or "path" (default when endpoint is set). */
+            url_style?: string | null;
+        } | {
+            /**
+             * @description Bucket name.
+             * @example my-gcs-bucket
+             */
+            bucket: string;
+            /**
+             * @description HMAC key ID (generate in GCP Console → Interoperability).
+             * @example GOOG1EXAMPLE
+             */
+            hmac_key_id?: string | null;
+            /**
+             * Format: password
+             * @description HMAC secret paired with hmac_key_id.
+             */
+            hmac_secret?: string | null;
+            /** @enum {string} */
+            kind: "gcs";
+            /** @description Optional object prefix within the bucket. */
+            prefix?: string | null;
+            /**
+             * Format: password
+             * @description Service account JSON key. Used by object_store for URL signing.
+             */
+            service_account_json?: string | null;
+        } | {
+            /**
+             * Format: password
+             * @description Azure Storage connection string (Portal → Access Keys → Connection string).
+             * @example DefaultEndpointsProtocol=https;AccountName=a;AccountKey=k;EndpointSuffix=core.windows.net
+             */
+            connection_string: string;
+            /**
+             * @description Container name.
+             * @example my-container
+             */
+            container: string;
+            /** @enum {string} */
+            kind: "azure_blob";
+            /** @description Optional blob prefix within the container. */
+            prefix?: string | null;
+        };
         /** @enum {string} */
         ConnectorDirection: "source" | "destination" | "both";
-        /** @description Metadata about a connector type (for API listing). */
-        ConnectorTypeInfo: {
+        ConnectorKindInfo: {
             description: string;
-            direction: components["schemas"]["ConnectorDirection"];
-            id: string;
+            kind: string;
             name: string;
-            secret_fields: string[];
         };
         CreateConnectorRequest: {
-            config?: unknown;
-            connector_type: string;
+            config: components["schemas"]["ConnectorConfig"];
             direction: components["schemas"]["ConnectorDirection"];
             name: string;
         };
@@ -814,6 +855,7 @@ export interface components {
             updated_at: string;
             url: string;
         };
+        /** @description Diagnostic item returned by the analysis endpoint. */
         DiagnosticItem: {
             from: number;
             message: string;
@@ -822,19 +864,13 @@ export interface components {
         };
         /** @description Manifest for an edge type (GraphAr v1 ordered adjacency lists). */
         EdgeManifest: {
-            /** @description CSR-ordered edge parquet (ordered by source vertex). */
             by_source: string;
-            /** @description CSC-ordered edge parquet (ordered by target vertex). */
             by_target: string;
             /** Format: int64 */
             count: number;
-            /** @description Full predicate IRI. */
             iri: string;
-            /** @description Short edge label (e.g. "knows"). */
             name: string;
-            /** @description Source vertex type name. */
             source_type: string;
-            /** @description Target vertex type name. */
             target_type: string;
         };
         Field: {
@@ -883,15 +919,6 @@ export interface components {
             script?: string | null;
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
-        };
-        /** @description SSE event emitted by the job runner at each execution phase. */
-        JobEvent: {
-            error?: string | null;
-            /** Format: int32 */
-            index: number;
-            phase: string;
-            /** Format: int32 */
-            total: number;
         };
         /**
          * @description Runtime job error — stored in the database as JSON on a failed job.
@@ -1052,16 +1079,12 @@ export interface components {
             columns: components["schemas"]["ColumnStat"][];
             /** Format: int64 */
             entity_count: number;
-            /** @description Full RDF type IRI. */
             iri: string;
-            /** @description Short type name (e.g. "person"). */
             name: string;
-            /** @description Relative path to vertex Parquet file. */
             vertex_file: string;
         };
         UpdateConnectorRequest: {
             config?: unknown;
-            connector_type?: string | null;
             direction?: null | components["schemas"]["ConnectorDirection"];
             name?: string | null;
         };
@@ -1529,7 +1552,7 @@ export interface operations {
             };
         };
     };
-    list_connector_types: {
+    list_connector_kinds: {
         parameters: {
             query?: never;
             header?: never;
@@ -1538,13 +1561,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Available connector types */
+            /** @description Available connector kinds */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConnectorTypeInfo"][];
+                    "application/json": components["schemas"]["ConnectorKindInfo"][];
                 };
             };
         };
@@ -1714,14 +1737,12 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Analysis result */
-            200: {
+            /** @description Not implemented */
+            501: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["AnalyzeResponse"];
-                };
+                content?: never;
             };
         };
     };
@@ -1935,34 +1956,6 @@ export interface operations {
             };
         };
     };
-    get_job_catalog: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description DCAT-AP catalog as Turtle (download) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Job or catalog not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     get_dashboard_layout: {
         parameters: {
             query?: never;
@@ -2040,36 +2033,6 @@ export interface operations {
                 };
             };
             /** @description Job not found or no output */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    stream_job: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description SSE stream of job progress events */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": components["schemas"]["JobEvent"];
-                };
-            };
-            /** @description Job not found */
             404: {
                 headers: {
                     [name: string]: unknown;

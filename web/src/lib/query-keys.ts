@@ -16,7 +16,7 @@ export const queryKeys = {
     detail: (id: string) => ["connections", id] as const,
     files: (id: string) => ["connections", id, "files"] as const,
     schema: (id: string, paths: string[]) => ["connections", id, "schema", paths] as const,
-    types: ["connection-types"] as const,
+    kinds: () => ["connection-kinds"] as const,
   },
 
   // Settings

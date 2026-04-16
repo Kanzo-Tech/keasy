@@ -10,7 +10,7 @@ use axum::body::Body;
 
 use crate::AppState;
 use crate::error::AppError;
-use crate::org::org_members::MemberRole;
+use crate::org::models::MemberRole;
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::tenant::OrgId;
 

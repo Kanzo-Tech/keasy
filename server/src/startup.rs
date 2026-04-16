@@ -173,12 +173,15 @@ impl Application {
         };
         let connector_repo = Arc::new(crate::connectors::db::DieselConnectorRepo::new(repos.clone()));
         let job_repo = Arc::new(crate::jobs::db::DieselJobRepo::new(repos.clone()));
+        let org_repo = Arc::new(crate::org::db::DieselOrgRepo::new(repos.diesel_pool.clone()));
+        let org_service = crate::org::service::OrgService::new(org_repo);
         let state = AppState {
             repos,
             runner: runner.clone(),
             fossil_registry,
             connectors: connector_repo,
             jobs: job_repo,
+            orgs: org_service,
             api_key: config.api_key,
             base_url: config.base_url,
             auth,

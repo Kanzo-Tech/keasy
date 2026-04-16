@@ -27,30 +27,30 @@ use utoipa::OpenApi;
         crate::settings::routes::save_ai_provider,
         crate::settings::routes::delete_ai_provider,
         // Auth
-        crate::auth::routes::get_me,
-        crate::auth::routes::logout,
-        crate::auth::routes::list_workspaces,
+        crate::auth::handlers::get_me,
+        crate::auth::handlers::logout,
+        crate::auth::handlers::list_workspaces,
         // Scripts
         crate::executor::scripts::validate_script,
         // Providers
         crate::settings::providers::list_providers,
         // Admin
-        crate::org::admin::list_all_orgs,
-        crate::org::admin::create_org_and_invite,
-        crate::org::admin::list_invites,
-        crate::org::admin::create_invite,
-        crate::org::admin::revoke_invite,
-        crate::org::admin::list_dataspaces,
-        crate::org::admin::register_dataspace,
+        crate::org::admin_handlers::list_all_orgs,
+        crate::org::admin_handlers::create_org_and_invite,
+        crate::org::admin_handlers::list_invites,
+        crate::org::admin_handlers::create_invite,
+        crate::org::admin_handlers::revoke_invite,
+        crate::org::admin_handlers::list_dataspaces,
+        crate::org::admin_handlers::register_dataspace,
         // Organization
-        crate::org::routes::list_users,
-        crate::org::routes::update_user_role,
-        crate::org::routes::remove_user,
-        crate::org::routes::get_org_identity,
-        crate::org::routes::update_org_identity,
-        crate::org::routes::create_org_invite,
-        crate::org::routes::list_org_invites,
-        crate::org::routes::revoke_org_invite,
+        crate::org::handlers::list_users,
+        crate::org::handlers::update_user_role,
+        crate::org::handlers::remove_user,
+        crate::org::handlers::get_org_identity,
+        crate::org::handlers::update_org_identity,
+        crate::org::handlers::create_org_invite,
+        crate::org::handlers::list_org_invites,
+        crate::org::handlers::revoke_org_invite,
         // Gaia-X Compliance
         crate::gaia_x::routes::comply,
         crate::gaia_x::routes::get_compliance_status,
@@ -62,7 +62,7 @@ use utoipa::OpenApi;
         crate::jobs::handlers::get_dashboard_layout,
         crate::jobs::handlers::save_dashboard_layout,
         // Auth (additional)
-        crate::auth::routes::get_invite_info,
+        crate::auth::handlers::get_invite_info,
         // Fossil Analysis
         crate::executor::fossil_analysis::analyze,
         // Connectors
@@ -108,15 +108,15 @@ use utoipa::OpenApi;
         crate::settings::preferences::Preferences,
         crate::settings::ai::AiSettingsPayload,
         // Organizations
-        crate::org::organizations::Organization,
+        crate::org::models::Organization,
         // Scripts
         crate::executor::scripts::ValidateRequest,
         // Invite Tokens
-        crate::org::invite_tokens::InviteToken,
+        crate::org::models::InviteToken,
         // Dataspaces
         crate::dataspaces::db::Dataspace,
         // Org members
-        crate::org::org_members::OrgMember,
+        crate::org::models::OrgMember,
         // Gaia-X Compliance
         crate::gaia_x::routes::ComplianceCredential,
         crate::gaia_x::routes::ComplianceStatus,
@@ -124,29 +124,29 @@ use utoipa::OpenApi;
         crate::gaia_x::ComplyResponse,
         crate::gaia_x::ComplyEvent,
         // Auth response types
-        crate::auth::routes::MeResponse,
-        crate::auth::routes::MeOrg,
-        crate::auth::routes::Workspace,
-        crate::auth::routes::WorkspacesResponse,
-        crate::auth::routes::InviteInfoResponse,
-        crate::auth::routes::LogoutResponse,
+        crate::auth::handlers::MeResponse,
+        crate::auth::handlers::MeOrg,
+        crate::auth::handlers::Workspace,
+        crate::auth::handlers::WorkspacesResponse,
+        crate::auth::handlers::InviteInfoResponse,
+        crate::auth::handlers::LogoutResponse,
         // Health
         crate::health::ServiceStatusResponse,
         // Admin
-        crate::org::admin::CreateOrgAndInviteRequest,
-        crate::org::admin::RegisterOidcClientRequest,
-        crate::org::admin::CreateInviteRequest,
-        crate::org::admin::AdminInviteEntry,
-        crate::org::admin::AdminInviteResult,
-        crate::org::admin::CreateOrgResponse,
-        crate::org::admin::RegisterDataspaceResponse,
+        crate::org::admin_handlers::CreateOrgAndInviteRequest,
+        crate::org::admin_handlers::RegisterOidcClientRequest,
+        crate::org::admin_handlers::CreateInviteRequest,
+        crate::org::admin_handlers::AdminInviteEntry,
+        crate::org::admin_handlers::AdminInviteResult,
+        crate::org::admin_handlers::CreateOrgResponse,
+        crate::org::admin_handlers::RegisterDataspaceResponse,
         // Organization
-        crate::org::routes::OrgInviteEntry,
-        crate::org::routes::UpdateUserRoleRequest,
-        crate::org::routes::UpdateOrgIdentityPayload,
-        crate::org::routes::CreateOrgInviteRequest,
-        crate::org::routes::CreateOrgInviteResponse,
-        crate::org::routes::OrgIdentityResponse,
+        crate::org::handlers::OrgInviteEntry,
+        crate::org::handlers::UpdateUserRoleRequest,
+        crate::org::handlers::UpdateOrgIdentityPayload,
+        crate::org::handlers::CreateOrgInviteRequest,
+        crate::org::handlers::CreateOrgInviteResponse,
+        crate::org::handlers::OrgIdentityResponse,
         // Jobs
         // Discovery
         crate::graph::types::TabularData,

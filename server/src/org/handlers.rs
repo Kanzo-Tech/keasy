@@ -1,7 +1,6 @@
-//! Org management endpoints — participant only.
+//! Org management endpoints -- participant only.
 //! User/invite management requires `RequireOrgAdmin` (participant org admins).
 //! Identity read uses `RequireParticipant` (any participant user).
-//! These routes live inside `api_routes` (session + tenant context required).
 
 use axum::{
     extract::{Path, State},
@@ -14,8 +13,7 @@ use regex::Regex;
 use serde::Deserialize;
 
 use crate::AppState;
-use crate::org::invite_tokens::InviteToken;
-use crate::org::org_members::{MemberRole, OrgMember};
+use crate::org::models::OrgMember;
 use crate::error::{data_response, error_body};
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::error::AppError;
@@ -31,7 +29,7 @@ pub async fn list_users(
     ctx: Require<IsAdmin>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    let users = state.repos.list_org_members(&ctx.org_id.0).await;
+    let users = state.orgs.repo.list_org_members(&ctx.org_id.0).await;
     Ok(data_response(users))
 }
 
@@ -54,13 +52,7 @@ pub async fn update_user_role(
     Path(user_id): Path<String>,
     Json(payload): Json<UpdateUserRoleRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let role: MemberRole = payload.role.parse()
-        .map_err(|msg: String| AppError::Internal(anyhow::anyhow!(msg)))?;
-    state
-        .repos
-        .update_member_role(&user_id, &ctx.org_id.0, role.as_str())
-        .await
-        .map_err(|msg: String| AppError::Internal(anyhow::anyhow!(msg)))?;
+    state.orgs.update_member_role(&user_id, &ctx.org_id.0, &payload.role).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -76,15 +68,11 @@ pub async fn remove_user(
     State(state): State<AppState>,
     Path(user_id): Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
-    state
-        .repos
-        .remove_org_member(&user_id, &ctx.org_id.0)
-        .await
-        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
+    state.orgs.remove_member(&user_id, &ctx.org_id.0).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
-// ── Organization identity ────────────────────────────────────────────────────
+// -- Organization identity ────────────────────────────────────────────────────
 
 #[derive(Debug, serde::Serialize, utoipa::ToSchema)]
 pub struct OrgIdentityResponse {
@@ -114,7 +102,7 @@ pub async fn get_org_identity(
     ctx: Require<IsParticipant>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let org = state.repos.get_organization(&ctx.org_id.0).await;
+    let org = state.orgs.repo.get_organization(&ctx.org_id.0).await;
     match org {
         Some(o) => data_response(OrgIdentityResponse {
             legal_name: o.legal_name,
@@ -160,7 +148,6 @@ pub async fn update_org_identity(
             .into_response());
     }
 
-    // Validate registration_number_type
     if let Some(ref rnt) = payload.registration_number_type
         && !matches!(rnt.as_str(), "vatID" | "leiCode" | "EORI") {
             return Ok((
@@ -170,7 +157,6 @@ pub async fn update_org_identity(
                 .into_response());
         }
 
-    // Validate country_subdivision_code (ISO 3166-2: XX-YYY)
     if let Some(ref csc) = payload.country_subdivision_code
         && !SUBDIVISION_RE.is_match(csc) {
             return Ok((
@@ -181,7 +167,7 @@ pub async fn update_org_identity(
         }
 
     state
-        .repos
+        .orgs
         .update_org_identity(
             &ctx.org_id.0,
             &legal_name,
@@ -190,10 +176,8 @@ pub async fn update_org_identity(
             payload.country_subdivision_code.as_deref(),
             payload.registration_number_type.as_deref(),
         )
-        .await
-        .map_err(|e| AppError::Internal(anyhow::anyhow!("failed to update org identity: {e}")))?;
+        .await?;
 
-    // Return the updated identity
     Ok(data_response(OrgIdentityResponse {
         legal_name,
         country: payload.country,
@@ -204,7 +188,7 @@ pub async fn update_org_identity(
     .into_response())
 }
 
-// ── Org invite management ────────────────────────────────────────────────────
+// -- Org invite management ────────────────────────────────────────────────────
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct OrgInviteEntry {
@@ -239,31 +223,10 @@ pub async fn create_org_invite(
     State(state): State<AppState>,
     Json(payload): Json<CreateOrgInviteRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let role: MemberRole = payload.role.parse()
-        .map_err(|msg: String| AppError::Internal(anyhow::anyhow!(msg)))?;
-
-    let now = jiff::Timestamp::now().to_string();
-    let token_value = uuid::Uuid::new_v4().to_string();
-    let expires_at = {
-        let ts = jiff::Timestamp::now();
-        ts.checked_add(jiff::SignedDuration::from_hours(7 * 24))
-            .unwrap_or(ts)
-            .to_string()
-    };
-
-    let invite = InviteToken {
-        token: token_value.clone(),
-        org_id: ctx.org_id.0.clone(),
-        role: role.as_str().to_string(),
-        created_by: auth_user.user_id.clone(),
-        expires_at,
-        created_at: now,
-    };
-    state
-        .repos
-        .create_invite_token(&invite)
-        .await
-        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
+    let (token_value, _invite) = state
+        .orgs
+        .create_org_invite(&ctx.org_id.0, &payload.role, &auth_user.user_id)
+        .await?;
 
     let invite_url = format!("{}/invite?token={}", state.base_url, token_value);
     Ok((
@@ -282,7 +245,7 @@ pub async fn list_org_invites(
     ctx: Require<IsAdmin>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    let tokens = state.repos.list_invite_tokens_for_org(&ctx.org_id.0).await;
+    let tokens = state.orgs.repo.list_invite_tokens_for_org(&ctx.org_id.0).await;
     let now = jiff::Timestamp::now().to_string();
     let result: Vec<OrgInviteEntry> = tokens
         .into_iter()
@@ -312,17 +275,6 @@ pub async fn revoke_org_invite(
     Path(token): Path<String>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    // Security: verify token belongs to this org before deleting
-    let invite = state.repos.get_invite_token(&token).await.ok_or_else(|| {
-        AppError::NotFound
-    })?;
-    if invite.org_id != ctx.org_id.0 {
-        return Err(AppError::NotFound);
-    }
-    state
-        .repos
-        .delete_invite_token(&token)
-        .await
-        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
+    state.orgs.revoke_org_invite(&token, &ctx.org_id.0).await?;
     Ok(StatusCode::NO_CONTENT)
 }

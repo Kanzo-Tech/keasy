@@ -1,18 +1,13 @@
 //! Promotor-only admin endpoints.
 //!
-//! All handlers require `RequirePromotor` — non-promotor users receive 403
-//! `rbac/insufficient_role`. These routes live inside `api_routes` and are
-//! therefore also protected by `session_required` and `tenant_context_required`.
-
-use std::collections::HashMap;
+//! All handlers require `RequirePromotor` -- non-promotor users receive 403.
 
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use serde::Deserialize;
 
 use crate::AppState;
-use crate::org::invite_tokens::InviteToken;
+use crate::org::models::Organization;
 use crate::dataspaces::db::Dataspace;
-use crate::org::organizations::Organization;
 use crate::error::data_response;
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::error::AppError;
@@ -69,12 +64,12 @@ pub async fn list_all_orgs(
     _ctx: Require<IsPromotor>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    let orgs = state.repos.list_organizations().await;
+    let orgs = state.orgs.repo.list_organizations().await;
     Ok(data_response(orgs))
 }
 
 // ---------------------------------------------------------------------------
-// POST /v1/admin/organizations — create org + invite token + send email
+// POST /v1/admin/organizations
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -95,52 +90,11 @@ pub async fn create_org_and_invite(
     State(state): State<AppState>,
     Json(payload): Json<CreateOrgAndInviteRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let now = jiff::Timestamp::now().to_string();
+    let (org, _token) = state
+        .orgs
+        .create_org_and_invite(&payload.name, &auth_user.user_id)
+        .await?;
 
-    // 1. Create organization as participant
-    let slug = state.repos.generate_unique_slug(&payload.name).await;
-    let org = Organization {
-        id: uuid::Uuid::new_v4().to_string(),
-        name: payload.name.clone(),
-        slug,
-        legal_name: payload.name.clone(),
-        registration_number: None,
-        country_subdivision_code: None,
-        registration_number_type: None,
-        country: "EU".to_string(),
-        role: "participant".to_string(),
-        created_at: now.clone(),
-        updated_at: now.clone(),
-    };
-    state
-        .repos
-        .create_organization(&org)
-        .await
-        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
-
-    // 2. Create invite token (7-day expiry)
-    let token_value = uuid::Uuid::new_v4().to_string();
-    let expires_at = {
-        let ts = jiff::Timestamp::now();
-        ts.checked_add(jiff::SignedDuration::from_hours(7 * 24))
-            .unwrap_or(ts)
-            .to_string()
-    };
-    let invite = InviteToken {
-        token: token_value.clone(),
-        org_id: org.id.clone(),
-        role: "admin".to_string(),
-        created_by: auth_user.user_id.clone(),
-        expires_at,
-        created_at: now,
-    };
-    state
-        .repos
-        .create_invite_token(&invite)
-        .await
-        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
-
-    // 3. Return created org
     Ok((
         StatusCode::CREATED,
         data_response(CreateOrgResponse {
@@ -152,7 +106,7 @@ pub async fn create_org_and_invite(
 }
 
 // ---------------------------------------------------------------------------
-// POST /v1/admin/oidc-clients — Register a dataspace instance as an OIDC client
+// POST /v1/admin/oidc-clients
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -175,10 +129,9 @@ pub async fn register_dataspace(
     State(state): State<AppState>,
     Json(payload): Json<RegisterOidcClientRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    // 1. Verify Keycloak admin is configured
     let kc_admin = state.auth.keycloak_admin.as_ref().ok_or_else(|| {
         AppError::Internal(anyhow::anyhow!(
-            "Identity service not configured — set KEASY_OIDC_* environment variables"
+            "Identity service not configured -- set KEASY_OIDC_* environment variables"
         ))
     })?;
 
@@ -186,14 +139,12 @@ pub async fn register_dataspace(
     let id = uuid::Uuid::new_v4().to_string();
     let client_id = format!("keasy-instance-{}", uuid::Uuid::new_v4());
 
-    // 2. Build redirect URI and web origin from the instance URL
     let redirect_uri = format!(
         "{}/v1/auth/oidc-callback",
         payload.url.trim_end_matches('/')
     );
     let web_origin = payload.url.trim_end_matches('/').to_string();
 
-    // 3. Create OIDC client in Keycloak
     let registered = kc_admin
         .create_client(
             &client_id,
@@ -205,7 +156,6 @@ pub async fn register_dataspace(
         .await
         .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
 
-    // 4. Store display metadata in SQLite (NO secret stored)
     let dataspace = Dataspace {
         id: id.clone(),
         client_id: client_id.clone(),
@@ -222,7 +172,6 @@ pub async fn register_dataspace(
         .await
         .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
 
-    // 5. Return the record WITH client_secret (one-time display — not stored)
     Ok((
         StatusCode::CREATED,
         data_response(RegisterDataspaceResponse {
@@ -238,7 +187,7 @@ pub async fn register_dataspace(
 }
 
 // ---------------------------------------------------------------------------
-// GET /v1/admin/oidc-clients — List all registered dataspace instances
+// GET /v1/admin/oidc-clients
 // ---------------------------------------------------------------------------
 
 #[utoipa::path(get, path = "/v1/admin/oidc-clients", tag = "Admin",
@@ -253,7 +202,7 @@ pub async fn list_dataspaces(
 }
 
 // ---------------------------------------------------------------------------
-// GET /v1/admin/invites — List all invite tokens
+// GET /v1/admin/invites
 // ---------------------------------------------------------------------------
 
 #[utoipa::path(get, path = "/v1/admin/invites", tag = "Admin",
@@ -263,12 +212,7 @@ pub async fn list_invites(
     _ctx: Require<IsPromotor>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    let tokens = state.repos.list_invite_tokens().await;
-    let orgs = state.repos.list_organizations().await;
-    let org_map: HashMap<String, String> = orgs
-        .into_iter()
-        .map(|o| (o.id.clone(), o.name.clone()))
-        .collect();
+    let (tokens, org_map) = state.orgs.list_admin_invites().await;
     let now = jiff::Timestamp::now().to_string();
     let result: Vec<AdminInviteEntry> = tokens
         .into_iter()
@@ -288,7 +232,7 @@ pub async fn list_invites(
 }
 
 // ---------------------------------------------------------------------------
-// POST /v1/admin/invites — Create invite link (no email sent)
+// POST /v1/admin/invites
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -309,52 +253,11 @@ pub async fn create_invite(
     State(state): State<AppState>,
     Json(payload): Json<CreateInviteRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let now = jiff::Timestamp::now().to_string();
+    let (org, token_value) = state
+        .orgs
+        .create_org_and_invite(&payload.org_name, &auth_user.user_id)
+        .await?;
 
-    // 1. Create participant org
-    let slug = state.repos.generate_unique_slug(&payload.org_name).await;
-    let org = Organization {
-        id: uuid::Uuid::new_v4().to_string(),
-        name: payload.org_name.clone(),
-        slug,
-        legal_name: payload.org_name.clone(),
-        registration_number: None,
-        country_subdivision_code: None,
-        registration_number_type: None,
-        country: "EU".to_string(),
-        role: "participant".to_string(),
-        created_at: now.clone(),
-        updated_at: now.clone(),
-    };
-    state
-        .repos
-        .create_organization(&org)
-        .await
-        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
-
-    // 2. Create invite token (7-day expiry)
-    let token_value = uuid::Uuid::new_v4().to_string();
-    let expires_at = {
-        let ts = jiff::Timestamp::now();
-        ts.checked_add(jiff::SignedDuration::from_hours(7 * 24))
-            .unwrap_or(ts)
-            .to_string()
-    };
-    let invite = InviteToken {
-        token: token_value.clone(),
-        org_id: org.id.clone(),
-        role: "admin".to_string(),
-        created_by: auth_user.user_id.clone(),
-        expires_at,
-        created_at: now,
-    };
-    state
-        .repos
-        .create_invite_token(&invite)
-        .await
-        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
-
-    // 3. Build invite URL
     let invite_url = format!("{}/invite?token={}", state.base_url, token_value);
     Ok((
         StatusCode::CREATED,
@@ -368,7 +271,7 @@ pub async fn create_invite(
 }
 
 // ---------------------------------------------------------------------------
-// DELETE /v1/admin/invites/{token} — Revoke an invite token
+// DELETE /v1/admin/invites/{token}
 // ---------------------------------------------------------------------------
 
 #[utoipa::path(delete, path = "/v1/admin/invites/{token}", tag = "Admin",
@@ -383,10 +286,6 @@ pub async fn revoke_invite(
     axum::extract::Path(token): axum::extract::Path<String>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    state
-        .repos
-        .delete_invite_token(&token)
-        .await
-        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
+    state.orgs.admin_revoke_invite(&token).await?;
     Ok(StatusCode::NO_CONTENT)
 }

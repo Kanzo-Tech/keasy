@@ -53,6 +53,7 @@ pub struct AppState {
     pub fossil_registry: Arc<fossil_lang::FossilRegistry>,
     pub connectors: Arc<dyn connectors::repository::ConnectorRepository>,
     pub jobs: Arc<dyn jobs::repository::JobRepository>,
+    pub orgs: org::service::OrgService,
     pub api_key: SecretString,
     pub base_url: String,
     pub auth: AuthServices,

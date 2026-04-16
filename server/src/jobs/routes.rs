@@ -107,7 +107,7 @@ pub async fn create_job(
         .await
         .map_err(JobApiError::InvalidFormat)?;
 
-    use crate::jobs::runner::SpawnParams;
+    use crate::executor::runner::SpawnParams;
     state.runner.spawn(SpawnParams {
         org_id: ctx.org_id.0.clone(),
         job_id: id,

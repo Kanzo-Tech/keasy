@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use fossil_lang::plan::{FossilPlan, OutputResult};
 
-use super::duckdb_engine::DuckDbConn;
+use super::duckdb::DuckDbConn;
 
 /// Loads external data into DuckDB before SQL execution.
 ///

@@ -7,13 +7,13 @@ use tracing::{error, info, warn};
 
 use crate::graph::manifest::DataManifest;
 
-use super::errors::{JobRuntimeError, classify_error};
-use super::models::{JobStatus, now_iso8601};
+use crate::jobs::errors::{JobRuntimeError, classify_error};
+use crate::jobs::models::{JobStatus, now_iso8601};
 use super::path_resolver::PathResolver;
 use crate::db::Repos;
 use crate::graph::dcat::extract::extract_dcat_input;
 use crate::graph::dcat::types::DcatInput;
-use super::pipeline_types::PipelineOutput;
+use crate::jobs::pipeline_types::PipelineOutput;
 use super::script;
 use crate::settings::org::OrgSettings;
 use crate::tenant::{OrgId, TenantResource};
@@ -139,7 +139,7 @@ impl JobRunner {
                 job_timeout,
                 tokio::task::spawn_blocking(move || {
                     let fossil_db =
-                        crate::jobs::fossil_sources::build_fossil_db(&registry_blocking);
+                        super::fossil::build_fossil_db(&registry_blocking);
                     run_job(
                         &job_id_clone,
                         &fossil_db,
@@ -231,7 +231,7 @@ fn run_job(
         extract_dcat_input(job_id, job_name, &completed_at, org, outputs)
     });
 
-    let duckdb = super::duckdb_engine::DuckDbConn::new()
+    let duckdb = super::duckdb::DuckDbConn::new()
         .map_err(|e| format!("DuckDB init failed: {e}"))?;
 
     duckdb
@@ -243,8 +243,8 @@ fn run_job(
             .map_err(|e| format!("install secret '{}': {e}", entry.name))?;
     }
 
-    use super::fossil_sources::DuckDbNativeHandler;
-    let exec = super::executor::Executor::new(duckdb)
+    use super::fossil::DuckDbNativeHandler;
+    let exec = super::engine::Executor::new(duckdb)
         .source(DuckDbNativeHandler::new("csv", path_resolver.clone()))
         .source(DuckDbNativeHandler::new("parquet", path_resolver.clone()))
         .source(DuckDbNativeHandler::new("json", path_resolver.clone()))

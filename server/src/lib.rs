@@ -9,6 +9,7 @@ pub mod crypto;
 pub mod db;
 pub mod discovery;
 pub mod error;
+pub mod executor;
 pub mod gaia_x;
 pub mod graph;
 pub mod jobs;
@@ -24,7 +25,7 @@ pub mod tenant;
 
 // Re-export types integration tests need
 pub use db::Repos;
-pub use jobs::runner::JobRunner;
+pub use executor::runner::JobRunner;
 
 use secrecy::SecretString;
 use std::path::PathBuf;

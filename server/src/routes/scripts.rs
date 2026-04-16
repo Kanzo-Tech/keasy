@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 use crate::AppState;
 use crate::jobs::{PipelineSummary, ValidationResult};
-use crate::jobs::script;
+use crate::executor::script;
 use crate::jobs::pipeline_extract::extract_summary_from_plan;
 use crate::middleware::tenant::{IsParticipant, Require};
 
@@ -24,7 +24,7 @@ pub async fn validate_script(
     let registry = state.fossil_registry.clone();
     let result = tokio::task::spawn_blocking(move || {
         // Build a fresh FossilDb in this thread (Salsa storage is not Send+Sync).
-        let db = crate::jobs::fossil_sources::build_fossil_db(&registry);
+        let db = crate::executor::fossil::build_fossil_db(&registry);
         match script::compile_to_plan(&db, "validate", &payload.script) {
             Ok(plan) => extract_summary_from_plan(&plan),
             Err(errors) => ValidationResult {

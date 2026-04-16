@@ -73,7 +73,7 @@ async fn main() {
     // Build Fossil compiler registry with keasy sources pre-registered.
     // Replaces old init_registry() global state pattern. The registry is
     // Send+Sync; per-job FossilDb instances are built from it in run_job.
-    let fossil_registry = Arc::new(keasy_server::jobs::fossil_sources::build_fossil_registry());
+    let fossil_registry = Arc::new(keasy_server::executor::fossil::build_fossil_registry());
 
     let runner = Arc::new(JobRunner::new(
         repos.clone(),

@@ -14,8 +14,8 @@ use std::sync::Arc;
 use fossil_lang::registry::register_defaults;
 use fossil_lang::{FossilDb, FossilRegistry, ParamDef, SourceDef, SourceRegistry};
 
-use super::duckdb_engine::DuckDbConn;
-use super::executor::SourceHandler;
+use super::duckdb::DuckDbConn;
+use super::engine::SourceHandler;
 use super::path_resolver::PathResolver;
 
 // ── Source builders ─────────────────────────────────────────────────

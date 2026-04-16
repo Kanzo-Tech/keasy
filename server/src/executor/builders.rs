@@ -3,11 +3,11 @@ use std::sync::Arc;
 use diesel::prelude::*;
 use crate::db::diesel_schema::connectors::dsl;
 use crate::db::Repos;
-use crate::jobs::path_resolver::{ConnectorEntry, KeasyPathResolver, PathResolver};
+use crate::executor::path_resolver::{ConnectorEntry, KeasyPathResolver, PathResolver};
 use crate::tenant::Tenant;
 
-use super::models::{Connector, ConnectorRow};
-use super::secrets;
+use crate::connectors::models::{Connector, ConnectorRow};
+use crate::connectors::secrets;
 
 impl Repos {
     async fn resolve_connectors(

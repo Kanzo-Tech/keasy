@@ -1,11 +1,7 @@
-//! Storage operations for connectors — file listing, upload.
-//! Uses the ConnectorType trait to build CloudStore clients.
-
 use futures::StreamExt;
 use serde::Serialize;
 
 use super::models::Connector;
-use super::types::ConnectorRegistry;
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct FileEntry {
@@ -14,15 +10,9 @@ pub struct FileEntry {
     pub last_modified: Option<String>,
 }
 
-pub async fn list_files(
-    registry: &ConnectorRegistry,
-    connector: &Connector,
-) -> Result<Vec<FileEntry>, String> {
-    let ct = registry
-        .get(&connector.connector_type)
-        .ok_or_else(|| format!("unknown connector type: {}", connector.connector_type))?;
-
-    let (store, prefix) = ct.build_store(&connector.config)?;
+pub async fn list_files(connector: &Connector) -> Result<Vec<FileEntry>, String> {
+    let cc = connector.parse_config()?;
+    let (store, prefix) = cc.build_store()?;
 
     let prefix_opt = if prefix.as_ref().is_empty() {
         None

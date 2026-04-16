@@ -11,7 +11,7 @@ use crate::AppState;
 use super::error::ConnectorError;
 use super::models::{Connector, CreateConnectorRequest, UpdateConnectorRequest};
 use super::storage::FileEntry;
-use super::types::ConnectorTypeInfo;
+use super::types::{ConnectorKindInfo, KNOWN_KINDS};
 
 #[derive(Deserialize)]
 pub struct ListConnectorsQuery {
@@ -32,7 +32,7 @@ pub async fn list_connectors(
         .list_connectors(&ctx.tenant(), query.direction.as_deref())
         .await
         .into_iter()
-        .map(|c| c.into_redacted(&state.connector_registry))
+        .map(|c| c.into_redacted())
         .collect();
     data_response(connectors)
 }
@@ -49,19 +49,14 @@ pub async fn create_connector(
     State(state): State<AppState>,
     Json(req): Json<CreateConnectorRequest>,
 ) -> Result<impl IntoResponse, ConnectorError> {
-    req.validate(&state.connector_registry)
+    req.validate()
         .map_err(ConnectorError::ValidationFailed)?;
 
-    // Auto-test connectivity before persisting
-    let ct = state
-        .connector_registry
-        .get(&req.connector_type)
-        .ok_or_else(|| ConnectorError::UnknownType(req.connector_type.clone()))?;
-    super::test::test_connection(ct.as_ref(), &req.config).await?;
+    super::test::test_connection(&req.config).await?;
 
     let connector = state
         .repos
-        .create_connector(&state.connector_registry, &ctx.tenant(), req)
+        .create_connector(&ctx.tenant(), req)
         .await
         .map_err(ConnectorError::Internal)?;
 
@@ -84,7 +79,7 @@ pub async fn get_connector(
         .get_connector(&ctx.resource(&id))
         .await
         .ok_or(ConnectorError::NotFound)?
-        .into_redacted(&state.connector_registry);
+        .into_redacted();
     Ok(data_response(connector))
 }
 
@@ -103,7 +98,7 @@ pub async fn update_connector(
 ) -> Result<impl IntoResponse, ConnectorError> {
     let connector = state
         .repos
-        .update_connector(&state.connector_registry, &ctx.resource(&id), req)
+        .update_connector(&ctx.resource(&id), req)
         .await
         .map_err(ConnectorError::Internal)?
         .ok_or(ConnectorError::NotFound)?;
@@ -128,11 +123,11 @@ pub async fn delete_connector(
     }
 }
 
-#[utoipa::path(get, path = "/v1/connectors/types", tag = "Connectors",
-    responses((status = 200, description = "Available connector types", body = Vec<ConnectorTypeInfo>))
+#[utoipa::path(get, path = "/v1/connectors/kinds", tag = "Connectors",
+    responses((status = 200, description = "Available connector kinds", body = Vec<ConnectorKindInfo>))
 )]
-pub async fn list_connector_types(State(state): State<AppState>) -> impl IntoResponse {
-    data_response(state.connector_registry.list())
+pub async fn list_connector_kinds() -> impl IntoResponse {
+    data_response(KNOWN_KINDS)
 }
 
 #[utoipa::path(get, path = "/v1/connectors/{id}/files", tag = "Connectors",
@@ -152,7 +147,7 @@ pub async fn list_connector_files(
         .await
         .ok_or(ConnectorError::NotFound)?;
 
-    let files = super::storage::list_files(&state.connector_registry, &connector)
+    let files = super::storage::list_files(&connector)
         .await
         .map_err(ConnectorError::Internal)?;
     Ok(data_response(files))
@@ -175,15 +170,14 @@ pub async fn test_connector(
         .get_connector_full(&ctx.resource(&id))
         .await
         .ok_or(ConnectorError::NotFound)?;
-    let ct = state
-        .connector_registry
-        .get(&connector.connector_type)
-        .ok_or_else(|| ConnectorError::UnknownType(connector.connector_type.clone()))?;
-    super::test::test_connection(ct.as_ref(), &connector.config).await?;
+    let cc = connector
+        .parse_config()
+        .map_err(ConnectorError::ValidationFailed)?;
+    super::test::test_connection(&cc).await?;
     Ok(StatusCode::OK)
 }
 
-use super::schema::{SchemaRequest, SchemaEntry};
+use super::schema::{SchemaEntry, SchemaRequest};
 
 #[utoipa::path(post, path = "/v1/connectors/{id}/schema", tag = "Connectors",
     params(("id" = String, Path, description = "Connector ID")),
@@ -205,13 +199,15 @@ pub async fn post_connector_schema(
         .await
         .ok_or(ConnectorError::NotFound)?;
 
-    // Schema inference pending DuckDB DESCRIBE implementation
     let mut results = std::collections::HashMap::new();
     for path in &req.paths {
-        results.insert(path.clone(), SchemaEntry {
-            columns: vec![],
-            error: Some("Schema inference not yet reimplemented".to_string()),
-        });
+        results.insert(
+            path.clone(),
+            SchemaEntry {
+                columns: vec![],
+                error: Some("Schema inference not yet reimplemented".to_string()),
+            },
+        );
     }
     let _ = connector;
 

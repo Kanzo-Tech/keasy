@@ -12,26 +12,26 @@ use super::models::{
     UpdateConnectorRequest,
 };
 use super::secrets;
-use super::types::ConnectorRegistry;
 
 impl Repos {
     pub async fn create_connector(
         &self,
-        registry: &ConnectorRegistry,
         tenant: &Tenant,
         req: CreateConnectorRequest,
     ) -> Result<Connector, String> {
         let now = now_iso8601();
-        let (public_config, secret_values) =
-            secrets::split(registry, &req.connector_type, &req.config);
-        let config_json =
-            serde_json::to_string(&public_config).map_err(|e| format!("invalid config JSON: {e}"))?;
+        let connector_type = req.config.kind().to_string();
+        let config_value = serde_json::to_value(&req.config)
+            .map_err(|e| format!("serialize config: {e}"))?;
+        let (public_config, secret_values) = secrets::split(&connector_type, &config_value);
+        let config_json = serde_json::to_string(&public_config)
+            .map_err(|e| format!("invalid config JSON: {e}"))?;
 
         let new = NewConnector {
             id: uuid::Uuid::new_v4().to_string(),
             organization_id: tenant.org_id.as_str().to_string(),
             name: req.name,
-            connector_type: req.connector_type,
+            connector_type,
             direction: req.direction.as_str().to_string(),
             config: config_json,
             created_at: now.clone(),
@@ -53,16 +53,15 @@ impl Repos {
             .map_err(|e| format!("interact: {e}"))?
             .map_err(|e| format!("insert: {e}"))?;
 
-        // Store secrets
         if !secret_values.is_empty() {
-            let blob =
-                serde_json::to_string(&secret_values).map_err(|e| format!("serialize secrets: {e}"))?;
+            let blob = serde_json::to_string(&secret_values)
+                .map_err(|e| format!("serialize secrets: {e}"))?;
             self.set_secret(&secrets::key_for(&row.id), blob.as_bytes())
                 .await;
         }
 
         let mut connector: Connector = row.into();
-        connector.config = req.config; // return full config including secrets
+        connector.config = config_value;
         Ok(connector)
     }
 
@@ -86,7 +85,6 @@ impl Repos {
             .map(Connector::from)
     }
 
-    /// Get connector with secrets merged back — for internal use (storage ops, credential building).
     pub async fn get_connector_full(&self, resource: &TenantResource<'_>) -> Option<Connector> {
         let mut connector = self.get_connector(resource).await?;
         secrets::merge_from_db(self, &mut connector).await;
@@ -115,7 +113,9 @@ impl Repos {
                     query = query.filter(dsl::direction.eq(d));
                 }
 
-                query.select(ConnectorRow::as_select()).load::<ConnectorRow>(conn)
+                query
+                    .select(ConnectorRow::as_select())
+                    .load::<ConnectorRow>(conn)
             })
             .await;
 
@@ -127,7 +127,6 @@ impl Repos {
 
     pub async fn update_connector(
         &self,
-        registry: &ConnectorRegistry,
         resource: &TenantResource<'_>,
         req: UpdateConnectorRequest,
     ) -> Result<Option<Connector>, String> {
@@ -139,14 +138,10 @@ impl Repos {
         if let Some(name) = req.name {
             connector.name = name;
         }
-        if let Some(connector_type) = req.connector_type {
-            connector.connector_type = connector_type;
-        }
         if let Some(direction) = req.direction {
             connector.direction = direction;
         }
 
-        // Handle config update with secret preservation
         if let Some(new_config) = req.config {
             let mut existing_secrets = HashMap::new();
             if let Some(bytes) = self.get_secret(&secrets::key_for(&connector.id)).await {
@@ -155,28 +150,25 @@ impl Repos {
                 }
             }
 
-            let secret_names = secrets::field_names(registry, &connector.connector_type);
+            let secret_names = secrets::field_names_for_kind(&connector.connector_type);
             let mut full_config = new_config.clone();
             if let Some(obj) = full_config.as_object_mut() {
                 for name in secret_names {
-                    match obj.get(*name) {
-                        Some(serde_json::Value::Bool(true)) => {
-                            if let Some(existing_val) = existing_secrets.get(*name) {
-                                obj.insert(
-                                    (*name).to_string(),
-                                    serde_json::Value::String(existing_val.clone()),
-                                );
-                            } else {
-                                obj.remove(*name);
-                            }
+                    if let Some(serde_json::Value::Bool(true)) = obj.get(*name) {
+                        if let Some(existing_val) = existing_secrets.get(*name) {
+                            obj.insert(
+                                (*name).to_string(),
+                                serde_json::Value::String(existing_val.clone()),
+                            );
+                        } else {
+                            obj.remove(*name);
                         }
-                        _ => {}
                     }
                 }
             }
 
             let (public_config, new_secrets) =
-                secrets::split(registry, &connector.connector_type, &full_config);
+                secrets::split(&connector.connector_type, &full_config);
             connector.config = public_config;
 
             if new_secrets.is_empty() {

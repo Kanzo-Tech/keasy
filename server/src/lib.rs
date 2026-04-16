@@ -51,7 +51,7 @@ pub struct AppState {
     pub base_url: String,
     pub auth: AuthServices,
     pub gaia_x: GaiaXServices,
-    pub connector_registry: Arc<connectors::types::ConnectorRegistry>,
+    // ConnectorRegistry removed — ConnectorConfig enum methods are called directly.
 }
 
 /// Authentication and identity services (Keycloak / OIDC).

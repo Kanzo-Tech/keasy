@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::db::diesel_schema::connectors;
 
+use super::types::ConnectorConfig;
+
 // ── Direction enum (API-facing) ──────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
@@ -74,7 +76,7 @@ pub struct ConnectorChangeset {
     pub updated_at: Option<String>,
 }
 
-// ── API-facing model (parsed JSON config, enum direction) ────────────
+// ── API-facing model ─────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct Connector {
@@ -102,11 +104,19 @@ impl From<ConnectorRow> for Connector {
 }
 
 impl Connector {
-    /// Return a copy with secret fields replaced by `true` markers,
-    /// suitable for API responses. Keeps non-secret config fields intact.
-    pub fn into_redacted(mut self, registry: &super::types::ConnectorRegistry) -> Self {
-        self.config = super::secrets::redact(registry, &self.connector_type, &self.config);
+    pub fn into_redacted(mut self) -> Self {
+        if let Ok(mut cc) = serde_json::from_value::<ConnectorConfig>(self.config.clone()) {
+            cc = cc.into_redacted();
+            if let Ok(v) = serde_json::to_value(&cc) {
+                self.config = v;
+            }
+        }
         self
+    }
+
+    pub fn parse_config(&self) -> Result<ConnectorConfig, String> {
+        serde_json::from_value(self.config.clone())
+            .map_err(|e| format!("invalid connector config: {e}"))
     }
 }
 
@@ -115,32 +125,22 @@ impl Connector {
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CreateConnectorRequest {
     pub name: String,
-    pub connector_type: String,
     pub direction: ConnectorDirection,
-    #[serde(default = "default_config")]
-    pub config: serde_json::Value,
-}
-
-fn default_config() -> serde_json::Value {
-    serde_json::json!({})
+    pub config: ConnectorConfig,
 }
 
 impl CreateConnectorRequest {
-    pub fn validate(&self, registry: &super::types::ConnectorRegistry) -> Result<(), String> {
+    pub fn validate(&self) -> Result<(), String> {
         if self.name.trim().is_empty() {
             return Err("name is required".into());
         }
-        let ct = registry
-            .get(&self.connector_type)
-            .ok_or_else(|| format!("unknown connector type: {}", self.connector_type))?;
-        ct.validate(&self.config)
+        self.config.validate()
     }
 }
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct UpdateConnectorRequest {
     pub name: Option<String>,
-    pub connector_type: Option<String>,
     pub direction: Option<ConnectorDirection>,
     pub config: Option<serde_json::Value>,
 }

@@ -5,23 +5,18 @@ use serde_json::Value;
 use crate::db::Repos;
 
 use super::models::Connector;
-use super::types::ConnectorRegistry;
 
-/// Identify secret field names from a connector type's static metadata.
-pub fn field_names(registry: &ConnectorRegistry, connector_type: &str) -> &'static [&'static str] {
-    registry
-        .get(connector_type)
-        .map(|ct| ct.info().secret_fields)
-        .unwrap_or(&[])
+pub fn field_names_for_kind(kind: &str) -> &'static [&'static str] {
+    match kind {
+        "s3" => &["secret_access_key", "session_token"],
+        "gcs" => &["service_account_json", "hmac_secret"],
+        "azure_blob" => &["connection_string"],
+        _ => &[],
+    }
 }
 
-/// Split config into (public_config, secrets_map).
-pub fn split(
-    registry: &ConnectorRegistry,
-    connector_type: &str,
-    config: &Value,
-) -> (Value, HashMap<String, String>) {
-    let secret_names = field_names(registry, connector_type);
+pub fn split(connector_type: &str, config: &Value) -> (Value, HashMap<String, String>) {
+    let secret_names = field_names_for_kind(connector_type);
     let mut public = config.clone();
     let mut secrets = HashMap::new();
     if let Some(obj) = public.as_object_mut() {
@@ -36,7 +31,6 @@ pub fn split(
     (public, secrets)
 }
 
-/// Merge secrets back into config for internal use.
 pub fn merge(config: &Value, secrets: &HashMap<String, String>) -> Value {
     let mut merged = config.clone();
     if let Some(obj) = merged.as_object_mut() {
@@ -47,13 +41,8 @@ pub fn merge(config: &Value, secrets: &HashMap<String, String>) -> Value {
     merged
 }
 
-/// Redact secret fields — replace values with boolean true (has_stored_value flag).
-pub fn redact(
-    registry: &ConnectorRegistry,
-    connector_type: &str,
-    config: &Value,
-) -> Value {
-    let secret_names = field_names(registry, connector_type);
+pub fn redact(connector_type: &str, config: &Value) -> Value {
+    let secret_names = field_names_for_kind(connector_type);
     let mut redacted = config.clone();
     if let Some(obj) = redacted.as_object_mut() {
         for name in secret_names {
@@ -65,12 +54,10 @@ pub fn redact(
     redacted
 }
 
-/// Build the secrets table key for a connector.
 pub fn key_for(connector_id: &str) -> String {
     format!("connector:{connector_id}")
 }
 
-/// Merge secrets from the encrypted store into a connector's config.
 pub async fn merge_from_db(db: &Repos, connector: &mut Connector) {
     if let Some(bytes) = db.get_secret(&key_for(&connector.id)).await {
         if let Ok(secrets) = serde_json::from_slice::<HashMap<String, String>>(&bytes) {

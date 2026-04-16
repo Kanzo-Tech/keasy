@@ -58,7 +58,6 @@ async fn sign_manifest_urls(
     let resolver = state
         .repos
         .build_path_resolver(
-            &state.connector_registry,
             &ctx.tenant(),
             connector_ids,
         )

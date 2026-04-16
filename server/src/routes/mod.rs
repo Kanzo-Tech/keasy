@@ -175,8 +175,8 @@ pub fn build_router(
             axum::routing::get(crate::discovery::routes::resolve_catalog_urls),
         )
         .route(
-            "/v1/connectors/types",
-            axum::routing::get(crate::connectors::routes::list_connector_types),
+            "/v1/connectors/kinds",
+            axum::routing::get(crate::connectors::routes::list_connector_kinds),
         )
         .route(
             "/v1/connectors",

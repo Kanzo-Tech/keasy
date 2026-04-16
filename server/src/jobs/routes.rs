@@ -124,7 +124,6 @@ pub async fn create_job(
     let path_resolver = state
         .repos
         .build_path_resolver(
-            &state.connector_registry,
             &ctx.tenant(),
             &payload.connector_ids,
         )

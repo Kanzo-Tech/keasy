@@ -10,9 +10,9 @@ use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use serde::Deserialize;
 
 use crate::AppState;
-use crate::db::invite_tokens::InviteToken;
-use crate::db::dataspaces::Dataspace;
-use crate::db::organizations::Organization;
+use crate::org::invite_tokens::InviteToken;
+use crate::dataspaces::db::Dataspace;
+use crate::org::organizations::Organization;
 use crate::error::data_response;
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::middleware::tenant::{IsPromotor, RbacError, Require};

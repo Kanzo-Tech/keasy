@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 
 use crate::db::diesel_schema::organizations;
-use super::Repos;
+use crate::db::Repos;
 
 #[derive(Debug, Clone, serde::Serialize, Queryable, Selectable, Insertable, utoipa::ToSchema)]
 #[diesel(table_name = organizations)]

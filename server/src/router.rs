@@ -1,10 +1,3 @@
-pub mod admin;
-pub mod fossil_analysis;
-pub mod health;
-pub mod org;
-pub mod providers;
-pub mod scripts;
-
 use axum::{middleware, Router};
 use axum::extract::DefaultBodyLimit;
 use axum::http::HeaderValue;
@@ -22,7 +15,7 @@ use crate::middleware::tenant::tenant_context_required;
 
 /// Session configuration — groups the 4 session-related params for `build_router`.
 pub struct SessionConfig {
-    pub store: crate::db::session_store::DieselStore,
+    pub store: crate::auth::session_store::DieselStore,
     pub secret: secrecy::SecretString,
     pub cookie_name: String,
     pub secure: bool,
@@ -49,16 +42,16 @@ pub fn build_router(
         .with_signed(key);
 
     let health_routes = Router::new()
-        .route("/healthz/live", axum::routing::get(health::liveness))
-        .route("/healthz/ready", axum::routing::get(health::readiness))
+        .route("/healthz/live", axum::routing::get(crate::health::liveness))
+        .route("/healthz/ready", axum::routing::get(crate::health::readiness))
         .with_state(state.clone());
 
     let public_api_routes = Router::new()
         .route("/openapi.json", axum::routing::get(crate::openapi::openapi_json))
-        .route("/v1/status", axum::routing::get(health::service_status))
+        .route("/v1/status", axum::routing::get(crate::health::service_status))
         .route(
             "/v1/providers",
-            axum::routing::get(providers::list_providers),
+            axum::routing::get(crate::settings::providers::list_providers),
         )
         // Gaia-X .well-known public endpoints (no auth required — GXDCH must resolve these)
         .route(
@@ -123,11 +116,11 @@ pub fn build_router(
         )
         .route(
             "/v1/scripts/validate",
-            axum::routing::post(scripts::validate_script),
+            axum::routing::post(crate::executor::scripts::validate_script),
         )
         .route(
             "/v1/fossil/analyze",
-            axum::routing::post(fossil_analysis::analyze),
+            axum::routing::post(crate::executor::fossil_analysis::analyze),
         )
         .route(
             "/v1/settings/organization",
@@ -196,46 +189,46 @@ pub fn build_router(
         // Admin routes — promotor only
         .route(
             "/v1/admin/organizations",
-            axum::routing::get(admin::list_all_orgs).post(admin::create_org_and_invite),
+            axum::routing::get(crate::org::admin::list_all_orgs).post(crate::org::admin::create_org_and_invite),
         )
         // Invite link management — promotor only
         .route(
             "/v1/admin/invites",
-            axum::routing::get(admin::list_invites).post(admin::create_invite),
+            axum::routing::get(crate::org::admin::list_invites).post(crate::org::admin::create_invite),
         )
         .route(
             "/v1/admin/invites/{token}",
-            axum::routing::delete(admin::revoke_invite),
+            axum::routing::delete(crate::org::admin::revoke_invite),
         )
         // OIDC instance registration — promotor only
         .route(
             "/v1/admin/oidc-clients",
-            axum::routing::get(admin::list_dataspaces)
-                .post(admin::register_dataspace),
+            axum::routing::get(crate::org::admin::list_dataspaces)
+                .post(crate::org::admin::register_dataspace),
         )
         // Org identity — read for any participant, write for participant org admins
         .route(
             "/v1/org/identity",
-            axum::routing::get(org::get_org_identity)
-                .put(org::update_org_identity),
+            axum::routing::get(crate::org::routes::get_org_identity)
+                .put(crate::org::routes::update_org_identity),
         )
         // Org admin routes — participant org admins only
         .route(
             "/v1/org/users",
-            axum::routing::get(org::list_users),
+            axum::routing::get(crate::org::routes::list_users),
         )
         .route(
             "/v1/org/users/{id}",
-            axum::routing::put(org::update_user_role).delete(org::remove_user),
+            axum::routing::put(crate::org::routes::update_user_role).delete(crate::org::routes::remove_user),
         )
         // Org invite management — participant org admins only
         .route(
             "/v1/org/invites",
-            axum::routing::get(org::list_org_invites).post(org::create_org_invite),
+            axum::routing::get(crate::org::routes::list_org_invites).post(crate::org::routes::create_org_invite),
         )
         .route(
             "/v1/org/invites/{token}",
-            axum::routing::delete(org::revoke_org_invite),
+            axum::routing::delete(crate::org::routes::revoke_org_invite),
         )
         // Gaia-X compliance routes (session + tenant protected)
         .route(

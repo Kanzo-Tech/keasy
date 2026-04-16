@@ -9,9 +9,9 @@ use utoipa::OpenApi;
     ),
     paths(
         // Health
-        crate::routes::health::liveness,
-        crate::routes::health::readiness,
-        crate::routes::health::service_status,
+        crate::health::liveness,
+        crate::health::readiness,
+        crate::health::service_status,
         // Jobs
         crate::jobs::routes::list_jobs,
         crate::jobs::routes::create_job,
@@ -33,26 +33,26 @@ use utoipa::OpenApi;
         crate::auth::routes::logout,
         crate::auth::routes::list_workspaces,
         // Scripts
-        crate::routes::scripts::validate_script,
+        crate::executor::scripts::validate_script,
         // Providers
-        crate::routes::providers::list_providers,
+        crate::settings::providers::list_providers,
         // Admin
-        crate::routes::admin::list_all_orgs,
-        crate::routes::admin::create_org_and_invite,
-        crate::routes::admin::list_invites,
-        crate::routes::admin::create_invite,
-        crate::routes::admin::revoke_invite,
-        crate::routes::admin::list_dataspaces,
-        crate::routes::admin::register_dataspace,
+        crate::org::admin::list_all_orgs,
+        crate::org::admin::create_org_and_invite,
+        crate::org::admin::list_invites,
+        crate::org::admin::create_invite,
+        crate::org::admin::revoke_invite,
+        crate::org::admin::list_dataspaces,
+        crate::org::admin::register_dataspace,
         // Organization
-        crate::routes::org::list_users,
-        crate::routes::org::update_user_role,
-        crate::routes::org::remove_user,
-        crate::routes::org::get_org_identity,
-        crate::routes::org::update_org_identity,
-        crate::routes::org::create_org_invite,
-        crate::routes::org::list_org_invites,
-        crate::routes::org::revoke_org_invite,
+        crate::org::routes::list_users,
+        crate::org::routes::update_user_role,
+        crate::org::routes::remove_user,
+        crate::org::routes::get_org_identity,
+        crate::org::routes::update_org_identity,
+        crate::org::routes::create_org_invite,
+        crate::org::routes::list_org_invites,
+        crate::org::routes::revoke_org_invite,
         // Gaia-X Compliance
         crate::gaia_x::routes::comply,
         crate::gaia_x::routes::get_compliance_status,
@@ -66,7 +66,7 @@ use utoipa::OpenApi;
         // Auth (additional)
         crate::auth::routes::get_invite_info,
         // Fossil Analysis
-        crate::routes::fossil_analysis::analyze,
+        crate::executor::fossil_analysis::analyze,
         // Connectors
         crate::connectors::routes::list_connectors,
         crate::connectors::routes::create_connector,
@@ -111,15 +111,15 @@ use utoipa::OpenApi;
         crate::settings::preferences::Preferences,
         crate::settings::ai::AiSettingsPayload,
         // Organizations
-        crate::db::organizations::Organization,
+        crate::org::organizations::Organization,
         // Scripts
-        crate::routes::scripts::ValidateRequest,
+        crate::executor::scripts::ValidateRequest,
         // Invite Tokens
-        crate::db::invite_tokens::InviteToken,
+        crate::org::invite_tokens::InviteToken,
         // Dataspaces
-        crate::db::dataspaces::Dataspace,
+        crate::dataspaces::db::Dataspace,
         // Org members
-        crate::db::org_members::OrgMember,
+        crate::org::org_members::OrgMember,
         // Gaia-X Compliance
         crate::gaia_x::routes::ComplianceCredential,
         crate::gaia_x::routes::ComplianceStatus,
@@ -134,32 +134,32 @@ use utoipa::OpenApi;
         crate::auth::routes::InviteInfoResponse,
         crate::auth::routes::LogoutResponse,
         // Health
-        crate::routes::health::ServiceStatusResponse,
+        crate::health::ServiceStatusResponse,
         // Admin
-        crate::routes::admin::CreateOrgAndInviteRequest,
-        crate::routes::admin::RegisterOidcClientRequest,
-        crate::routes::admin::CreateInviteRequest,
-        crate::routes::admin::AdminInviteEntry,
-        crate::routes::admin::AdminInviteResult,
-        crate::routes::admin::CreateOrgResponse,
-        crate::routes::admin::RegisterDataspaceResponse,
+        crate::org::admin::CreateOrgAndInviteRequest,
+        crate::org::admin::RegisterOidcClientRequest,
+        crate::org::admin::CreateInviteRequest,
+        crate::org::admin::AdminInviteEntry,
+        crate::org::admin::AdminInviteResult,
+        crate::org::admin::CreateOrgResponse,
+        crate::org::admin::RegisterDataspaceResponse,
         // Organization
-        crate::routes::org::OrgInviteEntry,
-        crate::routes::org::UpdateUserRoleRequest,
-        crate::routes::org::UpdateOrgIdentityPayload,
-        crate::routes::org::CreateOrgInviteRequest,
-        crate::routes::org::CreateOrgInviteResponse,
-        crate::routes::org::OrgIdentityResponse,
+        crate::org::routes::OrgInviteEntry,
+        crate::org::routes::UpdateUserRoleRequest,
+        crate::org::routes::UpdateOrgIdentityPayload,
+        crate::org::routes::CreateOrgInviteRequest,
+        crate::org::routes::CreateOrgInviteResponse,
+        crate::org::routes::OrgIdentityResponse,
         // Jobs
         // Discovery
         crate::graph::types::TabularData,
         // Providers
-        crate::routes::providers::ProviderEntry,
+        crate::settings::providers::ProviderEntry,
         // Fossil Analysis
-        crate::routes::fossil_analysis::AnalyzeRequest,
-        crate::routes::fossil_analysis::AnalyzeResponse,
-        crate::routes::fossil_analysis::CompletionItem,
-        crate::routes::fossil_analysis::DiagnosticItem,
+        crate::executor::fossil_analysis::AnalyzeRequest,
+        crate::executor::fossil_analysis::AnalyzeResponse,
+        crate::executor::fossil_analysis::CompletionItem,
+        crate::executor::fossil_analysis::DiagnosticItem,
     ))
 )]
 pub struct ApiDoc;

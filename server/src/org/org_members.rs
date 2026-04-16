@@ -3,7 +3,7 @@ use std::fmt;
 use diesel::prelude::*;
 
 use crate::db::diesel_schema::org_members;
-use super::Repos;
+use crate::db::Repos;
 
 /// Role of a user within their organization.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

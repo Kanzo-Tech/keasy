@@ -1,6 +1,6 @@
 /// Gaia-X state CRUD — bridges GaiaxState (gaia_x layer) and OrgGaiax (DB layer).
 use crate::db::Repos;
-use crate::db::org_gaiax::{OrgGaiax, get_org_gaiax, upsert_org_gaiax};
+use crate::gaia_x::org_gaiax::{OrgGaiax, get_org_gaiax, upsert_org_gaiax};
 use crate::gaia_x::GaiaxState;
 
 impl Repos {

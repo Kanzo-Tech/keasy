@@ -10,7 +10,7 @@ use tower_sessions_core::session::{Id, Record};
 use tower_sessions_core::session_store;
 use tower_sessions_core::{ExpiredDeletion, SessionStore};
 
-use super::diesel_schema::tower_sessions::dsl;
+use crate::db::diesel_schema::tower_sessions::dsl;
 
 fn backend(e: impl std::fmt::Display) -> session_store::Error {
     session_store::Error::Backend(e.to_string())
@@ -34,7 +34,7 @@ impl DieselStore {
 }
 
 #[derive(Insertable, AsChangeset)]
-#[diesel(table_name = super::diesel_schema::tower_sessions)]
+#[diesel(table_name = crate::db::diesel_schema::tower_sessions)]
 struct SessionRecord {
     id: String,
     data: Vec<u8>,
@@ -42,7 +42,7 @@ struct SessionRecord {
 }
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = super::diesel_schema::tower_sessions)]
+#[diesel(table_name = crate::db::diesel_schema::tower_sessions)]
 struct SessionRow {
     data: Vec<u8>,
 }

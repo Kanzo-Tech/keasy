@@ -14,8 +14,8 @@ use regex::Regex;
 use serde::Deserialize;
 
 use crate::AppState;
-use crate::db::invite_tokens::InviteToken;
-use crate::db::org_members::{MemberRole, OrgMember};
+use crate::org::invite_tokens::InviteToken;
+use crate::org::org_members::{MemberRole, OrgMember};
 use crate::error::{data_response, error_body};
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::middleware::tenant::{IsAdmin, IsParticipant, RbacError, Require};

@@ -1,6 +1,6 @@
 use keasy_server::{AppState, AuthServices, GaiaXServices, Repos, JobRunner};
 use keasy_server::config::ServerConfig;
-use keasy_server::routes::{build_router, SessionConfig};
+use keasy_server::router::{build_router, SessionConfig};
 use secrecy::ExposeSecret;
 
 use std::net::SocketAddr;
@@ -61,7 +61,7 @@ async fn main() {
 
     // Session store — shares the Diesel pool (no separate rusqlite connection needed).
     // The tower_sessions table is created by schema::apply() during Repos::open().
-    let session_store = keasy_server::db::session_store::DieselStore::new(repos.diesel_pool.clone());
+    let session_store = keasy_server::auth::session_store::DieselStore::new(repos.diesel_pool.clone());
 
     // Background task: continuously delete expired sessions (every 60 seconds)
     let deletion_task = tokio::task::spawn(

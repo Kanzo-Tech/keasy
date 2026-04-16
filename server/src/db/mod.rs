@@ -1,13 +1,7 @@
-pub mod dataspaces;
 pub mod diesel_schema;
-pub mod invite_tokens;
-pub mod org_gaiax;
-pub mod org_members;
-pub mod organizations;
 mod schema;
 pub mod secrets;
 pub mod seed;
-pub mod session_store;
 
 use std::path::Path;
 

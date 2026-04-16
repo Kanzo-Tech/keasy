@@ -14,6 +14,7 @@ pub mod credentials;
 pub mod db;
 pub mod gxdch;
 pub mod keys;
+pub mod org_gaiax;
 pub mod routes;
 pub mod signing;
 pub mod vp;

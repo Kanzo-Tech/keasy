@@ -1,9 +1,7 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use serde::Serialize;
-use tokio::sync::{Semaphore, broadcast};
+use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
@@ -20,16 +18,6 @@ use super::script;
 use crate::settings::org::OrgSettings;
 use crate::tenant::{OrgId, TenantResource};
 
-/// SSE event emitted by the job runner at each execution phase.
-#[derive(Clone, Serialize, utoipa::ToSchema)]
-pub struct JobEvent {
-    pub phase: String,
-    pub index: u8,
-    pub total: u8,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
-}
-
 /// Parameters for spawning a job execution task.
 pub struct SpawnParams {
     pub org_id: String,
@@ -37,38 +25,18 @@ pub struct SpawnParams {
     pub script: String,
     pub org_settings: Option<OrgSettings>,
     pub dcat_enabled: bool,
-    /// Pre-resolved catalog storage destination (promotor cloud) as a
-    /// base URL like `s3://bucket/prefix`. None when catalog storage is
-    /// not configured. The DCAT materializer will use it via DuckDB
-    /// `COPY ... TO '<catalog_dest>/...'` once implemented.
-    pub catalog_dest: Option<String>,
-    /// Shared Fossil registry (sources + sinks + attribute ops). Send+Sync.
-    /// Each job thread builds its own FossilDb from this registry.
     pub fossil_registry: Arc<fossil_lang::FossilRegistry>,
-    /// Per-job path resolver: one `ConnectorEntry` per authorized
-    /// connector, with its `Arc<dyn CloudStore>` and DuckDB SECRET spec
-    /// pre-built. Used by `run_job` to install secrets and resolve
-    /// `@conn/...` source paths to real cloud URLs.
     pub path_resolver: Arc<dyn PathResolver>,
 }
 
-const TOTAL_PHASES: u8 = 5;
-
-/// Value returned by [`run_job`] after successful script execution.
 struct JobResult {
     dcat_input: Option<DcatInput>,
-    /// Detected fragment base URL (present when `Rdf.fragments()` was used).
     rdf_base: Option<String>,
-    /// GraphAr manifest with vertex/edge file paths and column statistics.
     manifest: Option<DataManifest>,
-    /// DCAT-AP catalog manifest (parquets in promotor storage).
     catalog_manifest: Option<DataManifest>,
-    /// Base URL for catalog parquets.
     catalog_base: Option<String>,
 }
 
-/// Flattened error from the three failure modes of job execution:
-/// script error, task panic, or timeout.
 enum JobFailure {
     Execution(String),
     Panic(String),
@@ -102,7 +70,6 @@ pub struct JobRunner {
     semaphore: Arc<Semaphore>,
     job_timeout: Duration,
     tasks: std::sync::Mutex<JoinSet<()>>,
-    progress: Arc<std::sync::Mutex<HashMap<String, broadcast::Sender<JobEvent>>>>,
 }
 
 impl JobRunner {
@@ -116,7 +83,6 @@ impl JobRunner {
             semaphore: Arc::new(Semaphore::new(max_concurrent)),
             job_timeout: Duration::from_secs(job_timeout_secs),
             tasks: std::sync::Mutex::new(JoinSet::new()),
-            progress: Arc::new(std::sync::Mutex::new(HashMap::new())),
         }
     }
 
@@ -124,33 +90,13 @@ impl JobRunner {
         self.semaphore.available_permits()
     }
 
-    /// Subscribe to progress events for a running job.
-    /// Returns `None` if no broadcast channel exists (job already finished or not yet spawned).
-    pub fn subscribe(&self, job_id: &str) -> Option<broadcast::Receiver<JobEvent>> {
-        let map = self.progress.lock().expect("progress lock poisoned");
-        map.get(job_id).map(|tx| tx.subscribe())
-    }
-
-    /// Spawn a job execution task.
-    /// `params.org_id` is the organization that owns this job.
     pub fn spawn(&self, params: SpawnParams) {
-        let SpawnParams { org_id, job_id, script, org_settings, dcat_enabled, catalog_dest, fossil_registry, path_resolver } = params;
+        let SpawnParams { org_id, job_id, script, org_settings, dcat_enabled, fossil_registry, path_resolver } = params;
         let db = self.db.clone();
         let semaphore = self.semaphore.clone();
         let job_timeout = self.job_timeout;
-        let progress = self.progress.clone();
-
-        // Create broadcast channel synchronously -- guaranteed to exist when spawn() returns
-        let (tx, _) = broadcast::channel::<JobEvent>(16);
-        {
-            let mut map = progress.lock().expect("progress lock poisoned");
-            map.insert(job_id.clone(), tx.clone());
-        }
 
         self.tasks.lock().expect("tasks lock poisoned").spawn(async move {
-            // Emit initial queued event
-            if tx.send(JobEvent { phase: "queued".into(), index: 0, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
-
             let org = OrgId(org_id.clone());
 
             let _permit = match semaphore.acquire_owned().await {
@@ -164,8 +110,6 @@ impl JobRunner {
                     }).await {
                         error!(job_id = %job_id, error = %e, "failed to update job");
                     }
-                    if tx.send(JobEvent { phase: "error".into(), index: 0, total: TOTAL_PHASES, error: Some("Failed to acquire execution permit".into()) }).is_err() { warn!("SSE subscriber disconnected"); }
-                    progress.lock().expect("progress lock poisoned").remove(&job_id);
                     return;
                 }
             };
@@ -189,14 +133,11 @@ impl JobRunner {
 
             let job_id_clone = job_id.clone();
             let outputs = pipeline_outputs;
-            let tx_blocking = tx.clone();
             let registry_blocking = fossil_registry.clone();
             let resolver_blocking = path_resolver.clone();
             let result = tokio::time::timeout(
                 job_timeout,
                 tokio::task::spawn_blocking(move || {
-                    // Build a fresh FossilDb per job thread (Salsa storage is not Send+Sync).
-                    // Cheap: clones the registry (~6 sources + defaults).
                     let fossil_db =
                         crate::jobs::fossil_sources::build_fossil_db(&registry_blocking);
                     run_job(
@@ -206,9 +147,7 @@ impl JobRunner {
                         if dcat_enabled { org_settings.as_ref() } else { None },
                         job_name.as_deref(),
                         &outputs,
-                        catalog_dest.as_deref(),
                         &resolver_blocking,
-                        &tx_blocking,
                     )
                 }),
             )
@@ -219,9 +158,6 @@ impl JobRunner {
 
             match result {
                 Ok(JobResult { dcat_input, rdf_base, manifest, catalog_manifest, catalog_base }) => {
-                    // Phase 3: finalizing
-                    if tx.send(JobEvent { phase: "finalizing".into(), index: 3, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
-
                     if let Err(e) = db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Completed;
                         job.completed_at = Some(now_iso8601());
@@ -234,7 +170,6 @@ impl JobRunner {
                         error!(job_id = %job_id, error = %e, "failed to update job");
                     }
                     info!(job_id = %job_id, "Job completed");
-                    if tx.send(JobEvent { phase: "complete".into(), index: 4, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
                 }
                 Err(failure) => {
                     let msg = failure.message();
@@ -247,12 +182,8 @@ impl JobRunner {
                     }).await {
                         error!(job_id = %job_id, error = %e, "failed to update job");
                     }
-                    if tx.send(JobEvent { phase: "error".into(), index: 4, total: TOTAL_PHASES, error: Some(msg.to_string()) }).is_err() { warn!("SSE subscriber disconnected"); }
                 }
             }
-
-            // Remove sender so subscribe() returns None for finished jobs
-            progress.lock().expect("progress lock poisoned").remove(&job_id);
         });
     }
 
@@ -290,13 +221,8 @@ fn run_job(
     org: Option<&OrgSettings>,
     job_name: Option<&str>,
     outputs: &[PipelineOutput],
-    catalog_dest: Option<&str>,
     path_resolver: &Arc<dyn PathResolver>,
-    tx: &broadcast::Sender<JobEvent>,
 ) -> Result<JobResult, String> {
-    // Phase 1: compiling
-    if tx.send(JobEvent { phase: "compiling".into(), index: 1, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
-
     let plan = script::compile_to_plan(fossil_db, &format!("job-{}", job_id), script_source)
         .map_err(|errors| errors.join("; "))?;
 
@@ -305,16 +231,9 @@ fn run_job(
         extract_dcat_input(job_id, job_name, &completed_at, org, outputs)
     });
 
-    // Phase 2: executing
-    if tx.send(JobEvent { phase: "executing".into(), index: 2, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
-
-    // Execute the plan via Executor<DuckDB>.
     let duckdb = super::duckdb_engine::DuckDbConn::new()
         .map_err(|e| format!("DuckDB init failed: {e}"))?;
 
-    // Load cloud extensions and install a SECRET per authorized connector
-    // BEFORE the executor runs. DuckDB autoselects the matching secret per
-    // cloud read by SCOPE prefix, so multi-credential coexistence is safe.
     duckdb
         .load_extensions(&["httpfs", "azure"])
         .map_err(|e| format!("DuckDB load_extensions failed: {e}"))?;
@@ -324,10 +243,6 @@ fn run_job(
             .map_err(|e| format!("install secret '{}': {e}", entry.name))?;
     }
 
-    // Register one native DuckDB handler per format fossil-lang knows
-    // about. Each handler resolves `@conn/...` source paths through the
-    // shared resolver and materialises `<alias>` as a DuckDB view reading
-    // from the corresponding table-valued function.
     use super::fossil_sources::DuckDbNativeHandler;
     let exec = super::executor::Executor::new(duckdb)
         .source(DuckDbNativeHandler::new("csv", path_resolver.clone()))
@@ -336,28 +251,8 @@ fn run_job(
         .source(DuckDbNativeHandler::new("excel", path_resolver.clone()));
     let results = exec.execute(&plan).map_err(|e| e.to_string())?;
 
-    // Extract rdf_base and manifest from execution output
     let rdf_base = results.first().map(|r| r.path.clone());
-    let manifest: Option<DataManifest> = None; // GraphAr handler will provide this
+    let manifest: Option<DataManifest> = None;
 
-    // Materialize DCAT-AP catalog as parquets (if dcat + manifest + dest available)
-    let (catalog_manifest, catalog_base) = match (&dcat_input, &manifest, catalog_dest) {
-        (Some(input), Some(data_manifest), Some(dest)) => {
-            let dest_with_job = format!(
-                "{}/{}/{job_id}",
-                dest.trim_end_matches('/'),
-                input.org.publisher_name,
-            );
-            match crate::graph::dcat::materializer::materialize_catalog(input, data_manifest, &dest_with_job) {
-                Ok(cat_manifest) => (Some(cat_manifest), Some(dest_with_job)),
-                Err(e) => {
-                    warn!("Catalog materialization failed (non-fatal): {e}");
-                    (None, None)
-                }
-            }
-        }
-        _ => (None, None),
-    };
-
-    Ok(JobResult { dcat_input, rdf_base, manifest, catalog_manifest, catalog_base })
+    Ok(JobResult { dcat_input, rdf_base, manifest, catalog_manifest: None, catalog_base: None })
 }

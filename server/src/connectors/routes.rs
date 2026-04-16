@@ -177,39 +177,3 @@ pub async fn test_connector(
     Ok(StatusCode::OK)
 }
 
-use super::schema::{SchemaEntry, SchemaRequest};
-
-#[utoipa::path(post, path = "/v1/connectors/{id}/schema", tag = "Connectors",
-    params(("id" = String, Path, description = "Connector ID")),
-    request_body = SchemaRequest,
-    responses(
-        (status = 200, description = "File schemas", body = std::collections::HashMap<String, SchemaEntry>),
-        (status = 404, description = "Connector not found"),
-    )
-)]
-pub async fn post_connector_schema(
-    ctx: Require<IsParticipant>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-    Json(req): Json<SchemaRequest>,
-) -> Result<impl IntoResponse, ConnectorError> {
-    let connector = state
-        .repos
-        .get_connector_full(&ctx.resource(&id))
-        .await
-        .ok_or(ConnectorError::NotFound)?;
-
-    let mut results = std::collections::HashMap::new();
-    for path in &req.paths {
-        results.insert(
-            path.clone(),
-            SchemaEntry {
-                columns: vec![],
-                error: Some("Schema inference not yet reimplemented".to_string()),
-            },
-        );
-    }
-    let _ = connector;
-
-    Ok(crate::error::data_response(results))
-}

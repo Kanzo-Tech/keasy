@@ -122,10 +122,6 @@ pub fn build_router(
                 .delete(crate::jobs::routes::delete_job),
         )
         .route(
-            "/v1/jobs/{id}/stream",
-            axum::routing::get(crate::jobs::routes::stream_job),
-        )
-        .route(
             "/v1/scripts/validate",
             axum::routing::post(scripts::validate_script),
         )
@@ -196,10 +192,6 @@ pub fn build_router(
         .route(
             "/v1/connectors/{id}/test",
             axum::routing::post(crate::connectors::routes::test_connector),
-        )
-        .route(
-            "/v1/connectors/{id}/schema",
-            axum::routing::post(crate::connectors::routes::post_connector_schema),
         )
         // Admin routes — promotor only
         .route(

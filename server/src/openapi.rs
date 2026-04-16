@@ -18,7 +18,6 @@ use utoipa::OpenApi;
         crate::jobs::routes::get_job,
         crate::jobs::routes::update_job,
         crate::jobs::routes::delete_job,
-        crate::jobs::routes::stream_job,
         // Settings
         crate::settings::routes::get_org_settings,
         crate::settings::routes::save_org_settings,
@@ -77,7 +76,6 @@ use utoipa::OpenApi;
         crate::connectors::routes::list_connector_files,
         crate::connectors::routes::list_connector_kinds,
         crate::connectors::routes::test_connector,
-        crate::connectors::routes::post_connector_schema,
     ),
     components(schemas(
         crate::error::DataResponse<serde_json::Value>,
@@ -108,9 +106,6 @@ use utoipa::OpenApi;
         crate::connectors::types::ConnectorConfig,
         crate::connectors::types::ConnectorKindInfo,
         crate::connectors::storage::FileEntry,
-        crate::connectors::schema::SchemaRequest,
-        crate::connectors::schema::SchemaEntry,
-        crate::connectors::schema::ColumnInfo,
         // Settings
         crate::settings::org::OrgSettings,
         crate::settings::preferences::Preferences,
@@ -156,7 +151,6 @@ use utoipa::OpenApi;
         crate::routes::org::CreateOrgInviteResponse,
         crate::routes::org::OrgIdentityResponse,
         // Jobs
-        crate::jobs::runner::JobEvent,
         // Discovery
         crate::graph::types::TabularData,
         // Providers

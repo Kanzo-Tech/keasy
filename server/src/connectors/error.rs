@@ -12,12 +12,6 @@ pub enum ConnectorError {
     #[error("validation failed: {0}")]
     ValidationFailed(String),
 
-    #[error("unknown connector type: {0}")]
-    UnknownType(String),
-
-    #[error("storage error: {0}")]
-    Storage(#[from] object_store::Error),
-
     #[error("connection test failed: {0}")]
     TestFailed(String),
 
@@ -32,8 +26,6 @@ impl IntoResponse for ConnectorError {
             ConnectorError::ValidationFailed(_) => {
                 (StatusCode::BAD_REQUEST, "validation_failed")
             }
-            ConnectorError::UnknownType(_) => (StatusCode::BAD_REQUEST, "unknown_type"),
-            ConnectorError::Storage(_) => (StatusCode::BAD_GATEWAY, "storage_error"),
             ConnectorError::TestFailed(_) => (StatusCode::BAD_REQUEST, "test_failed"),
             ConnectorError::Internal(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "internal_error")

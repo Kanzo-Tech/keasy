@@ -1,21 +1,13 @@
-use std::convert::Infallible;
-
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
-    response::{IntoResponse, Response},
-    response::sse::{Event, KeepAlive, Sse},
+    response::IntoResponse,
 };
-use tokio_stream::wrappers::BroadcastStream;
-use tokio_stream::StreamExt;
-
-use tracing::warn;
 
 use crate::AppState;
 use crate::error::data_response;
 use crate::jobs::models::{CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601};
-use super::runner::JobEvent;
 use crate::middleware::tenant::{IsParticipant, Require};
 
 use super::errors::JobApiError;
@@ -106,21 +98,6 @@ pub async fn create_job(
         None
     };
 
-    let catalog_dest = if dcat_enabled {
-        state
-            .repos
-            .get_promotor_catalog_config()
-            .await
-            .map(|(_, _, base_url)| base_url)
-    } else {
-        None
-    };
-
-    // Build the per-job path resolver from the connector IDs the caller
-    // authorized for this job. This pre-builds the `Arc<dyn CloudStore>`
-    // and DuckDB SECRET spec for every connector once, so the runner
-    // can install secrets and resolve `@conn/...` source paths without
-    // touching the database again.
     let path_resolver = state
         .repos
         .build_path_resolver(
@@ -137,7 +114,6 @@ pub async fn create_job(
         script: payload.script,
         org_settings,
         dcat_enabled,
-        catalog_dest,
         fossil_registry: state.fossil_registry.clone(),
         path_resolver,
     });
@@ -196,66 +172,6 @@ pub async fn update_job(
         Some(_) => Err(JobApiError::NotDraft),
         None => Err(JobApiError::NotFound),
     }
-}
-
-#[utoipa::path(get, path = "/v1/jobs/{id}/stream", tag = "Jobs",
-    params(("id" = String, Path, description = "Job ID")),
-    responses(
-        (status = 200, description = "SSE stream of job progress events", body = JobEvent, content_type = "text/event-stream"),
-        (status = 404, description = "Job not found"),
-    )
-)]
-pub async fn stream_job(
-    ctx: Require<IsParticipant>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Result<Response, JobApiError> {
-    let job = state.repos.get_job(&ctx.resource(&id)).await
-        .ok_or(JobApiError::NotFound)?;
-
-    fn is_terminal(status: &JobStatus) -> bool {
-        matches!(status, JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled)
-    }
-
-    fn terminal_event(job: &Job) -> JobEvent {
-        let (phase, error) = match job.status {
-            JobStatus::Completed => ("complete", None),
-            JobStatus::Failed => ("error", job.error.as_ref().map(|e| e.message.clone())),
-            JobStatus::Cancelled => ("complete", None),
-            _ => ("complete", None),
-        };
-        JobEvent { phase: phase.into(), index: 4, total: 5, error }
-    }
-
-    // Already terminal → single event + close
-    if is_terminal(&job.status) {
-        let evt = terminal_event(&job);
-        let stream = futures::stream::once(async move {
-            Ok::<_, Infallible>(Event::default().data(serde_json::to_string(&evt).unwrap_or_else(|e| { warn!("SSE serialization failed: {e}"); "{}".to_string() })))
-        });
-        return Ok(Sse::new(stream).keep_alive(KeepAlive::default()).into_response());
-    }
-
-    // Subscribe to broadcast channel
-    let rx = match state.runner.subscribe(&id) {
-        Some(rx) => rx,
-        None => {
-            // Channel gone — job may have finished between DB read and subscribe; refetch
-            let job = state.repos.get_job(&ctx.resource(&id)).await
-                .ok_or(JobApiError::NotFound)?;
-            let evt = terminal_event(&job);
-            let stream = futures::stream::once(async move {
-                Ok::<_, Infallible>(Event::default().data(serde_json::to_string(&evt).unwrap_or_else(|e| { warn!("SSE serialization failed: {e}"); "{}".to_string() })))
-            });
-            return Ok(Sse::new(stream).keep_alive(KeepAlive::default()).into_response());
-        }
-    };
-
-    let stream = BroadcastStream::new(rx)
-        .filter_map(|r| r.ok())
-        .map(|evt| Ok::<_, Infallible>(Event::default().data(serde_json::to_string(&evt).unwrap_or_else(|e| { warn!("SSE serialization failed: {e}"); "{}".to_string() }))));
-
-    Ok(Sse::new(stream).keep_alive(KeepAlive::default()).into_response())
 }
 
 #[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs",

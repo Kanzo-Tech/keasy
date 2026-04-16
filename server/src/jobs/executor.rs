@@ -23,21 +23,10 @@ pub trait SourceHandler: Send + Sync {
     fn load(&self, conn: &DuckDbConn, def: &fossil_lang::plan::SourceDef) -> Result<(), String>;
 }
 
-/// Writes query results to external formats after SQL execution.
-pub trait OutputHandler: Send + Sync {
-    fn name(&self) -> &str;
-    fn write(
-        &self,
-        conn: &DuckDbConn,
-        def: &fossil_lang::plan::OutputDef,
-    ) -> Result<OutputResult, String>;
-}
-
 /// Plan executor — runs FossilPlan steps against DuckDB.
 pub struct Executor {
     conn: DuckDbConn,
     sources: HashMap<String, Arc<dyn SourceHandler>>,
-    outputs: HashMap<String, Arc<dyn OutputHandler>>,
 }
 
 impl Executor {
@@ -45,19 +34,12 @@ impl Executor {
         Self {
             conn,
             sources: HashMap::new(),
-            outputs: HashMap::new(),
         }
     }
 
     pub fn source(mut self, handler: impl SourceHandler + 'static) -> Self {
         self.sources
             .insert(handler.format().to_string(), Arc::new(handler));
-        self
-    }
-
-    pub fn output(mut self, handler: impl OutputHandler + 'static) -> Self {
-        self.outputs
-            .insert(handler.name().to_string(), Arc::new(handler));
         self
     }
 
@@ -81,18 +63,14 @@ impl Executor {
                 .map_err(|e| ExecutionError::Sql(e.to_string()))?;
         }
 
-        // Phase 3: Write outputs
-        let mut results = Vec::new();
-        for output_def in &plan.outputs {
-            let handler = self
-                .outputs
-                .get(&output_def.format)
-                .ok_or_else(|| ExecutionError::UnknownHandler(output_def.format.clone()))?;
-            let result = handler
-                .write(&self.conn, output_def)
-                .map_err(ExecutionError::Handler)?;
-            results.push(result);
-        }
+        let results = plan
+            .outputs
+            .iter()
+            .map(|o| OutputResult {
+                path: o.path.clone(),
+                format: o.format.clone(),
+            })
+            .collect();
 
         Ok(results)
     }

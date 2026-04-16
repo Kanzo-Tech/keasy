@@ -19,6 +19,24 @@ pub mod routes;
 pub mod signing;
 pub mod vp;
 
+use axum::routing::{get, post};
+use axum::Router;
+use crate::AppState;
+
+/// Gaia-X API routes — session + tenant protected.
+pub fn api_routes() -> Router<AppState> {
+    Router::new()
+        .route("/v1/gaia-x/comply", post(routes::comply))
+        .route("/v1/gaia-x/compliance", get(routes::get_compliance_status))
+}
+
+/// Gaia-X .well-known public endpoints — no auth required (GXDCH must resolve these).
+pub fn public_routes() -> Router<AppState> {
+    Router::new()
+        .route("/.well-known/did.json", get(routes::get_did_document))
+        .route("/.well-known/x509CertificateChain.pem", get(routes::get_cert_chain))
+}
+
 use serde::{Deserialize, Serialize};
 
 /// Gaia-X state record — mirrors the org_gaiax table.

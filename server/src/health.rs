@@ -1,9 +1,22 @@
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use axum::routing::get;
+use axum::Router;
 
 use crate::AppState;
 use crate::error::data_response;
+
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        .route("/healthz/live", get(liveness))
+        .route("/healthz/ready", get(readiness))
+}
+
+pub fn public_routes() -> Router<AppState> {
+    Router::new()
+        .route("/v1/status", get(service_status))
+}
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct ServiceStatusResponse {

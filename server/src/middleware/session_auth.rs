@@ -6,7 +6,7 @@ use axum::{
 use tower_sessions::Session;
 
 use crate::AppState;
-use crate::auth::errors::AuthError;
+use crate::error::AppError;
 
 /// Inserted into request extensions by session_required middleware.
 /// Downstream handlers can extract this to get the authenticated user's ID.
@@ -35,7 +35,7 @@ pub async fn session_required(
     State(state): State<AppState>,
     mut request: Request,
     next: Next,
-) -> Result<Response, AuthError> {
+) -> Result<Response, AppError> {
     match session.get::<String>("user_id").await {
         Ok(Some(user_id)) => {
             // Cross-check: is this session still the active one for this user?
@@ -55,21 +55,21 @@ pub async fn session_required(
                     // session exists. Flush the orphaned session data from the store
                     // so the browser doesn't keep sending it.
                     let _ = session.flush().await;
-                    Err(AuthError::SessionRequired)
+                    Err(AppError::Unauthorized)
                 }
             }
         }
         Ok(None) => {
             // Session exists but no user_id — could be expired or never authenticated
             if session.is_empty().await {
-                Err(AuthError::SessionRequired)
+                Err(AppError::Unauthorized)
             } else {
-                Err(AuthError::SessionExpired)
+                Err(AppError::SessionExpired)
             }
         }
         Err(_) => {
             // Session store error — treat as unauthenticated
-            Err(AuthError::SessionRequired)
+            Err(AppError::Unauthorized)
         }
     }
 }

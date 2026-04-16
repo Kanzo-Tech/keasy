@@ -29,7 +29,7 @@ use time::OffsetDateTime;
 use tower_sessions::{Expiry, Session};
 
 use crate::AppState;
-use crate::auth::errors::AuthError;
+use crate::error::AppError;
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Custom claims (keasy:dataspaces multivalued claim)
@@ -341,12 +341,12 @@ pub async fn oidc_start(
     session: Session,
     State(state): State<AppState>,
     Query(params): Query<OidcStartParams>,
-) -> Result<impl IntoResponse, AuthError> {
+) -> Result<impl IntoResponse, AppError> {
     let oidc = state
         .auth
         .oidc_state
         .as_ref()
-        .ok_or(AuthError::OidcNotConfigured)?;
+        .ok_or(AppError::OidcNotConfigured)?;
 
     // Generate PKCE S256 verifier + challenge pair.
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
@@ -374,24 +374,24 @@ pub async fn oidc_start(
     session
         .insert("oidc_pkce_verifier", pkce_verifier.secret())
         .await
-        .map_err(|e| AuthError::Internal(format!("session insert oidc_pkce_verifier: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session insert oidc_pkce_verifier: {e}")))?;
 
     session
         .insert("oidc_csrf_state", csrf_token.secret())
         .await
-        .map_err(|e| AuthError::Internal(format!("session insert oidc_csrf_state: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session insert oidc_csrf_state: {e}")))?;
 
     session
         .insert("oidc_nonce", nonce.secret())
         .await
-        .map_err(|e| AuthError::Internal(format!("session insert oidc_nonce: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session insert oidc_nonce: {e}")))?;
 
     // Store invite token if present — will be auto-accepted after OIDC callback.
     if let Some(token) = params.invite_token {
         session
             .insert("pending_invite_token", token)
             .await
-            .map_err(|e| AuthError::Internal(format!("session insert pending_invite_token: {e}")))?;
+            .map_err(|e| AppError::Internal(anyhow::anyhow!("session insert pending_invite_token: {e}")))?;
     }
 
     // CRITICAL: explicitly save so the session cookie is set BEFORE the redirect.
@@ -399,7 +399,7 @@ pub async fn oidc_start(
     session
         .save()
         .await
-        .map_err(|e| AuthError::Internal(format!("session save in oidc_start: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session save in oidc_start: {e}")))?;
 
     Ok(Redirect::to(auth_url.as_str()))
 }
@@ -418,7 +418,7 @@ pub async fn oidc_callback(
     session: Session,
     State(state): State<AppState>,
     Query(params): Query<OidcCallbackParams>,
-) -> Result<impl IntoResponse, AuthError> {
+) -> Result<impl IntoResponse, AppError> {
     // 1. Check for provider-side errors (user denied access, Keycloak error, etc.).
     if let Some(err) = &params.error {
         tracing::warn!(
@@ -430,34 +430,34 @@ pub async fn oidc_callback(
     }
 
     // 2. Both `code` and `state` are required for a valid callback.
-    let code = params.code.ok_or(AuthError::OidcStateMismatch)?;
-    let returned_state = params.state.ok_or(AuthError::OidcStateMismatch)?;
+    let code = params.code.ok_or(AppError::OidcRedirect)?;
+    let returned_state = params.state.ok_or(AppError::OidcRedirect)?;
 
     // 3. Validate CSRF state — compare returned state with what we stored in session.
     let stored_state: String = session
         .get("oidc_csrf_state")
         .await
-        .map_err(|e| AuthError::Internal(format!("session get oidc_csrf_state: {e}")))?
-        .ok_or(AuthError::OidcStateMismatch)?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session get oidc_csrf_state: {e}")))?
+        .ok_or(AppError::OidcRedirect)?;
 
     if returned_state != stored_state {
-        return Err(AuthError::OidcStateMismatch);
+        return Err(AppError::OidcRedirect);
     }
 
     // 4. Reconstruct the PKCE verifier from session.
     let verifier_secret: String = session
         .get("oidc_pkce_verifier")
         .await
-        .map_err(|e| AuthError::Internal(format!("session get oidc_pkce_verifier: {e}")))?
-        .ok_or(AuthError::OidcStateMismatch)?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session get oidc_pkce_verifier: {e}")))?
+        .ok_or(AppError::OidcRedirect)?;
     let pkce_verifier = PkceCodeVerifier::new(verifier_secret);
 
     // 5. Reconstruct nonce from session.
     let nonce_secret: String = session
         .get("oidc_nonce")
         .await
-        .map_err(|e| AuthError::Internal(format!("session get oidc_nonce: {e}")))?
-        .ok_or(AuthError::OidcStateMismatch)?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session get oidc_nonce: {e}")))?
+        .ok_or(AppError::OidcRedirect)?;
     let nonce = Nonce::new(nonce_secret);
 
     // 6. Get OidcState.
@@ -465,7 +465,7 @@ pub async fn oidc_callback(
         .auth
         .oidc_state
         .as_ref()
-        .ok_or(AuthError::OidcNotConfigured)?;
+        .ok_or(AppError::OidcNotConfigured)?;
 
     // 7. Exchange authorization code for tokens (with PKCE verifier).
     //    Use the rewriting client when internal_base_url is configured so the
@@ -485,11 +485,11 @@ pub async fn oidc_callback(
     }
     .map_err(|e| {
         tracing::error!(error = %e, "OIDC token exchange failed");
-        AuthError::OidcTokenExchange
+        AppError::OidcRedirect
     })?;
 
     // 8. Extract and verify the ID token.
-    let id_token = token_response.id_token().ok_or(AuthError::OidcNoIdToken)?;
+    let id_token = token_response.id_token().ok_or(AppError::OidcRedirect)?;
     let verifier = oidc.client.id_token_verifier();
 
     // Try verification. On failure, refresh JWKS once and retry (handles Keycloak key rotation).
@@ -508,7 +508,7 @@ pub async fn oidc_callback(
                 .claims(&verifier, &nonce)
                 .map_err(|e| {
                     tracing::error!(error = %e, "ID token verification failed after JWKS refresh");
-                    AuthError::OidcTokenInvalid
+                    AppError::OidcRedirect
                 })?
         }
     };
@@ -519,7 +519,7 @@ pub async fn oidc_callback(
             session
                 .insert("id_token", jwt_str)
                 .await
-                .map_err(|e| AuthError::Internal(format!("session insert id_token: {e}")))?;
+                .map_err(|e| AppError::Internal(anyhow::anyhow!("session insert id_token: {e}")))?;
         }
 
     // 9. Extract subject (Keycloak user UUID).
@@ -542,15 +542,15 @@ pub async fn oidc_callback(
     session
         .insert("user_email", &email_str)
         .await
-        .map_err(|e| AuthError::Internal(format!("session insert user_email: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session insert user_email: {e}")))?;
     session
         .insert("user_first_name", &first_str)
         .await
-        .map_err(|e| AuthError::Internal(format!("session insert user_first_name: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session insert user_first_name: {e}")))?;
     session
         .insert("user_last_name", &last_str)
         .await
-        .map_err(|e| AuthError::Internal(format!("session insert user_last_name: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session insert user_last_name: {e}")))?;
 
     // 11. Sync cached profile in org_members (no-op if user has no membership yet).
     let _ = state
@@ -565,32 +565,32 @@ pub async fn oidc_callback(
     session
         .remove_value("oidc_pkce_verifier")
         .await
-        .map_err(|e| AuthError::Internal(format!("session remove oidc_pkce_verifier: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session remove oidc_pkce_verifier: {e}")))?;
     session
         .remove_value("oidc_csrf_state")
         .await
-        .map_err(|e| AuthError::Internal(format!("session remove oidc_csrf_state: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session remove oidc_csrf_state: {e}")))?;
     session
         .remove_value("oidc_nonce")
         .await
-        .map_err(|e| AuthError::Internal(format!("session remove oidc_nonce: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session remove oidc_nonce: {e}")))?;
 
     // 14. CRITICAL: cycle session ID to prevent session fixation attacks.
     session
         .cycle_id()
         .await
-        .map_err(|e| AuthError::Internal(format!("cycle_id failed: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("cycle_id failed: {e}")))?;
 
     // 15. Set session values for the authenticated user.
     session
         .insert("user_id", &subject)
         .await
-        .map_err(|e| AuthError::Internal(format!("session insert user_id: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session insert user_id: {e}")))?;
 
     session
         .insert("auth_method", "oidc")
         .await
-        .map_err(|e| AuthError::Internal(format!("session insert auth_method: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session insert auth_method: {e}")))?;
 
     // 16. Set 24-hour fixed expiry (same as password auth pattern).
     session.set_expiry(Some(Expiry::AtDateTime(
@@ -601,19 +601,19 @@ pub async fn oidc_callback(
     session
         .save()
         .await
-        .map_err(|e| AuthError::Internal(format!("session save in oidc_callback: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("session save in oidc_callback: {e}")))?;
 
     // 18. Enforce single session via user_sessions table.
     let session_id = session
         .id()
-        .ok_or_else(|| AuthError::Internal("session has no ID after save".to_string()))?
+        .ok_or_else(|| AppError::Internal(anyhow::anyhow!("session has no ID after save")))?
         .to_string();
 
     state
         .repos
         .upsert_user_session(&subject, &session_id)
         .await
-        .map_err(|e| AuthError::Internal(format!("upsert_user_session failed: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("upsert_user_session failed: {e}")))?;
 
     // 19. Auto-accept pending invite if one was stored before the OIDC redirect.
     if let Some(invite_token) = pending_invite_token {

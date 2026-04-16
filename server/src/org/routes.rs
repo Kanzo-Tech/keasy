@@ -18,7 +18,8 @@ use crate::org::invite_tokens::InviteToken;
 use crate::org::org_members::{MemberRole, OrgMember};
 use crate::error::{data_response, error_body};
 use crate::middleware::session_auth::AuthenticatedUser;
-use crate::middleware::tenant::{IsAdmin, IsParticipant, RbacError, Require};
+use crate::error::AppError;
+use crate::middleware::tenant::{IsAdmin, IsParticipant, Require};
 
 static SUBDIVISION_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[A-Z]{2}-[A-Z0-9]{1,3}$").unwrap());
@@ -29,7 +30,7 @@ static SUBDIVISION_RE: LazyLock<Regex> =
 pub async fn list_users(
     ctx: Require<IsAdmin>,
     State(state): State<AppState>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Result<impl IntoResponse, AppError> {
     let users = state.repos.list_org_members(&ctx.org_id.0).await;
     Ok(data_response(users))
 }
@@ -52,14 +53,14 @@ pub async fn update_user_role(
     State(state): State<AppState>,
     Path(user_id): Path<String>,
     Json(payload): Json<UpdateUserRoleRequest>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Result<impl IntoResponse, AppError> {
     let role: MemberRole = payload.role.parse()
-        .map_err(RbacError::Internal)?;
+        .map_err(|msg: String| AppError::Internal(anyhow::anyhow!(msg)))?;
     state
         .repos
         .update_member_role(&user_id, &ctx.org_id.0, role.as_str())
         .await
-        .map_err(RbacError::Internal)?;
+        .map_err(|msg: String| AppError::Internal(anyhow::anyhow!(msg)))?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -74,12 +75,12 @@ pub async fn remove_user(
     ctx: Require<IsAdmin>,
     State(state): State<AppState>,
     Path(user_id): Path<String>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Result<impl IntoResponse, AppError> {
     state
         .repos
         .remove_org_member(&user_id, &ctx.org_id.0)
         .await
-        .map_err(RbacError::Internal)?;
+        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -142,7 +143,7 @@ pub async fn update_org_identity(
     ctx: Require<IsAdmin>,
     State(state): State<AppState>,
     Json(payload): Json<UpdateOrgIdentityPayload>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Result<impl IntoResponse, AppError> {
     let legal_name = payload.legal_name.trim().to_string();
     if legal_name.is_empty() {
         return Ok((
@@ -190,7 +191,7 @@ pub async fn update_org_identity(
             payload.registration_number_type.as_deref(),
         )
         .await
-        .map_err(|e| RbacError::Internal(format!("failed to update org identity: {e}")))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("failed to update org identity: {e}")))?;
 
     // Return the updated identity
     Ok(data_response(OrgIdentityResponse {
@@ -237,9 +238,9 @@ pub async fn create_org_invite(
     axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
     State(state): State<AppState>,
     Json(payload): Json<CreateOrgInviteRequest>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Result<impl IntoResponse, AppError> {
     let role: MemberRole = payload.role.parse()
-        .map_err(RbacError::Internal)?;
+        .map_err(|msg: String| AppError::Internal(anyhow::anyhow!(msg)))?;
 
     let now = jiff::Timestamp::now().to_string();
     let token_value = uuid::Uuid::new_v4().to_string();
@@ -262,7 +263,7 @@ pub async fn create_org_invite(
         .repos
         .create_invite_token(&invite)
         .await
-        .map_err(RbacError::Internal)?;
+        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
 
     let invite_url = format!("{}/invite?token={}", state.base_url, token_value);
     Ok((
@@ -280,7 +281,7 @@ pub async fn create_org_invite(
 pub async fn list_org_invites(
     ctx: Require<IsAdmin>,
     State(state): State<AppState>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Result<impl IntoResponse, AppError> {
     let tokens = state.repos.list_invite_tokens_for_org(&ctx.org_id.0).await;
     let now = jiff::Timestamp::now().to_string();
     let result: Vec<OrgInviteEntry> = tokens
@@ -310,18 +311,18 @@ pub async fn revoke_org_invite(
     ctx: Require<IsAdmin>,
     Path(token): Path<String>,
     State(state): State<AppState>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Result<impl IntoResponse, AppError> {
     // Security: verify token belongs to this org before deleting
     let invite = state.repos.get_invite_token(&token).await.ok_or_else(|| {
-        RbacError::Internal("invite token not found".to_string())
+        AppError::NotFound
     })?;
     if invite.org_id != ctx.org_id.0 {
-        return Err(RbacError::Internal("invite token not found".to_string()));
+        return Err(AppError::NotFound);
     }
     state
         .repos
         .delete_invite_token(&token)
         .await
-        .map_err(RbacError::Internal)?;
+        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
     Ok(StatusCode::NO_CONTENT)
 }

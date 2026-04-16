@@ -6,11 +6,9 @@ use axum::{
 };
 
 use crate::AppState;
-use crate::error::data_response;
+use crate::error::{AppError, data_response};
 use crate::jobs::models::{CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601};
 use crate::middleware::tenant::{IsParticipant, Require};
-
-use super::errors::JobApiError;
 
 #[utoipa::path(get, path = "/v1/jobs", tag = "Jobs",
     responses(
@@ -20,7 +18,7 @@ use super::errors::JobApiError;
 pub async fn list_jobs(
     ctx: Require<IsParticipant>,
     State(state): State<AppState>,
-) -> Result<impl IntoResponse, JobApiError> {
+) -> Result<impl IntoResponse, AppError> {
     let jobs = state.repos.list_jobs(&ctx.tenant()).await;
     Ok(data_response(jobs))
 }
@@ -36,7 +34,7 @@ pub async fn create_job(
     ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
-) -> Result<impl IntoResponse, JobApiError> {
+) -> Result<impl IntoResponse, AppError> {
     let id = uuid::Uuid::new_v4().to_string();
 
     if payload.draft {
@@ -57,7 +55,7 @@ pub async fn create_job(
             manifest: None,
         };
         state.repos.insert_job(&ctx.tenant(), &job).await
-            .map_err(JobApiError::Internal)?;
+            .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
         return Ok((StatusCode::CREATED, data_response(job)).into_response());
     }
 
@@ -81,7 +79,7 @@ pub async fn create_job(
     };
 
     state.repos.insert_job(&ctx.tenant(), &job).await
-        .map_err(JobApiError::Internal)?;
+        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
 
     let org_settings = if dcat_enabled {
         state.repos.get_organization(&ctx.org_id.0).await.map(|org| {
@@ -101,7 +99,7 @@ pub async fn create_job(
             &payload.connector_ids,
         )
         .await
-        .map_err(JobApiError::InvalidFormat)?;
+        .map_err(AppError::Validation)?;
 
     use crate::executor::runner::SpawnParams;
     state.runner.spawn(SpawnParams {
@@ -128,12 +126,12 @@ pub async fn get_job(
     ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> Result<impl IntoResponse, JobApiError> {
+) -> Result<impl IntoResponse, AppError> {
     match state.repos.get_job(&ctx.resource(&id)).await {
         Some(job) => Ok(data_response(job).into_response()),
         None => {
             tracing::debug!(job_id = %id, org_id = %ctx.org_id.0, "job not found for tenant");
-            Err(JobApiError::NotFound)
+            Err(AppError::NotFound)
         }
     }
 }
@@ -152,7 +150,7 @@ pub async fn update_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateJobRequest>,
-) -> Result<impl IntoResponse, JobApiError> {
+) -> Result<impl IntoResponse, AppError> {
     match state.repos.update_job(&ctx.resource(&id), |job| {
         if job.status != JobStatus::Draft {
             return;
@@ -163,10 +161,10 @@ pub async fn update_job(
         if let Some(name) = payload.name {
             job.name = Some(name);
         }
-    }).await.map_err(JobApiError::Internal)? {
+    }).await.map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))? {
         Some(job) if job.status == JobStatus::Draft => Ok(data_response(job).into_response()),
-        Some(_) => Err(JobApiError::NotDraft),
-        None => Err(JobApiError::NotFound),
+        Some(_) => Err(AppError::Conflict("only draft jobs can be updated".into())),
+        None => Err(AppError::NotFound),
     }
 }
 
@@ -182,16 +180,16 @@ pub async fn delete_job(
     ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> Result<impl IntoResponse, JobApiError> {
+) -> Result<impl IntoResponse, AppError> {
     let job = state.repos.get_job(&ctx.resource(&id)).await
-        .ok_or(JobApiError::NotFound)?;
+        .ok_or(AppError::NotFound)?;
 
     if matches!(job.status, JobStatus::Pending | JobStatus::Running) {
-        return Err(JobApiError::StillRunning);
+        return Err(AppError::Conflict("cannot delete a running job".into()));
     }
 
     state.repos.remove_job(&ctx.resource(&id)).await
-        .map_err(JobApiError::Internal)?;
+        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
 
     Ok(StatusCode::NO_CONTENT.into_response())
 }
@@ -204,9 +202,9 @@ pub async fn get_dashboard_layout(
     ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> Result<impl IntoResponse, JobApiError> {
+) -> Result<impl IntoResponse, AppError> {
     if state.repos.get_job(&ctx.resource(&id)).await.is_none() {
-        return Err(JobApiError::NotFound);
+        return Err(AppError::NotFound);
     }
     match state.repos.get_dashboard_layout(&id).await {
         Some(layout) => Ok(data_response(layout).into_response()),
@@ -224,9 +222,9 @@ pub async fn save_dashboard_layout(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(body): Json<serde_json::Value>,
-) -> Result<impl IntoResponse, JobApiError> {
+) -> Result<impl IntoResponse, AppError> {
     if state.repos.get_job(&ctx.resource(&id)).await.is_none() {
-        return Err(JobApiError::NotFound);
+        return Err(AppError::NotFound);
     }
     state.repos.set_dashboard_layout(&id, &body).await;
     Ok(StatusCode::OK.into_response())

@@ -3,17 +3,14 @@ use std::ops::Deref;
 
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
-use axum::Json;
+use axum::response::Response;
 use axum::extract::State;
 use axum::middleware::Next;
 use axum::body::Body;
-use thiserror::Error;
 
 use crate::AppState;
+use crate::error::AppError;
 use crate::org::org_members::MemberRole;
-use crate::error::error_body;
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::tenant::OrgId;
 
@@ -45,58 +42,6 @@ impl TenantContext {
     }
     pub fn resource<'a>(&'a self, id: &'a str) -> crate::tenant::TenantResource<'a> {
         crate::tenant::TenantResource { org_id: &self.org_id, id }
-    }
-}
-
-/// RBAC error type. All 403 responses are intentionally opaque.
-#[derive(Debug, Error)]
-pub enum RbacError {
-    #[error("auth/session_required")]
-    AuthRequired,
-
-    #[error("rbac/no_membership")]
-    NoMembership,
-
-    #[error("rbac/insufficient_role")]
-    InsufficientRole,
-
-    #[error("internal")]
-    Internal(String),
-}
-
-impl IntoResponse for RbacError {
-    fn into_response(self) -> Response {
-        match self {
-            RbacError::AuthRequired => (
-                StatusCode::UNAUTHORIZED,
-                Json(error_body("auth/session_required", "Authentication required")),
-            )
-                .into_response(),
-
-            RbacError::NoMembership => (
-                StatusCode::FORBIDDEN,
-                Json(error_body(
-                    "rbac/no_membership",
-                    "No organization membership found",
-                )),
-            )
-                .into_response(),
-
-            RbacError::InsufficientRole => (
-                StatusCode::FORBIDDEN,
-                Json(error_body("rbac/insufficient_role", "Insufficient permissions")),
-            )
-                .into_response(),
-
-            RbacError::Internal(detail) => {
-                tracing::error!(detail = %detail, "RBAC internal error");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(error_body("internal_error", "An internal error occurred")),
-                )
-                    .into_response()
-            }
-        }
     }
 }
 
@@ -161,18 +106,18 @@ impl<S, P: Policy> FromRequestParts<S> for Require<P>
 where
     S: Send + Sync,
 {
-    type Rejection = RbacError;
+    type Rejection = AppError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         let ctx = parts
             .extensions
             .get::<TenantContext>()
             .cloned()
-            .ok_or(RbacError::AuthRequired)?;
+            .ok_or(AppError::Unauthorized)?;
         if P::is_allowed(&ctx.role) {
             Ok(Self { ctx, _p: PhantomData })
         } else {
-            Err(RbacError::InsufficientRole)
+            Err(AppError::Forbidden("insufficient permissions".into()))
         }
     }
 }
@@ -187,27 +132,27 @@ pub async fn tenant_context_required(
     State(state): State<AppState>,
     mut request: axum::http::Request<Body>,
     next: Next,
-) -> Result<Response, RbacError> {
+) -> Result<Response, AppError> {
     // 1. Extract AuthenticatedUser inserted by session_required
     let user = request
         .extensions()
         .get::<AuthenticatedUser>()
         .cloned()
-        .ok_or(RbacError::AuthRequired)?;
+        .ok_or(AppError::Unauthorized)?;
 
     // 2. Get org membership
     let member = state
         .repos
         .get_org_membership(&user.user_id)
         .await
-        .ok_or(RbacError::NoMembership)?;
+        .ok_or(AppError::Forbidden("no organization membership".into()))?;
 
     // 3. Get the org to read its role (promotor/participant)
     let org = state
         .repos
         .get_organization(&member.org_id)
         .await
-        .ok_or(RbacError::NoMembership)?;
+        .ok_or(AppError::Forbidden("no organization membership".into()))?;
 
     // 4. Determine TenantRole
     let role = if org.role == "promotor" {

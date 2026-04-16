@@ -4,8 +4,7 @@ use serde::Deserialize;
 use tower_sessions::Session;
 
 use crate::AppState;
-use crate::auth::errors::AuthError;
-use crate::error::data_response;
+use crate::error::{AppError, data_response};
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct MeOrg {
@@ -52,7 +51,7 @@ pub async fn get_me(
     session: Session,
     State(state): State<AppState>,
     axum::Extension(auth_user): axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
-) -> Result<impl IntoResponse, AuthError> {
+) -> Result<impl IntoResponse, AppError> {
     let membership = state.repos.get_org_membership(&auth_user.user_id).await;
 
     // Profile: prefer cached org_members data; fall back to session values set at login.
@@ -62,17 +61,17 @@ pub async fn get_me(
             session
                 .get::<String>("user_email")
                 .await
-                .map_err(|e| AuthError::Internal(format!("session get user_email: {e}")))?
+                .map_err(|e| anyhow::anyhow!("session get user_email: {e}"))?
                 .unwrap_or_default(),
             session
                 .get::<String>("user_first_name")
                 .await
-                .map_err(|e| AuthError::Internal(format!("session get user_first_name: {e}")))?
+                .map_err(|e| anyhow::anyhow!("session get user_first_name: {e}"))?
                 .unwrap_or_default(),
             session
                 .get::<String>("user_last_name")
                 .await
-                .map_err(|e| AuthError::Internal(format!("session get user_last_name: {e}")))?
+                .map_err(|e| anyhow::anyhow!("session get user_last_name: {e}"))?
                 .unwrap_or_default(),
         ),
     };
@@ -145,7 +144,7 @@ pub async fn list_workspaces(
     _session: Session,
     State(state): State<AppState>,
     auth_user: axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
-) -> Result<impl IntoResponse, AuthError> {
+) -> Result<impl IntoResponse, AppError> {
     // Read workspaces live from Keycloak (user_id = Keycloak sub).
     let dataspaces: Vec<String> = if let Some(kc_admin) = &state.auth.keycloak_admin {
         match kc_admin.get_user_workspaces(&auth_user.user_id).await {
@@ -206,7 +205,7 @@ pub struct LogoutResponse {
 pub async fn logout(
     session: Session,
     State(state): State<AppState>,
-) -> Result<impl IntoResponse, AuthError> {
+) -> Result<impl IntoResponse, AppError> {
     if let Ok(Some(user_id)) = session.get::<String>("user_id").await {
         let _ = state.repos.delete_user_session(&user_id).await;
     }
@@ -216,7 +215,7 @@ pub async fn logout(
     session
         .flush()
         .await
-        .map_err(|e| AuthError::Internal(format!("session flush failed: {e}")))?;
+        .map_err(|e| anyhow::anyhow!("session flush failed: {e}"))?;
 
     let end_session_url = if let (Some(oidc), Some(client_id)) =
         (&state.auth.oidc_state, &state.auth.oidc_client_id)

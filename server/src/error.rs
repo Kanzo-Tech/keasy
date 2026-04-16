@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use axum::Json;
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::response::{IntoResponse, Redirect, Response};
 use serde::Serialize;
 use serde_json::{Value, json};
 
@@ -55,48 +55,39 @@ pub fn bad_request_response(msg: impl Into<String>) -> Response {
         .into_response()
 }
 
-/// Typed application error enum.
+/// Unified application error type.
 /// `impl IntoResponse` maps each variant to the correct HTTP status and error body.
-#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
-    /// 404 Not Found
-    #[error("not_found")]
+    #[error("not found")]
     NotFound,
 
-    /// 400 Bad Request
-    #[error("bad_request: {0}")]
-    BadRequest(String),
+    #[error("validation: {0}")]
+    Validation(String),
 
-    /// 400 Bad Request — validation failure with per-field details
-    #[error("validation_failed: {message}")]
-    ValidationFailed {
-        message: String,
-        fields: HashMap<String, String>,
-    },
+    #[error("conflict: {0}")]
+    Conflict(String),
 
-    /// 502 Bad Gateway — upstream cloud error
-    #[error("cloud_error: {0}")]
-    CloudError(String),
-
-    /// 500 Internal Server Error.
-    /// The inner string is logged via `tracing::error!` but NOT returned to the caller.
-    #[error("internal: {0}")]
-    Internal(String),
-
-    /// 401 Unauthenticated
     #[error("unauthorized")]
     Unauthorized,
 
-    /// 403 Forbidden
-    #[error("forbidden")]
-    Forbidden,
+    #[error("session expired")]
+    SessionExpired,
 
-    /// Bridging variants for domain errors
+    #[error("forbidden: {0}")]
+    Forbidden(String),
+
+    #[error("bad gateway: {0}")]
+    BadGateway(String),
+
+    #[error("OIDC redirect")]
+    OidcRedirect,
+
+    #[error("OIDC not configured")]
+    OidcNotConfigured,
+
     #[error(transparent)]
-    JobApi(#[from] crate::jobs::errors::JobApiError),
-    #[error(transparent)]
-    Auth(#[from] crate::auth::errors::AuthError),
+    Internal(#[from] anyhow::Error),
 }
 
 impl IntoResponse for AppError {
@@ -108,45 +99,61 @@ impl IntoResponse for AppError {
             )
                 .into_response(),
 
-            AppError::BadRequest(msg) => (
+            AppError::Validation(msg) => (
                 StatusCode::BAD_REQUEST,
-                Json(error_body("bad_request", msg)),
+                Json(error_body("validation_failed", msg)),
             )
                 .into_response(),
 
-            AppError::ValidationFailed { message, ref fields } => (
-                StatusCode::BAD_REQUEST,
-                Json(validation_error_body(&message, fields)),
+            AppError::Conflict(msg) => (
+                StatusCode::CONFLICT,
+                Json(error_body("conflict", msg)),
             )
                 .into_response(),
 
-            AppError::CloudError(msg) => (
+            AppError::Unauthorized => (
+                StatusCode::UNAUTHORIZED,
+                Json(error_body("auth/session_required", "Authentication required")),
+            )
+                .into_response(),
+
+            AppError::SessionExpired => (
+                StatusCode::UNAUTHORIZED,
+                [(axum::http::header::LOCATION, "/v1/auth/oidc-start")],
+                Json(error_body("auth/session_expired", "Session expired")),
+            )
+                .into_response(),
+
+            AppError::Forbidden(msg) => (
+                StatusCode::FORBIDDEN,
+                Json(error_body("forbidden", msg)),
+            )
+                .into_response(),
+
+            AppError::BadGateway(msg) => (
                 StatusCode::BAD_GATEWAY,
-                Json(error_body("cloud_error", msg)),
+                Json(error_body("bad_gateway", msg)),
             )
                 .into_response(),
 
-            AppError::Internal(detail) => {
-                tracing::error!(detail = %detail, "Internal server error");
+            AppError::OidcRedirect => {
+                Redirect::to("/v1/auth/oidc-start").into_response()
+            }
+
+            AppError::OidcNotConfigured => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(error_body("auth/oidc_not_configured", "OIDC authentication is not configured")),
+            )
+                .into_response(),
+
+            AppError::Internal(err) => {
+                tracing::error!(detail = %err, "Internal server error");
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(error_body("internal_error", "An internal error occurred")),
                 )
                     .into_response()
             }
-
-            AppError::Unauthorized => (
-                StatusCode::UNAUTHORIZED,
-                Json(error_body("auth/session_required", "Authentication required")),
-            ).into_response(),
-
-            AppError::Forbidden => (
-                StatusCode::FORBIDDEN,
-                Json(error_body("auth/forbidden", "Access denied")),
-            ).into_response(),
-
-            AppError::JobApi(e) => e.into_response(),
-            AppError::Auth(e) => e.into_response(),
         }
     }
 }

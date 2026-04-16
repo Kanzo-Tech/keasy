@@ -15,7 +15,8 @@ use crate::dataspaces::db::Dataspace;
 use crate::org::organizations::Organization;
 use crate::error::data_response;
 use crate::middleware::session_auth::AuthenticatedUser;
-use crate::middleware::tenant::{IsPromotor, RbacError, Require};
+use crate::error::AppError;
+use crate::middleware::tenant::{IsPromotor, Require};
 
 // ---------------------------------------------------------------------------
 // Response types
@@ -67,7 +68,7 @@ pub struct AdminInviteResult {
 pub async fn list_all_orgs(
     _ctx: Require<IsPromotor>,
     State(state): State<AppState>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Result<impl IntoResponse, AppError> {
     let orgs = state.repos.list_organizations().await;
     Ok(data_response(orgs))
 }
@@ -93,7 +94,7 @@ pub async fn create_org_and_invite(
     axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
     State(state): State<AppState>,
     Json(payload): Json<CreateOrgAndInviteRequest>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Result<impl IntoResponse, AppError> {
     let now = jiff::Timestamp::now().to_string();
 
     // 1. Create organization as participant
@@ -115,7 +116,7 @@ pub async fn create_org_and_invite(
         .repos
         .create_organization(&org)
         .await
-        .map_err(RbacError::Internal)?;
+        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
 
     // 2. Create invite token (7-day expiry)
     let token_value = uuid::Uuid::new_v4().to_string();
@@ -137,7 +138,7 @@ pub async fn create_org_and_invite(
         .repos
         .create_invite_token(&invite)
         .await
-        .map_err(RbacError::Internal)?;
+        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
 
     // 3. Return created org
     Ok((
@@ -173,12 +174,12 @@ pub async fn register_dataspace(
     _ctx: Require<IsPromotor>,
     State(state): State<AppState>,
     Json(payload): Json<RegisterOidcClientRequest>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Result<impl IntoResponse, AppError> {
     // 1. Verify Keycloak admin is configured
     let kc_admin = state.auth.keycloak_admin.as_ref().ok_or_else(|| {
-        RbacError::Internal(
-            "Identity service not configured — set KEASY_OIDC_* environment variables".to_string(),
-        )
+        AppError::Internal(anyhow::anyhow!(
+            "Identity service not configured — set KEASY_OIDC_* environment variables"
+        ))
     })?;
 
     let now = jiff::Timestamp::now().to_string();
@@ -202,7 +203,7 @@ pub async fn register_dataspace(
             &web_origin,
         )
         .await
-        .map_err(RbacError::Internal)?;
+        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
 
     // 4. Store display metadata in SQLite (NO secret stored)
     let dataspace = Dataspace {
@@ -219,7 +220,7 @@ pub async fn register_dataspace(
         .repos
         .create_dataspace(&dataspace)
         .await
-        .map_err(RbacError::Internal)?;
+        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
 
     // 5. Return the record WITH client_secret (one-time display — not stored)
     Ok((
@@ -246,7 +247,7 @@ pub async fn register_dataspace(
 pub async fn list_dataspaces(
     _ctx: Require<IsPromotor>,
     State(state): State<AppState>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Result<impl IntoResponse, AppError> {
     let clients = state.repos.list_dataspaces().await;
     Ok(data_response(clients))
 }
@@ -261,7 +262,7 @@ pub async fn list_dataspaces(
 pub async fn list_invites(
     _ctx: Require<IsPromotor>,
     State(state): State<AppState>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Result<impl IntoResponse, AppError> {
     let tokens = state.repos.list_invite_tokens().await;
     let orgs = state.repos.list_organizations().await;
     let org_map: HashMap<String, String> = orgs
@@ -307,7 +308,7 @@ pub async fn create_invite(
     axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
     State(state): State<AppState>,
     Json(payload): Json<CreateInviteRequest>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Result<impl IntoResponse, AppError> {
     let now = jiff::Timestamp::now().to_string();
 
     // 1. Create participant org
@@ -329,7 +330,7 @@ pub async fn create_invite(
         .repos
         .create_organization(&org)
         .await
-        .map_err(RbacError::Internal)?;
+        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
 
     // 2. Create invite token (7-day expiry)
     let token_value = uuid::Uuid::new_v4().to_string();
@@ -351,7 +352,7 @@ pub async fn create_invite(
         .repos
         .create_invite_token(&invite)
         .await
-        .map_err(RbacError::Internal)?;
+        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
 
     // 3. Build invite URL
     let invite_url = format!("{}/invite?token={}", state.base_url, token_value);
@@ -381,11 +382,11 @@ pub async fn revoke_invite(
     _ctx: Require<IsPromotor>,
     axum::extract::Path(token): axum::extract::Path<String>,
     State(state): State<AppState>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Result<impl IntoResponse, AppError> {
     state
         .repos
         .delete_invite_token(&token)
         .await
-        .map_err(RbacError::Internal)?;
+        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
     Ok(StatusCode::NO_CONTENT)
 }

@@ -5,18 +5,17 @@ use axum::Json;
 use futures::StreamExt;
 use serde::Deserialize;
 
-use crate::error::data_response;
+use crate::error::{AppError, data_response};
 use crate::middleware::tenant::{IsParticipant, Require};
 use crate::AppState;
 
-use super::error::ConnectorError;
 use super::models::{Connector, CreateConnectorRequest, UpdateConnectorRequest};
 use super::types::{ConnectorConfig, ConnectorKindInfo, KNOWN_KINDS};
 
-async fn test_connection(config: &ConnectorConfig) -> Result<(), ConnectorError> {
+async fn test_connection(config: &ConnectorConfig) -> Result<(), AppError> {
     let (store, prefix) = config
         .build_store()
-        .map_err(ConnectorError::TestFailed)?;
+        .map_err(|msg| AppError::Validation(format!("connection test: {msg}")))?;
     let list_prefix = if prefix.as_ref().is_empty() {
         None
     } else {
@@ -25,7 +24,7 @@ async fn test_connection(config: &ConnectorConfig) -> Result<(), ConnectorError>
     let mut stream = store.list(list_prefix);
     match stream.next().await {
         Some(Ok(_)) | None => Ok(()),
-        Some(Err(e)) => Err(ConnectorError::TestFailed(e.to_string())),
+        Some(Err(e)) => Err(AppError::Validation(format!("connection test: {e}"))),
     }
 }
 
@@ -64,9 +63,9 @@ pub async fn create_connector(
     ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Json(req): Json<CreateConnectorRequest>,
-) -> Result<impl IntoResponse, ConnectorError> {
+) -> Result<impl IntoResponse, AppError> {
     req.validate()
-        .map_err(ConnectorError::ValidationFailed)?;
+        .map_err(AppError::Validation)?;
 
     test_connection(&req.config).await?;
 
@@ -74,7 +73,7 @@ pub async fn create_connector(
         .repos
         .create_connector(&ctx.tenant(), req)
         .await
-        .map_err(ConnectorError::Internal)?;
+        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
 
     Ok((StatusCode::CREATED, data_response(connector)))
 }
@@ -89,12 +88,12 @@ pub async fn get_connector(
     ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> Result<impl IntoResponse, ConnectorError> {
+) -> Result<impl IntoResponse, AppError> {
     let connector = state
         .repos
         .get_connector(&ctx.resource(&id))
         .await
-        .ok_or(ConnectorError::NotFound)?
+        .ok_or(AppError::NotFound)?
         .into_redacted();
     Ok(data_response(connector))
 }
@@ -111,13 +110,13 @@ pub async fn update_connector(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<UpdateConnectorRequest>,
-) -> Result<impl IntoResponse, ConnectorError> {
+) -> Result<impl IntoResponse, AppError> {
     let connector = state
         .repos
         .update_connector(&ctx.resource(&id), req)
         .await
-        .map_err(ConnectorError::Internal)?
-        .ok_or(ConnectorError::NotFound)?;
+        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?
+        .ok_or(AppError::NotFound)?;
     Ok(data_response(connector))
 }
 
@@ -131,11 +130,11 @@ pub async fn delete_connector(
     ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> Result<impl IntoResponse, ConnectorError> {
+) -> Result<impl IntoResponse, AppError> {
     if state.repos.delete_connector(&ctx.resource(&id)).await {
         Ok(StatusCode::NO_CONTENT)
     } else {
-        Err(ConnectorError::NotFound)
+        Err(AppError::NotFound)
     }
 }
 
@@ -157,16 +156,15 @@ pub async fn test_connector(
     ctx: Require<IsParticipant>,
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> Result<impl IntoResponse, ConnectorError> {
+) -> Result<impl IntoResponse, AppError> {
     let connector = state
         .repos
         .get_connector_full(&ctx.resource(&id))
         .await
-        .ok_or(ConnectorError::NotFound)?;
+        .ok_or(AppError::NotFound)?;
     let cc = connector
         .parse_config()
-        .map_err(ConnectorError::ValidationFailed)?;
+        .map_err(AppError::Validation)?;
     test_connection(&cc).await?;
     Ok(StatusCode::OK)
 }
-

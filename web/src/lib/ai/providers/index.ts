@@ -1,19 +1,22 @@
-import type { TypeDef } from "@/lib/schemas/field-def";
-import { anthropicProvider } from "./anthropic";
-import { openaiProvider } from "./openai";
+import type { ComponentType } from "react";
+import { Bot } from "lucide-react";
 
-export const providerRegistry: Record<string, TypeDef> = {
-  anthropic: anthropicProvider,
-  openai: openaiProvider,
+interface ProviderDef {
+  id: string;
+  name: string;
+  icon: ComponentType<{ className?: string }>;
+}
+
+const anthropic: ProviderDef = { id: "anthropic", name: "Anthropic", icon: Bot };
+const openai: ProviderDef = { id: "openai", name: "OpenAI", icon: Bot };
+
+export const allProviders: ProviderDef[] = [anthropic, openai];
+
+export const providerRegistry: Record<string, ProviderDef> = {
+  anthropic,
+  openai,
 };
 
-export const allProviders = Object.values(providerRegistry);
-
-/** Convert RegistryForm output to the API shape for saveProvider. */
 export function toProviderPayload(config: Record<string, string>) {
-  return {
-    api_key: config.api_key,
-    model: config.model || undefined,
-    max_tokens: config.max_tokens ? parseInt(config.max_tokens, 10) : undefined,
-  };
+  return config;
 }

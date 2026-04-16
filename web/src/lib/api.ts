@@ -68,23 +68,8 @@ export const api = {
       unwrap(await client.DELETE("/v1/connectors/{id}", { params: { path: { id } } }));
     },
 
-    files: async (id: string) =>
-      unwrap(await client.GET("/v1/connectors/{id}/files", { params: { path: { id } } })),
-
     kinds: async () =>
       unwrap(await client.GET("/v1/connectors/kinds")),
-
-    schema: async (id: string, paths: string[]): Promise<Record<string, { columns: { name: string; type: string }[]; error?: string }>> => {
-      const res = await fetch(`/api/v1/connectors/${id}/schema`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paths }),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error(`Schema request failed: ${res.status}`);
-      const json = await res.json();
-      return json.data;
-    },
   },
 
   // ── Settings ──────────────────────────────────────────────────────────
@@ -105,14 +90,6 @@ export const api = {
     savePreferences: async (prefs: Schemas["Preferences"]) =>
       unwrap(await client.PUT("/v1/settings/preferences", { body: prefs })),
 
-    catalogStorage: async (): Promise<{ connector_id: string; base_url: string } | null> => {
-      const result = await client.GET("/v1/settings/catalog-storage");
-      if (result.data === undefined) return null;
-      return result.data as { connector_id: string; base_url: string } | null;
-    },
-
-    saveCatalogStorage: async (data: { connector_id: string; base_url: string }) =>
-      unwrap(await client.PUT("/v1/settings/catalog-storage", { body: data })),
   },
 
   // ── AI Providers ──────────────────────────────────────────────────────

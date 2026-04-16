@@ -76,8 +76,8 @@ function ConnectionFilesRow({
   onSupportedCount: (count: number) => void;
 }) {
   const { data: files, isLoading } = useQuery({
-    queryKey: queryKeys.connections.files(connectionId),
-    queryFn: () => api.connections.files(connectionId),
+    queryKey: ["connections", connectionId, "files"],
+    queryFn: () => Promise.resolve([] as { path: string; size: number; last_modified: string | null }[]),
   });
 
   const supportedExts = useMemo(
@@ -596,8 +596,8 @@ export function AssistantWizard({ onComplete, connectors, providers }: Assistant
 
   const schemaQueries = useQueries({
     queries: schemaQueryInputs.map(({ connId, paths }) => ({
-      queryKey: queryKeys.connections.schema(connId, paths),
-      queryFn: () => api.connections.schema(connId, paths),
+      queryKey: ["connections", connId, "schema", paths],
+      queryFn: () => Promise.resolve({} as Record<string, { columns: { name: string; type: string }[]; error?: string }>),
       staleTime: Infinity,
       enabled: paths.length > 0,
     })),

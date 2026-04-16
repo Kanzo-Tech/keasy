@@ -14,8 +14,6 @@ export const queryKeys = {
   connections: {
     all: (direction?: string) => (direction ? ["connections", direction] as const : ["connections"] as const),
     detail: (id: string) => ["connections", id] as const,
-    files: (id: string) => ["connections", id, "files"] as const,
-    schema: (id: string, paths: string[]) => ["connections", id, "schema", paths] as const,
     kinds: () => ["connection-kinds"] as const,
   },
 
@@ -24,7 +22,6 @@ export const queryKeys = {
     providers: ["providers"] as const,
     org: ["settings-org"] as const,
     preferences: ["preferences"] as const,
-    catalogStorage: ["catalog-storage"] as const,
   },
 
   // Org

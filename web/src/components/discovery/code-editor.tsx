@@ -98,7 +98,7 @@ function connectorCompletion(
       let files = fileCache.get(connector.id);
       if (!files) {
         try {
-          files = await api.connections.files(connector.id);
+          files = [];
           fileCache.set(connector.id, files);
         } catch {
           return null;

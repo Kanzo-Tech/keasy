@@ -55,8 +55,6 @@ pub async fn create_job(
             script: Some(payload.script),
             rdf_base: None,
             manifest: None,
-            catalog_manifest: None,
-            catalog_base: None,
         };
         state.repos.insert_job(&ctx.tenant(), &job).await
             .map_err(JobApiError::Internal)?;
@@ -80,8 +78,6 @@ pub async fn create_job(
         script: None,
         rdf_base: None,
         manifest: None,
-        catalog_manifest: None,
-        catalog_base: None,
     };
 
     state.repos.insert_job(&ctx.tenant(), &job).await

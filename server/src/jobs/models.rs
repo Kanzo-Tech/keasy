@@ -89,8 +89,6 @@ pub struct JobRow {
     pub script: Option<String>,
     pub rdf_base: Option<String>,
     pub manifest: Option<String>,
-    pub catalog_manifest: Option<String>,
-    pub catalog_base: Option<String>,
 }
 
 // ── Diesel insert model ─────────────────────────────────────────────
@@ -112,8 +110,6 @@ pub struct NewJob {
     pub script: Option<String>,
     pub rdf_base: Option<String>,
     pub manifest: Option<String>,
-    pub catalog_manifest: Option<String>,
-    pub catalog_base: Option<String>,
 }
 
 // ── Diesel update changeset ─────────────────────────────────────────
@@ -131,8 +127,6 @@ pub struct JobChangeset {
     pub script: Option<Option<String>>,
     pub rdf_base: Option<Option<String>>,
     pub manifest: Option<Option<String>>,
-    pub catalog_manifest: Option<Option<String>>,
-    pub catalog_base: Option<Option<String>>,
 }
 
 // ── API-facing model ────────────────────────────────────────────────
@@ -165,12 +159,6 @@ pub struct Job {
     /// GraphAr manifest with vertex/edge file paths and column statistics.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub manifest: Option<DataManifest>,
-    /// DCAT-AP catalog manifest (parquets stored in promotor cloud).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub catalog_manifest: Option<DataManifest>,
-    /// Base URL for catalog parquets in promotor storage.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub catalog_base: Option<String>,
 }
 
 // ── From<JobRow> for Job ────────────────────────────────────────────
@@ -194,8 +182,6 @@ impl From<JobRow> for Job {
             script: if is_draft { r.script } else { None },
             rdf_base: r.rdf_base,
             manifest: r.manifest.and_then(|j| serde_json::from_str(&j).ok()),
-            catalog_manifest: r.catalog_manifest.and_then(|j| serde_json::from_str(&j).ok()),
-            catalog_base: r.catalog_base,
         }
     }
 }

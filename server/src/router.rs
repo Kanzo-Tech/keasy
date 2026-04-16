@@ -128,11 +128,6 @@ pub fn build_router(
                 .put(crate::settings::routes::save_org_settings),
         )
         .route(
-            "/v1/settings/catalog-storage",
-            axum::routing::get(crate::settings::routes::get_catalog_storage)
-                .put(crate::settings::routes::save_catalog_storage),
-        )
-        .route(
             "/v1/settings/preferences",
             axum::routing::get(crate::settings::routes::get_preferences)
                 .put(crate::settings::routes::save_preferences),
@@ -160,10 +155,6 @@ pub fn build_router(
             axum::routing::get(crate::discovery::routes::resolve_discover_urls),
         )
         .route(
-            "/v1/jobs/{id}/catalog/urls",
-            axum::routing::get(crate::discovery::routes::resolve_catalog_urls),
-        )
-        .route(
             "/v1/connectors/kinds",
             axum::routing::get(crate::connectors::routes::list_connector_kinds),
         )
@@ -177,10 +168,6 @@ pub fn build_router(
             axum::routing::get(crate::connectors::routes::get_connector)
                 .put(crate::connectors::routes::update_connector)
                 .delete(crate::connectors::routes::delete_connector),
-        )
-        .route(
-            "/v1/connectors/{id}/files",
-            axum::routing::get(crate::connectors::routes::list_connector_files),
         )
         .route(
             "/v1/connectors/{id}/test",

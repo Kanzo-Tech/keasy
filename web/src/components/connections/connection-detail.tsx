@@ -1,6 +1,5 @@
 "use client";
 
-import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,7 +9,6 @@ import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { MetaItem } from "@/components/shared/meta-item";
 import { PageShell } from "@/components/layout/page-shell";
-import { FileExplorer } from "@/components/connections/file-explorer";
 
 export function ConnectionDetail({ id }: { id: string }) {
   const { data: connection, isLoading: connLoading } = useQuery({
@@ -19,13 +17,6 @@ export function ConnectionDetail({ id }: { id: string }) {
   });
 
   const showSkeleton = useDelayedLoading(connLoading);
-
-  const { data: files = [], isLoading: filesLoading } = useQuery({
-    queryKey: queryKeys.connections.files(id),
-    queryFn: () => api.connections.files(id),
-    enabled: !!connection,
-    meta: { onError: () => toast.error("Failed to list files") },
-  });
 
   if (connLoading) {
     return showSkeleton ? (
@@ -38,11 +29,6 @@ export function ConnectionDetail({ id }: { id: string }) {
             </div>
           ))}
         </div>
-        <FileExplorer
-          connectionName=""
-          files={[]}
-          isLoading
-        />
       </PageShell.Content>
     ) : null;
   }
@@ -77,12 +63,6 @@ export function ConnectionDetail({ id }: { id: string }) {
           />
         ))}
       </div>
-
-      <FileExplorer
-        connectionName={connection.name}
-        files={files}
-        isLoading={filesLoading}
-      />
     </PageShell.Content>
   );
 }

@@ -11,10 +11,4 @@ pub struct OrgSettings {
     pub license_uri: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalog_description: Option<String>,
-    /// Connector ID for catalog parquet storage (set by promotor).
-    #[serde(default, alias = "catalog_cloud_account_id", skip_serializing_if = "Option::is_none")]
-    pub catalog_connector_id: Option<String>,
-    /// Base URL for catalog parquet storage (e.g. s3://promotor/catalogs/).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub catalog_base_url: Option<String>,
 }

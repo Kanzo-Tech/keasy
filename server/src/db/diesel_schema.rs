@@ -54,8 +54,6 @@ diesel::table! {
         script -> Nullable<Text>,
         rdf_base -> Nullable<Text>,
         manifest -> Nullable<Text>,
-        catalog_manifest -> Nullable<Text>,
-        catalog_base -> Nullable<Text>,
     }
 }
 

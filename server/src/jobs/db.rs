@@ -29,10 +29,6 @@ fn to_new_job(job: &Job, org_id: &str) -> Result<NewJob, String> {
         manifest: job.manifest.as_ref()
             .map(serde_json::to_string).transpose()
             .map_err(|e| format!("serialize manifest: {e}"))?,
-        catalog_manifest: job.catalog_manifest.as_ref()
-            .map(serde_json::to_string).transpose()
-            .map_err(|e| format!("serialize catalog_manifest: {e}"))?,
-        catalog_base: job.catalog_base.clone(),
     })
 }
 
@@ -55,10 +51,6 @@ fn to_changeset(job: &Job) -> Result<JobChangeset, String> {
         manifest: Some(job.manifest.as_ref()
             .map(serde_json::to_string).transpose()
             .map_err(|e| format!("serialize manifest: {e}"))?),
-        catalog_manifest: Some(job.catalog_manifest.as_ref()
-            .map(serde_json::to_string).transpose()
-            .map_err(|e| format!("serialize catalog_manifest: {e}"))?),
-        catalog_base: Some(job.catalog_base.clone()),
     })
 }
 

@@ -174,33 +174,3 @@ pub async fn resolve_discover_urls(
     }
 }
 
-// ── Catalog parquet URLs ────────────────────────────────────────────────
-
-#[utoipa::path(get, path = "/v1/jobs/{id}/catalog/urls", tag = "Catalog",
-    params(("id" = String, Path, description = "Job ID")),
-    responses(
-        (status = 200, description = "Signed URLs for catalog Parquet access", body = ResolveResponse),
-        (status = 404, description = "Job not found or no catalog"),
-    )
-)]
-pub async fn resolve_catalog_urls(
-    ctx: Require<IsParticipant>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Response {
-    let job = match load_completed_job(&state, &ctx, &id).await {
-        Ok(j) => j,
-        Err(resp) => return resp,
-    };
-    let Some(base) = &job.catalog_base else {
-        return (StatusCode::NOT_FOUND, Json(error_body("no_catalog", "Job has no catalog output"))).into_response();
-    };
-    let Some(manifest) = &job.catalog_manifest else {
-        return (StatusCode::NOT_FOUND, Json(error_body("no_catalog_manifest", "Job has no catalog manifest"))).into_response();
-    };
-
-    match sign_manifest_urls(&state, &ctx, base, manifest, &job.connector_ids).await {
-        Ok(resp) => resp,
-        Err(resp) => resp,
-    }
-}

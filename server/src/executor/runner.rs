@@ -33,8 +33,6 @@ struct JobResult {
     dcat_input: Option<DcatInput>,
     rdf_base: Option<String>,
     manifest: Option<DataManifest>,
-    catalog_manifest: Option<DataManifest>,
-    catalog_base: Option<String>,
 }
 
 enum JobFailure {
@@ -157,15 +155,13 @@ impl JobRunner {
             .and_then(|r| r.map_err(JobFailure::Execution));
 
             match result {
-                Ok(JobResult { dcat_input, rdf_base, manifest, catalog_manifest, catalog_base }) => {
+                Ok(JobResult { dcat_input, rdf_base, manifest }) => {
                     if let Err(e) = db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Completed;
                         job.completed_at = Some(now_iso8601());
                         job.dcat_input = dcat_input;
                         job.rdf_base = rdf_base;
                         job.manifest = manifest;
-                        job.catalog_manifest = catalog_manifest;
-                        job.catalog_base = catalog_base;
                     }).await {
                         error!(job_id = %job_id, error = %e, "failed to update job");
                     }
@@ -254,5 +250,5 @@ fn run_job(
     let rdf_base = results.first().map(|r| r.path.clone());
     let manifest: Option<DataManifest> = None;
 
-    Ok(JobResult { dcat_input, rdf_base, manifest, catalog_manifest: None, catalog_base: None })
+    Ok(JobResult { dcat_input, rdf_base, manifest })
 }

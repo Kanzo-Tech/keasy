@@ -2,6 +2,7 @@ use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
+use futures::StreamExt;
 use serde::Deserialize;
 
 use crate::error::data_response;
@@ -10,8 +11,23 @@ use crate::AppState;
 
 use super::error::ConnectorError;
 use super::models::{Connector, CreateConnectorRequest, UpdateConnectorRequest};
-use super::storage::FileEntry;
-use super::types::{ConnectorKindInfo, KNOWN_KINDS};
+use super::types::{ConnectorConfig, ConnectorKindInfo, KNOWN_KINDS};
+
+async fn test_connection(config: &ConnectorConfig) -> Result<(), ConnectorError> {
+    let (store, prefix) = config
+        .build_store()
+        .map_err(ConnectorError::TestFailed)?;
+    let list_prefix = if prefix.as_ref().is_empty() {
+        None
+    } else {
+        Some(&prefix)
+    };
+    let mut stream = store.list(list_prefix);
+    match stream.next().await {
+        Some(Ok(_)) | None => Ok(()),
+        Some(Err(e)) => Err(ConnectorError::TestFailed(e.to_string())),
+    }
+}
 
 #[derive(Deserialize)]
 pub struct ListConnectorsQuery {
@@ -52,7 +68,7 @@ pub async fn create_connector(
     req.validate()
         .map_err(ConnectorError::ValidationFailed)?;
 
-    super::test::test_connection(&req.config).await?;
+    test_connection(&req.config).await?;
 
     let connector = state
         .repos
@@ -130,29 +146,6 @@ pub async fn list_connector_kinds() -> impl IntoResponse {
     data_response(KNOWN_KINDS)
 }
 
-#[utoipa::path(get, path = "/v1/connectors/{id}/files", tag = "Connectors",
-    responses(
-        (status = 200, description = "Files in storage", body = Vec<FileEntry>),
-        (status = 404, description = "Connector not found"),
-    )
-)]
-pub async fn list_connector_files(
-    ctx: Require<IsParticipant>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Result<impl IntoResponse, ConnectorError> {
-    let connector = state
-        .repos
-        .get_connector_full(&ctx.resource(&id))
-        .await
-        .ok_or(ConnectorError::NotFound)?;
-
-    let files = super::storage::list_files(&connector)
-        .await
-        .map_err(ConnectorError::Internal)?;
-    Ok(data_response(files))
-}
-
 #[utoipa::path(post, path = "/v1/connectors/{id}/test", tag = "Connectors",
     responses(
         (status = 200, description = "Connection test passed"),
@@ -173,7 +166,7 @@ pub async fn test_connector(
     let cc = connector
         .parse_config()
         .map_err(ConnectorError::ValidationFailed)?;
-    super::test::test_connection(&cc).await?;
+    test_connection(&cc).await?;
     Ok(StatusCode::OK)
 }
 

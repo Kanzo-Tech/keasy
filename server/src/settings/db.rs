@@ -2,7 +2,6 @@ use diesel::prelude::*;
 use secrecy::SecretString;
 use serde::{Serialize, de::DeserializeOwned};
 
-use crate::db::diesel_schema::organizations as orgs_dsl;
 use crate::db::diesel_schema::settings::dsl;
 use crate::settings::ai::AiSettings;
 use crate::settings::org::OrgSettings;
@@ -122,35 +121,6 @@ impl Repos {
             }
         }
         result
-    }
-
-    /// Returns (promotor_org_id, connector_id, base_url) if the promotor
-    /// has configured catalog storage. Used by the job runner to resolve
-    /// `catalog_dest` for DCAT materialization.
-    pub async fn get_promotor_catalog_config(&self) -> Option<(String, String, String)> {
-        let promotor_org_id: String = self
-            .diesel_pool
-            .get()
-            .await
-            .ok()?
-            .interact(|conn| {
-                orgs_dsl::table
-                    .filter(orgs_dsl::role.eq("promotor"))
-                    .select(orgs_dsl::id)
-                    .first::<String>(conn)
-                    .optional()
-            })
-            .await
-            .ok()?
-            .ok()??;
-
-        let settings: OrgSettings = self.get_setting("org_settings").await?;
-        let connector_id = settings.catalog_connector_id?;
-        let base_url = settings.catalog_base_url?;
-        if connector_id.is_empty() || base_url.is_empty() {
-            return None;
-        }
-        Some((promotor_org_id, connector_id, base_url))
     }
 
     pub async fn get_dashboard_layout(&self, job_id: &str) -> Option<serde_json::Value> {

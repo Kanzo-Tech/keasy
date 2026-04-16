@@ -3,6 +3,4 @@ pub mod error;
 pub mod models;
 pub mod routes;
 pub mod secrets;
-pub mod storage;
-pub mod test;
 pub mod types;

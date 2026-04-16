@@ -53,9 +53,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     connector_ids   TEXT NOT NULL DEFAULT '[]',
     script          TEXT,
     rdf_base        TEXT,
-    manifest        TEXT,
-    catalog_manifest TEXT,
-    catalog_base    TEXT
+    manifest        TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_jobs_org ON jobs(organization_id);

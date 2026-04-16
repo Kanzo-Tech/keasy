@@ -57,7 +57,7 @@ function aiColumns(
         if (model) return <span className="text-muted-foreground">{model}</span>;
         return (
           <span className="text-muted-foreground">
-            Default: {provider?.fields.find((f) => f.name === "model")?.placeholder ?? "—"}
+            Default
           </span>
         );
       },

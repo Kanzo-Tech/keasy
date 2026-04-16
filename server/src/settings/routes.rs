@@ -8,7 +8,7 @@ use secrecy::{ExposeSecret, SecretString};
 
 use crate::AppState;
 use crate::error::{data_response, error_body};
-use crate::middleware::tenant::{AnyRole, IsAdmin, IsParticipant, IsPromotor, Require};
+use crate::middleware::tenant::{AnyRole, IsAdmin, IsParticipant, Require};
 use crate::settings::ai::{AiSettings, AiSettingsPayload};
 use crate::settings::org::OrgSettings;
 use crate::settings::preferences::Preferences;
@@ -215,67 +215,3 @@ fn to_payload(s: &AiSettings) -> AiSettingsPayload {
     }
 }
 
-// ── Catalog Storage (Promotor) ───────────────────────────────────────────
-
-#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
-pub struct CatalogStoragePayload {
-    pub connector_id: String,
-    pub base_url: String,
-}
-
-#[utoipa::path(get, path = "/v1/settings/catalog-storage", tag = "Settings",
-    responses(
-        (status = 200, description = "Catalog storage config", body = CatalogStoragePayload),
-        (status = 204, description = "Not configured"),
-    )
-)]
-pub async fn get_catalog_storage(
-    _ctx: Require<IsPromotor>,
-    State(state): State<AppState>,
-) -> Response {
-    let settings = state.repos.get_org_settings().await;
-    match settings {
-        Some(s) if s.catalog_connector_id.is_some() && s.catalog_base_url.is_some() => {
-            data_response(CatalogStoragePayload {
-                connector_id: s.catalog_connector_id.unwrap(),
-                base_url: s.catalog_base_url.unwrap(),
-            }).into_response()
-        }
-        _ => StatusCode::NO_CONTENT.into_response(),
-    }
-}
-
-#[utoipa::path(put, path = "/v1/settings/catalog-storage", tag = "Settings",
-    request_body = CatalogStoragePayload,
-    responses(
-        (status = 200, description = "Catalog storage saved", body = CatalogStoragePayload),
-        (status = 400, description = "Validation error"),
-    )
-)]
-pub async fn save_catalog_storage(
-    ctx: Require<IsPromotor>,
-    State(state): State<AppState>,
-    Json(payload): Json<CatalogStoragePayload>,
-) -> Response {
-    if payload.connector_id.trim().is_empty() || payload.base_url.trim().is_empty() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(error_body("validation_error", "connector_id and base_url are required")),
-        ).into_response();
-    }
-
-    // Verify connector exists for the promotor's org
-    if state.repos.get_connector(&ctx.resource(&payload.connector_id)).await.is_none() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(error_body("validation_error", "Connector not found")),
-        ).into_response();
-    }
-
-    let mut settings = state.repos.get_org_settings().await.unwrap_or_default();
-    settings.catalog_connector_id = Some(payload.connector_id.clone());
-    settings.catalog_base_url = Some(payload.base_url.clone());
-    state.repos.set_org_settings(&settings).await;
-
-    data_response(payload).into_response()
-}

@@ -221,7 +221,7 @@ pub async fn comply(
             domain: Some(domain.clone()),
             updated_at: now_iso(),
         };
-        if let Err(e) = state.repos.upsert_gaiax_state(&gx_state).await {
+        if let Err(e) = state.gaia_x_repo.upsert_gaiax_state(&gx_state).await {
             fail_sse!(tx, "certificate", 1, format!("Failed to save gaiax state: {e}"), Some(private_key_pem));
         }
 
@@ -277,7 +277,7 @@ pub async fn comply(
         gx_state.tc_credential = Some(tc_str);
         gx_state.compliance_vc = Some(vc_str);
         gx_state.updated_at = now_iso();
-        if let Err(e) = state.repos.upsert_gaiax_state(&gx_state).await {
+        if let Err(e) = state.gaia_x_repo.upsert_gaiax_state(&gx_state).await {
             tracing::error!("failed to save final gaiax state: {e}");
         }
 
@@ -310,7 +310,7 @@ pub async fn get_compliance_status(
 ) -> Response {
     let org_id = ctx.org_id.0.clone();
 
-    let gx = match state.repos.get_gaiax_state(&org_id).await {
+    let gx = match state.gaia_x_repo.get_gaiax_state(&org_id).await {
         Ok(Some(w)) => w,
         Ok(None) => {
             return data_response(ComplianceStatus {
@@ -376,7 +376,7 @@ pub async fn get_did_document(
         Err(r) => return r,
     };
 
-    let gx = match state.repos.get_gaiax_state(&org_id).await {
+    let gx = match state.gaia_x_repo.get_gaiax_state(&org_id).await {
         Ok(Some(w)) => w,
         Ok(None) => {
             return (
@@ -473,7 +473,7 @@ pub async fn get_cert_chain(
         Err(r) => return r,
     };
 
-    let gx = match state.repos.get_gaiax_state(&org_id).await {
+    let gx = match state.gaia_x_repo.get_gaiax_state(&org_id).await {
         Ok(Some(w)) => w,
         Ok(None) => {
             return (StatusCode::NOT_FOUND, "Certificate chain not found".to_string())

@@ -173,6 +173,8 @@ impl Application {
         };
         let connector_repo = Arc::new(crate::connectors::db::DieselConnectorRepo::new(repos.clone()));
         let job_repo = Arc::new(crate::jobs::db::DieselJobRepo::new(repos.clone()));
+        let settings_repo = Arc::new(crate::settings::db::DieselSettingsRepo::new(repos.clone()));
+        let gaia_x_repo = Arc::new(crate::gaia_x::db::DieselGaiaXRepo::new(repos.clone()));
         let org_repo = Arc::new(crate::org::db::DieselOrgRepo::new(repos.diesel_pool.clone()));
         let org_service = crate::org::service::OrgService::new(org_repo);
         let state = AppState {
@@ -181,6 +183,8 @@ impl Application {
             fossil_registry,
             connectors: connector_repo,
             jobs: job_repo,
+            settings: settings_repo,
+            gaia_x_repo,
             orgs: org_service,
             api_key: config.api_key,
             base_url: config.base_url,

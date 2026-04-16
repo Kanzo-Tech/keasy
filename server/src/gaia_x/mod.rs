@@ -13,9 +13,9 @@ pub mod cert;
 pub mod credentials;
 pub mod db;
 pub mod gxdch;
+pub mod handlers;
 pub mod keys;
-pub mod org_gaiax;
-pub mod routes;
+pub mod repository;
 pub mod signing;
 pub mod vp;
 
@@ -26,15 +26,15 @@ use crate::AppState;
 /// Gaia-X API routes — session + tenant protected.
 pub fn api_routes() -> Router<AppState> {
     Router::new()
-        .route("/v1/gaia-x/comply", post(routes::comply))
-        .route("/v1/gaia-x/compliance", get(routes::get_compliance_status))
+        .route("/v1/gaia-x/comply", post(handlers::comply))
+        .route("/v1/gaia-x/compliance", get(handlers::get_compliance_status))
 }
 
 /// Gaia-X .well-known public endpoints — no auth required (GXDCH must resolve these).
 pub fn public_routes() -> Router<AppState> {
     Router::new()
-        .route("/.well-known/did.json", get(routes::get_did_document))
-        .route("/.well-known/x509CertificateChain.pem", get(routes::get_cert_chain))
+        .route("/.well-known/did.json", get(handlers::get_did_document))
+        .route("/.well-known/x509CertificateChain.pem", get(handlers::get_cert_chain))
 }
 
 use serde::{Deserialize, Serialize};

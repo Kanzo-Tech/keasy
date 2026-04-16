@@ -27,6 +27,6 @@ pub fn api_routes() -> Router<AppState> {
         )
         .route(
             "/v1/jobs/{id}/discover/urls",
-            get(crate::discovery::routes::resolve_discover_urls),
+            get(crate::discovery::handlers::resolve_discover_urls),
         )
 }

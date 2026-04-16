@@ -12,6 +12,7 @@ use crate::middleware::tenant::{AnyRole, IsAdmin, IsParticipant, Require};
 use crate::settings::ai::{AiSettings, AiSettingsPayload};
 use crate::settings::org::OrgSettings;
 use crate::settings::preferences::Preferences;
+
 const KNOWN_PROVIDERS: &[&str] = &["anthropic", "openai"];
 
 #[utoipa::path(get, path = "/v1/settings/organization", tag = "Settings",
@@ -21,7 +22,7 @@ const KNOWN_PROVIDERS: &[&str] = &["anthropic", "openai"];
     )
 )]
 pub async fn get_org_settings(_ctx: Require<IsParticipant>, State(state): State<AppState>) -> Response {
-    match state.repos.get_org_settings().await {
+    match state.settings.get_org_settings().await {
         Some(settings) => data_response(settings).into_response(),
         None => StatusCode::NO_CONTENT.into_response(),
     }
@@ -45,7 +46,7 @@ pub async fn save_org_settings(
             Json(error_body("validation_error", "publisher_name is required")),
         ).into_response();
     }
-    state.repos.set_org_settings(&payload).await;
+    state.settings.set_org_settings(&payload).await;
     data_response(payload).into_response()
 }
 
@@ -53,7 +54,7 @@ pub async fn save_org_settings(
     responses((status = 200, description = "UI preferences", body = Preferences))
 )]
 pub async fn get_preferences(_ctx: Require<AnyRole>, State(state): State<AppState>) -> impl IntoResponse {
-    data_response(state.repos.get_preferences().await)
+    data_response(state.settings.get_preferences().await)
 }
 
 #[utoipa::path(put, path = "/v1/settings/preferences", tag = "Settings",
@@ -82,7 +83,7 @@ pub async fn save_preferences(
             ).into_response();
         }
     }
-    state.repos.set_preferences(&payload).await;
+    state.settings.set_preferences(&payload).await;
     data_response(payload).into_response()
 }
 
@@ -90,7 +91,7 @@ pub async fn save_preferences(
     responses((status = 200, description = "List of AI providers", body = Vec<AiSettingsPayload>))
 )]
 pub async fn list_ai_providers(_ctx: Require<IsParticipant>, State(state): State<AppState>) -> impl IntoResponse {
-    let providers = state.repos.list_ai_providers().await;
+    let providers = state.settings.list_ai_providers().await;
     let payloads: Vec<AiSettingsPayload> = providers.iter().map(to_payload).collect();
     data_response(payloads)
 }
@@ -117,7 +118,7 @@ pub async fn save_ai_provider(
     }
 
     let api_key = if payload.api_key.is_empty() {
-        state.repos.get_ai_provider(&provider_id).await
+        state.settings.get_ai_provider(&provider_id).await
             .map(|c| c.api_key.expose_secret().to_string())
             .unwrap_or_default()
     } else {
@@ -130,7 +131,7 @@ pub async fn save_ai_provider(
         model: payload.model.filter(|m| !m.trim().is_empty()),
         max_tokens: payload.max_tokens,
     };
-    state.repos.set_ai_provider(&provider_id, &settings).await;
+    state.settings.set_ai_provider(&provider_id, &settings).await;
 
     data_response(to_payload(&settings)).into_response()
 }
@@ -153,7 +154,7 @@ pub async fn delete_ai_provider(
             Json(error_body("validation_error", "Unknown provider")),
         ).into_response();
     }
-    state.repos.delete_ai_provider(&provider_id).await;
+    state.settings.delete_ai_provider(&provider_id).await;
     StatusCode::NO_CONTENT.into_response()
 }
 
@@ -185,9 +186,9 @@ pub async fn resolve_ai_provider(
     axum::extract::Query(query): axum::extract::Query<ResolveAiQuery>,
 ) -> Response {
     let settings = if let Some(pid) = &query.provider {
-        state.repos.get_ai_provider(pid).await
+        state.settings.get_ai_provider(pid).await
     } else {
-        state.repos.list_ai_providers().await.into_iter().next()
+        state.settings.list_ai_providers().await.into_iter().next()
     };
 
     match settings {

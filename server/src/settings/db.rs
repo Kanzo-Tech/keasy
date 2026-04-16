@@ -1,20 +1,33 @@
+use async_trait::async_trait;
 use diesel::prelude::*;
 use secrecy::SecretString;
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::db::diesel_schema::settings::dsl;
+use crate::db::Repos;
 use crate::settings::ai::AiSettings;
 use crate::settings::org::OrgSettings;
 use crate::settings::preferences::Preferences;
 
-use crate::db::Repos;
+use super::repository::SettingsRepository;
 
 const KNOWN_AI_PROVIDERS: &[&str] = &["anthropic", "openai"];
 
-impl Repos {
-    pub async fn get_setting<T: DeserializeOwned>(&self, key: &str) -> Option<T> {
+// ── DieselSettingsRepo ─────────────────────────────────────────────
+
+pub struct DieselSettingsRepo {
+    repos: Repos,
+}
+
+impl DieselSettingsRepo {
+    pub fn new(repos: Repos) -> Self {
+        Self { repos }
+    }
+
+    async fn get_setting<T: DeserializeOwned>(&self, key: &str) -> Option<T> {
         let key = key.to_string();
         let json: String = self
+            .repos
             .diesel_pool
             .get()
             .await
@@ -32,10 +45,10 @@ impl Repos {
         serde_json::from_str(&json).ok()
     }
 
-    pub async fn set_setting<T: Serialize>(&self, key: &str, value: &T) {
+    async fn set_setting<T: Serialize>(&self, key: &str, value: &T) {
         let json = serde_json::to_string(value).expect("serialize setting");
         let key = key.to_string();
-        let Ok(pool_conn) = self.diesel_pool.get().await else {
+        let Ok(pool_conn) = self.repos.diesel_pool.get().await else {
             return;
         };
         let _ = pool_conn
@@ -50,9 +63,9 @@ impl Repos {
             .await;
     }
 
-    pub async fn delete_setting(&self, key: &str) {
+    async fn delete_setting(&self, key: &str) {
         let key = key.to_string();
-        let Ok(pool_conn) = self.diesel_pool.get().await else {
+        let Ok(pool_conn) = self.repos.diesel_pool.get().await else {
             return;
         };
         let _ = pool_conn
@@ -61,27 +74,30 @@ impl Repos {
             })
             .await;
     }
+}
 
-    pub async fn get_org_settings(&self) -> Option<OrgSettings> {
+#[async_trait]
+impl SettingsRepository for DieselSettingsRepo {
+    async fn get_org_settings(&self) -> Option<OrgSettings> {
         self.get_setting("org_settings").await
     }
 
-    pub async fn set_org_settings(&self, settings: &OrgSettings) {
+    async fn set_org_settings(&self, settings: &OrgSettings) {
         self.set_setting("org_settings", settings).await;
     }
 
-    pub async fn get_preferences(&self) -> Preferences {
+    async fn get_preferences(&self) -> Preferences {
         self.get_setting("preferences").await.unwrap_or_default()
     }
 
-    pub async fn set_preferences(&self, prefs: &Preferences) {
+    async fn set_preferences(&self, prefs: &Preferences) {
         self.set_setting("preferences", prefs).await;
     }
 
-    pub async fn get_ai_provider(&self, provider_id: &str) -> Option<AiSettings> {
+    async fn get_ai_provider(&self, provider_id: &str) -> Option<AiSettings> {
         let key = format!("ai_provider:{provider_id}");
         let public: serde_json::Value = self.get_setting(&key).await?;
-        let api_key_bytes = self.get_secret(&key).await?;
+        let api_key_bytes = self.repos.get_secret(&key).await?;
         let api_key = SecretString::from(String::from_utf8(api_key_bytes).ok()?);
         Some(AiSettings {
             provider: public["provider"].as_str()?.to_string(),
@@ -91,7 +107,7 @@ impl Repos {
         })
     }
 
-    pub async fn set_ai_provider(&self, provider_id: &str, s: &AiSettings) {
+    async fn set_ai_provider(&self, provider_id: &str, s: &AiSettings) {
         use secrecy::ExposeSecret;
         let key = format!("ai_provider:{provider_id}");
         self.set_setting(
@@ -103,17 +119,18 @@ impl Repos {
             }),
         )
         .await;
-        self.set_secret(&key, s.api_key.expose_secret().as_bytes())
+        self.repos
+            .set_secret(&key, s.api_key.expose_secret().as_bytes())
             .await;
     }
 
-    pub async fn delete_ai_provider(&self, provider_id: &str) {
+    async fn delete_ai_provider(&self, provider_id: &str) {
         let key = format!("ai_provider:{provider_id}");
         self.delete_setting(&key).await;
-        self.delete_secret(&key).await;
+        self.repos.delete_secret(&key).await;
     }
 
-    pub async fn list_ai_providers(&self) -> Vec<AiSettings> {
+    async fn list_ai_providers(&self) -> Vec<AiSettings> {
         let mut result = Vec::new();
         for id in KNOWN_AI_PROVIDERS {
             if let Some(s) = self.get_ai_provider(id).await {
@@ -123,11 +140,11 @@ impl Repos {
         result
     }
 
-    pub async fn get_dashboard_layout(&self, job_id: &str) -> Option<serde_json::Value> {
+    async fn get_dashboard_layout(&self, job_id: &str) -> Option<serde_json::Value> {
         self.get_setting(&format!("dashboard:{job_id}")).await
     }
 
-    pub async fn set_dashboard_layout(&self, job_id: &str, value: &serde_json::Value) {
+    async fn set_dashboard_layout(&self, job_id: &str, value: &serde_json::Value) {
         self.set_setting(&format!("dashboard:{job_id}"), value)
             .await;
     }

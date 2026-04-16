@@ -147,7 +147,7 @@ pub async fn get_dashboard_layout(
 ) -> Result<impl IntoResponse, AppError> {
     // Verify job exists via the repository trait
     svc(&state).get(&ctx.resource(&id)).await?;
-    match state.repos.get_dashboard_layout(&id).await {
+    match state.settings.get_dashboard_layout(&id).await {
         Some(layout) => Ok(data_response(layout).into_response()),
         None => Ok(StatusCode::NO_CONTENT.into_response()),
     }
@@ -165,6 +165,6 @@ pub async fn save_dashboard_layout(
     Json(body): Json<serde_json::Value>,
 ) -> Result<impl IntoResponse, AppError> {
     svc(&state).get(&ctx.resource(&id)).await?;
-    state.repos.set_dashboard_layout(&id, &body).await;
+    state.settings.set_dashboard_layout(&id, &body).await;
     Ok(StatusCode::OK)
 }

@@ -19,13 +19,13 @@ use utoipa::OpenApi;
         crate::jobs::handlers::update_job,
         crate::jobs::handlers::delete_job,
         // Settings
-        crate::settings::routes::get_org_settings,
-        crate::settings::routes::save_org_settings,
-        crate::settings::routes::get_preferences,
-        crate::settings::routes::save_preferences,
-        crate::settings::routes::list_ai_providers,
-        crate::settings::routes::save_ai_provider,
-        crate::settings::routes::delete_ai_provider,
+        crate::settings::handlers::get_org_settings,
+        crate::settings::handlers::save_org_settings,
+        crate::settings::handlers::get_preferences,
+        crate::settings::handlers::save_preferences,
+        crate::settings::handlers::list_ai_providers,
+        crate::settings::handlers::save_ai_provider,
+        crate::settings::handlers::delete_ai_provider,
         // Auth
         crate::auth::handlers::get_me,
         crate::auth::handlers::logout,
@@ -52,12 +52,12 @@ use utoipa::OpenApi;
         crate::org::handlers::list_org_invites,
         crate::org::handlers::revoke_org_invite,
         // Gaia-X Compliance
-        crate::gaia_x::routes::comply,
-        crate::gaia_x::routes::get_compliance_status,
-        crate::gaia_x::routes::get_did_document,
-        crate::gaia_x::routes::get_cert_chain,
+        crate::gaia_x::handlers::comply,
+        crate::gaia_x::handlers::get_compliance_status,
+        crate::gaia_x::handlers::get_did_document,
+        crate::gaia_x::handlers::get_cert_chain,
         // Discovery
-        crate::discovery::routes::resolve_discover_urls,
+        crate::discovery::handlers::resolve_discover_urls,
         // Dashboard Layout
         crate::jobs::handlers::get_dashboard_layout,
         crate::jobs::handlers::save_dashboard_layout,
@@ -118,8 +118,8 @@ use utoipa::OpenApi;
         // Org members
         crate::org::models::OrgMember,
         // Gaia-X Compliance
-        crate::gaia_x::routes::ComplianceCredential,
-        crate::gaia_x::routes::ComplianceStatus,
+        crate::gaia_x::handlers::ComplianceCredential,
+        crate::gaia_x::handlers::ComplianceStatus,
         crate::gaia_x::ComplyRequest,
         crate::gaia_x::ComplyResponse,
         crate::gaia_x::ComplyEvent,

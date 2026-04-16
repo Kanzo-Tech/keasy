@@ -70,7 +70,7 @@ INSERT OR IGNORE INTO connectors
 VALUES
   ('eeeeeeee-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001',
    'dev-bucket', 's3', 'both',
-   '{"bucket":"keasy-dev","endpoint":"http://minio:9000","region":"us-east-1","access_key_id":"keasy-dev","secret_access_key":"keasy-dev-password","url_style":"path"}',
+   '{"kind":"s3","bucket":"keasy-dev","endpoint":"http://minio:9000","region":"us-east-1","access_key_id":"keasy-dev","secret_access_key":"keasy-dev-password","url_style":"path"}',
    strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), strftime('%Y-%m-%dT%H:%M:%SZ', 'now'));
 
 -- ── Jobs ────────────────────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ INSERT OR IGNORE INTO connectors
 VALUES
   ('eeeeeeee-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002',
    'acme-bucket', 's3', 'both',
-   '{"bucket":"keasy-dev","prefix":"acme/","endpoint":"http://minio:9000","region":"us-east-1","access_key_id":"keasy-dev","secret_access_key":"keasy-dev-password","url_style":"path"}',
+   '{"kind":"s3","bucket":"keasy-dev","prefix":"acme/","endpoint":"http://minio:9000","region":"us-east-1","access_key_id":"keasy-dev","secret_access_key":"keasy-dev-password","url_style":"path"}',
    strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), strftime('%Y-%m-%dT%H:%M:%SZ', 'now'));
 
 -- ── Jobs ────────────────────────────────────────────────────────────────────

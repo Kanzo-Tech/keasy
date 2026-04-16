@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { getProviderIcon } from "@/lib/provider-icons";
+import { getConnectorIcon } from "@/lib/connectors/connector-icons";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { MetaItem } from "@/components/shared/meta-item";
@@ -45,7 +45,7 @@ export function ConnectionDetail({ id }: { id: string }) {
         <div className="space-y-0.5">
           <p className="text-xs text-muted-foreground">Type</p>
           {(() => {
-            const Icon = getProviderIcon(connection.connector_type);
+            const Icon = getConnectorIcon(connection.connector_type);
             return (
               <Badge variant="outline" className="gap-1.5">
                 <Icon className="h-3.5 w-3.5" />

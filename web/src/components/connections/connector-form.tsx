@@ -19,14 +19,12 @@ import {
   FieldLabel,
   FieldLegend,
   FieldSet,
-  FieldTitle,
 } from "@/components/ui/field";
 
 import type { Schemas } from "@/lib/api/client";
 import { getConnectorIcon } from "@/lib/connectors/connector-icons";
 
 type ConnectorKind = Schemas["ConnectorKindInfo"];
-type ConnectorConfig = Schemas["ConnectorConfig"];
 
 interface FieldSpec {
   name: string;
@@ -34,6 +32,7 @@ interface FieldSpec {
   example?: string;
   required: boolean;
   secret: boolean;
+  multiline?: boolean;
   type: "string";
 }
 
@@ -56,7 +55,7 @@ const CONNECTOR_FIELDS: Record<string, FieldSpec[]> = {
   gcs: [
     { name: "bucket", description: "Bucket name", example: "my-gcs-bucket", required: true, secret: false, type: "string" },
     { name: "prefix", description: "Optional object prefix within the bucket", required: false, secret: false, type: "string" },
-    { name: "service_account_json", description: "Service account JSON key. Used by object_store for URL signing", required: false, secret: true, type: "string" },
+    { name: "service_account_json", description: "Service account JSON key. Used by object_store for URL signing", required: false, secret: true, multiline: true, type: "string" },
     { name: "hmac_key_id", description: "HMAC key ID (generate in GCP Console → Interoperability)", example: "GOOG1EXAMPLE", required: false, secret: false, type: "string" },
     { name: "hmac_secret", description: "HMAC secret paired with hmac_key_id", required: false, secret: true, type: "string" },
   ],
@@ -195,20 +194,20 @@ export function ConnectorForm({
               </FieldLabel>
               {field.description && <FieldDescription>{field.description}</FieldDescription>}
               <FieldContent>
-                {field.secret ? (
-                  <SecretInput
-                    id={`field-${field.name}`}
-                    placeholder={field.example}
-                    value={config[field.name] ?? ""}
-                    onChange={(e) => setConfig((p) => ({ ...p, [field.name]: e.target.value }))}
-                  />
-                ) : field.name === "service_account_json" ? (
+                {field.multiline ? (
                   <Textarea
                     id={`field-${field.name}`}
                     placeholder={field.example}
                     value={config[field.name] ?? ""}
                     onChange={(e) => setConfig((p) => ({ ...p, [field.name]: e.target.value }))}
                     rows={4}
+                  />
+                ) : field.secret ? (
+                  <SecretInput
+                    id={`field-${field.name}`}
+                    placeholder={field.example}
+                    value={config[field.name] ?? ""}
+                    onChange={(e) => setConfig((p) => ({ ...p, [field.name]: e.target.value }))}
                   />
                 ) : (
                   <Input

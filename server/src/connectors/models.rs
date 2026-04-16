@@ -105,10 +105,16 @@ impl From<ConnectorRow> for Connector {
 
 impl Connector {
     pub fn into_redacted(mut self) -> Self {
-        if let Ok(mut cc) = serde_json::from_value::<ConnectorConfig>(self.config.clone()) {
-            cc = cc.into_redacted();
-            if let Ok(v) = serde_json::to_value(&cc) {
-                self.config = v;
+        let config_val = std::mem::take(&mut self.config);
+        match serde_json::from_value::<ConnectorConfig>(config_val) {
+            Ok(cc) => {
+                if let Ok(v) = serde_json::to_value(&cc.into_redacted()) {
+                    self.config = v;
+                }
+            }
+            Err(e) => {
+                tracing::warn!(id = %self.id, error = %e, "failed to parse config for redaction, stripping entirely");
+                self.config = serde_json::json!({});
             }
         }
         self
@@ -116,6 +122,11 @@ impl Connector {
 
     pub fn parse_config(&self) -> Result<ConnectorConfig, String> {
         serde_json::from_value(self.config.clone())
+            .map_err(|e| format!("invalid connector config: {e}"))
+    }
+
+    pub fn into_config(self) -> Result<ConnectorConfig, String> {
+        serde_json::from_value(self.config)
             .map_err(|e| format!("invalid connector config: {e}"))
     }
 }

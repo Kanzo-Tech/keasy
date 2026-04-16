@@ -23,7 +23,7 @@ impl Repos {
         let connector_type = req.config.kind().to_string();
         let config_value = serde_json::to_value(&req.config)
             .map_err(|e| format!("serialize config: {e}"))?;
-        let (public_config, secret_values) = secrets::split(&connector_type, &config_value);
+        let (public_config, secret_values) = secrets::split(&connector_type, config_value);
         let config_json = serde_json::to_string(&public_config)
             .map_err(|e| format!("invalid config JSON: {e}"))?;
 
@@ -61,7 +61,7 @@ impl Repos {
         }
 
         let mut connector: Connector = row.into();
-        connector.config = config_value;
+        connector.config = secrets::merge(public_config, &secret_values);
         Ok(connector)
     }
 
@@ -168,7 +168,7 @@ impl Repos {
             }
 
             let (public_config, new_secrets) =
-                secrets::split(&connector.connector_type, &full_config);
+                secrets::split(&connector.connector_type, full_config);
             connector.config = public_config;
 
             if new_secrets.is_empty() {

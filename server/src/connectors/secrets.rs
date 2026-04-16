@@ -15,9 +15,9 @@ pub fn field_names_for_kind(kind: &str) -> &'static [&'static str] {
     }
 }
 
-pub fn split(connector_type: &str, config: &Value) -> (Value, HashMap<String, String>) {
+pub fn split(connector_type: &str, config: Value) -> (Value, HashMap<String, String>) {
     let secret_names = field_names_for_kind(connector_type);
-    let mut public = config.clone();
+    let mut public = config;
     let mut secrets = HashMap::new();
     if let Some(obj) = public.as_object_mut() {
         for name in secret_names {
@@ -31,27 +31,14 @@ pub fn split(connector_type: &str, config: &Value) -> (Value, HashMap<String, St
     (public, secrets)
 }
 
-pub fn merge(config: &Value, secrets: &HashMap<String, String>) -> Value {
-    let mut merged = config.clone();
+pub fn merge(config: Value, secrets: &HashMap<String, String>) -> Value {
+    let mut merged = config;
     if let Some(obj) = merged.as_object_mut() {
         for (k, v) in secrets {
             obj.insert(k.clone(), Value::String(v.clone()));
         }
     }
     merged
-}
-
-pub fn redact(connector_type: &str, config: &Value) -> Value {
-    let secret_names = field_names_for_kind(connector_type);
-    let mut redacted = config.clone();
-    if let Some(obj) = redacted.as_object_mut() {
-        for name in secret_names {
-            if obj.contains_key(*name) {
-                obj.insert((*name).to_string(), Value::Bool(true));
-            }
-        }
-    }
-    redacted
 }
 
 pub fn key_for(connector_id: &str) -> String {
@@ -61,7 +48,7 @@ pub fn key_for(connector_id: &str) -> String {
 pub async fn merge_from_db(db: &Repos, connector: &mut Connector) {
     if let Some(bytes) = db.get_secret(&key_for(&connector.id)).await {
         if let Ok(secrets) = serde_json::from_slice::<HashMap<String, String>>(&bytes) {
-            connector.config = merge(&connector.config, &secrets);
+            connector.config = merge(std::mem::take(&mut connector.config), &secrets);
         }
     }
 }

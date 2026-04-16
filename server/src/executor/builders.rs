@@ -69,18 +69,19 @@ impl Repos {
             .resolve_connectors(tenant, connector_ids)
             .await?;
         let entries = connectors
-            .iter()
+            .into_iter()
             .map(build_entry)
             .collect::<Result<Vec<_>, _>>()?;
         Ok(Arc::new(KeasyPathResolver::new(entries)))
     }
 }
 
-fn build_entry(c: &Connector) -> Result<ConnectorEntry, String> {
-    let cc = c.parse_config()?;
+fn build_entry(c: Connector) -> Result<ConnectorEntry, String> {
+    let name = c.name.clone();
+    let cc = c.into_config()?;
     let (store, _prefix) = cc.build_store()?;
     Ok(ConnectorEntry {
-        name: c.name.clone(),
+        name,
         base_url: cc.base_url(),
         store,
         secret_spec: cc.duckdb_secret(),

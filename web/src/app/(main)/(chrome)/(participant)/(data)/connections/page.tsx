@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Database, Plus } from "lucide-react";
-import { getProviderIcon } from "@/lib/provider-icons";
+import { getConnectorIcon } from "@/lib/connectors/connector-icons";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -41,7 +41,7 @@ function connectorColumns(
       header: "Type",
       cell: ({ getValue }) => {
         const type = getValue<string>();
-        const Icon = getProviderIcon(type);
+        const Icon = getConnectorIcon(type);
         return (
           <Badge variant="outline" className="gap-1.5">
             <Icon className="h-3.5 w-3.5" />

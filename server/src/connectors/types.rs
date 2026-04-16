@@ -11,7 +11,6 @@ use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize, Serializer};
 use utoipa::ToSchema;
 
-pub use object_store::path::Path;
 
 // ── CloudStore ─────────────────────────────────────────────────────────
 
@@ -223,29 +222,11 @@ impl ConnectorConfig {
 
     pub fn base_url(&self) -> String {
         match self {
-            Self::S3 { bucket, prefix, .. } => {
-                let base = format!("s3://{bucket}");
-                match prefix.as_deref().filter(|s| !s.is_empty()) {
-                    Some(p) => format!("{base}/{p}"),
-                    None => base,
-                }
-            }
-            Self::Gcs { bucket, prefix, .. } => {
-                let base = format!("gs://{bucket}");
-                match prefix.as_deref().filter(|s| !s.is_empty()) {
-                    Some(p) => format!("{base}/{p}"),
-                    None => base,
-                }
-            }
+            Self::S3 { bucket, prefix, .. } => format_base_url("s3", bucket, prefix),
+            Self::Gcs { bucket, prefix, .. } => format_base_url("gs", bucket, prefix),
             Self::Azure {
                 container, prefix, ..
-            } => {
-                let base = format!("az://{container}");
-                match prefix.as_deref().filter(|s| !s.is_empty()) {
-                    Some(p) => format!("{base}/{p}"),
-                    None => base,
-                }
-            }
+            } => format_base_url("az", container, prefix),
         }
     }
 
@@ -286,12 +267,7 @@ impl ConnectorConfig {
                 let store = builder
                     .build()
                     .map_err(|e| format!("S3 build failed: {e}"))?;
-                let path = prefix
-                    .as_deref()
-                    .filter(|s| !s.is_empty())
-                    .map(ObjectPath::from)
-                    .unwrap_or_else(|| ObjectPath::from(""));
-                Ok((Arc::new(store), path))
+                Ok((Arc::new(store), prefix_to_path(prefix)))
             }
             Self::Gcs {
                 bucket,
@@ -306,12 +282,7 @@ impl ConnectorConfig {
                 let store = builder
                     .build()
                     .map_err(|e| format!("GCS build failed: {e}"))?;
-                let path = prefix
-                    .as_deref()
-                    .filter(|s| !s.is_empty())
-                    .map(ObjectPath::from)
-                    .unwrap_or_else(|| ObjectPath::from(""));
-                Ok((Arc::new(store), path))
+                Ok((Arc::new(store), prefix_to_path(prefix)))
             }
             Self::Azure {
                 container,
@@ -343,12 +314,7 @@ impl ConnectorConfig {
                 let store = builder
                     .build()
                     .map_err(|e| format!("Azure build failed: {e}"))?;
-                let path = prefix
-                    .as_deref()
-                    .filter(|s| !s.is_empty())
-                    .map(ObjectPath::from)
-                    .unwrap_or_else(|| ObjectPath::from(""));
-                Ok((Arc::new(store), path))
+                Ok((Arc::new(store), prefix_to_path(prefix)))
             }
         }
     }
@@ -445,12 +411,15 @@ impl ConnectorConfig {
                 url_style,
             },
             Self::Gcs {
-                bucket, prefix, ..
+                bucket,
+                prefix,
+                hmac_key_id,
+                ..
             } => Self::Gcs {
                 bucket,
                 prefix,
                 service_account_json: None,
-                hmac_key_id: None,
+                hmac_key_id,
                 hmac_secret: None,
             },
             Self::Azure {
@@ -458,20 +427,11 @@ impl ConnectorConfig {
             } => Self::Azure {
                 container,
                 prefix,
-                connection_string: SecretString::from(""),
+                connection_string: SecretString::from("[REDACTED]"),
             },
         }
     }
 
-    /// Secret field names for this connector kind — used by the secrets module
-    /// to split/merge/redact secrets for DB persistence.
-    pub fn secret_field_names(&self) -> &'static [&'static str] {
-        match self {
-            Self::S3 { .. } => &["secret_access_key", "session_token"],
-            Self::Gcs { .. } => &["service_account_json", "hmac_secret"],
-            Self::Azure { .. } => &["connection_string"],
-        }
-    }
 }
 
 // ── ConnectorKindInfo (for kind selector endpoint) ─────────────────────
@@ -500,6 +460,24 @@ pub const KNOWN_KINDS: &[ConnectorKindInfo] = &[
         description: "Azure Blob container",
     },
 ];
+
+// ── Shared helpers ─────────────────────────────────────────────────────
+
+fn format_base_url(scheme: &str, root: &str, prefix: &Option<String>) -> String {
+    let base = format!("{scheme}://{root}");
+    match prefix.as_deref().filter(|s| !s.is_empty()) {
+        Some(p) => format!("{base}/{p}"),
+        None => base,
+    }
+}
+
+fn prefix_to_path(prefix: &Option<String>) -> ObjectPath {
+    prefix
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .map(ObjectPath::from)
+        .unwrap_or_else(|| ObjectPath::from(""))
+}
 
 // ── Azure connection string parser ─────────────────────────────────────
 

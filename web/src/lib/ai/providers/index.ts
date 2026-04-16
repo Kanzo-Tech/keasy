@@ -17,6 +17,3 @@ export const providerRegistry: Record<string, ProviderDef> = {
   openai,
 };
 
-export function toProviderPayload(config: Record<string, string>) {
-  return config;
-}

@@ -55,7 +55,6 @@ pub struct AppState {
     pub base_url: String,
     pub auth: AuthServices,
     pub gaia_x: GaiaXServices,
-    // ConnectorRegistry removed — ConnectorConfig enum methods are called directly.
 }
 
 /// Authentication and identity services (Keycloak / OIDC).

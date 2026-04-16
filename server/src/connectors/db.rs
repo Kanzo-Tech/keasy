@@ -93,17 +93,6 @@ impl Repos {
         Some(connector)
     }
 
-    /// Get connector with secret fields redacted — for API responses.
-    pub async fn get_connector_redacted(
-        &self,
-        registry: &ConnectorRegistry,
-        resource: &TenantResource<'_>,
-    ) -> Option<Connector> {
-        let mut connector = self.get_connector(resource).await?;
-        connector.config = secrets::redact(registry, &connector.connector_type, &connector.config);
-        Some(connector)
-    }
-
     pub async fn list_connectors(
         &self,
         tenant: &Tenant,
@@ -134,20 +123,6 @@ impl Repos {
             Ok(Ok(rows)) => rows.into_iter().map(Connector::from).collect(),
             _ => vec![],
         }
-    }
-
-    /// List connectors with secret fields redacted — for API responses.
-    pub async fn list_connectors_redacted(
-        &self,
-        registry: &ConnectorRegistry,
-        tenant: &Tenant,
-        direction_filter: Option<&str>,
-    ) -> Vec<Connector> {
-        let mut connectors = self.list_connectors(tenant, direction_filter).await;
-        for c in &mut connectors {
-            c.config = secrets::redact(registry, &c.connector_type, &c.config);
-        }
-        connectors
     }
 
     pub async fn update_connector(

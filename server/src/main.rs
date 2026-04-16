@@ -158,7 +158,6 @@ async fn main() {
         gaia_x,
         connector_registry: Arc::new({
             let mut registry = keasy_server::connectors::types::ConnectorRegistry::new();
-            registry.register("local_fs", Arc::new(keasy_server::connectors::types::local_fs::LocalFsConnector));
             registry.register("s3", Arc::new(keasy_server::connectors::types::s3::S3Connector));
             registry.register("gcs", Arc::new(keasy_server::connectors::types::gcs::GcsConnector));
             registry.register("azure_blob", Arc::new(keasy_server::connectors::types::azure::AzureConnector));

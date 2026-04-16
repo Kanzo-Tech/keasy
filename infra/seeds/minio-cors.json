@@ -1,0 +1,21 @@
+{
+  "CORSRules": [
+    {
+      "AllowedOrigins": [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://keasy.local"
+      ],
+      "AllowedMethods": ["GET", "HEAD"],
+      "AllowedHeaders": ["*"],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Content-Type",
+        "ETag",
+        "Accept-Ranges"
+      ],
+      "MaxAgeSeconds": 3600
+    }
+  ]
+}

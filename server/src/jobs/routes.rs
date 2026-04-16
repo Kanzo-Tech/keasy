@@ -107,23 +107,29 @@ pub async fn create_job(
     };
 
     let catalog_dest = if dcat_enabled {
-        match state.repos.get_promotor_catalog_config().await {
-            Some((promotor_org_id, connector_id, base_url)) => {
-                use crate::tenant::{OrgId, Tenant};
-                use crate::jobs::path_resolver::ResolvedPath;
-
-                let promotor_tenant = Tenant { org_id: OrgId(promotor_org_id) };
-                let res = crate::tenant::TenantResource { org_id: &promotor_tenant.org_id, id: &connector_id };
-                let connector = state.repos.get_connector_full(&res).await;
-                // ResolvedPath does not carry cloud credentials; they are configured at DuckDB engine level
-                let _ = connector;
-                Some(ResolvedPath::new(&base_url, None))
-            }
-            None => None,
-        }
+        state
+            .repos
+            .get_promotor_catalog_config()
+            .await
+            .map(|(_, _, base_url)| base_url)
     } else {
         None
     };
+
+    // Build the per-job path resolver from the connector IDs the caller
+    // authorized for this job. This pre-builds the `Arc<dyn CloudStore>`
+    // and DuckDB SECRET spec for every connector once, so the runner
+    // can install secrets and resolve `@conn/...` source paths without
+    // touching the database again.
+    let path_resolver = state
+        .repos
+        .build_path_resolver(
+            &state.connector_registry,
+            &ctx.tenant(),
+            &payload.connector_ids,
+        )
+        .await
+        .map_err(JobApiError::InvalidFormat)?;
 
     use crate::jobs::runner::SpawnParams;
     state.runner.spawn(SpawnParams {
@@ -134,6 +140,7 @@ pub async fn create_job(
         dcat_enabled,
         catalog_dest,
         fossil_registry: state.fossil_registry.clone(),
+        path_resolver,
     });
 
     Ok((StatusCode::ACCEPTED, data_response(job)).into_response())

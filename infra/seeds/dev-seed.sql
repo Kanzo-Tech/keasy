@@ -61,19 +61,16 @@ VALUES
 -- ══════════════════════════════════════════════════════════════════════════════
 
 -- ── Connectors ──────────────────────────────────────────────────────────────
+-- Dev uses MinIO (S3-compatible) at http://minio:9000 — same connector type
+-- and code path as production S3, only the endpoint differs. Bucket and
+-- CORS are pre-created by the minio-init sidecar (docker-compose.dev.yml).
 
 INSERT OR IGNORE INTO connectors
   (id, organization_id, name, connector_type, direction, config, created_at, updated_at)
 VALUES
   ('eeeeeeee-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001',
-   'Product Catalog', 'local_fs', 'source', '{"base_path":"/sample/products.csv"}',
-   strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), strftime('%Y-%m-%dT%H:%M:%SZ', 'now'));
-
-INSERT OR IGNORE INTO connectors
-  (id, organization_id, name, connector_type, direction, config, created_at, updated_at)
-VALUES
-  ('eeeeeeee-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001',
-   'Schema.org Vocab', 'http', 'source', '{"url":"https://schema.org"}',
+   'dev-bucket', 's3', 'both',
+   '{"bucket":"keasy-dev","endpoint":"http://minio:9000","region":"us-east-1","access_key_id":"keasy-dev","secret_access_key":"keasy-dev-password","url_style":"path"}',
    strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), strftime('%Y-%m-%dT%H:%M:%SZ', 'now'));
 
 -- ── Jobs ────────────────────────────────────────────────────────────────────
@@ -97,14 +94,8 @@ INSERT OR IGNORE INTO connectors
   (id, organization_id, name, connector_type, direction, config, created_at, updated_at)
 VALUES
   ('eeeeeeee-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002',
-   'Customer Data', 'gcs', 'source', '{"bucket":"acme-dev","prefix":"customers/"}',
-   strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), strftime('%Y-%m-%dT%H:%M:%SZ', 'now'));
-
-INSERT OR IGNORE INTO connectors
-  (id, organization_id, name, connector_type, direction, config, created_at, updated_at)
-VALUES
-  ('eeeeeeee-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002',
-   'Product Feed', 'local_fs', 'source', '{"base_path":"/sample/products.csv"}',
+   'acme-bucket', 's3', 'both',
+   '{"bucket":"keasy-dev","prefix":"acme/","endpoint":"http://minio:9000","region":"us-east-1","access_key_id":"keasy-dev","secret_access_key":"keasy-dev-password","url_style":"path"}',
    strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), strftime('%Y-%m-%dT%H:%M:%SZ', 'now'));
 
 -- ── Jobs ────────────────────────────────────────────────────────────────────

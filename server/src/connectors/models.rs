@@ -101,6 +101,15 @@ impl From<ConnectorRow> for Connector {
     }
 }
 
+impl Connector {
+    /// Return a copy with secret fields replaced by `true` markers,
+    /// suitable for API responses. Keeps non-secret config fields intact.
+    pub fn into_redacted(mut self, registry: &super::types::ConnectorRegistry) -> Self {
+        self.config = super::secrets::redact(registry, &self.connector_type, &self.config);
+        self
+    }
+}
+
 // ── API request types ────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]

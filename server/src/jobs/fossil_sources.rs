@@ -9,11 +9,14 @@
 //! views via `read_csv(...)`, `read_parquet(...)`, etc. The dialect
 //! trait is gone — this logic used to live on its emission side.
 
+use std::sync::Arc;
+
 use fossil_lang::registry::register_defaults;
 use fossil_lang::{FossilDb, FossilRegistry, ParamDef, SourceDef, SourceRegistry};
 
 use super::duckdb_engine::DuckDbConn;
 use super::executor::SourceHandler;
+use super::path_resolver::PathResolver;
 
 // ── Source builders ─────────────────────────────────────────────────
 
@@ -89,16 +92,19 @@ pub fn build_fossil_db(registry: &FossilRegistry) -> FossilDb {
 /// format in `runner.rs` when the `Executor` is constructed.
 ///
 /// For every fossil source referencing one of these formats, this
-/// handler issues `CREATE OR REPLACE VIEW <alias> AS SELECT * FROM
-/// read_<format>('<path>', <params>)` against the DuckDB connection.
-/// The compiled fossil SQL then reads from `<alias>` directly.
+/// handler resolves `def.path` (always `@conn/...`) through the per-job
+/// `PathResolver` to a real cloud URL, then issues `CREATE OR REPLACE
+/// VIEW <alias> AS SELECT * FROM read_<format>('<url>', <params>)`
+/// against the DuckDB connection. DuckDB autoselects the matching
+/// SECRET (installed by the runner pre-pass) by URL prefix.
 pub struct DuckDbNativeHandler {
     format: &'static str,
+    resolver: Arc<dyn PathResolver>,
 }
 
 impl DuckDbNativeHandler {
-    pub const fn new(format: &'static str) -> Self {
-        Self { format }
+    pub fn new(format: &'static str, resolver: Arc<dyn PathResolver>) -> Self {
+        Self { format, resolver }
     }
 }
 
@@ -112,7 +118,11 @@ impl SourceHandler for DuckDbNativeHandler {
         conn: &DuckDbConn,
         def: &fossil_lang::plan::SourceDef,
     ) -> Result<(), String> {
-        let tvf = build_tvf_call(&def.format, &def.path, &def.params);
+        let url = self
+            .resolver
+            .resolve(&def.path)
+            .map_err(|e| format!("resolve source '{}': {e}", def.alias))?;
+        let tvf = build_tvf_call(&def.format, &url, &def.params);
         let sql = format!(
             "CREATE OR REPLACE VIEW \"{alias}\" AS SELECT * FROM {tvf}",
             alias = def.alias,

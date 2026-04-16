@@ -6,6 +6,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use http::Method;
+use object_store::path::Path as ObjectPath;
 use serde::Serialize;
 
 use crate::graph::manifest::DataManifest;
@@ -16,7 +17,10 @@ use crate::middleware::tenant::{IsParticipant, Require, TenantContext};
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
-const SIGNED_URL_EXPIRES: Duration = Duration::from_secs(300);
+/// Reference TTL for browser-facing presigned URLs. The DuckDB-WASM docs
+/// suggest 15min–1h; 15min limits leakage and the frontend can re-fetch
+/// `/discover/urls` cheaply if a session outlives it.
+const SIGNED_URL_EXPIRES: Duration = Duration::from_secs(15 * 60);
 
 #[derive(Serialize, utoipa::ToSchema)]
 struct ResolveResponse {
@@ -38,6 +42,12 @@ async fn load_completed_job(
 }
 
 /// Sign parquet URLs for a manifest.
+///
+/// Reference pattern (HuggingFace Datasets, GitHub LFS, Kaggle, official
+/// DuckDB-WASM docs): backend presigns short-lived URLs scoped to the
+/// authenticated user, browser uses them directly in `read_parquet(...)`
+/// via httpfs. Bucket needs CORS configured once for the keasy origin
+/// (see `infra/README.md`).
 async fn sign_manifest_urls(
     state: &AppState,
     ctx: &TenantContext,
@@ -45,26 +55,89 @@ async fn sign_manifest_urls(
     manifest: &DataManifest,
     connector_ids: &[String],
 ) -> Result<Response, Response> {
-    let (store, prefix) = state.repos.build_signing_store_for_job(
-        &state.connector_registry, &ctx.tenant(), connector_ids, base_url
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("store_error", e))).into_response())?;
+    let resolver = state
+        .repos
+        .build_path_resolver(
+            &state.connector_registry,
+            &ctx.tenant(),
+            connector_ids,
+        )
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(error_body("resolver_error", e)),
+            )
+                .into_response()
+        })?;
 
-    let all_files: Vec<String> = manifest.types.iter().map(|t| t.vertex_file.clone())
+    // Find the connector entry whose `base_url` is a prefix of the job's
+    // output `base_url`. The "extra" suffix between the two is the
+    // path-within-store prefix that all manifest file paths sit under.
+    let (entry, sub_prefix) = resolver
+        .entries()
+        .iter()
+        .find_map(|e| {
+            base_url
+                .strip_prefix(&e.base_url)
+                .map(|rest| (e, rest.trim_start_matches('/').to_string()))
+        })
+        .ok_or_else(|| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(error_body(
+                    "no_connector_match",
+                    format!("no authorized connector matches output URL: {base_url}"),
+                )),
+            )
+                .into_response()
+        })?;
+
+    let all_files: Vec<String> = manifest
+        .types
+        .iter()
+        .map(|t| t.vertex_file.clone())
         .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
         .collect();
 
     let mut paths = Vec::with_capacity(all_files.len());
     for f in &all_files {
-        let full = if prefix.as_ref().is_empty() { f.to_string() } else { format!("{prefix}/{f}") };
-        let p = object_store::path::Path::parse(&full)
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("path_error", e.to_string()))).into_response())?;
+        let full = if sub_prefix.is_empty() {
+            f.to_string()
+        } else {
+            format!("{sub_prefix}/{f}")
+        };
+        let p = ObjectPath::parse(&full).map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(error_body("path_error", e.to_string())),
+            )
+                .into_response()
+        })?;
         paths.push(p);
     }
 
-    let urls = store.sign_urls(Method::GET, &paths, SIGNED_URL_EXPIRES).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("sign_error", e.to_string()))).into_response())?;
+    // Sign each path via the connector's `Arc<dyn CloudStore>`. `signed_url`
+    // comes from `object_store::signer::Signer`, which `CloudStore` implies
+    // by trait bound.
+    let mut urls = Vec::with_capacity(paths.len());
+    for path in &paths {
+        let url = entry
+            .store
+            .signed_url(Method::GET, path, SIGNED_URL_EXPIRES)
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(error_body("sign_error", e.to_string())),
+                )
+                    .into_response()
+            })?;
+        urls.push(url);
+    }
 
-    let files: HashMap<String, String> = all_files.into_iter()
+    let files: HashMap<String, String> = all_files
+        .into_iter()
         .zip(urls.into_iter().map(|u| u.to_string()))
         .collect();
 

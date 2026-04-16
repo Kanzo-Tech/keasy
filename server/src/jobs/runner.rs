@@ -11,6 +11,7 @@ use crate::graph::manifest::DataManifest;
 
 use super::errors::{JobRuntimeError, classify_error};
 use super::models::{JobStatus, now_iso8601};
+use super::path_resolver::PathResolver;
 use crate::db::Repos;
 use crate::graph::dcat::extract::extract_dcat_input;
 use crate::graph::dcat::types::DcatInput;
@@ -36,12 +37,19 @@ pub struct SpawnParams {
     pub script: String,
     pub org_settings: Option<OrgSettings>,
     pub dcat_enabled: bool,
-    /// Pre-resolved catalog storage destination (promotor cloud).
-    /// None when catalog storage is not configured.
-    pub catalog_dest: Option<crate::jobs::path_resolver::ResolvedPath>,
+    /// Pre-resolved catalog storage destination (promotor cloud) as a
+    /// base URL like `s3://bucket/prefix`. None when catalog storage is
+    /// not configured. The DCAT materializer will use it via DuckDB
+    /// `COPY ... TO '<catalog_dest>/...'` once implemented.
+    pub catalog_dest: Option<String>,
     /// Shared Fossil registry (sources + sinks + attribute ops). Send+Sync.
     /// Each job thread builds its own FossilDb from this registry.
     pub fossil_registry: Arc<fossil_lang::FossilRegistry>,
+    /// Per-job path resolver: one `ConnectorEntry` per authorized
+    /// connector, with its `Arc<dyn CloudStore>` and DuckDB SECRET spec
+    /// pre-built. Used by `run_job` to install secrets and resolve
+    /// `@conn/...` source paths to real cloud URLs.
+    pub path_resolver: Arc<dyn PathResolver>,
 }
 
 const TOTAL_PHASES: u8 = 5;
@@ -126,7 +134,7 @@ impl JobRunner {
     /// Spawn a job execution task.
     /// `params.org_id` is the organization that owns this job.
     pub fn spawn(&self, params: SpawnParams) {
-        let SpawnParams { org_id, job_id, script, org_settings, dcat_enabled, catalog_dest, fossil_registry } = params;
+        let SpawnParams { org_id, job_id, script, org_settings, dcat_enabled, catalog_dest, fossil_registry, path_resolver } = params;
         let db = self.db.clone();
         let semaphore = self.semaphore.clone();
         let job_timeout = self.job_timeout;
@@ -183,6 +191,7 @@ impl JobRunner {
             let outputs = pipeline_outputs;
             let tx_blocking = tx.clone();
             let registry_blocking = fossil_registry.clone();
+            let resolver_blocking = path_resolver.clone();
             let result = tokio::time::timeout(
                 job_timeout,
                 tokio::task::spawn_blocking(move || {
@@ -197,7 +206,8 @@ impl JobRunner {
                         if dcat_enabled { org_settings.as_ref() } else { None },
                         job_name.as_deref(),
                         &outputs,
-                        catalog_dest.as_ref(),
+                        catalog_dest.as_deref(),
+                        &resolver_blocking,
                         &tx_blocking,
                     )
                 }),
@@ -280,7 +290,8 @@ fn run_job(
     org: Option<&OrgSettings>,
     job_name: Option<&str>,
     outputs: &[PipelineOutput],
-    catalog_dest: Option<&crate::jobs::path_resolver::ResolvedPath>,
+    catalog_dest: Option<&str>,
+    path_resolver: &Arc<dyn PathResolver>,
     tx: &broadcast::Sender<JobEvent>,
 ) -> Result<JobResult, String> {
     // Phase 1: compiling
@@ -297,19 +308,32 @@ fn run_job(
     // Phase 2: executing
     if tx.send(JobEvent { phase: "executing".into(), index: 2, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
-    // Execute the plan via Executor<DuckDB>
+    // Execute the plan via Executor<DuckDB>.
     let duckdb = super::duckdb_engine::DuckDbConn::new()
         .map_err(|e| format!("DuckDB init failed: {e}"))?;
+
+    // Load cloud extensions and install a SECRET per authorized connector
+    // BEFORE the executor runs. DuckDB autoselects the matching secret per
+    // cloud read by SCOPE prefix, so multi-credential coexistence is safe.
+    duckdb
+        .load_extensions(&["httpfs", "azure"])
+        .map_err(|e| format!("DuckDB load_extensions failed: {e}"))?;
+    for entry in path_resolver.entries() {
+        duckdb
+            .install_secret(&entry.name, &entry.base_url, &entry.secret_spec)
+            .map_err(|e| format!("install secret '{}': {e}", entry.name))?;
+    }
+
     // Register one native DuckDB handler per format fossil-lang knows
-    // about. Each handler materialises `<alias>` as a DuckDB view reading
-    // from the corresponding table-valued function. pdf/docx handlers
-    // will be registered here when fossil-doc is wired in.
+    // about. Each handler resolves `@conn/...` source paths through the
+    // shared resolver and materialises `<alias>` as a DuckDB view reading
+    // from the corresponding table-valued function.
     use super::fossil_sources::DuckDbNativeHandler;
     let exec = super::executor::Executor::new(duckdb)
-        .source(DuckDbNativeHandler::new("csv"))
-        .source(DuckDbNativeHandler::new("parquet"))
-        .source(DuckDbNativeHandler::new("json"))
-        .source(DuckDbNativeHandler::new("excel"));
+        .source(DuckDbNativeHandler::new("csv", path_resolver.clone()))
+        .source(DuckDbNativeHandler::new("parquet", path_resolver.clone()))
+        .source(DuckDbNativeHandler::new("json", path_resolver.clone()))
+        .source(DuckDbNativeHandler::new("excel", path_resolver.clone()));
     let results = exec.execute(&plan).map_err(|e| e.to_string())?;
 
     // Extract rdf_base and manifest from execution output
@@ -319,9 +343,13 @@ fn run_job(
     // Materialize DCAT-AP catalog as parquets (if dcat + manifest + dest available)
     let (catalog_manifest, catalog_base) = match (&dcat_input, &manifest, catalog_dest) {
         (Some(input), Some(data_manifest), Some(dest)) => {
-            let dest_with_job = dest.join(&format!("{}/{job_id}", input.org.publisher_name));
+            let dest_with_job = format!(
+                "{}/{}/{job_id}",
+                dest.trim_end_matches('/'),
+                input.org.publisher_name,
+            );
             match crate::graph::dcat::materializer::materialize_catalog(input, data_manifest, &dest_with_job) {
-                Ok(cat_manifest) => (Some(cat_manifest), Some(dest_with_job.to_str().to_string())),
+                Ok(cat_manifest) => (Some(cat_manifest), Some(dest_with_job)),
                 Err(e) => {
                     warn!("Catalog materialization failed (non-fatal): {e}");
                     (None, None)

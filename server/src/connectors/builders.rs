@@ -3,12 +3,12 @@ use std::sync::Arc;
 use diesel::prelude::*;
 use crate::db::diesel_schema::connectors::dsl;
 use crate::db::Repos;
-use crate::jobs::path_resolver::{KeasyPathResolver, PathResolver};
+use crate::jobs::path_resolver::{ConnectorEntry, KeasyPathResolver, PathResolver};
 use crate::tenant::Tenant;
 
 use super::models::{Connector, ConnectorRow};
 use super::secrets;
-use super::types::ConnectorRegistry;
+use super::types::{ConnectorRegistry, ConnectorType};
 
 impl Repos {
     /// Bulk-fetch connectors by IDs (single query) and resolve their types.
@@ -17,13 +17,7 @@ impl Repos {
         registry: &'a ConnectorRegistry,
         tenant: &Tenant,
         connector_ids: &[String],
-    ) -> Result<
-        Vec<(
-            Connector,
-            &'a Arc<dyn super::types::ConnectorType>,
-        )>,
-        String,
-    > {
+    ) -> Result<Vec<(Connector, &'a Arc<dyn ConnectorType>)>, String> {
         if connector_ids.is_empty() {
             return Ok(vec![]);
         }
@@ -79,7 +73,11 @@ impl Repos {
             .collect()
     }
 
-    /// Build a PathResolver from specific connector IDs.
+    /// Build a `PathResolver` for a job from explicit connector IDs. For
+    /// each connector this constructs the `Arc<dyn CloudStore>` and the
+    /// `DuckDbSecretSpec` once and stashes them in a `ConnectorEntry`,
+    /// so the runner can install secrets and resolve paths without
+    /// re-touching the registry or rebuilding stores per request.
     pub async fn build_path_resolver(
         &self,
         registry: &ConnectorRegistry,
@@ -89,71 +87,24 @@ impl Repos {
         let resolved = self
             .resolve_connectors(registry, tenant, connector_ids)
             .await?;
-        let entries: Vec<_> = resolved
-            .iter()
-            .map(|(c, ct)| {
-                (
-                    c.name.clone(),
-                    ct.base_url(&c.config),
-                    ct.cloud_config(&c.config),
-                )
-            })
-            .collect();
-        Ok(Arc::new(KeasyPathResolver::from_connectors(entries)))
+        let entries = resolved
+            .into_iter()
+            .map(|(c, ct)| build_entry(&c, ct))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Arc::new(KeasyPathResolver::new(entries)))
     }
+}
 
-    /// Build a PathResolver from ALL connectors in an org.
-    pub async fn build_path_resolver_for_org(
-        &self,
-        registry: &ConnectorRegistry,
-        tenant: &Tenant,
-    ) -> Result<Arc<dyn PathResolver>, String> {
-        let mut connectors = self.list_connectors(tenant, None).await;
-        // Merge secrets for each connector
-        for connector in &mut connectors {
-            secrets::merge_from_db(self, connector).await;
-        }
-        let entries: Vec<_> = connectors
-            .iter()
-            .filter_map(|c| {
-                let ct = registry.get(&c.connector_type)?;
-                Some((
-                    c.name.clone(),
-                    ct.base_url(&c.config),
-                    ct.cloud_config(&c.config),
-                ))
-            })
-            .collect();
-        Ok(Arc::new(KeasyPathResolver::from_connectors(entries)))
-    }
-
-    /// Build a signing-capable store for a job's output URL.
-    pub async fn build_signing_store_for_job(
-        &self,
-        registry: &ConnectorRegistry,
-        tenant: &Tenant,
-        connector_ids: &[String],
-        target_url: &str,
-    ) -> Result<(super::types::CloudStore, object_store::path::Path), String> {
-        let resolved = self
-            .resolve_connectors(registry, tenant, connector_ids)
-            .await?;
-        for (c, ct) in &resolved {
-            let base = ct.base_url(&c.config);
-            if target_url.starts_with(&base) {
-                let (store, connector_prefix) = ct.build_store(&c.config)?;
-                // Append the sub-path from rdf_base that goes beyond the connector's base_url
-                let sub = target_url[base.len()..].trim_start_matches('/');
-                let full_prefix = if connector_prefix.as_ref().is_empty() {
-                    object_store::path::Path::from(sub)
-                } else if sub.is_empty() {
-                    connector_prefix
-                } else {
-                    object_store::path::Path::from(format!("{connector_prefix}/{sub}"))
-                };
-                return Ok((store, full_prefix));
-            }
-        }
-        Err(format!("no connector found matching URL: {target_url}"))
-    }
+/// Project a `(Connector, ConnectorType)` pair into the `ConnectorEntry`
+/// that the path resolver and the rest of the job lifecycle consume.
+/// Single point where credentials cross from the JSON config into runtime
+/// state — `build_store` and `duckdb_secret` are both called once here.
+fn build_entry(c: &Connector, ct: &Arc<dyn ConnectorType>) -> Result<ConnectorEntry, String> {
+    let (store, _prefix) = ct.build_store(&c.config)?;
+    Ok(ConnectorEntry {
+        name: c.name.clone(),
+        base_url: ct.base_url(&c.config),
+        store,
+        secret_spec: ct.duckdb_secret(&c.config),
+    })
 }

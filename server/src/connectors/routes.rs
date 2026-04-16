@@ -27,14 +27,13 @@ pub async fn list_connectors(
     State(state): State<AppState>,
     Query(query): Query<ListConnectorsQuery>,
 ) -> impl IntoResponse {
-    let connectors = state
+    let connectors: Vec<_> = state
         .repos
-        .list_connectors_redacted(
-            &state.connector_registry,
-            &ctx.tenant(),
-            query.direction.as_deref(),
-        )
-        .await;
+        .list_connectors(&ctx.tenant(), query.direction.as_deref())
+        .await
+        .into_iter()
+        .map(|c| c.into_redacted(&state.connector_registry))
+        .collect();
     data_response(connectors)
 }
 
@@ -82,9 +81,10 @@ pub async fn get_connector(
 ) -> Result<impl IntoResponse, ConnectorError> {
     let connector = state
         .repos
-        .get_connector_redacted(&state.connector_registry, &ctx.resource(&id))
+        .get_connector(&ctx.resource(&id))
         .await
-        .ok_or(ConnectorError::NotFound)?;
+        .ok_or(ConnectorError::NotFound)?
+        .into_redacted(&state.connector_registry);
     Ok(data_response(connector))
 }
 

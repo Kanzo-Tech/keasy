@@ -3,32 +3,25 @@
 //! Each storage backend implements ConnectorType. Adding a new backend
 //! = implementing the trait, NOT editing a match statement.
 //!
-//! Reference: DataFusion ObjectStoreRegistry, Airbyte connector pattern,
-//! Fossil TypeProviderImpl.
+//! Reference: DataFusion ObjectStoreRegistry, Airbyte connector pattern.
 
 pub mod azure;
 pub mod gcs;
-pub mod local_fs;
 pub mod s3;
 
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use std::time::Duration;
-
-use futures::stream::BoxStream;
-use http::Method;
-use object_store::aws::AmazonS3;
-use object_store::azure::MicrosoftAzure;
-use object_store::gcp::GoogleCloudStorage;
-use object_store::local::LocalFileSystem;
 use object_store::path::Path as ObjectPath;
 use object_store::signer::Signer;
-use object_store::{ObjectMeta, ObjectStore, PutPayload, PutResult};
+use object_store::ObjectStore;
 use serde::Serialize;
-use url::Url;
 
 use super::models::ConnectorDirection;
+
+// Re-exports so consumers can `use crate::connectors::types::{CloudStore, ObjectPath, ...}`
+// without depending on `object_store::*` directly.
+pub use object_store::path::Path;
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -39,50 +32,28 @@ pub fn str_field<'a>(config: &'a serde_json::Value, key: &str) -> Option<&'a str
 
 // ── CloudStore ─────────────────────────────────────────────────────────
 
-/// Cloud storage abstraction that preserves the concrete provider type.
-/// Unlike `Box<dyn ObjectStore>`, this allows URL signing for direct
-/// browser access to cloud storage.
-pub enum CloudStore {
-    S3(AmazonS3),
-    Azure(MicrosoftAzure),
-    Gcs(GoogleCloudStorage),
-    Local(LocalFileSystem),
-}
+/// Combined trait: ObjectStore + Signer + Send + Sync.
+///
+/// `Arc<dyn CloudStore>` is keasy's canonical handle for talking to cloud
+/// storage — it covers reading, writing, listing, AND URL signing in one
+/// type. The blanket impl ties it to any `object_store` backend that also
+/// implements `Signer` (S3, GCS, Azure — but not local FS, which is why
+/// keasy is cloud-only). Compile-time guarantee: every connector keasy
+/// supports can do everything keasy needs.
+pub trait CloudStore: ObjectStore + Signer {}
+impl<T: ObjectStore + Signer> CloudStore for T {}
 
-impl CloudStore {
-    fn as_store(&self) -> &dyn ObjectStore {
-        match self {
-            Self::S3(s) => s,
-            Self::Azure(s) => s,
-            Self::Gcs(s) => s,
-            Self::Local(s) => s,
-        }
-    }
+// ── DuckDB SECRET projection ───────────────────────────────────────────
 
-    /// Batch-sign multiple URLs. Only cloud variants support signing.
-    pub async fn sign_urls(
-        &self,
-        method: Method,
-        paths: &[ObjectPath],
-        expires_in: Duration,
-    ) -> object_store::Result<Vec<Url>> {
-        match self {
-            Self::S3(s) => s.signed_urls(method, paths, expires_in).await,
-            Self::Azure(s) => s.signed_urls(method, paths, expires_in).await,
-            Self::Gcs(s) => s.signed_urls(method, paths, expires_in).await,
-            Self::Local(_) => Err(object_store::Error::NotSupported {
-                source: "local filesystem does not support URL signing".into(),
-            }),
-        }
-    }
-
-    pub fn list(&self, prefix: Option<&ObjectPath>) -> BoxStream<'_, object_store::Result<ObjectMeta>> {
-        self.as_store().list(prefix)
-    }
-
-    pub async fn put(&self, path: &ObjectPath, payload: PutPayload) -> object_store::Result<PutResult> {
-        self.as_store().put(path, payload).await
-    }
+/// Spec for `CREATE SECRET` in DuckDB: the secret type and parameters.
+/// SCOPE is supplied by the caller (typically `entry.base_url`).
+///
+/// DuckDB is the only consumer of credentials that lives outside the
+/// object_store ecosystem and needs its own credential format, so it
+/// gets its own projection method on `ConnectorType`.
+pub struct DuckDbSecretSpec {
+    pub secret_type: &'static str,
+    pub params: Vec<(&'static str, String)>,
 }
 
 // ── ConnectorType trait ────────────────────────────────────────────────
@@ -97,7 +68,7 @@ pub struct ConnectorTypeInfo {
     pub secret_fields: &'static [&'static str],
 }
 
-/// Trait that each storage backend implements.
+/// Trait that each cloud storage backend implements.
 pub trait ConnectorType: Send + Sync {
     fn info(&self) -> ConnectorTypeInfo;
 
@@ -105,20 +76,24 @@ pub trait ConnectorType: Send + Sync {
     fn validate(&self, config: &serde_json::Value) -> Result<(), String>;
 
     /// Derive the base URL from config (e.g. `s3://bucket/prefix`).
+    /// Used as the DuckDB SECRET SCOPE and as the prefix that
+    /// `KeasyPathResolver` concatenates with `@conn/...` paths.
     fn base_url(&self, config: &serde_json::Value) -> String;
 
-    /// Build cloud configuration key-value pairs from connector config.
-    /// Returns raw pairs consumed by the DuckDB execution engine.
-    fn cloud_config(&self, config: &serde_json::Value) -> Option<Vec<(String, String)>> {
-        let _ = config;
-        None
-    }
-
-    /// Build a CloudStore client for file operations.
+    /// Build the object_store client for this connector. The returned
+    /// `Arc<dyn CloudStore>` is the canonical handle for read/write/sign
+    /// operations and is shared across the job lifecycle.
     fn build_store(
         &self,
         config: &serde_json::Value,
-    ) -> Result<(CloudStore, ObjectPath), String>;
+    ) -> Result<(Arc<dyn CloudStore>, ObjectPath), String>;
+
+    /// Project credentials to DuckDB SECRET parameters. Each impl knows
+    /// the DuckDB key names for its cloud (KEY_ID / SECRET / REGION for
+    /// S3, KEY_ID / SECRET for GCS HMAC, ACCOUNT_NAME / ACCOUNT_KEY for
+    /// Azure, etc.). The caller installs the secret with `entry.base_url`
+    /// as the SCOPE.
+    fn duckdb_secret(&self, config: &serde_json::Value) -> DuckDbSecretSpec;
 }
 
 /// Registry of available connector types.

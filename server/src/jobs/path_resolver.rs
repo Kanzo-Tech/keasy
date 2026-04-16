@@ -1,94 +1,74 @@
-//! Host-side path resolution.
+//! Host-side `@conn/path` resolver.
 //!
-//! `ResolvedPath` wraps a URL + optional cloud credentials. `PathResolver`
-//! is the trait keasy consumers implement to resolve `@connection/path`
-//! references to actual storage URLs. These types live here — not in
-//! fossil-lang — because resolution is entirely a host concern (language
-//! compilers don't care how paths become URLs).
+//! Fossil scripts reference data via `@<connector-name>/<relative-path>`.
+//! The compiler (fossil-lang) treats the path as opaque — translation to
+//! a real cloud URL is keasy's responsibility. `KeasyPathResolver` does
+//! that translation, holding all the per-connector state needed by the
+//! job runtime in a single place:
+//!
+//!   - `base_url`        — concatenated with the relative path to form
+//!                         the URL DuckDB sees in `read_csv`/`read_parquet`
+//!   - `store`           — `Arc<dyn CloudStore>` shared across all
+//!                         consumers (DuckDB SECRET install, presigning,
+//!                         server-side reads/writes/listing)
+//!   - `secret_spec`     — DuckDB SECRET parameters; the runner installs
+//!                         a `CREATE OR REPLACE SECRET` per entry before
+//!                         the executor runs
+//!
+//! One resolver instance per job, built in `routes::create_job` and
+//! propagated through `SpawnParams`. Out of scope for this module: cloud
+//! credential extraction (lives in `ConnectorType` impls).
 
-use std::collections::HashMap;
+use std::sync::Arc;
 
-/// A resolved path ready for I/O: URL + cloud credentials.
-#[derive(Clone)]
-pub struct ResolvedPath {
-    url: String,
-    cloud_config: HashMap<String, String>,
+use crate::connectors::types::{CloudStore, DuckDbSecretSpec};
+
+/// One connector authorized for a job, with all its runtime state pre-built.
+pub struct ConnectorEntry {
+    pub name: String,
+    pub base_url: String,
+    pub store: Arc<dyn CloudStore>,
+    pub secret_spec: DuckDbSecretSpec,
 }
 
-impl ResolvedPath {
-    pub fn new(url: &str, _cloud_options: Option<()>) -> Self {
-        Self {
-            url: url.to_string(),
-            cloud_config: HashMap::new(),
-        }
-    }
-
-    pub fn with_config(url: &str, cloud_config: HashMap<String, String>) -> Self {
-        Self {
-            url: url.to_string(),
-            cloud_config,
-        }
-    }
-
-    pub fn join(&self, rel: &str) -> Self {
-        Self {
-            url: format!("{}/{}", self.url.trim_end_matches('/'), rel),
-            cloud_config: self.cloud_config.clone(),
-        }
-    }
-
-    pub fn cloud_config(&self) -> &HashMap<String, String> {
-        &self.cloud_config
-    }
-
-    pub fn to_str(&self) -> &str {
-        &self.url
-    }
-}
-
-impl std::fmt::Debug for ResolvedPath {
+impl std::fmt::Debug for ConnectorEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ResolvedPath")
-            .field("url", &self.url)
+        f.debug_struct("ConnectorEntry")
+            .field("name", &self.name)
+            .field("base_url", &self.base_url)
             .finish()
     }
 }
 
-/// Host-provided path resolution.
+/// Host-provided path resolution for `@conn/...` references.
 pub trait PathResolver: Send + Sync + std::fmt::Debug {
-    fn resolve(&self, raw_path: &str) -> Result<ResolvedPath, String>;
+    /// Resolve `@name/path` to the full cloud URL (e.g. `s3://bucket/path`).
+    /// Direct paths (without `@`) are rejected.
+    fn resolve(&self, raw: &str) -> Result<String, String>;
+
+    /// Resolve `@name/path` to the owning `ConnectorEntry`. Used by the
+    /// data plane endpoint when it needs the entry's `store` for signing
+    /// without re-walking the entries list.
+    fn entry_for(&self, raw: &str) -> Result<&ConnectorEntry, String>;
+
+    /// All entries authorized for this job. Used by the runner to install
+    /// DuckDB SECRETs before the executor runs.
+    fn entries(&self) -> &[ConnectorEntry];
 }
 
-#[derive(Debug)]
-struct ConnectionInfo {
-    base_url: String,
-    /// Cloud configuration key-value pairs for the DuckDB engine.
-    _cloud_config: Option<Vec<(String, String)>>,
-}
-
-/// Keasy-specific path resolver: resolves `@connection/path` references using
-/// per-connection credentials. Direct paths are rejected.
+/// Keasy's `PathResolver` impl: looks up `@name` against a fixed set of
+/// connector entries authorized at job spawn time.
 #[derive(Debug)]
 pub struct KeasyPathResolver {
-    connections: HashMap<String, ConnectionInfo>,
+    entries: Vec<ConnectorEntry>,
 }
 
 impl KeasyPathResolver {
-    pub fn from_connectors(
-        connections: Vec<(String, String, Option<Vec<(String, String)>>)>,
-    ) -> Self {
-        let map = connections
-            .into_iter()
-            .map(|(name, base_url, cloud_config)| {
-                (name, ConnectionInfo { base_url, _cloud_config: cloud_config })
-            })
-            .collect();
-        Self { connections: map }
+    pub fn new(entries: Vec<ConnectorEntry>) -> Self {
+        Self { entries }
     }
-}
 
-impl PathResolver for KeasyPathResolver {
-    fn resolve(&self, raw: &str) -> Result<ResolvedPath, String> {
+    fn split_at(raw: &str) -> Result<(&str, &str), String> {
         if !raw.starts_with('@') {
             return Err(format!(
                 "Direct paths not allowed. Use @connection/path: {raw}"
@@ -98,15 +78,34 @@ impl PathResolver for KeasyPathResolver {
         let (name, path) = without_at
             .split_once('/')
             .ok_or_else(|| format!("Invalid reference: {raw}. Expected @name/path"))?;
-        let conn = self
-            .connections
-            .get(name)
-            .ok_or_else(|| format!("Unknown connection: @{name}"))?;
-        let url = format!(
+        Ok((name, path))
+    }
+
+    fn lookup(&self, name: &str) -> Result<&ConnectorEntry, String> {
+        self.entries
+            .iter()
+            .find(|e| e.name == name)
+            .ok_or_else(|| format!("Unknown connection: @{name}"))
+    }
+}
+
+impl PathResolver for KeasyPathResolver {
+    fn resolve(&self, raw: &str) -> Result<String, String> {
+        let (name, path) = Self::split_at(raw)?;
+        let entry = self.lookup(name)?;
+        Ok(format!(
             "{}/{}",
-            conn.base_url.trim_end_matches('/'),
+            entry.base_url.trim_end_matches('/'),
             path.trim_start_matches('/')
-        );
-        Ok(ResolvedPath::new(&url, None))
+        ))
+    }
+
+    fn entry_for(&self, raw: &str) -> Result<&ConnectorEntry, String> {
+        let (name, _) = Self::split_at(raw)?;
+        self.lookup(name)
+    }
+
+    fn entries(&self) -> &[ConnectorEntry] {
+        &self.entries
     }
 }

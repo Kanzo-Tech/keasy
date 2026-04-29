@@ -558,8 +558,15 @@
           "required": true
         },
         "responses": {
-          "501": {
-            "description": "Not implemented"
+          "200": {
+            "description": "Analysis result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1460,12 +1467,12 @@
       "AnalyzeRequest": {
         "type": "object",
         "required": [
-          "script",
-          "cursor_offset"
+          "script"
         ],
         "properties": {
           "cursor_offset": {
             "type": "integer",
+            "description": "Reserved for future completion support (LSP-style cursor position).",
             "minimum": 0
           },
           "script": {

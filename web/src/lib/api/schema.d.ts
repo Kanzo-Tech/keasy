@@ -585,7 +585,8 @@ export interface components {
             provider: string;
         };
         AnalyzeRequest: {
-            cursor_offset: number;
+            /** @description Reserved for future completion support (LSP-style cursor position). */
+            cursor_offset?: number;
             script: string;
         };
         AnalyzeResponse: {
@@ -1584,12 +1585,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Not implemented */
-            501: {
+            /** @description Analysis result */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AnalyzeResponse"];
+                };
             };
         };
     };

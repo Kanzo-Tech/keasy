@@ -216,15 +216,20 @@ export const api = {
 
   // ── Fossil Analysis ────────────────────────────────────────────────────
   fossil: {
-    analyze: async (script: string, cursorOffset: number) => {
-      const res = await fetch("/v1/fossil/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ script, cursor_offset: cursorOffset }),
-      });
-      if (!res.ok) return { completions: [], diagnostics: [] } as FossilAnalysis;
-      return (await res.json()) as FossilAnalysis;
+    analyze: async (
+      script: string,
+      cursorOffset: number,
+    ): Promise<FossilAnalysis> => {
+      try {
+        const res = unwrap(
+          await client.POST("/v1/fossil/analyze", {
+            body: { script, cursor_offset: cursorOffset },
+          }),
+        );
+        return res as unknown as FossilAnalysis;
+      } catch {
+        return { completions: [], diagnostics: [] };
+      }
     },
   },
 

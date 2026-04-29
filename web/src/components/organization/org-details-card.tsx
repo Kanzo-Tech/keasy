@@ -26,6 +26,10 @@ import {
 import { COUNTRY_OPTIONS, getCountryName } from "@/lib/countries";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
+import {
+  REGISTRATION_NUMBER_TYPES,
+  REGISTRATION_NUMBER_TYPE_LABELS,
+} from "@/lib/constants/enums";
 
 /* ---------- Schema ---------- */
 
@@ -33,7 +37,10 @@ const orgIdentitySchema = z.object({
   legal_name: z.string().min(1, "Legal name is required"),
   country: z.string().length(2, "Country code required"),
   country_subdivision_code: z.string().nullable().optional(),
-  registration_number_type: z.enum(["vatID", "leiCode", "EORI"]).nullable().optional(),
+  registration_number_type: z
+    .enum(REGISTRATION_NUMBER_TYPES as readonly [string, ...string[]])
+    .nullable()
+    .optional(),
   registration_number: z.string().nullable().optional(),
 });
 
@@ -274,9 +281,11 @@ export function OrgDetailsCard({
                         <SelectValue placeholder="Type..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="vatID">VAT ID</SelectItem>
-                        <SelectItem value="leiCode">LEI Code</SelectItem>
-                        <SelectItem value="EORI">EORI</SelectItem>
+                        {REGISTRATION_NUMBER_TYPES.map((rnt) => (
+                          <SelectItem key={rnt} value={rnt}>
+                            {REGISTRATION_NUMBER_TYPE_LABELS[rnt]}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   )}

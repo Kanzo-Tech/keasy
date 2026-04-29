@@ -42,12 +42,13 @@ import { PageShell } from "@/components/layout/page-shell";
 import { useOrgUsers } from "@/hooks/use-org-users";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
+import { MEMBER_ROLES } from "@/lib/constants/enums";
 import type { OrgUser, OrgInvite } from "@/lib/types";
 
 /* ---------- Schema ---------- */
 
 const inviteSchema = z.object({
-  role: z.enum(["admin", "user"]),
+  role: z.enum(MEMBER_ROLES as [string, ...string[]]),
 });
 
 type InviteFormValues = z.infer<typeof inviteSchema>;
@@ -91,8 +92,11 @@ function orgUserColumns(
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="user">User</SelectItem>
+            {MEMBER_ROLES.map((role) => (
+              <SelectItem key={role} value={role}>
+                {role.charAt(0).toUpperCase() + role.slice(1)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       ),

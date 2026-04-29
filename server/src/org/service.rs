@@ -49,9 +49,9 @@ impl OrgService {
     ) -> Result<(), AppError> {
         let role: MemberRole = role_str
             .parse()
-            .map_err(|msg: String| AppError::Internal(anyhow::anyhow!(msg)))?;
+            .map_err(|e: strum::ParseError| AppError::Validation(format!("invalid role '{role_str}': {e}")))?;
         self.repo
-            .update_member_role(user_id, org_id, role.as_str())
+            .update_member_role(user_id, org_id, role.as_ref())
             .await
             .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))
     }
@@ -73,7 +73,7 @@ impl OrgService {
     ) -> Result<(String, InviteToken), AppError> {
         let role: MemberRole = role_str
             .parse()
-            .map_err(|msg: String| AppError::Internal(anyhow::anyhow!(msg)))?;
+            .map_err(|e: strum::ParseError| AppError::Validation(format!("invalid role '{role_str}': {e}")))?;
 
         let now = jiff::Timestamp::now().to_string();
         let token_value = uuid::Uuid::new_v4().to_string();
@@ -87,7 +87,7 @@ impl OrgService {
         let invite = InviteToken {
             token: token_value.clone(),
             org_id: org_id.to_string(),
-            role: role.as_str().to_string(),
+            role: role.to_string(),
             created_by: created_by.to_string(),
             expires_at,
             created_at: now,

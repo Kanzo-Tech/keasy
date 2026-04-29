@@ -43,7 +43,7 @@ impl ConnectorRepository for DieselConnectorRepo {
             organization_id: tenant.org_id.as_str().to_string(),
             name: req.name,
             connector_type,
-            direction: req.direction.as_str().to_string(),
+            direction: req.direction.to_string(),
             config: config_json,
             created_at: now.clone(),
             updated_at: now,
@@ -186,7 +186,7 @@ impl ConnectorRepository for DieselConnectorRepo {
         let changeset = ConnectorChangeset {
             name: Some(connector.name.clone()),
             connector_type: Some(connector.connector_type.clone()),
-            direction: Some(connector.direction.as_str().to_string()),
+            direction: Some(connector.direction.to_string()),
             config: Some(config_json),
             updated_at: Some(connector.updated_at.clone()),
         };

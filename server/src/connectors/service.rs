@@ -90,6 +90,13 @@ impl ConnectorService {
             .map_err(|e| AppError::Validation(e.to_string()))?;
         test_connection(&cc).await
     }
+
+    /// Dry-run a config provided directly in the request body. Used by the
+    /// "Test connection" button in the New Connection form before saving.
+    pub async fn test_config(&self, config: &ConnectorConfig) -> Result<(), AppError> {
+        config.validate().map_err(AppError::Validation)?;
+        test_connection(config).await
+    }
 }
 
 async fn test_connection(config: &ConnectorConfig) -> Result<(), AppError> {

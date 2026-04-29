@@ -9,7 +9,9 @@ use crate::middleware::tenant::{IsParticipant, Require};
 use crate::AppState;
 
 use super::config::{ConnectorKindInfo, KNOWN_KINDS};
-use super::models::{ConnectorResponse, CreateConnectorRequest, UpdateConnectorRequest};
+use super::models::{
+    ConnectorResponse, CreateConnectorRequest, TestConnectorRequest, UpdateConnectorRequest,
+};
 use super::service::ConnectorService;
 
 #[derive(Deserialize)]
@@ -118,5 +120,22 @@ pub async fn test_connector(
 ) -> Result<impl IntoResponse, AppError> {
     let svc = ConnectorService::new(state.connectors.clone());
     svc.test(&ctx.resource(&id)).await?;
+    Ok(StatusCode::OK)
+}
+
+#[utoipa::path(post, path = "/v1/connectors/test", tag = "Connectors",
+    request_body = TestConnectorRequest,
+    responses(
+        (status = 200, description = "Connection test passed"),
+        (status = 400, description = "Connection test failed"),
+    )
+)]
+pub async fn test_connector_config(
+    _ctx: Require<IsParticipant>,
+    State(state): State<AppState>,
+    Json(req): Json<TestConnectorRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let svc = ConnectorService::new(state.connectors.clone());
+    svc.test_config(&req.config).await?;
     Ok(StatusCode::OK)
 }

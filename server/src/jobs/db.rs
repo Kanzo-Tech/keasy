@@ -14,8 +14,8 @@ fn to_new_job(job: &Job, org_id: &str) -> Result<NewJob, String> {
         id: job.id.clone(),
         organization_id: org_id.to_string(),
         name: job.name.clone(),
-        status: job.status.as_str().to_string(),
-        mode: job.mode.as_str().to_string(),
+        status: job.status.to_string(),
+        mode: job.mode.to_string(),
         created_at: job.created_at.clone(),
         started_at: job.started_at.clone(),
         completed_at: job.completed_at.clone(),
@@ -38,7 +38,7 @@ fn to_new_job(job: &Job, org_id: &str) -> Result<NewJob, String> {
 fn to_changeset(job: &Job) -> Result<JobChangeset, String> {
     Ok(JobChangeset {
         name: Some(job.name.clone()),
-        status: Some(job.status.as_str().to_string()),
+        status: Some(job.status.to_string()),
         started_at: Some(job.started_at.clone()),
         completed_at: Some(job.completed_at.clone()),
         error: Some(job.error.as_ref()

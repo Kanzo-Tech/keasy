@@ -73,6 +73,7 @@ use utoipa::OpenApi;
         crate::connectors::handlers::delete_connector,
         crate::connectors::handlers::list_connector_kinds,
         crate::connectors::handlers::test_connector,
+        crate::connectors::handlers::test_connector_config,
     ),
     components(schemas(
         crate::error::DataResponse<serde_json::Value>,
@@ -101,6 +102,7 @@ use utoipa::OpenApi;
         crate::connectors::models::ConnectorResponse,
         crate::connectors::models::CreateConnectorRequest,
         crate::connectors::models::UpdateConnectorRequest,
+        crate::connectors::models::TestConnectorRequest,
         crate::connectors::config::ConnectorConfig,
         crate::connectors::config::ConnectorKindInfo,
         // Settings

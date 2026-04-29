@@ -8,33 +8,45 @@ use super::pipeline_types::PipelineSummary;
 
 // ── RunMode enum (API-facing) ──────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    utoipa::ToSchema,
+    strum::Display,
+    strum::EnumString,
+)]
 #[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 pub enum RunMode {
     Integrated,
     Scheduled,
 }
 
 impl RunMode {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::Integrated => "integrated",
-            Self::Scheduled => "scheduled",
-        }
-    }
-
     pub fn from_db(s: &str) -> Self {
-        match s {
-            "scheduled" => Self::Scheduled,
-            _ => Self::Integrated,
-        }
+        s.parse().unwrap_or(Self::Integrated)
     }
 }
 
 // ── JobStatus enum (API-facing) ─────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    utoipa::ToSchema,
+    strum::Display,
+    strum::EnumString,
+)]
 #[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 pub enum JobStatus {
     Draft,
     Pending,
@@ -45,27 +57,8 @@ pub enum JobStatus {
 }
 
 impl JobStatus {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::Draft => "draft",
-            Self::Pending => "pending",
-            Self::Running => "running",
-            Self::Completed => "completed",
-            Self::Failed => "failed",
-            Self::Cancelled => "cancelled",
-        }
-    }
-
     pub fn from_db(s: &str) -> Self {
-        match s {
-            "draft" => Self::Draft,
-            "pending" => Self::Pending,
-            "running" => Self::Running,
-            "completed" => Self::Completed,
-            "failed" => Self::Failed,
-            "cancelled" => Self::Cancelled,
-            _ => Self::Pending,
-        }
+        s.parse().unwrap_or(Self::Pending)
     }
 }
 

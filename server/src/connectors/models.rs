@@ -7,8 +7,19 @@ use super::config::ConnectorConfig;
 
 // ── Direction enum (API-facing) ──────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    utoipa::ToSchema,
+    strum::Display,
+    strum::EnumString,
+)]
 #[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 pub enum ConnectorDirection {
     Source,
     Destination,
@@ -16,20 +27,8 @@ pub enum ConnectorDirection {
 }
 
 impl ConnectorDirection {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::Source => "source",
-            Self::Destination => "destination",
-            Self::Both => "both",
-        }
-    }
-
     pub fn from_db(s: &str) -> Self {
-        match s {
-            "destination" => Self::Destination,
-            "both" => Self::Both,
-            _ => Self::Source,
-        }
+        s.parse().unwrap_or(Self::Source)
     }
 }
 
@@ -172,4 +171,9 @@ pub struct UpdateConnectorRequest {
     pub name: Option<String>,
     pub direction: Option<ConnectorDirection>,
     pub config: Option<ConnectorConfig>,
+}
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct TestConnectorRequest {
+    pub config: ConnectorConfig,
 }

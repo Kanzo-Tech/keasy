@@ -16,6 +16,7 @@ pub fn api_routes() -> Router<AppState> {
             "/v1/connectors",
             get(handlers::list_connectors).post(handlers::create_connector),
         )
+        .route("/v1/connectors/test", post(handlers::test_connector_config))
         .route(
             "/v1/connectors/{id}",
             get(handlers::get_connector).put(handlers::update_connector).delete(handlers::delete_connector),

@@ -1,5 +1,5 @@
 import { AlertCircle } from "lucide-react";
-import { MetaItem } from "@/components/shared/meta-item";
+import { MetaGrid, type MetaGridItem } from "@/components/shared/meta-grid";
 import { PipelineSection } from "@/components/pipeline-flow/pipeline-section";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -46,23 +46,25 @@ export function OverviewContent({
   dests,
   hasPipeline,
 }: OverviewContentProps) {
+  const items: MetaGridItem[] = [
+    { label: "ID", value: job.id.slice(0, 12), mono: true },
+    { label: "Created", value: new Date(job.created_at).toLocaleString() },
+  ];
+  if (job.started_at) {
+    items.push({
+      label: "Run",
+      value: job.completed_at
+        ? `${new Date(job.started_at).toLocaleTimeString()} (${formatDuration(job.started_at, job.completed_at)})`
+        : `${new Date(job.started_at).toLocaleTimeString()} (running)`,
+    });
+  }
+  if (dests.length > 0) {
+    items.push({ label: "Destination", value: dests.join(", "), mono: true });
+  }
+
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2 lg:grid-cols-4 mb-4">
-        <MetaItem label="ID" value={job.id.slice(0, 12)} mono />
-        <MetaItem label="Created" value={new Date(job.created_at).toLocaleString()} />
-        {job.started_at && (
-          <MetaItem
-            label="Run"
-            value={
-              job.completed_at
-                ? `${new Date(job.started_at).toLocaleTimeString()} (${formatDuration(job.started_at, job.completed_at)})`
-                : `${new Date(job.started_at).toLocaleTimeString()} (running)`
-            }
-          />
-        )}
-        {dests.length > 0 && <MetaItem label="Destination" value={dests.join(", ")} mono />}
-      </div>
+      <MetaGrid items={items} className="mb-4 lg:grid-cols-4" />
 
       {hasPipeline && job.pipeline && (
         <PipelineSection pipeline={job.pipeline} className="flex-1 min-h-0 flex flex-col" />

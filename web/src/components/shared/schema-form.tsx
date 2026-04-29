@@ -56,7 +56,10 @@ export function SchemaForm<TSchema extends z.ZodTypeAny>({
   } as DefaultValues<FieldValues>;
 
   const form = useForm<FieldValues>({
-    resolver: zodResolver(zodSchema),
+    // Generic TSchema doesn't satisfy zodResolver's input narrowing; cast
+    // through unknown — runtime behavior is identical.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(zodSchema as any),
     defaultValues: computedDefaults,
   });
 

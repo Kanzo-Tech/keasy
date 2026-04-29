@@ -70,6 +70,10 @@ export const api = {
 
     kinds: async () =>
       unwrap(await client.GET("/v1/connectors/kinds")),
+
+    testConfig: async (config: Schemas["ConnectorConfig"]) => {
+      unwrap(await client.POST("/v1/connectors/test", { body: { config } }));
+    },
   },
 
   // ── Settings ──────────────────────────────────────────────────────────

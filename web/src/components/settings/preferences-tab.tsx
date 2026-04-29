@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 import { usePreferences } from "@/components/providers/preferences-provider";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { PageShell } from "@/components/layout/page-shell";
-import { FormField } from "@/components/shared/form-layout";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { RadioCardGroup, type RadioCardOption } from "@/components/shared/radio-card-group";
 import {
   Select,
@@ -74,7 +74,7 @@ export function PreferencesTab() {
         description="Control the look and feel of the interface."
       >
         <div className="space-y-4">
-          <FormField label="Theme">
+          <Field><FieldLabel>Theme</FieldLabel><FieldContent>
             <Select value={mounted ? theme : undefined} onValueChange={setTheme}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Loading..." />
@@ -87,9 +87,9 @@ export function PreferencesTab() {
                 ))}
               </SelectContent>
             </Select>
-          </FormField>
+          </FieldContent></Field>
 
-          <FormField label="Accent color">
+          <Field><FieldLabel>Accent color</FieldLabel><FieldContent>
             <Select
               value={preferences.accent_color}
               onValueChange={(v) => handleChange("accent_color", v)}
@@ -112,7 +112,7 @@ export function PreferencesTab() {
                 ))}
               </SelectContent>
             </Select>
-          </FormField>
+          </FieldContent></Field>
         </div>
       </SettingsSection>
 
@@ -121,7 +121,7 @@ export function PreferencesTab() {
         description="Choose fonts and sizes for the interface."
       >
         <div className="space-y-4">
-          <FormField label="Font">
+          <Field><FieldLabel>Font</FieldLabel><FieldContent>
             <RadioCardGroup
               name="font"
               value={preferences.font_family}
@@ -129,9 +129,9 @@ export function PreferencesTab() {
               disabled={saving}
               options={FONT_OPTIONS}
             />
-          </FormField>
+          </FieldContent></Field>
 
-          <FormField label="Monospace font">
+          <Field><FieldLabel>Monospace font</FieldLabel><FieldContent>
             <RadioCardGroup
               name="mono-font"
               value={preferences.mono_font_family}
@@ -139,9 +139,9 @@ export function PreferencesTab() {
               disabled={saving}
               options={MONO_FONT_OPTIONS}
             />
-          </FormField>
+          </FieldContent></Field>
 
-          <FormField label="Font size">
+          <Field><FieldLabel>Font size</FieldLabel><FieldContent>
             <RadioCardGroup
               name="font-size"
               value={preferences.font_size}
@@ -149,7 +149,7 @@ export function PreferencesTab() {
               disabled={saving}
               options={SIZE_OPTIONS}
             />
-          </FormField>
+          </FieldContent></Field>
         </div>
       </SettingsSection>
     </PageShell.Content>

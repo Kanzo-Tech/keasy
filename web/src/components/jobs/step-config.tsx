@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { FormField } from "@/components/shared/form-layout";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { PageShell } from "@/components/layout/page-shell";
 import { ComingSoon } from "@/components/shared/coming-soon";
 import { ArrowLeft } from "lucide-react";
@@ -40,16 +40,23 @@ export function StepConfig({
   return (
     <PageShell>
       <PageShell.Content>
-        <FormField label="Job Name" optional>
-          <Input
-            type="text"
-            placeholder="Optional name"
-            value={name}
-            onChange={(e) => onNameChange(e.target.value)}
-          />
-        </FormField>
+        <Field>
+          <FieldLabel>
+            Job Name <span className="text-muted-foreground text-xs">(optional)</span>
+          </FieldLabel>
+          <FieldContent>
+            <Input
+              type="text"
+              placeholder="Optional name"
+              value={name}
+              onChange={(e) => onNameChange(e.target.value)}
+            />
+          </FieldContent>
+        </Field>
 
-        <FormField label="Run Mode">
+        <Field>
+          <FieldLabel>Run Mode</FieldLabel>
+          <FieldContent>
           <RadioGroup
             value={mode}
             onValueChange={(v) => onModeChange(v as RunMode)}
@@ -84,7 +91,8 @@ export function StepConfig({
               </Label>
             </ComingSoon>
           </RadioGroup>
-        </FormField>
+          </FieldContent>
+        </Field>
 
         {/* DCAT toggle */}
         <div

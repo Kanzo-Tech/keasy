@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Database, Plus } from "lucide-react";
 import { getConnectorIcon } from "@/lib/connectors/connector-icons";
@@ -65,11 +65,7 @@ function connectorColumns(
 }
 
 export default function ConnectionsPage() {
-  return (
-    <Suspense>
-      <ConnectionsContent />
-    </Suspense>
-  );
+  return <ConnectionsContent />;
 }
 
 function ConnectionsContent() {

@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FormField } from "@/components/shared/form-layout";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import {
   Dialog,
   DialogContent,
@@ -268,16 +268,19 @@ export default function ParticipantsPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              <FormField label="Organization Name">
-                <Input
-                  placeholder="Acme Corp"
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleCreateInvite();
-                  }}
-                />
-              </FormField>
+              <Field>
+                <FieldLabel>Organization Name</FieldLabel>
+                <FieldContent>
+                  <Input
+                    placeholder="Acme Corp"
+                    value={orgName}
+                    onChange={(e) => setOrgName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleCreateInvite();
+                    }}
+                  />
+                </FieldContent>
+              </Field>
             </div>
           )}
 

@@ -408,7 +408,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Connector"
+                    "$ref": "#/components/schemas/ConnectorResponse"
                   }
                 }
               }
@@ -437,7 +437,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Connector"
+                  "$ref": "#/components/schemas/ConnectorResponse"
                 }
               }
             }
@@ -471,6 +471,32 @@
         }
       }
     },
+    "/v1/connectors/test": {
+      "post": {
+        "tags": [
+          "Connectors"
+        ],
+        "operationId": "test_connector_config",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestConnectorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Connection test passed"
+          },
+          "400": {
+            "description": "Connection test failed"
+          }
+        }
+      }
+    },
     "/v1/connectors/{id}": {
       "get": {
         "tags": [
@@ -493,7 +519,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Connector"
+                  "$ref": "#/components/schemas/ConnectorResponse"
                 }
               }
             }
@@ -534,7 +560,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Connector"
+                  "$ref": "#/components/schemas/ConnectorResponse"
                 }
               }
             }
@@ -565,42 +591,6 @@
           },
           "404": {
             "description": "Not found"
-          }
-        }
-      }
-    },
-    "/v1/connectors/{id}/files": {
-      "get": {
-        "tags": [
-          "Connectors"
-        ],
-        "operationId": "list_connector_files",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Files in storage",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FileEntry"
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Connector not found"
           }
         }
       }
@@ -1339,60 +1329,6 @@
         }
       }
     },
-    "/v1/settings/catalog-storage": {
-      "get": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "get_catalog_storage",
-        "responses": {
-          "200": {
-            "description": "Catalog storage config",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CatalogStoragePayload"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "Not configured"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "save_catalog_storage",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CatalogStoragePayload"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Catalog storage saved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CatalogStoragePayload"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation error"
-          }
-        }
-      }
-    },
     "/v1/settings/organization": {
       "get": {
         "tags": [
@@ -1638,21 +1574,6 @@
             "items": {
               "$ref": "#/components/schemas/DiagnosticItem"
             }
-          }
-        }
-      },
-      "CatalogStoragePayload": {
-        "type": "object",
-        "required": [
-          "connector_id",
-          "base_url"
-        ],
-        "properties": {
-          "base_url": {
-            "type": "string"
-          },
-          "connector_id": {
-            "type": "string"
           }
         }
       },
@@ -2086,6 +2007,39 @@
           }
         }
       },
+      "ConnectorResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "connector_type",
+          "direction",
+          "config",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "config": {},
+          "connector_type": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/ConnectorDirection"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
       "CreateConnectorRequest": {
         "type": "object",
         "required": [
@@ -2407,29 +2361,6 @@
           }
         }
       },
-      "FileEntry": {
-        "type": "object",
-        "required": [
-          "path",
-          "size"
-        ],
-        "properties": {
-          "last_modified": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "path": {
-            "type": "string"
-          },
-          "size": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          }
-        }
-      },
       "InviteInfoResponse": {
         "type": "object",
         "required": [
@@ -2482,24 +2413,6 @@
           "pipeline"
         ],
         "properties": {
-          "catalog_base": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Base URL for catalog parquets in promotor storage."
-          },
-          "catalog_manifest": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/DataManifest",
-                "description": "DCAT-AP catalog manifest (parquets stored in promotor cloud)."
-              }
-            ]
-          },
           "completed_at": {
             "type": [
               "string",
@@ -2761,7 +2674,7 @@
       },
       "OrgMember": {
         "type": "object",
-        "description": "An org member — a Keycloak user's membership in a Keasy organization.\nProfile fields (email, first_name, last_name) are cached from OIDC tokens.",
+        "description": "An org member -- a Keycloak user's membership in a Keasy organization.\nProfile fields (email, first_name, last_name) are cached from OIDC tokens.",
         "required": [
           "user_id",
           "org_id",
@@ -2801,20 +2714,6 @@
           "publisher_name"
         ],
         "properties": {
-          "catalog_base_url": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Base URL for catalog parquet storage (e.g. s3://promotor/catalogs/)."
-          },
-          "catalog_connector_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Connector ID for catalog parquet storage (set by promotor)."
-          },
           "catalog_description": {
             "type": [
               "string",
@@ -3213,6 +3112,17 @@
           }
         }
       },
+      "TestConnectorRequest": {
+        "type": "object",
+        "required": [
+          "config"
+        ],
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/ConnectorConfig"
+          }
+        }
+      },
       "TypeManifest": {
         "type": "object",
         "description": "Manifest for a vertex type (one Parquet file per type).",
@@ -3249,7 +3159,16 @@
       "UpdateConnectorRequest": {
         "type": "object",
         "properties": {
-          "config": {},
+          "config": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConnectorConfig"
+              }
+            ]
+          },
           "direction": {
             "oneOf": [
               {

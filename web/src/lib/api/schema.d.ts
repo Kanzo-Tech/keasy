@@ -239,6 +239,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/connectors/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["test_connector_config"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/connectors/{id}": {
         parameters: {
             query?: never;
@@ -250,22 +266,6 @@ export interface paths {
         put: operations["update_connector"];
         post?: never;
         delete: operations["delete_connector"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/connectors/{id}/files": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_connector_files"];
-        put?: never;
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -543,22 +543,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/settings/catalog-storage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_catalog_storage"];
-        put: operations["save_catalog_storage"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/settings/organization": {
         parameters: {
             query?: never;
@@ -639,10 +623,6 @@ export interface components {
         AnalyzeResponse: {
             completions: components["schemas"]["CompletionItem"][];
             diagnostics: components["schemas"]["DiagnosticItem"][];
-        };
-        CatalogStoragePayload: {
-            base_url: string;
-            connector_id: string;
         };
         /** @description Per-column statistics for a vertex property. */
         ColumnStat: {
@@ -804,6 +784,15 @@ export interface components {
             kind: string;
             name: string;
         };
+        ConnectorResponse: {
+            config: unknown;
+            connector_type: string;
+            created_at: string;
+            direction: components["schemas"]["ConnectorDirection"];
+            id: string;
+            name: string;
+            updated_at: string;
+        };
         CreateConnectorRequest: {
             config: components["schemas"]["ConnectorConfig"];
             direction: components["schemas"]["ConnectorDirection"];
@@ -884,12 +873,6 @@ export interface components {
             source: string;
             target: string;
         };
-        FileEntry: {
-            last_modified?: string | null;
-            path: string;
-            /** Format: int64 */
-            size: number;
-        };
         InviteInfoResponse: {
             valid: boolean;
         };
@@ -902,9 +885,6 @@ export interface components {
             token: string;
         };
         Job: {
-            /** @description Base URL for catalog parquets in promotor storage. */
-            catalog_base?: string | null;
-            catalog_manifest?: null | components["schemas"]["DataManifest"];
             completed_at?: string | null;
             connector_ids?: string[];
             created_at: string;
@@ -968,7 +948,7 @@ export interface components {
             token: string;
         };
         /**
-         * @description An org member — a Keycloak user's membership in a Keasy organization.
+         * @description An org member -- a Keycloak user's membership in a Keasy organization.
          *     Profile fields (email, first_name, last_name) are cached from OIDC tokens.
          */
         OrgMember: {
@@ -981,10 +961,6 @@ export interface components {
             user_id: string;
         };
         OrgSettings: {
-            /** @description Base URL for catalog parquet storage (e.g. s3://promotor/catalogs/). */
-            catalog_base_url?: string | null;
-            /** @description Connector ID for catalog parquet storage (set by promotor). */
-            catalog_connector_id?: string | null;
             catalog_description?: string | null;
             contact_email?: string | null;
             license_uri?: string | null;
@@ -1074,6 +1050,9 @@ export interface components {
             columns: string[];
             rows: Record<string, never>[];
         };
+        TestConnectorRequest: {
+            config: components["schemas"]["ConnectorConfig"];
+        };
         /** @description Manifest for a vertex type (one Parquet file per type). */
         TypeManifest: {
             columns: components["schemas"]["ColumnStat"][];
@@ -1084,7 +1063,7 @@ export interface components {
             vertex_file: string;
         };
         UpdateConnectorRequest: {
-            config?: unknown;
+            config?: null | components["schemas"]["ConnectorConfig"];
             direction?: null | components["schemas"]["ConnectorDirection"];
             name?: string | null;
         };
@@ -1516,7 +1495,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Connector"][];
+                    "application/json": components["schemas"]["ConnectorResponse"][];
                 };
             };
         };
@@ -1540,7 +1519,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Connector"];
+                    "application/json": components["schemas"]["ConnectorResponse"];
                 };
             };
             /** @description Validation error */
@@ -1572,6 +1551,35 @@ export interface operations {
             };
         };
     };
+    test_connector_config: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestConnectorRequest"];
+            };
+        };
+        responses: {
+            /** @description Connection test passed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Connection test failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     get_connector: {
         parameters: {
             query?: never;
@@ -1589,7 +1597,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Connector"];
+                    "application/json": components["schemas"]["ConnectorResponse"];
                 };
             };
             /** @description Not found */
@@ -1622,7 +1630,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Connector"];
+                    "application/json": components["schemas"]["ConnectorResponse"];
                 };
             };
             /** @description Not found */
@@ -1653,35 +1661,6 @@ export interface operations {
                 content?: never;
             };
             /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    list_connector_files: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Files in storage */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FileEntry"][];
-                };
-            };
-            /** @description Connector not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2376,64 +2355,6 @@ export interface operations {
                 content?: never;
             };
             /** @description Unknown provider */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_catalog_storage: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Catalog storage config */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CatalogStoragePayload"];
-                };
-            };
-            /** @description Not configured */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    save_catalog_storage: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CatalogStoragePayload"];
-            };
-        };
-        responses: {
-            /** @description Catalog storage saved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CatalogStoragePayload"];
-                };
-            };
-            /** @description Validation error */
             400: {
                 headers: {
                     [name: string]: unknown;

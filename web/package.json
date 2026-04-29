@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "openapi": "openapi-typescript ../openapi.json -o src/lib/api/schema.d.ts"
+    "openapi": "openapi-typescript ../openapi.json -o src/lib/api/schema.d.ts && node scripts/extract-connector-schemas.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.64",

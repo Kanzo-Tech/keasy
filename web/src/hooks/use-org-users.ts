@@ -1,41 +1,49 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutation";
+
 export function useOrgUsers() {
-  const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.org.users,
     queryFn: api.org.users,
   });
 
-  const roleChangeMutation = useMutation({
+  const roleChangeMutation = useCrudMutation({
     mutationFn: ({ userId, newRole }: { userId: string; newRole: string }) =>
       api.org.updateRole(userId, newRole),
-    onSuccess: () => {
-      toast.success("Role updated");
-      queryClient.invalidateQueries({ queryKey: queryKeys.org.users });
-    },
-    onError: () => toast.error("Failed to update role"),
+    successMessage: "Role updated",
+    errorMessage: "Failed to update role",
+    invalidateKey: queryKeys.org.users,
   });
 
-  const removeUserMutation = useMutation({
-    mutationFn: ({ userId }: { userId: string; userName: string }) =>
-      api.org.removeUser(userId),
-    onSuccess: (_, { userName }) => {
-      toast.success(`${userName} has been removed`);
-      queryClient.invalidateQueries({ queryKey: queryKeys.org.users });
-    },
-    onError: () => toast.error("Failed to remove user"),
+  const removeUserMutation = useCrudMutation<
+    { userId: string; userName: string },
+    void
+  >({
+    mutationFn: ({ userId }) => api.org.removeUser(userId),
+    errorMessage: "Failed to remove user",
+    invalidateKey: queryKeys.org.users,
   });
+  // Custom success toast for remove (uses the userName variable, which
+  // useCrudMutation's static successMessage doesn't expose).
+  const removeOnSuccess = removeUserMutation.mutate;
+  const wrappedRemove = (vars: { userId: string; userName: string }) => {
+    removeUserMutation.mutate(vars, {
+      onSuccess: () => toast.success(`${vars.userName} has been removed`),
+    });
+    return removeOnSuccess;
+  };
 
   function handleRoleChange(userId: string, newRole: string) {
-    if (!roleChangeMutation.isPending) roleChangeMutation.mutate({ userId, newRole });
+    if (!roleChangeMutation.isPending)
+      roleChangeMutation.mutate({ userId, newRole });
   }
 
   function handleRemoveUser(userId: string, userName: string) {
-    if (!removeUserMutation.isPending) removeUserMutation.mutate({ userId, userName });
+    if (!removeUserMutation.isPending) wrappedRemove({ userId, userName });
   }
 
   return {

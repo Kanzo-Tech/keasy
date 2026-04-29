@@ -40,8 +40,6 @@ use utoipa::OpenApi;
         crate::org::admin_handlers::list_invites,
         crate::org::admin_handlers::create_invite,
         crate::org::admin_handlers::revoke_invite,
-        crate::org::admin_handlers::list_dataspaces,
-        crate::org::admin_handlers::register_dataspace,
         // Organization
         crate::org::handlers::list_users,
         crate::org::handlers::update_user_role,
@@ -72,7 +70,6 @@ use utoipa::OpenApi;
         crate::connectors::handlers::update_connector,
         crate::connectors::handlers::delete_connector,
         crate::connectors::handlers::list_connector_kinds,
-        crate::connectors::handlers::test_connector,
         crate::connectors::handlers::test_connector_config,
     ),
     components(schemas(
@@ -136,12 +133,10 @@ use utoipa::OpenApi;
         crate::health::ServiceStatusResponse,
         // Admin
         crate::org::admin_handlers::CreateOrgAndInviteRequest,
-        crate::org::admin_handlers::RegisterOidcClientRequest,
         crate::org::admin_handlers::CreateInviteRequest,
         crate::org::admin_handlers::AdminInviteEntry,
         crate::org::admin_handlers::AdminInviteResult,
         crate::org::admin_handlers::CreateOrgResponse,
-        crate::org::admin_handlers::RegisterDataspaceResponse,
         // Organization
         crate::org::handlers::OrgInviteEntry,
         crate::org::handlers::UpdateUserRoleRequest,

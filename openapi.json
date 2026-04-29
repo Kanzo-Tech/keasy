@@ -177,60 +177,6 @@
         }
       }
     },
-    "/v1/admin/oidc-clients": {
-      "get": {
-        "tags": [
-          "Admin"
-        ],
-        "operationId": "list_dataspaces",
-        "responses": {
-          "200": {
-            "description": "List of registered OIDC clients",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Dataspace"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Admin"
-        ],
-        "operationId": "register_dataspace",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterOidcClientRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "OIDC client registered",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RegisterDataspaceResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Insufficient role"
-          }
-        }
-      }
-    },
     "/v1/admin/organizations": {
       "get": {
         "tags": [
@@ -588,35 +534,6 @@
         "responses": {
           "204": {
             "description": "Connector deleted"
-          },
-          "404": {
-            "description": "Not found"
-          }
-        }
-      }
-    },
-    "/v1/connectors/{id}/test": {
-      "post": {
-        "tags": [
-          "Connectors"
-        ],
-        "operationId": "test_connector",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Connection test passed"
-          },
-          "400": {
-            "description": "Connection test failed"
           },
           "404": {
             "description": "Not found"
@@ -2962,72 +2879,6 @@
             "type": "string"
           },
           "name": {
-            "type": "string"
-          }
-        }
-      },
-      "RegisterDataspaceResponse": {
-        "type": "object",
-        "required": [
-          "id",
-          "client_id",
-          "client_secret",
-          "name",
-          "url"
-        ],
-        "properties": {
-          "client_id": {
-            "type": "string"
-          },
-          "client_secret": {
-            "type": "string"
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "logo": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "url": {
-            "type": "string"
-          }
-        }
-      },
-      "RegisterOidcClientRequest": {
-        "type": "object",
-        "required": [
-          "name",
-          "url"
-        ],
-        "properties": {
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "logo": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "url": {
             "type": "string"
           }
         }

@@ -106,23 +106,6 @@ pub async fn list_connector_kinds() -> impl IntoResponse {
     data_response(KNOWN_KINDS)
 }
 
-#[utoipa::path(post, path = "/v1/connectors/{id}/test", tag = "Connectors",
-    responses(
-        (status = 200, description = "Connection test passed"),
-        (status = 400, description = "Connection test failed"),
-        (status = 404, description = "Not found"),
-    )
-)]
-pub async fn test_connector(
-    ctx: Require<IsParticipant>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Result<impl IntoResponse, AppError> {
-    let svc = ConnectorService::new(state.connectors.clone());
-    svc.test(&ctx.resource(&id)).await?;
-    Ok(StatusCode::OK)
-}
-
 #[utoipa::path(post, path = "/v1/connectors/test", tag = "Connectors",
     request_body = TestConnectorRequest,
     responses(

@@ -21,10 +21,6 @@ pub fn api_routes() -> Router<AppState> {
         )
         .route("/v1/admin/invites/{token}", delete(admin_handlers::revoke_invite))
         .route(
-            "/v1/admin/oidc-clients",
-            get(admin_handlers::list_dataspaces).post(admin_handlers::register_dataspace),
-        )
-        .route(
             "/v1/org/identity",
             get(handlers::get_org_identity).put(handlers::update_org_identity),
         )

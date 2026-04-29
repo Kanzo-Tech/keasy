@@ -7,7 +7,6 @@ use serde::Deserialize;
 
 use crate::AppState;
 use crate::org::models::Organization;
-use crate::dataspaces::db::Dataspace;
 use crate::error::data_response;
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::error::AppError;
@@ -22,17 +21,6 @@ pub struct CreateOrgResponse {
     pub id: String,
     pub name: String,
     pub status: String,
-}
-
-#[derive(serde::Serialize, utoipa::ToSchema)]
-pub struct RegisterDataspaceResponse {
-    pub id: String,
-    pub client_id: String,
-    pub client_secret: String,
-    pub name: String,
-    pub url: String,
-    pub description: Option<String>,
-    pub logo: Option<String>,
 }
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
@@ -103,102 +91,6 @@ pub async fn create_org_and_invite(
             status: "pending".to_string(),
         }),
     ))
-}
-
-// ---------------------------------------------------------------------------
-// POST /v1/admin/oidc-clients
-// ---------------------------------------------------------------------------
-
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct RegisterOidcClientRequest {
-    pub name: String,
-    pub url: String,
-    pub description: Option<String>,
-    pub logo: Option<String>,
-}
-
-#[utoipa::path(post, path = "/v1/admin/oidc-clients", tag = "Admin",
-    request_body = RegisterOidcClientRequest,
-    responses(
-        (status = 201, description = "OIDC client registered", body = RegisterDataspaceResponse),
-        (status = 403, description = "Insufficient role"),
-    )
-)]
-pub async fn register_dataspace(
-    _ctx: Require<IsPromotor>,
-    State(state): State<AppState>,
-    Json(payload): Json<RegisterOidcClientRequest>,
-) -> Result<impl IntoResponse, AppError> {
-    let kc_admin = state.auth.keycloak_admin.as_ref().ok_or_else(|| {
-        AppError::Internal(anyhow::anyhow!(
-            "Identity service not configured -- set KEASY_OIDC_* environment variables"
-        ))
-    })?;
-
-    let now = jiff::Timestamp::now().to_string();
-    let id = uuid::Uuid::new_v4().to_string();
-    let client_id = format!("keasy-instance-{}", uuid::Uuid::new_v4());
-
-    let redirect_uri = format!(
-        "{}/v1/auth/oidc-callback",
-        payload.url.trim_end_matches('/')
-    );
-    let web_origin = payload.url.trim_end_matches('/').to_string();
-
-    let registered = kc_admin
-        .create_client(
-            &client_id,
-            &payload.name,
-            payload.description.as_deref(),
-            &redirect_uri,
-            &web_origin,
-        )
-        .await
-        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
-
-    let dataspace = Dataspace {
-        id: id.clone(),
-        client_id: client_id.clone(),
-        name: payload.name.clone(),
-        url: payload.url.clone(),
-        description: payload.description.clone(),
-        logo: payload.logo.clone(),
-        created_at: now.clone(),
-        updated_at: now,
-    };
-    state
-        .repos
-        .create_dataspace(&dataspace)
-        .await
-        .map_err(|msg| AppError::Internal(anyhow::anyhow!(msg)))?;
-
-    Ok((
-        StatusCode::CREATED,
-        data_response(RegisterDataspaceResponse {
-            id,
-            client_id,
-            client_secret: registered.client_secret,
-            name: payload.name,
-            url: payload.url,
-            description: payload.description,
-            logo: payload.logo,
-        }),
-    ))
-}
-
-// ---------------------------------------------------------------------------
-// GET /v1/admin/oidc-clients
-// ---------------------------------------------------------------------------
-
-#[utoipa::path(get, path = "/v1/admin/oidc-clients", tag = "Admin",
-    responses((status = 200, description = "List of registered OIDC clients", body = Vec<Dataspace>))
-)]
-pub async fn list_dataspaces(
-    _ctx: Require<IsPromotor>,
-    State(state): State<AppState>,
-) -> Result<impl IntoResponse, AppError> {
-    let clients = state.repos.list_dataspaces().await;
-    Ok(data_response(clients))
 }
 
 // ---------------------------------------------------------------------------

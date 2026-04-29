@@ -100,22 +100,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/admin/oidc-clients": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_dataspaces"];
-        put?: never;
-        post: operations["register_dataspace"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/admin/organizations": {
         parameters: {
             query?: never;
@@ -266,22 +250,6 @@ export interface paths {
         put: operations["update_connector"];
         post?: never;
         delete: operations["delete_connector"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/connectors/{id}/test": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["test_connector"];
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1015,21 +983,6 @@ export interface components {
             kind: string;
             name: string;
         };
-        RegisterDataspaceResponse: {
-            client_id: string;
-            client_secret: string;
-            description?: string | null;
-            id: string;
-            logo?: string | null;
-            name: string;
-            url: string;
-        };
-        RegisterOidcClientRequest: {
-            description?: string | null;
-            logo?: string | null;
-            name: string;
-            url: string;
-        };
         ResolveResponse: {
             files: {
                 [key: string]: string;
@@ -1275,57 +1228,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            /** @description Insufficient role */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    list_dataspaces: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of registered OIDC clients */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Dataspace"][];
-                };
-            };
-        };
-    };
-    register_dataspace: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegisterOidcClientRequest"];
-            };
-        };
-        responses: {
-            /** @description OIDC client registered */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RegisterDataspaceResponse"];
-                };
             };
             /** @description Insufficient role */
             403: {
@@ -1655,40 +1557,6 @@ export interface operations {
         responses: {
             /** @description Connector deleted */
             204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    test_connector: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Connection test passed */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Connection test failed */
-            400: {
                 headers: {
                     [name: string]: unknown;
                 };

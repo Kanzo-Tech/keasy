@@ -47,7 +47,4 @@ export const queryKeys = {
     compliance: ["gx-compliance-status"] as const,
   },
 
-  // Services
-  services: ["service-status"] as const,
-
 } as const;

@@ -80,17 +80,6 @@ impl ConnectorService {
         }
     }
 
-    pub async fn test(&self, resource: &TenantResource<'_>) -> Result<(), AppError> {
-        let connector = self
-            .repo
-            .get_with_secrets(resource)
-            .await
-            .ok_or(AppError::NotFound)?;
-        let cc = serde_json::from_value::<ConnectorConfig>(connector.config)
-            .map_err(|e| AppError::Validation(e.to_string()))?;
-        test_connection(&cc).await
-    }
-
     /// Dry-run a config provided directly in the request body. Used by the
     /// "Test connection" button in the New Connection form before saving.
     pub async fn test_config(&self, config: &ConnectorConfig) -> Result<(), AppError> {

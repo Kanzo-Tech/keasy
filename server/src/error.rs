@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Redirect, Response};
@@ -10,12 +8,6 @@ use serde_json::{Value, json};
 /// This is the locked response format for all error responses.
 pub fn error_body(code: &str, message: impl Into<String>) -> Value {
     json!({ "error": code, "message": message.into() })
-}
-
-/// Build a validation error body with per-field reasons:
-/// `{ "error": "validation_failed", "message": "...", "fields": { "field": "reason" } }`.
-pub fn validation_error_body(message: impl Into<String>, fields: &HashMap<String, String>) -> Value {
-    json!({ "error": "validation_failed", "message": message.into(), "fields": fields })
 }
 
 /// Typed envelope for successful API responses: `{ "data": T }`.

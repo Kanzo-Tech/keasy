@@ -79,6 +79,63 @@
   --sidebar-accent-foreground: hsl(240 5.9% 10%);
   --sidebar-border: hsl(220 13% 91%);
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
+
+  /* ── @fossil-lang/* token bridge (Phase 16 MIG-04, ADR-0038) ────────────── */
+  /* One-way aliases that point @fossil-lang/ui + viewer + editor + codemirror-fossil
+     at Keasy's shadcn token vocabulary. Aliases ONLY — never modify a shadcn
+     token directly; Keasy owns those (per ADR-0035 visual ownership separation).
+     The published @fossil-lang/* packages were grep-surveyed to find the
+     ACTUAL consumed --fossil-* names (not just the ADR-0034 spec list); the
+     authoritative list (26 names) is reproduced below grouped by namespace.
+     Non-shadcn tokens (motion/spacing/focus/size/font-sizes/radii-full) take
+     literal values mirroring @kanzo/theme's kanzoTheme defaults so a Keasy
+     page hosting an @fossil-lang/* component renders byte-identical to the
+     same component rendered inside <KanzoThemeProvider/> on landing. */
+
+  /* Colors — sourced from Keasy's shadcn palette (light values here, .dark
+     block swaps the underlying shadcn tokens; the var() indirection cascades
+     automatically so we do NOT re-declare these aliases in .dark). */
+  --fossil-colors-background: var(--background);
+  --fossil-colors-foreground: var(--foreground);
+  --fossil-colors-muted: var(--muted);
+  --fossil-colors-mutedForeground: var(--muted-foreground);
+  --fossil-colors-border: var(--border);
+  --fossil-colors-card: var(--card);
+  --fossil-colors-popover: var(--popover);
+  --fossil-colors-primary: var(--primary);
+  --fossil-colors-destructive: var(--destructive);
+
+  /* Fonts — sizeBase/sizeSmall/sizeXs are IDE-grade overrides (smaller than
+     Keasy's Tailwind defaults to match the @fossil-lang/* IDE typography
+     signature established in kanzoTheme.fonts). */
+  --fossil-fonts-sizeBase: 13px;
+  --fossil-fonts-sizeSmall: 11px;
+  --fossil-fonts-sizeXs: 10px;
+
+  /* Radii — calc atop Keasy's --radius for sm/md/lg; full + xl are literal
+     defaults (Keasy's radius scale stops at lg=var(--radius)). */
+  --fossil-radii-sm: calc(var(--radius) - 4px);
+  --fossil-radii-md: calc(var(--radius) - 2px);
+  --fossil-radii-lg: var(--radius);
+  --fossil-radii-xl: calc(var(--radius) + 4px);
+  --fossil-radii-full: 9999px;
+
+  /* Spacing — literal defaults; Keasy uses Tailwind utility classes for
+     spacing rather than CSS-var tokens, so there is no shadcn source to
+     alias to. Values mirror kanzoTheme.spacing. */
+  --fossil-spacing-1: 4px;
+  --fossil-spacing-2: 8px;
+  --fossil-spacing-3: 12px;
+  --fossil-spacing-4: 16px;
+
+  /* Motion — literal defaults (no shadcn equivalent). */
+  --fossil-motion-duration-fast: 150ms;
+  --fossil-motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Focus + size + dialog — literal defaults (no shadcn equivalent). */
+  --fossil-focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.5);
+  --fossil-size-control-base: 32px;
+  --fossil-dialog-overlay: rgba(0, 0, 0, 0.5);
 }
 
 .dark {
@@ -114,6 +171,16 @@
   --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
   --sidebar-border: hsl(240 3.7% 15.9%);
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
+
+  /* ── @fossil-lang/* bridge — dark mode (Phase 16 MIG-04, ADR-0038) ──────── */
+  /* All --fossil-colors-* aliases declared in :root cascade automatically
+     here via the var() indirection — the underlying --background/--foreground/
+     etc. tokens swap above, and the alias values are re-evaluated. So this
+     block intentionally re-declares NOTHING for colors.
+     Non-color tokens (fonts/radii/spacing/motion/focus/size/dialog) are
+     palette-neutral and also need no .dark override. Left as a doc comment
+     so future maintainers see the dark-mode coverage is intentional rather
+     than missed. */
 }
 
 /* ── Accent color presets — override --primary family ── */

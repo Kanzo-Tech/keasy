@@ -42,3 +42,6 @@ next-env.d.ts
 
 # generated — source of truth is /openapi.json at repo root
 src/lib/api/openapi.json
+
+# Phase 16 — vendored Fossil packages (npm pack tarballs, see ADR-0038 in fossil repo)
+vendor/fossil-lang/*.tgz

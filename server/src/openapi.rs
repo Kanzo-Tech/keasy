@@ -93,8 +93,6 @@ use utoipa::OpenApi;
         crate::jobs::routes::save_dashboard_layout,
         // Auth (additional)
         crate::auth::routes::get_invite_info,
-        // Fossil Analysis
-        crate::routes::fossil_analysis::analyze,
         // Fossil LSP (JSON-RPC adapter for @fossil-lang/editor's HttpTransport)
         crate::routes::fossil_lsp::lsp,
     ),
@@ -203,9 +201,7 @@ use utoipa::OpenApi;
         crate::settings::schema::ProviderSchema,
         crate::settings::schema::FieldSchema,
         crate::settings::schema::AuthMethodSchema,
-        // Fossil Analysis
-        crate::routes::fossil_analysis::AnalyzeRequest,
-        crate::routes::fossil_analysis::AnalyzeResponse,
+        // Fossil LSP types
         fossil_lsp::CompletionItem,
         fossil_lsp::DiagnosticItem,
     ))

@@ -45,8 +45,7 @@ pub fn hash_str(s: &str) -> u64 {
 ///
 /// The `docs` cache holds the latest full text per `textDocument.uri`. Used by
 /// the JSON-RPC LSP route (`routes::fossil_lsp`): didOpen/didChange WRITE to
-/// `docs`, then completion/hover READ from it. The custom `/v1/fossil/analyze`
-/// route does NOT touch `docs` (it carries the source in the request body).
+/// `docs`, then completion/hover READ from it.
 ///
 /// Locking discipline: take the `docs` lock briefly (insert-and-drop or
 /// get-cloned-and-drop) so it never overlaps the `host` lock — prevents a

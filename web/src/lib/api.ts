@@ -5,7 +5,6 @@ import type {
   ProviderSchema,
   ProviderInfo,
   ComplyEvent,
-  FossilAnalysis,
   GraphData,
 } from "./types";
 
@@ -326,20 +325,6 @@ export const api = {
   scripts: {
     validate: async (script: string) =>
       unwrap(await client.POST("/v1/scripts/validate", { body: { script } })),
-  },
-
-  // ── Fossil Analysis ────────────────────────────────────────────────────
-  fossil: {
-    analyze: async (script: string, cursorOffset: number) => {
-      const res = await fetch("/v1/fossil/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ script, cursor_offset: cursorOffset }),
-      });
-      if (!res.ok) return { completions: [], diagnostics: [] } as FossilAnalysis;
-      return (await res.json()) as FossilAnalysis;
-    },
   },
 
 };

@@ -47,10 +47,10 @@ tower-sessions = { version = "0.14", features = ["signed"] }
 tower-sessions-rusqlite-store = "0.14.1"
 time = "0.3"
 polars = { version = "0.52", features = ["cloud", "aws", "azure", "gcp", "round_series"] }
-fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git", features = ["utoipa"] }
-fossil-stdlib = { git = "https://github.com/angelip2303/fossil-lang.git" }
-fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git" }
-fossil-lsp = { git = "https://github.com/angelip2303/fossil-lang.git", features = ["utoipa"] }
+fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider", features = ["utoipa"] }
+fossil-stdlib = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider" }
+fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider" }
+fossil-lsp = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider", features = ["utoipa"] }
 base64 = "0.22"
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "jwk"] }
 x509-parser = { version = "0.16", features = ["verify"] }

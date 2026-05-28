@@ -264,10 +264,7 @@ mod tests {
         struct NoopResolver;
         impl PathResolver for NoopResolver {
             fn resolve(&self, path: &str) -> Result<fossil_lang::traits::resolver::ResolvedPath, String> {
-                Ok(fossil_lang::traits::resolver::ResolvedPath {
-                    url: path.to_string(),
-                    cloud_options: None,
-                })
+                Ok(fossil_lang::traits::resolver::ResolvedPath::new(path, None))
             }
         }
 
@@ -305,9 +302,9 @@ mod tests {
     #[test]
     fn join_to_output_edge_conditions() {
         let result = compile_and_extract(
-            "type A do X: int Y: string end\n\
-             type B do X: int Z: bool end\n\
-             type Out do Y: string Z: bool end\n\
+            "type A do X: int, Y: string end\n\
+             type B do X: int, Z: bool end\n\
+             type Out do Y: string, Z: bool end\n\
              let a = A { X = 1, Y = \"hi\" }\n\
              let b = B { X = 1, Z = true }\n\
              a |> join b on X = X |> each row -> Out { Y = row.Y, Z = row.Z }",

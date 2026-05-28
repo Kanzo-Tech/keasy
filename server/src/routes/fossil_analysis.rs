@@ -62,6 +62,7 @@ pub async fn analyze(
             let mut guard = org_analysis.lock().unwrap_or_else(|e| e.into_inner());
             guard.get_or_insert_mut(org_id, || OrgAnalysisState {
                 host: Arc::new(std::sync::Mutex::new(fossil_lsp::AnalysisHost::default())),
+                docs: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
             }).host.clone()
         };
 

@@ -95,6 +95,8 @@ use utoipa::OpenApi;
         crate::auth::routes::get_invite_info,
         // Fossil Analysis
         crate::routes::fossil_analysis::analyze,
+        // Fossil LSP (JSON-RPC adapter for @fossil-lang/editor's HttpTransport)
+        crate::routes::fossil_lsp::lsp,
     ),
     components(schemas(
         crate::error::DataResponse<serde_json::Value>,

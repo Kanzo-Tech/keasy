@@ -1,5 +1,6 @@
 pub mod admin;
 pub mod fossil_analysis;
+pub mod fossil_lsp;
 pub mod health;
 pub mod org;
 pub mod providers;
@@ -140,6 +141,10 @@ pub fn build_router(
         .route(
             "/v1/fossil/analyze",
             axum::routing::post(fossil_analysis::analyze),
+        )
+        .route(
+            "/v1/fossil/lsp",
+            axum::routing::post(fossil_lsp::lsp),
         )
         .route(
             "/v1/settings/organization",

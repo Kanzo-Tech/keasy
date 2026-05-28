@@ -1,19 +1,71 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/layout/page-shell";
-import {
-  CodeEditor,
-  fossilLanguage,
-  fossilAutocomplete,
-  fossilLinterExtension,
-} from "@/components/discovery/code-editor";
+import { FossilEditor, HttpTransport } from "@fossil-lang/editor";
+import type {
+  ConnectionResolver,
+  Connector,
+  ResolvedSource,
+  SourceRef,
+} from "@fossil-lang/types";
 import { AssistantWizard } from "@/components/jobs/assistant-wizard";
 import { ArrowLeft, ArrowRight, Save, Loader2 } from "lucide-react";
-import type { Connection, ProviderInfo, FileEntry, FossilCompletionItem, CreationMode } from "@/lib/types";
-import type { Extension } from "@codemirror/state";
+import type { Connection, ProviderInfo, CreationMode } from "@/lib/types";
+
+// ── Keasy → @fossil-lang/types adapter ─────────────────────────────────
+//
+// Bridges Keasy's (`Connection[]`, `ProviderInfo[]`) UI state into the
+// `ConnectionResolver` contract consumed by <FossilEditor/>'s `@`-prefix
+// autocomplete. Narrow surface — only `list()` is wired:
+//
+//   - `list()`: enumerate `data`-kind connections as `{ name, type, label }`
+//     `Connector` rows. `type` is collapsed to `'public_http'` because the
+//     Tier-1 connector taxonomy (`local_file | public_http | upload |
+//     examples` per ADR-0029) is closed and Keasy's cloud-mediated S3/GCS/
+//     Azure connectors don't slot into it cleanly. The editor uses `type`
+//     only to pick an icon — `'public_http'` produces the generic cloud
+//     glyph which is the correct affordance for Keasy.
+//   - `resolve()`: not used at edit time — Keasy script execution happens
+//     server-side via `/v1/fossil/lsp` analyze, which already has the org's
+//     PathResolver (`db.build_path_resolver_for_org`). We surface a clear
+//     runtime error if the editor ever calls it (the @-autocomplete path
+//     does not).
+//
+// Memoised via `useMemo` on the (connections, providers) tuple so the
+// editor's mount effect doesn't tear down on every render.
+function useKeasyResolver(
+  connections: Connection[],
+  _providers: ProviderInfo[],
+): ConnectionResolver {
+  return useMemo<ConnectionResolver>(() => {
+    const dataConnections = connections.filter((c) => c.kind === "data");
+    return {
+      async list(): Promise<Connector[]> {
+        return dataConnections.map<Connector>((c) => ({
+          name: c.name,
+          // Tier-1 enum is closed; 'public_http' is the safe default for
+          // host-mediated cloud connectors. The icon in the @-autocomplete
+          // popover is the only consumer of this field.
+          type: "public_http",
+          label: c.name,
+        }));
+      },
+      async resolve(ref: SourceRef): Promise<ResolvedSource> {
+        // Keasy resolves at execution time (server-side, per-org). If the
+        // editor ever calls this (it shouldn't — completion only uses
+        // list()), fail loud rather than returning a stub URL.
+        throw new Error(
+          `Keasy ConnectionResolver.resolve() not implemented at edit time — ` +
+            `script execution resolves @${ref.connector}/ via /v1/fossil/lsp ` +
+            `(server-side PathResolver per org).`,
+        );
+      },
+    };
+  }, [connections, _providers]);
+}
 
 interface StepScriptProps {
   creationMode: CreationMode;
@@ -40,18 +92,19 @@ export function StepScript({
   onSaveDraft,
   onAssistantComplete,
 }: StepScriptProps) {
-  const fileCacheRef = useRef(new Map<string, FileEntry[]>());
-  const completionCacheRef = useRef<{
-    source: string;
-    receiver: string;
-    items: FossilCompletionItem[];
-  } | null>(null);
+  // HTTP transport — POSTs JSON-RPC envelopes to /v1/fossil/lsp on the
+  // same origin (cookie session handles auth; no explicit Authorization
+  // header needed). Memoised so the editor's mount effect doesn't tear
+  // down on every render.
+  const lspTransport = useMemo(
+    () =>
+      new HttpTransport({
+        endpoint: "/v1/fossil/lsp",
+      }),
+    [],
+  );
 
-  const fossilExtensions = useMemo((): Extension[] => [
-    fossilLanguage(),
-    fossilAutocomplete(connections, providers, fileCacheRef, completionCacheRef),
-    fossilLinterExtension(),
-  ], [connections, providers]);
+  const resolver = useKeasyResolver(connections, providers);
 
   if (creationMode === "assistant") {
     return (
@@ -98,11 +151,19 @@ export function StepScript({
           </div>
         </div>
 
-        <CodeEditor
+        {/*
+          FossilEditor auto-composes the language extension + LSP wiring
+          from `lspTransport` and `resolver`. The previous in-tree CodeEditor
+          accepted a `placeholder` prop; FossilEditor does not yet expose
+          one (see 16-04 deferred-items.md). The "Type @ to reference
+          connections" hint above the editor stands in as the empty-state
+          cue.
+        */}
+        <FossilEditor
           value={script}
           onChange={onScriptChange}
-          extensions={fossilExtensions}
-          placeholder="Write your Fossil script here..."
+          lspTransport={lspTransport}
+          resolver={resolver}
           className="flex-1"
         />
       </PageShell.Content>

@@ -16,7 +16,7 @@ import { useLLMStream } from "@/hooks/use-llm-stream";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { CodeEditor } from "@/components/discovery/code-editor";
+import { FossilEditor } from "@fossil-lang/editor";
 import { PageShell } from "@/components/layout/page-shell";
 import {
   Table,
@@ -318,10 +318,17 @@ function StepDescribe({
       <p className="text-sm text-muted-foreground">
         Describe the domain or purpose of your knowledge graph (optional).
       </p>
-      <CodeEditor
+      {/*
+        StepDescribe is free-form prose — no Fossil syntax, no autocomplete,
+        no diagnostics. Plain CodeMirror via <FossilEditor lspTransport={null} />.
+        FossilEditor does not yet expose a `placeholder` prop (see
+        deferred-items.md from 16-04); empty-state copy is conveyed by the
+        sibling <p> above instead.
+      */}
+      <FossilEditor
         value={domain}
         onChange={onDomainChange}
-        placeholder="e.g. Employee directory linking people to departments, roles, and office locations..."
+        lspTransport={null}
         className="flex-1"
       />
     </div>

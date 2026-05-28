@@ -9,14 +9,14 @@ import { buildGraphSchema } from "@/lib/graph-schema";
 import { WorkspaceLayout, type PanelDef } from "@/components/layout/workspace-layout";
 import { DiscoveryProvider } from "@/components/discovery/store";
 import { useCoordinator } from "@/components/discovery/use-discovery-store";
-import { GraphCanvas, DEFAULT_GRAPH_CONFIG } from "@/components/discovery/graph-view-v2";
+import { GraphCanvas, DEFAULT_GRAPH_CONFIG, type CosmosGraphHandle } from "@fossil-lang/viewer";
+import { useGraphDataRows } from "@/components/discovery/use-graph-data-rows";
 import { NodeInfo } from "@/components/discovery/node-info";
 import { GraphSettings } from "@/components/discovery/graph-settings";
 import { DiscoveryAsk } from "@/components/discovery/discovery-ask";
 import { RuleBuilder } from "@/components/discovery/rule-builder";
 import { AnalysisPanel } from "@/components/discovery/analysis-panel";
 import { FloatingControls } from "@/components/discovery/floating-controls";
-import type { CosmosGraphHandle } from "@/components/discovery/cosmos-graph";
 import type { GraphConfigInterface } from "@cosmos.gl/graph";
 import type { DataManifest } from "@/lib/types";
 import { api } from "@/lib/api";
@@ -75,6 +75,7 @@ function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: Data
   const [graphConfig, setGraphConfig] = useState<GraphConfigInterface>(DEFAULT_GRAPH_CONFIG);
   const [simulationRunning, setSimulationRunning] = useState(true);
   const selection = useMemo(() => Selection.crossfilter(), []);
+  const graphRows = useGraphDataRows(kgSchema);
 
   const handleConfigChange = useCallback((patch: Partial<GraphConfigInterface>) => {
     setGraphConfig((prev) => ({ ...prev, ...patch }));
@@ -144,13 +145,20 @@ function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: Data
         </>
       }
     >
-      <GraphCanvas
-        schema={kgSchema}
-        graphConfig={graphConfig}
-        graphRef={graphRef}
-        selection={selection}
-        onSelectVertex={setSelectedVertex}
-      />
+      {graphRows ? (
+        <GraphCanvas
+          vertices={graphRows.vertices}
+          edges={graphRows.edges}
+          graphConfig={graphConfig}
+          graphRef={graphRef}
+          selection={selection}
+          onSelectVertex={setSelectedVertex}
+        />
+      ) : (
+        <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+          Loading graph…
+        </div>
+      )}
     </WorkspaceLayout>
   );
 }

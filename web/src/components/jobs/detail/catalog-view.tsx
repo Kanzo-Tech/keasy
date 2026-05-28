@@ -9,11 +9,11 @@ import { queryKeys } from "@/lib/query-keys";
 import { buildGraphSchema } from "@/lib/graph-schema";
 import { Database, Loader2 } from "lucide-react";
 import { CodeView } from "@/components/discovery/code-view";
-import { GraphCanvas, DEFAULT_GRAPH_CONFIG } from "@/components/discovery/graph-view-v2";
+import { GraphCanvas, DEFAULT_GRAPH_CONFIG, type CosmosGraphHandle } from "@fossil-lang/viewer";
+import { useGraphDataRows } from "@/components/discovery/use-graph-data-rows";
 import { DiscoveryProvider } from "@/components/discovery/store";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { CosmosGraphHandle } from "@/components/discovery/cosmos-graph";
 import type { DataManifest } from "@/lib/types";
 
 export type DcatFormat = "turtle" | "jsonld" | "rdfxml" | "ntriples" | "nquads";
@@ -99,10 +99,20 @@ function CatalogGraphContent({ catalogManifest, onNavigateToDiscovery }: { catal
   const schema = useMemo(() => buildGraphSchema(catalogManifest), [catalogManifest]);
   const graphRef = useRef<CosmosGraphHandle>(null);
   const selection = useMemo(() => Selection.crossfilter(), []);
+  const graphRows = useGraphDataRows(schema);
+
+  if (!graphRows) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+        Loading graph…
+      </div>
+    );
+  }
 
   return (
     <GraphCanvas
-      schema={schema}
+      vertices={graphRows.vertices}
+      edges={graphRows.edges}
       graphConfig={DEFAULT_GRAPH_CONFIG}
       graphRef={graphRef}
       selection={selection}

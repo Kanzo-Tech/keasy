@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { PanelHeader } from "@/components/layout/workspace-layout";
 import { ChevronRight } from "lucide-react";
 import type { GraphConfigInterface } from "@cosmos.gl/graph";
-import { DEFAULT_GRAPH_CONFIG } from "./graph-view-v2";
+import { DEFAULT_GRAPH_CONFIG } from "@fossil-lang/viewer";
 
 interface Props {
   graphConfig: GraphConfigInterface;

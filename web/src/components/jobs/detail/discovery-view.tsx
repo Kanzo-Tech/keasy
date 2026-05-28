@@ -11,12 +11,12 @@ import { queryKeys } from "@/lib/query-keys";
 
 import { DiscoveryProvider } from "@/components/discovery/store";
 import { useCoordinator } from "@/components/discovery/use-discovery-store";
-import { GraphCanvas, DEFAULT_GRAPH_CONFIG } from "@/components/discovery/graph-view-v2";
+import { GraphCanvas, DEFAULT_GRAPH_CONFIG, type CosmosGraphHandle } from "@fossil-lang/viewer";
+import { useGraphDataRows } from "@/components/discovery/use-graph-data-rows";
 import { DiscoverySidebar } from "@/components/discovery/discovery-sidebar";
 import { HistogramPanel } from "@/components/discovery/histogram-panel";
 import { buildGraphSchema } from "@/lib/graph-schema";
 import type { DataManifest } from "@/lib/types";
-import type { CosmosGraphHandle } from "@/components/discovery/cosmos-graph";
 import type { GraphConfigInterface } from "@cosmos.gl/graph";
 
 // ── URL resolution ───────────────────────────────────────────────────────
@@ -109,6 +109,7 @@ function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: Data
   const dragRef = useRef<{ startX: number; startW: number } | null>(null);
   // Global crossfilter Selection — shared by graph, histograms, chat, and rules
   const selection = useMemo(() => Selection.crossfilter(), []);
+  const graphRows = useGraphDataRows(kgSchema);
 
   const handleConfigChange = (patch: Partial<GraphConfigInterface>) => {
     setGraphConfig((prev) => ({ ...prev, ...patch }));
@@ -141,13 +142,20 @@ function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: Data
     <div className="flex-1 flex flex-col min-h-0 relative">
       {/* Graph canvas — always 100% */}
       <div className="flex-1 min-h-0">
-        <GraphCanvas
-          schema={kgSchema}
-          graphConfig={graphConfig}
-          graphRef={graphRef}
-          selection={selection}
-          onSelectVertex={setSelectedVertex}
-        />
+        {graphRows ? (
+          <GraphCanvas
+            vertices={graphRows.vertices}
+            edges={graphRows.edges}
+            graphConfig={graphConfig}
+            graphRef={graphRef}
+            selection={selection}
+            onSelectVertex={setSelectedVertex}
+          />
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+            Loading graph…
+          </div>
+        )}
       </div>
 
       {/* Histogram panel — bottom */}

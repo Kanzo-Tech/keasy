@@ -55,7 +55,7 @@ pub async fn ask_discover(
                 Some(j) => j,
                 None => return (StatusCode::NOT_FOUND, Json(crate::error::error_body("not_found", "Job not found"))).into_response(),
             };
-            build_pipeline_schema(&job.pipeline)
+            build_fallback_schema(&job)
         }
     };
 
@@ -227,7 +227,7 @@ pub async fn ask_discover_stream(
                 Some(j) => j,
                 None => return (StatusCode::NOT_FOUND, Json(crate::error::error_body("not_found", "Job not found"))).into_response(),
             };
-            build_pipeline_schema(&job.pipeline)
+            build_fallback_schema(&job)
         }
     };
 
@@ -350,27 +350,40 @@ pub async fn ask_discover_stream(
 /// statements) and sample rows, sent by the frontend after querying DuckDB-WASM.
 fn build_system_prompt(schema_context: &str) -> String {
     format!(
-        "You are a DuckDB SQL query assistant.\n\n\
-         The data is stored in Parquet files loaded into DuckDB as multiple tables.\n\
-         Each table represents an entity type (e.g. person, organization).\n\
-         The schema below shows CREATE TABLE statements, sample rows, and relationships.\n\n\
+        "You are a DuckDB SQL query assistant operating over a GraphAr property graph\n\
+         materialized as Parquet files and loaded into DuckDB as views.\n\n\
+         ## GraphAr layout (REQUIRED — do not invent table names)\n\
+         - Vertex tables: one per RDF type, named by the type's local name\n\
+           (e.g. `\"IfcBeam\"`, `\"IfcColumn\"`, `\"EnvironmentalImpact\"`).\n\
+           Standard columns: `\"_id\"` (UBIGINT), `\"subject\"` (VARCHAR, full IRI),\n\
+           plus one column per RDF predicate using its local name.\n\
+         - Edge tables: named exactly `\"{{SourceType}}_{{predicate}}_{{TargetType}}\"`\n\
+           (e.g. `\"IfcBeam_locatedInStorey_IfcBuildingStorey\"`).\n\
+           Columns: `\"source\"` (UBIGINT, points to SourceType.\"_id\")\n\
+           and `\"target\"` (UBIGINT, points to TargetType.\"_id\").\n\
+         - Traversal idiom:\n\
+           ```\n\
+           SELECT t.*\n\
+           FROM \"SourceType\" s\n\
+           JOIN \"SourceType_pred_TargetType\" e ON s.\"_id\" = e.\"source\"\n\
+           JOIN \"TargetType\" t ON t.\"_id\" = e.\"target\"\n\
+           ```\n\
+         - There is NO single `rdf` or `triples` table. Always use the typed\n\
+           vertex tables shown in the schema below.\n\n\
+         ## Schema (live)\n\n\
          {schema_context}\n\n\
-         ## DuckDB SQL Rules\n\
-         - Always quote table and column names with double quotes: \"table\".\"column\"\n\
-         - Use LIMIT 100 by default unless the user asks for all results.\n\
-         - For top-N queries, use ORDER BY ... DESC LIMIT N.\n\
-         - Always include readable columns (name, label, title) in SELECT when available.\n\
-         - Use sample rows to understand the data format and choose appropriate filters.\n\
-         - String matching: \"col\" ILIKE '%term%'\n\
-         - Numeric filter: \"col\" > N, \"col\" BETWEEN a AND b\n\
-         - Aggregation: SELECT \"col\", COUNT(*) FROM \"table\" GROUP BY \"col\"\n\
-         - Date filter: \"col\" >= '2024-01-01'\n\
-         - Date extraction: EXTRACT(YEAR FROM \"col\"), DATE_TRUNC('month', \"col\")\n\
-         - CASE expressions: CASE WHEN ... THEN ... END\n\
-         - To join across entity types, use the edge tables shown in relationships.\n\n\
+         ## DuckDB SQL rules\n\
+         - Always quote identifiers with double quotes: `\"Table\".\"column\"`.\n\
+         - Default to `LIMIT 100`; for top-N use `ORDER BY ... DESC LIMIT N`.\n\
+         - Always include readable columns (subject, name, label, title) in SELECT.\n\
+         - String match: `\"col\" ILIKE '%term%'`. Numeric: `\"col\" > N`, BETWEEN.\n\
+         - Aggregation: `SELECT \"col\", COUNT(*) FROM \"Table\" GROUP BY \"col\"`.\n\
+         - Date extraction: `EXTRACT(YEAR FROM \"col\")`, `DATE_TRUNC('month', \"col\")`.\n\
+         - Casts may be required on property columns stored as VARCHAR\n\
+           (e.g. `CAST(\"elementQuantity\" AS DOUBLE) > 0.5`).\n\n\
          Return ONLY a JSON object with these three fields:\n\
-         - \"reasoning\": step-by-step explanation — which tables/columns you chose,\n\
-           which values/thresholds you derived from the sample data, and why.\n\
+         - \"reasoning\": which tables/columns you chose and why,\n\
+           which values/thresholds you derived from the sample data.\n\
          - \"sql\": a valid DuckDB SQL SELECT query.\n\
          - \"explanation\": one-sentence summary of what the query retrieves.\n\n\
          No markdown fences. No extra text."
@@ -390,18 +403,71 @@ fn build_explain_prompt() -> String {
         .to_string()
 }
 
-/// Build a minimal schema description from the pipeline summary (fallback when
-/// the frontend doesn't send a DuckDB schema).
-fn build_pipeline_schema(pipeline: &crate::jobs::PipelineSummary) -> String {
+/// Build a schema description as a fallback when the frontend hasn't (yet)
+/// sent the live DuckDB-WASM schema. Prefers `job.manifest` (real GraphAr
+/// types + edges from the executed pipeline) over `job.pipeline.outputs`
+/// (declarative job spec that's empty for `Rdf.from_turtle`-style jobs).
+fn build_fallback_schema(job: &crate::jobs::models::Job) -> String {
     use std::fmt::Write;
-    let mut out = String::from("## Table: rdf\n\nColumns:\n");
-    for output in &pipeline.outputs {
+
+    if let Some(manifest) = &job.manifest {
+        if !manifest.types.is_empty() {
+            let mut out = String::new();
+            for t in &manifest.types {
+                let _ = writeln!(
+                    out,
+                    "CREATE TABLE \"{}\" (\n  \"_id\" UBIGINT,\n  \"subject\" VARCHAR,",
+                    t.name,
+                );
+                for (i, c) in t.columns.iter().enumerate() {
+                    let comma = if i + 1 < t.columns.len() { "," } else { "" };
+                    let _ = writeln!(out, "  \"{}\" {}{}", c.name, sql_type_for(&c.datatype), comma);
+                }
+                let _ = writeln!(out, "); -- type IRI: {}, rows: {}\n", t.iri, t.entity_count);
+            }
+            for e in &manifest.edges {
+                let _ = writeln!(
+                    out,
+                    "CREATE TABLE \"{src}_{name}_{dst}\" (\n  \"source\" UBIGINT,\n  \"target\" UBIGINT\n); -- {src} --[{name}]--> {dst} ({count} edges, predicate: {iri})\n",
+                    src = e.source_type,
+                    name = e.name,
+                    dst = e.target_type,
+                    count = e.count,
+                    iri = e.iri,
+                );
+            }
+            return out;
+        }
+    }
+
+    // Older typed-pipeline shape (csv → typed records → Rdf.materialize):
+    // describe each declared output as a flat table.
+    let mut out = String::new();
+    if job.pipeline.outputs.is_empty() {
+        return "-- No schema available yet. The pipeline produced no manifest.\n".to_string();
+    }
+    for output in &job.pipeline.outputs {
+        let _ = writeln!(out, "## Table: {}\n", output.type_name);
+        let _ = writeln!(out, "Columns:");
         for field in &output.fields {
             let opt = if field.optional { " (nullable)" } else { "" };
             let _ = writeln!(out, "- {}: {}{}", field.name, field.field_type, opt);
         }
+        let _ = writeln!(out);
     }
     out
+}
+
+/// Map a logical column datatype (as recorded in `ColumnStat.datatype`) to
+/// the DuckDB SQL type the LLM should expect when filtering.
+fn sql_type_for(datatype: &str) -> &'static str {
+    match datatype {
+        "int64" => "BIGINT",
+        "double" => "DOUBLE",
+        "boolean" => "BOOLEAN",
+        "date" => "DATE",
+        _ => "VARCHAR",
+    }
 }
 
 /// Build LLM message history from conversation messages.

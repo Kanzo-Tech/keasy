@@ -5,14 +5,14 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@fossil-lang/codemirror-fossil': file:./vendor/fossil-lang/fossil-lang-codemirror-fossil-0.1.0.tgz
-  '@fossil-lang/editor': file:./vendor/fossil-lang/fossil-lang-editor-0.1.0.tgz
-  '@fossil-lang/resolvers': file:./vendor/fossil-lang/fossil-lang-resolvers-0.1.0.tgz
-  '@fossil-lang/types': file:./vendor/fossil-lang/fossil-lang-types-0.1.0.tgz
-  '@fossil-lang/ui': file:./vendor/fossil-lang/fossil-lang-ui-0.1.0.tgz
-  '@fossil-lang/viewer': file:./vendor/fossil-lang/fossil-lang-viewer-0.1.0.tgz
-  '@fossil-lang/wasm': file:./vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz
-  '@kanzo/theme': file:./vendor/fossil-lang/kanzo-theme-0.1.0.tgz
+  '@fossil-lang/codemirror-fossil': file:./vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz
+  '@fossil-lang/editor': file:./vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz
+  '@fossil-lang/resolvers': file:./vendor/fossil-lang/fossil-lang-resolvers-0.3.0-alpha.0.tgz
+  '@fossil-lang/types': file:./vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz
+  '@fossil-lang/ui': file:./vendor/fossil-lang/fossil-lang-ui-0.3.0-alpha.0.tgz
+  '@fossil-lang/viewer': file:./vendor/fossil-lang/fossil-lang-viewer-0.3.0-alpha.0.tgz
+  '@fossil-lang/wasm': file:./vendor/fossil-lang/fossil-lang-wasm-0.3.0-alpha.0.tgz
+  '@kanzo/theme': file:./vendor/fossil-lang/kanzo-theme-0.3.0-alpha.0.tgz
 
 importers:
 
@@ -46,32 +46,29 @@ importers:
         specifier: ^6.39.15
         version: 6.40.0
       '@fossil-lang/codemirror-fossil':
-        specifier: file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.1.0.tgz
-        version: file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.1.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@fossil-lang/wasm@file:vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz)
+        specifier: file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz
+        version: file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)
       '@fossil-lang/editor':
-        specifier: file:vendor/fossil-lang/fossil-lang-editor-0.1.0.tgz
-        version: file:vendor/fossil-lang/fossil-lang-editor-0.1.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/lsp-client@6.2.4)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@fossil-lang/codemirror-fossil@file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.1.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@fossil-lang/wasm@file:vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz))(@fossil-lang/wasm@file:vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz)(@lezer/highlight@1.2.3)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        specifier: file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz
+        version: file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/lsp-client@6.2.4)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@fossil-lang/resolvers':
-        specifier: file:vendor/fossil-lang/fossil-lang-resolvers-0.1.0.tgz
-        version: file:vendor/fossil-lang/fossil-lang-resolvers-0.1.0.tgz
+        specifier: file:vendor/fossil-lang/fossil-lang-resolvers-0.3.0-alpha.0.tgz
+        version: file:vendor/fossil-lang/fossil-lang-resolvers-0.3.0-alpha.0.tgz
       '@fossil-lang/types':
-        specifier: file:vendor/fossil-lang/fossil-lang-types-0.1.0.tgz
-        version: file:vendor/fossil-lang/fossil-lang-types-0.1.0.tgz
-      '@fossil-lang/ui':
-        specifier: file:vendor/fossil-lang/fossil-lang-ui-0.1.0.tgz
-        version: file:vendor/fossil-lang/fossil-lang-ui-0.1.0.tgz(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        specifier: file:vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz
+        version: file:vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz
       '@fossil-lang/viewer':
-        specifier: file:vendor/fossil-lang/fossil-lang-viewer-0.1.0.tgz
-        version: file:vendor/fossil-lang/fossil-lang-viewer-0.1.0.tgz(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        specifier: file:vendor/fossil-lang/fossil-lang-viewer-0.3.0-alpha.0.tgz
+        version: file:vendor/fossil-lang/fossil-lang-viewer-0.3.0-alpha.0.tgz(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@fossil-lang/wasm':
-        specifier: file:vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz
-        version: file:vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz
+        specifier: file:vendor/fossil-lang/fossil-lang-wasm-0.3.0-alpha.0.tgz
+        version: file:vendor/fossil-lang/fossil-lang-wasm-0.3.0-alpha.0.tgz
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.72.0(react@19.2.3))
       '@kanzo/theme':
-        specifier: file:vendor/fossil-lang/kanzo-theme-0.1.0.tgz
-        version: file:vendor/fossil-lang/kanzo-theme-0.1.0.tgz(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        specifier: file:vendor/fossil-lang/kanzo-theme-0.3.0-alpha.0.tgz
+        version: file:vendor/fossil-lang/kanzo-theme-0.3.0-alpha.0.tgz(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
@@ -677,20 +674,19 @@ packages:
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
 
-  '@fossil-lang/codemirror-fossil@file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.1.0.tgz':
-    resolution: {integrity: sha512-fBi28To5GK26m1MDGNZ7HYpFdNBwGnU+m0OVqYHSrP+ZEHXw6lIBpSaLx1gDcaZlkHXBWX5hhMUgN5SAIzM+zQ==, tarball: file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.1.0.tgz}
-    version: 0.1.0
+  '@fossil-lang/codemirror-fossil@file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz':
+    resolution: {integrity: sha512-xgqXvR037xlR41kZjngE2ZIGAd8jxmiwA8od4bq5LOevIDRU4k/KgrMPoX9bsjV/1QXuR/zmZygF3eYNmjYsig==, tarball: file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz}
+    version: 0.3.0-alpha.0
     peerDependencies:
       '@codemirror/autocomplete': ^6.0.0
       '@codemirror/language': ^6.0.0
       '@codemirror/lint': ^6.0.0
       '@codemirror/state': ^6.0.0
       '@codemirror/view': ^6.0.0
-      '@fossil-lang/wasm': 0.1.0
 
-  '@fossil-lang/editor@file:vendor/fossil-lang/fossil-lang-editor-0.1.0.tgz':
-    resolution: {integrity: sha512-Ve2pJ8Mit78DXAhbxSbxm5/f502dBuy+vzxBBoRhcs0yt8WcG7XC9Yg5n4msKFXnINfErgF/g8VyQOM3SpkbHg==, tarball: file:vendor/fossil-lang/fossil-lang-editor-0.1.0.tgz}
-    version: 0.1.0
+  '@fossil-lang/editor@file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz':
+    resolution: {integrity: sha512-0PU9LtjaTUDOYBjiPxEOa3vHE9e6vwhjJeV3Tsr9VZZUSRPGoH8h5xHUrprS83UduDEb/FanOeWbIcG/fQGyzw==, tarball: file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz}
+    version: 0.3.0-alpha.0
     peerDependencies:
       '@codemirror/autocomplete': ^6.0.0
       '@codemirror/language': ^6.0.0
@@ -698,37 +694,35 @@ packages:
       '@codemirror/lsp-client': ^6.2.4
       '@codemirror/state': ^6.0.0
       '@codemirror/view': ^6.0.0
-      '@fossil-lang/codemirror-fossil': 0.1.0
-      '@fossil-lang/wasm': 0.1.0
       '@lezer/highlight': ^1.0.0
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
 
-  '@fossil-lang/resolvers@file:vendor/fossil-lang/fossil-lang-resolvers-0.1.0.tgz':
-    resolution: {integrity: sha512-khRUmnpMWhH1YCi5X+71tecd2RSh1BNhPGUn7p96DWANwgr1u1xa3Ar3XonmE5pdPfGxFomUbr+6f3+tpiu9uw==, tarball: file:vendor/fossil-lang/fossil-lang-resolvers-0.1.0.tgz}
-    version: 0.1.0
+  '@fossil-lang/resolvers@file:vendor/fossil-lang/fossil-lang-resolvers-0.3.0-alpha.0.tgz':
+    resolution: {integrity: sha512-xKDo6LGvFCg9Qshzlw5UKi/toMVy6ixAeEr9nGaYe9Nridhr/u1bOFlNTdM3EvWz9XfK4dLxIAtDMcHUs8hxuA==, tarball: file:vendor/fossil-lang/fossil-lang-resolvers-0.3.0-alpha.0.tgz}
+    version: 0.3.0-alpha.0
 
-  '@fossil-lang/types@file:vendor/fossil-lang/fossil-lang-types-0.1.0.tgz':
-    resolution: {integrity: sha512-WM1sArye1Dhary4xCGX6rWWhNNWierZ/bEbQq58Q01/QuJoPZ+dhTHb2jmRQGj/pVTVWrCJUjlp65IWcvOl0pQ==, tarball: file:vendor/fossil-lang/fossil-lang-types-0.1.0.tgz}
-    version: 0.1.0
+  '@fossil-lang/types@file:vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz':
+    resolution: {integrity: sha512-674dBS8w8xq6foN5f1ztl67ONGBzY2fv26WOQNbHqiUb965NXBKxnEY8Q2XctESgHJCvc6N8t/rWl616hSdTZQ==, tarball: file:vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz}
+    version: 0.3.0-alpha.0
 
-  '@fossil-lang/ui@file:vendor/fossil-lang/fossil-lang-ui-0.1.0.tgz':
-    resolution: {integrity: sha512-DrbHdwbxF4IRrPS3iIYnPlHt1J4fsnRH6ll9HgT367CpkNEGV3zQ82kXpsT5mOXrhTtTrFqRlfO60x8vqwiSfw==, tarball: file:vendor/fossil-lang/fossil-lang-ui-0.1.0.tgz}
-    version: 0.1.0
+  '@fossil-lang/ui@file:vendor/fossil-lang/fossil-lang-ui-0.3.0-alpha.0.tgz':
+    resolution: {integrity: sha512-XRc641ATZ7tFdpX0RzDaESkd7/WZKRa4Cxk0L0LlQduJrcZAvFq22tnCuftDC86dKY1hYnElB8bOTV91LF9qrQ==, tarball: file:vendor/fossil-lang/fossil-lang-ui-0.3.0-alpha.0.tgz}
+    version: 0.3.0-alpha.0
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
 
-  '@fossil-lang/viewer@file:vendor/fossil-lang/fossil-lang-viewer-0.1.0.tgz':
-    resolution: {integrity: sha512-MCGY6HdLMFK8gdN04AOTmt5Z+Ulr59gvDNScnY882C57zb+ymx2dvUgfkmhB7xBkY/mHnT/+UFGwFEnXlCPoYg==, tarball: file:vendor/fossil-lang/fossil-lang-viewer-0.1.0.tgz}
-    version: 0.1.0
+  '@fossil-lang/viewer@file:vendor/fossil-lang/fossil-lang-viewer-0.3.0-alpha.0.tgz':
+    resolution: {integrity: sha512-RC6kikb28wtmfSRZhGOhYnJYk1eCMtY3iEO5mmR1cx7RYJkeJ8/D2BxSYVsOx7nf/3eLTt8NfEmojPo+KxksCQ==, tarball: file:vendor/fossil-lang/fossil-lang-viewer-0.3.0-alpha.0.tgz}
+    version: 0.3.0-alpha.0
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
 
-  '@fossil-lang/wasm@file:vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz':
-    resolution: {integrity: sha512-y1XrNi8OAO2LmQ6NiKBjgRSybVvjvc8D14mj5YxfOjr6WA2e2NUp8HkHPNgayDKvCMnF5W8E4al3umSxFDTAYA==, tarball: file:vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz}
-    version: 0.1.0
+  '@fossil-lang/wasm@file:vendor/fossil-lang/fossil-lang-wasm-0.3.0-alpha.0.tgz':
+    resolution: {integrity: sha512-4VhAFtbpDZN9GMtG/NGFnuGEbtXLC7Bt1lD7TJryi0i8O67ZYPC2zL24sa/6F422KhrGumyAsnFjh9SIM+06lw==, tarball: file:vendor/fossil-lang/fossil-lang-wasm-0.3.0-alpha.0.tgz}
+    version: 0.3.0-alpha.0
 
   '@hono/node-server@1.19.11':
     resolution: {integrity: sha512-dr8/3zEaB+p0D2n/IUrlPF1HZm586qgJNXK1a9fhg/PzdtkK7Ksd5l312tJX2yBuALqDYBlG20QEbayqPyxn+g==}
@@ -953,9 +947,9 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@kanzo/theme@file:vendor/fossil-lang/kanzo-theme-0.1.0.tgz':
-    resolution: {integrity: sha512-/cRSRUmN59H1EMpiteeWFRKlDeWJko0JOslDnhsURKTcaNvEiI1VIKgpedNz7TBfa9uXuh3r0g/+EQpiOuZt/Q==, tarball: file:vendor/fossil-lang/kanzo-theme-0.1.0.tgz}
-    version: 0.1.0
+  '@kanzo/theme@file:vendor/fossil-lang/kanzo-theme-0.3.0-alpha.0.tgz':
+    resolution: {integrity: sha512-wYLujnKtusZqc66EpOtR2SzhZaUCpCHcv1Bnf5rzUmw1RZLtMKNEC8JLYkWJq09hDPn6C0oCVDyD4zVjvXi9Cg==, tarball: file:vendor/fossil-lang/kanzo-theme-0.3.0-alpha.0.tgz}
+    version: 0.3.0-alpha.0
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
@@ -6334,18 +6328,18 @@ snapshots:
 
   '@floating-ui/utils@0.2.11': {}
 
-  '@fossil-lang/codemirror-fossil@file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.1.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@fossil-lang/wasm@file:vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz)':
+  '@fossil-lang/codemirror-fossil@file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)':
     dependencies:
       '@codemirror/autocomplete': 6.20.1
       '@codemirror/language': 6.12.3
       '@codemirror/lint': 6.9.5
       '@codemirror/state': 6.6.0
       '@codemirror/view': 6.40.0
-      '@fossil-lang/types': file:vendor/fossil-lang/fossil-lang-types-0.1.0.tgz
-      '@fossil-lang/wasm': file:vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz
+      '@fossil-lang/types': file:vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz
+      '@fossil-lang/wasm': file:vendor/fossil-lang/fossil-lang-wasm-0.3.0-alpha.0.tgz
       '@lezer/highlight': 1.2.3
 
-  '@fossil-lang/editor@file:vendor/fossil-lang/fossil-lang-editor-0.1.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/lsp-client@6.2.4)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@fossil-lang/codemirror-fossil@file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.1.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@fossil-lang/wasm@file:vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz))(@fossil-lang/wasm@file:vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz)(@lezer/highlight@1.2.3)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@fossil-lang/editor@file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/lsp-client@6.2.4)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@codemirror/autocomplete': 6.20.1
       '@codemirror/language': 6.12.3
@@ -6353,10 +6347,10 @@ snapshots:
       '@codemirror/lsp-client': 6.2.4
       '@codemirror/state': 6.6.0
       '@codemirror/view': 6.40.0
-      '@fossil-lang/codemirror-fossil': file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.1.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@fossil-lang/wasm@file:vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz)
-      '@fossil-lang/types': file:vendor/fossil-lang/fossil-lang-types-0.1.0.tgz
-      '@fossil-lang/ui': file:vendor/fossil-lang/fossil-lang-ui-0.1.0.tgz(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@fossil-lang/wasm': file:vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz
+      '@fossil-lang/codemirror-fossil': file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)
+      '@fossil-lang/types': file:vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz
+      '@fossil-lang/ui': file:vendor/fossil-lang/fossil-lang-ui-0.3.0-alpha.0.tgz(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@fossil-lang/wasm': file:vendor/fossil-lang/fossil-lang-wasm-0.3.0-alpha.0.tgz
       '@lezer/highlight': 1.2.3
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
@@ -6364,13 +6358,13 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@fossil-lang/resolvers@file:vendor/fossil-lang/fossil-lang-resolvers-0.1.0.tgz':
+  '@fossil-lang/resolvers@file:vendor/fossil-lang/fossil-lang-resolvers-0.3.0-alpha.0.tgz':
     dependencies:
-      '@fossil-lang/types': file:vendor/fossil-lang/fossil-lang-types-0.1.0.tgz
+      '@fossil-lang/types': file:vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz
 
-  '@fossil-lang/types@file:vendor/fossil-lang/fossil-lang-types-0.1.0.tgz': {}
+  '@fossil-lang/types@file:vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz': {}
 
-  '@fossil-lang/ui@file:vendor/fossil-lang/fossil-lang-ui-0.1.0.tgz(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@fossil-lang/ui@file:vendor/fossil-lang/fossil-lang-ui-0.3.0-alpha.0.tgz(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@radix-ui/react-dialog': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@radix-ui/react-dropdown-menu': 2.1.16(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -6387,11 +6381,11 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@fossil-lang/viewer@file:vendor/fossil-lang/fossil-lang-viewer-0.1.0.tgz(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@fossil-lang/viewer@file:vendor/fossil-lang/fossil-lang-viewer-0.3.0-alpha.0.tgz(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@cosmos.gl/graph': 2.6.4
-      '@fossil-lang/types': file:vendor/fossil-lang/fossil-lang-types-0.1.0.tgz
-      '@fossil-lang/ui': file:vendor/fossil-lang/fossil-lang-ui-0.1.0.tgz(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@fossil-lang/types': file:vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz
+      '@fossil-lang/ui': file:vendor/fossil-lang/fossil-lang-ui-0.3.0-alpha.0.tgz(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@uwdata/mosaic-core': 0.21.1
       '@uwdata/mosaic-sql': 0.21.1
       n3: 1.26.0
@@ -6401,9 +6395,9 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@fossil-lang/wasm@file:vendor/fossil-lang/fossil-lang-wasm-0.1.0.tgz':
+  '@fossil-lang/wasm@file:vendor/fossil-lang/fossil-lang-wasm-0.3.0-alpha.0.tgz':
     dependencies:
-      '@fossil-lang/types': file:vendor/fossil-lang/fossil-lang-types-0.1.0.tgz
+      '@fossil-lang/types': file:vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz
 
   '@hono/node-server@1.19.11(hono@4.12.9)':
     dependencies:
@@ -6580,9 +6574,9 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@kanzo/theme@file:vendor/fossil-lang/kanzo-theme-0.1.0.tgz(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@kanzo/theme@file:vendor/fossil-lang/kanzo-theme-0.3.0-alpha.0.tgz(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
-      '@fossil-lang/types': file:vendor/fossil-lang/fossil-lang-types-0.1.0.tgz
+      '@fossil-lang/types': file:vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
 

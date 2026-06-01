@@ -10,13 +10,16 @@
  * a long-lived host-singleton that survives React remounts (incl. Strict Mode
  * double-mount); the browser tears it down on tab close. No `reset` by design.
  *
- * 2.1 returns a bare `Transport` for `<FossilEditor lspTransport={…}/>`'s
- * auto-compose path (it builds + owns its own LSPClient internally). The
- * descriptor-push path (source-field completion) needs a host-held LSPClient
- * and lands in a later slice.
+ * The singleton is exposed via `useSyncExternalStore` — the idiomatic way to
+ * subscribe to an external mutable resource: SSR-safe (server snapshot is
+ * `null`, no `Worker` on the server) and re-renders the consumer once the
+ * worker boots, without a setState-in-effect.
+ *
+ * Returns a bare `Transport` for `<FossilEditor lspTransport={…}/>`'s
+ * auto-compose path (it builds + owns its own LSPClient internally).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { createWorkerTransport, type Transport } from "@fossil-lang/editor";
 
 // Static URL of the wasm artefact staged into public/ by scripts/copy-fossil-wasm.mjs
@@ -25,24 +28,33 @@ const WASM_URL = "/fossil/fossil_wasm_bg.wasm";
 
 let _worker: Worker | null = null;
 let _transport: Transport | null = null;
+const _listeners = new Set<() => void>();
+
+/** Create the worker + transport once (client-only), then notify subscribers. */
+function ensureTransport(): void {
+  if (_transport) return;
+  _worker = new Worker(new URL("./lsp.worker.ts", import.meta.url), {
+    type: "module",
+  });
+  _worker.postMessage({ type: "__boot", wasmUrl: WASM_URL });
+  _transport = createWorkerTransport(_worker);
+  for (const l of _listeners) l();
+}
 
 export function useFossilLspTransport(): Transport | null {
-  const [transport, setTransport] = useState<Transport | null>(_transport);
+  const transport = useSyncExternalStore(
+    (onChange) => {
+      _listeners.add(onChange);
+      return () => _listeners.delete(onChange);
+    },
+    () => _transport, // client snapshot
+    () => null, // server snapshot (no Worker during SSR)
+  );
 
+  // Boot the singleton on mount (client-only). Idempotent — the module guard
+  // short-circuits Strict Mode's second mount; no cleanup (ADR-0026).
   useEffect(() => {
-    if (_transport) {
-      setTransport(_transport);
-      return;
-    }
-    _worker = new Worker(new URL("./lsp.worker.ts", import.meta.url), {
-      type: "module",
-    });
-    _worker.postMessage({ type: "__boot", wasmUrl: WASM_URL });
-    _transport = createWorkerTransport(_worker);
-    setTransport(_transport);
-    // INTENTIONAL: no cleanup — long-lived singleton (ADR-0026). The module
-    // guard above short-circuits Strict Mode's second mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ensureTransport();
   }, []);
 
   return transport;

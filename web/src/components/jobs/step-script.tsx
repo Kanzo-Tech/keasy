@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/layout/page-shell";
 import { FossilEditor } from "@fossil-lang/editor";
 import { useFossilLspTransport } from "@/lib/fossil/use-fossil-lsp-transport";
+import { useSourceDescriptors } from "@/lib/fossil/use-source-descriptors";
 import type {
   ConnectionResolver,
   Connector,
@@ -103,6 +104,12 @@ export function StepScript({
 
   const resolver = useKeasyResolver(connections, providers);
 
+  // Schema-aware completion: introspect each `@conn/path` source binding
+  // (server-side via /v1/connections/{id}/schema) and feed the descriptors to
+  // the editor, which registers them with the LSP worker (fossil/
+  // registerInferredDescriptor) to power `source.<field>` completion.
+  const descriptors = useSourceDescriptors(script, connections);
+
   if (creationMode === "assistant") {
     return (
       <AssistantWizard
@@ -161,6 +168,7 @@ export function StepScript({
           onChange={onScriptChange}
           lspTransport={lspTransport}
           resolver={resolver}
+          descriptors={descriptors}
           className="flex-1"
         />
       </PageShell.Content>

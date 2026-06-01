@@ -4,7 +4,8 @@ import { useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/layout/page-shell";
-import { FossilEditor, HttpTransport } from "@fossil-lang/editor";
+import { FossilEditor } from "@fossil-lang/editor";
+import { useFossilLspTransport } from "@/lib/fossil/use-fossil-lsp-transport";
 import type {
   ConnectionResolver,
   Connector,
@@ -92,17 +93,13 @@ export function StepScript({
   onSaveDraft,
   onAssistantComplete,
 }: StepScriptProps) {
-  // HTTP transport — POSTs JSON-RPC envelopes to /v1/fossil/lsp on the
-  // same origin (cookie session handles auth; no explicit Authorization
-  // header needed). Memoised so the editor's mount effect doesn't tear
-  // down on every render.
-  const lspTransport = useMemo(
-    () =>
-      new HttpTransport({
-        endpoint: "/v1/fossil/lsp",
-      }),
-    [],
-  );
+  // Browser WASM LSP worker (CONNECTION-SHAPE-MODEL decision b) — replaces the
+  // server-side HttpTransport(/v1/fossil/lsp). `null` on first render until the
+  // host-singleton worker boots; FossilEditor treats `null` as read-only
+  // (syntax highlighting + @-autocomplete still work) and re-wires the LSP once
+  // the transport arrives. The reference-stable singleton keeps the editor's
+  // mount effect from tearing down across renders.
+  const lspTransport = useFossilLspTransport();
 
   const resolver = useKeasyResolver(connections, providers);
 

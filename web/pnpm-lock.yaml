@@ -7,6 +7,7 @@ settings:
 overrides:
   '@fossil-lang/codemirror-fossil': file:./vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz
   '@fossil-lang/editor': file:./vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz
+  '@fossil-lang/introspect': file:./vendor/fossil-lang/fossil-lang-introspect-0.3.0-alpha.0.tgz
   '@fossil-lang/resolvers': file:./vendor/fossil-lang/fossil-lang-resolvers-0.3.0-alpha.0.tgz
   '@fossil-lang/types': file:./vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz
   '@fossil-lang/ui': file:./vendor/fossil-lang/fossil-lang-ui-0.3.0-alpha.0.tgz
@@ -675,7 +676,7 @@ packages:
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
 
   '@fossil-lang/codemirror-fossil@file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz':
-    resolution: {integrity: sha512-xgqXvR037xlR41kZjngE2ZIGAd8jxmiwA8od4bq5LOevIDRU4k/KgrMPoX9bsjV/1QXuR/zmZygF3eYNmjYsig==, tarball: file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz}
+    resolution: {integrity: sha512-mESMBZca6OdTP3COkMRr1+ANZidF+PJbAXCklbHWZpNfOO1L2WJ5+Hou83HsSXnMH8/KMqeisciBcUienmFROQ==, tarball: file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz}
     version: 0.3.0-alpha.0
     peerDependencies:
       '@codemirror/autocomplete': ^6.0.0
@@ -685,7 +686,7 @@ packages:
       '@codemirror/view': ^6.0.0
 
   '@fossil-lang/editor@file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz':
-    resolution: {integrity: sha512-0PU9LtjaTUDOYBjiPxEOa3vHE9e6vwhjJeV3Tsr9VZZUSRPGoH8h5xHUrprS83UduDEb/FanOeWbIcG/fQGyzw==, tarball: file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz}
+    resolution: {integrity: sha512-D0azusfK1olW/cyM7yDCi5IpnhG7tvZhATEi2fBJIlMUYEHFiPkeJcnO/w1+Rv1Qw5zs44seBgl8stkpXlcntQ==, tarball: file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz}
     version: 0.3.0-alpha.0
     peerDependencies:
       '@codemirror/autocomplete': ^6.0.0
@@ -697,6 +698,10 @@ packages:
       '@lezer/highlight': ^1.0.0
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
+
+  '@fossil-lang/introspect@file:vendor/fossil-lang/fossil-lang-introspect-0.3.0-alpha.0.tgz':
+    resolution: {integrity: sha512-j774q8/oQAoSsoWiK6IfgiR64iYWBbnk87cysg2GR8vNb+iBhX5wIRFFbmnuE1xids84RPLDuizR9FrNUocbCA==, tarball: file:vendor/fossil-lang/fossil-lang-introspect-0.3.0-alpha.0.tgz}
+    version: 0.3.0-alpha.0
 
   '@fossil-lang/resolvers@file:vendor/fossil-lang/fossil-lang-resolvers-0.3.0-alpha.0.tgz':
     resolution: {integrity: sha512-xKDo6LGvFCg9Qshzlw5UKi/toMVy6ixAeEr9nGaYe9Nridhr/u1bOFlNTdM3EvWz9XfK4dLxIAtDMcHUs8hxuA==, tarball: file:vendor/fossil-lang/fossil-lang-resolvers-0.3.0-alpha.0.tgz}
@@ -6348,6 +6353,7 @@ snapshots:
       '@codemirror/state': 6.6.0
       '@codemirror/view': 6.40.0
       '@fossil-lang/codemirror-fossil': file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)
+      '@fossil-lang/introspect': file:vendor/fossil-lang/fossil-lang-introspect-0.3.0-alpha.0.tgz
       '@fossil-lang/types': file:vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz
       '@fossil-lang/ui': file:vendor/fossil-lang/fossil-lang-ui-0.3.0-alpha.0.tgz(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@fossil-lang/wasm': file:vendor/fossil-lang/fossil-lang-wasm-0.3.0-alpha.0.tgz
@@ -6357,6 +6363,8 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'
+
+  '@fossil-lang/introspect@file:vendor/fossil-lang/fossil-lang-introspect-0.3.0-alpha.0.tgz': {}
 
   '@fossil-lang/resolvers@file:vendor/fossil-lang/fossil-lang-resolvers-0.3.0-alpha.0.tgz':
     dependencies:

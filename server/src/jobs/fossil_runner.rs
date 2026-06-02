@@ -186,6 +186,30 @@ impl FossilRunner {
         ]
     }
 
+    /// Bound the child `fossil`/`DuckDB` memory + CPU — multi-instance OOM
+    /// protection. An uncapped DuckDB targets ~80% of physical RAM, so a few
+    /// concurrent jobs (across keasy instances sharing a small host) can OOM the
+    /// box. The CLI reads `FOSSIL_DUCKDB_{MEMORY_LIMIT,THREADS,TEMP_DIR}`
+    /// ([`fossil_runtime::apply_resource_limits`]). A value already in keasy's
+    /// env is inherited by the child (deployment override); otherwise a
+    /// conservative default is set so the cap is never silently absent. The
+    /// temp dir lets DuckDB spill (rather than error) once the limit is hit.
+    fn apply_duckdb_limits(command: &mut Command, fossil_file: &Path) {
+        if std::env::var_os("FOSSIL_DUCKDB_MEMORY_LIMIT").is_none() {
+            command.env("FOSSIL_DUCKDB_MEMORY_LIMIT", "512MB");
+        }
+        if std::env::var_os("FOSSIL_DUCKDB_THREADS").is_none() {
+            command.env("FOSSIL_DUCKDB_THREADS", "2");
+        }
+        if std::env::var_os("FOSSIL_DUCKDB_TEMP_DIR").is_none() {
+            let tmp = fossil_file
+                .parent()
+                .map(Path::to_path_buf)
+                .unwrap_or_else(std::env::temp_dir);
+            command.env("FOSSIL_DUCKDB_TEMP_DIR", tmp);
+        }
+    }
+
     /// Run a fossil pipeline to GraphAr under `dest_url`. `fossil_file` is a
     /// filesystem path the CLI reads; the working directory is anchored to its
     /// parent so any relative source paths resolve. `creds` is piped on stdin.
@@ -214,6 +238,7 @@ impl FossilRunner {
         if let Some(parent) = fossil_file.parent().filter(|p| !p.as_os_str().is_empty()) {
             command.current_dir(parent);
         }
+        Self::apply_duckdb_limits(&mut command, fossil_file);
 
         let mut child = command.spawn().map_err(spawn_err)?;
         // Write the creds payload, then drop stdin so the CLI's read-to-EOF

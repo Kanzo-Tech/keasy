@@ -363,8 +363,11 @@ mod tests {
         let stdout = r#"{
             "dest": "s3://bucket/job-123",
             "vertices": [
-                { "type": "Person", "file": "vertex/Person.parquet", "count": 5,
-                  "columns": [ { "name": "name", "data_type": "string" } ] }
+                { "type": "Person", "rdf_type": "https://example.org/Person",
+                  "file": "vertex/Person.parquet", "count": 5,
+                  "columns": [ { "name": "name", "data_type": "string",
+                                 "rdf_uri": "https://example.org/name",
+                                 "xsd_datatype": "http://www.w3.org/2001/XMLSchema#string" } ] }
             ],
             "edges": [
                 { "edge_type": "knows", "src_type": "Person", "dst_type": "Person",
@@ -379,9 +382,14 @@ mod tests {
         assert_eq!(v.vertex_type, "Person");
         assert_eq!(v.file, "vertex/Person.parquet");
         assert_eq!(v.count, Some(5));
+        // The enriched manifest carries the RDF output spec (#5a) the DCAT
+        // governance layer reads from the manifest instead of re-deriving it.
+        assert_eq!(v.rdf_type.as_deref(), Some("https://example.org/Person"));
         assert_eq!(v.columns, vec![ColumnStatus {
             name: "name".to_string(),
             data_type: "string".to_string(),
+            rdf_uri: Some("https://example.org/name".to_string()),
+            xsd_datatype: Some("http://www.w3.org/2001/XMLSchema#string".to_string()),
         }]);
         assert_eq!(parsed.edges.len(), 1);
         assert_eq!(parsed.edges[0].edge_type, "knows");

@@ -13,7 +13,6 @@ use super::models::{JobStatus, now_iso8601};
 use crate::db::Database;
 use crate::graph::dcat::extract::extract_dcat_input;
 use crate::graph::dcat::types::DcatInput;
-use super::pipeline_types::PipelineOutput;
 use crate::settings::org::OrgSettings;
 use crate::tenant::{OrgId, TenantScoped};
 
@@ -163,11 +162,7 @@ impl JobRunner {
 
             let job_ctx = TenantScoped::new(OrgId(org_id.clone()), job_id.as_str());
 
-            let (job_name, pipeline_outputs) = db
-                .get_job(&job_ctx)
-                .await
-                .map(|j| (j.name.clone(), j.pipeline.outputs.clone()))
-                .unwrap_or_default();
+            let job_name = db.get_job(&job_ctx).await.and_then(|j| j.name.clone());
 
             if let Err(e) = db.update_job(&job_ctx, |job| {
                 job.status = JobStatus::Running;
@@ -179,7 +174,6 @@ impl JobRunner {
             info!(job_id = %job_id, "Job started");
 
             let job_id_clone = job_id.clone();
-            let outputs = pipeline_outputs;
             let tx_blocking = tx.clone();
             let result = tokio::time::timeout(
                 job_timeout,
@@ -191,7 +185,6 @@ impl JobRunner {
                         &run_creds,
                         if dcat_enabled { org_settings.as_ref() } else { None },
                         job_name.as_deref(),
-                        &outputs,
                         catalog_dest.as_ref(),
                         &tx_blocking,
                     )
@@ -276,7 +269,6 @@ fn run_job(
     run_creds: &RunCreds,
     org: Option<&OrgSettings>,
     job_name: Option<&str>,
-    outputs: &[PipelineOutput],
     catalog_dest: Option<&fossil_lang::traits::resolver::ResolvedPath>,
     tx: &broadcast::Sender<JobEvent>,
 ) -> Result<JobResult, String> {
@@ -300,7 +292,8 @@ fn run_job(
     let run_status = run_result.map_err(|e| e.to_string())?;
 
     let completed_at = now_iso8601();
-    let dcat_input = org.map(|org| extract_dcat_input(job_id, job_name, &completed_at, org, outputs));
+    let dcat_input =
+        org.map(|org| extract_dcat_input(job_id, job_name, &completed_at, org, &run_status, dest_url));
 
     // Materialize the DCAT-AP catalog (if dcat enabled + catalog storage set).
     // The catalog manifest is keasy's own RDF-rich artifact; `run_status`

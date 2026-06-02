@@ -86,10 +86,15 @@ impl ServerConfig {
             std::process::exit(1);
         }
 
+        // Each concurrent job spawns a `fossil` subprocess whose DuckDB is capped
+        // at `FOSSIL_DUCKDB_MEMORY_LIMIT` (default 512MB). Peak job RAM on a host
+        // ≈ (instances on host) × max_concurrent_jobs × memory_limit, so the
+        // default is conservative for small shared boxes (raise it per-deployment
+        // on dedicated hardware).
         let max_concurrent_jobs = std::env::var("KEASY_MAX_CONCURRENT_JOBS")
             .ok()
             .and_then(|v| v.parse().ok())
-            .unwrap_or(4);
+            .unwrap_or(2);
 
         let job_timeout_secs = std::env::var("KEASY_JOB_TIMEOUT_SECS")
             .ok()

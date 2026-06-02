@@ -320,10 +320,4 @@ export const api = {
       fetchSSE("/v1/assistant/generate-stream", req),
   },
 
-  // ── Scripts ───────────────────────────────────────────────────────────
-  scripts: {
-    validate: async (script: string) =>
-      unwrap(await client.POST("/v1/scripts/validate", { body: { script } })),
-  },
-
 };

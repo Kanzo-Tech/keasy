@@ -54,22 +54,10 @@ export function JobEditor() {
   useEffect(() => () => useJobEditorStore.getState().reset(), []);
 
   // ── Handlers ──────────────────────────────────────────────────────────
-
-  async function handleConfigReview() {
-    store.setValidating(true);
-    try {
-      const result = await api.scripts.validate(store.script);
-      if (!result.valid) {
-        result.errors.forEach((err) => toastError(err));
-        return;
-      }
-      store.goToReview(result);
-    } catch (err) {
-      toastError(err, "Failed to validate script");
-    } finally {
-      store.setValidating(false);
-    }
-  }
+  // No server-side validate round-trip: the editor's browser LSP validates the
+  // program inline as the user types (errors surface there), so "Review" just
+  // advances the wizard. The output structure (types/destinations) is shown
+  // from the run manifest once the job completes, not pre-submit.
 
   const draftMutation = useMutation({
     mutationFn: async () => {
@@ -116,7 +104,6 @@ export function JobEditor() {
         script: store.script,
         name: jobName,
         mode: store.mode,
-        pipeline: store.validation?.pipeline,
         dcat_enabled: store.dcatEnabled || undefined,
         connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
       });
@@ -141,7 +128,7 @@ export function JobEditor() {
     );
   }
 
-  if (store.step === 3 && store.validation) {
+  if (store.step === 3) {
     return (
       <div className="flex flex-col flex-1 min-h-0">
         <UnsavedChangesGuard isDirty={isDirty} />
@@ -154,9 +141,7 @@ export function JobEditor() {
           submitting={confirmMutation.isPending || confirmMutation.isSuccess}
           jobName={store.name.trim()}
           mode={store.mode}
-          validation={store.validation}
           dcatEnabled={store.dcatEnabled}
-          connections={connections}
         />
       </div>
     );
@@ -178,7 +163,7 @@ export function JobEditor() {
           onDcatToggle={store.setDcatEnabled}
           orgConfigured={orgConfigured}
           onBack={store.goBack}
-          onReview={handleConfigReview}
+          onReview={store.goToReview}
           validating={store.validating}
         />
       </div>

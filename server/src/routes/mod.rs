@@ -2,7 +2,6 @@ pub mod admin;
 pub mod health;
 pub mod org;
 pub mod providers;
-pub mod scripts;
 
 use axum::{middleware, Router};
 use axum::extract::DefaultBodyLimit;
@@ -131,10 +130,6 @@ pub fn build_router(
         .route(
             "/v1/jobs/{id}/catalog",
             axum::routing::get(crate::jobs::routes::get_job_catalog),
-        )
-        .route(
-            "/v1/scripts/validate",
-            axum::routing::post(scripts::validate_script),
         )
         .route(
             "/v1/settings/organization",

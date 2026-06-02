@@ -1,11 +1,10 @@
 //! Subprocess wrapper around the `fossil` CLI's W0b `run` path.
 //!
-//! **W0e Branch-by-Abstraction seam.** Keasy stops embedding fossil as a Rust
-//! library (`fossil-lang` / `fossil-stdlib` / …) and consumes it as a process —
-//! the same way it already consumes the editor, viewer, and LSP. This module is
-//! the seam; it is intentionally NOT wired into the job runner yet (call sites
-//! in `runner.rs` migrate onto it, then the embedded-library deps and
-//! `pipeline_extract.rs` get deleted).
+//! **W0e Branch-by-Abstraction seam.** Keasy runs fossil as a process — the same
+//! way it already consumes the editor, viewer, and LSP — rather than embedding
+//! the compiler as a Rust library. `runner.rs` executes jobs through this seam;
+//! the IR-walking validate path (`pipeline_extract` / `ProgramQuery`) is gone and
+//! the catalog reads the output spec from the run manifest (`RunStatus`).
 //!
 //! Protocol contract (owned + end-to-end-tested on the rmlext side, see
 //! `crates/fossil-cli/tests/run_w0b.rs`):

@@ -5,7 +5,6 @@ use crate::tenant::TenantScoped;
 
 use super::errors::JobRuntimeError;
 use super::models::{Job, JobStatus, RunMode};
-use super::pipeline_types::PipelineSummary;
 
 impl Database {
     pub async fn insert_job(&self, ctx: &TenantScoped<()>, job: &Job) -> Result<(), String> {
@@ -13,8 +12,6 @@ impl Database {
             .map(serde_json::to_string)
             .transpose()
             .map_err(|e| format!("failed to serialize error: {e}"))?;
-        let pipeline_json = serde_json::to_string(&job.pipeline)
-            .map_err(|e| format!("failed to serialize pipeline: {e}"))?;
         let account_ids_json = serde_json::to_string(&job.connection_ids)
             .map_err(|e| format!("failed to serialize connection_ids: {e}"))?;
 
@@ -29,8 +26,8 @@ impl Database {
 
         let conn = self.write().await;
         conn.execute(
-            "INSERT INTO jobs (id, organization_id, name, status, mode, created_at, started_at, completed_at, error, pipeline, connection_ids, script, rdf_base, manifest, catalog_manifest, catalog_base)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
+            "INSERT INTO jobs (id, organization_id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, script, rdf_base, manifest, catalog_manifest, catalog_base)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
             params![
                 job.id,
                 ctx.org_id().as_str(),
@@ -41,7 +38,6 @@ impl Database {
                 job.started_at,
                 job.completed_at,
                 error_json,
-                pipeline_json,
                 account_ids_json,
                 job.script,
                 job.rdf_base,
@@ -58,7 +54,7 @@ impl Database {
     pub async fn get_job(&self, ctx: &TenantScoped<&str>) -> Option<Job> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, pipeline, connection_ids, script, rdf_base, manifest, catalog_manifest, catalog_base
+            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, script, rdf_base, manifest, catalog_manifest, catalog_base
              FROM jobs WHERE id = ?1 AND organization_id = ?2",
             params![ctx.inner(), ctx.org_id().as_str()],
             |row| Ok(row_to_job(row)),
@@ -77,8 +73,6 @@ impl Database {
             .map(serde_json::to_string)
             .transpose()
             .map_err(|e| format!("failed to serialize error: {e}"))?;
-        let pipeline_json = serde_json::to_string(&job.pipeline)
-            .map_err(|e| format!("failed to serialize pipeline: {e}"))?;
         let account_ids_json = serde_json::to_string(&job.connection_ids)
             .map_err(|e| format!("failed to serialize connection_ids: {e}"))?;
         let manifest_json = job.manifest.as_ref()
@@ -92,15 +86,14 @@ impl Database {
 
         let conn = self.write().await;
         conn.execute(
-            "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, error = ?5, pipeline = ?6, connection_ids = ?7, script = ?8, rdf_base = ?9, manifest = ?10, catalog_manifest = ?11, catalog_base = ?12
-             WHERE id = ?13 AND organization_id = ?14",
+            "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, error = ?5, connection_ids = ?6, script = ?7, rdf_base = ?8, manifest = ?9, catalog_manifest = ?10, catalog_base = ?11
+             WHERE id = ?12 AND organization_id = ?13",
             params![
                 job.name,
                 job.status,
                 job.started_at,
                 job.completed_at,
                 error_json,
-                pipeline_json,
                 account_ids_json,
                 job.script,
                 job.rdf_base,
@@ -119,7 +112,7 @@ impl Database {
     pub async fn list_jobs(&self, ctx: &TenantScoped<()>) -> Vec<Job> {
         let (_permit, conn) = self.read().await;
         let mut stmt = match conn.prepare(
-            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, pipeline, connection_ids, script, rdf_base, manifest, catalog_manifest, catalog_base
+            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, script, rdf_base, manifest, catalog_manifest, catalog_base
              FROM jobs WHERE organization_id = ?1 ORDER BY created_at DESC",
         ) {
             Ok(s) => s,
@@ -156,10 +149,6 @@ fn row_to_job(row: &rusqlite::Row) -> Job {
     let error_json: Option<String> = row.get("error").unwrap_or_else(|e| {
         tracing::warn!(error = %e, "row_to_job: error column type mismatch");
         None
-    });
-    let pipeline_json: String = row.get("pipeline").unwrap_or_else(|e| {
-        tracing::warn!(error = %e, "row_to_job: pipeline type mismatch, using empty pipeline");
-        r#"{"inputs":[],"operations":[],"outputs":[]}"#.to_string()
     });
     let account_ids_json: String = row.get("connection_ids").unwrap_or_else(|e| {
         tracing::warn!(error = %e, "row_to_job: connection_ids type mismatch, using empty list");
@@ -203,7 +192,6 @@ fn row_to_job(row: &rusqlite::Row) -> Job {
             None
         }),
         error: error_json.and_then(|j| serde_json::from_str::<JobRuntimeError>(&j).ok()),
-        pipeline: serde_json::from_str::<PipelineSummary>(&pipeline_json).unwrap_or_default(),
         dcat_input: None,
         connection_ids: serde_json::from_str::<Vec<String>>(&account_ids_json)
             .unwrap_or_default(),

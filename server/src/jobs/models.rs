@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use crate::graph::dcat::types::DcatInput;
 use fossil_lang::runtime::executor::DataManifest;
 use fossil_run_status::RunStatus;
-use super::pipeline_types::PipelineSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
 #[serde(rename_all = "snake_case")]
@@ -87,7 +86,6 @@ pub struct Job {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<super::errors::JobRuntimeError>,
     pub mode: RunMode,
-    pub pipeline: PipelineSummary,
     #[serde(skip)]
     #[schema(ignore)]
     pub dcat_input: Option<DcatInput>,
@@ -117,7 +115,6 @@ pub struct CreateJobRequest {
     pub script: String,
     pub name: Option<String>,
     pub mode: Option<RunMode>,
-    pub pipeline: Option<PipelineSummary>,
     pub dcat_enabled: Option<bool>,
     #[serde(default)]
     pub connection_ids: Vec<String>,

@@ -7,7 +7,7 @@ import { toastError } from "@/lib/toast-error";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
-import { reverseMapUrl, reverseMapPipeline } from "@/lib/formatters";
+import { reverseMapUrl } from "@/lib/formatters";
 import { isTerminalStatus } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -88,26 +88,14 @@ export function JobDetailView({ id }: { id: string }) {
     return <p className="text-muted-foreground">Job not found.</p>;
   }
 
-  const rawPipeline = job.pipeline;
-  const pipeline = rawPipeline
-    ? reverseMapPipeline(rawPipeline, connections ?? [])
-    : rawPipeline;
-  const hasPipeline =
-    pipeline != null &&
-    (pipeline.inputs.length > 0 || pipeline.outputs.length > 0);
-
   const isCompleted = job.status === "completed";
   const hasCatalog = isCompleted && (!!job.rdf_base || !!job.catalog_manifest);
   const hasManifest = isCompleted && !!job.manifest;
 
-  const rawDests = [
-    ...new Set(
-      (rawPipeline?.outputs ?? [])
-        .map((o) => o.destination)
-        .filter((d): d is string => d != null),
-    ),
-  ];
-  const dests = rawDests.map((d) => reverseMapUrl(d, connections ?? []));
+  // The output location is the GraphAr dataset root the run wrote to
+  // (`rdf_base`); pre-run jobs have none. Per-type files + structure live in
+  // the manifest, surfaced by the discovery view.
+  const dests = job.rdf_base ? [reverseMapUrl(job.rdf_base, connections ?? [])] : [];
 
   return (
     <Tabs value={tab} onValueChange={setTab} className="flex-1 min-h-0">
@@ -136,7 +124,7 @@ export function JobDetailView({ id }: { id: string }) {
       </div>
 
       <TabsContent value="overview" className="gap-4 overflow-auto p-4">
-        <OverviewContent job={job} dests={dests} hasPipeline={hasPipeline} />
+        <OverviewContent job={job} dests={dests} />
       </TabsContent>
 
       <TabsContent value="catalog" className="gap-4 overflow-auto p-4">

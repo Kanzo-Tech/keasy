@@ -50,8 +50,6 @@ use utoipa::OpenApi;
         crate::auth::routes::get_me,
         crate::auth::routes::logout,
         crate::auth::routes::list_workspaces,
-        // Scripts
-        crate::routes::scripts::validate_script,
         // Providers
         crate::routes::providers::list_providers,
         // Admin
@@ -111,14 +109,6 @@ use utoipa::OpenApi;
         fossil_lang::runtime::executor::EdgeManifest,
         fossil_lang::runtime::executor::ColumnStat,
         crate::jobs::errors::JobRuntimeError,
-        crate::jobs::pipeline_types::PipelineSummary,
-        crate::jobs::pipeline_types::PipelineInput,
-        crate::jobs::pipeline_types::PipelineOutput,
-        crate::jobs::pipeline_types::PipelineOperation,
-        crate::jobs::pipeline_types::OperationInput,
-        crate::jobs::pipeline_types::Field,
-        crate::jobs::pipeline_types::FieldMapping,
-        crate::jobs::pipeline_types::ValidationResult,
         // Connections
         crate::connections::models::Connection,
         crate::connections::models::ConnectionKind,
@@ -138,8 +128,6 @@ use utoipa::OpenApi;
         crate::settings::ai::AiSettingsPayload,
         // Organizations
         crate::db::organizations::Organization,
-        // Scripts
-        crate::routes::scripts::ValidateRequest,
         // Invite Tokens
         crate::db::invite_tokens::InviteToken,
         // Dataspaces

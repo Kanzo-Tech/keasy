@@ -1,6 +1,5 @@
 import { AlertCircle } from "lucide-react";
 import { MetaItem } from "@/components/shared/meta-item";
-import { PipelineSection } from "@/components/pipeline-flow/pipeline-section";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getErrorInfo } from "@/lib/error-codes";
@@ -11,7 +10,6 @@ import Link from "next/link";
 interface OverviewContentProps {
   job: Job;
   dests: string[];
-  hasPipeline: boolean;
 }
 
 function JobErrorBlock({ error }: { error: JobError }) {
@@ -44,7 +42,6 @@ function JobErrorBlock({ error }: { error: JobError }) {
 export function OverviewContent({
   job,
   dests,
-  hasPipeline,
 }: OverviewContentProps) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -63,10 +60,6 @@ export function OverviewContent({
         )}
         {dests.length > 0 && <MetaItem label="Destination" value={dests.join(", ")} mono />}
       </div>
-
-      {hasPipeline && job.pipeline && (
-        <PipelineSection pipeline={job.pipeline} className="flex-1 min-h-0 flex flex-col" />
-      )}
 
       {job.error && <JobErrorBlock error={job.error} />}
     </div>

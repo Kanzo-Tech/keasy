@@ -1704,36 +1704,6 @@
         }
       }
     },
-    "/v1/scripts/validate": {
-      "post": {
-        "tags": [
-          "Scripts"
-        ],
-        "operationId": "validate_script",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ValidateRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Validation result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidationResult"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/settings/ai/providers": {
       "get": {
         "tags": [
@@ -2359,6 +2329,20 @@
           "name": {
             "type": "string",
             "description": "Column / predicate local name."
+          },
+          "rdf_uri": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The full RDF predicate IRI this column maps (e.g.\n`https://example.org/name`); `None` when the output has no RDF predicate."
+          },
+          "xsd_datatype": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The XSD datatype IRI of the literal value (e.g.\n`http://www.w3.org/2001/XMLSchema#string`); `None` when not an RDF\nliteral. Part of the output spec the governance layer (DCAT) consumes."
           }
         }
       },
@@ -2752,16 +2736,6 @@
               "null"
             ]
           },
-          "pipeline": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/PipelineSummary"
-              }
-            ]
-          },
           "script": {
             "type": "string"
           }
@@ -2982,51 +2956,6 @@
           }
         }
       },
-      "Field": {
-        "type": "object",
-        "required": [
-          "name",
-          "type"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "optional": {
-            "type": "boolean"
-          },
-          "type": {
-            "type": "string"
-          },
-          "uri": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "xsd_datatype": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "FieldMapping": {
-        "type": "object",
-        "required": [
-          "target",
-          "source"
-        ],
-        "properties": {
-          "source": {
-            "type": "string"
-          },
-          "target": {
-            "type": "string"
-          }
-        }
-      },
       "FieldSchema": {
         "type": "object",
         "required": [
@@ -3204,8 +3133,7 @@
           "id",
           "status",
           "created_at",
-          "mode",
-          "pipeline"
+          "mode"
         ],
         "properties": {
           "catalog_base": {
@@ -3273,9 +3201,6 @@
               "string",
               "null"
             ]
-          },
-          "pipeline": {
-            "$ref": "#/components/schemas/PipelineSummary"
           },
           "rdf_base": {
             "type": [
@@ -3441,23 +3366,6 @@
             ]
           },
           "user_id": {
-            "type": "string"
-          }
-        }
-      },
-      "OperationInput": {
-        "type": "object",
-        "required": [
-          "source"
-        ],
-        "properties": {
-          "key_fields": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "source": {
             "type": "string"
           }
         }
@@ -3661,123 +3569,6 @@
           },
           "updated_at": {
             "type": "string"
-          }
-        }
-      },
-      "PipelineInput": {
-        "type": "object",
-        "required": [
-          "name",
-          "fields"
-        ],
-        "properties": {
-          "fields": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Field"
-            }
-          },
-          "name": {
-            "type": "string"
-          }
-        }
-      },
-      "PipelineOperation": {
-        "type": "object",
-        "required": [
-          "kind",
-          "label",
-          "fields",
-          "inputs"
-        ],
-        "properties": {
-          "fields": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Field"
-            }
-          },
-          "inputs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OperationInput"
-            }
-          },
-          "kind": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          }
-        }
-      },
-      "PipelineOutput": {
-        "type": "object",
-        "required": [
-          "type_name",
-          "fields"
-        ],
-        "properties": {
-          "destination": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "fields": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Field"
-            }
-          },
-          "mappings": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FieldMapping"
-            }
-          },
-          "rdf_type": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "source": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "type_name": {
-            "type": "string"
-          }
-        }
-      },
-      "PipelineSummary": {
-        "type": "object",
-        "required": [
-          "inputs",
-          "operations",
-          "outputs"
-        ],
-        "properties": {
-          "inputs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PipelineInput"
-            }
-          },
-          "operations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PipelineOperation"
-            }
-          },
-          "outputs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PipelineOutput"
-            }
           }
         }
       },
@@ -4265,39 +4056,6 @@
           }
         }
       },
-      "ValidateRequest": {
-        "type": "object",
-        "required": [
-          "script"
-        ],
-        "properties": {
-          "script": {
-            "type": "string"
-          }
-        }
-      },
-      "ValidationResult": {
-        "type": "object",
-        "required": [
-          "valid",
-          "pipeline",
-          "errors"
-        ],
-        "properties": {
-          "errors": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "pipeline": {
-            "$ref": "#/components/schemas/PipelineSummary"
-          },
-          "valid": {
-            "type": "boolean"
-          }
-        }
-      },
       "VertexStatus": {
         "type": "object",
         "description": "One vertex type — its dataset-relative Parquet, row count, and property\ncolumns.",
@@ -4325,6 +4083,13 @@
           "file": {
             "type": "string",
             "description": "Dataset-relative Parquet path, e.g. `vertex/Person.parquet`."
+          },
+          "rdf_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The full RDF type IRI the mapping declares for this vertex (the shape IRI,\ne.g. `https://example.org/Person`); `None` when the output has no RDF\ntype. This is the output *spec* fossil owns — the governance layer (DCAT)\nreads it from the manifest instead of re-deriving it from the program."
           },
           "type": {
             "type": "string",

@@ -623,22 +623,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/scripts/validate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["validate_script"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/settings/ai/providers": {
         parameters: {
             query?: never;
@@ -853,6 +837,17 @@ export interface components {
             data_type: string;
             /** @description Column / predicate local name. */
             name: string;
+            /**
+             * @description The full RDF predicate IRI this column maps (e.g.
+             *     `https://example.org/name`); `None` when the output has no RDF predicate.
+             */
+            rdf_uri?: string | null;
+            /**
+             * @description The XSD datatype IRI of the literal value (e.g.
+             *     `http://www.w3.org/2001/XMLSchema#string`); `None` when not an RDF
+             *     literal. Part of the output spec the governance layer (DCAT) consumes.
+             */
+            xsd_datatype?: string | null;
         };
         CompetencyQuestion: {
             id: string;
@@ -956,7 +951,6 @@ export interface components {
             draft?: boolean;
             mode?: null | components["schemas"]["RunMode"];
             name?: string | null;
-            pipeline?: null | components["schemas"]["PipelineSummary"];
             script: string;
         };
         CreateOrgAndInviteRequest: {
@@ -1028,17 +1022,6 @@ export interface components {
             /** @description Source vertex type. */
             src_type: string;
         };
-        Field: {
-            name: string;
-            optional?: boolean;
-            type: string;
-            uri?: string | null;
-            xsd_datatype?: string | null;
-        };
-        FieldMapping: {
-            source: string;
-            target: string;
-        };
         FieldSchema: {
             default_value?: string | null;
             env_var?: string | null;
@@ -1092,7 +1075,6 @@ export interface components {
             manifest?: null | components["schemas"]["RunStatus"];
             mode: components["schemas"]["RunMode"];
             name?: string | null;
-            pipeline: components["schemas"]["PipelineSummary"];
             /** @description Base URL for RDF Parquet storage (set when job uses Rdf output). */
             rdf_base?: string | null;
             script?: string | null;
@@ -1138,10 +1120,6 @@ export interface components {
             membership_role?: string | null;
             org?: null | components["schemas"]["MeOrg"];
             user_id: string;
-        };
-        OperationInput: {
-            key_fields?: string[];
-            source: string;
         };
         OrgIdentityResponse: {
             country: string;
@@ -1193,29 +1171,6 @@ export interface components {
             role: string;
             slug: string;
             updated_at: string;
-        };
-        PipelineInput: {
-            fields: components["schemas"]["Field"][];
-            name: string;
-        };
-        PipelineOperation: {
-            fields: components["schemas"]["Field"][];
-            inputs: components["schemas"]["OperationInput"][];
-            kind: string;
-            label: string;
-        };
-        PipelineOutput: {
-            destination?: string | null;
-            fields: components["schemas"]["Field"][];
-            mappings?: components["schemas"]["FieldMapping"][];
-            rdf_type?: string | null;
-            source?: string | null;
-            type_name: string;
-        };
-        PipelineSummary: {
-            inputs: components["schemas"]["PipelineInput"][];
-            operations: components["schemas"]["PipelineOperation"][];
-            outputs: components["schemas"]["PipelineOutput"][];
         };
         Preferences: {
             accent_color: string;
@@ -1334,14 +1289,6 @@ export interface components {
             content: string;
             path: string;
         };
-        ValidateRequest: {
-            script: string;
-        };
-        ValidationResult: {
-            errors: string[];
-            pipeline: components["schemas"]["PipelineSummary"];
-            valid: boolean;
-        };
         /**
          * @description One vertex type — its dataset-relative Parquet, row count, and property
          *     columns.
@@ -1356,6 +1303,13 @@ export interface components {
             count?: number | null;
             /** @description Dataset-relative Parquet path, e.g. `vertex/Person.parquet`. */
             file: string;
+            /**
+             * @description The full RDF type IRI the mapping declares for this vertex (the shape IRI,
+             *     e.g. `https://example.org/Person`); `None` when the output has no RDF
+             *     type. This is the output *spec* fossil owns — the governance layer (DCAT)
+             *     reads it from the manifest instead of re-deriving it from the program.
+             */
+            rdf_type?: string | null;
             /** @description The vertex type / `GraphAr` `type` (e.g. `Person`). */
             type: string;
         };
@@ -2949,30 +2903,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProviderEntry"][];
-                };
-            };
-        };
-    };
-    validate_script: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ValidateRequest"];
-            };
-        };
-        responses: {
-            /** @description Validation result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ValidationResult"];
                 };
             };
         };

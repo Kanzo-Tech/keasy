@@ -234,55 +234,40 @@ fn build_explain_prompt() -> String {
 }
 
 /// Build a schema description as a fallback when the frontend hasn't (yet)
-/// sent the live DuckDB-WASM schema. Prefers `job.manifest` (real GraphAr
-/// types + edges from the executed pipeline) over `job.pipeline.outputs`
-/// (declarative job spec that's empty for `Rdf.from_turtle`-style jobs).
+/// sent the live DuckDB-WASM schema, from `job.manifest` (the GraphAr types +
+/// edges the executed pipeline wrote).
 fn build_fallback_schema(job: &crate::jobs::models::Job) -> String {
     use std::fmt::Write;
 
-    if let Some(manifest) = &job.manifest {
-        if !manifest.vertices.is_empty() {
-            let mut out = String::new();
-            for t in &manifest.vertices {
-                let _ = writeln!(
-                    out,
-                    "CREATE TABLE \"{}\" (\n  \"_id\" UBIGINT,\n  \"subject\" VARCHAR,",
-                    t.vertex_type,
-                );
-                for (i, c) in t.columns.iter().enumerate() {
-                    let comma = if i + 1 < t.columns.len() { "," } else { "" };
-                    let _ = writeln!(out, "  \"{}\" {}{}", c.name, sql_type_for(&c.data_type), comma);
-                }
-                let _ = writeln!(out, "); -- rows: {}\n", t.count.unwrap_or(0));
-            }
-            for e in &manifest.edges {
-                let _ = writeln!(
-                    out,
-                    "CREATE TABLE \"{src}_{name}_{dst}\" (\n  \"source\" UBIGINT,\n  \"target\" UBIGINT\n); -- {src} --[{name}]--> {dst} ({count} edges)\n",
-                    src = e.src_type,
-                    name = e.edge_type,
-                    dst = e.dst_type,
-                    count = e.count.unwrap_or(0),
-                );
-            }
-            return out;
-        }
-    }
-
-    // Older typed-pipeline shape (csv → typed records → Rdf.materialize):
-    // describe each declared output as a flat table.
-    let mut out = String::new();
-    if job.pipeline.outputs.is_empty() {
+    let Some(manifest) = &job.manifest else {
+        return "-- No schema available yet. The pipeline produced no manifest.\n".to_string();
+    };
+    if manifest.vertices.is_empty() {
         return "-- No schema available yet. The pipeline produced no manifest.\n".to_string();
     }
-    for output in &job.pipeline.outputs {
-        let _ = writeln!(out, "## Table: {}\n", output.type_name);
-        let _ = writeln!(out, "Columns:");
-        for field in &output.fields {
-            let opt = if field.optional { " (nullable)" } else { "" };
-            let _ = writeln!(out, "- {}: {}{}", field.name, field.field_type, opt);
+
+    let mut out = String::new();
+    for t in &manifest.vertices {
+        let _ = writeln!(
+            out,
+            "CREATE TABLE \"{}\" (\n  \"_id\" UBIGINT,\n  \"subject\" VARCHAR,",
+            t.vertex_type,
+        );
+        for (i, c) in t.columns.iter().enumerate() {
+            let comma = if i + 1 < t.columns.len() { "," } else { "" };
+            let _ = writeln!(out, "  \"{}\" {}{}", c.name, sql_type_for(&c.data_type), comma);
         }
-        let _ = writeln!(out);
+        let _ = writeln!(out, "); -- rows: {}\n", t.count.unwrap_or(0));
+    }
+    for e in &manifest.edges {
+        let _ = writeln!(
+            out,
+            "CREATE TABLE \"{src}_{name}_{dst}\" (\n  \"source\" UBIGINT,\n  \"target\" UBIGINT\n); -- {src} --[{name}]--> {dst} ({count} edges)\n",
+            src = e.src_type,
+            name = e.edge_type,
+            dst = e.dst_type,
+            count = e.count.unwrap_or(0),
+        );
     }
     out
 }

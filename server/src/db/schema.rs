@@ -58,7 +58,6 @@ CREATE TABLE IF NOT EXISTS jobs (
     started_at      TEXT,
     completed_at    TEXT,
     error           TEXT,
-    pipeline        TEXT NOT NULL DEFAULT '{\"inputs\":[],\"operations\":[],\"outputs\":[]}',
     connection_ids  TEXT NOT NULL DEFAULT '[]',
     script          TEXT,
     rdf_base        TEXT,

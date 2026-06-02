@@ -4,7 +4,7 @@
  */
 
 import { create } from "zustand";
-import type { RunMode, ValidationResult, CreationMode } from "@/lib/types";
+import type { RunMode, CreationMode } from "@/lib/types";
 
 interface JobEditorState {
   // Wizard
@@ -17,9 +17,9 @@ interface JobEditorState {
   mode: RunMode;
   dcatEnabled: boolean;
 
-  // Validation
+  // Validation — the editor's browser LSP validates inline; the wizard only
+  // tracks the transient spinner while advancing to review.
   validating: boolean;
-  validation: ValidationResult | null;
 
   // Actions
   setStep: (step: number) => void;
@@ -29,13 +29,12 @@ interface JobEditorState {
   setMode: (mode: RunMode) => void;
   setDcatEnabled: (enabled: boolean) => void;
   setValidating: (validating: boolean) => void;
-  setValidation: (validation: ValidationResult | null) => void;
 
   // Compound actions
   selectMode: (mode: CreationMode) => void;
   goToScript: () => void;
   goToConfig: () => void;
-  goToReview: (validation: ValidationResult) => void;
+  goToReview: () => void;
   goBack: () => void;
   completeAssistant: (generatedScript: string) => void;
   restoreDraft: (script: string, name: string, mode: RunMode) => void;
@@ -50,7 +49,6 @@ export const useJobEditorStore = create<JobEditorState>((set) => ({
   mode: "integrated",
   dcatEnabled: false,
   validating: false,
-  validation: null,
 
   setStep: (step) => set({ step }),
   setCreationMode: (creationMode) => set({ creationMode }),
@@ -59,22 +57,21 @@ export const useJobEditorStore = create<JobEditorState>((set) => ({
   setMode: (mode) => set({ mode }),
   setDcatEnabled: (dcatEnabled) => set({ dcatEnabled }),
   setValidating: (validating) => set({ validating }),
-  setValidation: (validation) => set({ validation }),
 
   selectMode: (mode) => set({ creationMode: mode, step: 1 }),
   goToScript: () => set({ step: 1 }),
   goToConfig: () => set({ step: 2 }),
-  goToReview: (validation) => set({ step: 3, validation }),
+  goToReview: () => set({ step: 3 }),
   goBack: () => set((s) => {
     if (s.step === 1) return { step: 0, creationMode: null };
     if (s.step === 2) return { step: 1 };
-    if (s.step === 3) return { step: 2, validation: null };
+    if (s.step === 3) return { step: 2 };
     return {};
   }),
   completeAssistant: (generatedScript) => set({ script: generatedScript, creationMode: "studio" }),
   restoreDraft: (script, name, mode) => set({ script, name, mode, creationMode: "studio", step: 1 }),
   reset: () => set({
     step: 0, creationMode: null, script: "", name: "",
-    mode: "integrated", dcatEnabled: false, validating: false, validation: null,
+    mode: "integrated", dcatEnabled: false, validating: false,
   }),
 }));

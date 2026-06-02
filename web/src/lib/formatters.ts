@@ -1,4 +1,4 @@
-import type { Job, Connection, PipelineSummary } from "@/lib/types";
+import type { Job, Connection } from "@/lib/types";
 
 export function formatDuration(startIso: string, endIso: string): string {
   const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
@@ -52,18 +52,6 @@ export function reverseMapUrl(url: string, connections: Connection[]): string {
     }
   }
   return url;
-}
-
-/** Apply reverse mapping to all destinations in a pipeline summary. */
-export function reverseMapPipeline(pipeline: PipelineSummary, connections: Connection[]): PipelineSummary {
-  if (connections.length === 0) return pipeline;
-  return {
-    ...pipeline,
-    outputs: pipeline.outputs.map((out) => ({
-      ...out,
-      destination: out.destination ? reverseMapUrl(out.destination, connections) : out.destination,
-    })),
-  };
 }
 
 export function cleanValidationMessage(message: string, node: string): string {

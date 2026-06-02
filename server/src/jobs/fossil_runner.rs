@@ -17,8 +17,9 @@
 //! No `--shape`: the output descriptor is program-resident (the `.fossil`'s
 //! typed mapping synthesises the vertex decomposition; an in-program `shex!()`
 //! refines it). Cloud credentials ride **stdin**, never argv/env — a single JSON
-//! document carrying the dest's `DuckDB` cloud-config and the per-`@conn` source
-//! connection map. `<url>` may be `file://` or a cloud object store (`s3://`,
+//! document carrying the dest's typed cloud secret and the per-`@conn` source
+//! connection map (url + secret). The CLI installs each as a scoped DuckDB
+//! `CREATE SECRET`. `<url>` may be `file://` or a cloud object store (`s3://`,
 //! `az://`, …); the CLI's DuckDB writes both Parquet and the YAML manifests.
 //!
 //! The CLI emits a single structured status object on stdout:
@@ -43,34 +44,56 @@ use serde::Deserialize;
 /// `fossil` on `PATH` when unset.
 const FOSSIL_BIN_ENV: &str = "FOSSIL_BIN";
 
-/// Cloud credentials + source connections piped to `fossil run --creds-stdin`.
-/// Values are [`SecretString`] so they stay off `Debug`/logs; they are exposed
-/// only when serialising to the child's stdin pipe ([`RunCreds::to_stdin_json`]).
+/// Cloud secrets + source connections piped to `fossil run --creds-stdin`.
+/// Secret values are [`SecretString`] so they stay off `Debug`/logs; they are
+/// exposed only when serialising to the child's stdin pipe
+/// ([`RunCreds::to_stdin_json`]).
 #[derive(Debug, Default, Clone)]
 pub struct RunCreds {
-    /// `DuckDB`-spelt cloud config for the `--dest` URL (empty ⇒ local/public).
-    pub dest_config: HashMap<String, SecretString>,
-    /// Per-`@conn-name` source resolution: base URL + read cloud config.
+    /// Cloud secret for the `--dest` URL (`None` ⇒ local/public dest).
+    pub dest: Option<CloudSecret>,
+    /// Per-`@conn-name` source resolution: base URL + read secret.
     pub connections: HashMap<String, ConnectionCreds>,
 }
 
-/// A `.fossil` `@conn-name` source: its base URL plus the read cloud config.
+/// A `.fossil` `@conn-name` source: its base URL plus the read secret.
 #[derive(Debug, Default, Clone)]
 pub struct ConnectionCreds {
     /// Base URL the connection resolves to (e.g. `s3://bucket/prefix`).
     pub url: String,
-    /// `DuckDB`-spelt cloud config keys → secret values.
-    pub config: HashMap<String, SecretString>,
+    /// Cloud secret for reading under `url` (`None` ⇒ public-URL source).
+    pub secret: Option<CloudSecret>,
+}
+
+/// A DuckDB `CREATE SECRET` spec: provider type + parameters. The keasy host
+/// projects a connection's provider + stored credentials into this from its
+/// `ProviderSchema`; the CLI renders it into a scoped `CREATE SECRET`.
+#[derive(Debug, Default, Clone)]
+pub struct CloudSecret {
+    /// DuckDB secret provider — `"s3"`, `"azure"`, `"gcs"`.
+    pub secret_type: String,
+    /// `CREATE SECRET` parameter names (`KEY_ID`, `SECRET`, `REGION`, …) → values.
+    pub params: HashMap<String, SecretString>,
 }
 
 impl RunCreds {
     /// Serialise to the `--creds-stdin` JSON the CLI expects. Secret values are
     /// exposed ONLY here, to be written to the child's stdin pipe — never logged.
     fn to_stdin_json(&self) -> String {
-        fn expose(m: &HashMap<String, SecretString>) -> serde_json::Map<String, serde_json::Value> {
-            m.iter()
-                .map(|(k, v)| (k.clone(), serde_json::Value::String(v.expose_secret().to_owned())))
-                .collect()
+        fn secret_json(s: &Option<CloudSecret>) -> serde_json::Value {
+            match s {
+                Some(cs) => {
+                    let params: serde_json::Map<String, serde_json::Value> = cs
+                        .params
+                        .iter()
+                        .map(|(k, v)| {
+                            (k.clone(), serde_json::Value::String(v.expose_secret().to_owned()))
+                        })
+                        .collect();
+                    serde_json::json!({ "type": cs.secret_type, "params": params })
+                }
+                None => serde_json::Value::Null,
+            }
         }
         let connections: serde_json::Map<String, serde_json::Value> = self
             .connections
@@ -78,12 +101,12 @@ impl RunCreds {
             .map(|(name, c)| {
                 (
                     name.clone(),
-                    serde_json::json!({ "url": c.url, "config": expose(&c.config) }),
+                    serde_json::json!({ "url": c.url, "secret": secret_json(&c.secret) }),
                 )
             })
             .collect();
         serde_json::json!({
-            "dest": { "config": expose(&self.dest_config) },
+            "dest": { "secret": secret_json(&self.dest) },
             "connections": connections,
         })
         .to_string()
@@ -300,44 +323,54 @@ mod tests {
         );
     }
 
+    fn s3_secret(pairs: &[(&str, &str)]) -> CloudSecret {
+        CloudSecret {
+            secret_type: "s3".to_string(),
+            params: pairs
+                .iter()
+                .map(|(k, v)| ((*k).to_string(), SecretString::from(*v)))
+                .collect(),
+        }
+    }
+
     #[test]
     fn creds_serialise_to_the_stdin_contract() {
-        let mut dest_config = HashMap::new();
-        dest_config.insert("s3_region".to_string(), SecretString::from("eu-west-1"));
-        let mut conn_config = HashMap::new();
-        conn_config.insert(
-            "s3_access_key_id".to_string(),
-            SecretString::from("AKIA"),
-        );
         let mut connections = HashMap::new();
         connections.insert(
             "sales".to_string(),
             ConnectionCreds {
                 url: "s3://bucket/prefix".to_string(),
-                config: conn_config,
+                secret: Some(s3_secret(&[("KEY_ID", "AKIA")])),
             },
         );
         let creds = RunCreds {
-            dest_config,
+            dest: Some(s3_secret(&[("REGION", "eu-west-1")])),
             connections,
         };
 
         let json: serde_json::Value =
             serde_json::from_str(&creds.to_stdin_json()).expect("valid JSON");
-        assert_eq!(json["dest"]["config"]["s3_region"], "eu-west-1");
+        assert_eq!(json["dest"]["secret"]["type"], "s3");
+        assert_eq!(json["dest"]["secret"]["params"]["REGION"], "eu-west-1");
         assert_eq!(json["connections"]["sales"]["url"], "s3://bucket/prefix");
         assert_eq!(
-            json["connections"]["sales"]["config"]["s3_access_key_id"],
+            json["connections"]["sales"]["secret"]["params"]["KEY_ID"],
             "AKIA"
         );
     }
 
     #[test]
+    fn no_secret_serialises_as_null() {
+        let creds = RunCreds::default();
+        let json: serde_json::Value =
+            serde_json::from_str(&creds.to_stdin_json()).expect("valid JSON");
+        assert!(json["dest"]["secret"].is_null());
+    }
+
+    #[test]
     fn secrets_never_appear_in_debug() {
-        let mut dest_config = HashMap::new();
-        dest_config.insert("k".to_string(), SecretString::from("leaky-value"));
         let creds = RunCreds {
-            dest_config,
+            dest: Some(s3_secret(&[("SECRET", "leaky-value")])),
             connections: HashMap::new(),
         };
         assert!(

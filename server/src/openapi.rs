@@ -93,8 +93,6 @@ use utoipa::OpenApi;
         crate::jobs::routes::save_dashboard_layout,
         // Auth (additional)
         crate::auth::routes::get_invite_info,
-        // Fossil LSP (JSON-RPC adapter for @fossil-lang/editor's HttpTransport)
-        crate::routes::fossil_lsp::lsp,
     ),
     components(schemas(
         crate::error::DataResponse<serde_json::Value>,
@@ -205,9 +203,6 @@ use utoipa::OpenApi;
         crate::settings::schema::ProviderSchema,
         crate::settings::schema::FieldSchema,
         crate::settings::schema::AuthMethodSchema,
-        // Fossil LSP types
-        fossil_lsp::CompletionItem,
-        fossil_lsp::DiagnosticItem,
     ))
 )]
 pub struct ApiDoc;

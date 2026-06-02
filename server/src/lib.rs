@@ -28,32 +28,8 @@ pub use db::Database;
 pub use jobs::runner::JobRunner;
 
 use secrecy::SecretString;
-use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
-
-/// Hash a string using the default hasher (for cache keys, not cryptography).
-pub fn hash_str(s: &str) -> u64 {
-    use std::hash::{Hash, Hasher};
-    let mut h = std::collections::hash_map::DefaultHasher::new();
-    s.hash(&mut h);
-    h.finish()
-}
-
-/// Per-org fossil analysis state: compilation host cache + per-doc text cache.
-/// Stored in a single LRU so eviction is consistent.
-///
-/// The `docs` cache holds the latest full text per `textDocument.uri`. Used by
-/// the JSON-RPC LSP route (`routes::fossil_lsp`): didOpen/didChange WRITE to
-/// `docs`, then completion/hover READ from it.
-///
-/// Locking discipline: take the `docs` lock briefly (insert-and-drop or
-/// get-cloned-and-drop) so it never overlaps the `host` lock — prevents a
-/// deadlock if two dispatches race on the same org.
-pub struct OrgAnalysisState {
-    pub host: Arc<Mutex<fossil_lsp::AnalysisHost>>,
-    pub docs: Arc<Mutex<HashMap<String, String>>>,
-}
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -63,8 +39,6 @@ pub struct AppState {
     pub base_url: String,
     pub auth: AuthServices,
     pub gaia_x: GaiaXServices,
-    /// Per-org fossil analysis state (compilation host + resolve cache).
-    pub org_analysis: Arc<Mutex<lru::LruCache<String, OrgAnalysisState>>>,
 }
 
 /// Authentication and identity services (Keycloak / OIDC).

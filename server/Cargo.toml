@@ -30,7 +30,6 @@ tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 object_store = { version = "0.12", features = ["aws", "gcp", "azure"] }
 futures = "0.3"
 tokio-stream = { version = "0.1", features = ["sync"] }
-lru = "0.12"
 url = "2"
 regex = "1"
 aes-gcm = "0.10"
@@ -50,7 +49,6 @@ polars = { version = "0.52", features = ["cloud", "aws", "azure", "gcp", "round_
 fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider", features = ["utoipa"] }
 fossil-stdlib = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider" }
 fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider" }
-fossil-lsp = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider", features = ["utoipa"] }
 # W0e subprocess: the `fossil run --output-json` wire contract, reused verbatim
 # (one source of truth — FossilRunner deserialises this exact struct). Path dep
 # while rmlext is a sibling local checkout; → git dep once rmlext is published.

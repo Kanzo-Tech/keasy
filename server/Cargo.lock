@@ -1537,17 +1537,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fossil-lsp"
-version = "0.0.1"
-source = "git+https://github.com/angelip2303/fossil-lang.git?branch=feat%2Fturtle-provider#aa20c258302e764d3101f584d0f114d402a6222b"
-dependencies = [
- "fossil-lang",
- "miette",
- "serde",
- "utoipa",
-]
-
-[[package]]
 name = "fossil-macros"
 version = "0.0.1"
 source = "git+https://github.com/angelip2303/fossil-lang.git?branch=feat%2Fturtle-provider#aa20c258302e764d3101f584d0f114d402a6222b"
@@ -2360,7 +2349,6 @@ dependencies = [
  "base64 0.22.1",
  "csv",
  "fossil-lang",
- "fossil-lsp",
  "fossil-providers",
  "fossil-run-status",
  "fossil-stdlib",
@@ -2370,7 +2358,6 @@ dependencies = [
  "http",
  "http-body-util",
  "jiff",
- "lru",
  "oauth2",
  "object_store",
  "openidconnect",
@@ -2596,15 +2583,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "605d9697bcd5ef3a42d38efc51541aa3d6a4a25f7ab6d1ed0da5ac632a26b470"
 dependencies = [
  "logos-codegen",
-]
-
-[[package]]
-name = "lru"
-version = "0.12.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "234cf4f4a04dc1f57e24b96cc0cd600cf2af460d4161ac5ecdd0af8e1f3b2a38"
-dependencies = [
- "hashbrown 0.15.5",
 ]
 
 [[package]]

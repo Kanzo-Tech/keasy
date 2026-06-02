@@ -367,22 +367,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/fossil/lsp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["lsp"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/gaia-x/compliance": {
         parameters: {
             query?: never;
@@ -875,11 +859,6 @@ export interface components {
             question: string;
             rationale: string;
         };
-        CompletionItem: {
-            detail: string;
-            kind: string;
-            label: string;
-        };
         ComplianceCredential: {
             issued_at: string;
             name: string;
@@ -1014,12 +993,6 @@ export interface components {
             updated_at: string;
             url: string;
         };
-        DiagnosticItem: {
-            from: number;
-            message: string;
-            severity: string;
-            to: number;
-        };
         /** @description Manifest for an edge type (GraphAr v1 ordered adjacency lists). */
         EdgeManifest: {
             /** @description CSR-ordered edge parquet (ordered by source vertex). */
@@ -1146,31 +1119,6 @@ export interface components {
         };
         /** @enum {string} */
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
-        JsonRpcError: {
-            /** Format: int32 */
-            code: number;
-            message: string;
-        };
-        JsonRpcRequest: {
-            /** @description None = JSON-RPC notification; Some = request expecting a response. */
-            id?: unknown;
-            jsonrpc: string;
-            method: string;
-            params?: unknown;
-        };
-        JsonRpcResponse: {
-            error?: null | components["schemas"]["JsonRpcError"];
-            id?: unknown;
-            jsonrpc: string;
-            /**
-             * @description Server-pushed notification piggy-backed in a response body.
-             *     Present only when the request was a notification that produced
-             *     a server-side push (e.g., `didChange` → `publishDiagnostics`).
-             */
-            method?: string | null;
-            params?: unknown;
-            result?: unknown;
-        };
         /** @enum {string} */
         LocationType: "cloud" | "local";
         /** @description POST /v1/auth/logout */
@@ -2335,30 +2283,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    lsp: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["JsonRpcRequest"];
-            };
-        };
-        responses: {
-            /** @description JSON-RPC response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["JsonRpcResponse"];
-                };
             };
         };
     };

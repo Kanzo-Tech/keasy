@@ -973,36 +973,6 @@
         }
       }
     },
-    "/v1/fossil/lsp": {
-      "post": {
-        "tags": [
-          "Fossil"
-        ],
-        "operationId": "lsp",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/JsonRpcRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "JSON-RPC response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/gaia-x/compliance": {
       "get": {
         "tags": [
@@ -2415,25 +2385,6 @@
           }
         }
       },
-      "CompletionItem": {
-        "type": "object",
-        "required": [
-          "label",
-          "kind",
-          "detail"
-        ],
-        "properties": {
-          "detail": {
-            "type": "string"
-          },
-          "kind": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          }
-        }
-      },
       "ComplianceCredential": {
         "type": "object",
         "required": [
@@ -2950,31 +2901,6 @@
           }
         }
       },
-      "DiagnosticItem": {
-        "type": "object",
-        "required": [
-          "from",
-          "to",
-          "severity",
-          "message"
-        ],
-        "properties": {
-          "from": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "message": {
-            "type": "string"
-          },
-          "severity": {
-            "type": "string"
-          },
-          "to": {
-            "type": "integer",
-            "minimum": 0
-          }
-        }
-      },
       "EdgeManifest": {
         "type": "object",
         "description": "Manifest for an edge type (GraphAr v1 ordered adjacency lists).",
@@ -3441,72 +3367,6 @@
           "failed",
           "cancelled"
         ]
-      },
-      "JsonRpcError": {
-        "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      },
-      "JsonRpcRequest": {
-        "type": "object",
-        "required": [
-          "jsonrpc",
-          "method"
-        ],
-        "properties": {
-          "id": {
-            "description": "None = JSON-RPC notification; Some = request expecting a response."
-          },
-          "jsonrpc": {
-            "type": "string"
-          },
-          "method": {
-            "type": "string"
-          },
-          "params": {}
-        }
-      },
-      "JsonRpcResponse": {
-        "type": "object",
-        "required": [
-          "jsonrpc"
-        ],
-        "properties": {
-          "error": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/JsonRpcError"
-              }
-            ]
-          },
-          "id": {},
-          "jsonrpc": {
-            "type": "string"
-          },
-          "method": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Server-pushed notification piggy-backed in a response body.\nPresent only when the request was a notification that produced\na server-side push (e.g., `didChange` → `publishDiagnostics`)."
-          },
-          "params": {},
-          "result": {}
-        }
       },
       "LocationType": {
         "type": "string",

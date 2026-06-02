@@ -86,8 +86,6 @@ pub enum JobApiError {
     NotDraft,
     #[error("invalid format: {0}")]
     InvalidFormat(String),
-    #[error("script rewrite failed: {0}")]
-    RewriteFailed(String),
     #[error("cannot delete a running job")]
     StillRunning,
     #[error("no catalog available for this job")]
@@ -114,11 +112,6 @@ impl JobApiError {
             JobApiError::InvalidFormat(msg) => (
                 axum::http::StatusCode::BAD_REQUEST,
                 "invalid_format",
-                msg.clone(),
-            ),
-            JobApiError::RewriteFailed(msg) => (
-                axum::http::StatusCode::BAD_REQUEST,
-                "rewrite_error",
                 msg.clone(),
             ),
             JobApiError::StillRunning => (

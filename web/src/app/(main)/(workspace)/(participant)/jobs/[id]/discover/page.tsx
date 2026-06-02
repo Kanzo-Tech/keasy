@@ -5,10 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Selection } from "@uwdata/mosaic-core";
 import { BarChart3, Info, Loader2, MessageCircle, Settings2, ShieldCheck } from "lucide-react";
 import { queryKeys } from "@/lib/query-keys";
-import { buildGraphSchema } from "@/lib/graph-schema";
 import { WorkspaceLayout, type PanelDef } from "@/components/layout/workspace-layout";
 import { DiscoveryProvider } from "@/components/discovery/store";
 import { useCoordinator } from "@/components/discovery/use-discovery-store";
+import { useGraphSchema } from "@/components/discovery/use-graph-schema";
 import { GraphCanvas, DEFAULT_GRAPH_CONFIG, type CosmosGraphHandle } from "@fossil-lang/viewer";
 import { useGraphDataRows } from "@/components/discovery/use-graph-data-rows";
 import { NodeInfo } from "@/components/discovery/node-info";
@@ -18,7 +18,7 @@ import { RuleBuilder } from "@/components/discovery/rule-builder";
 import { AnalysisPanel } from "@/components/discovery/analysis-panel";
 import { FloatingControls } from "@/components/discovery/floating-controls";
 import type { GraphConfigInterface } from "@cosmos.gl/graph";
-import type { DataManifest } from "@/lib/types";
+import type { RunStatus } from "@/lib/types";
 import { api } from "@/lib/api";
 
 // ── URL resolution ───────────────────────────────────────────────────────
@@ -67,9 +67,9 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
 
 // ── Workspace ────────────────────────────────────────────────────────────
 
-function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: DataManifest }) {
+function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: RunStatus }) {
   const coordinator = useCoordinator();
-  const kgSchema = useMemo(() => buildGraphSchema(manifest), [manifest]);
+  const kgSchema = useGraphSchema(manifest);
   const graphRef = useRef<CosmosGraphHandle>(null);
   const [selectedVertex, setSelectedVertex] = useState<{ id: string; type: string; label: string } | null>(null);
   const [graphConfig, setGraphConfig] = useState<GraphConfigInterface>(DEFAULT_GRAPH_CONFIG);

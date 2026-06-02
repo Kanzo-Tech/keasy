@@ -4,37 +4,44 @@ import {
   isNumericType,
   fieldKey,
   buildGraphSchema,
+  type ColumnStatsMap,
 } from "@/lib/graph-schema";
-import type { DataManifest } from "@/lib/types";
+import type { RunStatus } from "@/lib/types";
 
 // ── Test fixtures ───────────────────────────────────────────────────────
 
-const manifest: DataManifest = {
-  types: [
+const manifest: RunStatus = {
+  dest: "",
+  vertices: [
     {
-      name: "person",
-      iri: "urn:Person",
-      vertex_file: "person.parquet",
-      entity_count: 100,
+      type: "person",
+      file: "person.parquet",
+      count: 100,
       columns: [
-        { name: "subject", iri: "urn:subject", datatype: "VARCHAR", count: 100, n_unique: 100, min: null, max: null },
-        { name: "age", iri: "urn:age", datatype: "DOUBLE", count: 100, n_unique: 50, min: "18", max: "90" },
-        { name: "dept", iri: "urn:dept", datatype: "VARCHAR", count: 100, n_unique: 5, min: null, max: null, samples: ["Engineering", "Sales"] },
+        { name: "subject", data_type: "VARCHAR" },
+        { name: "age", data_type: "DOUBLE" },
+        { name: "dept", data_type: "VARCHAR" },
       ],
     },
     {
-      name: "org",
-      iri: "urn:Org",
-      vertex_file: "org.parquet",
-      entity_count: 20,
+      type: "org",
+      file: "org.parquet",
+      count: 20,
       columns: [
-        { name: "subject", iri: "urn:subject", datatype: "VARCHAR", count: 20, n_unique: 20, min: null, max: null },
-        { name: "revenue", iri: "urn:revenue", datatype: "BIGINT", count: 20, n_unique: 18, min: "1000", max: "999999" },
+        { name: "subject", data_type: "VARCHAR" },
+        { name: "revenue", data_type: "BIGINT" },
       ],
     },
   ],
   edges: [
-    { source_type: "person", name: "works_at", target_type: "org", count: 100, by_source: "e.parquet", by_target: "e_t.parquet", iri: "urn:works_at" },
+    {
+      edge_type: "works_at",
+      src_type: "person",
+      dst_type: "org",
+      by_source: "e.parquet",
+      by_target: "e_t.parquet",
+      count: 100,
+    },
   ],
 };
 
@@ -79,6 +86,7 @@ describe("buildGraphSchema", () => {
   it("creates vertex types from manifest", () => {
     expect(schema.types).toHaveLength(2);
     expect(schema.types[0].name).toBe("person");
+    expect(schema.types[0].entityCount).toBe(100);
     expect(schema.types[1].name).toBe("org");
   });
 
@@ -102,6 +110,20 @@ describe("buildGraphSchema", () => {
     const keys = schema.allFields.map((f) => f.key);
     expect(new Set(keys).size).toBe(keys.length);
   });
+
+  it("without stats, infers role from name + type only", () => {
+    expect(schema.field("person::dept")?.role).toBe("dimension");
+    expect(schema.field("person::dept")?.distinct).toBeUndefined();
+  });
+
+  it("refines role with browser-computed cardinality", () => {
+    const stats: ColumnStatsMap = new Map([
+      ["person::dept", { distinct: 95, count: 100 }],
+    ]);
+    const enriched = buildGraphSchema(manifest, stats);
+    expect(enriched.field("person::dept")?.role).toBe("identifier");
+    expect(enriched.field("person::dept")?.distinct).toBe(95);
+  });
 });
 
 describe("buildSource", () => {
@@ -124,15 +146,13 @@ describe("buildSource", () => {
   });
 
   it("no connection → fallback to first type", () => {
-    const noEdgeManifest: DataManifest = {
-      types: [
-        { name: "a", iri: "", vertex_file: "", entity_count: 0, columns: [
-          { name: "x", iri: "", datatype: "VARCHAR", count: 0, n_unique: 0, min: null, max: null },
-        ] },
-        { name: "b", iri: "", vertex_file: "", entity_count: 0, columns: [
-          { name: "y", iri: "", datatype: "VARCHAR", count: 0, n_unique: 0, min: null, max: null },
-        ] },
+    const noEdgeManifest: RunStatus = {
+      dest: "",
+      vertices: [
+        { type: "a", file: "", count: 0, columns: [{ name: "x", data_type: "VARCHAR" }] },
+        { type: "b", file: "", count: 0, columns: [{ name: "y", data_type: "VARCHAR" }] },
       ],
+      edges: [],
     };
     const s = buildGraphSchema(noEdgeManifest);
     const source = s.buildSource([s.field("a::x")!, s.field("b::y")!]);

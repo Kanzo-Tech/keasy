@@ -68,22 +68,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/admin/catalog/graph": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_federated_catalog_graph"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/admin/invites": {
         parameters: {
             query?: never;
@@ -148,7 +132,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/assistant/generate": {
+    "/v1/assistant/generate-stream": {
         parameters: {
             query?: never;
             header?: never;
@@ -157,14 +141,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["generate_script"];
+        post: operations["generate_script_stream"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/assistant/suggest": {
+    "/v1/assistant/suggest-stream": {
         parameters: {
             query?: never;
             header?: never;
@@ -173,7 +157,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["suggest_cqs"];
+        post: operations["suggest_cqs_stream"];
         delete?: never;
         options?: never;
         head?: never;
@@ -247,22 +231,6 @@ export interface paths {
          *     the dataspaces table. Used by the sidebar instance switcher.
          */
         get: operations["list_workspaces"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/catalog/graph": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_org_catalog_graph"];
         put?: never;
         post?: never;
         delete?: never;
@@ -399,7 +367,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/fossil/analyze": {
+    "/v1/fossil/lsp": {
         parameters: {
             query?: never;
             header?: never;
@@ -408,7 +376,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["analyze"];
+        post: operations["lsp"];
         delete?: never;
         options?: never;
         head?: never;
@@ -551,22 +519,6 @@ export interface paths {
             cookie?: never;
         };
         get: operations["resolve_discover_urls"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/graph": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_job_graph"];
         put?: never;
         post?: never;
         delete?: never;
@@ -735,6 +687,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/settings/catalog-storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_catalog_storage"];
+        put: operations["save_catalog_storage"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/settings/organization": {
         parameters: {
             query?: never;
@@ -824,14 +792,6 @@ export interface components {
             model?: string | null;
             provider: string;
         };
-        AnalyzeRequest: {
-            cursor_offset: number;
-            script: string;
-        };
-        AnalyzeResponse: {
-            completions: components["schemas"]["CompletionItem"][];
-            diagnostics: components["schemas"]["DiagnosticItem"][];
-        };
         AskRequest: {
             conversation_id?: string | null;
             /**
@@ -870,6 +830,10 @@ export interface components {
         CatalogResponse: {
             catalog: string;
         };
+        CatalogStoragePayload: {
+            base_url: string;
+            cloud_account_id: string;
+        };
         CloudAccountSummary: {
             auth_method?: string | null;
             fields: {
@@ -898,6 +862,13 @@ export interface components {
             /** @description Short label used as Parquet column name. */
             name: string;
             samples?: string[];
+        };
+        /** @description A property column of a [`VertexStatus`]. */
+        ColumnStatus: {
+            /** @description `GraphAr` data-type spelling (`string`, `int64`, `double`, …). */
+            data_type: string;
+            /** @description Column / predicate local name. */
+            name: string;
         };
         CompetencyQuestion: {
             id: string;
@@ -974,6 +945,7 @@ export interface components {
             conversation_id: string;
             created_at: string;
             data?: null | components["schemas"]["TabularData"];
+            explanation?: string | null;
             id: string;
             role: string;
             sql?: string | null;
@@ -1065,6 +1037,24 @@ export interface components {
             /** @description Target vertex type name. */
             target_type: string;
         };
+        /** @description One edge type — its CSR/CSC Parquet pair and endpoints. */
+        EdgeStatus: {
+            /** @description CSR-ordered (`by_source`) Parquet, dataset-relative. */
+            by_source: string;
+            /** @description CSC-ordered (`by_target`) Parquet, dataset-relative. */
+            by_target: string;
+            /**
+             * Format: int64
+             * @description Edge count (Parquet footer metadata); `None` if the count query failed.
+             */
+            count?: number | null;
+            /** @description Destination vertex type. */
+            dst_type: string;
+            /** @description The edge type / predicate local name. */
+            edge_type: string;
+            /** @description Source vertex type. */
+            src_type: string;
+        };
         Field: {
             name: string;
             optional?: boolean;
@@ -1106,23 +1096,6 @@ export interface components {
         GenerateResponse: {
             script: string;
         };
-        GraphData: {
-            links: components["schemas"]["GraphLink"][];
-            nodes: components["schemas"]["GraphNode"][];
-        };
-        GraphLink: {
-            label: string;
-            source: string;
-            target: string;
-        };
-        GraphNode: {
-            group: string;
-            id: string;
-            label: string;
-            properties?: {
-                [key: string]: string;
-            };
-        };
         InviteInfoResponse: {
             valid: boolean;
         };
@@ -1135,21 +1108,20 @@ export interface components {
             token: string;
         };
         Job: {
+            /** @description Base URL for catalog parquets in promotor storage. */
+            catalog_base?: string | null;
+            catalog_manifest?: null | components["schemas"]["DataManifest"];
             completed_at?: string | null;
             connection_ids?: string[];
             created_at: string;
             error?: null | components["schemas"]["JobRuntimeError"];
             id: string;
-            manifest?: null | components["schemas"]["DataManifest"];
+            manifest?: null | components["schemas"]["RunStatus"];
             mode: components["schemas"]["RunMode"];
             name?: string | null;
             pipeline: components["schemas"]["PipelineSummary"];
             /** @description Base URL for RDF Parquet storage (set when job uses Rdf output). */
             rdf_base?: string | null;
-            /** @description DCAT-AP catalog manifest (parquets in promotor storage). */
-            catalog_manifest?: null | components["schemas"]["DataManifest"];
-            /** @description Base URL for catalog parquets in promotor storage. */
-            catalog_base?: string | null;
             script?: string | null;
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
@@ -1174,6 +1146,31 @@ export interface components {
         };
         /** @enum {string} */
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
+        JsonRpcError: {
+            /** Format: int32 */
+            code: number;
+            message: string;
+        };
+        JsonRpcRequest: {
+            /** @description None = JSON-RPC notification; Some = request expecting a response. */
+            id?: unknown;
+            jsonrpc: string;
+            method: string;
+            params?: unknown;
+        };
+        JsonRpcResponse: {
+            error?: null | components["schemas"]["JsonRpcError"];
+            id?: unknown;
+            jsonrpc: string;
+            /**
+             * @description Server-pushed notification piggy-backed in a response body.
+             *     Present only when the request was a notification that produced
+             *     a server-side push (e.g., `didChange` → `publishDiagnostics`).
+             */
+            method?: string | null;
+            params?: unknown;
+            result?: unknown;
+        };
         /** @enum {string} */
         LocationType: "cloud" | "local";
         /** @description POST /v1/auth/logout */
@@ -1226,6 +1223,10 @@ export interface components {
             user_id: string;
         };
         OrgSettings: {
+            /** @description Base URL for catalog parquet storage (e.g. s3://promotor/catalogs/). */
+            catalog_base_url?: string | null;
+            /** @description Cloud account ID for catalog parquet storage (set by promotor). */
+            catalog_cloud_account_id?: string | null;
             catalog_description?: string | null;
             contact_email?: string | null;
             license_uri?: string | null;
@@ -1306,18 +1307,20 @@ export interface components {
             title: string;
         };
         ResolveResponse: {
-            /** @description Map of logical file name → signed URL for direct cloud access. */
             files: {
                 [key: string]: string;
             };
         };
         /** @enum {string} */
         RunMode: "integrated" | "scheduled";
-        SearchResult: {
-            description?: string | null;
-            group: string;
-            id: string;
-            label: string;
+        /** @description The status object `fossil run --output-json` writes to stdout. */
+        RunStatus: {
+            /** @description Destination URL the `GraphAr` dataset was written under (echoes `--dest`). */
+            dest: string;
+            /** @description One entry per emitted edge type (empty until a shape/Phase-B adds edges). */
+            edges: components["schemas"]["EdgeStatus"][];
+            /** @description One entry per emitted vertex type. */
+            vertices: components["schemas"]["VertexStatus"][];
         };
         ServiceStatusResponse: {
             base_domain?: string | null;
@@ -1390,6 +1393,23 @@ export interface components {
             errors: string[];
             pipeline: components["schemas"]["PipelineSummary"];
             valid: boolean;
+        };
+        /**
+         * @description One vertex type — its dataset-relative Parquet, row count, and property
+         *     columns.
+         */
+        VertexStatus: {
+            /** @description The vertex's property columns. */
+            columns: components["schemas"]["ColumnStatus"][];
+            /**
+             * Format: int64
+             * @description Row count (Parquet footer metadata); `None` if the count query failed.
+             */
+            count?: number | null;
+            /** @description Dataset-relative Parquet path, e.g. `vertex/Person.parquet`. */
+            file: string;
+            /** @description The vertex type / `GraphAr` `type` (e.g. `Person`). */
+            type: string;
         };
         Workspace: {
             client_id: string;
@@ -1505,26 +1525,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    get_federated_catalog_graph: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Federated catalog graph (all organizations) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GraphData"];
-                };
             };
         };
     };
@@ -1709,7 +1709,7 @@ export interface operations {
             };
         };
     };
-    generate_script: {
+    generate_script_stream: {
         parameters: {
             query?: never;
             header?: never;
@@ -1722,14 +1722,12 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Generated Fossil script */
+            /** @description SSE stream: delta events + complete with GenerateResponse */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["GenerateResponse"];
-                };
+                content?: never;
             };
             /** @description AI provider not configured */
             400: {
@@ -1740,7 +1738,7 @@ export interface operations {
             };
         };
     };
-    suggest_cqs: {
+    suggest_cqs_stream: {
         parameters: {
             query?: never;
             header?: never;
@@ -1753,14 +1751,12 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Suggested competency questions */
+            /** @description SSE stream: delta events + complete with SuggestResponse */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["SuggestResponse"];
-                };
+                content?: never;
             };
             /** @description AI provider not configured */
             400: {
@@ -1857,26 +1853,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkspacesResponse"];
-                };
-            };
-        };
-    };
-    get_org_catalog_graph: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Organization catalog graph */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GraphData"];
                 };
             };
         };
@@ -2362,7 +2338,7 @@ export interface operations {
             };
         };
     };
-    analyze: {
+    lsp: {
         parameters: {
             query?: never;
             header?: never;
@@ -2371,17 +2347,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AnalyzeRequest"];
+                "application/json": components["schemas"]["JsonRpcRequest"];
             };
         };
         responses: {
-            /** @description Analysis result */
+            /** @description JSON-RPC response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AnalyzeResponse"];
+                    "application/json": components["schemas"]["JsonRpcResponse"];
                 };
             };
         };
@@ -2608,14 +2584,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description DCAT catalog (N-Triples) */
+            /** @description DCAT-AP catalog as Turtle (download) */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["CatalogResponse"];
-                };
+                content?: never;
             };
             /** @description Job or catalog not found */
             404: {
@@ -2780,36 +2754,6 @@ export interface operations {
                 };
             };
             /** @description Job not found or no output */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_job_graph: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Job knowledge graph */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GraphData"];
-                };
-            };
-            /** @description Job not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -3183,6 +3127,64 @@ export interface operations {
                 content?: never;
             };
             /** @description Unknown provider */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_catalog_storage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Catalog storage config */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogStoragePayload"];
+                };
+            };
+            /** @description Not configured */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    save_catalog_storage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogStoragePayload"];
+            };
+        };
+        responses: {
+            /** @description Catalog storage saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogStoragePayload"];
+                };
+            };
+            /** @description Validation error */
             400: {
                 headers: {
                     [name: string]: unknown;

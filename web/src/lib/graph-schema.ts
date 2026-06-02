@@ -1,4 +1,6 @@
-import type { DataManifest } from "@/lib/types";
+import type { Coordinator } from "@uwdata/mosaic-core";
+
+import type { DataManifest, RunStatus } from "@/lib/types";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -16,15 +18,13 @@ export interface FieldInfo {
   role: FieldRole;
   /** Vertex type this field belongs to */
   sourceType: string;
-  iri: string;
+  /** Cardinality from browser-side DuckDB-WASM profiling (absent until computed). */
   distinct?: number;
   count?: number;
-  samples?: string[];
 }
 
 export interface VertexType {
   name: string;
-  iri: string;
   entityCount: number;
   fields: FieldInfo[];
 }
@@ -103,36 +103,84 @@ export function fieldKey(sourceType: string, name: string): string {
   return `${sourceType}::${name}`;
 }
 
-export function edgeTableName(edge: { source_type: string; name: string; target_type: string }): string {
-  return `${edge.source_type}_${edge.name}_${edge.target_type}`;
+export function edgeTableName(sourceType: string, name: string, targetType: string): string {
+  return `${sourceType}_${name}_${targetType}`;
+}
+
+// ── Browser-side column statistics ───────────────────────────────────────
+
+/** Per-field cardinality, keyed by `FieldInfo.key`. */
+export type ColumnStatsMap = Map<string, { distinct: number; count: number }>;
+
+function quoteIdent(name: string): string {
+  return `"${name.replace(/"/g, '""')}"`;
+}
+
+/**
+ * Profile each vertex view in DuckDB-WASM: row count + per-column distinct
+ * count, in one query per type. RunStatus carries no statistics (host-boundary:
+ * the server ships structure, the browser owns stats) — this is where the
+ * browser fills that in.
+ */
+export async function computeColumnStats(
+  coordinator: Coordinator,
+  schema: GraphSchema,
+): Promise<ColumnStatsMap> {
+  const out: ColumnStatsMap = new Map();
+  await Promise.all(
+    schema.types.map(async (t) => {
+      if (t.fields.length === 0) return;
+      const selects = [
+        "COUNT(*) AS n",
+        ...t.fields.map((f, i) => `COUNT(DISTINCT ${quoteIdent(f.name)}) AS d${i}`),
+      ];
+      const sql = `SELECT ${selects.join(", ")} FROM ${quoteIdent(t.name)}`;
+      const rows = (await coordinator.query(sql, { type: "json" })) as
+        | Array<Record<string, number>>
+        | undefined;
+      const row = rows?.[0];
+      if (!row) return;
+      const count = Number(row.n ?? 0);
+      t.fields.forEach((f, i) => {
+        out.set(f.key, { count, distinct: Number(row[`d${i}`] ?? 0) });
+      });
+    }),
+  );
+  return out;
 }
 
 // ── Build schema from manifest ──────────────────────────────────────────
 
-export function buildGraphSchema(manifest: DataManifest): GraphSchema {
-  const types: VertexType[] = manifest.types.map((t) => ({
-    name: t.name,
-    iri: t.iri,
-    entityCount: t.entity_count,
-    fields: t.columns.map((c) => ({
-      key: fieldKey(t.name, c.name),
-      name: c.name,
-      type: c.datatype,
-      role: inferRole(c.name, c.datatype, c.n_unique, c.count),
-      sourceType: t.name,
-      iri: c.iri,
-      distinct: c.n_unique,
-      count: c.count,
-      samples: c.samples ?? [],
-    })),
+/**
+ * Build the graph schema from the subprocess `RunStatus`. Pass `stats` (from
+ * [`computeColumnStats`]) to refine role inference with browser-computed
+ * cardinality; without it, roles fall back to name + type heuristics.
+ */
+export function buildGraphSchema(manifest: RunStatus, stats?: ColumnStatsMap): GraphSchema {
+  const types: VertexType[] = manifest.vertices.map((v) => ({
+    name: v.type,
+    entityCount: v.count ?? 0,
+    fields: v.columns.map((c) => {
+      const key = fieldKey(v.type, c.name);
+      const s = stats?.get(key);
+      return {
+        key,
+        name: c.name,
+        type: c.data_type,
+        role: inferRole(c.name, c.data_type, s?.distinct, s?.count),
+        sourceType: v.type,
+        distinct: s?.distinct,
+        count: s?.count,
+      };
+    }),
   }));
 
   const edges: EdgeType[] = (manifest.edges ?? []).map((e) => ({
-    sourceType: e.source_type,
-    name: e.name,
-    targetType: e.target_type,
-    count: e.count,
-    tableName: edgeTableName(e),
+    sourceType: e.src_type,
+    name: e.edge_type,
+    targetType: e.dst_type,
+    count: e.count ?? 0,
+    tableName: edgeTableName(e.src_type, e.edge_type, e.dst_type),
   }));
 
   const allFields = types.flatMap((t) => t.fields);
@@ -157,7 +205,7 @@ export function buildGraphSchema(manifest: DataManifest): GraphSchema {
     const sourceTypes = [...new Set(fields.map((f) => f.sourceType))];
 
     if (sourceTypes.length <= 1) {
-      return { tableName: sourceTypes[0] ?? manifest.types[0]?.name ?? "data" };
+      return { tableName: sourceTypes[0] ?? manifest.vertices[0]?.type ?? "data" };
     }
 
     if (sourceTypes.length === 2) {
@@ -178,4 +226,32 @@ export function buildGraphSchema(manifest: DataManifest): GraphSchema {
   }
 
   return { types, edges, allFields, field, fieldsOf, buildSource };
+}
+
+// ── Catalog adapter ──────────────────────────────────────────────────────
+
+/**
+ * Adapt the RDF-rich DCAT-AP `DataManifest` (Job.catalog_manifest) to a
+ * `RunStatus` so the graph code consumes one shape. Lossy by design: RDF IRIs
+ * and baked-in stats are dropped — the browser recomputes stats, and the graph
+ * UI never read the IRIs.
+ */
+export function runStatusFromDataManifest(manifest: DataManifest): RunStatus {
+  return {
+    dest: "",
+    vertices: manifest.types.map((t) => ({
+      type: t.name,
+      file: t.vertex_file,
+      count: t.entity_count,
+      columns: t.columns.map((c) => ({ name: c.name, data_type: c.datatype })),
+    })),
+    edges: (manifest.edges ?? []).map((e) => ({
+      edge_type: e.name,
+      src_type: e.source_type,
+      dst_type: e.target_type,
+      by_source: e.by_source,
+      by_target: e.by_target,
+      count: e.count,
+    })),
+  };
 }

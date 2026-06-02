@@ -15,8 +15,8 @@ import { GraphCanvas, DEFAULT_GRAPH_CONFIG, type CosmosGraphHandle } from "@foss
 import { useGraphDataRows } from "@/components/discovery/use-graph-data-rows";
 import { DiscoverySidebar } from "@/components/discovery/discovery-sidebar";
 import { HistogramPanel } from "@/components/discovery/histogram-panel";
-import { buildGraphSchema } from "@/lib/graph-schema";
-import type { DataManifest } from "@/lib/types";
+import { useGraphSchema } from "@/components/discovery/use-graph-schema";
+import type { RunStatus } from "@/lib/types";
 import type { GraphConfigInterface } from "@cosmos.gl/graph";
 
 // ── URL resolution ───────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ function SetupErrorBanner({ error, isCors }: { error: string; isCors: boolean })
 
 interface DiscoveryViewProps {
   jobId: string;
-  manifest: DataManifest;
+  manifest: RunStatus;
 }
 
 export function DiscoveryView({ jobId, manifest }: DiscoveryViewProps) {
@@ -97,10 +97,10 @@ export function DiscoveryView({ jobId, manifest }: DiscoveryViewProps) {
 
 // ── Workspace (canvas + sidebar) ─────────────────────────────────────────
 
-function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: DataManifest }) {
+function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: RunStatus }) {
   const coordinator = useCoordinator();
   const isMobile = useIsMobile();
-  const kgSchema = useMemo(() => buildGraphSchema(manifest), [manifest]);
+  const kgSchema = useGraphSchema(manifest);
   const graphRef = useRef<CosmosGraphHandle>(null);
   const [selectedVertex, setSelectedVertex] = useState<{ id: string; type: string; label: string } | null>(null);
   const [graphConfig, setGraphConfig] = useState<GraphConfigInterface>(DEFAULT_GRAPH_CONFIG);

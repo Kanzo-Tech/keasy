@@ -6,15 +6,16 @@ import { Selection } from "@uwdata/mosaic-core";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
-import { buildGraphSchema } from "@/lib/graph-schema";
+import { runStatusFromDataManifest } from "@/lib/graph-schema";
 import { Database, Loader2 } from "lucide-react";
 import { CodeView } from "@/components/discovery/code-view";
 import { GraphCanvas, DEFAULT_GRAPH_CONFIG, type CosmosGraphHandle } from "@fossil-lang/viewer";
 import { useGraphDataRows } from "@/components/discovery/use-graph-data-rows";
+import { useGraphSchema } from "@/components/discovery/use-graph-schema";
 import { DiscoveryProvider } from "@/components/discovery/store";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { DataManifest } from "@/lib/types";
+import type { DataManifest, RunStatus } from "@/lib/types";
 
 export type DcatFormat = "turtle" | "jsonld" | "rdfxml" | "ntriples" | "nquads";
 
@@ -48,6 +49,13 @@ export function CatalogView({ id, viewMode = "graph", catalogManifest, onNavigat
     enabled: viewMode === "graph" && !!catalogManifest,
   });
 
+  // Adapt the RDF-rich catalog DataManifest to a RunStatus so the graph code
+  // (mount + schema) consumes one shape. Memoised: the schema hook keys on it.
+  const manifest = useMemo(
+    () => (catalogManifest ? runStatusFromDataManifest(catalogManifest) : null),
+    [catalogManifest],
+  );
+
   if (viewMode === "serialized") {
     return (
       <div className="flex-1 flex flex-col min-h-0">
@@ -66,7 +74,7 @@ export function CatalogView({ id, viewMode = "graph", catalogManifest, onNavigat
     );
   }
 
-  if (!catalogManifest) {
+  if (!catalogManifest || !manifest) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <EmptyState
@@ -88,15 +96,15 @@ export function CatalogView({ id, viewMode = "graph", catalogManifest, onNavigat
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <DiscoveryProvider manifest={catalogManifest} signedUrls={signedUrls}>
-        <CatalogGraphContent catalogManifest={catalogManifest} onNavigateToDiscovery={onNavigateToDiscovery} />
+      <DiscoveryProvider manifest={manifest} signedUrls={signedUrls}>
+        <CatalogGraphContent manifest={manifest} onNavigateToDiscovery={onNavigateToDiscovery} />
       </DiscoveryProvider>
     </div>
   );
 }
 
-function CatalogGraphContent({ catalogManifest, onNavigateToDiscovery }: { catalogManifest: DataManifest; onNavigateToDiscovery?: (typeName: string) => void }) {
-  const schema = useMemo(() => buildGraphSchema(catalogManifest), [catalogManifest]);
+function CatalogGraphContent({ manifest, onNavigateToDiscovery }: { manifest: RunStatus; onNavigateToDiscovery?: (typeName: string) => void }) {
+  const schema = useGraphSchema(manifest);
   const graphRef = useRef<CosmosGraphHandle>(null);
   const selection = useMemo(() => Selection.crossfilter(), []);
   const graphRows = useGraphDataRows(schema);

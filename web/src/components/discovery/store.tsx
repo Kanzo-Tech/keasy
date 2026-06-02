@@ -16,7 +16,7 @@ import type { Graph } from "@cosmos.gl/graph";
 
 import { initMosaic, type MosaicInstance } from "@/lib/mosaic";
 import { mountDataSpace } from "@/lib/data-space";
-import type { DataManifest } from "@/lib/types";
+import type { RunStatus } from "@/lib/types";
 
 // ── State ─────────────────────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ function DiscoveryRoom({
   signedUrls,
   children,
 }: {
-  manifest: DataManifest;
+  manifest: RunStatus;
   signedUrls: Record<string, string>;
   children: ReactNode;
 }) {
@@ -112,7 +112,7 @@ export function DiscoveryProvider({
   signedUrls,
   children,
 }: {
-  manifest: DataManifest;
+  manifest: RunStatus;
   signedUrls: Record<string, string>;
   children: ReactNode;
 }) {

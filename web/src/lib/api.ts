@@ -5,7 +5,6 @@ import type {
   ProviderSchema,
   ProviderInfo,
   ComplyEvent,
-  GraphData,
 } from "./types";
 
 export { ApiError };

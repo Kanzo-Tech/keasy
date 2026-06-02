@@ -49,20 +49,24 @@ export type OrgEntry = S["Organization"];
 // Types now in OpenAPI spec — re-exported from schema
 // ---------------------------------------------------------------------------
 
-// GraphAr manifest types (from OpenAPI schema)
+// The fossil subprocess run status — the job's GraphAr structure (Job.manifest).
+// Column statistics are NOT here; the browser computes them via DuckDB-WASM.
+export type RunStatus = S["RunStatus"];
+export type VertexStatus = S["VertexStatus"];
+export type EdgeStatus = S["EdgeStatus"];
+export type ColumnStatus = S["ColumnStatus"];
+
+// DCAT-AP catalog manifest (RDF-rich; Job.catalog_manifest). Adapted to RunStatus
+// at the web boundary so the graph code consumes one shape.
 export type DataManifest = S["DataManifest"];
 export type TypeManifest = S["TypeManifest"];
 export type EdgeManifest = S["EdgeManifest"];
 export type ColumnStat = S["ColumnStat"];
 
-export type SearchResult = S["SearchResult"];
 // Override rows type — server uses serde_json::Value per cell, schema generates Record<string,never>
 export type TabularData = Omit<S["TabularData"], "rows"> & {
   rows: Record<string, string | number | null>[];
 };
-export type GraphData = S["GraphData"];
-export type GraphNode = S["GraphNode"];
-export type GraphLink = S["GraphLink"];
 export type Conversation = S["Conversation"];
 // Override data type — schema generates rows: Record<string,never>[], we use Record<string, string|number|null>[]
 // Add explanation field (populated by the explain stream, not yet in the OpenAPI spec)

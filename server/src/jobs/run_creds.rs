@@ -14,8 +14,51 @@ use std::collections::HashMap;
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::cloud::models::CloudAccount;
-use crate::jobs::fossil_runner::CloudSecret;
+use crate::db::Database;
+use crate::jobs::fossil_runner::{ConnectionCreds, CloudSecret, RunCreds};
 use crate::settings::schema::find_provider;
+use crate::tenant::{OrgId, TenantScoped};
+
+/// Assemble the [`RunCreds`] the fossil subprocess reads on stdin: the dest's
+/// cloud secret (promotor storage) plus a per-`@conn-name` source map (each
+/// connection's base URL + read secret).
+///
+/// Connections resolve under the job's own org; the dest account is the
+/// promotor's. A connection with no cloud account, or a provider whose secret
+/// intake is pending, contributes a `None` secret — fossil then reads it as a
+/// public source rather than guessing credentials.
+pub async fn build_run_creds(
+    db: &Database,
+    job_org_id: &str,
+    connection_ids: &[String],
+    dest_account: Option<(String, String)>,
+) -> RunCreds {
+    let dest = match dest_account {
+        Some((org, account_id)) => {
+            let ctx = TenantScoped::new(OrgId(org), account_id.as_str());
+            db.get_cloud_account(&ctx).await.as_ref().and_then(cloud_secret)
+        }
+        None => None,
+    };
+
+    let mut connections = HashMap::new();
+    for id in connection_ids {
+        let ctx = TenantScoped::new(OrgId(job_org_id.to_string()), id.as_str());
+        let Some(conn) = db.get_connection(&ctx).await else {
+            continue;
+        };
+        let secret = match &conn.cloud_account_id {
+            Some(account_id) => {
+                let acc_ctx = TenantScoped::new(OrgId(job_org_id.to_string()), account_id.as_str());
+                db.get_cloud_account(&acc_ctx).await.as_ref().and_then(cloud_secret)
+            }
+            None => None,
+        };
+        connections.insert(conn.name, ConnectionCreds { url: conn.url, secret });
+    }
+
+    RunCreds { dest, connections }
+}
 
 /// Project an account's stored credentials into a DuckDB `CREATE SECRET` spec,
 /// or `None` when the provider's pipeline-secret intake is not yet wired.

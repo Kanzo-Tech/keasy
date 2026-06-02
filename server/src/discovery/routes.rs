@@ -8,7 +8,6 @@ use axum::Json;
 use http::Method;
 use serde::Serialize;
 
-use fossil_lang::runtime::executor::DataManifest;
 use crate::AppState;
 use crate::error::error_body;
 use crate::jobs::models::JobStatus;
@@ -44,12 +43,14 @@ struct ResolveResponse {
     files: HashMap<String, String>,
 }
 
-/// Sign parquet URLs for a manifest. Shared by discover and catalog endpoints.
+/// Sign the given dataset-relative parquet paths under `base_url`. Shared by the
+/// discover (subprocess `RunStatus`) and catalog (`DataManifest`) endpoints —
+/// each caller flattens its own manifest type into the file list.
 async fn sign_manifest_urls(
     state: &AppState,
     ctx: &TenantContext,
     base_url: &str,
-    manifest: &DataManifest,
+    files: &[String],
     connection_ids: &[String],
 ) -> Result<Response, Response> {
     let creds = state
@@ -60,9 +61,7 @@ async fn sign_manifest_urls(
     let (store, prefix) = crate::cloud::build_store(base_url, &creds)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("store_error", e.to_string()))).into_response())?;
 
-    let all_files: Vec<String> = manifest.types.iter().map(|t| t.vertex_file.clone())
-        .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
-        .collect();
+    let all_files: Vec<String> = files.to_vec();
 
     let mut paths = Vec::with_capacity(all_files.len());
     for f in &all_files {
@@ -110,7 +109,11 @@ pub async fn resolve_discover_urls(
         return (StatusCode::NOT_FOUND, Json(error_body("no_manifest", "Job has no data manifest"))).into_response();
     };
 
-    match sign_manifest_urls(&state, &ctx, base, manifest, &job.connection_ids).await {
+    let files: Vec<String> = manifest.vertices.iter().map(|v| v.file.clone())
+        .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
+        .collect();
+
+    match sign_manifest_urls(&state, &ctx, base, &files, &job.connection_ids).await {
         Ok(resp) => resp,
         Err(resp) => resp,
     }
@@ -144,7 +147,11 @@ pub async fn resolve_catalog_urls(
         return (StatusCode::NOT_FOUND, Json(error_body("no_catalog_manifest", "Job has no catalog manifest"))).into_response();
     };
 
-    match sign_manifest_urls(&state, &ctx, base, manifest, &job.connection_ids).await {
+    let files: Vec<String> = manifest.types.iter().map(|t| t.vertex_file.clone())
+        .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
+        .collect();
+
+    match sign_manifest_urls(&state, &ctx, base, &files, &job.connection_ids).await {
         Ok(resp) => resp,
         Err(resp) => resp,
     }

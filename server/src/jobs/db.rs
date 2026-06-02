@@ -212,7 +212,7 @@ fn row_to_job(row: &rusqlite::Row) -> Job {
             tracing::warn!(error = %e, "row_to_job: rdf_base column type mismatch");
             None
         }),
-        manifest: manifest_json.and_then(|j| serde_json::from_str::<fossil_lang::runtime::executor::DataManifest>(&j).ok()),
+        manifest: manifest_json.and_then(|j| serde_json::from_str::<fossil_run_status::RunStatus>(&j).ok()),
         catalog_manifest: row.get::<_, Option<String>>("catalog_manifest")
             .unwrap_or(None)
             .and_then(|j| serde_json::from_str::<fossil_lang::runtime::executor::DataManifest>(&j).ok()),

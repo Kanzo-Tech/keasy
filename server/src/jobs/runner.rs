@@ -7,16 +7,13 @@ use tokio::sync::{Semaphore, broadcast};
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
-use fossil_lang::runtime::executor::OutputKind;
-use fossil_lang::traits::resolver::PathResolver;
-
 use super::errors::{JobRuntimeError, classify_error};
+use super::fossil_runner::{FossilRunner, RunCreds, RunStatus};
 use super::models::{JobStatus, now_iso8601};
 use crate::db::Database;
 use crate::graph::dcat::extract::extract_dcat_input;
 use crate::graph::dcat::types::DcatInput;
 use super::pipeline_types::PipelineOutput;
-use super::script;
 use crate::settings::org::OrgSettings;
 use crate::tenant::{OrgId, TenantScoped};
 
@@ -36,9 +33,13 @@ pub struct SpawnParams {
     pub org_id: String,
     pub job_id: String,
     pub script: String,
-    pub path_resolver: Arc<dyn PathResolver>,
     pub org_settings: Option<OrgSettings>,
     pub dcat_enabled: bool,
+    /// Destination URL for the job's GraphAr output (promotor storage + job id).
+    /// None when no output storage is configured — the run fails fast.
+    pub output_dest: Option<String>,
+    /// Cloud secrets for the dest + `@conn` sources, piped to the subprocess.
+    pub run_creds: RunCreds,
     /// Pre-resolved catalog storage destination (promotor cloud).
     /// None when catalog storage is not configured.
     pub catalog_dest: Option<fossil_lang::traits::resolver::ResolvedPath>,
@@ -49,10 +50,10 @@ const TOTAL_PHASES: u8 = 5;
 /// Value returned by [`run_job`] after successful script execution.
 struct JobResult {
     dcat_input: Option<DcatInput>,
-    /// Detected fragment base URL (present when `Rdf.fragments()` was used).
+    /// Base URL the GraphAr dataset was written under (the subprocess `--dest`).
     rdf_base: Option<String>,
-    /// GraphAr manifest with vertex/edge file paths and column statistics.
-    manifest: Option<fossil_lang::runtime::executor::DataManifest>,
+    /// GraphAr structure from the subprocess (`RunStatus`).
+    manifest: Option<RunStatus>,
     /// DCAT-AP catalog manifest (parquets in promotor storage).
     catalog_manifest: Option<fossil_lang::runtime::executor::DataManifest>,
     /// Base URL for catalog parquets.
@@ -126,7 +127,7 @@ impl JobRunner {
     /// Spawn a job execution task.
     /// `params.org_id` is the organization that owns this job.
     pub fn spawn(&self, params: SpawnParams) {
-        let SpawnParams { org_id, job_id, script, path_resolver, org_settings, dcat_enabled, catalog_dest } = params;
+        let SpawnParams { org_id, job_id, script, org_settings, dcat_enabled, output_dest, run_creds, catalog_dest } = params;
         let db = self.db.clone();
         let semaphore = self.semaphore.clone();
         let job_timeout = self.job_timeout;
@@ -186,7 +187,8 @@ impl JobRunner {
                     run_job(
                         &job_id_clone,
                         &script,
-                        path_resolver,
+                        output_dest.as_deref(),
+                        &run_creds,
                         if dcat_enabled { org_settings.as_ref() } else { None },
                         job_name.as_deref(),
                         &outputs,
@@ -266,46 +268,47 @@ impl JobRunner {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_job(
     job_id: &str,
     script: &str,
-    path_resolver: Arc<dyn PathResolver>,
+    output_dest: Option<&str>,
+    run_creds: &RunCreds,
     org: Option<&OrgSettings>,
     job_name: Option<&str>,
     outputs: &[PipelineOutput],
     catalog_dest: Option<&fossil_lang::traits::resolver::ResolvedPath>,
     tx: &broadcast::Sender<JobEvent>,
 ) -> Result<JobResult, String> {
-    // Phase 1: compiling
+    // Phase 1: compiling — the fossil subprocess parses + typechecks the program.
     if tx.send(JobEvent { phase: "compiling".into(), index: 1, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
-    let compiled = script::compile(&format!("job-{}", job_id), script, path_resolver)
-        .map_err(|errors| errors.join("; "))?;
+    let dest_url = output_dest
+        .ok_or_else(|| "no output storage configured for this job".to_string())?;
 
-    let completed_at = now_iso8601();
-    let dcat_input = org.map(|org| {
-        extract_dcat_input(&compiled.program, job_id, job_name, &completed_at, org, outputs)
-    });
+    // The subprocess reads the program from a file; write it to a temp path
+    // anchored so any relative source paths resolve against it.
+    let fossil_file = std::env::temp_dir().join(format!("keasy-job-{job_id}.fossil"));
+    std::fs::write(&fossil_file, script)
+        .map_err(|e| format!("failed to write pipeline file: {e}"))?;
 
-    // Phase 2: executing
+    // Phase 2: executing — run the pipeline to GraphAr under `dest_url`.
     if tx.send(JobEvent { phase: "executing".into(), index: 2, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
-    let result = script::execute(compiled)?;
+    let run_result = FossilRunner::from_env().run(&fossil_file, dest_url, run_creds);
+    let _ = std::fs::remove_file(&fossil_file);
+    let run_status = run_result.map_err(|e| e.to_string())?;
 
-    // Detect rdf_base and manifest from RdfParquet outputs
-    let (rdf_base, manifest) = result.outputs.iter().find_map(|o| {
-        if o.kind == OutputKind::RdfParquet {
-            Some((o.path.clone(), o.manifest.clone()))
-        } else {
-            None
-        }
-    }).map(|(path, m)| (Some(path), m)).unwrap_or((None, None));
+    let completed_at = now_iso8601();
+    let dcat_input = org.map(|org| extract_dcat_input(job_id, job_name, &completed_at, org, outputs));
 
-    // Materialize DCAT-AP catalog as parquets (if dcat + manifest + dest available)
-    let (catalog_manifest, catalog_base) = match (&dcat_input, &manifest, catalog_dest) {
-        (Some(input), Some(data_manifest), Some(dest)) => {
+    // Materialize the DCAT-AP catalog (if dcat enabled + catalog storage set).
+    // The catalog manifest is keasy's own RDF-rich artifact; `run_status`
+    // contributes only per-type row counts.
+    let (catalog_manifest, catalog_base) = match (&dcat_input, catalog_dest) {
+        (Some(input), Some(dest)) => {
             let dest_with_job = dest.join(&format!("{}/{job_id}", input.org.publisher_name));
-            match crate::graph::dcat::materializer::materialize_catalog(input, data_manifest, &dest_with_job) {
+            match crate::graph::dcat::materializer::materialize_catalog(input, &run_status, &dest_with_job) {
                 Ok(cat_manifest) => (Some(cat_manifest), Some(dest_with_job.to_str().to_string())),
                 Err(e) => {
                     warn!("Catalog materialization failed (non-fatal): {e}");
@@ -316,5 +319,11 @@ fn run_job(
         _ => (None, None),
     };
 
-    Ok(JobResult { dcat_input, rdf_base, manifest, catalog_manifest, catalog_base })
+    Ok(JobResult {
+        dcat_input,
+        rdf_base: Some(dest_url.to_string()),
+        manifest: Some(run_status),
+        catalog_manifest,
+        catalog_base,
+    })
 }

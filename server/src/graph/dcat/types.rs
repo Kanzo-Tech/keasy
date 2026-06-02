@@ -18,7 +18,6 @@ pub struct DcatInput {
 pub struct DatasetInfo {
     pub type_name: String,
     pub source_name: Option<String>,
-    pub rdf_subject: Option<String>,
     pub rdf_type: Option<String>,
     pub fields: Vec<FieldInfo>,
     pub distributions: Vec<DistributionInfo>,
@@ -30,6 +29,8 @@ pub struct DatasetInfo {
 pub struct FieldInfo {
     pub name: String,
     pub rdf_uri: Option<String>,
+    /// XSD/GraphAr datatype from the pipeline spec; `None` ⇒ defaults to string.
+    pub datatype: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

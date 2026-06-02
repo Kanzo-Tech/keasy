@@ -96,26 +96,6 @@
         }
       }
     },
-    "/v1/admin/catalog/graph": {
-      "get": {
-        "tags": [
-          "Catalog"
-        ],
-        "operationId": "get_federated_catalog_graph",
-        "responses": {
-          "200": {
-            "description": "Federated catalog graph (all organizations)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GraphData"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/admin/invites": {
       "get": {
         "tags": [
@@ -305,12 +285,12 @@
         }
       }
     },
-    "/v1/assistant/generate": {
+    "/v1/assistant/generate-stream": {
       "post": {
         "tags": [
           "Assistant"
         ],
-        "operationId": "generate_script",
+        "operationId": "generate_script_stream",
         "requestBody": {
           "content": {
             "application/json": {
@@ -323,14 +303,7 @@
         },
         "responses": {
           "200": {
-            "description": "Generated Fossil script",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GenerateResponse"
-                }
-              }
-            }
+            "description": "SSE stream: delta events + complete with GenerateResponse"
           },
           "400": {
             "description": "AI provider not configured"
@@ -338,12 +311,12 @@
         }
       }
     },
-    "/v1/assistant/suggest": {
+    "/v1/assistant/suggest-stream": {
       "post": {
         "tags": [
           "Assistant"
         ],
-        "operationId": "suggest_cqs",
+        "operationId": "suggest_cqs_stream",
         "requestBody": {
           "content": {
             "application/json": {
@@ -356,14 +329,7 @@
         },
         "responses": {
           "200": {
-            "description": "Suggested competency questions",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SuggestResponse"
-                }
-              }
-            }
+            "description": "SSE stream: delta events + complete with SuggestResponse"
           },
           "400": {
             "description": "AI provider not configured"
@@ -462,26 +428,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WorkspacesResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/catalog/graph": {
-      "get": {
-        "tags": [
-          "Catalog"
-        ],
-        "operationId": "get_org_catalog_graph",
-        "responses": {
-          "200": {
-            "description": "Organization catalog graph",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GraphData"
                 }
               }
             }
@@ -1027,17 +973,17 @@
         }
       }
     },
-    "/v1/fossil/analyze": {
+    "/v1/fossil/lsp": {
       "post": {
         "tags": [
           "Fossil"
         ],
-        "operationId": "analyze",
+        "operationId": "lsp",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AnalyzeRequest"
+                "$ref": "#/components/schemas/JsonRpcRequest"
               }
             }
           },
@@ -1045,11 +991,11 @@
         },
         "responses": {
           "200": {
-            "description": "Analysis result",
+            "description": "JSON-RPC response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AnalyzeResponse"
+                  "$ref": "#/components/schemas/JsonRpcResponse"
                 }
               }
             }
@@ -1297,14 +1243,7 @@
         ],
         "responses": {
           "200": {
-            "description": "DCAT catalog (N-Triples)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CatalogResponse"
-                }
-              }
-            }
+            "description": "DCAT-AP catalog as Turtle (download)"
           },
           "404": {
             "description": "Job or catalog not found"
@@ -1518,40 +1457,6 @@
           },
           "404": {
             "description": "Job not found or no output"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/graph": {
-      "get": {
-        "tags": [
-          "Jobs"
-        ],
-        "operationId": "get_job_graph",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Job knowledge graph",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GraphData"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Job not found"
           }
         }
       }
@@ -1955,6 +1860,60 @@
         }
       }
     },
+    "/v1/settings/catalog-storage": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "get_catalog_storage",
+        "responses": {
+          "200": {
+            "description": "Catalog storage config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogStoragePayload"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Not configured"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "save_catalog_storage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogStoragePayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Catalog storage saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogStoragePayload"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
     "/v1/settings/organization": {
       "get": {
         "tags": [
@@ -2189,43 +2148,6 @@
           }
         }
       },
-      "AnalyzeRequest": {
-        "type": "object",
-        "required": [
-          "script",
-          "cursor_offset"
-        ],
-        "properties": {
-          "cursor_offset": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "script": {
-            "type": "string"
-          }
-        }
-      },
-      "AnalyzeResponse": {
-        "type": "object",
-        "required": [
-          "completions",
-          "diagnostics"
-        ],
-        "properties": {
-          "completions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CompletionItem"
-            }
-          },
-          "diagnostics": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DiagnosticItem"
-            }
-          }
-        }
-      },
       "AskRequest": {
         "type": "object",
         "required": [
@@ -2338,6 +2260,21 @@
           }
         }
       },
+      "CatalogStoragePayload": {
+        "type": "object",
+        "required": [
+          "cloud_account_id",
+          "base_url"
+        ],
+        "properties": {
+          "base_url": {
+            "type": "string"
+          },
+          "cloud_account_id": {
+            "type": "string"
+          }
+        }
+      },
       "CloudAccountSummary": {
         "type": "object",
         "required": [
@@ -2438,6 +2375,24 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "ColumnStatus": {
+        "type": "object",
+        "description": "A property column of a [`VertexStatus`].",
+        "required": [
+          "name",
+          "data_type"
+        ],
+        "properties": {
+          "data_type": {
+            "type": "string",
+            "description": "`GraphAr` data-type spelling (`string`, `int64`, `double`, …)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Column / predicate local name."
           }
         }
       },
@@ -2711,13 +2666,19 @@
               }
             ]
           },
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "id": {
             "type": "string"
           },
           "role": {
             "type": "string"
           },
-          "sparql": {
+          "sql": {
             "type": [
               "string",
               "null"
@@ -3058,6 +3019,47 @@
           }
         }
       },
+      "EdgeStatus": {
+        "type": "object",
+        "description": "One edge type — its CSR/CSC Parquet pair and endpoints.",
+        "required": [
+          "edge_type",
+          "src_type",
+          "dst_type",
+          "by_source",
+          "by_target"
+        ],
+        "properties": {
+          "by_source": {
+            "type": "string",
+            "description": "CSR-ordered (`by_source`) Parquet, dataset-relative."
+          },
+          "by_target": {
+            "type": "string",
+            "description": "CSC-ordered (`by_target`) Parquet, dataset-relative."
+          },
+          "count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Edge count (Parquet footer metadata); `None` if the count query failed."
+          },
+          "dst_type": {
+            "type": "string",
+            "description": "Destination vertex type."
+          },
+          "edge_type": {
+            "type": "string",
+            "description": "The edge type / predicate local name."
+          },
+          "src_type": {
+            "type": "string",
+            "description": "Source vertex type."
+          }
+        }
+      },
       "Field": {
         "type": "object",
         "required": [
@@ -3232,74 +3234,6 @@
           }
         }
       },
-      "GraphData": {
-        "type": "object",
-        "required": [
-          "nodes",
-          "links"
-        ],
-        "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GraphLink"
-            }
-          },
-          "nodes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GraphNode"
-            }
-          }
-        }
-      },
-      "GraphLink": {
-        "type": "object",
-        "required": [
-          "source",
-          "target",
-          "label"
-        ],
-        "properties": {
-          "label": {
-            "type": "string"
-          },
-          "source": {
-            "type": "string"
-          },
-          "target": {
-            "type": "string"
-          }
-        }
-      },
-      "GraphNode": {
-        "type": "object",
-        "required": [
-          "id",
-          "label",
-          "group"
-        ],
-        "properties": {
-          "group": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          },
-          "properties": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          }
-        }
-      },
       "InviteInfoResponse": {
         "type": "object",
         "required": [
@@ -3352,6 +3286,24 @@
           "pipeline"
         ],
         "properties": {
+          "catalog_base": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Base URL for catalog parquets in promotor storage."
+          },
+          "catalog_manifest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataManifest",
+                "description": "DCAT-AP catalog manifest (RDF-rich; drives the Turtle export). keasy\ngovernance output, parquets stored in promotor cloud."
+              }
+            ]
+          },
           "completed_at": {
             "type": [
               "string",
@@ -3386,8 +3338,8 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/DataManifest",
-                "description": "GraphAr manifest with vertex/edge file paths and column statistics."
+                "$ref": "#/components/schemas/RunStatus",
+                "description": "GraphAr structure from the fossil subprocess: per-type Parquet + row\ncount + columns, per-edge CSR/CSC pair. Column statistics are NOT here —\nthe browser computes them from the Parquet (DuckDB-WASM)."
               }
             ]
           },
@@ -3489,6 +3441,72 @@
           "failed",
           "cancelled"
         ]
+      },
+      "JsonRpcError": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "JsonRpcRequest": {
+        "type": "object",
+        "required": [
+          "jsonrpc",
+          "method"
+        ],
+        "properties": {
+          "id": {
+            "description": "None = JSON-RPC notification; Some = request expecting a response."
+          },
+          "jsonrpc": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "params": {}
+        }
+      },
+      "JsonRpcResponse": {
+        "type": "object",
+        "required": [
+          "jsonrpc"
+        ],
+        "properties": {
+          "error": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonRpcError"
+              }
+            ]
+          },
+          "id": {},
+          "jsonrpc": {
+            "type": "string"
+          },
+          "method": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Server-pushed notification piggy-backed in a response body.\nPresent only when the request was a notification that produced\na server-side push (e.g., `didChange` → `publishDiagnostics`)."
+          },
+          "params": {},
+          "result": {}
+        }
       },
       "LocationType": {
         "type": "string",
@@ -3690,6 +3708,20 @@
           "publisher_name"
         ],
         "properties": {
+          "catalog_base_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Base URL for catalog parquet storage (e.g. s3://promotor/catalogs/)."
+          },
+          "catalog_cloud_account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cloud account ID for catalog parquet storage (set by promotor)."
+          },
           "catalog_description": {
             "type": [
               "string",
@@ -4060,7 +4092,6 @@
         "properties": {
           "files": {
             "type": "object",
-            "description": "Map of logical file name → signed URL for direct cloud access.",
             "additionalProperties": {
               "type": "string"
             },
@@ -4077,28 +4108,32 @@
           "scheduled"
         ]
       },
-      "SearchResult": {
+      "RunStatus": {
         "type": "object",
+        "description": "The status object `fossil run --output-json` writes to stdout.",
         "required": [
-          "id",
-          "label",
-          "group"
+          "dest",
+          "vertices",
+          "edges"
         ],
         "properties": {
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "dest": {
+            "type": "string",
+            "description": "Destination URL the `GraphAr` dataset was written under (echoes `--dest`)."
           },
-          "group": {
-            "type": "string"
+          "edges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EdgeStatus"
+            },
+            "description": "One entry per emitted edge type (empty until a shape/Phase-B adds edges)."
           },
-          "id": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
+          "vertices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VertexStatus"
+            },
+            "description": "One entry per emitted vertex type."
           }
         }
       },
@@ -4404,6 +4439,40 @@
           },
           "valid": {
             "type": "boolean"
+          }
+        }
+      },
+      "VertexStatus": {
+        "type": "object",
+        "description": "One vertex type — its dataset-relative Parquet, row count, and property\ncolumns.",
+        "required": [
+          "type",
+          "file",
+          "columns"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ColumnStatus"
+            },
+            "description": "The vertex's property columns."
+          },
+          "count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Row count (Parquet footer metadata); `None` if the count query failed."
+          },
+          "file": {
+            "type": "string",
+            "description": "Dataset-relative Parquet path, e.g. `vertex/Person.parquet`."
+          },
+          "type": {
+            "type": "string",
+            "description": "The vertex type / `GraphAr` `type` (e.g. `Person`)."
           }
         }
       },

@@ -411,29 +411,28 @@ fn build_fallback_schema(job: &crate::jobs::models::Job) -> String {
     use std::fmt::Write;
 
     if let Some(manifest) = &job.manifest {
-        if !manifest.types.is_empty() {
+        if !manifest.vertices.is_empty() {
             let mut out = String::new();
-            for t in &manifest.types {
+            for t in &manifest.vertices {
                 let _ = writeln!(
                     out,
                     "CREATE TABLE \"{}\" (\n  \"_id\" UBIGINT,\n  \"subject\" VARCHAR,",
-                    t.name,
+                    t.vertex_type,
                 );
                 for (i, c) in t.columns.iter().enumerate() {
                     let comma = if i + 1 < t.columns.len() { "," } else { "" };
-                    let _ = writeln!(out, "  \"{}\" {}{}", c.name, sql_type_for(&c.datatype), comma);
+                    let _ = writeln!(out, "  \"{}\" {}{}", c.name, sql_type_for(&c.data_type), comma);
                 }
-                let _ = writeln!(out, "); -- type IRI: {}, rows: {}\n", t.iri, t.entity_count);
+                let _ = writeln!(out, "); -- rows: {}\n", t.count.unwrap_or(0));
             }
             for e in &manifest.edges {
                 let _ = writeln!(
                     out,
-                    "CREATE TABLE \"{src}_{name}_{dst}\" (\n  \"source\" UBIGINT,\n  \"target\" UBIGINT\n); -- {src} --[{name}]--> {dst} ({count} edges, predicate: {iri})\n",
-                    src = e.source_type,
-                    name = e.name,
-                    dst = e.target_type,
-                    count = e.count,
-                    iri = e.iri,
+                    "CREATE TABLE \"{src}_{name}_{dst}\" (\n  \"source\" UBIGINT,\n  \"target\" UBIGINT\n); -- {src} --[{name}]--> {dst} ({count} edges)\n",
+                    src = e.src_type,
+                    name = e.edge_type,
+                    dst = e.dst_type,
+                    count = e.count.unwrap_or(0),
                 );
             }
             return out;

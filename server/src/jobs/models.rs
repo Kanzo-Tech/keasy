@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::graph::dcat::types::DcatInput;
 use fossil_lang::runtime::executor::DataManifest;
+use fossil_run_status::RunStatus;
 use super::pipeline_types::PipelineSummary;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
@@ -97,10 +98,13 @@ pub struct Job {
     /// Base URL for RDF Parquet storage (set when job uses Rdf output).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rdf_base: Option<String>,
-    /// GraphAr manifest with vertex/edge file paths and column statistics.
+    /// GraphAr structure from the fossil subprocess: per-type Parquet + row
+    /// count + columns, per-edge CSR/CSC pair. Column statistics are NOT here —
+    /// the browser computes them from the Parquet (DuckDB-WASM).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub manifest: Option<DataManifest>,
-    /// DCAT-AP catalog manifest (parquets stored in promotor cloud).
+    pub manifest: Option<RunStatus>,
+    /// DCAT-AP catalog manifest (RDF-rich; drives the Turtle export). keasy
+    /// governance output, parquets stored in promotor cloud.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalog_manifest: Option<DataManifest>,
     /// Base URL for catalog parquets in promotor storage.

@@ -78,11 +78,6 @@ pub async fn create_job(
 
     let dcat_enabled = payload.dcat_enabled.unwrap_or(false);
 
-    let resolver = state.db
-        .build_path_resolver(&ctx.as_ctx(), &payload.connection_ids)
-        .await
-        .map_err(|e| JobApiError::RewriteFailed(e))?;
-
     let job = Job {
         id: id.clone(),
         status: JobStatus::Pending,
@@ -116,17 +111,35 @@ pub async fn create_job(
         None
     };
 
+    // Promotor cloud storage backs both the job's GraphAr output (always, when
+    // configured) and — for dcat jobs — the DCAT-AP catalog. Fetch once.
+    let promotor_storage = state.db.get_promotor_catalog_config().await;
+
+    let output_dest = promotor_storage
+        .as_ref()
+        .map(|(_, _, base_url)| format!("{}/{}", base_url.trim_end_matches('/'), id));
+
+    let run_creds = crate::jobs::run_creds::build_run_creds(
+        &state.db,
+        &ctx.org_id.0,
+        &payload.connection_ids,
+        promotor_storage
+            .as_ref()
+            .map(|(org, account, _)| (org.clone(), account.clone())),
+    )
+    .await;
+
     let catalog_dest = if dcat_enabled {
-        match state.db.get_promotor_catalog_config().await {
+        match &promotor_storage {
             Some((promotor_org_id, account_id, base_url)) => {
                 use crate::tenant::{OrgId, TenantScoped};
                 use crate::jobs::path_resolver::build_cloud_options;
                 use fossil_lang::traits::resolver::ResolvedPath;
 
-                let ctx = TenantScoped::new(OrgId(promotor_org_id), ());
-                let env = state.db.build_storage_config(&ctx, &[account_id]).await;
-                let cloud_opts = build_cloud_options(&base_url, &env);
-                Some(ResolvedPath::with_config(&base_url, cloud_opts, env))
+                let pctx = TenantScoped::new(OrgId(promotor_org_id.clone()), ());
+                let env = state.db.build_storage_config(&pctx, std::slice::from_ref(account_id)).await;
+                let cloud_opts = build_cloud_options(base_url, &env);
+                Some(ResolvedPath::with_config(base_url, cloud_opts, env))
             }
             None => None,
         }
@@ -139,9 +152,10 @@ pub async fn create_job(
         org_id: ctx.org_id.0.clone(),
         job_id: id,
         script: payload.script,
-        path_resolver: resolver,
         org_settings,
         dcat_enabled,
+        output_dest,
+        run_creds,
         catalog_dest,
     });
 

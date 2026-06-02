@@ -14,6 +14,7 @@ use polars::prelude::*;
 use fossil_lang::error::FossilError;
 use fossil_lang::runtime::executor::DataManifest;
 use fossil_lang::traits::resolver::ResolvedPath;
+use fossil_run_status::RunStatus;
 use fossil_stdlib::rdf::{EdgeSpec, VertexSpec, materialize_frames};
 
 use crate::graph::vocab;
@@ -55,13 +56,17 @@ fn field_urn(job_id: &str, type_name: &str, field_name: &str) -> String {
 /// Materialize DCAT-AP catalog as GraphAr parquets.
 ///
 /// Builds DataFrames for each DCAT-AP type, converts to lazy `VertexSpec` /
-/// `EdgeSpec`, and delegates to `materialize_frames` for streaming parquet
-/// I/O + stats computation.
+/// `EdgeSpec`, and delegates to `materialize_frames` for streaming parquet I/O.
+///
+/// `run_status` is the executed graph's structure from the fossil subprocess —
+/// used only for per-type row counts. The returned [`DataManifest`] is the
+/// catalog's own RDF-rich manifest (it drives the Turtle export); it is keasy
+/// governance output, distinct from the subprocess `RunStatus`.
 ///
 /// `DcatInput` is transient — only used here, never persisted.
 pub fn materialize_catalog(
     input: &DcatInput,
-    data_manifest: &DataManifest,
+    run_status: &RunStatus,
     dest: &ResolvedPath,
 ) -> Result<DataManifest, FossilError> {
     let mut vertices = Vec::new();
@@ -94,8 +99,8 @@ pub fn materialize_catalog(
     });
 
     // Dataset (N rows)
-    let type_counts: HashMap<&str, u64> = data_manifest.types.iter()
-        .map(|t| (t.name.as_str(), t.entity_count))
+    let type_counts: HashMap<&str, u64> = run_status.vertices.iter()
+        .map(|v| (v.vertex_type.as_str(), v.count.unwrap_or(0).max(0) as u64))
         .collect();
 
     let ds_ids: Vec<u64> = (0..input.datasets.len() as u64).collect();
@@ -198,44 +203,23 @@ pub fn materialize_catalog(
         });
     }
 
-    // Field (1 per column per dataset, enriched with stats from DataManifest)
-    let mut col_stats: HashMap<(&str, &str), &fossil_lang::runtime::executor::ColumnStat> = HashMap::new();
-    for tm in &data_manifest.types {
-        for cs in &tm.columns {
-            col_stats.insert((tm.name.as_str(), cs.name.as_str()), cs);
-        }
-    }
-
+    // Field (1 per column per dataset). Schema metadata only — column-value
+    // statistics (count/n_unique/min/max/samples) are no longer baked in; the
+    // browser computes them on demand from the Parquet via DuckDB-WASM.
     let mut f_ids = Vec::new();
     let mut f_subjects = Vec::new();
     let mut f_names = Vec::new();
     let mut f_uris = Vec::new();
     let mut f_datatypes = Vec::new();
-    let mut f_counts = Vec::new();
-    let mut f_uniques = Vec::new();
-    let mut f_mins = Vec::new();
-    let mut f_maxs = Vec::new();
-    let mut f_s1 = Vec::new();
-    let mut f_s2 = Vec::new();
-    let mut f_s3 = Vec::new();
 
     let mut fi = 0u64;
     for ds in &input.datasets {
         for field in &ds.fields {
-            let stat = col_stats.get(&(ds.type_name.as_str(), field.name.as_str()));
             f_ids.push(fi);
             f_subjects.push(field_urn(&input.job_id, &ds.type_name, &field.name));
             f_names.push(field.name.clone());
             f_uris.push(field.rdf_uri.as_deref().unwrap_or("").to_string());
-            f_datatypes.push(stat.map(|s| s.datatype.as_str()).unwrap_or("string").to_string());
-            f_counts.push(stat.map(|s| s.count).unwrap_or(0));
-            f_uniques.push(stat.map(|s| s.n_unique).unwrap_or(0));
-            f_mins.push(stat.and_then(|s| s.min.clone()).unwrap_or_default());
-            f_maxs.push(stat.and_then(|s| s.max.clone()).unwrap_or_default());
-            let samples = stat.map(|s| &s.samples);
-            f_s1.push(samples.and_then(|s| s.first().cloned()).unwrap_or_default());
-            f_s2.push(samples.and_then(|s| s.get(1).cloned()).unwrap_or_default());
-            f_s3.push(samples.and_then(|s| s.get(2).cloned()).unwrap_or_default());
+            f_datatypes.push(field.datatype.as_deref().unwrap_or("string").to_string());
             fi += 1;
         }
     }
@@ -250,13 +234,6 @@ pub fn materialize_catalog(
                 "name" => &f_names,
                 "rdf_uri" => &f_uris,
                 "datatype" => &f_datatypes,
-                "count" => &f_counts,
-                "n_unique" => &f_uniques,
-                "min" => &f_mins,
-                "max" => &f_maxs,
-                "sample_1" => &f_s1,
-                "sample_2" => &f_s2,
-                "sample_3" => &f_s3,
             }.expect("field df").lazy(),
             column_iris: HashMap::new(), // Field columns are schema metadata, not RDF properties
         });

@@ -13,6 +13,12 @@ pub struct FieldSchema {
     pub env_var: Option<&'static str>,
     #[serde(skip)]
     pub store_config_key: Option<&'static str>,
+    /// DuckDB `CREATE SECRET` parameter name (`KEY_ID`, `SECRET`, `REGION`, …)
+    /// this field projects to, when the provider's secret maps 1:1 from fields.
+    /// `None` where the projection synthesises the value (e.g. Azure
+    /// `CONNECTION_STRING`) or the provider's secret intake is still pending.
+    #[serde(skip)]
+    pub duckdb_config_key: Option<&'static str>,
 }
 
 fn is_false(v: &bool) -> bool {
@@ -71,6 +77,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
             default_value: None,
             env_var: Some("AZURE_STORAGE_ACCOUNT_NAME"),
             store_config_key: Some("account_name"),
+            duckdb_config_key: Some("ACCOUNT_NAME"),
         }],
         auth_methods: &[
             AuthMethodSchema {
@@ -84,6 +91,8 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                     default_value: None,
                     env_var: Some("AZURE_STORAGE_ACCOUNT_KEY"),
                     store_config_key: Some("access_key"),
+                    // Synthesised into CONNECTION_STRING by the projection.
+                    duckdb_config_key: None,
                 }],
             },
             AuthMethodSchema {
@@ -97,6 +106,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                     default_value: None,
                     env_var: Some("AZURE_STORAGE_SAS_KEY"),
                     store_config_key: Some("sas_key"),
+                    duckdb_config_key: None,
                 }],
             },
             AuthMethodSchema {
@@ -111,6 +121,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                         default_value: None,
                         env_var: Some("AZURE_STORAGE_CLIENT_ID"),
                         store_config_key: Some("client_id"),
+                        duckdb_config_key: Some("CLIENT_ID"),
                     },
                     FieldSchema {
                         name: "client_secret",
@@ -120,6 +131,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                         default_value: None,
                         env_var: Some("AZURE_STORAGE_CLIENT_SECRET"),
                         store_config_key: Some("client_secret"),
+                        duckdb_config_key: Some("CLIENT_SECRET"),
                     },
                     FieldSchema {
                         name: "tenant_id",
@@ -129,6 +141,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                         default_value: None,
                         env_var: Some("AZURE_STORAGE_TENANT_ID"),
                         store_config_key: Some("tenant_id"),
+                        duckdb_config_key: Some("TENANT_ID"),
                     },
                 ],
             },
@@ -152,6 +165,9 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                     default_value: None,
                     env_var: Some("GOOGLE_SERVICE_ACCOUNT_KEY"),
                     store_config_key: Some("service_account_key"),
+                    // GCS pipeline secret needs HMAC (KEY_ID/SECRET); service-account
+                    // JSON stays for object_store URL signing only. HMAC intake pending.
+                    duckdb_config_key: None,
                 }],
             },
             AuthMethodSchema {
@@ -165,6 +181,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                     default_value: None,
                     env_var: Some("GOOGLE_SERVICE_ACCOUNT"),
                     store_config_key: Some("service_account"),
+                    duckdb_config_key: None,
                 }],
             },
         ],
@@ -183,6 +200,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                 default_value: None,
                 env_var: Some("AWS_ACCESS_KEY_ID"),
                 store_config_key: Some("access_key_id"),
+                duckdb_config_key: Some("KEY_ID"),
             },
             FieldSchema {
                 name: "secret_access_key",
@@ -192,6 +210,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                 default_value: None,
                 env_var: Some("AWS_SECRET_ACCESS_KEY"),
                 store_config_key: Some("secret_access_key"),
+                duckdb_config_key: Some("SECRET"),
             },
             FieldSchema {
                 name: "region",
@@ -201,6 +220,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                 default_value: Some("us-east-1"),
                 env_var: Some("AWS_DEFAULT_REGION"),
                 store_config_key: Some("region"),
+                duckdb_config_key: Some("REGION"),
             },
             FieldSchema {
                 name: "endpoint_url",
@@ -210,6 +230,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
                 default_value: None,
                 env_var: Some("AWS_ENDPOINT_URL"),
                 store_config_key: Some("endpoint"),
+                duckdb_config_key: Some("ENDPOINT"),
             },
         ],
         auth_methods: &[],

@@ -4,6 +4,7 @@ pub mod db;
 pub mod routes;
 pub mod runner;
 pub mod fossil_runner;
+pub mod run_creds;
 pub mod pipeline_extract;
 pub mod pipeline_types;
 pub mod script;

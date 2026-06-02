@@ -1356,12 +1356,12 @@
         }
       }
     },
-    "/v1/jobs/{id}/discover/ask": {
+    "/v1/jobs/{id}/discover/ask-stream": {
       "post": {
         "tags": [
           "Discovery"
         ],
-        "operationId": "ask_discover",
+        "operationId": "ask_discover_stream",
         "parameters": [
           {
             "name": "id",
@@ -1385,13 +1385,9 @@
         },
         "responses": {
           "200": {
-            "description": "AI answer with DuckDB SQL query",
+            "description": "SSE stream of LLM deltas",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskResponse"
-                }
-              }
+              "text/event-stream": {}
             }
           }
         }

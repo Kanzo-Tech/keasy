@@ -174,10 +174,6 @@ pub fn build_router(
             axum::routing::get(crate::discovery::routes::resolve_catalog_urls),
         )
         .route(
-            "/v1/jobs/{id}/discover/ask",
-            axum::routing::post(crate::ai::routes::ask_discover),
-        )
-        .route(
             "/v1/jobs/{id}/discover/ask-stream",
             axum::routing::post(crate::ai::routes::ask_discover_stream),
         )

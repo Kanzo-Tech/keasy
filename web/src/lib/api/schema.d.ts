@@ -479,7 +479,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/discover/ask": {
+    "/v1/jobs/{id}/discover/ask-stream": {
         parameters: {
             query?: never;
             header?: never;
@@ -488,7 +488,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["ask_discover"];
+        post: operations["ask_discover_stream"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2629,7 +2629,7 @@ export interface operations {
             };
         };
     };
-    ask_discover: {
+    ask_discover_stream: {
         parameters: {
             query?: never;
             header?: never;
@@ -2645,13 +2645,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description AI answer with DuckDB SQL query */
+            /** @description SSE stream of LLM deltas */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AskResponse"];
+                    "text/event-stream": unknown;
                 };
             };
         };

@@ -38,7 +38,6 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use secrecy::{ExposeSecret, SecretString};
-use serde::Deserialize;
 
 /// Environment variable overriding the `fossil` binary location. Falls back to
 /// `fossil` on `PATH` when unset.
@@ -113,58 +112,12 @@ impl RunCreds {
     }
 }
 
-/// One vertex type in a [`RunOutput`] — its dataset-relative Parquet, row count,
-/// and property columns (the structure keasy persists; column-value statistics
-/// are computed browser-side via DuckDB-WASM over the mounted Parquet).
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct VertexInfo {
-    /// The vertex type / `GraphAr` `type` (e.g. `Person`).
-    #[serde(rename = "type")]
-    pub type_name: String,
-    /// Dataset-relative Parquet path, e.g. `vertex/Person.parquet`.
-    pub file: String,
-    /// Row count (Parquet footer metadata), `None` if the count query failed.
-    pub count: Option<i64>,
-    /// The vertex's property columns.
-    pub columns: Vec<ColumnInfo>,
-}
-
-/// A property column of a [`VertexInfo`].
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct ColumnInfo {
-    /// Column / predicate local name.
-    pub name: String,
-    /// `GraphAr` data-type spelling (`string`, `int64`, `double`, …).
-    pub data_type: String,
-}
-
-/// One edge type in a [`RunOutput`] — its CSR/CSC Parquet pair and endpoints.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct EdgeInfo {
-    /// The edge type / predicate local name.
-    pub edge_type: String,
-    /// Source vertex type.
-    pub src_type: String,
-    /// Destination vertex type.
-    pub dst_type: String,
-    /// CSR-ordered (`by_source`) Parquet, dataset-relative.
-    pub by_source: String,
-    /// CSC-ordered (`by_target`) Parquet, dataset-relative.
-    pub by_target: String,
-    /// Edge count (Parquet footer metadata), `None` if the count query failed.
-    pub count: Option<i64>,
-}
-
-/// Parsed `--output-json` status from a successful `fossil run` (W0b path).
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct RunOutput {
-    /// Destination URL the GraphAr dataset was written under (echoes `--dest`).
-    pub dest: String,
-    /// One entry per emitted vertex type.
-    pub vertices: Vec<VertexInfo>,
-    /// One entry per emitted edge type (empty until a shape/Phase-B adds edges).
-    pub edges: Vec<EdgeInfo>,
-}
+/// The `fossil run --output-json` status — `RunStatus { dest, vertices, edges }`
+/// — reused VERBATIM from the canonical `fossil-run-status` crate (one source of
+/// truth: the CLI serialises exactly this struct, keasy deserialises it; the TS
+/// type for the web is `JsonSchema`-codegen'd from the same crate). No
+/// hand-mirrored copy here.
+pub use fossil_run_status::{ColumnStatus, EdgeStatus, RunStatus, VertexStatus};
 
 /// Failure modes of a `fossil run` subprocess invocation.
 #[derive(Debug, thiserror::Error)]
@@ -179,7 +132,7 @@ pub enum FossilRunError {
     /// `fossil` exited non-zero. Carries the captured stderr for diagnosis.
     #[error("fossil run exited with {code}: {stderr}")]
     NonZero { code: String, stderr: String },
-    /// `--output-json` stdout was not a parseable [`RunOutput`].
+    /// `--output-json` stdout was not a parseable [`RunStatus`].
     #[error("could not parse fossil --output-json status: {source} (stdout: {stdout})")]
     Parse {
         stdout: String,
@@ -246,7 +199,7 @@ impl FossilRunner {
         fossil_file: &Path,
         dest_url: &str,
         creds: &RunCreds,
-    ) -> Result<RunOutput, FossilRunError> {
+    ) -> Result<RunStatus, FossilRunError> {
         let spawn_err = |source: std::io::Error| FossilRunError::Spawn {
             binary: self.binary.to_string_lossy().into_owned(),
             source,
@@ -291,8 +244,8 @@ impl FossilRunner {
         Self::parse_status(&String::from_utf8_lossy(&output.stdout))
     }
 
-    /// Parse the `--output-json` stdout into a [`RunOutput`].
-    fn parse_status(stdout: &str) -> Result<RunOutput, FossilRunError> {
+    /// Parse the `--output-json` stdout into a [`RunStatus`].
+    fn parse_status(stdout: &str) -> Result<RunStatus, FossilRunError> {
         serde_json::from_str(stdout.trim()).map_err(|source| FossilRunError::Parse {
             stdout: stdout.to_string(),
             source,
@@ -398,10 +351,10 @@ mod tests {
         assert_eq!(parsed.dest, "s3://bucket/job-123");
         assert_eq!(parsed.vertices.len(), 1);
         let v = &parsed.vertices[0];
-        assert_eq!(v.type_name, "Person");
+        assert_eq!(v.vertex_type, "Person");
         assert_eq!(v.file, "vertex/Person.parquet");
         assert_eq!(v.count, Some(5));
-        assert_eq!(v.columns, vec![ColumnInfo {
+        assert_eq!(v.columns, vec![ColumnStatus {
             name: "name".to_string(),
             data_type: "string".to_string(),
         }]);

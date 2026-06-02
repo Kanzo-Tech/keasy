@@ -51,6 +51,10 @@ fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git", branch =
 fossil-stdlib = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider" }
 fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider" }
 fossil-lsp = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider", features = ["utoipa"] }
+# W0e subprocess: the `fossil run --output-json` wire contract, reused verbatim
+# (one source of truth — FossilRunner deserialises this exact struct). Path dep
+# while rmlext is a sibling local checkout; → git dep once rmlext is published.
+fossil-run-status = { path = "../../rmlext/crates/fossil-run-status" }
 base64 = "0.22"
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "jwk"] }
 x509-parser = { version = "0.16", features = ["verify"] }

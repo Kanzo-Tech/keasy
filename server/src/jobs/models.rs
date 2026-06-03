@@ -97,11 +97,11 @@ pub struct Job {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub manifest: Option<RunStatus>,
     /// DCAT-AP catalog graph structure (`fossil catalog` subprocess output):
-    /// per-type Parquet + counts, stored in promotor cloud. Drives the catalog
+    /// per-type Parquet + counts, stored in owner cloud. Drives the catalog
     /// graph view (DuckDB-WASM reads the Parquet directly).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalog_manifest: Option<RunStatus>,
-    /// Base URL for catalog parquets in promotor storage.
+    /// Base URL for catalog parquets in owner storage.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalog_base: Option<String>,
 }

@@ -21,12 +21,6 @@ pub struct ServerConfig {
     /// Base URL for the frontend — used to construct invite links.
     /// Read from KEASY_BASE_URL, default "http://localhost:3000".
     pub base_url: String,
-    /// GXDCH Notary API base URL for LRN credential requests.
-    /// Read from KEASY_GXDCH_NOTARY_URL. Default: staging Notary endpoint.
-    pub gxdch_notary_url: String,
-    /// GXDCH Compliance Service URL for VP submission.
-    /// Read from KEASY_GXDCH_COMPLIANCE_URL. Default: main/stable Compliance endpoint.
-    pub gxdch_compliance_url: String,
     /// OIDC issuer URL. Discovery doc at {issuer}/.well-known/openid-configuration.
     /// Read from KEASY_OIDC_ISSUER_URL. Example: http://keycloak:8080/auth/realms/keasy
     pub oidc_issuer_url: Option<String>,
@@ -42,22 +36,17 @@ pub struct ServerConfig {
     /// to this internal URL (e.g. `http://keycloak:8080`).
     /// Read from KEASY_OIDC_INTERNAL_BASE_URL.
     pub oidc_internal_base_url: Option<String>,
-    /// Base domain for org subdomains (e.g. "keasy.example.com").
-    /// When set, each org gets `{slug}.{base_domain}` for did:web resolution.
-    /// Read from KEASY_BASE_DOMAIN.
-    pub base_domain: Option<String>,
-    /// Path to an external SQL seed file executed at startup.
-    /// Read from KEASY_SEED_FILE. Default None — no seed data.
-    pub seed_file: Option<PathBuf>,
+    /// Keycloak subject (`sub`) of the workspace owner, provisioned by the
+    /// control-plane. When set, the instance idempotently ensures this user is
+    /// the `owner` of this workspace at boot — the single bootstrap datum that
+    /// replaces the old SQL seeds. Read from `KEASY_OWNER_KEYCLOAK_SUB`.
+    pub owner_keycloak_sub: Option<String>,
+    /// Display name of this workspace. Read from `KEASY_WORKSPACE_NAME`,
+    /// default `"Workspace"`. Used for the owner org created at boot.
+    pub workspace_name: String,
     /// Session cookie name — allows multiple Keasy instances on the same host.
     /// Read from KEASY_SESSION_COOKIE_NAME. Default "keasy.sid".
     pub session_cookie_name: String,
-    /// Path to Caddy's data directory for reading TLS certificates.
-    /// Read from KEASY_CADDY_CERTS_DIR.
-    pub caddy_certs_dir: Option<PathBuf>,
-    /// Use mock GXDCH client (returns structurally valid JSON-LD, no network calls).
-    /// Read from KEASY_GXDCH_MOCK. Default false.
-    pub gxdch_mock: bool,
 }
 
 impl ServerConfig {
@@ -136,11 +125,6 @@ impl ServerConfig {
         let base_url = std::env::var("KEASY_BASE_URL")
             .unwrap_or_else(|_| "http://localhost:3000".to_string());
 
-        let gxdch_notary_url = std::env::var("KEASY_GXDCH_NOTARY_URL")
-            .unwrap_or_else(|_| crate::gaia_x::gxdch::GXDCH_NOTARY_URL.to_string());
-        let gxdch_compliance_url = std::env::var("KEASY_GXDCH_COMPLIANCE_URL")
-            .unwrap_or_else(|_| crate::gaia_x::gxdch::GXDCH_COMPLIANCE_URL.to_string());
-
         let oidc_issuer_url = std::env::var("KEASY_OIDC_ISSUER_URL")
             .ok()
             .filter(|s| !s.trim().is_empty());
@@ -155,28 +139,19 @@ impl ServerConfig {
             .ok()
             .filter(|s| !s.trim().is_empty());
 
-        let base_domain = std::env::var("KEASY_BASE_DOMAIN")
+        let owner_keycloak_sub = std::env::var("KEASY_OWNER_KEYCLOAK_SUB")
             .ok()
             .filter(|s| !s.trim().is_empty());
 
-        let seed_file = std::env::var("KEASY_SEED_FILE")
+        let workspace_name = std::env::var("KEASY_WORKSPACE_NAME")
             .ok()
             .filter(|s| !s.trim().is_empty())
-            .map(PathBuf::from);
+            .unwrap_or_else(|| "Workspace".to_string());
 
         let session_cookie_name = std::env::var("KEASY_SESSION_COOKIE_NAME")
             .unwrap_or_else(|_| "keasy.sid".to_string());
 
         let session_secure = std::env::var("KEASY_SESSION_SECURE")
-            .map(|v| v == "true" || v == "1")
-            .unwrap_or(false);
-
-        let caddy_certs_dir = std::env::var("KEASY_CADDY_CERTS_DIR")
-            .ok()
-            .filter(|s| !s.trim().is_empty())
-            .map(PathBuf::from);
-
-        let gxdch_mock = std::env::var("KEASY_GXDCH_MOCK")
             .map(|v| v == "true" || v == "1")
             .unwrap_or(false);
 
@@ -193,17 +168,13 @@ impl ServerConfig {
             session_secure,
             cache_capacity,
             base_url,
-            gxdch_notary_url,
-            gxdch_compliance_url,
             oidc_issuer_url,
             oidc_client_id,
             oidc_client_secret,
             oidc_internal_base_url,
-            base_domain,
-            seed_file,
+            owner_keycloak_sub,
+            workspace_name,
             session_cookie_name,
-            caddy_certs_dir,
-            gxdch_mock,
         }
     }
 }

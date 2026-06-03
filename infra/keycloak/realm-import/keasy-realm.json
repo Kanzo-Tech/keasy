@@ -103,17 +103,17 @@
       ]
     },
     {
-      "name": "keasy-dataspaces",
-      "description": "Maps keasy.dataspaces user attribute to keasy:dataspaces ID-token claim",
+      "name": "keasy-workspaces",
+      "description": "Maps keasy.workspaces user attribute to keasy:workspaces ID-token claim",
       "protocol": "openid-connect",
       "protocolMappers": [
         {
-          "name": "keasy-dataspaces",
+          "name": "keasy-workspaces",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-usermodel-attribute-mapper",
           "config": {
-            "user.attribute": "keasy.dataspaces",
-            "claim.name": "keasy:dataspaces",
+            "user.attribute": "keasy.workspaces",
+            "claim.name": "keasy:workspaces",
             "jsonType.label": "String",
             "multivalued": "true",
             "id.token.claim": "true",
@@ -144,29 +144,29 @@
       "attributes": {
         "post.logout.redirect.uris": "http://localhost:8080/*##http://localhost:3000/*"
       },
-      "defaultClientScopes": ["openid", "profile", "email", "keasy-dataspaces"]
+      "defaultClientScopes": ["openid", "profile", "email", "keasy-workspaces"]
     }
   ],
   "users": [
     {
       "id": "aaaa0000-0000-0000-0000-000000000001",
-      "username": "promotor@keasy.dev",
-      "email": "promotor@keasy.dev",
+      "username": "owner@keasy.dev",
+      "email": "owner@keasy.dev",
       "firstName": "Admin",
-      "lastName": "Promotor",
+      "lastName": "Owner",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [{ "type": "password", "value": "promotor", "temporary": false }]
+      "credentials": [{ "type": "password", "value": "owner", "temporary": false }]
     },
     {
       "id": "bbbb0000-0000-0000-0000-000000000001",
-      "username": "participant@keasy.dev",
-      "email": "participant@keasy.dev",
+      "username": "member@keasy.dev",
+      "email": "member@keasy.dev",
       "firstName": "User",
-      "lastName": "Participant",
+      "lastName": "Member",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [{ "type": "password", "value": "participant", "temporary": false }]
+      "credentials": [{ "type": "password", "value": "member", "temporary": false }]
     }
   ]
 }

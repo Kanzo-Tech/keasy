@@ -18,21 +18,21 @@ use crate::middleware::session_auth::AuthenticatedUser;
 use crate::tenant::OrgId;
 
 /// Flat role assigned to a tenant context. No hierarchy — each variant
-/// is distinct. Promotor is the org that manages the instance. OrgAdmin/OrgUser
-/// reflect the user's role within their org.
+/// is distinct. `Owner` owns the workspace; `Admin`/`Member` reflect the
+/// user's role within their workspace (Slack-style membership).
 #[derive(Clone, Debug, PartialEq)]
 pub enum TenantRole {
-    /// Org is promotor of the instance
-    Promotor,
-    /// User has admin role in their org
-    OrgAdmin,
-    /// User has regular user role in their org
-    OrgUser,
+    /// Workspace owner
+    Owner,
+    /// Workspace admin
+    Admin,
+    /// Regular workspace member
+    Member,
 }
 
 /// Authenticated, tenant-scoped request context. Injected into request
 /// extensions by `tenant_context_required` middleware. Route handlers
-/// extract this via `RequireParticipant`, `RequirePromotor`, or `RequireOrgAdmin`.
+/// extract this via `Require<P>` (e.g. `Require<IsOwner>`, `Require<IsAdmin>`).
 #[derive(Clone, Debug)]
 pub struct TenantContext {
     pub org_id: OrgId,
@@ -126,27 +126,27 @@ macro_rules! define_policy {
 }
 
 define_policy!(
-    /// Any authenticated user with a tenant context (promotor, admin, or user).
+    /// Any authenticated user with a tenant context (owner, admin, or member).
     AnyRole, |_role| true
 );
 define_policy!(
-    /// Promotor only — Metadata Broker role (IDS-RAM 4.0).
-    IsPromotor, |role| *role == TenantRole::Promotor
+    /// Workspace owner only.
+    IsOwner, |role| *role == TenantRole::Owner
 );
 define_policy!(
-    /// Any participant user (OrgAdmin or OrgUser). Rejects promotor.
-    IsParticipant, |role| matches!(role, TenantRole::OrgAdmin | TenantRole::OrgUser)
+    /// Any regular workspace user (Admin or Member). Rejects owner.
+    IsMember, |role| matches!(role, TenantRole::Admin | TenantRole::Member)
 );
 define_policy!(
-    /// Participant org admin only. Rejects promotor and OrgUser.
-    IsAdmin, |role| *role == TenantRole::OrgAdmin
+    /// Workspace admin only. Rejects owner and member.
+    IsAdmin, |role| *role == TenantRole::Admin
 );
 define_policy!(
-    /// Promotor or participant admin. Rejects OrgUser.
-    IsAdminOrPromotor, |role| matches!(role, TenantRole::OrgAdmin | TenantRole::Promotor)
+    /// Workspace admin or owner. Rejects member.
+    IsAdminOrOwner, |role| matches!(role, TenantRole::Admin | TenantRole::Owner)
 );
 
-/// Generic policy-based extractor. Replaces `RequirePromotor`, `RequireParticipant`,
+/// Generic policy-based extractor. Replaces `RequireOwner`, `RequireParticipant`,
 /// and `RequireOrgAdmin` with a single `Require<P>` type.
 pub struct Require<P: Policy> {
     ctx: TenantContext,
@@ -205,7 +205,7 @@ pub async fn tenant_context_required(
         .await
         .ok_or(RbacError::NoMembership)?;
 
-    // 3. Get the org to read its role (promotor/participant)
+    // 3. Get the org to read its workspace role (owner/member)
     let org = state
         .db
         .get_organization(&member.org_id)
@@ -213,12 +213,12 @@ pub async fn tenant_context_required(
         .ok_or(RbacError::NoMembership)?;
 
     // 4. Determine TenantRole
-    let role = if org.role == "promotor" {
-        TenantRole::Promotor
+    let role = if org.role == "owner" {
+        TenantRole::Owner
     } else {
         match member.role.parse::<MemberRole>() {
-            Ok(MemberRole::Admin) => TenantRole::OrgAdmin,
-            _ => TenantRole::OrgUser,
+            Ok(MemberRole::Admin) => TenantRole::Admin,
+            _ => TenantRole::Member,
         }
     };
 

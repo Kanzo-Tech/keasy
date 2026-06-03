@@ -11,11 +11,12 @@ services:
     volumes:
       - ./server/src:/src/keasy/server/src
       - server-target:/src/keasy/server/target
-      - ./infra/seeds/dev-seed.sql:/seed/init.sql:ro
     environment:
-      KEASY_SEED_FILE: /seed/init.sql
+      # W7: the owner is bootstrapped from config (replaces SQL seeds). In dev,
+      # this is the demo user's fixed Keycloak `sub` pinned in the realm import.
+      KEASY_OWNER_KEYCLOAK_SUB: ${KEASY_OWNER_KEYCLOAK_SUB:-aaaa0000-0000-0000-0000-000000000001}
+      KEASY_WORKSPACE_NAME: ${KEASY_WORKSPACE_NAME:-Keasy}
       KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-keasy.local}
-      KEASY_GXDCH_MOCK: "true"
       RUST_LOG: debug
     healthcheck:
       interval: 10s
@@ -29,6 +30,10 @@ services:
     volumes:
       - ./web/src:/app/src
       - ./web/public:/app/public
+      # The dev image is deps-only (source is bind-mounted for hot reload). `scripts/`
+      # is part of that source — `predev` runs `scripts/copy-fossil-wasm.mjs` — so it
+      # must be mounted like src/public, else the container exits 1 (→ Caddy 502).
+      - ./web/scripts:/app/scripts
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/"]
       interval: 5s

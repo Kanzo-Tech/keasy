@@ -33,13 +33,13 @@ pub struct SpawnParams {
     pub script: String,
     pub org_settings: Option<OrgSettings>,
     pub dcat_enabled: bool,
-    /// Destination URL for the job's GraphAr output (promotor storage + job id).
+    /// Destination URL for the job's GraphAr output (owner storage + job id).
     /// None when no output storage is configured — the run fails fast.
     pub output_dest: Option<String>,
     /// Cloud secrets for the dest + `@conn` sources, piped to the subprocess.
     pub run_creds: RunCreds,
-    /// Base URL for catalog storage (promotor cloud). The dest cloud secret is
-    /// reused from `run_creds.dest` (catalog + output share the promotor
+    /// Base URL for catalog storage (owner cloud). The dest cloud secret is
+    /// reused from `run_creds.dest` (catalog + output share the owner
     /// account). None when catalog storage is not configured.
     pub catalog_dest: Option<String>,
 }
@@ -302,7 +302,7 @@ fn run_job(
                 build_catalog_input(job_id, job_name, &completed_at, org, &run_status, dest_url);
             let dest_with_job =
                 format!("{}/{}/{job_id}", base.trim_end_matches('/'), org.publisher_name);
-            // The catalog shares the promotor cloud account with the output, so
+            // The catalog shares the owner cloud account with the output, so
             // its dest secret is the run's dest secret.
             match FossilRunner::from_env().run_catalog(&catalog_input, &dest_with_job, &run_creds.dest) {
                 Ok(cat_status) => (Some(cat_status), Some(dest_with_job)),

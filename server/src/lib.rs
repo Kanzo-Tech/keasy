@@ -12,10 +12,9 @@ pub mod crypto;
 pub mod db;
 pub mod discovery;
 pub mod error;
-pub mod gaia_x;
 pub mod graph;
 pub mod jobs;
-pub mod keycloak;
+pub use keasy_keycloak as keycloak;
 pub mod middleware;
 pub mod openapi;
 pub mod routes;
@@ -28,7 +27,6 @@ pub use db::Database;
 pub use jobs::runner::JobRunner;
 
 use secrecy::SecretString;
-use std::path::PathBuf;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -38,7 +36,6 @@ pub struct AppState {
     pub api_key: SecretString,
     pub base_url: String,
     pub auth: AuthServices,
-    pub gaia_x: GaiaXServices,
 }
 
 /// Authentication and identity services (Keycloak / OIDC).
@@ -58,14 +55,3 @@ pub struct AuthServices {
     pub oidc_client_secret: Option<SecretString>,
 }
 
-/// Gaia-X external services (GXDCH).
-#[derive(Clone)]
-pub struct GaiaXServices {
-    /// GXDCH client — Real (HTTP) or Mock (local JSON-LD).
-    pub gxdch: crate::gaia_x::gxdch::GxdchClient,
-    /// Base domain for org subdomains (e.g. "keasy.example.com").
-    /// When set, .well-known endpoints resolve org via Host header subdomain.
-    pub base_domain: Option<String>,
-    /// Path to Caddy's data directory for reading TLS certificates.
-    pub caddy_certs_dir: Option<PathBuf>,
-}

@@ -25,8 +25,9 @@ pub struct MeResponse {
     pub org: Option<MeOrg>,
 }
 
+/// A workspace the user can switch to, as shown in the switcher.
 #[derive(serde::Serialize, utoipa::ToSchema)]
-pub struct Workspace {
+pub struct WorkspaceSummary {
     pub client_id: String,
     pub name: String,
     pub url: String,
@@ -34,7 +35,7 @@ pub struct Workspace {
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct WorkspacesResponse {
-    pub workspaces: Vec<Workspace>,
+    pub workspaces: Vec<WorkspaceSummary>,
     pub current_client_id: String,
 }
 
@@ -84,9 +85,9 @@ pub async fn get_me(
 
     // Compute effective role
     let effective_role = match (&org, &membership) {
-        (Some(o), _) if o.role == "promotor" => "promotor",
-        (_, Some(m)) if m.role == "admin" => "org_admin",
-        (_, Some(_)) => "org_user",
+        (Some(o), _) if o.role == "owner" => "owner",
+        (_, Some(m)) if m.role == "admin" => "admin",
+        (_, Some(_)) => "member",
         _ => "none",
     };
 
@@ -135,9 +136,9 @@ pub async fn get_invite_info(
 
 /// GET /v1/auth/workspaces
 ///
-/// Returns the list of dataspaces the authenticated user has access to,
-/// resolved from the `dataspaces` session value to display info via
-/// the dataspaces table. Used by the sidebar instance switcher.
+/// Returns the list of workspaces the authenticated user has access to,
+/// resolved from the Keycloak `keasy:workspaces` claim to display info via
+/// the workspaces table. Used by the sidebar workspace switcher.
 #[utoipa::path(get, path = "/v1/auth/workspaces", tag = "Auth",
     responses((status = 200, description = "List of accessible workspaces", body = WorkspacesResponse))
 )]
@@ -147,11 +148,11 @@ pub async fn list_workspaces(
     auth_user: axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
 ) -> Result<impl IntoResponse, AuthError> {
     // Read workspaces live from Keycloak (user_id = Keycloak sub).
-    let dataspaces: Vec<String> = if let Some(kc_admin) = &state.auth.keycloak_admin {
+    let workspace_ids: Vec<String> = if let Some(kc_admin) = &state.auth.keycloak_admin {
         match kc_admin.get_user_workspaces(&auth_user.user_id).await {
-            Ok(ds) => {
-                tracing::debug!(user_id = %auth_user.user_id, workspaces = ?ds, "Keycloak workspaces");
-                ds
+            Ok(ids) => {
+                tracing::debug!(user_id = %auth_user.user_id, workspaces = ?ids, "Keycloak workspaces");
+                ids
             }
             Err(e) => {
                 tracing::warn!(error = %e, user_id = %auth_user.user_id, "Failed to read workspaces from Keycloak");
@@ -165,25 +166,25 @@ pub async fn list_workspaces(
 
     let current_client_id = state.auth.oidc_client_id.clone().unwrap_or_default();
 
-    // Batch lookup: resolve all dataspaces in a single query
-    let client_id_refs: Vec<&str> = dataspaces.iter().map(|s| s.as_str()).collect();
-    let cached = state.db.get_dataspaces_by_client_ids(&client_id_refs).await;
+    // Batch lookup: resolve all workspaces in a single query
+    let client_id_refs: Vec<&str> = workspace_ids.iter().map(|s| s.as_str()).collect();
+    let cached = state.db.get_workspaces_by_client_ids(&client_id_refs).await;
     let cached_ids: std::collections::HashSet<String> = cached.iter().map(|d| d.client_id.clone()).collect();
 
-    let mut workspaces: Vec<Workspace> = cached
+    let mut workspaces: Vec<WorkspaceSummary> = cached
         .into_iter()
-        .map(|ds| Workspace { client_id: ds.client_id, name: ds.name, url: ds.url })
+        .map(|w| WorkspaceSummary { client_id: w.client_id, name: w.name, url: w.url })
         .collect();
 
     // Resolve cache misses individually via Keycloak Admin API
-    for client_id in &dataspaces {
+    for client_id in &workspace_ids {
         if cached_ids.contains(client_id) {
             continue;
         }
         if let Some(kc_admin) = &state.auth.keycloak_admin
             && let Some(resolved) = kc_admin.resolve_client(client_id).await {
-                let _ = state.db.ensure_dataspace(client_id, &resolved.name, &resolved.url).await;
-                workspaces.push(Workspace {
+                let _ = state.db.ensure_workspace(client_id, &resolved.name, &resolved.url).await;
+                workspaces.push(WorkspaceSummary {
                     client_id: client_id.clone(),
                     name: resolved.name,
                     url: resolved.url,

@@ -1,6 +1,6 @@
-//! Promotor-only admin endpoints.
+//! Owner-only admin endpoints.
 //!
-//! All handlers require `RequirePromotor` — non-promotor users receive 403
+//! All handlers require `RequireOwner` — non-owner users receive 403
 //! `rbac/insufficient_role`. These routes live inside `api_routes` and are
 //! therefore also protected by `session_required` and `tenant_context_required`.
 
@@ -11,11 +11,11 @@ use serde::Deserialize;
 
 use crate::AppState;
 use crate::db::invite_tokens::InviteToken;
-use crate::db::dataspaces::Dataspace;
+use crate::db::workspaces::Workspace;
 use crate::db::organizations::{Organization, generate_unique_slug};
 use crate::error::data_response;
 use crate::middleware::session_auth::AuthenticatedUser;
-use crate::middleware::tenant::{IsPromotor, RbacError, Require};
+use crate::middleware::tenant::{IsOwner, RbacError, Require};
 
 // ---------------------------------------------------------------------------
 // Response types
@@ -29,7 +29,7 @@ pub struct CreateOrgResponse {
 }
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
-pub struct RegisterDataspaceResponse {
+pub struct RegisterWorkspaceResponse {
     pub id: String,
     pub client_id: String,
     pub client_secret: String,
@@ -65,7 +65,7 @@ pub struct AdminInviteResult {
     responses((status = 200, description = "List all organizations", body = Vec<Organization>))
 )]
 pub async fn list_all_orgs(
-    _ctx: Require<IsPromotor>,
+    _ctx: Require<IsOwner>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
     let orgs = state.db.list_organizations().await;
@@ -89,14 +89,14 @@ pub struct CreateOrgAndInviteRequest {
     )
 )]
 pub async fn create_org_and_invite(
-    _ctx: Require<IsPromotor>,
+    _ctx: Require<IsOwner>,
     axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
     State(state): State<AppState>,
     Json(payload): Json<CreateOrgAndInviteRequest>,
 ) -> Result<impl IntoResponse, RbacError> {
     let now = jiff::Timestamp::now().to_string();
 
-    // 1. Create organization as participant
+    // 1. Create organization as member
     let slug = {
         let (_permit, conn) = state.db.read().await;
         generate_unique_slug(&conn, &payload.name)
@@ -110,7 +110,7 @@ pub async fn create_org_and_invite(
         country_subdivision_code: None,
         registration_number_type: None,
         country: "EU".to_string(),
-        role: "participant".to_string(),
+        role: "member".to_string(),
         created_at: now.clone(),
         updated_at: now.clone(),
     };
@@ -154,7 +154,7 @@ pub async fn create_org_and_invite(
 }
 
 // ---------------------------------------------------------------------------
-// POST /v1/admin/oidc-clients — Register a dataspace instance as an OIDC client
+// POST /v1/admin/oidc-clients — Register a workspace instance as an OIDC client
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -168,12 +168,12 @@ pub struct RegisterOidcClientRequest {
 #[utoipa::path(post, path = "/v1/admin/oidc-clients", tag = "Admin",
     request_body = RegisterOidcClientRequest,
     responses(
-        (status = 201, description = "OIDC client registered", body = RegisterDataspaceResponse),
+        (status = 201, description = "OIDC client registered", body = RegisterWorkspaceResponse),
         (status = 403, description = "Insufficient role"),
     )
 )]
-pub async fn register_dataspace(
-    _ctx: Require<IsPromotor>,
+pub async fn register_workspace(
+    _ctx: Require<IsOwner>,
     State(state): State<AppState>,
     Json(payload): Json<RegisterOidcClientRequest>,
 ) -> Result<impl IntoResponse, RbacError> {
@@ -208,7 +208,7 @@ pub async fn register_dataspace(
         .map_err(RbacError::Internal)?;
 
     // 4. Store display metadata in SQLite (NO secret stored)
-    let dataspace = Dataspace {
+    let workspace = Workspace {
         id: id.clone(),
         client_id: client_id.clone(),
         name: payload.name.clone(),
@@ -220,14 +220,14 @@ pub async fn register_dataspace(
     };
     state
         .db
-        .create_dataspace(&dataspace)
+        .create_workspace(&workspace)
         .await
         .map_err(RbacError::Internal)?;
 
     // 5. Return the record WITH client_secret (one-time display — not stored)
     Ok((
         StatusCode::CREATED,
-        data_response(RegisterDataspaceResponse {
+        data_response(RegisterWorkspaceResponse {
             id,
             client_id,
             client_secret: registered.client_secret,
@@ -240,17 +240,17 @@ pub async fn register_dataspace(
 }
 
 // ---------------------------------------------------------------------------
-// GET /v1/admin/oidc-clients — List all registered dataspace instances
+// GET /v1/admin/oidc-clients — List all registered workspace instances
 // ---------------------------------------------------------------------------
 
 #[utoipa::path(get, path = "/v1/admin/oidc-clients", tag = "Admin",
-    responses((status = 200, description = "List of registered OIDC clients", body = Vec<Dataspace>))
+    responses((status = 200, description = "List of registered OIDC clients", body = Vec<Workspace>))
 )]
-pub async fn list_dataspaces(
-    _ctx: Require<IsPromotor>,
+pub async fn list_registered_workspaces(
+    _ctx: Require<IsOwner>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let clients = state.db.list_dataspaces().await;
+    let clients = state.db.list_workspaces().await;
     Ok(data_response(clients))
 }
 
@@ -262,7 +262,7 @@ pub async fn list_dataspaces(
     responses((status = 200, description = "List all invite tokens", body = Vec<AdminInviteEntry>))
 )]
 pub async fn list_invites(
-    _ctx: Require<IsPromotor>,
+    _ctx: Require<IsOwner>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
     let tokens = state.db.list_invite_tokens().await;
@@ -306,14 +306,14 @@ pub struct CreateInviteRequest {
     )
 )]
 pub async fn create_invite(
-    _ctx: Require<IsPromotor>,
+    _ctx: Require<IsOwner>,
     axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
     State(state): State<AppState>,
     Json(payload): Json<CreateInviteRequest>,
 ) -> Result<impl IntoResponse, RbacError> {
     let now = jiff::Timestamp::now().to_string();
 
-    // 1. Create participant org
+    // 1. Create member workspace
     let slug = {
         let (_permit, conn) = state.db.read().await;
         generate_unique_slug(&conn, &payload.org_name)
@@ -327,7 +327,7 @@ pub async fn create_invite(
         country_subdivision_code: None,
         registration_number_type: None,
         country: "EU".to_string(),
-        role: "participant".to_string(),
+        role: "member".to_string(),
         created_at: now.clone(),
         updated_at: now.clone(),
     };
@@ -384,7 +384,7 @@ pub async fn create_invite(
     )
 )]
 pub async fn revoke_invite(
-    _ctx: Require<IsPromotor>,
+    _ctx: Require<IsOwner>,
     axum::extract::Path(token): axum::extract::Path<String>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {

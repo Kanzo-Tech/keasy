@@ -57,6 +57,7 @@ pub fn build_catalog_input(
         .collect();
 
     CatalogInput {
+        version: fossil_run_status::WIRE_VERSION,
         job_id: job_id.to_string(),
         job_name: job_name.map(str::to_string),
         completed_at: completed_at.to_string(),

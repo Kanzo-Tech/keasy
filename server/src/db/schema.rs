@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS organizations (
     country_subdivision_code TEXT,
     registration_number_type TEXT CHECK(registration_number_type IN ('vatID', 'leiCode', 'EORI')),
     country             TEXT NOT NULL CHECK(length(country) = 2),
-    role                TEXT NOT NULL DEFAULT 'participant' CHECK(role IN ('promotor', 'participant')),
+    role                TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('owner', 'member')),
     created_at          TEXT NOT NULL,
     updated_at          TEXT NOT NULL
 );
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS organizations (
 CREATE TABLE IF NOT EXISTS org_members (
     user_id    TEXT NOT NULL,
     org_id     TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    role       TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('admin', 'user')),
+    role       TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('admin', 'member')),
     email      TEXT NOT NULL DEFAULT '',
     first_name TEXT NOT NULL DEFAULT '',
     last_name  TEXT NOT NULL DEFAULT '',
@@ -109,34 +109,15 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 CREATE TABLE IF NOT EXISTS invite_tokens (
     token      TEXT PRIMARY KEY,
     org_id     TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    role       TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('admin', 'user')),
+    role       TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('admin', 'member')),
     created_by TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
 
--- Gaia-X compliance state per org (replaces gaia_x_wizard_state)
--- Private key is NEVER stored — only public_key_jwk is persisted (locked decision)
--- did_document is NOT persisted: derived at runtime from public_key_jwk + domain
-CREATE TABLE IF NOT EXISTS org_gaiax (
-    org_id          TEXT PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
-    domain          TEXT,
-    public_key_jwk  TEXT,
-    cert_chain_pem  TEXT,
-    root_ca_pem     TEXT,
-    lrn_type        TEXT,
-    lrn_value       TEXT,
-    lrn_vc          TEXT,
-    lp_vc           TEXT,
-    tandc_vc        TEXT,
-    compliance_vc   TEXT,
-    wizard_step     INTEGER NOT NULL DEFAULT 0,
-    updated_at      TEXT NOT NULL
-);
-
--- Registered dataspace instances (OIDC clients in Keycloak)
--- Display metadata for workspace picker; OIDC credentials live in Keycloak only
-CREATE TABLE IF NOT EXISTS dataspaces (
+-- Registered workspace instances (OIDC clients in Keycloak)
+-- Display metadata for the workspace switcher; OIDC credentials live in Keycloak only
+CREATE TABLE IF NOT EXISTS workspaces (
     id          TEXT PRIMARY KEY,
     client_id   TEXT NOT NULL UNIQUE,
     name        TEXT NOT NULL,

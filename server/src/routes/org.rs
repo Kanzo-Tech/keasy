@@ -18,7 +18,7 @@ use crate::db::invite_tokens::InviteToken;
 use crate::db::org_members::{MemberRole, OrgMember};
 use crate::error::{data_response, error_body};
 use crate::middleware::session_auth::AuthenticatedUser;
-use crate::middleware::tenant::{IsAdmin, IsParticipant, RbacError, Require};
+use crate::middleware::tenant::{IsAdmin, IsMember, RbacError, Require};
 
 static SUBDIVISION_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[A-Z]{2}-[A-Z0-9]{1,3}$").unwrap());
@@ -110,7 +110,7 @@ pub struct UpdateOrgIdentityPayload {
     )
 )]
 pub async fn get_org_identity(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     let org = state.db.get_organization(&ctx.org_id.0).await;

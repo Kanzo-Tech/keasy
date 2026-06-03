@@ -8,9 +8,6 @@ use crate::error::data_response;
 #[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct ServiceStatusResponse {
     pub oidc: bool,
-    pub gxdch_notary: bool,
-    pub gxdch_compliance: bool,
-    pub base_domain: Option<String>,
 }
 
 #[utoipa::path(get, path = "/healthz/live", tag = "Health",
@@ -40,8 +37,5 @@ pub async fn readiness(State(state): State<AppState>) -> impl IntoResponse {
 pub async fn service_status(State(state): State<AppState>) -> impl IntoResponse {
     data_response(ServiceStatusResponse {
         oidc: state.auth.oidc_state.is_some(),
-        gxdch_notary: true,
-        gxdch_compliance: true,
-        base_domain: state.gaia_x.base_domain.clone(),
     })
 }

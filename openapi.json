@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Keasy API",
-    "description": "Keasy — data pipeline execution, cloud storage, and Gaia-X compliance API",
+    "description": "Keasy — data pipeline execution and cloud storage API",
     "contact": {
       "name": "Ángel Iglesias Préstamo",
       "email": "angel.iglesias.prestamo@gmail.com"
@@ -13,60 +13,6 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/.well-known/did.json": {
-      "get": {
-        "tags": [
-          "Gaia-X Public"
-        ],
-        "operationId": "get_did_document",
-        "parameters": [
-          {
-            "name": "org",
-            "in": "query",
-            "description": "Organization ID (dev fallback)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "DID document"
-          },
-          "404": {
-            "description": "DID document not found"
-          }
-        }
-      }
-    },
-    "/.well-known/x509CertificateChain.pem": {
-      "get": {
-        "tags": [
-          "Gaia-X Public"
-        ],
-        "operationId": "get_cert_chain",
-        "parameters": [
-          {
-            "name": "org",
-            "in": "query",
-            "description": "Organization ID (dev fallback)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "X.509 certificate chain PEM"
-          },
-          "404": {
-            "description": "Certificate chain not found"
-          }
-        }
-      }
-    },
     "/healthz/live": {
       "get": {
         "tags": [
@@ -182,7 +128,7 @@
         "tags": [
           "Admin"
         ],
-        "operationId": "list_dataspaces",
+        "operationId": "list_registered_workspaces",
         "responses": {
           "200": {
             "description": "List of registered OIDC clients",
@@ -191,7 +137,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Dataspace"
+                    "$ref": "#/components/schemas/Workspace"
                   }
                 }
               }
@@ -203,7 +149,7 @@
         "tags": [
           "Admin"
         ],
-        "operationId": "register_dataspace",
+        "operationId": "register_workspace",
         "requestBody": {
           "content": {
             "application/json": {
@@ -220,7 +166,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RegisterDataspaceResponse"
+                  "$ref": "#/components/schemas/RegisterWorkspaceResponse"
                 }
               }
             }
@@ -419,7 +365,7 @@
           "Auth"
         ],
         "summary": "GET /v1/auth/workspaces",
-        "description": "Returns the list of dataspaces the authenticated user has access to,\nresolved from the `dataspaces` session value to display info via\nthe dataspaces table. Used by the sidebar instance switcher.",
+        "description": "Returns the list of workspaces the authenticated user has access to,\nresolved from the Keycloak `keasy:workspaces` claim to display info via\nthe workspaces table. Used by the sidebar workspace switcher.",
         "operationId": "list_workspaces",
         "responses": {
           "200": {
@@ -969,59 +915,6 @@
           },
           "404": {
             "description": "Not found"
-          }
-        }
-      }
-    },
-    "/v1/gaia-x/compliance": {
-      "get": {
-        "tags": [
-          "Gaia-X Compliance"
-        ],
-        "operationId": "get_compliance_status",
-        "responses": {
-          "200": {
-            "description": "Compliance status and credentials",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ComplianceStatus"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/gaia-x/comply": {
-      "post": {
-        "tags": [
-          "Gaia-X Compliance"
-        ],
-        "operationId": "comply",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ComplyRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "SSE stream of compliance phases",
-            "content": {
-              "text/event-stream": {
-                "schema": {
-                  "$ref": "#/components/schemas/ComplyEvent"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Prerequisites missing"
           }
         }
       }
@@ -2274,138 +2167,6 @@
           }
         }
       },
-      "ComplianceCredential": {
-        "type": "object",
-        "required": [
-          "name",
-          "issued_at",
-          "raw_json"
-        ],
-        "properties": {
-          "issued_at": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "raw_json": {
-            "type": "object",
-            "additionalProperties": true
-          }
-        }
-      },
-      "ComplianceStatus": {
-        "type": "object",
-        "required": [
-          "compliant",
-          "credentials"
-        ],
-        "properties": {
-          "compliant": {
-            "type": "boolean"
-          },
-          "credentials": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ComplianceCredential"
-            }
-          },
-          "verified_at": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "ComplyEvent": {
-        "type": "object",
-        "description": "SSE event emitted during the comply pipeline.",
-        "required": [
-          "phase",
-          "index"
-        ],
-        "properties": {
-          "data": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ComplyResponse",
-                "description": "Final result (only on \"complete\" or error-after-key-gen)"
-              }
-            ]
-          },
-          "error": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Error message (only on failure)"
-          },
-          "index": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Index 0-5, maps to frontend PHASES array",
-            "minimum": 0
-          },
-          "phase": {
-            "type": "string",
-            "description": "Phase name: key_generation, certificate, lrn_request, signing, compliance_submission, complete"
-          }
-        }
-      },
-      "ComplyRequest": {
-        "type": "object",
-        "description": "Request body for the one-click comply endpoint.",
-        "properties": {
-          "cert_chain_pem": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Optional PEM cert chain — fallback if Caddy certs are unavailable."
-          }
-        }
-      },
-      "ComplyResponse": {
-        "type": "object",
-        "description": "Response from the one-click comply endpoint.",
-        "required": [
-          "compliant"
-        ],
-        "properties": {
-          "compliance_vc": {
-            "type": "object",
-            "additionalProperties": true
-          },
-          "compliant": {
-            "type": "boolean"
-          },
-          "error": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Error message on failure."
-          },
-          "failed_phase": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Which phase failed: key_generation, certificate, lrn_request, lp_signing, tc_signing, compliance_submission."
-          },
-          "private_key_pem": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "PEM-encoded private key (auto-download on success)."
-          }
-        }
-      },
       "Connection": {
         "type": "object",
         "required": [
@@ -2716,49 +2477,6 @@
           "data": {}
         }
       },
-      "Dataspace": {
-        "type": "object",
-        "required": [
-          "id",
-          "client_id",
-          "name",
-          "url",
-          "created_at",
-          "updated_at"
-        ],
-        "properties": {
-          "client_id": {
-            "type": "string"
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "logo": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "url": {
-            "type": "string"
-          }
-        }
-      },
       "EdgeStatus": {
         "type": "object",
         "description": "One edge type — its CSR/CSC Parquet pair and endpoints.",
@@ -2985,7 +2703,7 @@
               "string",
               "null"
             ],
-            "description": "Base URL for catalog parquets in promotor storage."
+            "description": "Base URL for catalog parquets in owner storage."
           },
           "catalog_manifest": {
             "oneOf": [
@@ -2994,7 +2712,7 @@
               },
               {
                 "$ref": "#/components/schemas/RunStatus",
-                "description": "DCAT-AP catalog graph structure (`fossil catalog` subprocess output):\nper-type Parquet + counts, stored in promotor cloud. Drives the catalog\ngraph view (DuckDB-WASM reads the Parquet directly)."
+                "description": "DCAT-AP catalog graph structure (`fossil catalog` subprocess output):\nper-type Parquet + counts, stored in owner cloud. Drives the catalog\ngraph view (DuckDB-WASM reads the Parquet directly)."
               }
             ]
           },
@@ -3321,14 +3039,14 @@
               "string",
               "null"
             ],
-            "description": "Base URL for catalog parquet storage (e.g. s3://promotor/catalogs/)."
+            "description": "Base URL for catalog parquet storage (e.g. s3://owner/catalogs/)."
           },
           "catalog_cloud_account_id": {
             "type": [
               "string",
               "null"
             ],
-            "description": "Cloud account ID for catalog parquet storage (set by promotor)."
+            "description": "Cloud account ID for catalog parquet storage (set by owner)."
           },
           "catalog_description": {
             "type": [
@@ -3511,7 +3229,34 @@
           }
         }
       },
-      "RegisterDataspaceResponse": {
+      "RegisterOidcClientRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "url"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "logo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "RegisterWorkspaceResponse": {
         "type": "object",
         "required": [
           "id",
@@ -3535,33 +3280,6 @@
           },
           "id": {
             "type": "string"
-          },
-          "logo": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "url": {
-            "type": "string"
-          }
-        }
-      },
-      "RegisterOidcClientRequest": {
-        "type": "object",
-        "required": [
-          "name",
-          "url"
-        ],
-        "properties": {
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
           },
           "logo": {
             "type": [
@@ -3632,6 +3350,12 @@
             },
             "description": "One entry per emitted edge type (empty until a shape/Phase-B adds edges)."
           },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Wire-contract version this payload was produced with (see [`WIRE_VERSION`]).",
+            "minimum": 0
+          },
           "vertices": {
             "type": "array",
             "items": {
@@ -3644,23 +3368,9 @@
       "ServiceStatusResponse": {
         "type": "object",
         "required": [
-          "oidc",
-          "gxdch_notary",
-          "gxdch_compliance"
+          "oidc"
         ],
         "properties": {
-          "base_domain": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "gxdch_compliance": {
-            "type": "boolean"
-          },
-          "gxdch_notary": {
-            "type": "boolean"
-          },
           "oidc": {
             "type": "boolean"
           }
@@ -3921,6 +3631,50 @@
       "Workspace": {
         "type": "object",
         "required": [
+          "id",
+          "client_id",
+          "name",
+          "url",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "logo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkspaceSummary": {
+        "type": "object",
+        "description": "A workspace the user can switch to, as shown in the switcher.",
+        "required": [
           "client_id",
           "name",
           "url"
@@ -3950,7 +3704,7 @@
           "workspaces": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Workspace"
+              "$ref": "#/components/schemas/WorkspaceSummary"
             }
           }
         }

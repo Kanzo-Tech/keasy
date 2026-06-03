@@ -5,7 +5,7 @@ use utoipa::OpenApi;
     info(
         title = "Keasy API",
         version = "1.0.0",
-        description = "Keasy — data pipeline execution, cloud storage, and Gaia-X compliance API",
+        description = "Keasy — data pipeline execution and cloud storage API",
     ),
     paths(
         // Health
@@ -57,8 +57,8 @@ use utoipa::OpenApi;
         crate::routes::admin::list_invites,
         crate::routes::admin::create_invite,
         crate::routes::admin::revoke_invite,
-        crate::routes::admin::list_dataspaces,
-        crate::routes::admin::register_dataspace,
+        crate::routes::admin::list_registered_workspaces,
+        crate::routes::admin::register_workspace,
         // Organization
         crate::routes::org::list_users,
         crate::routes::org::update_user_role,
@@ -68,11 +68,6 @@ use utoipa::OpenApi;
         crate::routes::org::create_org_invite,
         crate::routes::org::list_org_invites,
         crate::routes::org::revoke_org_invite,
-        // Gaia-X Compliance
-        crate::gaia_x::routes::comply,
-        crate::gaia_x::routes::get_compliance_status,
-        crate::gaia_x::routes::get_did_document,
-        crate::gaia_x::routes::get_cert_chain,
         // Discovery
         crate::discovery::routes::resolve_discover_urls,
         // AI / Conversations
@@ -125,20 +120,14 @@ use utoipa::OpenApi;
         crate::db::organizations::Organization,
         // Invite Tokens
         crate::db::invite_tokens::InviteToken,
-        // Dataspaces
-        crate::db::dataspaces::Dataspace,
+        // Workspaces
+        crate::db::workspaces::Workspace,
         // Org members
         crate::db::org_members::OrgMember,
-        // Gaia-X Compliance
-        crate::gaia_x::routes::ComplianceCredential,
-        crate::gaia_x::routes::ComplianceStatus,
-        crate::gaia_x::ComplyRequest,
-        crate::gaia_x::ComplyResponse,
-        crate::gaia_x::ComplyEvent,
         // Auth response types
         crate::auth::routes::MeResponse,
         crate::auth::routes::MeOrg,
-        crate::auth::routes::Workspace,
+        crate::auth::routes::WorkspaceSummary,
         crate::auth::routes::WorkspacesResponse,
         crate::auth::routes::InviteInfoResponse,
         crate::auth::routes::LogoutResponse,
@@ -151,7 +140,7 @@ use utoipa::OpenApi;
         crate::routes::admin::AdminInviteEntry,
         crate::routes::admin::AdminInviteResult,
         crate::routes::admin::CreateOrgResponse,
-        crate::routes::admin::RegisterDataspaceResponse,
+        crate::routes::admin::RegisterWorkspaceResponse,
         // Organization
         crate::routes::org::OrgInviteEntry,
         crate::routes::org::UpdateUserRoleRequest,

@@ -140,6 +140,11 @@ pub enum FossilRunError {
         #[source]
         source: serde_json::Error,
     },
+    /// The `fossil` binary speaks a wire-contract version this host does not
+    /// understand (the binary and host drifted). Surfaced instead of silently
+    /// misreading the payload.
+    #[error("fossil wire-contract version {got} is incompatible with host version {expected}")]
+    WireVersion { got: u32, expected: u32 },
 }
 
 /// Locates and invokes the `fossil` CLI.
@@ -341,12 +346,21 @@ impl FossilRunner {
         Ok(String::from_utf8_lossy(&output.stdout).into_owned())
     }
 
-    /// Parse the `--output-json` stdout into a [`RunStatus`].
+    /// Parse the `--output-json` stdout into a [`RunStatus`], rejecting a payload
+    /// whose wire-contract version this host can't read (binary/host drift).
     fn parse_status(stdout: &str) -> Result<RunStatus, FossilRunError> {
-        serde_json::from_str(stdout.trim()).map_err(|source| FossilRunError::Parse {
-            stdout: stdout.to_string(),
-            source,
-        })
+        let status: RunStatus =
+            serde_json::from_str(stdout.trim()).map_err(|source| FossilRunError::Parse {
+                stdout: stdout.to_string(),
+                source,
+            })?;
+        if !fossil_run_status::is_compatible(status.version) {
+            return Err(FossilRunError::WireVersion {
+                got: status.version,
+                expected: fossil_run_status::WIRE_VERSION,
+            });
+        }
+        Ok(status)
     }
 }
 

@@ -217,7 +217,34 @@ impl KeycloakAdmin {
         })
     }
 
-    /// Ensure the keasy:dataspaces protocol mapper exists on the specified client.
+    /// Delete an OIDC client by its Keycloak-internal UUID. Used by the
+    /// control-plane to roll back a half-provisioned workspace and to tear one
+    /// down on `DELETE /workspaces/{id}`. A 404 is treated as success
+    /// (idempotent — the client is already gone).
+    pub async fn delete_client(&self, keycloak_uuid: &str) -> Result<(), String> {
+        let token = self.get_admin_token().await?;
+        let url = format!(
+            "{}/admin/realms/{}/clients/{}",
+            self.base_url, self.realm, keycloak_uuid
+        );
+        let resp = self
+            .http
+            .delete(&url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak client deletion failed: {e}"))?;
+
+        if resp.status().is_success() || resp.status() == reqwest::StatusCode::NOT_FOUND {
+            Ok(())
+        } else {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            Err(format!("Keycloak client deletion returned {status}: {body}"))
+        }
+    }
+
+    /// Ensure the keasy:workspaces protocol mapper exists on the specified client.
     /// Idempotent: if the mapper already exists, Keycloak returns 409 which is ignored.
     pub async fn ensure_protocol_mapper(&self, keycloak_client_id: &str) -> Result<(), String> {
         let token = self.get_admin_token().await?;
@@ -253,12 +280,12 @@ impl KeycloakAdmin {
         );
 
         let mapper_body = serde_json::json!({
-            "name": "keasy-dataspaces",
+            "name": "keasy-workspaces",
             "protocol": "openid-connect",
             "protocolMapper": "oidc-usermodel-attribute-mapper",
             "config": {
-                "user.attribute": "keasy.dataspaces",
-                "claim.name": "keasy:dataspaces",
+                "user.attribute": "keasy.workspaces",
+                "claim.name": "keasy:workspaces",
                 "jsonType.label": "String",
                 "multivalued": "true",
                 "id.token.claim": "true",
@@ -278,11 +305,11 @@ impl KeycloakAdmin {
 
         match resp.status().as_u16() {
             201 => {
-                tracing::info!("Created keasy:dataspaces protocol mapper in Keycloak");
+                tracing::info!("Created keasy:workspaces protocol mapper in Keycloak");
                 Ok(())
             }
             409 => {
-                tracing::debug!("keasy:dataspaces protocol mapper already exists");
+                tracing::debug!("keasy:workspaces protocol mapper already exists");
                 Ok(())
             }
             status => {
@@ -294,7 +321,7 @@ impl KeycloakAdmin {
         }
     }
 
-    /// Add a workspace client_id to a Keycloak user's `keasy.dataspaces` attribute.
+    /// Add a workspace client_id to a Keycloak user's `keasy.workspaces` attribute.
     ///
     /// Reads the user's current attributes, appends the client_id (deduped),
     /// and PUTs the updated attributes back.
@@ -329,16 +356,16 @@ impl KeycloakAdmin {
             .await
             .map_err(|e| format!("Failed to parse Keycloak user response: {e}"))?;
 
-        // Read existing dataspaces attribute
-        let mut dataspaces: Vec<String> = user
+        // Read existing workspace_ids attribute
+        let mut workspace_ids: Vec<String> = user
             .get("attributes")
-            .and_then(|a| a.get("keasy.dataspaces"))
+            .and_then(|a| a.get("keasy.workspaces"))
             .and_then(|v| serde_json::from_value(v.clone()).ok())
             .unwrap_or_default();
 
         // Dedup — only add if not already present
-        if !dataspaces.contains(&client_id.to_string()) {
-            dataspaces.push(client_id.to_string());
+        if !workspace_ids.contains(&client_id.to_string()) {
+            workspace_ids.push(client_id.to_string());
         }
 
         // Update the user representation
@@ -347,7 +374,7 @@ impl KeycloakAdmin {
             .ok_or("user is not an object")?
             .entry("attributes")
             .or_insert_with(|| serde_json::json!({}));
-        attributes["keasy.dataspaces"] = serde_json::json!(dataspaces);
+        attributes["keasy.workspaces"] = serde_json::json!(workspace_ids);
 
         // PUT updated user
         let resp = self
@@ -368,7 +395,7 @@ impl KeycloakAdmin {
         tracing::info!(
             user_id = %keycloak_user_id,
             client_id = %client_id,
-            "Added dataspace to Keycloak user"
+            "Added workspace to Keycloak user"
         );
         Ok(())
     }
@@ -376,7 +403,7 @@ impl KeycloakAdmin {
     /// Resolve a Keycloak OIDC client by its clientId string.
     ///
     /// Returns the client's display name and base URL (from webOrigins[0]).
-    /// Used by the workspace switcher to resolve unknown dataspaces on cache miss.
+    /// Used by the workspace switcher to resolve unknown workspace_ids on cache miss.
     pub async fn resolve_client(&self, client_id: &str) -> Option<ResolvedClient> {
         let token = self.get_admin_token().await.ok()?;
 
@@ -408,7 +435,7 @@ impl KeycloakAdmin {
         Some(ResolvedClient { name, url })
     }
 
-    /// Read the user's workspaces from Keycloak (`keasy.dataspaces` attribute).
+    /// Read the user's workspaces from Keycloak (`keasy.workspaces` attribute).
     ///
     /// Returns the live list from Keycloak (not the stale ID token claim).
     pub async fn get_user_workspaces(&self, keycloak_user_id: &str) -> Result<Vec<String>, String> {
@@ -426,12 +453,12 @@ impl KeycloakAdmin {
         }
         let user: serde_json::Value = resp.json().await
             .map_err(|e| format!("parse user: {e}"))?;
-        let dataspaces: Vec<String> = user
+        let workspace_ids: Vec<String> = user
             .get("attributes")
-            .and_then(|a| a.get("keasy.dataspaces"))
+            .and_then(|a| a.get("keasy.workspaces"))
             .and_then(|v| serde_json::from_value(v.clone()).ok())
             .unwrap_or_default();
-        Ok(dataspaces)
+        Ok(workspace_ids)
     }
 
     /// Retrieve the client secret for a given Keycloak-internal client UUID.

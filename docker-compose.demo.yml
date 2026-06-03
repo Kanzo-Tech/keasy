@@ -1,5 +1,5 @@
 # Demo overlay — release build for fast runtime, no hot-reload.
-# Layers on top of dev (same seeds, mock GXDCH, keycloak).
+# Layers on top of dev (same seeds, keycloak).
 # Usage: make demo
 
 services:

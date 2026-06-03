@@ -95,6 +95,42 @@ impl Database {
         )
         .ok()
     }
+
+    /// Idempotently ensure the workspace `owner` org + the owner's membership
+    /// exist (W7 control-plane bootstrap). This is the SINGLE bootstrap datum the
+    /// instance derives from config (`owner_keycloak_sub`) — it replaces the old
+    /// SQL seeds, fixed UUIDs, and the open invite token. Re-running is a no-op:
+    /// the org is keyed by `workspace_id` (ON CONFLICT update), and the
+    /// membership upsert is idempotent.
+    ///
+    /// The owner org carries `role = 'owner'`, so any of its members resolves to
+    /// `TenantRole::Owner` (see `middleware::tenant`). The owner user is stored
+    /// as an `admin` member; profile fields fill in on first OIDC login.
+    pub async fn ensure_owner_bootstrap(
+        &self,
+        owner_keycloak_sub: &str,
+        workspace_id: &str,
+        workspace_name: &str,
+    ) -> Result<(), String> {
+        {
+            let conn = self.write().await;
+            let slug = generate_unique_slug(&conn, workspace_name);
+            conn.execute(
+                "INSERT INTO organizations
+                   (id, name, slug, legal_name, country, role, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?2, 'EU', 'owner', datetime('now'), datetime('now'))
+                 ON CONFLICT(id) DO UPDATE SET
+                   name = excluded.name,
+                   role = 'owner',
+                   updated_at = datetime('now')",
+                params![workspace_id, workspace_name, slug],
+            )
+            .map_err(|e| format!("failed to ensure owner org: {e}"))?;
+        }
+        self.upsert_org_member(owner_keycloak_sub, workspace_id, "admin", "", "", "")
+            .await?;
+        Ok(())
+    }
 }
 
 fn row_to_org(row: &rusqlite::Row<'_>) -> rusqlite::Result<Organization> {

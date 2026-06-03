@@ -132,7 +132,7 @@ impl Database {
                 last_name: row.get(3)?,
                 status: row.get(4)?,
                 created_at: row.get(5)?,
-                role: row.get::<_, Option<String>>(6)?.unwrap_or_else(|| "user".to_string()),
+                role: row.get::<_, Option<String>>(6)?.unwrap_or_else(|| "member".to_string()),
             })
         })
         .expect("query users in org")

@@ -1,11 +1,9 @@
-pub mod dataspaces;
+pub mod workspaces;
 pub mod invite_tokens;
-pub mod org_gaiax;
 pub mod org_members;
 pub mod organizations;
 mod schema;
 pub mod secrets;
-pub mod seed;
 
 use std::path::Path;
 use std::sync::Arc;
@@ -58,7 +56,7 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn open(path: &Path, secret_key: Option<SecretString>, seed_file: Option<&Path>) -> Result<Self, String> {
+    pub fn open(path: &Path, secret_key: Option<SecretString>) -> Result<Self, String> {
         // Open write connection
         let write_conn = open_conn(path)?;
         write_conn
@@ -67,9 +65,6 @@ impl Database {
             )
             .map_err(|e| format!("write conn pragmas: {e}"))?;
         schema::apply(&write_conn)?;
-        if let Some(sf) = seed_file {
-            seed::load_seed_file(&write_conn, sf)?;
-        }
 
         // Open read pool connections
         let read_conns: Result<Vec<_>, _> = (0..READ_POOL_SIZE).map(|_| open_conn(path)).collect();

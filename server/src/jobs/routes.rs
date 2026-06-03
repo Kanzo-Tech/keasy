@@ -16,7 +16,7 @@ use crate::AppState;
 use crate::error::data_response;
 use crate::jobs::models::{CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601};
 use super::runner::JobEvent;
-use crate::middleware::tenant::{IsParticipant, Require};
+use crate::middleware::tenant::{IsMember, Require};
 
 use super::errors::JobApiError;
 
@@ -26,7 +26,7 @@ use super::errors::JobApiError;
     )
 )]
 pub async fn list_jobs(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, JobApiError> {
     let jobs = state.db.list_jobs(&ctx.as_ctx()).await;
@@ -41,7 +41,7 @@ pub async fn list_jobs(
     )
 )]
 pub async fn create_job(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -102,11 +102,11 @@ pub async fn create_job(
         None
     };
 
-    // Promotor cloud storage backs both the job's GraphAr output (always, when
+    // Owner cloud storage backs both the job's GraphAr output (always, when
     // configured) and — for dcat jobs — the DCAT-AP catalog. Fetch once.
-    let promotor_storage = state.db.get_promotor_catalog_config().await;
+    let owner_storage = state.db.get_owner_catalog_config().await;
 
-    let output_dest = promotor_storage
+    let output_dest = owner_storage
         .as_ref()
         .map(|(_, _, base_url)| format!("{}/{}", base_url.trim_end_matches('/'), id));
 
@@ -114,17 +114,17 @@ pub async fn create_job(
         &state.db,
         &ctx.org_id.0,
         &payload.connection_ids,
-        promotor_storage
+        owner_storage
             .as_ref()
             .map(|(org, account, _)| (org.clone(), account.clone())),
     )
     .await;
 
-    // The catalog is written to promotor storage via the `fossil catalog`
+    // The catalog is written to owner storage via the `fossil catalog`
     // subprocess (cloud secret reused from the run's dest). keasy only supplies
     // the base URL; cloud auth rides the subprocess stdin, not a host resolver.
     let catalog_dest = if dcat_enabled {
-        promotor_storage
+        owner_storage
             .as_ref()
             .map(|(_, _, base_url)| base_url.clone())
     } else {
@@ -154,7 +154,7 @@ pub async fn create_job(
     )
 )]
 pub async fn get_job(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -177,7 +177,7 @@ pub async fn get_job(
     )
 )]
 pub async fn update_job(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateJobRequest>,
@@ -207,7 +207,7 @@ pub async fn update_job(
     )
 )]
 pub async fn stream_job(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<Response, JobApiError> {
@@ -268,7 +268,7 @@ pub async fn stream_job(
     )
 )]
 pub async fn delete_job(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -290,7 +290,7 @@ pub async fn delete_job(
     responses((status = 200, description = "Dashboard layout", body = serde_json::Value), (status = 204, description = "No layout saved"))
 )]
 pub async fn get_dashboard_layout(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -309,7 +309,7 @@ pub async fn get_dashboard_layout(
     responses((status = 200, description = "Layout saved"))
 )]
 pub async fn save_dashboard_layout(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(body): Json<serde_json::Value>,

@@ -1,6 +1,6 @@
 # Keasy
 
-Gaia-X dataspace management platform — connect data, build catalogs, verify compliance.
+Federated workspace management platform — connect data, build catalogs, share datasets.
 
 Built with Rust, Next.js, Keycloak, and Docker.
 
@@ -20,50 +20,22 @@ Open [http://localhost:3000](http://localhost:3000) — you'll be redirected to 
 
 ## Demo Credentials
 
-| Email | Password | Role | Organization | Access |
-|-------|----------|------|-------------|--------|
-| `admin@keasy.dev` | `admin` | Promotor admin | Keasy | Connections, jobs, catalog, cloud accounts |
-| `user@keasy.dev` | `user` | Participant admin | ACME Corp | Connections, jobs, cloud accounts |
+The Keycloak realm import ships two demo users:
 
-## Demo Data
+| Email | Password | Role |
+|-------|----------|------|
+| `owner@keasy.dev` | `owner` | Owner |
+| `member@keasy.dev` | `member` | Member |
 
-When running in dev mode (`make dev`), the server seeds the database with demo data linked to the Keycloak demo users. All IDs are fixed for idempotency — `make clean && make dev` resets everything cleanly.
+## Workspace Bootstrap
 
-### Organizations
-
-| Name | Role | Country | Visible to |
-|------|------|---------|------------|
-| Keasy | Promotor | EU | `admin@keasy.dev` |
-| ACME Corp | Participant | DE | `user@keasy.dev` |
-
-### Cloud Accounts
-
-| Name | Provider | Organization | Config |
-|------|----------|-------------|--------|
-| AWS Production | S3 | Keasy | `region: eu-west-1` |
-| Google Cloud Dev | GCP | ACME Corp | `project: acme-dev` |
-
-### Connections
-
-| Name | Kind | Location | Organization | Details |
-|------|------|----------|-------------|---------|
-| Product Catalog | Data | Local | Keasy | `file:///sample/products.csv` |
-| Schema.org Vocab | Vocabulary | Local | Keasy | `https://schema.org` |
-| Customer Data | Data | Cloud (GCP) | ACME Corp | `gs://acme-dev/customers/` |
-
-### Jobs
-
-| Name | Status | Organization | Notes |
-|------|--------|-------------|-------|
-| Product ETL | Completed | Keasy | Has pipeline config with map operation |
-| Monthly Report | Draft | ACME Corp | Empty, ready to configure |
-| Failed Import | Failed | ACME Corp | Error: connection timeout to GCP bucket |
-
-### What each user sees after login
-
-**`admin@keasy.dev`** (promotor) — sees the Keasy org dashboard with Product Catalog and Schema.org connections, the AWS Production cloud account, the completed Product ETL job, and access to admin features (participant management, invite links).
-
-**`user@keasy.dev`** (participant) — sees the ACME Corp dashboard with the Customer Data connection, the Google Cloud Dev account, a draft Monthly Report job and the failed Failed Import job.
+There are no SQL seeds. A workspace exists if and only if the **control-plane**
+provisioner created it (`POST /workspaces { name, owner_keycloak_sub }`), which
+registers the OIDC client in the shared Keycloak and brings up the instance
+stack. Each instance, at boot, idempotently ensures the `owner` membership of
+the `KEASY_OWNER_KEYCLOAK_SUB` it receives via config — the single bootstrap
+datum. In dev, `make dev` pins the demo owner's Keycloak `sub` so the instance
+self-provisions its owner; everything else starts empty.
 
 ## Architecture
 
@@ -77,7 +49,9 @@ graph TD
 
     Server --> SQLite[(SQLite<br/>app data)]
     Server -->|"admin API"| Keycloak
-    Server --> GXDCH["GXDCH<br/>(Notary + Compliance)"]
+
+    ControlPlane["Control-plane<br/>(provisioner)"] -->|"Docker socket"| Docker[("Docker Engine")]
+    ControlPlane -->|"register OIDC client"| Keycloak
 
     Keycloak --> PostgreSQL[(PostgreSQL<br/>identity data)]
 ```
@@ -129,6 +103,8 @@ keasy/
 ├── infra/                          # Infrastructure configs
 │   ├── caddy/Caddyfile             #   reverse proxy routing
 │   ├── keycloak/realm-import/      #   OIDC realm + demo users
+├── keycloak/                       # keasy-keycloak — shared Keycloak admin client
+├── control-plane/                  # workspace provisioner (Docker API + Keycloak)
 ├── server/                         # Rust API server
 │   ├── Dockerfile                  #   production (multi-stage, slim)
 │   ├── Dockerfile.dev              #   development (cargo-watch)

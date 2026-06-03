@@ -11,10 +11,10 @@ pub struct OrgSettings {
     pub license_uri: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalog_description: Option<String>,
-    /// Cloud account ID for catalog parquet storage (set by promotor).
+    /// Cloud account ID for catalog parquet storage (set by owner).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalog_cloud_account_id: Option<String>,
-    /// Base URL for catalog parquet storage (e.g. s3://promotor/catalogs/).
+    /// Base URL for catalog parquet storage (e.g. s3://owner/catalogs/).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalog_base_url: Option<String>,
 }

@@ -8,14 +8,14 @@ use super::Database;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MemberRole {
     Admin,
-    User,
+    Member,
 }
 
 impl MemberRole {
     pub fn as_str(&self) -> &'static str {
         match self {
             MemberRole::Admin => "admin",
-            MemberRole::User => "user",
+            MemberRole::Member => "member",
         }
     }
 }
@@ -25,8 +25,8 @@ impl std::str::FromStr for MemberRole {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "admin" => Ok(MemberRole::Admin),
-            "user" => Ok(MemberRole::User),
-            other => Err(format!("invalid role: '{other}', expected 'admin' or 'user'")),
+            "member" => Ok(MemberRole::Member),
+            other => Err(format!("invalid role: '{other}', expected 'admin' or 'member'")),
         }
     }
 }

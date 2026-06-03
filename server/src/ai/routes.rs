@@ -12,7 +12,7 @@ use crate::AppState;
 use super::client::{AiError, Message, ask_llm_stream, require_ai_settings, setup_sse_channels, into_sse_response};
 use super::models::{AskResultCode, Conversation, ConversationMessage};
 use crate::error::data_response;
-use crate::middleware::tenant::{IsParticipant, Require};
+use crate::middleware::tenant::{IsMember, Require};
 
 #[derive(Deserialize)]
 struct LlmResponse {
@@ -31,7 +31,7 @@ struct LlmResponse {
     responses((status = 200, description = "SSE stream of LLM deltas", content_type = "text/event-stream"))
 )]
 pub async fn ask_discover_stream(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<AskRequest>,
@@ -326,7 +326,7 @@ pub struct CreateConversationRequest {
     responses((status = 201, description = "Conversation created", body = crate::ai::models::Conversation))
 )]
 pub async fn create_conversation(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(job_id): Path<String>,
     Json(req): Json<CreateConversationRequest>,
@@ -352,7 +352,7 @@ pub async fn create_conversation(
     responses((status = 200, description = "List of conversations", body = Vec<crate::ai::models::Conversation>))
 )]
 pub async fn list_conversations(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(job_id): Path<String>,
 ) -> impl IntoResponse {
@@ -368,7 +368,7 @@ pub async fn list_conversations(
     )
 )]
 pub async fn get_conversation_messages(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
 ) -> Response {
@@ -393,7 +393,7 @@ pub struct RenameConversationRequest {
     responses((status = 204, description = "Conversation renamed"))
 )]
 pub async fn rename_conversation(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
     Json(req): Json<RenameConversationRequest>,
@@ -417,7 +417,7 @@ pub async fn rename_conversation(
     responses((status = 204, description = "Conversation deleted"))
 )]
 pub async fn delete_conversation(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
 ) -> Response {

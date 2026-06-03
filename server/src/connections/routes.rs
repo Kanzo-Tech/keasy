@@ -10,7 +10,7 @@ use crate::connections::models::{
     UpdateConnectionRequest, UploadFileRequest,
 };
 use crate::error::data_response;
-use crate::middleware::tenant::{IsParticipant, Require};
+use crate::middleware::tenant::{IsMember, Require};
 use crate::AppState;
 
 use super::errors::ConnectionError;
@@ -81,7 +81,7 @@ pub struct SchemaQuery {
     responses((status = 200, description = "List of connections", body = Vec<Connection>))
 )]
 pub async fn list_connections(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Query(query): Query<ListConnectionsQuery>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -97,7 +97,7 @@ pub async fn list_connections(
     )
 )]
 pub async fn create_connection(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Json(req): Json<CreateConnectionRequest>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -126,7 +126,7 @@ pub async fn create_connection(
     )
 )]
 pub async fn get_connection(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -146,7 +146,7 @@ pub async fn get_connection(
     )
 )]
 pub async fn update_connection(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<UpdateConnectionRequest>,
@@ -164,7 +164,7 @@ pub async fn update_connection(
     )
 )]
 pub async fn delete_connection(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -182,7 +182,7 @@ pub async fn delete_connection(
     )
 )]
 pub async fn list_connection_files(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -204,7 +204,7 @@ pub async fn list_connection_files(
     )
 )]
 pub async fn upload_file(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<UploadFileRequest>,
@@ -231,7 +231,7 @@ pub async fn upload_file(
     )
 )]
 pub async fn get_file_schema(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Query(query): Query<SchemaQuery>,

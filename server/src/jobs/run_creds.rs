@@ -20,11 +20,11 @@ use crate::settings::schema::find_provider;
 use crate::tenant::{OrgId, TenantScoped};
 
 /// Assemble the [`RunCreds`] the fossil subprocess reads on stdin: the dest's
-/// cloud secret (promotor storage) plus a per-`@conn-name` source map (each
+/// cloud secret (owner storage) plus a per-`@conn-name` source map (each
 /// connection's base URL + read secret).
 ///
 /// Connections resolve under the job's own org; the dest account is the
-/// promotor's. A connection with no cloud account, or a provider whose secret
+/// owner's. A connection with no cloud account, or a provider whose secret
 /// intake is pending, contributes a `None` secret — fossil then reads it as a
 /// public source rather than guessing credentials.
 pub async fn build_run_creds(

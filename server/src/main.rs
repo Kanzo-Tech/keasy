@@ -1,4 +1,4 @@
-use keasy_server::{AppState, AuthServices, GaiaXServices, Database, JobRunner};
+use keasy_server::{AppState, AuthServices, Database, JobRunner};
 use keasy_server::config::ServerConfig;
 use keasy_server::routes::{build_router, SessionConfig};
 use secrecy::ExposeSecret;
@@ -33,7 +33,7 @@ async fn main() {
     }
 
     let db_path = config.data_dir.join("keasy.db");
-    let db = match Database::open(&db_path, config.secret_key, config.seed_file.as_deref()) {
+    let db = match Database::open(&db_path, config.secret_key) {
         Ok(db) => db,
         Err(e) => {
             eprintln!("FATAL: Failed to open database: {e}");
@@ -41,16 +41,28 @@ async fn main() {
         }
     };
 
-    info!(path = %db_path.display(), seed_file = ?config.seed_file, "Database opened");
+    info!(path = %db_path.display(), "Database opened");
 
-    // Self-register in dataspaces so workspace picker can find this instance
-    if let Some(client_id) = &config.oidc_client_id
-        && let Err(e) = db
-            .ensure_dataspace(client_id, "This Instance", &config.base_url)
+    // W7 bootstrap: the control-plane provisions this workspace and passes the
+    // owner's Keycloak `sub` via config. The instance idempotently ensures the
+    // owner org + membership exist — the single bootstrap datum, replacing the
+    // old SQL seeds. Also self-registers the workspace so the switcher finds it.
+    if let (Some(owner_sub), Some(client_id)) =
+        (&config.owner_keycloak_sub, &config.oidc_client_id)
+    {
+        if let Err(e) = db
+            .ensure_owner_bootstrap(owner_sub, client_id, &config.workspace_name)
             .await
         {
-            warn!(error = %e, "Failed to self-register in dataspaces");
+            warn!(error = %e, "Failed to ensure owner bootstrap");
         }
+        if let Err(e) = db
+            .ensure_workspace(client_id, &config.workspace_name, &config.base_url)
+            .await
+        {
+            warn!(error = %e, "Failed to self-register workspace");
+        }
+    }
 
     if !db.verify_secret_key().await {
         eprintln!("FATAL: KEASY_SECRET_KEY does not match the key used to encrypt stored secrets");
@@ -145,27 +157,15 @@ async fn main() {
         oidc_client_id: config.oidc_client_id,
         oidc_client_secret: config.oidc_client_secret,
     };
-    let gaia_x = GaiaXServices {
-        gxdch: keasy_server::gaia_x::gxdch::GxdchClient::from_config(
-            config.gxdch_mock,
-            config.gxdch_notary_url,
-            config.gxdch_compliance_url,
-        ),
-        base_domain: config.base_domain,
-        caddy_certs_dir: config.caddy_certs_dir,
-    };
     let state = AppState {
         db,
         runner: runner.clone(),
         api_key: config.api_key,
         base_url: config.base_url,
         auth,
-        gaia_x,
     };
     info!(
         oidc = if state.auth.oidc_state.is_some() { "ready" } else { "not configured" },
-        gxdch = %state.gaia_x.gxdch,
-        base_domain = state.gaia_x.base_domain.as_deref().unwrap_or("not configured"),
         "External services"
     );
 

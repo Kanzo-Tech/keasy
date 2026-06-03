@@ -62,15 +62,6 @@ pub fn build_router(
             "/v1/providers",
             axum::routing::get(providers::list_providers),
         )
-        // Gaia-X .well-known public endpoints (no auth required — GXDCH must resolve these)
-        .route(
-            "/.well-known/did.json",
-            axum::routing::get(crate::gaia_x::routes::get_did_document),
-        )
-        .route(
-            "/.well-known/x509CertificateChain.pem",
-            axum::routing::get(crate::gaia_x::routes::get_cert_chain),
-        )
         .with_state(state.clone());
 
     // Public auth routes (no session middleware)
@@ -222,12 +213,12 @@ pub fn build_router(
             "/v1/assistant/generate-stream",
             axum::routing::post(crate::assistant::routes::generate_script_stream),
         )
-        // Admin routes — promotor only
+        // Admin routes — owner only
         .route(
             "/v1/admin/organizations",
             axum::routing::get(admin::list_all_orgs).post(admin::create_org_and_invite),
         )
-        // Invite link management — promotor only
+        // Invite link management — owner only
         .route(
             "/v1/admin/invites",
             axum::routing::get(admin::list_invites).post(admin::create_invite),
@@ -236,11 +227,11 @@ pub fn build_router(
             "/v1/admin/invites/{token}",
             axum::routing::delete(admin::revoke_invite),
         )
-        // OIDC instance registration — promotor only
+        // OIDC instance registration — owner only
         .route(
             "/v1/admin/oidc-clients",
-            axum::routing::get(admin::list_dataspaces)
-                .post(admin::register_dataspace),
+            axum::routing::get(admin::list_registered_workspaces)
+                .post(admin::register_workspace),
         )
         // Org identity — read for any participant, write for participant org admins
         .route(
@@ -265,15 +256,6 @@ pub fn build_router(
         .route(
             "/v1/org/invites/{token}",
             axum::routing::delete(org::revoke_org_invite),
-        )
-        // Gaia-X compliance routes (session + tenant protected)
-        .route(
-            "/v1/gaia-x/comply",
-            axum::routing::post(crate::gaia_x::routes::comply),
-        )
-        .route(
-            "/v1/gaia-x/compliance",
-            axum::routing::get(crate::gaia_x::routes::get_compliance_status),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),

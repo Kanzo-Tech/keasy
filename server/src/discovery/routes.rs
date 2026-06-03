@@ -11,7 +11,7 @@ use serde::Serialize;
 use crate::AppState;
 use crate::error::error_body;
 use crate::jobs::models::JobStatus;
-use crate::middleware::tenant::{IsParticipant, Require, TenantContext};
+use crate::middleware::tenant::{IsMember, Require, TenantContext};
 
 /// Checks that output is ready and returns Ok(()) or appropriate error.
 pub(crate) async fn require_output_ready(
@@ -91,7 +91,7 @@ async fn sign_manifest_urls(
     )
 )]
 pub async fn resolve_discover_urls(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
@@ -129,7 +129,7 @@ pub async fn resolve_discover_urls(
     )
 )]
 pub async fn resolve_catalog_urls(
-    ctx: Require<IsParticipant>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {

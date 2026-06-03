@@ -1,7 +1,7 @@
 //! OIDC relying party implementation.
 //!
 //! Provides:
-//! - `KeyasyIdTokenClaims` — custom claims struct with `keasy:dataspaces` multivalued claim
+//! - `KeyasyIdTokenClaims` — custom claims struct with `keasy:workspaces` multivalued claim
 //! - `KeyasyClient` — fully-parameterized openidconnect client type alias
 //! - `OidcState` — OIDC client + cached JWKS/provider metadata
 //! - `build_oidc_client()` — async initialization from issuer URL / client credentials
@@ -32,17 +32,17 @@ use crate::AppState;
 use crate::auth::errors::AuthError;
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Custom claims (keasy:dataspaces multivalued claim)
+// Custom claims (keasy:workspaces multivalued claim)
 // ──────────────────────────────────────────────────────────────────────────────
 
 /// Additional ID token claims specific to Keasy.
 ///
-/// The `keasy:dataspaces` claim is a multivalued list of dataspace client_ids
+/// The `keasy:workspaces` claim is a multivalued list of workspace client_ids
 /// that the authenticated user is a member of.
 #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
 pub struct KeyasyIdTokenClaims {
-    #[serde(rename = "keasy:dataspaces", default)]
-    pub dataspaces: Vec<String>,
+    #[serde(rename = "keasy:workspaces", default)]
+    pub workspaces: Vec<String>,
 }
 
 impl openidconnect::AdditionalClaims for KeyasyIdTokenClaims {}
@@ -633,7 +633,7 @@ pub async fn oidc_callback(
 /// Auto-accept a pending invite for a newly OIDC-authenticated user.
 ///
 /// Validates the token (must not be expired), creates the org membership,
-/// and updates the user's `keasy.dataspaces` attribute in Keycloak.
+/// and updates the user's `keasy.workspaces` attribute in Keycloak.
 /// Reusable — the token is not consumed. Silently ignores failures — if the
 /// invite is expired or the user already has a membership, they still log in.
 async fn accept_invite_for_user(
@@ -660,7 +660,7 @@ async fn accept_invite_for_user(
         .upsert_org_member(user_id, &token.org_id, &token.role, email, first_name, last_name)
         .await?;
 
-    // Update Keycloak dataspaces attribute — user_id IS the Keycloak UUID.
+    // Update Keycloak workspaces attribute — user_id IS the Keycloak UUID.
     if let (Some(kc_admin), Some(client_id)) = (
         &state.auth.keycloak_admin,
         &state.auth.oidc_client_id,
@@ -670,7 +670,7 @@ async fn accept_invite_for_user(
                 error = %e,
                 user_id = %user_id,
                 client_id = %client_id,
-                "Failed to update Keycloak dataspaces attribute"
+                "Failed to update Keycloak workspaces attribute"
             );
         }
 

@@ -8,7 +8,7 @@ use secrecy::{ExposeSecret, SecretString};
 
 use crate::AppState;
 use crate::error::{data_response, error_body};
-use crate::middleware::tenant::{AnyRole, IsAdmin, IsParticipant, IsPromotor, Require};
+use crate::middleware::tenant::{AnyRole, IsAdmin, IsMember, IsOwner, Require};
 use crate::settings::ai::{AiSettings, AiSettingsPayload};
 use crate::settings::org::OrgSettings;
 use crate::settings::preferences::Preferences;
@@ -29,7 +29,7 @@ pub async fn get_schema() -> impl IntoResponse {
         (status = 204, description = "No settings configured"),
     )
 )]
-pub async fn get_org_settings(_ctx: Require<IsParticipant>, State(state): State<AppState>) -> Response {
+pub async fn get_org_settings(_ctx: Require<IsMember>, State(state): State<AppState>) -> Response {
     match state.db.get_org_settings().await {
         Some(settings) => data_response(settings).into_response(),
         None => StatusCode::NO_CONTENT.into_response(),
@@ -98,7 +98,7 @@ pub async fn save_preferences(
 #[utoipa::path(get, path = "/v1/settings/ai/providers", tag = "Settings",
     responses((status = 200, description = "List of AI providers", body = Vec<AiSettingsPayload>))
 )]
-pub async fn list_ai_providers(_ctx: Require<IsParticipant>, State(state): State<AppState>) -> impl IntoResponse {
+pub async fn list_ai_providers(_ctx: Require<IsMember>, State(state): State<AppState>) -> impl IntoResponse {
     let providers = state.db.list_ai_providers().await;
     let payloads: Vec<AiSettingsPayload> = providers.iter().map(to_payload).collect();
     data_response(payloads)
@@ -175,7 +175,7 @@ fn to_payload(s: &AiSettings) -> AiSettingsPayload {
     }
 }
 
-// ── Catalog Storage (Promotor) ───────────────────────────────────────────
+// ── Catalog Storage (Owner) ───────────────────────────────────────────
 
 #[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CatalogStoragePayload {
@@ -190,7 +190,7 @@ pub struct CatalogStoragePayload {
     )
 )]
 pub async fn get_catalog_storage(
-    _ctx: Require<IsPromotor>,
+    _ctx: Require<IsOwner>,
     State(state): State<AppState>,
 ) -> Response {
     let settings = state.db.get_org_settings().await;
@@ -213,7 +213,7 @@ pub async fn get_catalog_storage(
     )
 )]
 pub async fn save_catalog_storage(
-    ctx: Require<IsPromotor>,
+    ctx: Require<IsOwner>,
     State(state): State<AppState>,
     Json(payload): Json<CatalogStoragePayload>,
 ) -> Response {
@@ -224,7 +224,7 @@ pub async fn save_catalog_storage(
         ).into_response();
     }
 
-    // Verify cloud account exists for the promotor's org
+    // Verify cloud account exists for the owner's org
     if state.db.get_cloud_account_summary(&ctx.scoped(payload.cloud_account_id.as_str())).await.is_none() {
         return (
             StatusCode::BAD_REQUEST,

@@ -6,7 +6,7 @@ use std::fmt::Write as FmtWrite;
 
 use crate::ai::client::{require_ai_settings, stream_llm_to_sse};
 use crate::ai::routes::strip_markdown_fences;
-use crate::middleware::tenant::{IsParticipant, Require};
+use crate::middleware::tenant::{IsMember, Require};
 use crate::AppState;
 
 use super::models::*;
@@ -145,7 +145,7 @@ people
     )
 )]
 pub async fn suggest_cqs_stream(
-    _ctx: Require<IsParticipant>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Json(req): Json<SuggestRequest>,
 ) -> Result<Response, ErrorResponse> {
@@ -180,7 +180,7 @@ pub async fn suggest_cqs_stream(
     )
 )]
 pub async fn generate_script_stream(
-    _ctx: Require<IsParticipant>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Json(req): Json<GenerateRequest>,
 ) -> Result<Response, ErrorResponse> {

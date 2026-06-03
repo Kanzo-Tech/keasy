@@ -74,25 +74,27 @@ pub struct CloudSecret {
     pub params: HashMap<String, SecretString>,
 }
 
+/// Serialise an optional cloud secret to the `{ "type", "params" }` JSON the CLI
+/// expects (or `null`). Secret values are exposed ONLY here, for the child's
+/// stdin pipe — never logged. Shared by the `run` and `catalog` payloads.
+fn secret_json(s: &Option<CloudSecret>) -> serde_json::Value {
+    match s {
+        Some(cs) => {
+            let params: serde_json::Map<String, serde_json::Value> = cs
+                .params
+                .iter()
+                .map(|(k, v)| (k.clone(), serde_json::Value::String(v.expose_secret().to_owned())))
+                .collect();
+            serde_json::json!({ "type": cs.secret_type, "params": params })
+        }
+        None => serde_json::Value::Null,
+    }
+}
+
 impl RunCreds {
     /// Serialise to the `--creds-stdin` JSON the CLI expects. Secret values are
     /// exposed ONLY here, to be written to the child's stdin pipe — never logged.
     fn to_stdin_json(&self) -> String {
-        fn secret_json(s: &Option<CloudSecret>) -> serde_json::Value {
-            match s {
-                Some(cs) => {
-                    let params: serde_json::Map<String, serde_json::Value> = cs
-                        .params
-                        .iter()
-                        .map(|(k, v)| {
-                            (k.clone(), serde_json::Value::String(v.expose_secret().to_owned()))
-                        })
-                        .collect();
-                    serde_json::json!({ "type": cs.secret_type, "params": params })
-                }
-                None => serde_json::Value::Null,
-            }
-        }
         let connections: serde_json::Map<String, serde_json::Value> = self
             .connections
             .iter()
@@ -193,7 +195,7 @@ impl FossilRunner {
     /// env is inherited by the child (deployment override); otherwise a
     /// conservative default is set so the cap is never silently absent. The
     /// temp dir lets DuckDB spill (rather than error) once the limit is hit.
-    fn apply_duckdb_limits(command: &mut Command, fossil_file: &Path) {
+    fn apply_duckdb_limits(command: &mut Command, anchor: Option<&Path>) {
         if std::env::var_os("FOSSIL_DUCKDB_MEMORY_LIMIT").is_none() {
             command.env("FOSSIL_DUCKDB_MEMORY_LIMIT", "512MB");
         }
@@ -201,10 +203,7 @@ impl FossilRunner {
             command.env("FOSSIL_DUCKDB_THREADS", "2");
         }
         if std::env::var_os("FOSSIL_DUCKDB_TEMP_DIR").is_none() {
-            let tmp = fossil_file
-                .parent()
-                .map(Path::to_path_buf)
-                .unwrap_or_else(std::env::temp_dir);
+            let tmp = anchor.map_or_else(std::env::temp_dir, Path::to_path_buf);
             command.env("FOSSIL_DUCKDB_TEMP_DIR", tmp);
         }
     }
@@ -223,6 +222,58 @@ impl FossilRunner {
         dest_url: &str,
         creds: &RunCreds,
     ) -> Result<RunStatus, FossilRunError> {
+        self.spawn_and_parse(
+            Self::run_args(fossil_file, dest_url),
+            &creds.to_stdin_json(),
+            fossil_file.parent().filter(|p| !p.as_os_str().is_empty()),
+        )
+    }
+
+    /// Argv for `fossil catalog`. No file argument — the catalog data rides
+    /// stdin (the `CatalogInput` + dest secret); `--output-json` is always set.
+    fn catalog_args(dest_url: &str) -> Vec<String> {
+        vec![
+            "catalog".to_string(),
+            "--dest".to_string(),
+            dest_url.to_string(),
+            "--output-json".to_string(),
+        ]
+    }
+
+    /// Materialise a DCAT-AP catalog graph via `fossil catalog` — the catalog is
+    /// "just another output graph", written by the same GraphAr path as a run.
+    /// The `catalog` (governance + dataset structure) and the dest secret ride
+    /// stdin; returns the catalog graph's [`RunStatus`] (per-type Parquet +
+    /// counts), which keasy persists as the job's `catalog_manifest`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FossilRunError`] under the same conditions as [`Self::run`].
+    pub fn run_catalog(
+        &self,
+        catalog: &fossil_run_status::CatalogInput,
+        dest_url: &str,
+        dest_secret: &Option<CloudSecret>,
+    ) -> Result<RunStatus, FossilRunError> {
+        let payload = serde_json::json!({
+            "catalog": catalog,
+            "dest": { "secret": secret_json(dest_secret) },
+        })
+        .to_string();
+        self.spawn_and_parse(Self::catalog_args(dest_url), &payload, None)
+    }
+
+    /// Spawn the `fossil` binary with `args`, pipe `stdin_payload`, and parse the
+    /// `--output-json` [`RunStatus`]. `anchor` (when set) is the child's working
+    /// directory (so a program's relative source paths resolve) AND the DuckDB
+    /// spill dir. The single subprocess path shared by [`Self::run`] +
+    /// [`Self::run_catalog`].
+    fn spawn_and_parse(
+        &self,
+        args: Vec<String>,
+        stdin_payload: &str,
+        anchor: Option<&Path>,
+    ) -> Result<RunStatus, FossilRunError> {
         let spawn_err = |source: std::io::Error| FossilRunError::Spawn {
             binary: self.binary.to_string_lossy().into_owned(),
             source,
@@ -230,17 +281,17 @@ impl FossilRunner {
 
         let mut command = Command::new(&self.binary);
         command
-            .args(Self::run_args(fossil_file, dest_url))
+            .args(args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
-        if let Some(parent) = fossil_file.parent().filter(|p| !p.as_os_str().is_empty()) {
-            command.current_dir(parent);
+        if let Some(dir) = anchor {
+            command.current_dir(dir);
         }
-        Self::apply_duckdb_limits(&mut command, fossil_file);
+        Self::apply_duckdb_limits(&mut command, anchor);
 
         let mut child = command.spawn().map_err(spawn_err)?;
-        // Write the creds payload, then drop stdin so the CLI's read-to-EOF
+        // Write the stdin payload, then drop stdin so the CLI's read-to-EOF
         // returns. Scoped so the borrow ends before `wait_with_output`.
         {
             let mut stdin = child.stdin.take().ok_or_else(|| {
@@ -249,9 +300,7 @@ impl FossilRunner {
                     "child stdin unavailable",
                 ))
             })?;
-            stdin
-                .write_all(creds.to_stdin_json().as_bytes())
-                .map_err(spawn_err)?;
+            stdin.write_all(stdin_payload.as_bytes()).map_err(spawn_err)?;
         }
 
         let output = child.wait_with_output().map_err(spawn_err)?;
@@ -297,6 +346,15 @@ mod tests {
                 "--output-json",
                 "--creds-stdin",
             ]
+        );
+    }
+
+    #[test]
+    fn catalog_args_match_the_cli_contract() {
+        let args = FossilRunner::catalog_args("s3://bucket/catalogs/job-1");
+        assert_eq!(
+            args,
+            vec!["catalog", "--dest", "s3://bucket/catalogs/job-1", "--output-json"]
         );
     }
 

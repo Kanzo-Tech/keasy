@@ -1668,7 +1668,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/ProviderEntry"
+                    "$ref": "#/components/schemas/ProviderInfo"
                   }
                 }
               }
@@ -3443,8 +3443,9 @@
           }
         }
       },
-      "ProviderEntry": {
+      "ProviderInfo": {
         "type": "object",
+        "description": "One data-source provider fossil exposes: its short name, the file extensions\nit reads, and how it can be used.",
         "required": [
           "name",
           "extensions",
@@ -3455,15 +3456,27 @@
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "File extensions this provider reads (no leading dot)."
           },
           "kind": {
-            "type": "string"
+            "$ref": "#/components/schemas/ProviderKind",
+            "description": "Whether the provider defines a type, loads data, or both."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Short provider name (e.g. `csv`, `json`, `parquet`)."
           }
         }
+      },
+      "ProviderKind": {
+        "type": "string",
+        "description": "What a provider can appear as in a program.",
+        "enum": [
+          "schema",
+          "data",
+          "both"
+        ]
       },
       "ProviderSchema": {
         "type": "object",

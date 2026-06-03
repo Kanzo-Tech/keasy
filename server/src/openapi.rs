@@ -164,7 +164,8 @@ use utoipa::OpenApi;
         // Discovery
         crate::graph::types::TabularData,
         // Providers
-        crate::routes::providers::ProviderEntry,
+        fossil_run_status::ProviderInfo,
+        fossil_run_status::ProviderKind,
         // AI / Conversations
         crate::ai::routes::AskRequest,
         crate::ai::routes::AskResponse,

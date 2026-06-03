@@ -45,11 +45,12 @@ secrecy = { version = "0.10", features = ["serde"] }
 tower-sessions = { version = "0.14", features = ["signed"] }
 tower-sessions-rusqlite-store = "0.14.1"
 time = "0.3"
-fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider", features = ["utoipa"] }
-fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider" }
-# W0e subprocess: the `fossil run --output-json` wire contract, reused verbatim
-# (one source of truth — FossilRunner deserialises this exact struct). Path dep
-# while rmlext is a sibling local checkout; → git dep once rmlext is published.
+# The ONLY fossil dependency: the subprocess wire contracts (RunStatus,
+# CatalogInput, ProviderInfo), reused verbatim — one source of truth, the
+# `fossil` CLI serialises these exact structs and keasy deserialises them. keasy
+# links NO fossil compiler/runtime crate: every fossil capability (run, catalog,
+# providers) goes through the `fossil` binary over a subprocess. Path dep while
+# rmlext is a sibling local checkout; → git dep once rmlext is published.
 fossil-run-status = { path = "../../rmlext/crates/fossil-run-status", features = ["utoipa"] }
 base64 = "0.22"
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "jwk"] }

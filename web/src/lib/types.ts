@@ -107,11 +107,9 @@ export interface ProviderSchema {
   auth_methods: AuthMethodSchema[];
 }
 
-export interface ProviderInfo {
-  name: string;
-  extensions: string[];
-  kind: "schema" | "data" | "both";
-}
+// Data-source providers fossil supports (`/v1/providers`). Codegen'd from the
+// shared `fossil-run-status` contract via openapi — no hand-mirrored shape.
+export type ProviderInfo = S["ProviderInfo"];
 
 // ---------------------------------------------------------------------------
 // Auth types — re-exported from schema

@@ -147,9 +147,8 @@ export const api = {
     schema: async () =>
       unwrap(await client.GET("/v1/settings/schema")) as unknown as ProviderSchema[],
 
-    // TODO: add ProviderInfo to openapi spec
-    providers: async () =>
-      unwrap(await client.GET("/v1/providers")) as unknown as ProviderInfo[],
+    providers: async (): Promise<ProviderInfo[]> =>
+      unwrap(await client.GET("/v1/providers")),
 
     org: async () => {
       const result = await client.GET("/v1/settings/organization");

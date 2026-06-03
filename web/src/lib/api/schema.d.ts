@@ -1122,11 +1122,23 @@ export interface components {
             mono_font_family: string;
             mono_font_size: string;
         };
-        ProviderEntry: {
+        /**
+         * @description One data-source provider fossil exposes: its short name, the file extensions
+         *     it reads, and how it can be used.
+         */
+        ProviderInfo: {
+            /** @description File extensions this provider reads (no leading dot). */
             extensions: string[];
-            kind: string;
+            /** @description Whether the provider defines a type, loads data, or both. */
+            kind: components["schemas"]["ProviderKind"];
+            /** @description Short provider name (e.g. `csv`, `json`, `parquet`). */
             name: string;
         };
+        /**
+         * @description What a provider can appear as in a program.
+         * @enum {string}
+         */
+        ProviderKind: "schema" | "data" | "both";
         ProviderSchema: {
             auth_methods: components["schemas"]["AuthMethodSchema"][];
             common_fields: components["schemas"]["FieldSchema"][];
@@ -2805,7 +2817,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProviderEntry"][];
+                    "application/json": components["schemas"]["ProviderInfo"][];
                 };
             };
         };

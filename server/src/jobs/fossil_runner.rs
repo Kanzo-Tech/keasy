@@ -118,7 +118,7 @@ impl RunCreds {
 /// truth: the CLI serialises exactly this struct, keasy deserialises it; the TS
 /// type for the web is `JsonSchema`-codegen'd from the same crate). No
 /// hand-mirrored copy here.
-pub use fossil_run_status::{ColumnStatus, EdgeStatus, RunStatus, VertexStatus};
+pub use fossil_run_status::{ColumnStatus, EdgeStatus, ProviderInfo, RunStatus, VertexStatus};
 
 /// Failure modes of a `fossil run` subprocess invocation.
 #[derive(Debug, thiserror::Error)]
@@ -222,11 +222,33 @@ impl FossilRunner {
         dest_url: &str,
         creds: &RunCreds,
     ) -> Result<RunStatus, FossilRunError> {
-        self.spawn_and_parse(
+        let stdout = self.spawn_capture(
             Self::run_args(fossil_file, dest_url),
             &creds.to_stdin_json(),
             fossil_file.parent().filter(|p| !p.as_os_str().is_empty()),
-        )
+        )?;
+        Self::parse_status(&stdout)
+    }
+
+    /// List the data-source providers fossil supports via `fossil providers
+    /// --output-json`. Host boundary: fossil owns which sources it can read; the
+    /// keasy `/v1/providers` endpoint surfaces this verbatim. No stdin payload,
+    /// no dest — a pure capability query.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FossilRunError`] if the binary cannot be spawned, it exits
+    /// non-zero, or emits an unparseable provider list.
+    pub fn run_providers(&self) -> Result<Vec<ProviderInfo>, FossilRunError> {
+        let stdout = self.spawn_capture(
+            vec!["providers".to_string(), "--output-json".to_string()],
+            "",
+            None,
+        )?;
+        serde_json::from_str(stdout.trim()).map_err(|source| FossilRunError::Parse {
+            stdout,
+            source,
+        })
     }
 
     /// Argv for `fossil catalog`. No file argument — the catalog data rides
@@ -260,20 +282,22 @@ impl FossilRunner {
             "dest": { "secret": secret_json(dest_secret) },
         })
         .to_string();
-        self.spawn_and_parse(Self::catalog_args(dest_url), &payload, None)
+        let stdout = self.spawn_capture(Self::catalog_args(dest_url), &payload, None)?;
+        Self::parse_status(&stdout)
     }
 
-    /// Spawn the `fossil` binary with `args`, pipe `stdin_payload`, and parse the
-    /// `--output-json` [`RunStatus`]. `anchor` (when set) is the child's working
-    /// directory (so a program's relative source paths resolve) AND the DuckDB
-    /// spill dir. The single subprocess path shared by [`Self::run`] +
-    /// [`Self::run_catalog`].
-    fn spawn_and_parse(
+    /// Spawn the `fossil` binary with `args`, pipe `stdin_payload`, and capture
+    /// its stdout (the `--output-json` document). `anchor` (when set) is the
+    /// child's working directory (so a program's relative source paths resolve)
+    /// AND the DuckDB spill dir. The single subprocess path shared by
+    /// [`Self::run`], [`Self::run_catalog`] and [`Self::run_providers`]; each
+    /// caller parses the captured stdout into its own contract type.
+    fn spawn_capture(
         &self,
         args: Vec<String>,
         stdin_payload: &str,
         anchor: Option<&Path>,
-    ) -> Result<RunStatus, FossilRunError> {
+    ) -> Result<String, FossilRunError> {
         let spawn_err = |source: std::io::Error| FossilRunError::Spawn {
             binary: self.binary.to_string_lossy().into_owned(),
             source,
@@ -314,7 +338,7 @@ impl FossilRunner {
             });
         }
 
-        Self::parse_status(&String::from_utf8_lossy(&output.stdout))
+        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
     }
 
     /// Parse the `--output-json` stdout into a [`RunStatus`].

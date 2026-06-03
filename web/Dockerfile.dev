@@ -1,12 +1,17 @@
 FROM node:22-alpine
 
+# The project uses pnpm (pnpm-lock.yaml v9 + pnpm-only `file:` overrides for the
+# vendored @fossil-lang/* packages, e.g. @fossil-lang/introspect — npm ci can't
+# see those overrides and 404s on the registry).
+RUN npm install -g pnpm@9
+
 WORKDIR /app
-# The vendored @fossil-lang/* packages are `file:./vendor/...tgz` deps, so they
-# must be present before `npm ci` (else ENOENT on the tarballs).
-COPY package.json package-lock.json ./
+# Vendored @fossil-lang/* packages are `file:./vendor/...tgz` deps — present
+# before install (else ENOENT / registry 404 on the tarballs).
+COPY package.json pnpm-lock.yaml ./
 COPY vendor ./vendor
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 COPY tsconfig.json next.config.ts postcss.config.mjs components.json eslint.config.mjs ./
 
 EXPOSE 3000
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "dev"]

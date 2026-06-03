@@ -1,6 +1,6 @@
 import type { Coordinator } from "@uwdata/mosaic-core";
 
-import type { DataManifest, RunStatus } from "@/lib/types";
+import type { RunStatus } from "@/lib/types";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -226,32 +226,4 @@ export function buildGraphSchema(manifest: RunStatus, stats?: ColumnStatsMap): G
   }
 
   return { types, edges, allFields, field, fieldsOf, buildSource };
-}
-
-// ── Catalog adapter ──────────────────────────────────────────────────────
-
-/**
- * Adapt the RDF-rich DCAT-AP `DataManifest` (Job.catalog_manifest) to a
- * `RunStatus` so the graph code consumes one shape. Lossy by design: RDF IRIs
- * and baked-in stats are dropped — the browser recomputes stats, and the graph
- * UI never read the IRIs.
- */
-export function runStatusFromDataManifest(manifest: DataManifest): RunStatus {
-  return {
-    dest: "",
-    vertices: manifest.types.map((t) => ({
-      type: t.name,
-      file: t.vertex_file,
-      count: t.entity_count,
-      columns: t.columns.map((c) => ({ name: c.name, data_type: c.datatype })),
-    })),
-    edges: (manifest.edges ?? []).map((e) => ({
-      edge_type: e.name,
-      src_type: e.source_type,
-      dst_type: e.target_type,
-      by_source: e.by_source,
-      by_target: e.by_target,
-      count: e.count,
-    })),
-  };
 }

@@ -1,8 +1,6 @@
 use rusqlite::types::{FromSql, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use serde::{Deserialize, Serialize};
 
-use crate::graph::dcat::types::DcatInput;
-use fossil_lang::runtime::executor::DataManifest;
 use fossil_run_status::RunStatus;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
@@ -86,9 +84,6 @@ pub struct Job {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<super::errors::JobRuntimeError>,
     pub mode: RunMode,
-    #[serde(skip)]
-    #[schema(ignore)]
-    pub dcat_input: Option<DcatInput>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub connection_ids: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -101,10 +96,11 @@ pub struct Job {
     /// the browser computes them from the Parquet (DuckDB-WASM).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub manifest: Option<RunStatus>,
-    /// DCAT-AP catalog manifest (RDF-rich; drives the Turtle export). keasy
-    /// governance output, parquets stored in promotor cloud.
+    /// DCAT-AP catalog graph structure (`fossil catalog` subprocess output):
+    /// per-type Parquet + counts, stored in promotor cloud. Drives the catalog
+    /// graph view (DuckDB-WASM reads the Parquet directly).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub catalog_manifest: Option<DataManifest>,
+    pub catalog_manifest: Option<RunStatus>,
     /// Base URL for catalog parquets in promotor storage.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalog_base: Option<String>,

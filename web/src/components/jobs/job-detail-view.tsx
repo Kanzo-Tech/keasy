@@ -11,9 +11,8 @@ import { reverseMapUrl } from "@/lib/formatters";
 import { isTerminalStatus } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
-import { Code, Compass, Network } from "lucide-react";
+import { Compass } from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -44,7 +43,6 @@ export function JobDetailView({ id }: { id: string }) {
   const pathname = usePathname();
 
   const tab = searchParams.get("tab") ?? "overview";
-  const catalogMode = searchParams.get("catalogMode") ?? "graph";
 
   const setParam = useCallback((key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -53,7 +51,6 @@ export function JobDetailView({ id }: { id: string }) {
   }, [searchParams, router, pathname]);
 
   const setTab = useCallback((v: string) => setParam("tab", v), [setParam]);
-  const setCatalogMode = useCallback((v: string) => setParam("catalogMode", v), [setParam]);
 
   const prevStatusRef = useRef(job?.status);
   useEffect(() => {
@@ -106,12 +103,6 @@ export function JobDetailView({ id }: { id: string }) {
         </TabsList>
 
         <div className="flex items-center gap-2">
-          {tab === "catalog" && (
-            <ToggleGroup type="single" variant="outline" size="sm" value={catalogMode} onValueChange={(v) => { if (v) setCatalogMode(v); }}>
-              <ToggleGroupItem value="graph" className="h-7 px-2"><Network size={14} /></ToggleGroupItem>
-              <ToggleGroupItem value="serialized" className="h-7 px-2"><Code size={14} /></ToggleGroupItem>
-            </ToggleGroup>
-          )}
           {hasManifest && (
             <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" asChild>
               <Link href={`/jobs/${id}/discover`}>
@@ -130,9 +121,7 @@ export function JobDetailView({ id }: { id: string }) {
       <TabsContent value="catalog" className="gap-4 overflow-auto p-4">
         <CatalogView
           id={id}
-          viewMode={catalogMode}
           catalogManifest={job.catalog_manifest}
-          onNavigateToDiscovery={hasManifest ? () => setTab("discover") : undefined}
         />
       </TabsContent>
 

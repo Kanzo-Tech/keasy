@@ -52,13 +52,6 @@ export type VertexStatus = S["VertexStatus"];
 export type EdgeStatus = S["EdgeStatus"];
 export type ColumnStatus = S["ColumnStatus"];
 
-// DCAT-AP catalog manifest (RDF-rich; Job.catalog_manifest). Adapted to RunStatus
-// at the web boundary so the graph code consumes one shape.
-export type DataManifest = S["DataManifest"];
-export type TypeManifest = S["TypeManifest"];
-export type EdgeManifest = S["EdgeManifest"];
-export type ColumnStat = S["ColumnStat"];
-
 // Override rows type — server uses serde_json::Value per cell, schema generates Record<string,never>
 export type TabularData = Omit<S["TabularData"], "rows"> & {
   rows: Record<string, string | number | null>[];
@@ -80,7 +73,6 @@ export type ServiceStatus = S["ServiceStatusResponse"];
 export type InviteInfoResponse = S["InviteInfoResponse"];
 export type LogoutResponse = S["LogoutResponse"];
 export type CreateOrgInviteResponse = S["CreateOrgInviteResponse"];
-export type CatalogResponse = S["CatalogResponse"];
 
 // ---------------------------------------------------------------------------
 // UI-only union types

@@ -19,7 +19,6 @@ use utoipa::OpenApi;
         crate::jobs::routes::update_job,
         crate::jobs::routes::delete_job,
         crate::jobs::routes::stream_job,
-        crate::jobs::routes::get_job_catalog,
         // Connections
         crate::connections::routes::list_connections,
         crate::connections::routes::create_connection,
@@ -104,10 +103,6 @@ use utoipa::OpenApi;
         fossil_run_status::VertexStatus,
         fossil_run_status::EdgeStatus,
         fossil_run_status::ColumnStatus,
-        fossil_lang::runtime::executor::DataManifest,
-        fossil_lang::runtime::executor::TypeManifest,
-        fossil_lang::runtime::executor::EdgeManifest,
-        fossil_lang::runtime::executor::ColumnStat,
         crate::jobs::errors::JobRuntimeError,
         // Connections
         crate::connections::models::Connection,
@@ -165,7 +160,6 @@ use utoipa::OpenApi;
         crate::routes::org::CreateOrgInviteResponse,
         crate::routes::org::OrgIdentityResponse,
         // Jobs
-        crate::jobs::routes::CatalogResponse,
         crate::jobs::runner::JobEvent,
         // Discovery
         crate::graph::types::TabularData,

@@ -44,7 +44,7 @@ struct ResolveResponse {
 }
 
 /// Sign the given dataset-relative parquet paths under `base_url`. Shared by the
-/// discover (subprocess `RunStatus`) and catalog (`DataManifest`) endpoints —
+/// discover and catalog endpoints (both subprocess `RunStatus`) —
 /// each caller flattens its own manifest type into the file list.
 async fn sign_manifest_urls(
     state: &AppState,
@@ -147,7 +147,7 @@ pub async fn resolve_catalog_urls(
         return (StatusCode::NOT_FOUND, Json(error_body("no_catalog_manifest", "Job has no catalog manifest"))).into_response();
     };
 
-    let files: Vec<String> = manifest.types.iter().map(|t| t.vertex_file.clone())
+    let files: Vec<String> = manifest.vertices.iter().map(|v| v.file.clone())
         .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
         .collect();
 

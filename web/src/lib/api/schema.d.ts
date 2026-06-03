@@ -431,22 +431,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/catalog": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_job_catalog"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/jobs/{id}/conversations": {
         parameters: {
             query?: never;
@@ -795,9 +779,6 @@ export interface components {
             label: string;
             name: string;
         };
-        CatalogResponse: {
-            catalog: string;
-        };
         CatalogStoragePayload: {
             base_url: string;
             cloud_account_id: string;
@@ -814,22 +795,6 @@ export interface components {
         ColumnInfo: {
             data_type: string;
             name: string;
-        };
-        /** @description Per-column statistics for a vertex property. */
-        ColumnStat: {
-            /** Format: int64 */
-            count: number;
-            /** @description Data type: "string", "int64", "double", "boolean", "date". */
-            datatype: string;
-            /** @description Full predicate IRI. */
-            iri: string;
-            max?: string | null;
-            min?: string | null;
-            /** Format: int64 */
-            n_unique: number;
-            /** @description Short label used as Parquet column name. */
-            name: string;
-            samples?: string[];
         };
         /** @description A property column of a [`VertexStatus`]. */
         ColumnStatus: {
@@ -968,11 +933,6 @@ export interface components {
             name: string;
             status: string;
         };
-        /** @description GraphAr-compatible manifest describing a property graph stored as Parquet files. */
-        DataManifest: {
-            edges?: components["schemas"]["EdgeManifest"][];
-            types: components["schemas"]["TypeManifest"][];
-        };
         /** @description Typed envelope for successful API responses: `{ "data": T }`. */
         DataResponse_Value: {
             data: unknown;
@@ -986,23 +946,6 @@ export interface components {
             name: string;
             updated_at: string;
             url: string;
-        };
-        /** @description Manifest for an edge type (GraphAr v1 ordered adjacency lists). */
-        EdgeManifest: {
-            /** @description CSR-ordered edge parquet (ordered by source vertex). */
-            by_source: string;
-            /** @description CSC-ordered edge parquet (ordered by target vertex). */
-            by_target: string;
-            /** Format: int64 */
-            count: number;
-            /** @description Full predicate IRI. */
-            iri: string;
-            /** @description Short edge label (e.g. "knows"). */
-            name: string;
-            /** @description Source vertex type name. */
-            source_type: string;
-            /** @description Target vertex type name. */
-            target_type: string;
         };
         /** @description One edge type — its CSR/CSC Parquet pair and endpoints. */
         EdgeStatus: {
@@ -1066,7 +1009,7 @@ export interface components {
         Job: {
             /** @description Base URL for catalog parquets in promotor storage. */
             catalog_base?: string | null;
-            catalog_manifest?: null | components["schemas"]["DataManifest"];
+            catalog_manifest?: null | components["schemas"]["RunStatus"];
             completed_at?: string | null;
             connection_ids?: string[];
             created_at: string;
@@ -1244,18 +1187,6 @@ export interface components {
             };
             columns: string[];
             rows: Record<string, never>[];
-        };
-        /** @description Manifest for a vertex type (one Parquet file per type). */
-        TypeManifest: {
-            columns: components["schemas"]["ColumnStat"][];
-            /** Format: int64 */
-            entity_count: number;
-            /** @description Full RDF type IRI. */
-            iri: string;
-            /** @description Short type name (e.g. "person"). */
-            name: string;
-            /** @description Relative path to vertex Parquet file. */
-            vertex_file: string;
         };
         UpdateCloudAccountRequest: {
             auth_method?: string | null;
@@ -2443,34 +2374,6 @@ export interface operations {
             };
             /** @description Job is still running */
             409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_job_catalog: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description DCAT-AP catalog as Turtle (download) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Job or catalog not found */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };

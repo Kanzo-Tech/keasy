@@ -9,7 +9,6 @@ export const queryKeys = {
   jobs: {
     all: ["jobs"] as const,
     detail: (id: string) => ["jobs", id] as const,
-    catalog: (id: string, format: string) => ["jobs", id, "catalog", format] as const,
   },
 
   // Connections

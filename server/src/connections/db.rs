@@ -1,11 +1,6 @@
-use std::sync::Arc;
-
 use rusqlite::params;
 
-use fossil_lang::traits::resolver::PathResolver;
-
 use crate::db::Database;
-use crate::jobs::path_resolver::KeasyPathResolver;
 use crate::tenant::{OrgId, TenantScoped};
 
 use super::models::{
@@ -176,24 +171,6 @@ impl Database {
     ) -> std::collections::HashMap<String, String> {
         let account_ids = self.resolve_cloud_account_ids(ctx, connection_ids).await;
         self.build_storage_config(ctx, &account_ids).await
-    }
-
-    /// Build a PathResolver from ALL connections in an org (for validation/analysis).
-    pub async fn build_path_resolver_for_org(
-        &self,
-        ctx: &TenantScoped<()>,
-    ) -> Result<Arc<dyn PathResolver>, String> {
-        let connections = self.list_connections(ctx, None).await;
-        let mut entries = Vec::new();
-        for conn in connections {
-            let creds = if let Some(ref account_id) = conn.cloud_account_id {
-                self.build_storage_config(ctx, &[account_id.clone()]).await
-            } else {
-                std::collections::HashMap::new()
-            };
-            entries.push((conn.name, conn.url, creds));
-        }
-        Ok(Arc::new(KeasyPathResolver::from_connections(entries)))
     }
 }
 

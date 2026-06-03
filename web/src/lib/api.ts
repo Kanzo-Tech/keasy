@@ -10,13 +10,6 @@ import type {
 export { ApiError };
 export type { ServiceStatus } from "./types";
 
-async function fetchJson<T>(endpoint: string): Promise<T> {
-  const res = await fetch(endpoint, { credentials: "same-origin" });
-  if (!res.ok) throw new ApiError("request_error", `Request failed (${res.status})`);
-  const json = await res.json();
-  return (json?.data ?? json) as T;
-}
-
 export const api = {
   // ── Jobs ──────────────────────────────────────────────────────────────
   jobs: {
@@ -34,12 +27,6 @@ export const api = {
 
     remove: async (id: string) => {
       unwrap(await client.DELETE("/v1/jobs/{id}", { params: { path: { id } } }));
-    },
-
-    catalog: async (id: string): Promise<string> => {
-      const res = await fetch(`/v1/jobs/${id}/catalog`, { credentials: "same-origin" });
-      if (!res.ok) throw new Error("Failed to fetch catalog");
-      return res.text();
     },
 
     dashboardLayout: async (id: string) =>

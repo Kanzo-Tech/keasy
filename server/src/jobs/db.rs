@@ -192,7 +192,6 @@ fn row_to_job(row: &rusqlite::Row) -> Job {
             None
         }),
         error: error_json.and_then(|j| serde_json::from_str::<JobRuntimeError>(&j).ok()),
-        dcat_input: None,
         connection_ids: serde_json::from_str::<Vec<String>>(&account_ids_json)
             .unwrap_or_default(),
         script,
@@ -203,7 +202,7 @@ fn row_to_job(row: &rusqlite::Row) -> Job {
         manifest: manifest_json.and_then(|j| serde_json::from_str::<fossil_run_status::RunStatus>(&j).ok()),
         catalog_manifest: row.get::<_, Option<String>>("catalog_manifest")
             .unwrap_or(None)
-            .and_then(|j| serde_json::from_str::<fossil_lang::runtime::executor::DataManifest>(&j).ok()),
+            .and_then(|j| serde_json::from_str::<fossil_run_status::RunStatus>(&j).ok()),
         catalog_base: row.get("catalog_base").unwrap_or(None),
     }
 }

@@ -128,10 +128,6 @@ pub fn build_router(
             axum::routing::get(crate::jobs::routes::stream_job),
         )
         .route(
-            "/v1/jobs/{id}/catalog",
-            axum::routing::get(crate::jobs::routes::get_job_catalog),
-        )
-        .route(
             "/v1/settings/organization",
             axum::routing::get(crate::settings::routes::get_org_settings)
                 .put(crate::settings::routes::save_org_settings),

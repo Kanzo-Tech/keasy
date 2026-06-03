@@ -88,8 +88,6 @@ pub enum JobApiError {
     InvalidFormat(String),
     #[error("cannot delete a running job")]
     StillRunning,
-    #[error("no catalog available for this job")]
-    NoCatalog,
     #[error("serialization failed: {0}")]
     Serialization(String),
     #[error("internal: {0}")]
@@ -118,11 +116,6 @@ impl JobApiError {
                 axum::http::StatusCode::CONFLICT,
                 "still_running",
                 "Cannot delete a job that is still running".to_string(),
-            ),
-            JobApiError::NoCatalog => (
-                axum::http::StatusCode::NOT_FOUND,
-                "no_catalog",
-                "No DCAT catalog available for this job".to_string(),
             ),
             JobApiError::Serialization(msg) => (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,

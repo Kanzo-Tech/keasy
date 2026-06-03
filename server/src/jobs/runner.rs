@@ -11,8 +11,7 @@ use super::errors::{JobRuntimeError, classify_error};
 use super::fossil_runner::{FossilRunner, RunCreds, RunStatus};
 use super::models::{JobStatus, now_iso8601};
 use crate::db::Database;
-use crate::graph::dcat::extract::extract_dcat_input;
-use crate::graph::dcat::types::DcatInput;
+use crate::graph::dcat::extract::build_catalog_input;
 use crate::settings::org::OrgSettings;
 use crate::tenant::{OrgId, TenantScoped};
 
@@ -39,22 +38,22 @@ pub struct SpawnParams {
     pub output_dest: Option<String>,
     /// Cloud secrets for the dest + `@conn` sources, piped to the subprocess.
     pub run_creds: RunCreds,
-    /// Pre-resolved catalog storage destination (promotor cloud).
-    /// None when catalog storage is not configured.
-    pub catalog_dest: Option<fossil_lang::traits::resolver::ResolvedPath>,
+    /// Base URL for catalog storage (promotor cloud). The dest cloud secret is
+    /// reused from `run_creds.dest` (catalog + output share the promotor
+    /// account). None when catalog storage is not configured.
+    pub catalog_dest: Option<String>,
 }
 
 const TOTAL_PHASES: u8 = 5;
 
 /// Value returned by [`run_job`] after successful script execution.
 struct JobResult {
-    dcat_input: Option<DcatInput>,
     /// Base URL the GraphAr dataset was written under (the subprocess `--dest`).
     rdf_base: Option<String>,
     /// GraphAr structure from the subprocess (`RunStatus`).
     manifest: Option<RunStatus>,
-    /// DCAT-AP catalog manifest (parquets in promotor storage).
-    catalog_manifest: Option<fossil_lang::runtime::executor::DataManifest>,
+    /// DCAT-AP catalog graph structure (`fossil catalog` subprocess output).
+    catalog_manifest: Option<RunStatus>,
     /// Base URL for catalog parquets.
     catalog_base: Option<String>,
 }
@@ -185,7 +184,7 @@ impl JobRunner {
                         &run_creds,
                         if dcat_enabled { org_settings.as_ref() } else { None },
                         job_name.as_deref(),
-                        catalog_dest.as_ref(),
+                        catalog_dest.as_deref(),
                         &tx_blocking,
                     )
                 }),
@@ -196,14 +195,13 @@ impl JobRunner {
             .and_then(|r| r.map_err(JobFailure::Execution));
 
             match result {
-                Ok(JobResult { dcat_input, rdf_base, manifest, catalog_manifest, catalog_base }) => {
+                Ok(JobResult { rdf_base, manifest, catalog_manifest, catalog_base }) => {
                     // Phase 3: finalizing
                     if tx.send(JobEvent { phase: "finalizing".into(), index: 3, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
                     if let Err(e) = db.update_job(&job_ctx, |job| {
                         job.status = JobStatus::Completed;
                         job.completed_at = Some(now_iso8601());
-                        job.dcat_input = dcat_input;
                         job.rdf_base = rdf_base;
                         job.manifest = manifest;
                         job.catalog_manifest = catalog_manifest;
@@ -269,7 +267,7 @@ fn run_job(
     run_creds: &RunCreds,
     org: Option<&OrgSettings>,
     job_name: Option<&str>,
-    catalog_dest: Option<&fossil_lang::traits::resolver::ResolvedPath>,
+    catalog_dest: Option<&str>,
     tx: &broadcast::Sender<JobEvent>,
 ) -> Result<JobResult, String> {
     // Phase 1: compiling — the fossil subprocess parses + typechecks the program.
@@ -292,17 +290,22 @@ fn run_job(
     let run_status = run_result.map_err(|e| e.to_string())?;
 
     let completed_at = now_iso8601();
-    let dcat_input =
-        org.map(|org| extract_dcat_input(job_id, job_name, &completed_at, org, &run_status, dest_url));
 
     // Materialize the DCAT-AP catalog (if dcat enabled + catalog storage set).
-    // The catalog manifest is keasy's own RDF-rich artifact; `run_status`
-    // contributes only per-type row counts.
-    let (catalog_manifest, catalog_base) = match (&dcat_input, catalog_dest) {
-        (Some(input), Some(dest)) => {
-            let dest_with_job = dest.join(&format!("{}/{job_id}", input.org.publisher_name));
-            match crate::graph::dcat::materializer::materialize_catalog(input, &run_status, &dest_with_job) {
-                Ok(cat_manifest) => (Some(cat_manifest), Some(dest_with_job.to_str().to_string())),
+    // The catalog is "just another output graph": keasy assembles the
+    // governance + dataset structure (`CatalogInput`) from the run manifest and
+    // lets `fossil catalog` build + write the DCAT-AP graph (same GraphAr path
+    // as the run). The DCAT-AP *shape* lives in fossil, not here.
+    let (catalog_manifest, catalog_base) = match (org, catalog_dest) {
+        (Some(org), Some(base)) => {
+            let catalog_input =
+                build_catalog_input(job_id, job_name, &completed_at, org, &run_status, dest_url);
+            let dest_with_job =
+                format!("{}/{}/{job_id}", base.trim_end_matches('/'), org.publisher_name);
+            // The catalog shares the promotor cloud account with the output, so
+            // its dest secret is the run's dest secret.
+            match FossilRunner::from_env().run_catalog(&catalog_input, &dest_with_job, &run_creds.dest) {
+                Ok(cat_status) => (Some(cat_status), Some(dest_with_job)),
                 Err(e) => {
                     warn!("Catalog materialization failed (non-fatal): {e}");
                     (None, None)
@@ -313,7 +316,6 @@ fn run_job(
     };
 
     Ok(JobResult {
-        dcat_input,
         rdf_base: Some(dest_url.to_string()),
         manifest: Some(run_status),
         catalog_manifest,

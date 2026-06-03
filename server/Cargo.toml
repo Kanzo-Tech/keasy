@@ -45,9 +45,7 @@ secrecy = { version = "0.10", features = ["serde"] }
 tower-sessions = { version = "0.14", features = ["signed"] }
 tower-sessions-rusqlite-store = "0.14.1"
 time = "0.3"
-polars = { version = "0.52", features = ["cloud", "aws", "azure", "gcp", "round_series"] }
 fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider", features = ["utoipa"] }
-fossil-stdlib = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider" }
 fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git", branch = "feat/turtle-provider" }
 # W0e subprocess: the `fossil run --output-json` wire contract, reused verbatim
 # (one source of truth — FossilRunner deserialises this exact struct). Path dep

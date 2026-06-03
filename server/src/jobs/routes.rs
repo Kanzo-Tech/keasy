@@ -20,11 +20,6 @@ use crate::middleware::tenant::{IsParticipant, Require};
 
 use super::errors::JobApiError;
 
-#[derive(serde::Serialize, utoipa::ToSchema)]
-pub struct CatalogResponse {
-    pub catalog: String,
-}
-
 #[utoipa::path(get, path = "/v1/jobs", tag = "Jobs",
     responses(
         (status = 200, description = "List of jobs", body = Vec<Job>),
@@ -62,7 +57,6 @@ pub async fn create_job(
             completed_at: None,
             error: None,
             mode: payload.mode.unwrap_or(RunMode::Integrated),
-            dcat_input: None,
             connection_ids: payload.connection_ids.clone(),
             script: Some(payload.script),
             rdf_base: None,
@@ -86,7 +80,6 @@ pub async fn create_job(
         completed_at: None,
         error: None,
         mode: payload.mode.unwrap_or(RunMode::Integrated),
-        dcat_input: None,
         connection_ids: payload.connection_ids.clone(),
         script: None,
         rdf_base: None,
@@ -127,20 +120,13 @@ pub async fn create_job(
     )
     .await;
 
+    // The catalog is written to promotor storage via the `fossil catalog`
+    // subprocess (cloud secret reused from the run's dest). keasy only supplies
+    // the base URL; cloud auth rides the subprocess stdin, not a host resolver.
     let catalog_dest = if dcat_enabled {
-        match &promotor_storage {
-            Some((promotor_org_id, account_id, base_url)) => {
-                use crate::tenant::{OrgId, TenantScoped};
-                use crate::jobs::path_resolver::build_cloud_options;
-                use fossil_lang::traits::resolver::ResolvedPath;
-
-                let pctx = TenantScoped::new(OrgId(promotor_org_id.clone()), ());
-                let env = state.db.build_storage_config(&pctx, std::slice::from_ref(account_id)).await;
-                let cloud_opts = build_cloud_options(base_url, &env);
-                Some(ResolvedPath::with_config(base_url, cloud_opts, env))
-            }
-            None => None,
-        }
+        promotor_storage
+            .as_ref()
+            .map(|(_, _, base_url)| base_url.clone())
     } else {
         None
     };
@@ -298,51 +284,6 @@ pub async fn delete_job(
 
     Ok(StatusCode::NO_CONTENT.into_response())
 }
-
-#[utoipa::path(get, path = "/v1/jobs/{id}/catalog", tag = "Jobs",
-    params(("id" = String, Path, description = "Job ID")),
-    responses(
-        (status = 200, description = "DCAT-AP catalog as Turtle (download)"),
-        (status = 404, description = "Job or catalog not found"),
-    )
-)]
-pub async fn get_job_catalog(
-    ctx: Require<IsParticipant>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Result<impl IntoResponse, JobApiError> {
-    let job = state.db.get_job(&ctx.scoped(id.as_str())).await
-        .ok_or(JobApiError::NotFound)?;
-
-    let catalog_base = job.catalog_base.as_deref()
-        .ok_or(JobApiError::NoCatalog)?;
-    let catalog_manifest = job.catalog_manifest.as_ref()
-        .ok_or(JobApiError::NoCatalog)?;
-
-    // Resolve cloud credentials for reading catalog parquets
-    let creds = state.db
-        .build_storage_config_from_connections(&ctx.scoped(()), &job.connection_ids)
-        .await;
-
-    // Generate Turtle from parquets (single source of truth)
-    let turtle = tokio::task::spawn_blocking({
-        let base = catalog_base.to_string();
-        let manifest = catalog_manifest.clone();
-        move || crate::graph::dcat::generator::parquets_to_turtle(&base, &manifest, &creds)
-    })
-    .await
-    .map_err(|e| JobApiError::Internal(format!("blocking task failed: {e}")))?
-    .map_err(|e| JobApiError::Internal(format!("Turtle generation failed: {e}")))?;
-
-    Ok((
-        [
-            (axum::http::header::CONTENT_TYPE, "text/turtle; charset=utf-8"),
-            (axum::http::header::CONTENT_DISPOSITION, "attachment; filename=\"catalog.ttl\""),
-        ],
-        turtle,
-    ).into_response())
-}
-
 
 #[utoipa::path(get, path = "/v1/jobs/{id}/dashboard-layout", tag = "Jobs",
     params(("id" = String, Path, description = "Job ID")),

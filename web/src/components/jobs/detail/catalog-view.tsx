@@ -3,27 +3,18 @@
 import { useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Selection } from "@uwdata/mosaic-core";
-import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
-import { runStatusFromDataManifest } from "@/lib/graph-schema";
 import { Database, Loader2 } from "lucide-react";
-import { CodeView } from "@/components/discovery/code-view";
 import { GraphCanvas, DEFAULT_GRAPH_CONFIG, type CosmosGraphHandle } from "@fossil-lang/viewer";
 import { useGraphDataRows } from "@/components/discovery/use-graph-data-rows";
 import { useGraphSchema } from "@/components/discovery/use-graph-schema";
 import { DiscoveryProvider } from "@/components/discovery/store";
 import { EmptyState } from "@/components/shared/empty-state";
-import { Skeleton } from "@/components/ui/skeleton";
-import type { DataManifest, RunStatus } from "@/lib/types";
-
-export type DcatFormat = "turtle" | "jsonld" | "rdfxml" | "ntriples" | "nquads";
+import type { RunStatus } from "@/lib/types";
 
 interface CatalogViewProps {
   id: string;
-  viewMode?: string;
-  catalogManifest?: DataManifest | null;
-  onNavigateToDiscovery?: (typeName: string) => void;
+  catalogManifest?: RunStatus | null;
 }
 
 async function resolveCatalogUrls(jobId: string): Promise<Record<string, string>> {
@@ -33,48 +24,17 @@ async function resolveCatalogUrls(jobId: string): Promise<Record<string, string>
   return files;
 }
 
-export function CatalogView({ id, viewMode = "graph", catalogManifest, onNavigateToDiscovery }: CatalogViewProps) {
-  // Serialized view: fetch Turtle from server (download endpoint)
-  const { data: fetchedCatalog, isLoading: catalogLoading } = useQuery({
-    queryKey: queryKeys.jobs.catalog(id, "turtle"),
-    queryFn: () => api.jobs.catalog(id),
-    enabled: viewMode === "serialized",
-  });
-  const showCatalogSkeleton = useDelayedLoading(catalogLoading);
-
-  // Resolve signed URLs for catalog parquets
+export function CatalogView({ id, catalogManifest }: CatalogViewProps) {
+  // Resolve signed URLs for catalog parquets (DuckDB-WASM reads them directly —
+  // the catalog graph is the single source of truth; serialised RDF export, if
+  // ever needed, belongs in the GraphAr layer, not the host).
   const { data: signedUrls, isLoading: urlsLoading } = useQuery({
     queryKey: [...queryKeys.jobs.detail(id), "catalog-urls"],
     queryFn: () => resolveCatalogUrls(id),
-    enabled: viewMode === "graph" && !!catalogManifest,
+    enabled: !!catalogManifest,
   });
 
-  // Adapt the RDF-rich catalog DataManifest to a RunStatus so the graph code
-  // (mount + schema) consumes one shape. Memoised: the schema hook keys on it.
-  const manifest = useMemo(
-    () => (catalogManifest ? runStatusFromDataManifest(catalogManifest) : null),
-    [catalogManifest],
-  );
-
-  if (viewMode === "serialized") {
-    return (
-      <div className="flex-1 flex flex-col min-h-0">
-        {catalogLoading ? (
-          showCatalogSkeleton ? (
-            <div className="space-y-2 p-3">
-              <Skeleton loading className="block w-full"><p className="text-sm font-mono">@prefix dcat: placeholder .</p></Skeleton>
-              <Skeleton loading className="block w-3/4"><p className="text-sm font-mono">@prefix dct: placeholder .</p></Skeleton>
-              <Skeleton loading className="block w-5/6"><p className="text-sm font-mono">@prefix xsd: placeholder .</p></Skeleton>
-            </div>
-          ) : null
-        ) : (
-          <CodeView code={fetchedCatalog ?? ""} lang="turtle" />
-        )}
-      </div>
-    );
-  }
-
-  if (!catalogManifest || !manifest) {
+  if (!catalogManifest) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <EmptyState
@@ -96,14 +56,14 @@ export function CatalogView({ id, viewMode = "graph", catalogManifest, onNavigat
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <DiscoveryProvider manifest={manifest} signedUrls={signedUrls}>
-        <CatalogGraphContent manifest={manifest} onNavigateToDiscovery={onNavigateToDiscovery} />
+      <DiscoveryProvider manifest={catalogManifest} signedUrls={signedUrls}>
+        <CatalogGraphContent manifest={catalogManifest} />
       </DiscoveryProvider>
     </div>
   );
 }
 
-function CatalogGraphContent({ manifest, onNavigateToDiscovery }: { manifest: RunStatus; onNavigateToDiscovery?: (typeName: string) => void }) {
+function CatalogGraphContent({ manifest }: { manifest: RunStatus }) {
   const schema = useGraphSchema(manifest);
   const graphRef = useRef<CosmosGraphHandle>(null);
   const selection = useMemo(() => Selection.crossfilter(), []);

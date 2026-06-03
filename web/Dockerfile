@@ -1,7 +1,10 @@
 FROM node:22-alpine AS builder
 
 WORKDIR /app
+# Vendored @fossil-lang/* packages are `file:./vendor/...tgz` deps — copy them
+# before `npm ci` (else ENOENT on the tarballs).
 COPY package.json package-lock.json ./
+COPY vendor ./vendor
 RUN npm ci
 COPY . .
 RUN npm run build

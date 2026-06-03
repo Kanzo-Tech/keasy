@@ -1,3 +1,9 @@
+# Dev image for keasy-server (hot reload). Build CONTEXT is the parent dir
+# holding BOTH `keasy/` and the sibling `rmlext/` — see docker-compose.dev.yml
+# (`context: ..`, `dockerfile: keasy/server/Dockerfile.dev`). rmlext is needed
+# for the `fossil-run-status` path dep AND to build the `fossil` subprocess
+# binary keasy invokes for every run/catalog/providers call.
+
 FROM rust:1.90-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -6,16 +12,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN cargo install cargo-watch
 
-WORKDIR /app
+WORKDIR /src
 
-# Cache dependencies: copy manifests, build with dummy source
-COPY Cargo.toml Cargo.lock ./
+# Build the `fossil` binary once (rmlext, bundled DuckDB ~3-5 min cold) and put
+# it on PATH via FOSSIL_BIN. rmlext also satisfies keasy-server's path dep.
+COPY rmlext /src/rmlext
+RUN cargo build --release --manifest-path /src/rmlext/Cargo.toml -p fossil-cli \
+    && cp /src/rmlext/target/release/fossil /usr/local/bin/fossil
+ENV FOSSIL_BIN=/usr/local/bin/fossil
+
+# keasy-server dep cache (the real `src/` is bind-mounted at runtime; `target/`
+# is a named volume so rebuilds are fast across restarts).
+WORKDIR /src/keasy/server
+COPY keasy/server/Cargo.toml keasy/server/Cargo.lock ./
 RUN mkdir src && echo 'fn main() {}' > src/main.rs && cargo build && rm -rf src
 
-# DuckDB looks for CA certs at the CentOS/RHEL path; symlink from Debian's path.
+# DuckDB (inside `fossil`) looks for CA certs at the CentOS/RHEL path; symlink it.
 RUN mkdir -p /etc/pki/tls/certs \
     && ln -s /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
-
 
 EXPOSE 8080
 CMD ["cargo", "watch", "-x", "run"]

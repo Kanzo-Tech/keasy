@@ -3,19 +3,20 @@
 
 services:
   server:
+    # Context is the parent of keasy/ + rmlext/ (the fossil-run-status path dep
+    # + the fossil subprocess binary both come from rmlext).
     build:
-      context: ./server
-      dockerfile: Dockerfile.dev
+      context: ..
+      dockerfile: keasy/server/Dockerfile.dev
     volumes:
-      - ./server/src:/app/src
-      - server-target:/app/target
+      - ./server/src:/src/keasy/server/src
+      - server-target:/src/keasy/server/target
       - ./infra/seeds/dev-seed.sql:/seed/init.sql:ro
     environment:
       KEASY_SEED_FILE: /seed/init.sql
       KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-keasy.local}
       KEASY_GXDCH_MOCK: "true"
       RUST_LOG: debug
-      POLARS_MAX_THREADS: "2"
     healthcheck:
       interval: 10s
       retries: 30

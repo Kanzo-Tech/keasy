@@ -3,9 +3,11 @@
 
 services:
   server:
+    # Context is the parent of keasy/ + rmlext/ (the fossil-run-status path dep
+    # + the bundled fossil subprocess binary both come from rmlext).
     build:
-      context: ./server
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: keasy/server/Dockerfile
     environment:
       KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-}
       KEASY_CADDY_CERTS_DIR: /caddy-data

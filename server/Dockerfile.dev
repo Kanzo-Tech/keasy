@@ -21,6 +21,10 @@ RUN cargo build --release --manifest-path /src/rmlext/Cargo.toml -p fossil-cli \
     && cp /src/rmlext/target/release/fossil /usr/local/bin/fossil
 ENV FOSSIL_BIN=/usr/local/bin/fossil
 
+# keasy-keycloak crate (a path dep of keasy-server) must be present before the
+# dep-cache build resolves `../keycloak`.
+COPY keasy/keycloak /src/keasy/keycloak
+
 # keasy-server dep cache (the real `src/` is bind-mounted at runtime; `target/`
 # is a named volume so rebuilds are fast across restarts).
 WORKDIR /src/keasy/server

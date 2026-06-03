@@ -25,6 +25,8 @@ RUN cargo build --release --manifest-path /src/rmlext/Cargo.toml -p fossil-cli
 # Dep cache: build manifests with a dummy main, then swap in real source. The
 # `fossil-run-status` path dep resolves to /src/rmlext (../../rmlext from
 # /src/keasy/server) — rmlext is already present above.
+# keasy-keycloak is a path dep at ../keycloak — copy it before the dep cache.
+COPY keasy/keycloak /src/keasy/keycloak
 WORKDIR /src/keasy/server
 COPY keasy/server/Cargo.toml keasy/server/Cargo.lock ./
 RUN mkdir src && echo 'fn main() {}' > src/main.rs && cargo build --release && rm -rf src

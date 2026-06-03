@@ -8,7 +8,7 @@ export default async function OrganizationLayout({
 }) {
   const role = await getEffectiveRole();
 
-  if (role === "promotor") {
+  if (role === "owner") {
     redirect("/?redirected=1");
   }
 

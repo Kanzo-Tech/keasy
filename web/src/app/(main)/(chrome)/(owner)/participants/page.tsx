@@ -46,8 +46,8 @@ export default function ParticipantsPage() {
         cell: ({ row }) => {
           const role = row.getValue("role") as string;
           return (
-            <Badge variant={role === "promotor" ? "default" : "secondary"}>
-              {role === "promotor" ? "Promotor" : "Participant"}
+            <Badge variant={role === "owner" ? "default" : "secondary"}>
+              {role === "owner" ? "Owner" : "Member"}
             </Badge>
           );
         },
@@ -151,7 +151,7 @@ export default function ParticipantsPage() {
         <EmptyState
           icon={Users}
           title="No participants yet"
-          description="Invite organizations to participate in your dataspace."
+          description="Invite organizations to participate in your workspace."
         />
       ) : (
         <DataTable
@@ -168,7 +168,7 @@ export default function ParticipantsPage() {
           <div>
             <h2 className="text-sm font-semibold">Pending Invitations</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Invite organizations to join your dataspace via a link.
+              Invite organizations to join your workspace via a link.
             </p>
           </div>
           <Button size="sm" onClick={handleOpenDialog}>
@@ -235,8 +235,8 @@ export default function ParticipantsPage() {
           <DialogHeader>
             <DialogTitle>Invite Organization</DialogTitle>
             <DialogDescription>
-              Create an invite link for a new participant organization. Share
-              the link with them to onboard to your dataspace.
+              Create an invite link for a new member organization. Share
+              the link with them to onboard to your workspace.
             </DialogDescription>
           </DialogHeader>
 

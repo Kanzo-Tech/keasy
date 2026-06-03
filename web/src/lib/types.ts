@@ -81,31 +81,13 @@ export type CreateOrgInviteResponse = S["CreateOrgInviteResponse"];
 export type CreationMode = "studio" | "assistant";
 
 // ---------------------------------------------------------------------------
-// Types NOT in the OpenAPI spec — remain manually defined (UI/static config)
+// Connection-provider registry schema — codegen'd from the OpenAPI spec
+// (`/v1/settings/schema`), NOT hand-mirrored ([[feedback_schema_driven_ui]]).
 // ---------------------------------------------------------------------------
 
-export interface FieldSchema {
-  name: string;
-  label: string;
-  secret: boolean;
-  optional?: boolean;
-  default_value?: string;
-  env_var?: string;
-}
-
-export interface AuthMethodSchema {
-  name: string;
-  label: string;
-  fields: FieldSchema[];
-}
-
-export interface ProviderSchema {
-  id: string;
-  label: string;
-  icon: string;
-  common_fields: FieldSchema[];
-  auth_methods: AuthMethodSchema[];
-}
+export type FieldSchema = S["FieldSchema"];
+export type AuthMethodSchema = S["AuthMethodSchema"];
+export type ProviderSchema = S["ProviderSchema"];
 
 // Data-source providers fossil supports (`/v1/providers`). Codegen'd from the
 // shared `fossil-run-status` contract via openapi — no hand-mirrored shape.
@@ -116,15 +98,9 @@ export type ProviderInfo = S["ProviderInfo"];
 // ---------------------------------------------------------------------------
 
 export type MeResponse = S["MeResponse"];
-export type Workspace = S["Workspace"];
+export type WorkspaceSummary = S["WorkspaceSummary"];
 export type WorkspacesResponse = S["WorkspacesResponse"];
 
-// ---------------------------------------------------------------------------
-// Gaia-X Compliance types — re-exported from schema
-// ---------------------------------------------------------------------------
-
-export type ComplianceCredential = S["ComplianceCredential"];
-export type ComplyEvent = S["ComplyEvent"];
 export type JobEvent = S["JobEvent"];
 
 // ---------------------------------------------------------------------------

@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Cloud,
   Database,
-  ShieldCheck,
   FileText,
 } from "lucide-react";
 import { api } from "@/lib/api";
@@ -14,7 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SummaryCard } from "@/components/shared/summary-card";
 
-export function ParticipantDashboard() {
+export function MemberDashboard() {
   const { data: jobs, isLoading: jobsLoading } = useQuery({
     queryKey: queryKeys.jobs.all,
     queryFn: api.jobs.list,
@@ -28,13 +27,8 @@ export function ParticipantDashboard() {
     queryKey: queryKeys.connections.all(),
     queryFn: () => api.connections.list(),
   });
-  const { data: complianceStatus, isLoading: complianceLoading } = useQuery({
-    queryKey: queryKeys.gx.compliance,
-    queryFn: api.gaiax.compliance.status,
-  });
 
-  const loading =
-    jobsLoading || accountsLoading || connectionsLoading || complianceLoading;
+  const loading = jobsLoading || accountsLoading || connectionsLoading;
 
   const completedJobs = jobs?.filter((j) => j.status === "completed") ?? [];
   const failedJobs = jobs?.filter((j) => j.status === "failed") ?? [];
@@ -43,16 +37,15 @@ export function ParticipantDashboard() {
 
   const accountCount = accounts?.length ?? 0;
   const connectionCount = connections?.length ?? 0;
-  const isCompliant = complianceStatus?.compliant ?? false;
   const catalogCount = completedJobs.filter((j) => j.rdf_base).length;
 
   return (
       <div className="space-y-8">
         <section>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-            Dataspace Readiness
+            Workspace Readiness
           </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <SummaryCard
               href="/settings/cloud-accounts"
               icon={Cloud}
@@ -76,20 +69,6 @@ export function ParticipantDashboard() {
                   : "connections configured"
               }
               ok={loading ? undefined : connectionCount > 0}
-            />
-            <SummaryCard
-              href="/organization/details"
-              icon={ShieldCheck}
-              title="Compliance"
-              value={
-                loading ? undefined : isCompliant ? "Compliant" : "Pending"
-              }
-              description={
-                isCompliant
-                  ? "Gaia-X conformant"
-                  : "Complete the compliance wizard"
-              }
-              ok={loading ? undefined : isCompliant}
             />
             <SummaryCard
               href="/jobs"

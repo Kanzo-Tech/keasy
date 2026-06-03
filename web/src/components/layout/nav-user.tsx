@@ -120,7 +120,7 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {effectiveRole !== "promotor" && (
+            {effectiveRole !== "owner" && (
               <DropdownMenuItem asChild>
                 <Link href="/organization" onClick={() => setOpenMobile(false)}>
                   <Building2 className="mr-2 h-4 w-4" />

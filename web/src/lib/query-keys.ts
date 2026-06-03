@@ -53,11 +53,6 @@ export const queryKeys = {
     providers: ["ai-providers"] as const,
   },
 
-  // Gaia-X
-  gx: {
-    compliance: ["gx-compliance-status"] as const,
-  },
-
   // Services
   services: ["service-status"] as const,
 

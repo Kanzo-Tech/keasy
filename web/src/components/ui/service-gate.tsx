@@ -8,8 +8,6 @@ import type { ServiceStatus } from "@/lib/api";
 
 const SERVICE_LABELS: Partial<Record<keyof ServiceStatus, string>> = {
   oidc: "Single sign-on (OIDC) is not configured.",
-  gxdch_notary: "GXDCH Notary service is not configured.",
-  gxdch_compliance: "GXDCH Compliance service is not configured.",
 };
 
 interface Props {

@@ -9,8 +9,8 @@ import { SectionNav, type NavSection } from "@/components/layout/section-nav";
 
 export function SettingsNav() {
   const { data: me } = useQuery<MeResponse>({ queryKey: queryKeys.me, queryFn: api.auth.me });
-  const isPromotor = me?.effective_role === "promotor";
-  const isAdmin = me?.effective_role === "org_admin";
+  const isPromotor = me?.effective_role === "owner";
+  const isAdmin = me?.effective_role === "admin";
 
   const sections: NavSection[] = [
     {

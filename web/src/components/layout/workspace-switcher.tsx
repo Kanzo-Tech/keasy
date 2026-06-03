@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { ROLE_LABEL } from "@/lib/route-config";
-import type { MeResponse, WorkspacesResponse, Workspace } from "@/lib/types";
+import type { MeResponse, WorkspacesResponse, WorkspaceSummary } from "@/lib/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,13 +40,13 @@ export function WorkspaceSwitcher() {
   const currentClientId = workspacesData?.current_client_id ?? "";
   const currentWorkspace = workspaces.find((ws) => ws.client_id === currentClientId);
 
-  const effectiveRole = me?.effective_role ?? "org_user";
+  const effectiveRole = me?.effective_role ?? "member";
   const orgName = me?.org?.name ?? "Keasy";
   const displayName = currentWorkspace?.name ?? orgName;
 
   const [switching, setSwitching] = React.useState<string | null>(null);
 
-  async function handleSwitch(ws: Workspace) {
+  async function handleSwitch(ws: WorkspaceSummary) {
     if (ws.client_id === currentClientId) return;
     setSwitching(ws.name);
     try {

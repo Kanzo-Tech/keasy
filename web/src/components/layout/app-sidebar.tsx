@@ -24,7 +24,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { data: me } = useQuery<MeResponse>({ queryKey: queryKeys.me, queryFn: api.auth.me });
 
-  const effectiveRole = me?.effective_role ?? "org_user";
+  const effectiveRole = me?.effective_role ?? "member";
   const sidebarRoutes = getSidebarRoutes(effectiveRole);
 
   const user = me

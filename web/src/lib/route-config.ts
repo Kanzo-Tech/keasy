@@ -5,7 +5,6 @@ import {
   GalleryVerticalEnd,
   Home,
   Settings2,
-  ShieldCheck,
   Users,
   Workflow,
   type LucideIcon,
@@ -16,8 +15,8 @@ import {
 type RouteDef = {
   name: string;
   icon?: LucideIcon;
-  /** Which roles see this in the sidebar. Omit = not in sidebar. */
-  sidebar?: readonly ("promotor" | "participant" | "org_admin")[];
+  /** Which workspace roles see this in the sidebar. Omit = not in sidebar. */
+  sidebar?: readonly ("owner" | "member" | "admin")[];
 };
 
 export type RouteEntry = RouteDef & { path: string };
@@ -25,9 +24,9 @@ export type RouteEntry = RouteDef & { path: string };
 // ── Data ─────────────────────────────────────────────────────────────────────
 
 export const ROLE_LABEL: Record<string, string> = {
-  promotor: "Promotor",
-  org_admin: "Admin",
-  org_user: "User",
+  owner: "Owner",
+  admin: "Admin",
+  member: "Member",
 };
 
 /**
@@ -35,20 +34,18 @@ export const ROLE_LABEL: Record<string, string> = {
  * Keyed by path, O(1) lookup, sidebar/breadcrumbs derive from this.
  */
 const ROUTES: Record<string, RouteDef> = {
-  "/":                            { name: "Dashboard", icon: Home, sidebar: ["promotor", "participant"] },
-  "/connections":                 { name: "Connections", icon: Database, sidebar: ["participant"] },
-  "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: ["participant"] },
+  "/":                            { name: "Dashboard", icon: Home, sidebar: ["owner", "member"] },
+  "/connections":                 { name: "Connections", icon: Database, sidebar: ["member"] },
+  "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: ["member"] },
   "/organization":                    { name: "Organization", icon: Building2 },
   "/organization/details":            { name: "Details" },
-  "/organization/compliance/wizard":  { name: "Compliance Wizard", icon: ShieldCheck },
   "/organization/users":              { name: "Users", icon: Users },
-  "/participants":                { name: "Participants", icon: Users, sidebar: ["promotor"] },
+  "/participants":                { name: "Participants", icon: Users, sidebar: ["owner"] },
   "/settings":                    { name: "Settings", icon: Settings2 },
   "/settings/ai":                 { name: "AI Settings", icon: Bot },
   "/settings/cloud-accounts":     { name: "Cloud Accounts", icon: GalleryVerticalEnd },
   "/settings/cloud-accounts/new": { name: "New Cloud Account" },
   "/settings/preferences":        { name: "Preferences" },
-  "/organization/compliance":     { name: "Compliance", icon: ShieldCheck },
 };
 
 // ── Derived ──────────────────────────────────────────────────────────────────
@@ -84,12 +81,12 @@ export function generateBreadcrumbs(path: string): RouteEntry[] {
 }
 
 export function getSidebarRoutes(effectiveRole?: string): RouteEntry[] {
-  const keys: ("promotor" | "participant" | "org_admin")[] =
-    effectiveRole === "promotor"
-      ? ["promotor"]
-      : effectiveRole === "org_admin"
-        ? ["participant", "org_admin"]
-        : ["participant"];
+  const keys: ("owner" | "member" | "admin")[] =
+    effectiveRole === "owner"
+      ? ["owner"]
+      : effectiveRole === "admin"
+        ? ["member", "admin"]
+        : ["member"];
   return Object.entries(ROUTES)
     .filter(([, def]) => def.sidebar?.some((s) => keys.includes(s)))
     .map(([path, def]) => ({ ...def, path }));

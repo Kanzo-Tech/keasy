@@ -1,10 +1,9 @@
 import client, { ApiError, unwrap } from "./api/client";
 import type { Schemas } from "./api/client";
-import { fetchSSE, fetchSSEJson } from "./api/sse";
+import { fetchSSE } from "./api/sse";
 import type {
   ProviderSchema,
   ProviderInfo,
-  ComplyEvent,
 } from "./types";
 
 export { ApiError };
@@ -143,9 +142,8 @@ export const api = {
 
   // ── Settings ──────────────────────────────────────────────────────────
   settings: {
-    // TODO: add ProviderSchema to openapi spec
-    schema: async () =>
-      unwrap(await client.GET("/v1/settings/schema")) as unknown as ProviderSchema[],
+    schema: async (): Promise<ProviderSchema[]> =>
+      unwrap(await client.GET("/v1/settings/schema")),
 
     providers: async (): Promise<ProviderInfo[]> =>
       unwrap(await client.GET("/v1/providers")),
@@ -256,20 +254,6 @@ export const api = {
         params: { path: { token } },
       }));
     },
-  },
-
-  // ── Gaia-X ────────────────────────────────────────────────────────────
-  gaiax: {
-    compliance: {
-      status: async () =>
-        unwrap(await client.GET("/v1/gaia-x/compliance")),
-    },
-
-    complyStream: (certChainPem?: string) =>
-      fetchSSEJson<ComplyEvent>("/v1/gaia-x/comply", {
-        cert_chain_pem: certChainPem ?? null,
-      }),
-
   },
 
   // ── Admin ─────────────────────────────────────────────────────────────

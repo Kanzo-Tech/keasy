@@ -9,7 +9,7 @@ import { SectionNav, type NavSection } from "@/components/layout/section-nav";
 
 export function OrgNav() {
   const { data: me } = useQuery<MeResponse>({ queryKey: queryKeys.me, queryFn: api.auth.me });
-  const isAdmin = me?.effective_role === "org_admin";
+  const isAdmin = me?.effective_role === "admin";
 
   const sections: NavSection[] = [
     {

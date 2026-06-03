@@ -1,16 +1,16 @@
 import { getEffectiveRole } from "@/lib/auth-check";
 import { PageShell } from "@/components/layout/page-shell";
-import { PromotorDashboard } from "./(promotor)/promotor-dashboard";
-import { ParticipantDashboard } from "./(participant)/participant-dashboard";
+import { OwnerDashboard } from "./(owner)/owner-dashboard";
+import { MemberDashboard } from "./(member)/member-dashboard";
 
 export default async function HomePage() {
   const role = await getEffectiveRole();
 
-  if (role === "promotor") {
+  if (role === "owner") {
     return (
       <PageShell>
         <PageShell.Content>
-          <PromotorDashboard />
+          <OwnerDashboard />
         </PageShell.Content>
       </PageShell>
     );
@@ -19,7 +19,7 @@ export default async function HomePage() {
   return (
     <PageShell>
       <PageShell.Content>
-        <ParticipantDashboard />
+        <MemberDashboard />
       </PageShell.Content>
     </PageShell>
   );

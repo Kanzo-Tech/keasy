@@ -4,9 +4,6 @@ import { queryKeys } from "@/lib/query-keys";
 
 const DEFAULTS: ServiceStatus = {
   oidc: false,
-  gxdch_notary: false,
-  gxdch_compliance: false,
-  base_domain: null,
 };
 
 export function useServices() {

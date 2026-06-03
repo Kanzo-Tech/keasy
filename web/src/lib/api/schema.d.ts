@@ -4,38 +4,6 @@
  */
 
 export interface paths {
-    "/.well-known/did.json": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_did_document"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/.well-known/x509CertificateChain.pem": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_cert_chain"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/healthz/live": {
         parameters: {
             query?: never;
@@ -107,9 +75,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_dataspaces"];
+        get: operations["list_registered_workspaces"];
         put?: never;
-        post: operations["register_dataspace"];
+        post: operations["register_workspace"];
         delete?: never;
         options?: never;
         head?: never;
@@ -226,9 +194,9 @@ export interface paths {
         };
         /**
          * GET /v1/auth/workspaces
-         * @description Returns the list of dataspaces the authenticated user has access to,
-         *     resolved from the `dataspaces` session value to display info via
-         *     the dataspaces table. Used by the sidebar instance switcher.
+         * @description Returns the list of workspaces the authenticated user has access to,
+         *     resolved from the Keycloak `keasy:workspaces` claim to display info via
+         *     the workspaces table. Used by the sidebar workspace switcher.
          */
         get: operations["list_workspaces"];
         put?: never;
@@ -361,38 +329,6 @@ export interface paths {
         get: operations["get_conversation_messages"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/gaia-x/compliance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_compliance_status"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/gaia-x/comply": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["comply"];
         delete?: never;
         options?: never;
         head?: never;
@@ -819,49 +755,6 @@ export interface components {
             question: string;
             rationale: string;
         };
-        ComplianceCredential: {
-            issued_at: string;
-            name: string;
-            raw_json: {
-                [key: string]: unknown;
-            };
-        };
-        ComplianceStatus: {
-            compliant: boolean;
-            credentials: components["schemas"]["ComplianceCredential"][];
-            verified_at?: string | null;
-        };
-        /** @description SSE event emitted during the comply pipeline. */
-        ComplyEvent: {
-            data?: null | components["schemas"]["ComplyResponse"];
-            /** @description Error message (only on failure) */
-            error?: string | null;
-            /**
-             * Format: int32
-             * @description Index 0-5, maps to frontend PHASES array
-             */
-            index: number;
-            /** @description Phase name: key_generation, certificate, lrn_request, signing, compliance_submission, complete */
-            phase: string;
-        };
-        /** @description Request body for the one-click comply endpoint. */
-        ComplyRequest: {
-            /** @description Optional PEM cert chain — fallback if Caddy certs are unavailable. */
-            cert_chain_pem?: string | null;
-        };
-        /** @description Response from the one-click comply endpoint. */
-        ComplyResponse: {
-            compliance_vc?: {
-                [key: string]: unknown;
-            };
-            compliant: boolean;
-            /** @description Error message on failure. */
-            error?: string | null;
-            /** @description Which phase failed: key_generation, certificate, lrn_request, lp_signing, tc_signing, compliance_submission. */
-            failed_phase?: string | null;
-            /** @description PEM-encoded private key (auto-download on success). */
-            private_key_pem?: string | null;
-        };
         Connection: {
             cloud_account_id?: string | null;
             id: string;
@@ -937,16 +830,6 @@ export interface components {
         DataResponse_Value: {
             data: unknown;
         };
-        Dataspace: {
-            client_id: string;
-            created_at: string;
-            description?: string | null;
-            id: string;
-            logo?: string | null;
-            name: string;
-            updated_at: string;
-            url: string;
-        };
         /** @description One edge type — its CSR/CSC Parquet pair and endpoints. */
         EdgeStatus: {
             /** @description CSR-ordered (`by_source`) Parquet, dataset-relative. */
@@ -1007,7 +890,7 @@ export interface components {
             token: string;
         };
         Job: {
-            /** @description Base URL for catalog parquets in promotor storage. */
+            /** @description Base URL for catalog parquets in owner storage. */
             catalog_base?: string | null;
             catalog_manifest?: null | components["schemas"]["RunStatus"];
             completed_at?: string | null;
@@ -1092,9 +975,9 @@ export interface components {
             user_id: string;
         };
         OrgSettings: {
-            /** @description Base URL for catalog parquet storage (e.g. s3://promotor/catalogs/). */
+            /** @description Base URL for catalog parquet storage (e.g. s3://owner/catalogs/). */
             catalog_base_url?: string | null;
-            /** @description Cloud account ID for catalog parquet storage (set by promotor). */
+            /** @description Cloud account ID for catalog parquet storage (set by owner). */
             catalog_cloud_account_id?: string | null;
             catalog_description?: string | null;
             contact_email?: string | null;
@@ -1146,17 +1029,17 @@ export interface components {
             id: string;
             label: string;
         };
-        RegisterDataspaceResponse: {
-            client_id: string;
-            client_secret: string;
+        RegisterOidcClientRequest: {
             description?: string | null;
-            id: string;
             logo?: string | null;
             name: string;
             url: string;
         };
-        RegisterOidcClientRequest: {
+        RegisterWorkspaceResponse: {
+            client_id: string;
+            client_secret: string;
             description?: string | null;
+            id: string;
             logo?: string | null;
             name: string;
             url: string;
@@ -1177,13 +1060,15 @@ export interface components {
             dest: string;
             /** @description One entry per emitted edge type (empty until a shape/Phase-B adds edges). */
             edges: components["schemas"]["EdgeStatus"][];
+            /**
+             * Format: int32
+             * @description Wire-contract version this payload was produced with (see [`WIRE_VERSION`]).
+             */
+            version?: number;
             /** @description One entry per emitted vertex type. */
             vertices: components["schemas"]["VertexStatus"][];
         };
         ServiceStatusResponse: {
-            base_domain?: string | null;
-            gxdch_compliance: boolean;
-            gxdch_notary: boolean;
             oidc: boolean;
         };
         SuggestRequest: {
@@ -1258,12 +1143,23 @@ export interface components {
         };
         Workspace: {
             client_id: string;
+            created_at: string;
+            description?: string | null;
+            id: string;
+            logo?: string | null;
+            name: string;
+            updated_at: string;
+            url: string;
+        };
+        /** @description A workspace the user can switch to, as shown in the switcher. */
+        WorkspaceSummary: {
+            client_id: string;
             name: string;
             url: string;
         };
         WorkspacesResponse: {
             current_client_id: string;
-            workspaces: components["schemas"]["Workspace"][];
+            workspaces: components["schemas"]["WorkspaceSummary"][];
         };
     };
     responses: never;
@@ -1274,62 +1170,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    get_did_document: {
-        parameters: {
-            query?: {
-                /** @description Organization ID (dev fallback) */
-                org?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description DID document */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description DID document not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_cert_chain: {
-        parameters: {
-            query?: {
-                /** @description Organization ID (dev fallback) */
-                org?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description X.509 certificate chain PEM */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Certificate chain not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     liveness: {
         parameters: {
             query?: never;
@@ -1452,7 +1292,7 @@ export interface operations {
             };
         };
     };
-    list_dataspaces: {
+    list_registered_workspaces: {
         parameters: {
             query?: never;
             header?: never;
@@ -1467,12 +1307,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Dataspace"][];
+                    "application/json": components["schemas"]["Workspace"][];
                 };
             };
         };
     };
-    register_dataspace: {
+    register_workspace: {
         parameters: {
             query?: never;
             header?: never;
@@ -1491,7 +1331,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RegisterDataspaceResponse"];
+                    "application/json": components["schemas"]["RegisterWorkspaceResponse"];
                 };
             };
             /** @description Insufficient role */
@@ -2176,57 +2016,6 @@ export interface operations {
             };
             /** @description Not found */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_compliance_status: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Compliance status and credentials */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ComplianceStatus"];
-                };
-            };
-        };
-    };
-    comply: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ComplyRequest"];
-            };
-        };
-        responses: {
-            /** @description SSE stream of compliance phases */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": components["schemas"]["ComplyEvent"];
-                };
-            };
-            /** @description Prerequisites missing */
-            400: {
                 headers: {
                     [name: string]: unknown;
                 };

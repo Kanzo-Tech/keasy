@@ -1,6 +1,6 @@
 "use client";
 
-import { Paintbrush, Cloud, Sparkles, Database } from "lucide-react";
+import { Paintbrush, Cloud, Sparkles, ShieldCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
@@ -9,32 +9,24 @@ import { SectionNav, type NavSection } from "@/components/layout/section-nav";
 
 export function SettingsNav() {
   const { data: me } = useQuery<MeResponse>({ queryKey: queryKeys.me, queryFn: api.auth.me });
-  const isOwner = me?.effective_role === "owner";
+  const isMember = me?.effective_role === "member";
 
   const sections: NavSection[] = [
     {
       heading: "General",
       items: [
         { href: "/settings/preferences", label: "Preferences", icon: Paintbrush },
+        { href: "/settings/security", label: "Security", icon: ShieldCheck },
       ],
     },
-    ...(isOwner
+    // Cloud accounts + AI are the member data plane's own infrastructure.
+    ...(isMember
       ? [
           {
-            heading: "Integrations",
+            heading: "Data",
             items: [
               { href: "/settings/cloud-accounts", label: "Cloud Accounts", icon: Cloud },
               { href: "/settings/ai", label: "AI", icon: Sparkles },
-            ],
-          },
-        ]
-      : []),
-    ...(isOwner
-      ? [
-          {
-            heading: "Catalog",
-            items: [
-              { href: "/settings/catalog", label: "Catalog Storage", icon: Database },
             ],
           },
         ]

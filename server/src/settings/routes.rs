@@ -113,7 +113,7 @@ pub async fn list_ai_providers(_ctx: Require<IsMember>, State(state): State<AppS
     )
 )]
 pub async fn save_ai_provider(
-    _ctx: Require<IsOwner>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(provider_id): Path<String>,
     Json(payload): Json<AiSettingsPayload>,
@@ -152,7 +152,7 @@ pub async fn save_ai_provider(
     )
 )]
 pub async fn delete_ai_provider(
-    _ctx: Require<IsOwner>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(provider_id): Path<String>,
 ) -> Response {

@@ -6,7 +6,7 @@ use axum::Json;
 use crate::AppState;
 use crate::cloud::models::{CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest};
 use crate::error::data_response;
-use crate::middleware::tenant::{IsOwner, Require};
+use crate::middleware::tenant::{IsMember, Require};
 
 use super::errors::CloudAccountError;
 
@@ -14,7 +14,7 @@ use super::errors::CloudAccountError;
     responses((status = 200, description = "List of cloud accounts", body = Vec<CloudAccountSummary>))
 )]
 pub async fn list_accounts(
-    _ctx: Require<IsOwner>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
     Ok(data_response(state.db.list_cloud_accounts().await))
@@ -28,7 +28,7 @@ pub async fn list_accounts(
     )
 )]
 pub async fn create_account(
-    _ctx: Require<IsOwner>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Json(payload): Json<CreateCloudAccountRequest>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
@@ -46,7 +46,7 @@ pub async fn create_account(
     )
 )]
 pub async fn get_account(
-    _ctx: Require<IsOwner>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
@@ -65,7 +65,7 @@ pub async fn get_account(
     )
 )]
 pub async fn update_account(
-    _ctx: Require<IsOwner>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateCloudAccountRequest>,
@@ -81,7 +81,7 @@ pub async fn update_account(
     responses((status = 204, description = "Cloud account deleted"))
 )]
 pub async fn delete_account(
-    _ctx: Require<IsOwner>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, CloudAccountError> {

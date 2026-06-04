@@ -1,9 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getEffectiveRole } from '@/lib/auth-check';
 
-// The data surface (connections, jobs) is for any workspace member. Roles are
-// hierarchical, so the owner uses it too — only unauthenticated users are sent
-// to log in ("none" is already handled by the parent (main) layout).
+// Member data plane (connections, jobs). Disjoint from the owner's metadata
+// plane — the owner has no data surface and is sent back to their home.
 export default async function MemberLayout({
   children,
 }: {
@@ -11,5 +10,6 @@ export default async function MemberLayout({
 }) {
   const role = await getEffectiveRole();
   if (!role) redirect('/v1/auth/oidc-start');
+  if (role !== 'member') redirect('/');
   return <>{children}</>;
 }

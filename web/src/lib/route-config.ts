@@ -33,17 +33,22 @@ export const ROLE_LABEL: Record<string, string> = {
  * Keyed by path, O(1) lookup, sidebar/breadcrumbs derive from this.
  */
 const ROUTES: Record<string, RouteDef> = {
+  // Shared
   "/":                            { name: "Dashboard", icon: Home, sidebar: ["owner", "member"] },
-  "/connections":                 { name: "Connections", icon: Database, sidebar: ["owner", "member"] },
-  "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: ["owner", "member"] },
-  "/organization":                    { name: "Organization", icon: Building2 },
-  "/organization/details":            { name: "Details" },
-  "/organization/members":            { name: "Members", icon: Users },
+  // Member plane (data)
+  "/connections":                 { name: "Connections", icon: Database, sidebar: ["member"] },
+  "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: ["member"] },
+  // Owner plane (metadata + people)
+  "/members":                     { name: "Members", icon: Users, sidebar: ["owner"] },
+  "/identity":                    { name: "Identity", icon: Building2, sidebar: ["owner"] },
+  "/catalog":                     { name: "Catalog", icon: GalleryVerticalEnd, sidebar: ["owner"] },
+  // Settings (not in main sidebar — reached via the user menu)
   "/settings":                    { name: "Settings", icon: Settings2 },
+  "/settings/preferences":        { name: "Preferences" },
+  "/settings/security":           { name: "Security" },
   "/settings/ai":                 { name: "AI Settings", icon: Bot },
   "/settings/cloud-accounts":     { name: "Cloud Accounts", icon: GalleryVerticalEnd },
   "/settings/cloud-accounts/new": { name: "New Cloud Account" },
-  "/settings/preferences":        { name: "Preferences" },
 };
 
 // ── Derived ──────────────────────────────────────────────────────────────────
@@ -79,10 +84,10 @@ export function generateBreadcrumbs(path: string): RouteEntry[] {
 }
 
 export function getSidebarRoutes(effectiveRole?: string): RouteEntry[] {
-  // Roles are hierarchical: the owner uses the app like a member, plus owner-only surfaces.
-  const keys: ("owner" | "member")[] =
-    effectiveRole === "owner" ? ["owner", "member"] : ["member"];
+  // Two disjoint planes: the member sees the data surface, the owner sees the
+  // metadata/people surface. Each role sees only its own plane (plus Dashboard).
+  const key: "owner" | "member" = effectiveRole === "owner" ? "owner" : "member";
   return Object.entries(ROUTES)
-    .filter(([, def]) => def.sidebar?.some((s) => keys.includes(s)))
+    .filter(([, def]) => def.sidebar?.includes(key))
     .map(([path, def]) => ({ ...def, path }));
 }

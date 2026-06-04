@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Cloud } from "lucide-react";
@@ -76,12 +75,7 @@ export default function CatalogStoragePage() {
           <EmptyState
             icon={Cloud}
             title="No cloud accounts"
-            description="Add a cloud account first to configure catalog storage."
-            action={
-              <Button asChild size="sm" variant="outline">
-                <Link href="/settings/cloud-accounts">Go to Cloud Accounts</Link>
-              </Button>
-            }
+            description="A member must add a cloud account (Settings → Cloud Accounts) before you can choose a catalog storage destination."
           />
         </PageShell.Content>
       </PageShell>

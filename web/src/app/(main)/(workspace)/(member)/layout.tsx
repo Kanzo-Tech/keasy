@@ -8,5 +8,6 @@ export default async function WorkspaceMemberLayout({
 }) {
   const role = await getEffectiveRole();
   if (!role) redirect("/v1/auth/oidc-start");
+  if (role !== "member") redirect("/");
   return <>{children}</>;
 }

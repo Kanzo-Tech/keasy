@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import {
-  Building2,
   ChevronsUpDown,
   LogOut,
   Settings,
@@ -118,12 +117,6 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/organization" onClick={() => setOpenMobile(false)}>
-                <Building2 className="mr-2 h-4 w-4" />
-                Organization
-              </Link>
-            </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link
                 href="/settings"

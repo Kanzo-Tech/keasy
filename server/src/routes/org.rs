@@ -15,7 +15,7 @@ use serde::Deserialize;
 
 use crate::AppState;
 use crate::db::invite_tokens::InviteToken;
-use crate::db::org_members::{MemberRole, OrgMember};
+use crate::db::org_members::OrgMember;
 use crate::error::{data_response, error_body};
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::middleware::tenant::{IsMember, IsOwner, RbacError, Require};
@@ -32,35 +32,6 @@ pub async fn list_users(
 ) -> Result<impl IntoResponse, RbacError> {
     let users = state.db.list_org_members(&ctx.org_id.0).await;
     Ok(data_response(users))
-}
-
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct UpdateUserRoleRequest {
-    pub role: String,
-}
-
-#[utoipa::path(put, path = "/v1/org/users/{id}", tag = "Organization",
-    params(("id" = String, Path, description = "User ID")),
-    request_body = UpdateUserRoleRequest,
-    responses(
-        (status = 204, description = "Role updated"),
-        (status = 403, description = "Insufficient role"),
-    )
-)]
-pub async fn update_user_role(
-    ctx: Require<IsOwner>,
-    State(state): State<AppState>,
-    Path(user_id): Path<String>,
-    Json(payload): Json<UpdateUserRoleRequest>,
-) -> Result<impl IntoResponse, RbacError> {
-    let role: MemberRole = payload.role.parse()
-        .map_err(RbacError::Internal)?;
-    state
-        .db
-        .update_member_role(&user_id, &ctx.org_id.0, role.as_str())
-        .await
-        .map_err(RbacError::Internal)?;
-    Ok(StatusCode::NO_CONTENT)
 }
 
 #[utoipa::path(delete, path = "/v1/org/users/{id}", tag = "Organization",

@@ -225,7 +225,7 @@ pub fn build_router(
         )
         .route(
             "/v1/org/users/{id}",
-            axum::routing::put(org::update_user_role).delete(org::remove_user),
+            axum::routing::delete(org::remove_user),
         )
         // Org invite management — participant org admins only
         .route(

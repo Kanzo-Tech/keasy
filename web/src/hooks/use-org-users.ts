@@ -10,16 +10,6 @@ export function useOrgUsers() {
     queryFn: api.org.users,
   });
 
-  const roleChangeMutation = useMutation({
-    mutationFn: ({ userId, newRole }: { userId: string; newRole: string }) =>
-      api.org.updateRole(userId, newRole),
-    onSuccess: () => {
-      toast.success("Role updated");
-      queryClient.invalidateQueries({ queryKey: queryKeys.org.users });
-    },
-    onError: () => toast.error("Failed to update role"),
-  });
-
   const removeUserMutation = useMutation({
     mutationFn: ({ userId }: { userId: string; userName: string }) =>
       api.org.removeUser(userId),
@@ -30,10 +20,6 @@ export function useOrgUsers() {
     onError: () => toast.error("Failed to remove user"),
   });
 
-  function handleRoleChange(userId: string, newRole: string) {
-    if (!roleChangeMutation.isPending) roleChangeMutation.mutate({ userId, newRole });
-  }
-
   function handleRemoveUser(userId: string, userName: string) {
     if (!removeUserMutation.isPending) removeUserMutation.mutate({ userId, userName });
   }
@@ -42,9 +28,7 @@ export function useOrgUsers() {
     users: data ?? [],
     isLoading,
     error,
-    handleRoleChange,
     handleRemoveUser,
-    roleChangePending: roleChangeMutation.isPending,
     removePending: removeUserMutation.isPending,
   };
 }

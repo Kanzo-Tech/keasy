@@ -232,13 +232,6 @@ export const api = {
     users: async () =>
       unwrap(await client.GET("/v1/org/users")),
 
-    updateRole: async (id: string, role: string) => {
-      unwrap(await client.PUT("/v1/org/users/{id}", {
-        params: { path: { id } },
-        body: { role },
-      }));
-    },
-
     removeUser: async (id: string) => {
       unwrap(await client.DELETE("/v1/org/users/{id}", { params: { path: { id } } }));
     },
@@ -246,33 +239,14 @@ export const api = {
     invites: async () =>
       unwrap(await client.GET("/v1/org/invites")),
 
-    createInvite: async (role: string) =>
-      unwrap(await client.POST("/v1/org/invites", { body: { role } })),
+    createInvite: async () =>
+      unwrap(await client.POST("/v1/org/invites")),
 
     revokeInvite: async (token: string) => {
       unwrap(await client.DELETE("/v1/org/invites/{token}", {
         params: { path: { token } },
       }));
     },
-  },
-
-  // ── Admin ─────────────────────────────────────────────────────────────
-  admin: {
-    orgs: async () =>
-      unwrap(await client.GET("/v1/admin/organizations")),
-
-    invites: async () =>
-      unwrap(await client.GET("/v1/admin/invites")),
-
-    createInvite: async (orgName: string) =>
-      unwrap(await client.POST("/v1/admin/invites", { body: { org_name: orgName } })),
-
-    revokeInvite: async (token: string) => {
-      unwrap(await client.DELETE("/v1/admin/invites/{token}", {
-        params: { path: { token } },
-      }));
-    },
-
   },
 
   // ── Status ────────────────────────────────────────────────────────────

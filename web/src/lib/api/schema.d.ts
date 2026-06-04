@@ -36,70 +36,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/admin/invites": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_invites"];
-        put?: never;
-        post: operations["create_invite"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/admin/invites/{token}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["revoke_invite"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/admin/oidc-clients": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_registered_workspaces"];
-        put?: never;
-        post: operations["register_workspace"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/admin/organizations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_all_orgs"];
-        put?: never;
-        post: operations["create_org_and_invite"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/assistant/generate-stream": {
         parameters: {
             query?: never;
@@ -472,6 +408,10 @@ export interface paths {
         };
         get: operations["list_org_invites"];
         put?: never;
+        /**
+         * Create a reusable, Discord-style invite link. No body: joining via the link
+         *     always grants `member`. The link is valid for 7 days and reusable.
+         */
         post: operations["create_org_invite"];
         delete?: never;
         options?: never;
@@ -519,7 +459,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["update_user_role"];
+        put?: never;
         post?: never;
         delete: operations["remove_user"];
         options?: never;
@@ -659,20 +599,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        AdminInviteEntry: {
-            created_at: string;
-            expires_at: string;
-            org_id: string;
-            org_name: string;
-            status: string;
-            token: string;
-        };
-        AdminInviteResult: {
-            invite_url: string;
-            org_id: string;
-            org_name: string;
-            token: string;
-        };
         AiSettingsPayload: {
             api_key: string;
             /** Format: int32 */
@@ -800,9 +726,6 @@ export interface components {
         CreateConversationRequest: {
             title?: string | null;
         };
-        CreateInviteRequest: {
-            org_name: string;
-        };
         CreateJobRequest: {
             connection_ids?: string[];
             dcat_enabled?: boolean | null;
@@ -811,20 +734,9 @@ export interface components {
             name?: string | null;
             script: string;
         };
-        CreateOrgAndInviteRequest: {
-            name: string;
-        };
-        CreateOrgInviteRequest: {
-            role: string;
-        };
         CreateOrgInviteResponse: {
             invite_url: string;
             token: string;
-        };
-        CreateOrgResponse: {
-            id: string;
-            name: string;
-            status: string;
         };
         /** @description Typed envelope for successful API responses: `{ "data": T }`. */
         DataResponse_Value: {
@@ -886,7 +798,6 @@ export interface components {
             created_by: string;
             expires_at: string;
             org_id: string;
-            role: string;
             token: string;
         };
         Job: {
@@ -936,7 +847,6 @@ export interface components {
         MeOrg: {
             id: string;
             name: string;
-            role: string;
         };
         MeResponse: {
             effective_role: string;
@@ -957,7 +867,6 @@ export interface components {
         OrgInviteEntry: {
             created_at: string;
             expires_at: string;
-            role: string;
             status: string;
             token: string;
         };
@@ -994,7 +903,6 @@ export interface components {
             name: string;
             registration_number?: string | null;
             registration_number_type?: string | null;
-            role: string;
             slug: string;
             updated_at: string;
         };
@@ -1028,21 +936,6 @@ export interface components {
             icon: string;
             id: string;
             label: string;
-        };
-        RegisterOidcClientRequest: {
-            description?: string | null;
-            logo?: string | null;
-            name: string;
-            url: string;
-        };
-        RegisterWorkspaceResponse: {
-            client_id: string;
-            client_secret: string;
-            description?: string | null;
-            id: string;
-            logo?: string | null;
-            name: string;
-            url: string;
         };
         RenameConversationRequest: {
             title: string;
@@ -1109,9 +1002,6 @@ export interface components {
             legal_name: string;
             registration_number?: string | null;
             registration_number_type?: string | null;
-        };
-        UpdateUserRoleRequest: {
-            role: string;
         };
         UploadFileRequest: {
             content: string;
@@ -1206,187 +1096,6 @@ export interface operations {
             };
             /** @description Service is not ready */
             503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    list_invites: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List all invite tokens */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminInviteEntry"][];
-                };
-            };
-        };
-    };
-    create_invite: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateInviteRequest"];
-            };
-        };
-        responses: {
-            /** @description Invite created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminInviteResult"];
-                };
-            };
-            /** @description Insufficient role */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    revoke_invite: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Invite token to revoke */
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Invite revoked */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Insufficient role */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    list_registered_workspaces: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of registered OIDC clients */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Workspace"][];
-                };
-            };
-        };
-    };
-    register_workspace: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegisterOidcClientRequest"];
-            };
-        };
-        responses: {
-            /** @description OIDC client registered */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RegisterWorkspaceResponse"];
-                };
-            };
-            /** @description Insufficient role */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    list_all_orgs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List all organizations */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Organization"][];
-                };
-            };
-        };
-    };
-    create_org_and_invite: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateOrgAndInviteRequest"];
-            };
-        };
-        responses: {
-            /** @description Organization created with invite */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CreateOrgResponse"];
-                };
-            };
-            /** @description Insufficient role */
-            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2459,11 +2168,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateOrgInviteRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Invite created */
             201: {
@@ -2528,38 +2233,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OrgMember"][];
                 };
-            };
-        };
-    };
-    update_user_role: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description User ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateUserRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description Role updated */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Insufficient role */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

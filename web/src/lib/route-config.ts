@@ -16,7 +16,7 @@ type RouteDef = {
   name: string;
   icon?: LucideIcon;
   /** Which workspace roles see this in the sidebar. Omit = not in sidebar. */
-  sidebar?: readonly ("owner" | "member" | "admin")[];
+  sidebar?: readonly ("owner" | "member")[];
 };
 
 export type RouteEntry = RouteDef & { path: string };
@@ -25,7 +25,6 @@ export type RouteEntry = RouteDef & { path: string };
 
 export const ROLE_LABEL: Record<string, string> = {
   owner: "Owner",
-  admin: "Admin",
   member: "Member",
 };
 
@@ -35,12 +34,11 @@ export const ROLE_LABEL: Record<string, string> = {
  */
 const ROUTES: Record<string, RouteDef> = {
   "/":                            { name: "Dashboard", icon: Home, sidebar: ["owner", "member"] },
-  "/connections":                 { name: "Connections", icon: Database, sidebar: ["member"] },
-  "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: ["member"] },
+  "/connections":                 { name: "Connections", icon: Database, sidebar: ["owner", "member"] },
+  "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: ["owner", "member"] },
   "/organization":                    { name: "Organization", icon: Building2 },
   "/organization/details":            { name: "Details" },
-  "/organization/users":              { name: "Users", icon: Users },
-  "/participants":                { name: "Participants", icon: Users, sidebar: ["owner"] },
+  "/organization/members":            { name: "Members", icon: Users },
   "/settings":                    { name: "Settings", icon: Settings2 },
   "/settings/ai":                 { name: "AI Settings", icon: Bot },
   "/settings/cloud-accounts":     { name: "Cloud Accounts", icon: GalleryVerticalEnd },
@@ -81,12 +79,9 @@ export function generateBreadcrumbs(path: string): RouteEntry[] {
 }
 
 export function getSidebarRoutes(effectiveRole?: string): RouteEntry[] {
-  const keys: ("owner" | "member" | "admin")[] =
-    effectiveRole === "owner"
-      ? ["owner"]
-      : effectiveRole === "admin"
-        ? ["member", "admin"]
-        : ["member"];
+  // Roles are hierarchical: the owner uses the app like a member, plus owner-only surfaces.
+  const keys: ("owner" | "member")[] =
+    effectiveRole === "owner" ? ["owner", "member"] : ["member"];
   return Object.entries(ROUTES)
     .filter(([, def]) => def.sidebar?.some((s) => keys.includes(s)))
     .map(([path, def]) => ({ ...def, path }));

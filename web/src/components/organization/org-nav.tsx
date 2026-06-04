@@ -9,7 +9,7 @@ import { SectionNav, type NavSection } from "@/components/layout/section-nav";
 
 export function OrgNav() {
   const { data: me } = useQuery<MeResponse>({ queryKey: queryKeys.me, queryFn: api.auth.me });
-  const isAdmin = me?.effective_role === "admin";
+  const isOwner = me?.effective_role === "owner";
 
   const sections: NavSection[] = [
     {
@@ -18,12 +18,12 @@ export function OrgNav() {
         { href: "/organization/details", label: "Details", icon: Building2 },
       ],
     },
-    ...(isAdmin
+    ...(isOwner
       ? [
           {
-            heading: "Members",
+            heading: "People",
             items: [
-              { href: "/organization/users", label: "Users", icon: Users },
+              { href: "/organization/members", label: "Members", icon: Users },
             ],
           },
         ]

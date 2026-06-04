@@ -9,8 +9,7 @@ import { SectionNav, type NavSection } from "@/components/layout/section-nav";
 
 export function SettingsNav() {
   const { data: me } = useQuery<MeResponse>({ queryKey: queryKeys.me, queryFn: api.auth.me });
-  const isPromotor = me?.effective_role === "owner";
-  const isAdmin = me?.effective_role === "admin";
+  const isOwner = me?.effective_role === "owner";
 
   const sections: NavSection[] = [
     {
@@ -19,7 +18,7 @@ export function SettingsNav() {
         { href: "/settings/preferences", label: "Preferences", icon: Paintbrush },
       ],
     },
-    ...(isPromotor || isAdmin
+    ...(isOwner
       ? [
           {
             heading: "Integrations",
@@ -30,7 +29,7 @@ export function SettingsNav() {
           },
         ]
       : []),
-    ...(isPromotor
+    ...(isOwner
       ? [
           {
             heading: "Catalog",

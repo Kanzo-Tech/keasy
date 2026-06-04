@@ -146,22 +146,6 @@ impl Database {
         .collect()
     }
 
-    /// Update a member's role within their organization.
-    pub async fn update_member_role(
-        &self,
-        user_id: &str,
-        org_id: &str,
-        new_role: &str,
-    ) -> Result<(), String> {
-        let conn = self.write().await;
-        conn.execute(
-            "UPDATE org_members SET role = ?1 WHERE user_id = ?2 AND org_id = ?3",
-            params![new_role, user_id, org_id],
-        )
-        .map_err(|e| format!("failed to update member role: {e}"))?;
-        Ok(())
-    }
-
     /// Remove a user from an organization.
     pub async fn remove_org_member(&self, user_id: &str, org_id: &str) -> Result<(), String> {
         let conn = self.write().await;

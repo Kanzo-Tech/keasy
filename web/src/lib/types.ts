@@ -39,7 +39,6 @@ export type JobError = S["JobRuntimeError"];
 // Org types — re-exported from schema with frontend aliases
 export type OrgIdentity = S["OrgIdentityResponse"];
 export type OrgUser = S["OrgMember"];
-export type OrgEntry = S["Organization"];
 
 // ---------------------------------------------------------------------------
 // Types now in OpenAPI spec — re-exported from schema
@@ -102,10 +101,3 @@ export type WorkspaceSummary = S["WorkspaceSummary"];
 export type WorkspacesResponse = S["WorkspacesResponse"];
 
 export type JobEvent = S["JobEvent"];
-
-// ---------------------------------------------------------------------------
-// Admin types — re-exported from schema
-// ---------------------------------------------------------------------------
-
-export type AdminInvite = S["AdminInviteEntry"];
-export type AdminInviteResult = S["AdminInviteResult"];

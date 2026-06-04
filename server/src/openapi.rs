@@ -53,7 +53,6 @@ use utoipa::OpenApi;
         crate::routes::providers::list_providers,
         // Organization
         crate::routes::org::list_users,
-        crate::routes::org::update_user_role,
         crate::routes::org::remove_user,
         crate::routes::org::get_org_identity,
         crate::routes::org::update_org_identity,
@@ -127,7 +126,6 @@ use utoipa::OpenApi;
         crate::routes::health::ServiceStatusResponse,
         // Organization
         crate::routes::org::OrgInviteEntry,
-        crate::routes::org::UpdateUserRoleRequest,
         crate::routes::org::UpdateOrgIdentityPayload,
         crate::routes::org::CreateOrgInviteResponse,
         crate::routes::org::OrgIdentityResponse,

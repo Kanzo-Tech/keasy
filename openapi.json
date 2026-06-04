@@ -1288,41 +1288,6 @@
       }
     },
     "/v1/org/users/{id}": {
-      "put": {
-        "tags": [
-          "Organization"
-        ],
-        "operationId": "update_user_role",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "User ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateUserRoleRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "Role updated"
-          },
-          "403": {
-            "description": "Insufficient role"
-          }
-        }
-      },
       "delete": {
         "tags": [
           "Organization"
@@ -3172,17 +3137,6 @@
               "string",
               "null"
             ]
-          }
-        }
-      },
-      "UpdateUserRoleRequest": {
-        "type": "object",
-        "required": [
-          "role"
-        ],
-        "properties": {
-          "role": {
-            "type": "string"
           }
         }
       },

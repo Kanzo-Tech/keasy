@@ -1,23 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Copy, Link2, Plus, Trash2, UserCircle } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Copy, Link2, Trash2, UserCircle } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { FormField } from "@/components/shared/form-layout";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Dialog,
   DialogContent,
@@ -41,8 +32,7 @@ import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import type { OrgUser, OrgInvite } from "@/lib/types";
 
-function orgUserColumns(
-  onRoleChange: (userId: string, role: string) => void,
+function memberColumns(
   onRemove: (userId: string, name: string) => void,
 ): ColumnDef<OrgUser>[] {
   return [
@@ -66,25 +56,18 @@ function orgUserColumns(
     {
       accessorKey: "role",
       header: "Role",
-      cell: ({ row }) => (
-        <Select
-          value={row.original.role}
-          onValueChange={(val) => onRoleChange(row.original.user_id, val)}
-        >
-          <SelectTrigger
-            className="w-[100px] h-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="user">User</SelectItem>
-          </SelectContent>
-        </Select>
-      ),
+      cell: ({ row }) => {
+        const role = row.original.role;
+        return (
+          <Badge variant={role === "owner" ? "default" : "secondary"}>
+            {role === "owner" ? "Owner" : "Member"}
+          </Badge>
+        );
+      },
     },
     actionsColumn<OrgUser>((user) => {
+      // The owner cannot be removed (bootstrapped from config).
+      if (user.role === "owner") return null;
       const displayName =
         [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email;
       return (
@@ -109,44 +92,32 @@ const inviteStatusVariant = (
   return "destructive";
 };
 
-export default function OrgUsersPage() {
+export default function MembersPage() {
   const queryClient = useQueryClient();
-  const { users, isLoading, handleRoleChange, handleRemoveUser } = useOrgUsers();
+  const { users, isLoading, handleRemoveUser } = useOrgUsers();
   const { data: invites } = useQuery<OrgInvite[]>({
     queryKey: queryKeys.org.invites,
     queryFn: api.org.invites,
   });
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [inviteRole, setInviteRole] = useState("user");
-  const [isCreating, setIsCreating] = useState(false);
   const [createdInviteUrl, setCreatedInviteUrl] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   const columns = useMemo(
-    () => orgUserColumns(handleRoleChange, handleRemoveUser),
-    [handleRoleChange, handleRemoveUser],
+    () => memberColumns(handleRemoveUser),
+    [handleRemoveUser],
   );
-
-  function handleOpenDialog() {
-    setInviteRole("user");
-    setCreatedInviteUrl(null);
-    setDialogOpen(true);
-  }
-
-  function handleCloseDialog() {
-    setDialogOpen(false);
-    setInviteRole("user");
-    setCreatedInviteUrl(null);
-  }
 
   async function handleCreateInvite() {
     setIsCreating(true);
     try {
-      const data = await api.org.createInvite(inviteRole);
+      const data = await api.org.createInvite();
       const inviteUrl =
         data.invite_url ??
         `${window.location.origin}/invite?token=${data.token}`;
       setCreatedInviteUrl(inviteUrl);
+      setDialogOpen(true);
       await queryClient.invalidateQueries({ queryKey: queryKeys.org.invites });
       toast.success("Invite link created");
     } catch {
@@ -166,56 +137,53 @@ export default function OrgUsersPage() {
     }
   }
 
-  function handleCopyLink(token: string) {
-    const url = `${window.location.origin}/invite?token=${token}`;
-    navigator.clipboard.writeText(url).then(() => {
-      toast.success("Link copied to clipboard");
-    }).catch(() => toast.error("Failed to copy link"));
+  function copy(url: string) {
+    navigator.clipboard
+      .writeText(url)
+      .then(() => toast.success("Link copied to clipboard"))
+      .catch(() => toast.error("Failed to copy link"));
   }
+
+  const inviteButton = (
+    <Button size="sm" onClick={handleCreateInvite} disabled={isCreating}>
+      <Link2 size={14} className="mr-1.5" />
+      {isCreating ? "Creating..." : "Create invite link"}
+    </Button>
+  );
 
   return (
     <PageShell>
     <PageShell.Content className="gap-8">
       <SettingsSection
-        title="Users"
-        description="Manage users in your organization."
+        title="Members"
+        description="People with access to this workspace. Share an invite link to add more — anyone who joins becomes a member."
       >
       {!isLoading && !users.length ? (
         <EmptyState
           icon={UserCircle}
-          title="No users yet"
-          description="Invite users to collaborate on data assets."
+          title="No members yet"
+          description="Share an invite link to add people to your workspace."
         />
       ) : (
         <DataTable
           columns={columns}
           data={users}
           searchKey="email"
-          searchPlaceholder="Search users..."
-          toolbarActions={
-            <Button size="sm" onClick={handleOpenDialog}>
-              <Plus className="mr-2 h-4 w-4" />
-              Invite User
-            </Button>
-          }
+          searchPlaceholder="Search members..."
+          toolbarActions={inviteButton}
         />
       )}
 
-      {/* Pending invitations section */}
+      {/* Active invite links */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-sm font-semibold">Pending Invitations</h2>
+            <h2 className="text-sm font-semibold">Invite links</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Invite users to join your organization via a link.
+              Reusable links valid for 7 days. Anyone with a link joins as a member.
             </p>
           </div>
-          {!users.length && (
-            <Button size="sm" onClick={handleOpenDialog}>
-              <Link2 size={14} className="mr-1.5" />
-              Invite User
-            </Button>
-          )}
+          {!users.length && inviteButton}
         </div>
 
         {invites && invites.length > 0 ? (
@@ -226,12 +194,7 @@ export default function OrgUsersPage() {
                 className="flex items-center gap-3 px-4 py-3"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    Invite
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      ({invite.role})
-                    </span>
-                  </p>
+                  <p className="text-sm font-medium truncate">Invite link</p>
                   <p className="text-xs text-muted-foreground">
                     Created {new Date(invite.created_at).toLocaleDateString()}
                     {" · "}
@@ -247,7 +210,11 @@ export default function OrgUsersPage() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
-                      onClick={() => handleCopyLink(invite.token)}
+                      onClick={() =>
+                        copy(
+                          `${window.location.origin}/invite?token=${invite.token}`,
+                        )
+                      }
                       title="Copy invite link"
                     >
                       <Copy size={13} />
@@ -268,84 +235,42 @@ export default function OrgUsersPage() {
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            No invitations yet. Use the button above to invite a user.
+            No invite links yet. Use the button above to create one.
           </p>
         )}
       </section>
 
-      {/* Create invite dialog */}
-      <Dialog open={dialogOpen} onOpenChange={handleCloseDialog}>
+      {/* Created-link dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invite User</DialogTitle>
+            <DialogTitle>Invite link created</DialogTitle>
             <DialogDescription>
-              Create an invite link for a new user. Share the link with them
-              to join your organization.
+              Share this link to add people to your workspace. They join as a
+              member. The link is reusable for 7 days.
             </DialogDescription>
           </DialogHeader>
 
-          {createdInviteUrl ? (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Invite link created successfully. Share this URL with the user:
-              </p>
-              <div className="flex items-center gap-2">
-                <Input
-                  readOnly
-                  value={createdInviteUrl}
-                  className="font-mono text-xs"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="shrink-0"
-                  onClick={() => {
-                    navigator.clipboard.writeText(createdInviteUrl).then(() => {
-                      toast.success("Link copied to clipboard");
-                    });
-                  }}
-                >
-                  <Copy size={14} />
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <FormField label="Role">
-                <ToggleGroup
-                  type="single"
-                  variant="outline"
-                  value={inviteRole}
-                  onValueChange={(v) => { if (v) setInviteRole(v); }}
-                  className="w-full"
-                >
-                  <ToggleGroupItem value="user" className="flex-1">
-                    User
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="admin" className="flex-1">
-                    Admin
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </FormField>
+          {createdInviteUrl && (
+            <div className="flex items-center gap-2">
+              <Input
+                readOnly
+                value={createdInviteUrl}
+                className="font-mono text-xs"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                onClick={() => copy(createdInviteUrl)}
+              >
+                <Copy size={14} />
+              </Button>
             </div>
           )}
 
           <DialogFooter>
-            {createdInviteUrl ? (
-              <Button onClick={handleCloseDialog}>Done</Button>
-            ) : (
-              <>
-                <Button variant="outline" onClick={handleCloseDialog}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreateInvite}
-                  disabled={isCreating}
-                >
-                  {isCreating ? "Creating..." : "Create Invite"}
-                </Button>
-              </>
-            )}
+            <Button onClick={() => setDialogOpen(false)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

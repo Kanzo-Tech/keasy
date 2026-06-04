@@ -42,12 +42,6 @@ export const queryKeys = {
     invites: ["org-invites"] as const,
   },
 
-  // Admin
-  admin: {
-    orgs: ["admin-orgs"] as const,
-    invites: ["admin-invites"] as const,
-  },
-
   // AI
   ai: {
     providers: ["ai-providers"] as const,

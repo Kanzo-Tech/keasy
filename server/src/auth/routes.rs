@@ -9,7 +9,6 @@ use crate::error::data_response;
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct MeOrg {
-    pub id: String,
     pub name: String,
 }
 
@@ -77,9 +76,15 @@ pub async fn get_me(
         ),
     };
 
-    let org = match &membership {
-        Some(m) => state.db.get_organization(&m.org_id).await,
-        None => None,
+    // The workspace identity is shown only to actual members.
+    let org = if membership.is_some() {
+        state
+            .db
+            .get_workspace_identity()
+            .await
+            .map(|i| MeOrg { name: i.name })
+    } else {
+        None
     };
 
     // Effective role derives solely from the membership: owner or member.
@@ -96,7 +101,7 @@ pub async fn get_me(
         last_name,
         membership_role: membership.as_ref().map(|m| m.role.clone()),
         effective_role: effective_role.to_string(),
-        org: org.map(|o| MeOrg { id: o.id, name: o.name }),
+        org,
     }))
 }
 

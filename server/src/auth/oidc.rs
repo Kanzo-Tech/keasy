@@ -659,7 +659,7 @@ async fn accept_invite_for_user(
     // bootstrapped from config, never via a link).
     state
         .db
-        .upsert_org_member(user_id, &token.org_id, "member", email, first_name, last_name)
+        .upsert_org_member(user_id, "member", email, first_name, last_name)
         .await?;
 
     // Update Keycloak workspaces attribute — user_id IS the Keycloak UUID.
@@ -678,7 +678,6 @@ async fn accept_invite_for_user(
 
     tracing::info!(
         user_id = %user_id,
-        org_id = %token.org_id,
         "OIDC: auto-accepted invite for user"
     );
 

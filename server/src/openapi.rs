@@ -107,8 +107,6 @@ use utoipa::OpenApi;
         crate::settings::org::OrgSettings,
         crate::settings::preferences::Preferences,
         crate::settings::ai::AiSettingsPayload,
-        // Organizations
-        crate::db::organizations::Organization,
         // Invite Tokens
         crate::db::invite_tokens::InviteToken,
         // Workspaces

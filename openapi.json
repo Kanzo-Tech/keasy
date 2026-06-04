@@ -1146,7 +1146,7 @@
         "operationId": "get_org_identity",
         "responses": {
           "200": {
-            "description": "Org identity",
+            "description": "Workspace identity",
             "content": {
               "application/json": {
                 "schema": {
@@ -1154,9 +1154,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Organization not found"
           }
         }
       },
@@ -2323,7 +2320,6 @@
         "type": "object",
         "required": [
           "token",
-          "org_id",
           "created_by",
           "expires_at",
           "created_at"
@@ -2336,9 +2332,6 @@
             "type": "string"
           },
           "expires_at": {
-            "type": "string"
-          },
-          "org_id": {
             "type": "string"
           },
           "token": {
@@ -2530,13 +2523,9 @@
       "MeOrg": {
         "type": "object",
         "required": [
-          "id",
           "name"
         ],
         "properties": {
-          "id": {
-            "type": "string"
-          },
           "name": {
             "type": "string"
           }
@@ -2643,10 +2632,9 @@
       },
       "OrgMember": {
         "type": "object",
-        "description": "An org member — a Keycloak user's membership in a Keasy organization.\nProfile fields (email, first_name, last_name) are cached from OIDC tokens.",
+        "description": "A workspace member — a Keycloak user's membership in this instance.\nProfile fields (email, first_name, last_name) are cached from OIDC tokens.",
         "required": [
           "user_id",
-          "org_id",
           "role",
           "email",
           "first_name",
@@ -2664,9 +2652,6 @@
             "type": "string"
           },
           "last_name": {
-            "type": "string"
-          },
-          "org_id": {
             "type": "string"
           },
           "role": {
@@ -2723,59 +2708,6 @@
               "string",
               "null"
             ]
-          }
-        }
-      },
-      "Organization": {
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "slug",
-          "legal_name",
-          "country",
-          "created_at",
-          "updated_at"
-        ],
-        "properties": {
-          "country": {
-            "type": "string"
-          },
-          "country_subdivision_code": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "legal_name": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "registration_number": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "registration_number_type": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "slug": {
-            "type": "string"
-          },
-          "updated_at": {
-            "type": "string"
           }
         }
       },
@@ -3198,8 +3130,8 @@
       },
       "Workspace": {
         "type": "object",
+        "description": "A registered workspace instance (OIDC client), keyed by `client_id`. Display\nmetadata for the federation switcher; OIDC credentials live in Keycloak only.",
         "required": [
-          "id",
           "client_id",
           "name",
           "url",
@@ -3212,21 +3144,6 @@
           },
           "created_at": {
             "type": "string"
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "logo": {
-            "type": [
-              "string",
-              "null"
-            ]
           },
           "name": {
             "type": "string"

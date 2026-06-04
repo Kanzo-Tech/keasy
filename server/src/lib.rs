@@ -19,7 +19,6 @@ pub mod middleware;
 pub mod openapi;
 pub mod routes;
 pub mod settings;
-pub mod tenant;
 
 
 // Re-export types integration tests need

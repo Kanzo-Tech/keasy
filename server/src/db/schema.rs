@@ -2,29 +2,16 @@ const SCHEMA: &str = "
 PRAGMA journal_mode=WAL;
 PRAGMA foreign_keys=ON;
 
--- New tenant entities
-CREATE TABLE IF NOT EXISTS organizations (
-    id                  TEXT PRIMARY KEY,
-    name                TEXT NOT NULL,
-    slug                TEXT NOT NULL UNIQUE,
-    legal_name          TEXT NOT NULL,
-    registration_number TEXT,
-    country_subdivision_code TEXT,
-    registration_number_type TEXT CHECK(registration_number_type IN ('vatID', 'leiCode', 'EORI')),
-    country             TEXT NOT NULL CHECK(length(country) = 2),
-    created_at          TEXT NOT NULL,
-    updated_at          TEXT NOT NULL
-);
-
+-- Workspace members. One workspace per instance, so a user belongs to it or
+-- not — no org scoping. The owner is bootstrapped from config; everyone else
+-- joins via an invite link as a member. Workspace identity lives in `settings`.
 CREATE TABLE IF NOT EXISTS org_members (
-    user_id    TEXT NOT NULL,
-    org_id     TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    user_id    TEXT PRIMARY KEY,
     role       TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('owner', 'member')),
     email      TEXT NOT NULL DEFAULT '',
     first_name TEXT NOT NULL DEFAULT '',
     last_name  TEXT NOT NULL DEFAULT '',
-    joined_at  TEXT NOT NULL,
-    PRIMARY KEY (user_id, org_id)
+    joined_at  TEXT NOT NULL
 );
 
 -- Resource tables. A single workspace per instance owns all data, so these
@@ -58,7 +45,9 @@ CREATE TABLE IF NOT EXISTS jobs (
     connection_ids  TEXT NOT NULL DEFAULT '[]',
     script          TEXT,
     rdf_base        TEXT,
-    manifest        TEXT
+    manifest        TEXT,
+    catalog_manifest TEXT,
+    catalog_base    TEXT
 );
 
 CREATE TABLE IF NOT EXISTS conversations (
@@ -103,21 +92,17 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 -- Joining via a link always grants `member`; the owner is bootstrapped.
 CREATE TABLE IF NOT EXISTS invite_tokens (
     token      TEXT PRIMARY KEY,
-    org_id     TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     created_by TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
 
--- Registered workspace instances (OIDC clients in Keycloak)
--- Display metadata for the workspace switcher; OIDC credentials live in Keycloak only
+-- Registered workspace instances (OIDC clients in Keycloak), keyed by client_id.
+-- Display metadata for the workspace switcher; OIDC credentials live in Keycloak only.
 CREATE TABLE IF NOT EXISTS workspaces (
-    id          TEXT PRIMARY KEY,
-    client_id   TEXT NOT NULL UNIQUE,
+    client_id   TEXT PRIMARY KEY,
     name        TEXT NOT NULL,
     url         TEXT NOT NULL,
-    description TEXT,
-    logo        TEXT,
     created_at  TEXT NOT NULL,
     updated_at  TEXT NOT NULL
 );
@@ -126,20 +111,5 @@ CREATE TABLE IF NOT EXISTS workspaces (
 pub fn apply(conn: &rusqlite::Connection) -> Result<(), String> {
     conn.execute_batch(SCHEMA)
         .map_err(|e| format!("schema creation failed: {e}"))?;
-
-    // Incremental migrations for existing databases
-    add_column_if_missing(conn, "jobs", "manifest", "TEXT");
-    add_column_if_missing(conn, "jobs", "catalog_manifest", "TEXT");
-    add_column_if_missing(conn, "jobs", "catalog_base", "TEXT");
-
     Ok(())
-}
-
-fn add_column_if_missing(conn: &rusqlite::Connection, table: &str, column: &str, col_type: &str) {
-    let has_col = conn
-        .prepare(&format!("SELECT {column} FROM {table} LIMIT 0"))
-        .is_ok();
-    if !has_col {
-        let _ = conn.execute_batch(&format!("ALTER TABLE {table} ADD COLUMN {column} {col_type}"));
-    }
 }

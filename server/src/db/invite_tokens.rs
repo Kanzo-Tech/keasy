@@ -4,7 +4,6 @@ use super::Database;
 #[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
 pub struct InviteToken {
     pub token: String,
-    pub org_id: String,
     pub created_by: String,
     pub expires_at: String,
     pub created_at: String,
@@ -15,44 +14,27 @@ impl Database {
     pub async fn get_invite_token(&self, token: &str) -> Option<InviteToken> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT token, org_id, created_by, expires_at, created_at
+            "SELECT token, created_by, expires_at, created_at
              FROM invite_tokens WHERE token = ?1",
             [token],
-            |row| {
-                Ok(InviteToken {
-                    token: row.get(0)?,
-                    org_id: row.get(1)?,
-                    created_by: row.get(2)?,
-                    expires_at: row.get(3)?,
-                    created_at: row.get(4)?,
-                })
-            },
+            row_to_invite,
         )
         .ok()
     }
 
-    /// List invite tokens for a specific org, ordered by created_at DESC.
-    pub async fn list_invite_tokens_for_org(&self, org_id: &str) -> Vec<InviteToken> {
-        let org_id = org_id.to_string();
+    /// List all invite tokens, ordered by created_at DESC.
+    pub async fn list_invite_tokens(&self) -> Vec<InviteToken> {
         let (_permit, conn) = self.read().await;
         let mut stmt = conn
             .prepare(
-                "SELECT token, org_id, created_by, expires_at, created_at
-                 FROM invite_tokens WHERE org_id = ?1 ORDER BY created_at DESC",
+                "SELECT token, created_by, expires_at, created_at
+                 FROM invite_tokens ORDER BY created_at DESC",
             )
-            .expect("prepare list invite tokens for org");
-        stmt.query_map([&org_id], |row| {
-            Ok(InviteToken {
-                token: row.get(0)?,
-                org_id: row.get(1)?,
-                created_by: row.get(2)?,
-                expires_at: row.get(3)?,
-                created_at: row.get(4)?,
-            })
-        })
-        .expect("query invite tokens for org")
-        .filter_map(|r| r.ok())
-        .collect()
+            .expect("prepare list invite tokens");
+        stmt.query_map([], row_to_invite)
+            .expect("query invite tokens")
+            .filter_map(|r| r.ok())
+            .collect()
     }
 
     /// Delete an invite token by value.
@@ -71,11 +53,10 @@ impl Database {
     pub async fn create_invite_token(&self, token: &InviteToken) -> Result<(), String> {
         let conn = self.write().await;
         conn.execute(
-            "INSERT INTO invite_tokens (token, org_id, created_by, expires_at, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
+            "INSERT INTO invite_tokens (token, created_by, expires_at, created_at)
+             VALUES (?1, ?2, ?3, ?4)",
             params![
                 token.token,
-                token.org_id,
                 token.created_by,
                 token.expires_at,
                 token.created_at,
@@ -131,4 +112,13 @@ impl Database {
         )
         .ok()
     }
+}
+
+fn row_to_invite(row: &rusqlite::Row<'_>) -> rusqlite::Result<InviteToken> {
+    Ok(InviteToken {
+        token: row.get(0)?,
+        created_by: row.get(1)?,
+        expires_at: row.get(2)?,
+        created_at: row.get(3)?,
+    })
 }

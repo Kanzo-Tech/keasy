@@ -1,7 +1,6 @@
 pub mod workspaces;
 pub mod invite_tokens;
 pub mod org_members;
-pub mod organizations;
 mod schema;
 pub mod secrets;
 

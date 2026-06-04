@@ -51,7 +51,7 @@ async fn main() {
         (&config.owner_keycloak_sub, &config.oidc_client_id)
     {
         if let Err(e) = db
-            .ensure_owner_bootstrap(owner_sub, client_id, &config.workspace_name)
+            .ensure_owner_bootstrap(owner_sub, &config.workspace_name)
             .await
         {
             warn!(error = %e, "Failed to ensure owner bootstrap");

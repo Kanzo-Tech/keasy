@@ -41,7 +41,7 @@ pub async fn list_jobs(
     )
 )]
 pub async fn create_job(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -92,9 +92,9 @@ pub async fn create_job(
         .map_err(JobApiError::Internal)?;
 
     let org_settings = if dcat_enabled {
-        state.db.get_organization(&ctx.org_id.0).await.map(|org| {
+        state.db.get_workspace_identity().await.map(|identity| {
             crate::settings::org::OrgSettings {
-                publisher_name: org.legal_name,
+                publisher_name: identity.legal_name,
                 ..Default::default()
             }
         })

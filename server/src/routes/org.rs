@@ -27,10 +27,10 @@ static SUBDIVISION_RE: LazyLock<Regex> =
     responses((status = 200, description = "List of users in the org", body = Vec<OrgMember>))
 )]
 pub async fn list_users(
-    ctx: Require<IsOwner>,
+    _ctx: Require<IsOwner>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let users = state.db.list_org_members(&ctx.org_id.0).await;
+    let users = state.db.list_org_members().await;
     Ok(data_response(users))
 }
 
@@ -42,13 +42,13 @@ pub async fn list_users(
     )
 )]
 pub async fn remove_user(
-    ctx: Require<IsOwner>,
+    _ctx: Require<IsOwner>,
     State(state): State<AppState>,
     Path(user_id): Path<String>,
 ) -> Result<impl IntoResponse, RbacError> {
     state
         .db
-        .remove_org_member(&user_id, &ctx.org_id.0)
+        .remove_org_member(&user_id)
         .await
         .map_err(RbacError::Internal)?;
     Ok(StatusCode::NO_CONTENT)
@@ -76,30 +76,22 @@ pub struct UpdateOrgIdentityPayload {
 
 #[utoipa::path(get, path = "/v1/org/identity", tag = "Organization",
     responses(
-        (status = 200, description = "Org identity", body = OrgIdentityResponse),
-        (status = 404, description = "Organization not found"),
+        (status = 200, description = "Workspace identity", body = OrgIdentityResponse),
     )
 )]
 pub async fn get_org_identity(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let org = state.db.get_organization(&ctx.org_id.0).await;
-    match org {
-        Some(o) => data_response(OrgIdentityResponse {
-            legal_name: o.legal_name,
-            country: o.country,
-            registration_number: o.registration_number,
-            country_subdivision_code: o.country_subdivision_code,
-            registration_number_type: o.registration_number_type,
-        })
-        .into_response(),
-        None => (
-            StatusCode::NOT_FOUND,
-            Json(error_body("not_found", "Organization not found")),
-        )
-            .into_response(),
-    }
+    let identity = state.db.get_workspace_identity().await.unwrap_or_default();
+    data_response(OrgIdentityResponse {
+        legal_name: identity.legal_name,
+        country: identity.country,
+        registration_number: identity.registration_number,
+        country_subdivision_code: identity.country_subdivision_code,
+        registration_number_type: identity.registration_number_type,
+    })
+    .into_response()
 }
 
 #[utoipa::path(put, path = "/v1/org/identity", tag = "Organization",
@@ -110,7 +102,7 @@ pub async fn get_org_identity(
     )
 )]
 pub async fn update_org_identity(
-    ctx: Require<IsOwner>,
+    _ctx: Require<IsOwner>,
     State(state): State<AppState>,
     Json(payload): Json<UpdateOrgIdentityPayload>,
 ) -> Result<impl IntoResponse, RbacError> {
@@ -150,18 +142,14 @@ pub async fn update_org_identity(
                 .into_response());
         }
 
-    state
-        .db
-        .update_org_identity(
-            &ctx.org_id.0,
-            &legal_name,
-            &payload.country,
-            payload.registration_number.as_deref(),
-            payload.country_subdivision_code.as_deref(),
-            payload.registration_number_type.as_deref(),
-        )
-        .await
-        .map_err(|e| RbacError::Internal(format!("failed to update org identity: {e}")))?;
+    // Read-modify-write so the display `name` (seeded at bootstrap) is preserved.
+    let mut identity = state.db.get_workspace_identity().await.unwrap_or_default();
+    identity.legal_name = legal_name.clone();
+    identity.country = payload.country.clone();
+    identity.registration_number = payload.registration_number.clone();
+    identity.country_subdivision_code = payload.country_subdivision_code.clone();
+    identity.registration_number_type = payload.registration_number_type.clone();
+    state.db.set_workspace_identity(&identity).await;
 
     // Return the updated identity
     Ok(data_response(OrgIdentityResponse {
@@ -199,7 +187,7 @@ pub struct CreateOrgInviteResponse {
     )
 )]
 pub async fn create_org_invite(
-    ctx: Require<IsOwner>,
+    _ctx: Require<IsOwner>,
     axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
@@ -214,7 +202,6 @@ pub async fn create_org_invite(
 
     let invite = InviteToken {
         token: token_value.clone(),
-        org_id: ctx.org_id.0.clone(),
         created_by: auth_user.user_id.clone(),
         expires_at,
         created_at: now,
@@ -239,10 +226,10 @@ pub async fn create_org_invite(
     responses((status = 200, description = "List of org invite tokens", body = Vec<OrgInviteEntry>))
 )]
 pub async fn list_org_invites(
-    ctx: Require<IsOwner>,
+    _ctx: Require<IsOwner>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let tokens = state.db.list_invite_tokens_for_org(&ctx.org_id.0).await;
+    let tokens = state.db.list_invite_tokens().await;
     let now = jiff::Timestamp::now().to_string();
     let result: Vec<OrgInviteEntry> = tokens
         .into_iter()
@@ -267,17 +254,10 @@ pub async fn list_org_invites(
     )
 )]
 pub async fn revoke_org_invite(
-    ctx: Require<IsOwner>,
+    _ctx: Require<IsOwner>,
     Path(token): Path<String>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
-    // Security: verify token belongs to this org before deleting
-    let invite = state.db.get_invite_token(&token).await.ok_or_else(|| {
-        RbacError::Internal("invite token not found".to_string())
-    })?;
-    if invite.org_id != ctx.org_id.0 {
-        return Err(RbacError::Internal("invite token not found".to_string()));
-    }
     state
         .db
         .delete_invite_token(&token)

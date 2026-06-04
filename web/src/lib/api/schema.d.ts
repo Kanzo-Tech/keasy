@@ -797,7 +797,6 @@ export interface components {
             created_at: string;
             created_by: string;
             expires_at: string;
-            org_id: string;
             token: string;
         };
         Job: {
@@ -845,7 +844,6 @@ export interface components {
             end_session_url?: string | null;
         };
         MeOrg: {
-            id: string;
             name: string;
         };
         MeResponse: {
@@ -871,7 +869,7 @@ export interface components {
             token: string;
         };
         /**
-         * @description An org member — a Keycloak user's membership in a Keasy organization.
+         * @description A workspace member — a Keycloak user's membership in this instance.
          *     Profile fields (email, first_name, last_name) are cached from OIDC tokens.
          */
         OrgMember: {
@@ -879,7 +877,6 @@ export interface components {
             first_name: string;
             joined_at: string;
             last_name: string;
-            org_id: string;
             role: string;
             user_id: string;
         };
@@ -893,18 +890,6 @@ export interface components {
             license_uri?: string | null;
             publisher_name: string;
             publisher_uri?: string | null;
-        };
-        Organization: {
-            country: string;
-            country_subdivision_code?: string | null;
-            created_at: string;
-            id: string;
-            legal_name: string;
-            name: string;
-            registration_number?: string | null;
-            registration_number_type?: string | null;
-            slug: string;
-            updated_at: string;
         };
         Preferences: {
             accent_color: string;
@@ -1031,12 +1016,13 @@ export interface components {
             /** @description The vertex type / `GraphAr` `type` (e.g. `Person`). */
             type: string;
         };
+        /**
+         * @description A registered workspace instance (OIDC client), keyed by `client_id`. Display
+         *     metadata for the federation switcher; OIDC credentials live in Keycloak only.
+         */
         Workspace: {
             client_id: string;
             created_at: string;
-            description?: string | null;
-            id: string;
-            logo?: string | null;
             name: string;
             updated_at: string;
             url: string;
@@ -2092,7 +2078,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Org identity */
+            /** @description Workspace identity */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2100,13 +2086,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OrgIdentityResponse"];
                 };
-            };
-            /** @description Organization not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

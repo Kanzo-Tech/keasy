@@ -15,7 +15,6 @@ use crate::AppState;
 use crate::db::org_members::MemberRole;
 use crate::error::error_body;
 use crate::middleware::session_auth::AuthenticatedUser;
-use crate::tenant::OrgId;
 
 /// Role assigned to a tenant context. Two hierarchical roles: `Owner` ⊇
 /// `Member`. The owner is bootstrapped from config (W7); everyone else joins
@@ -28,12 +27,12 @@ pub enum TenantRole {
     Member,
 }
 
-/// Authenticated, tenant-scoped request context. Injected into request
-/// extensions by `tenant_context_required` middleware. Route handlers
-/// extract this via `Require<P>` (e.g. `Require<IsOwner>`, `Require<IsMember>`).
+/// Authenticated request context. Injected into request extensions by
+/// `tenant_context_required` middleware. Route handlers extract this via
+/// `Require<P>` (e.g. `Require<IsOwner>`, `Require<IsMember>`). With one
+/// workspace per instance the context carries only the member's role.
 #[derive(Clone, Debug)]
 pub struct TenantContext {
-    pub org_id: OrgId,
     pub role: TenantRole,
 }
 
@@ -187,11 +186,7 @@ pub async fn tenant_context_required(
     };
 
     // 4. Build and inject the TenantContext
-    let ctx = TenantContext {
-        org_id: OrgId(member.org_id),
-        role,
-    };
-    request.extensions_mut().insert(ctx);
+    request.extensions_mut().insert(TenantContext { role });
 
     Ok(next.run(request).await)
 }

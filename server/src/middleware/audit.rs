@@ -3,7 +3,6 @@ use axum::middleware::Next;
 use axum::response::Response;
 
 use super::session_auth::AuthenticatedUser;
-use super::tenant::TenantContext;
 
 pub async fn audit_log(
     request: axum::http::Request<Body>,
@@ -15,10 +14,6 @@ pub async fn audit_log(
         .extensions()
         .get::<AuthenticatedUser>()
         .map(|u| u.user_id.clone());
-    let org_id = request
-        .extensions()
-        .get::<TenantContext>()
-        .map(|c| c.org_id.0.clone());
 
     let start = std::time::Instant::now();
     let response = next.run(request).await;
@@ -32,7 +27,6 @@ pub async fn audit_log(
         %status,
         %duration_ms,
         user_id = user_id.as_deref().unwrap_or("-"),
-        org_id = org_id.as_deref().unwrap_or("-"),
         "request"
     );
 

@@ -2,14 +2,13 @@ use rusqlite::params;
 
 use super::Database;
 
+/// A registered workspace instance (OIDC client), keyed by `client_id`. Display
+/// metadata for the federation switcher; OIDC credentials live in Keycloak only.
 #[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
 pub struct Workspace {
-    pub id: String,
     pub client_id: String,
     pub name: String,
     pub url: String,
-    pub description: Option<String>,
-    pub logo: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -25,37 +24,14 @@ impl Database {
     ) -> Result<(), String> {
         let conn = self.write().await;
         let now = jiff::Timestamp::now().to_string();
-        let id = uuid::Uuid::new_v4().to_string();
         conn.execute(
-            "INSERT INTO workspaces (id, client_id, name, url, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?5)
-             ON CONFLICT(client_id) DO UPDATE SET name = ?3, url = ?4, updated_at = ?5",
-            params![id, client_id, name, url, now],
+            "INSERT INTO workspaces (client_id, name, url, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?4)
+             ON CONFLICT(client_id) DO UPDATE SET name = ?2, url = ?3, updated_at = ?4",
+            params![client_id, name, url, now],
         )
         .map_err(|e| format!("ensure_workspace: {e}"))?;
         Ok(())
-    }
-
-    pub async fn get_workspace(&self, id: &str) -> Option<Workspace> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, client_id, name, url, description, logo, created_at, updated_at
-             FROM workspaces WHERE id = ?1",
-            [id],
-            row_to_workspace,
-        )
-        .ok()
-    }
-
-    pub async fn get_workspace_by_client_id(&self, client_id: &str) -> Option<Workspace> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, client_id, name, url, description, logo, created_at, updated_at
-             FROM workspaces WHERE client_id = ?1",
-            [client_id],
-            row_to_workspace,
-        )
-        .ok()
     }
 
     /// Batch lookup: returns all workspaces whose client_id is in the given list.
@@ -66,7 +42,7 @@ impl Database {
         let (_permit, conn) = self.read().await;
         let placeholders: Vec<String> = (1..=client_ids.len()).map(|i| format!("?{i}")).collect();
         let sql = format!(
-            "SELECT id, client_id, name, url, description, logo, created_at, updated_at
+            "SELECT client_id, name, url, created_at, updated_at
              FROM workspaces WHERE client_id IN ({})",
             placeholders.join(", ")
         );
@@ -80,18 +56,14 @@ impl Database {
             .filter_map(|r| r.ok())
             .collect()
     }
-
 }
 
 fn row_to_workspace(row: &rusqlite::Row<'_>) -> rusqlite::Result<Workspace> {
     Ok(Workspace {
-        id: row.get(0)?,
-        client_id: row.get(1)?,
-        name: row.get(2)?,
-        url: row.get(3)?,
-        description: row.get(4)?,
-        logo: row.get(5)?,
-        created_at: row.get(6)?,
-        updated_at: row.get(7)?,
+        client_id: row.get(0)?,
+        name: row.get(1)?,
+        url: row.get(2)?,
+        created_at: row.get(3)?,
+        updated_at: row.get(4)?,
     })
 }

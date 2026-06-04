@@ -2,7 +2,7 @@ use secrecy::SecretString;
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::settings::ai::AiSettings;
-use crate::settings::org::OrgSettings;
+use crate::settings::org::{OrgSettings, WorkspaceIdentity};
 use crate::settings::preferences::Preferences;
 
 use crate::db::Database;
@@ -43,6 +43,14 @@ impl Database {
 
     pub async fn set_org_settings(&self, settings: &OrgSettings) {
         self.set_setting("org_settings", settings).await;
+    }
+
+    pub async fn get_workspace_identity(&self) -> Option<WorkspaceIdentity> {
+        self.get_setting("workspace_identity").await
+    }
+
+    pub async fn set_workspace_identity(&self, identity: &WorkspaceIdentity) {
+        self.set_setting("workspace_identity", identity).await;
     }
 
     pub async fn get_preferences(&self) -> Preferences {

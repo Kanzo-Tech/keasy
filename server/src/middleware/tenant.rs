@@ -37,18 +37,6 @@ pub struct TenantContext {
     pub role: TenantRole,
 }
 
-impl TenantContext {
-    /// Create a TenantScoped<T> from this context, scoped to the org.
-    pub fn scoped<T>(&self, inner: T) -> crate::tenant::TenantScoped<T> {
-        crate::tenant::TenantScoped::new(self.org_id.clone(), inner)
-    }
-
-    /// Create a TenantScoped<()> for list queries that only need org_id.
-    pub fn as_ctx(&self) -> crate::tenant::TenantScoped<()> {
-        crate::tenant::TenantScoped::new(self.org_id.clone(), ())
-    }
-}
-
 /// RBAC error type. All 403 responses are intentionally opaque.
 #[derive(Debug, Error)]
 pub enum RbacError {

@@ -26,10 +26,10 @@ use super::errors::JobApiError;
     )
 )]
 pub async fn list_jobs(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    let jobs = state.db.list_jobs(&ctx.as_ctx()).await;
+    let jobs = state.db.list_jobs().await;
     Ok(data_response(jobs))
 }
 
@@ -64,7 +64,7 @@ pub async fn create_job(
             catalog_manifest: None,
             catalog_base: None,
         };
-        state.db.insert_job(&ctx.as_ctx(), &job).await
+        state.db.insert_job(&job).await
             .map_err(JobApiError::Internal)?;
         return Ok((StatusCode::CREATED, data_response(job)).into_response());
     }
@@ -88,7 +88,7 @@ pub async fn create_job(
         catalog_base: None,
     };
 
-    state.db.insert_job(&ctx.as_ctx(), &job).await
+    state.db.insert_job(&job).await
         .map_err(JobApiError::Internal)?;
 
     let org_settings = if dcat_enabled {
@@ -108,15 +108,12 @@ pub async fn create_job(
 
     let output_dest = owner_storage
         .as_ref()
-        .map(|(_, _, base_url)| format!("{}/{}", base_url.trim_end_matches('/'), id));
+        .map(|(_, base_url)| format!("{}/{}", base_url.trim_end_matches('/'), id));
 
     let run_creds = crate::jobs::run_creds::build_run_creds(
         &state.db,
-        &ctx.org_id.0,
         &payload.connection_ids,
-        owner_storage
-            .as_ref()
-            .map(|(org, account, _)| (org.clone(), account.clone())),
+        owner_storage.as_ref().map(|(account, _)| account.clone()),
     )
     .await;
 
@@ -126,14 +123,13 @@ pub async fn create_job(
     let catalog_dest = if dcat_enabled {
         owner_storage
             .as_ref()
-            .map(|(_, _, base_url)| base_url.clone())
+            .map(|(_, base_url)| base_url.clone())
     } else {
         None
     };
 
     use crate::jobs::runner::SpawnParams;
     state.runner.spawn(SpawnParams {
-        org_id: ctx.org_id.0.clone(),
         job_id: id,
         script: payload.script,
         org_settings,
@@ -154,16 +150,13 @@ pub async fn create_job(
     )
 )]
 pub async fn get_job(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    match state.db.get_job(&ctx.scoped(id.as_str())).await {
+    match state.db.get_job(id.as_str()).await {
         Some(job) => Ok(data_response(job).into_response()),
-        None => {
-            tracing::debug!(job_id = %id, org_id = %ctx.org_id.0, "job not found for tenant");
-            Err(JobApiError::NotFound)
-        }
+        None => Err(JobApiError::NotFound),
     }
 }
 
@@ -177,12 +170,12 @@ pub async fn get_job(
     )
 )]
 pub async fn update_job(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    match state.db.update_job(&ctx.scoped(id.as_str()), |job| {
+    match state.db.update_job(id.as_str(), |job| {
         if job.status != JobStatus::Draft {
             return;
         }
@@ -207,11 +200,11 @@ pub async fn update_job(
     )
 )]
 pub async fn stream_job(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<Response, JobApiError> {
-    let job = state.db.get_job(&ctx.scoped(id.as_str())).await
+    let job = state.db.get_job(id.as_str()).await
         .ok_or(JobApiError::NotFound)?;
 
     fn is_terminal(status: &JobStatus) -> bool {
@@ -242,7 +235,7 @@ pub async fn stream_job(
         Some(rx) => rx,
         None => {
             // Channel gone — job may have finished between DB read and subscribe; refetch
-            let job = state.db.get_job(&ctx.scoped(id.as_str())).await
+            let job = state.db.get_job(id.as_str()).await
                 .ok_or(JobApiError::NotFound)?;
             let evt = terminal_event(&job);
             let stream = futures::stream::once(async move {
@@ -268,18 +261,18 @@ pub async fn stream_job(
     )
 )]
 pub async fn delete_job(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    let job = state.db.get_job(&ctx.scoped(id.as_str())).await
+    let job = state.db.get_job(id.as_str()).await
         .ok_or(JobApiError::NotFound)?;
 
     if matches!(job.status, JobStatus::Pending | JobStatus::Running) {
         return Err(JobApiError::StillRunning);
     }
 
-    state.db.remove_job(&ctx.scoped(id.as_str())).await
+    state.db.remove_job(id.as_str()).await
         .map_err(JobApiError::Internal)?;
 
     Ok(StatusCode::NO_CONTENT.into_response())
@@ -290,11 +283,11 @@ pub async fn delete_job(
     responses((status = 200, description = "Dashboard layout", body = serde_json::Value), (status = 204, description = "No layout saved"))
 )]
 pub async fn get_dashboard_layout(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    if state.db.get_job(&ctx.scoped(id.as_str())).await.is_none() {
+    if state.db.get_job(id.as_str()).await.is_none() {
         return Err(JobApiError::NotFound);
     }
     match state.db.get_dashboard_layout(&id).await {
@@ -309,12 +302,12 @@ pub async fn get_dashboard_layout(
     responses((status = 200, description = "Layout saved"))
 )]
 pub async fn save_dashboard_layout(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    if state.db.get_job(&ctx.scoped(id.as_str())).await.is_none() {
+    if state.db.get_job(id.as_str()).await.is_none() {
         return Err(JobApiError::NotFound);
     }
     state.db.set_dashboard_layout(&id, &body).await;

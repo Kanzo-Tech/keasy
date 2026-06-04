@@ -20,12 +20,11 @@ use std::collections::HashMap;
 /// Resolve a cloud connection and its credentials. Shared by list_files, upload, and schema.
 async fn resolve_cloud_connection(
     state: &AppState,
-    ctx: &crate::middleware::tenant::TenantContext,
     id: &str,
 ) -> Result<(Connection, HashMap<String, String>), ConnectionError> {
     let connection = state
         .db
-        .get_connection(&ctx.scoped(id))
+        .get_connection(id)
         .await
         .ok_or(ConnectionError::NotFound)?;
 
@@ -45,7 +44,7 @@ async fn resolve_cloud_connection(
 
     let creds = state
         .db
-        .build_storage_config(&ctx.as_ctx(), std::slice::from_ref(&account_id))
+        .build_storage_config(std::slice::from_ref(&account_id))
         .await;
 
     Ok((connection, creds))
@@ -81,11 +80,11 @@ pub struct SchemaQuery {
     responses((status = 200, description = "List of connections", body = Vec<Connection>))
 )]
 pub async fn list_connections(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Query(query): Query<ListConnectionsQuery>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    let connections = state.db.list_connections(&ctx.as_ctx(), query.connection_type.as_deref()).await;
+    let connections = state.db.list_connections(query.connection_type.as_deref()).await;
     Ok(data_response(connections))
 }
 
@@ -97,14 +96,14 @@ pub async fn list_connections(
     )
 )]
 pub async fn create_connection(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Json(req): Json<CreateConnectionRequest>,
 ) -> Result<impl IntoResponse, ConnectionError> {
     if req.location_type == LocationType::Cloud
         && let Some(ref account_id) = req.cloud_account_id
     {
-        let creds = state.db.build_storage_config(&ctx.as_ctx(), std::slice::from_ref(account_id)).await;
+        let creds = state.db.build_storage_config(std::slice::from_ref(account_id)).await;
         if let Err(msg) = reader::list_files(&req.url, &creds).await {
             return Err(ConnectionError::ContainerNotFound(
                 format!("Cannot access container '{}': {msg}", req.url),
@@ -112,7 +111,7 @@ pub async fn create_connection(
         }
     }
 
-    match state.db.create_connection(&ctx.as_ctx(), req).await {
+    match state.db.create_connection(req).await {
         Ok(connection) => Ok((StatusCode::CREATED, data_response(connection)).into_response()),
         Err(msg) => Err(ConnectionError::InvalidConnection(msg)),
     }
@@ -126,11 +125,11 @@ pub async fn create_connection(
     )
 )]
 pub async fn get_connection(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    match state.db.get_connection(&ctx.scoped(id.as_str())).await {
+    match state.db.get_connection(id.as_str()).await {
         Some(connection) => Ok(data_response(connection).into_response()),
         None => Err(ConnectionError::NotFound),
     }
@@ -146,12 +145,12 @@ pub async fn get_connection(
     )
 )]
 pub async fn update_connection(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<UpdateConnectionRequest>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    match state.db.update_connection(&ctx.scoped(id.as_str()), req).await {
+    match state.db.update_connection(id.as_str(), req).await {
         Ok(connection) => Ok(data_response(connection).into_response()),
         Err(msg) => Err(ConnectionError::InvalidConnection(msg)),
     }
@@ -164,11 +163,11 @@ pub async fn update_connection(
     )
 )]
 pub async fn delete_connection(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    state.db.remove_connection(&ctx.scoped(id.as_str())).await
+    state.db.remove_connection(id.as_str()).await
         .map_err(ConnectionError::Internal)?;
     Ok(StatusCode::NO_CONTENT.into_response())
 }
@@ -182,11 +181,11 @@ pub async fn delete_connection(
     )
 )]
 pub async fn list_connection_files(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    let (connection, creds) = resolve_cloud_connection(&state, &ctx, id.as_str()).await?;
+    let (connection, creds) = resolve_cloud_connection(&state, id.as_str()).await?;
     match reader::list_files(&connection.url, &creds).await {
         Ok(files) => Ok(data_response(files).into_response()),
         Err(msg) => Err(ConnectionError::ListFilesFailed(msg)),
@@ -204,12 +203,12 @@ pub async fn list_connection_files(
     )
 )]
 pub async fn upload_file(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<UploadFileRequest>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    let (connection, creds) = resolve_cloud_connection(&state, &ctx, id.as_str()).await?;
+    let (connection, creds) = resolve_cloud_connection(&state, id.as_str()).await?;
     let url = join_connection_path(&connection.url, &req.path)
         .map_err(ConnectionError::InvalidConnection)?;
     reader::upload(&url, req.content.into_bytes(), &creds)
@@ -231,7 +230,7 @@ pub async fn upload_file(
     )
 )]
 pub async fn get_file_schema(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Query(query): Query<SchemaQuery>,
@@ -245,7 +244,7 @@ pub async fn get_file_schema(
 
     let connection = state
         .db
-        .get_connection(&ctx.scoped(id.as_str()))
+        .get_connection(id.as_str())
         .await
         .ok_or(ConnectionError::NotFound)?;
 
@@ -253,7 +252,7 @@ pub async fn get_file_schema(
         .map_err(ConnectionError::InvalidConnection)?;
 
     let bytes = if connection.location_type == LocationType::Cloud {
-        let (_, creds) = resolve_cloud_connection(&state, &ctx, id.as_str()).await?;
+        let (_, creds) = resolve_cloud_connection(&state, id.as_str()).await?;
         reader::download(&url, &creds)
             .await
             .map_err(|e| ConnectionError::SchemaInferenceFailed(format!("Download failed: {e}")))?

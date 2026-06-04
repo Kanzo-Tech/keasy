@@ -31,12 +31,12 @@ struct LlmResponse {
     responses((status = 200, description = "SSE stream of LLM deltas", content_type = "text/event-stream"))
 )]
 pub async fn ask_discover_stream(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<AskRequest>,
 ) -> Response {
-    if let Err(r) = crate::discovery::routes::require_output_ready(&state, &ctx, &id).await {
+    if let Err(r) = crate::discovery::routes::require_output_ready(&state, &id).await {
         return r;
     }
 
@@ -53,7 +53,7 @@ pub async fn ask_discover_stream(
     let schema_context = match &req.schema {
         Some(s) if !s.is_empty() => s.clone(),
         _ => {
-            let job = match state.db.get_job(&ctx.scoped(id.as_str())).await {
+            let job = match state.db.get_job(id.as_str()).await {
                 Some(j) => j,
                 None => return (StatusCode::NOT_FOUND, Json(crate::error::error_body("not_found", "Job not found"))).into_response(),
             };
@@ -66,7 +66,7 @@ pub async fn ask_discover_stream(
     let conversation_id = match req.conversation_id {
         Some(cid) => cid,
         None => {
-            match state.db.create_conversation(&ctx.as_ctx(), &id, None).await {
+            match state.db.create_conversation(&id, None).await {
                 Ok(conv) => conv.id,
                 Err(e) => {
                     warn!("Failed to create conversation: {e}");
@@ -326,19 +326,19 @@ pub struct CreateConversationRequest {
     responses((status = 201, description = "Conversation created", body = crate::ai::models::Conversation))
 )]
 pub async fn create_conversation(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(job_id): Path<String>,
     Json(req): Json<CreateConversationRequest>,
 ) -> Response {
-    if state.db.get_job(&ctx.scoped(job_id.as_str())).await.is_none() {
+    if state.db.get_job(job_id.as_str()).await.is_none() {
         return (
             StatusCode::NOT_FOUND,
             Json(crate::error::error_body("not_found", "Job not found")),
         )
             .into_response();
     }
-    match state.db.create_conversation(&ctx.as_ctx(), &job_id, req.title).await {
+    match state.db.create_conversation(&job_id, req.title).await {
         Ok(conv) => (StatusCode::CREATED, data_response(conv)).into_response(),
         Err(e) => {
             warn!("Failed to create conversation: {e}");
@@ -352,11 +352,11 @@ pub async fn create_conversation(
     responses((status = 200, description = "List of conversations", body = Vec<crate::ai::models::Conversation>))
 )]
 pub async fn list_conversations(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(job_id): Path<String>,
 ) -> impl IntoResponse {
-    let convs: Vec<Conversation> = state.db.list_conversations(&ctx.as_ctx(), &job_id).await;
+    let convs: Vec<Conversation> = state.db.list_conversations(&job_id).await;
     data_response(convs)
 }
 
@@ -368,11 +368,11 @@ pub async fn list_conversations(
     )
 )]
 pub async fn get_conversation_messages(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
 ) -> Response {
-    if state.db.get_conversation(&conversation_id, ctx.org_id.as_str()).await.is_none() {
+    if state.db.get_conversation(&conversation_id).await.is_none() {
         return (
             StatusCode::NOT_FOUND,
             Json(crate::error::error_body("not_found", "Conversation not found")),
@@ -393,7 +393,7 @@ pub struct RenameConversationRequest {
     responses((status = 204, description = "Conversation renamed"))
 )]
 pub async fn rename_conversation(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
     Json(req): Json<RenameConversationRequest>,
@@ -405,7 +405,7 @@ pub async fn rename_conversation(
         )
             .into_response();
     }
-    if let Err(e) = state.db.rename_conversation(&conversation_id, ctx.org_id.as_str(), req.title.trim()).await {
+    if let Err(e) = state.db.rename_conversation(&conversation_id, req.title.trim()).await {
         warn!("Failed to rename conversation: {e}");
         return (StatusCode::INTERNAL_SERVER_ERROR, Json(crate::error::error_body("db_error", "Failed to rename conversation"))).into_response();
     }
@@ -417,11 +417,11 @@ pub async fn rename_conversation(
     responses((status = 204, description = "Conversation deleted"))
 )]
 pub async fn delete_conversation(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(conversation_id): Path<String>,
 ) -> Response {
-    if let Err(e) = state.db.delete_conversation(&conversation_id, ctx.org_id.as_str()).await {
+    if let Err(e) = state.db.delete_conversation(&conversation_id).await {
         warn!("Failed to delete conversation: {e}");
         return (StatusCode::INTERNAL_SERVER_ERROR, Json(crate::error::error_body("db_error", "Failed to delete conversation"))).into_response();
     }

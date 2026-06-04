@@ -1,34 +1,12 @@
-/// Newtype over org UUID string.
+/// Newtype over the workspace UUID string. Carried by `TenantContext` and used
+/// by the workspace-management surface (members, invites, identity). Resource
+/// data is not org-scoped (W8 flatten) — one workspace owns the whole instance.
 #[derive(Debug, Clone)]
 pub struct OrgId(pub String);
 
 impl OrgId {
     pub fn as_str(&self) -> &str {
         &self.0
-    }
-}
-
-/// A value `T` scoped to a specific organization.
-/// DAL functions that list/detail resources MUST accept this type.
-/// Construction is unrestricted in Phase 1; Phase 4 middleware will
-/// be the sole constructor in production.
-#[derive(Debug, Clone)]
-pub struct TenantScoped<T> {
-    pub org_id: OrgId,
-    pub inner: T,
-}
-
-impl<T> TenantScoped<T> {
-    pub fn new(org_id: OrgId, inner: T) -> Self {
-        Self { org_id, inner }
-    }
-
-    pub fn org_id(&self) -> &OrgId {
-        &self.org_id
-    }
-
-    pub fn inner(&self) -> &T {
-        &self.inner
     }
 }
 

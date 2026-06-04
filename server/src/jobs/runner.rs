@@ -13,7 +13,6 @@ use super::models::{JobStatus, now_iso8601};
 use crate::db::Database;
 use crate::graph::dcat::extract::build_catalog_input;
 use crate::settings::org::OrgSettings;
-use crate::tenant::{OrgId, TenantScoped};
 
 /// SSE event emitted by the job runner at each execution phase.
 #[derive(Clone, Serialize, utoipa::ToSchema)]
@@ -28,7 +27,6 @@ pub struct JobEvent {
 /// Parameters for spawning a job execution task.
 /// Introduced to fix clippy::too_many_arguments on JobRunner::spawn().
 pub struct SpawnParams {
-    pub org_id: String,
     pub job_id: String,
     pub script: String,
     pub org_settings: Option<OrgSettings>,
@@ -123,9 +121,8 @@ impl JobRunner {
     }
 
     /// Spawn a job execution task.
-    /// `params.org_id` is the organization that owns this job.
     pub fn spawn(&self, params: SpawnParams) {
-        let SpawnParams { org_id, job_id, script, org_settings, dcat_enabled, output_dest, run_creds, catalog_dest } = params;
+        let SpawnParams { job_id, script, org_settings, dcat_enabled, output_dest, run_creds, catalog_dest } = params;
         let db = self.db.clone();
         let semaphore = self.semaphore.clone();
         let job_timeout = self.job_timeout;
@@ -145,8 +142,7 @@ impl JobRunner {
             let _permit = match semaphore.acquire_owned().await {
                 Ok(permit) => permit,
                 Err(_) => {
-                    let ctx = TenantScoped::new(OrgId(org_id.clone()), job_id.as_str());
-                    if let Err(e) = db.update_job(&ctx, |job| {
+                    if let Err(e) = db.update_job(&job_id, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(JobRuntimeError::new("INTERNAL_ERROR", "Failed to acquire execution permit"));
                         job.completed_at = Some(now_iso8601());
@@ -159,11 +155,9 @@ impl JobRunner {
                 }
             };
 
-            let job_ctx = TenantScoped::new(OrgId(org_id.clone()), job_id.as_str());
+            let job_name = db.get_job(&job_id).await.and_then(|j| j.name.clone());
 
-            let job_name = db.get_job(&job_ctx).await.and_then(|j| j.name.clone());
-
-            if let Err(e) = db.update_job(&job_ctx, |job| {
+            if let Err(e) = db.update_job(&job_id, |job| {
                 job.status = JobStatus::Running;
                 job.started_at = Some(now_iso8601());
             }).await {
@@ -199,7 +193,7 @@ impl JobRunner {
                     // Phase 3: finalizing
                     if tx.send(JobEvent { phase: "finalizing".into(), index: 3, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
-                    if let Err(e) = db.update_job(&job_ctx, |job| {
+                    if let Err(e) = db.update_job(&job_id, |job| {
                         job.status = JobStatus::Completed;
                         job.completed_at = Some(now_iso8601());
                         job.rdf_base = rdf_base;
@@ -216,7 +210,7 @@ impl JobRunner {
                     let msg = failure.message();
                     let runtime_err = failure.runtime_error();
                     error!(job_id = %job_id, error = %msg, "Job failed");
-                    if let Err(e) = db.update_job(&job_ctx, |job| {
+                    if let Err(e) = db.update_job(&job_id, |job| {
                         job.status = JobStatus::Failed;
                         job.error = Some(runtime_err);
                         job.completed_at = Some(now_iso8601());

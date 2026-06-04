@@ -6,14 +6,12 @@ use tracing::{info, warn};
 
 use crate::settings::schema::find_provider;
 use crate::db::Database;
-use crate::tenant::{OrgId, TenantScoped};
 
 use super::models::{CloudAccount, CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest};
 
 impl Database {
     pub async fn create_cloud_account(
         &self,
-        ctx: &TenantScoped<()>,
         request: CreateCloudAccountRequest,
     ) -> Result<CloudAccountSummary, String> {
         let schema = find_provider(&request.provider_id)
@@ -54,9 +52,9 @@ impl Database {
 
         let conn = self.write().await;
         conn.execute(
-            "INSERT INTO cloud_accounts (id, organization_id, name, provider_id, auth_method, fields)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![id, ctx.org_id().as_str(), request.name, request.provider_id, request.auth_method, fields_json],
+            "INSERT INTO cloud_accounts (id, name, provider_id, auth_method, fields)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![id, request.name, request.provider_id, request.auth_method, fields_json],
         )
         .map_err(|e| format!("failed to insert cloud account: {e}"))?;
         drop(conn);
@@ -72,9 +70,9 @@ impl Database {
         })
     }
 
-    pub async fn get_cloud_account(&self, ctx: &TenantScoped<&str>) -> Option<CloudAccount> {
-        let summary = self.get_cloud_account_summary(ctx).await?;
-        let secrets = self.decrypt_secrets_for_account(ctx.inner()).await;
+    pub async fn get_cloud_account(&self, id: &str) -> Option<CloudAccount> {
+        let summary = self.get_cloud_account_summary(id).await?;
+        let secrets = self.decrypt_secrets_for_account(id).await;
         Some(CloudAccount {
             id: summary.id,
             name: summary.name,
@@ -85,11 +83,11 @@ impl Database {
         })
     }
 
-    pub async fn get_cloud_account_summary(&self, ctx: &TenantScoped<&str>) -> Option<CloudAccountSummary> {
+    pub async fn get_cloud_account_summary(&self, id: &str) -> Option<CloudAccountSummary> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, provider_id, auth_method, fields FROM cloud_accounts WHERE id = ?1 AND organization_id = ?2",
-            params![ctx.inner(), ctx.org_id().as_str()],
+            "SELECT id, name, provider_id, auth_method, fields FROM cloud_accounts WHERE id = ?1",
+            [id],
             row_to_cloud_account_summary,
         )
         .ok()
@@ -97,13 +95,13 @@ impl Database {
 
     pub async fn update_cloud_account(
         &self,
-        ctx: &TenantScoped<&str>,
+        id: &str,
         request: UpdateCloudAccountRequest,
     ) -> Result<CloudAccountSummary, String> {
         let account = self
-            .get_cloud_account(ctx)
+            .get_cloud_account(id)
             .await
-            .ok_or_else(|| format!("cloud account not found: {}", ctx.inner()))?;
+            .ok_or_else(|| format!("cloud account not found: {id}"))?;
 
         let name = request.name.unwrap_or(account.name);
         let auth_method = request.auth_method.or(account.auth_method);
@@ -135,16 +133,16 @@ impl Database {
 
         let conn = self.write().await;
         conn.execute(
-            "UPDATE cloud_accounts SET name = ?1, auth_method = ?2, fields = ?3 WHERE id = ?4 AND organization_id = ?5",
-            params![name, auth_method, fields_json, ctx.inner(), ctx.org_id().as_str()],
+            "UPDATE cloud_accounts SET name = ?1, auth_method = ?2, fields = ?3 WHERE id = ?4",
+            params![name, auth_method, fields_json, id],
         )
         .map_err(|e| format!("failed to update cloud account: {e}"))?;
         drop(conn);
 
-        self.set_secret_json(&format!("cloud_account:{}", ctx.inner()), &secrets_plain).await;
+        self.set_secret_json(&format!("cloud_account:{id}"), &secrets_plain).await;
 
         Ok(CloudAccountSummary {
-            id: ctx.inner().to_string(),
+            id: id.to_string(),
             name,
             provider_id: account.provider_id,
             auth_method,
@@ -152,33 +150,31 @@ impl Database {
         })
     }
 
-    pub async fn remove_cloud_account(&self, ctx: &TenantScoped<&str>) {
-        let id = ctx.inner();
+    pub async fn remove_cloud_account(&self, id: &str) {
         let conn = self.write().await;
         let _ = conn.execute(
-            "DELETE FROM cloud_accounts WHERE id = ?1 AND organization_id = ?2",
-            params![id, ctx.org_id().as_str()],
+            "DELETE FROM cloud_accounts WHERE id = ?1",
+            [id],
         );
         drop(conn);
         self.delete_secret(&format!("cloud_account:{id}")).await;
     }
 
-    pub async fn list_cloud_accounts(&self, ctx: &TenantScoped<()>) -> Vec<CloudAccountSummary> {
+    pub async fn list_cloud_accounts(&self) -> Vec<CloudAccountSummary> {
         let (_permit, conn) = self.read().await;
         let mut stmt = conn
-            .prepare("SELECT id, name, provider_id, auth_method, fields FROM cloud_accounts WHERE organization_id = ?1")
+            .prepare("SELECT id, name, provider_id, auth_method, fields FROM cloud_accounts")
             .expect("prepare list accounts");
-        stmt.query_map([ctx.org_id().as_str()], row_to_cloud_account_summary)
+        stmt.query_map([], row_to_cloud_account_summary)
         .expect("query accounts")
         .filter_map(|r| r.ok())
         .collect()
     }
 
-    pub async fn build_storage_config(&self, ctx: &TenantScoped<()>, account_ids: &[String]) -> HashMap<String, String> {
+    pub async fn build_storage_config(&self, account_ids: &[String]) -> HashMap<String, String> {
         let mut env = HashMap::new();
         for id in account_ids {
-            let scoped = TenantScoped::new(OrgId(ctx.org_id().as_str().to_string()), id.as_str());
-            if let Some(account) = self.get_cloud_account(&scoped).await
+            if let Some(account) = self.get_cloud_account(id).await
                 && let Some(schema) = find_provider(&account.provider_id)
             {
                 for field in schema.active_fields(account.auth_method.as_deref()) {

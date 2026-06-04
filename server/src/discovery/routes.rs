@@ -11,17 +11,16 @@ use serde::Serialize;
 use crate::AppState;
 use crate::error::error_body;
 use crate::jobs::models::JobStatus;
-use crate::middleware::tenant::{IsMember, Require, TenantContext};
+use crate::middleware::tenant::{IsMember, Require};
 
 /// Checks that output is ready and returns Ok(()) or appropriate error.
 pub(crate) async fn require_output_ready(
     state: &AppState,
-    ctx: &TenantContext,
     job_id: &str,
 ) -> Result<(), Response> {
     let job = state
         .db
-        .get_job(&ctx.scoped(job_id))
+        .get_job(job_id)
         .await
         .ok_or_else(|| {
             (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response()
@@ -48,14 +47,13 @@ struct ResolveResponse {
 /// each caller flattens its own manifest type into the file list.
 async fn sign_manifest_urls(
     state: &AppState,
-    ctx: &TenantContext,
     base_url: &str,
     files: &[String],
     connection_ids: &[String],
 ) -> Result<Response, Response> {
     let creds = state
         .db
-        .build_storage_config_from_connections(&ctx.scoped(()), connection_ids)
+        .build_storage_config_from_connections(connection_ids)
         .await;
 
     let (store, prefix) = crate::cloud::build_store(base_url, &creds)
@@ -91,11 +89,11 @@ async fn sign_manifest_urls(
     )
 )]
 pub async fn resolve_discover_urls(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    let job = match state.db.get_job(&ctx.scoped(id.as_str())).await {
+    let job = match state.db.get_job(id.as_str()).await {
         Some(j) => j,
         None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
     };
@@ -113,7 +111,7 @@ pub async fn resolve_discover_urls(
         .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
         .collect();
 
-    match sign_manifest_urls(&state, &ctx, base, &files, &job.connection_ids).await {
+    match sign_manifest_urls(&state, base, &files, &job.connection_ids).await {
         Ok(resp) => resp,
         Err(resp) => resp,
     }
@@ -129,11 +127,11 @@ pub async fn resolve_discover_urls(
     )
 )]
 pub async fn resolve_catalog_urls(
-    ctx: Require<IsMember>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
-    let job = match state.db.get_job(&ctx.scoped(id.as_str())).await {
+    let job = match state.db.get_job(id.as_str()).await {
         Some(j) => j,
         None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
     };
@@ -151,7 +149,7 @@ pub async fn resolve_catalog_urls(
         .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
         .collect();
 
-    match sign_manifest_urls(&state, &ctx, base, &files, &job.connection_ids).await {
+    match sign_manifest_urls(&state, base, &files, &job.connection_ids).await {
         Ok(resp) => resp,
         Err(resp) => resp,
     }

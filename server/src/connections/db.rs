@@ -1,7 +1,6 @@
 use rusqlite::params;
 
 use crate::db::Database;
-use crate::tenant::{OrgId, TenantScoped};
 
 use super::models::{
     Connection, CreateConnectionRequest, LocationType, UpdateConnectionRequest,
@@ -10,16 +9,12 @@ use super::models::{
 impl Database {
     pub async fn create_connection(
         &self,
-        ctx: &TenantScoped<()>,
         req: CreateConnectionRequest,
     ) -> Result<Connection, String> {
         req.validate()?;
 
         if let Some(ref account_id) = req.cloud_account_id
-            && self
-                .get_cloud_account_summary(&TenantScoped::new(ctx.org_id.clone(), account_id.as_str()))
-                .await
-                .is_none()
+            && self.get_cloud_account_summary(account_id).await.is_none()
         {
             return Err(format!("cloud account not found: {account_id}"));
         }
@@ -35,75 +30,66 @@ impl Database {
 
         let conn = self.write().await;
         conn.execute(
-            "INSERT INTO connections (id, organization_id, name, kind, location_type, cloud_account_id, url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![connection.id, ctx.org_id().as_str(), connection.name, connection.kind, connection.location_type, connection.cloud_account_id, connection.url],
+            "INSERT INTO connections (id, name, kind, location_type, cloud_account_id, url) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![connection.id, connection.name, connection.kind, connection.location_type, connection.cloud_account_id, connection.url],
         )
         .map_err(|e| format!("failed to create connection: {e}"))?;
 
         Ok(connection)
     }
 
-    pub async fn get_connection(&self, ctx: &TenantScoped<&str>) -> Option<Connection> {
+    pub async fn get_connection(&self, id: &str) -> Option<Connection> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, kind, location_type, cloud_account_id, url FROM connections WHERE id = ?1 AND organization_id = ?2",
-            params![ctx.inner(), ctx.org_id().as_str()],
+            "SELECT id, name, kind, location_type, cloud_account_id, url FROM connections WHERE id = ?1",
+            [id],
             row_to_connection,
         )
         .ok()
     }
 
-    pub async fn get_connection_by_name(&self, ctx: &TenantScoped<&str>) -> Option<Connection> {
+    pub async fn get_connection_by_name(&self, name: &str) -> Option<Connection> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, kind, location_type, cloud_account_id, url FROM connections WHERE name = ?1 AND organization_id = ?2",
-            params![ctx.inner(), ctx.org_id().as_str()],
+            "SELECT id, name, kind, location_type, cloud_account_id, url FROM connections WHERE name = ?1",
+            [name],
             row_to_connection,
         )
         .ok()
     }
 
-    pub async fn list_connections(
-        &self,
-        ctx: &TenantScoped<()>,
-        type_filter: Option<&str>,
-    ) -> Vec<Connection> {
+    pub async fn list_connections(&self, type_filter: Option<&str>) -> Vec<Connection> {
         let (_permit, conn) = self.read().await;
         let (sql, param): (&str, Option<&str>) = match type_filter {
             Some(t) => (
-                "SELECT id, name, kind, location_type, cloud_account_id, url FROM connections WHERE kind = ?1 AND organization_id = ?2 ORDER BY name",
+                "SELECT id, name, kind, location_type, cloud_account_id, url FROM connections WHERE kind = ?1 ORDER BY name",
                 Some(t),
             ),
             None => (
-                "SELECT id, name, kind, location_type, cloud_account_id, url FROM connections WHERE organization_id = ?1 ORDER BY name",
+                "SELECT id, name, kind, location_type, cloud_account_id, url FROM connections ORDER BY name",
                 None,
             ),
         };
 
-        if let Some(p) = param {
-            let mut stmt = conn.prepare(sql).expect("prepare list connections");
-            stmt.query_map(params![p, ctx.org_id().as_str()], row_to_connection)
-                .expect("query connections")
-                .filter_map(|r| r.ok())
-                .collect()
-        } else {
-            let mut stmt = conn.prepare(sql).expect("prepare list connections");
-            stmt.query_map([ctx.org_id().as_str()], row_to_connection)
-                .expect("query connections")
-                .filter_map(|r| r.ok())
-                .collect()
-        }
+        let mut stmt = conn.prepare(sql).expect("prepare list connections");
+        let rows = match param {
+            Some(p) => stmt.query_map([p], row_to_connection),
+            None => stmt.query_map([], row_to_connection),
+        };
+        rows.expect("query connections")
+            .filter_map(|r| r.ok())
+            .collect()
     }
 
     pub async fn update_connection(
         &self,
-        ctx: &TenantScoped<&str>,
+        id: &str,
         req: UpdateConnectionRequest,
     ) -> Result<Connection, String> {
         let existing = self
-            .get_connection(ctx)
+            .get_connection(id)
             .await
-            .ok_or_else(|| format!("connection not found: {}", ctx.inner()))?;
+            .ok_or_else(|| format!("connection not found: {id}"))?;
 
         let name = req.name.unwrap_or(existing.name);
         let kind = req.kind.unwrap_or(existing.kind);
@@ -121,13 +107,13 @@ impl Database {
 
         let conn = self.write().await;
         conn.execute(
-            "UPDATE connections SET name = ?1, kind = ?2, location_type = ?3, cloud_account_id = ?4, url = ?5 WHERE id = ?6 AND organization_id = ?7",
-            params![name, kind, location_type, cloud_account_id, url, ctx.inner(), ctx.org_id().as_str()],
+            "UPDATE connections SET name = ?1, kind = ?2, location_type = ?3, cloud_account_id = ?4, url = ?5 WHERE id = ?6",
+            params![name, kind, location_type, cloud_account_id, url, id],
         )
         .map_err(|e| format!("failed to update connection: {e}"))?;
 
         Ok(Connection {
-            id: ctx.inner().to_string(),
+            id: id.to_string(),
             name,
             kind,
             location_type,
@@ -136,25 +122,20 @@ impl Database {
         })
     }
 
-    pub async fn remove_connection(&self, ctx: &TenantScoped<&str>) -> Result<(), String> {
+    pub async fn remove_connection(&self, id: &str) -> Result<(), String> {
         let conn = self.write().await;
         conn.execute(
-            "DELETE FROM connections WHERE id = ?1 AND organization_id = ?2",
-            params![ctx.inner(), ctx.org_id().as_str()],
+            "DELETE FROM connections WHERE id = ?1",
+            [id],
         )
         .map_err(|e| format!("failed to delete connection: {e}"))?;
         Ok(())
     }
 
-    pub async fn resolve_cloud_account_ids(
-        &self,
-        ctx: &TenantScoped<()>,
-        connection_ids: &[String],
-    ) -> Vec<String> {
+    pub async fn resolve_cloud_account_ids(&self, connection_ids: &[String]) -> Vec<String> {
         let mut account_ids = Vec::new();
         for connection_id in connection_ids {
-            let scoped = TenantScoped::new(OrgId(ctx.org_id().as_str().to_string()), connection_id.as_str());
-            if let Some(connection) = self.get_connection(&scoped).await
+            if let Some(connection) = self.get_connection(connection_id).await
                 && let Some(account_id) = &connection.cloud_account_id
                 && !account_ids.contains(account_id)
             {
@@ -166,11 +147,10 @@ impl Database {
 
     pub async fn build_storage_config_from_connections(
         &self,
-        ctx: &TenantScoped<()>,
         connection_ids: &[String],
     ) -> std::collections::HashMap<String, String> {
-        let account_ids = self.resolve_cloud_account_ids(ctx, connection_ids).await;
-        self.build_storage_config(ctx, &account_ids).await
+        let account_ids = self.resolve_cloud_account_ids(connection_ids).await;
+        self.build_storage_config(&account_ids).await
     }
 }
 

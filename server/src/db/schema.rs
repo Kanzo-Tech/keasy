@@ -27,10 +27,10 @@ CREATE TABLE IF NOT EXISTS org_members (
     PRIMARY KEY (user_id, org_id)
 );
 
--- Existing resource tables with organization_id NOT NULL FK
+-- Resource tables. A single workspace per instance owns all data, so these
+-- carry no organization scoping (W8 flatten).
 CREATE TABLE IF NOT EXISTS cloud_accounts (
     id              TEXT PRIMARY KEY,
-    organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     name            TEXT NOT NULL,
     provider_id     TEXT NOT NULL,
     auth_method     TEXT,
@@ -39,7 +39,6 @@ CREATE TABLE IF NOT EXISTS cloud_accounts (
 
 CREATE TABLE IF NOT EXISTS connections (
     id               TEXT PRIMARY KEY,
-    organization_id  TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     name             TEXT NOT NULL UNIQUE,
     kind             TEXT NOT NULL CHECK(kind IN ('data', 'vocab')),
     location_type    TEXT NOT NULL CHECK(location_type IN ('cloud', 'local')),
@@ -49,7 +48,6 @@ CREATE TABLE IF NOT EXISTS connections (
 
 CREATE TABLE IF NOT EXISTS jobs (
     id              TEXT PRIMARY KEY,
-    organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     name            TEXT,
     status          TEXT NOT NULL DEFAULT 'pending',
     mode            TEXT NOT NULL DEFAULT 'integrated',
@@ -65,7 +63,6 @@ CREATE TABLE IF NOT EXISTS jobs (
 
 CREATE TABLE IF NOT EXISTS conversations (
     id              TEXT PRIMARY KEY,
-    organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     job_id          TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
     created_at      TEXT NOT NULL,
     title           TEXT
@@ -83,9 +80,7 @@ CREATE TABLE IF NOT EXISTS messages (
     created_at      TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
-CREATE INDEX IF NOT EXISTS idx_conversations_org ON conversations(organization_id);
-CREATE INDEX IF NOT EXISTS idx_conversations_job_org ON conversations(job_id, organization_id);
-CREATE INDEX IF NOT EXISTS idx_jobs_org ON jobs(organization_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_job ON conversations(job_id);
 
 CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,

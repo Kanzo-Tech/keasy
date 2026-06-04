@@ -3,14 +3,12 @@ use rusqlite::params;
 use crate::db::Database;
 use crate::jobs::models::now_iso8601;
 use crate::graph::types::TabularData;
-use crate::tenant::TenantScoped;
 
 use super::models::{Conversation, ConversationMessage};
 
 impl Database {
     pub async fn create_conversation(
         &self,
-        ctx: &TenantScoped<()>,
         job_id: &str,
         title: Option<String>,
     ) -> Result<Conversation, String> {
@@ -22,17 +20,17 @@ impl Database {
         };
         let conn = self.write().await;
         conn.execute(
-            "INSERT INTO conversations (id, organization_id, job_id, created_at, title) VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![conv.id, ctx.org_id().as_str(), conv.job_id, conv.created_at, conv.title],
+            "INSERT INTO conversations (id, job_id, created_at, title) VALUES (?1, ?2, ?3, ?4)",
+            params![conv.id, conv.job_id, conv.created_at, conv.title],
         )
         .map_err(|e| format!("Failed to insert conversation: {e}"))?;
         Ok(conv)
     }
 
-    pub async fn list_conversations(&self, ctx: &TenantScoped<()>, job_id: &str) -> Vec<Conversation> {
+    pub async fn list_conversations(&self, job_id: &str) -> Vec<Conversation> {
         let (_permit, conn) = self.read().await;
         let mut stmt = match conn.prepare(
-            "SELECT id, job_id, created_at, title FROM conversations WHERE job_id = ?1 AND organization_id = ?2 ORDER BY created_at DESC",
+            "SELECT id, job_id, created_at, title FROM conversations WHERE job_id = ?1 ORDER BY created_at DESC",
         ) {
             Ok(s) => s,
             Err(e) => {
@@ -40,7 +38,7 @@ impl Database {
                 return vec![];
             }
         };
-        match stmt.query_map(params![job_id, ctx.org_id().as_str()], |row| {
+        match stmt.query_map([job_id], |row| {
             Ok(Conversation {
                 id: row.get(0)?,
                 job_id: row.get(1)?,
@@ -56,11 +54,11 @@ impl Database {
         }
     }
 
-    pub async fn get_conversation(&self, id: &str, org_id: &str) -> Option<Conversation> {
+    pub async fn get_conversation(&self, id: &str) -> Option<Conversation> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, job_id, created_at, title FROM conversations WHERE id = ?1 AND organization_id = ?2",
-            params![id, org_id],
+            "SELECT id, job_id, created_at, title FROM conversations WHERE id = ?1",
+            [id],
             |row| {
                 Ok(Conversation {
                     id: row.get(0)?,
@@ -157,21 +155,21 @@ impl Database {
         }
     }
 
-    pub async fn rename_conversation(&self, id: &str, org_id: &str, title: &str) -> Result<(), String> {
+    pub async fn rename_conversation(&self, id: &str, title: &str) -> Result<(), String> {
         let conn = self.write().await;
         conn.execute(
-            "UPDATE conversations SET title = ?1 WHERE id = ?2 AND organization_id = ?3",
-            params![title, id, org_id],
+            "UPDATE conversations SET title = ?1 WHERE id = ?2",
+            params![title, id],
         )
         .map_err(|e| format!("Failed to rename conversation: {e}"))?;
         Ok(())
     }
 
-    pub async fn delete_conversation(&self, id: &str, org_id: &str) -> Result<(), String> {
+    pub async fn delete_conversation(&self, id: &str) -> Result<(), String> {
         let conn = self.write().await;
         conn.execute(
-            "DELETE FROM conversations WHERE id = ?1 AND organization_id = ?2",
-            params![id, org_id],
+            "DELETE FROM conversations WHERE id = ?1",
+            [id],
         )
         .map_err(|e| format!("Failed to delete conversation: {e}"))?;
         Ok(())

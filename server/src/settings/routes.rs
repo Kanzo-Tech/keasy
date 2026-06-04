@@ -213,7 +213,7 @@ pub async fn get_catalog_storage(
     )
 )]
 pub async fn save_catalog_storage(
-    ctx: Require<IsOwner>,
+    _ctx: Require<IsOwner>,
     State(state): State<AppState>,
     Json(payload): Json<CatalogStoragePayload>,
 ) -> Response {
@@ -224,8 +224,8 @@ pub async fn save_catalog_storage(
         ).into_response();
     }
 
-    // Verify cloud account exists for the owner's org
-    if state.db.get_cloud_account_summary(&ctx.scoped(payload.cloud_account_id.as_str())).await.is_none() {
+    // Verify the cloud account exists
+    if state.db.get_cloud_account_summary(payload.cloud_account_id.as_str()).await.is_none() {
         return (
             StatusCode::BAD_REQUEST,
             Json(error_body("validation_error", "Cloud account not found")),

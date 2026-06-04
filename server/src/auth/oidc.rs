@@ -655,9 +655,11 @@ async fn accept_invite_for_user(
         return Err("invite token expired".to_string());
     }
 
+    // Joining via an invite link always grants `member` (the owner is
+    // bootstrapped from config, never via a link).
     state
         .db
-        .upsert_org_member(user_id, &token.org_id, &token.role, email, first_name, last_name)
+        .upsert_org_member(user_id, &token.org_id, "member", email, first_name, last_name)
         .await?;
 
     // Update Keycloak workspaces attribute — user_id IS the Keycloak UUID.

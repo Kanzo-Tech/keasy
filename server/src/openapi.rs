@@ -51,14 +51,6 @@ use utoipa::OpenApi;
         crate::auth::routes::list_workspaces,
         // Providers
         crate::routes::providers::list_providers,
-        // Admin
-        crate::routes::admin::list_all_orgs,
-        crate::routes::admin::create_org_and_invite,
-        crate::routes::admin::list_invites,
-        crate::routes::admin::create_invite,
-        crate::routes::admin::revoke_invite,
-        crate::routes::admin::list_registered_workspaces,
-        crate::routes::admin::register_workspace,
         // Organization
         crate::routes::org::list_users,
         crate::routes::org::update_user_role,
@@ -133,19 +125,10 @@ use utoipa::OpenApi;
         crate::auth::routes::LogoutResponse,
         // Health
         crate::routes::health::ServiceStatusResponse,
-        // Admin
-        crate::routes::admin::CreateOrgAndInviteRequest,
-        crate::routes::admin::RegisterOidcClientRequest,
-        crate::routes::admin::CreateInviteRequest,
-        crate::routes::admin::AdminInviteEntry,
-        crate::routes::admin::AdminInviteResult,
-        crate::routes::admin::CreateOrgResponse,
-        crate::routes::admin::RegisterWorkspaceResponse,
         // Organization
         crate::routes::org::OrgInviteEntry,
         crate::routes::org::UpdateUserRoleRequest,
         crate::routes::org::UpdateOrgIdentityPayload,
-        crate::routes::org::CreateOrgInviteRequest,
         crate::routes::org::CreateOrgInviteResponse,
         crate::routes::org::OrgIdentityResponse,
         // Jobs

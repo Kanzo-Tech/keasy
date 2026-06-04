@@ -5,7 +5,6 @@ use super::Database;
 pub struct InviteToken {
     pub token: String,
     pub org_id: String,
-    pub role: String,
     pub created_by: String,
     pub expires_at: String,
     pub created_at: String,
@@ -16,45 +15,20 @@ impl Database {
     pub async fn get_invite_token(&self, token: &str) -> Option<InviteToken> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT token, org_id, role, created_by, expires_at, created_at
+            "SELECT token, org_id, created_by, expires_at, created_at
              FROM invite_tokens WHERE token = ?1",
             [token],
             |row| {
                 Ok(InviteToken {
                     token: row.get(0)?,
                     org_id: row.get(1)?,
-                    role: row.get(2)?,
-                    created_by: row.get(3)?,
-                    expires_at: row.get(4)?,
-                    created_at: row.get(5)?,
+                    created_by: row.get(2)?,
+                    expires_at: row.get(3)?,
+                    created_at: row.get(4)?,
                 })
             },
         )
         .ok()
-    }
-
-    /// List all invite tokens ordered by created_at DESC.
-    pub async fn list_invite_tokens(&self) -> Vec<InviteToken> {
-        let (_permit, conn) = self.read().await;
-        let mut stmt = conn
-            .prepare(
-                "SELECT token, org_id, role, created_by, expires_at, created_at
-                 FROM invite_tokens ORDER BY created_at DESC",
-            )
-            .expect("prepare list invite tokens");
-        stmt.query_map([], |row| {
-            Ok(InviteToken {
-                token: row.get(0)?,
-                org_id: row.get(1)?,
-                role: row.get(2)?,
-                created_by: row.get(3)?,
-                expires_at: row.get(4)?,
-                created_at: row.get(5)?,
-            })
-        })
-        .expect("query invite tokens")
-        .filter_map(|r| r.ok())
-        .collect()
     }
 
     /// List invite tokens for a specific org, ordered by created_at DESC.
@@ -63,7 +37,7 @@ impl Database {
         let (_permit, conn) = self.read().await;
         let mut stmt = conn
             .prepare(
-                "SELECT token, org_id, role, created_by, expires_at, created_at
+                "SELECT token, org_id, created_by, expires_at, created_at
                  FROM invite_tokens WHERE org_id = ?1 ORDER BY created_at DESC",
             )
             .expect("prepare list invite tokens for org");
@@ -71,10 +45,9 @@ impl Database {
             Ok(InviteToken {
                 token: row.get(0)?,
                 org_id: row.get(1)?,
-                role: row.get(2)?,
-                created_by: row.get(3)?,
-                expires_at: row.get(4)?,
-                created_at: row.get(5)?,
+                created_by: row.get(2)?,
+                expires_at: row.get(3)?,
+                created_at: row.get(4)?,
             })
         })
         .expect("query invite tokens for org")
@@ -98,12 +71,11 @@ impl Database {
     pub async fn create_invite_token(&self, token: &InviteToken) -> Result<(), String> {
         let conn = self.write().await;
         conn.execute(
-            "INSERT INTO invite_tokens (token, org_id, role, created_by, expires_at, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT INTO invite_tokens (token, org_id, created_by, expires_at, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
                 token.token,
                 token.org_id,
-                token.role,
                 token.created_by,
                 token.expires_at,
                 token.created_at,

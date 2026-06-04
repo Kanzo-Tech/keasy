@@ -1,4 +1,3 @@
-pub mod admin;
 pub mod health;
 pub mod org;
 pub mod providers;
@@ -213,27 +212,7 @@ pub fn build_router(
             "/v1/assistant/generate-stream",
             axum::routing::post(crate::assistant::routes::generate_script_stream),
         )
-        // Admin routes — owner only
-        .route(
-            "/v1/admin/organizations",
-            axum::routing::get(admin::list_all_orgs).post(admin::create_org_and_invite),
-        )
-        // Invite link management — owner only
-        .route(
-            "/v1/admin/invites",
-            axum::routing::get(admin::list_invites).post(admin::create_invite),
-        )
-        .route(
-            "/v1/admin/invites/{token}",
-            axum::routing::delete(admin::revoke_invite),
-        )
-        // OIDC instance registration — owner only
-        .route(
-            "/v1/admin/oidc-clients",
-            axum::routing::get(admin::list_registered_workspaces)
-                .post(admin::register_workspace),
-        )
-        // Org identity — read for any participant, write for participant org admins
+        // Org identity — read for any member, write for the owner
         .route(
             "/v1/org/identity",
             axum::routing::get(org::get_org_identity)

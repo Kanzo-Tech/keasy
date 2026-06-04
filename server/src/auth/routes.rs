@@ -11,7 +11,6 @@ use crate::error::data_response;
 pub struct MeOrg {
     pub id: String,
     pub name: String,
-    pub role: String,
 }
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
@@ -83,12 +82,11 @@ pub async fn get_me(
         None => None,
     };
 
-    // Compute effective role
-    let effective_role = match (&org, &membership) {
-        (Some(o), _) if o.role == "owner" => "owner",
-        (_, Some(m)) if m.role == "admin" => "admin",
-        (_, Some(_)) => "member",
-        _ => "none",
+    // Effective role derives solely from the membership: owner or member.
+    let effective_role = match &membership {
+        Some(m) if m.role == "owner" => "owner",
+        Some(_) => "member",
+        None => "none",
     };
 
     Ok(data_response(MeResponse {
@@ -98,7 +96,7 @@ pub async fn get_me(
         last_name,
         membership_role: membership.as_ref().map(|m| m.role.clone()),
         effective_role: effective_role.to_string(),
-        org: org.map(|o| MeOrg { id: o.id, name: o.name, role: o.role }),
+        org: org.map(|o| MeOrg { id: o.id, name: o.name }),
     }))
 }
 

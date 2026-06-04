@@ -12,7 +12,6 @@ pub struct Organization {
     pub country_subdivision_code: Option<String>,
     pub registration_number_type: Option<String>,
     pub country: String,
-    pub role: String,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -22,8 +21,8 @@ impl Database {
         let conn = self.write().await;
         conn.execute(
             "INSERT INTO organizations
-             (id, name, slug, legal_name, registration_number, country_subdivision_code, registration_number_type, country, role, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+             (id, name, slug, legal_name, registration_number, country_subdivision_code, registration_number_type, country, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             params![
                 org.id,
                 org.name,
@@ -33,7 +32,6 @@ impl Database {
                 org.country_subdivision_code,
                 org.registration_number_type,
                 org.country,
-                org.role,
                 org.created_at,
                 org.updated_at,
             ],
@@ -45,7 +43,7 @@ impl Database {
     pub async fn get_organization(&self, id: &str) -> Option<Organization> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, slug, legal_name, registration_number, country_subdivision_code, registration_number_type, country, role, created_at, updated_at
+            "SELECT id, name, slug, legal_name, registration_number, country_subdivision_code, registration_number_type, country, created_at, updated_at
              FROM organizations WHERE id = ?1",
             [id],
             row_to_org,
@@ -71,41 +69,16 @@ impl Database {
         Ok(())
     }
 
-    pub async fn list_organizations(&self) -> Vec<Organization> {
-        let (_permit, conn) = self.read().await;
-        let mut stmt = conn
-            .prepare(
-                "SELECT id, name, slug, legal_name, registration_number, country_subdivision_code, registration_number_type, country, role, created_at, updated_at
-                 FROM organizations ORDER BY name",
-            )
-            .expect("prepare list organizations");
-        stmt.query_map([], row_to_org)
-            .expect("query organizations")
-            .filter_map(|r| r.ok())
-            .collect()
-    }
-
-    pub async fn get_organization_by_slug(&self, slug: &str) -> Option<Organization> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, name, slug, legal_name, registration_number, country_subdivision_code, registration_number_type, country, role, created_at, updated_at
-             FROM organizations WHERE slug = ?1",
-            [slug],
-            row_to_org,
-        )
-        .ok()
-    }
-
-    /// Idempotently ensure the workspace `owner` org + the owner's membership
-    /// exist (W7 control-plane bootstrap). This is the SINGLE bootstrap datum the
+    /// Idempotently ensure the workspace row + the owner's membership exist
+    /// (W7 control-plane bootstrap). This is the SINGLE bootstrap datum the
     /// instance derives from config (`owner_keycloak_sub`) — it replaces the old
     /// SQL seeds, fixed UUIDs, and the open invite token. Re-running is a no-op:
-    /// the org is keyed by `workspace_id` (ON CONFLICT update), and the
+    /// the row is keyed by `workspace_id` (ON CONFLICT update), and the
     /// membership upsert is idempotent.
     ///
-    /// The owner org carries `role = 'owner'`, so any of its members resolves to
-    /// `TenantRole::Owner` (see `middleware::tenant`). The owner user is stored
-    /// as an `admin` member; profile fields fill in on first OIDC login.
+    /// The owner is stored as an `owner` member, so they resolve to
+    /// `TenantRole::Owner` (see `middleware::tenant`). Profile fields fill in on
+    /// first OIDC login.
     pub async fn ensure_owner_bootstrap(
         &self,
         owner_keycloak_sub: &str,
@@ -117,17 +90,16 @@ impl Database {
             let slug = generate_unique_slug(&conn, workspace_name);
             conn.execute(
                 "INSERT INTO organizations
-                   (id, name, slug, legal_name, country, role, created_at, updated_at)
-                 VALUES (?1, ?2, ?3, ?2, 'EU', 'owner', datetime('now'), datetime('now'))
+                   (id, name, slug, legal_name, country, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?2, 'EU', datetime('now'), datetime('now'))
                  ON CONFLICT(id) DO UPDATE SET
                    name = excluded.name,
-                   role = 'owner',
                    updated_at = datetime('now')",
                 params![workspace_id, workspace_name, slug],
             )
             .map_err(|e| format!("failed to ensure owner org: {e}"))?;
         }
-        self.upsert_org_member(owner_keycloak_sub, workspace_id, "admin", "", "", "")
+        self.upsert_org_member(owner_keycloak_sub, workspace_id, "owner", "", "", "")
             .await?;
         Ok(())
     }
@@ -143,9 +115,8 @@ fn row_to_org(row: &rusqlite::Row<'_>) -> rusqlite::Result<Organization> {
         country_subdivision_code: row.get(5)?,
         registration_number_type: row.get(6)?,
         country: row.get(7)?,
-        role: row.get(8)?,
-        created_at: row.get(9)?,
-        updated_at: row.get(10)?,
+        created_at: row.get(8)?,
+        updated_at: row.get(9)?,
     })
 }
 

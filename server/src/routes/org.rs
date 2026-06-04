@@ -1,6 +1,6 @@
-//! Org management endpoints — participant only.
-//! User/invite management requires `RequireOrgAdmin` (participant org admins).
-//! Identity read uses `RequireParticipant` (any participant user).
+//! Workspace management endpoints.
+//! Member/invite management and identity writes require `Require<IsOwner>`;
+//! identity read uses `Require<IsMember>` (any workspace user).
 //! These routes live inside `api_routes` (session + tenant context required).
 
 use axum::{
@@ -18,7 +18,7 @@ use crate::db::invite_tokens::InviteToken;
 use crate::db::org_members::{MemberRole, OrgMember};
 use crate::error::{data_response, error_body};
 use crate::middleware::session_auth::AuthenticatedUser;
-use crate::middleware::tenant::{IsAdmin, IsMember, RbacError, Require};
+use crate::middleware::tenant::{IsMember, IsOwner, RbacError, Require};
 
 static SUBDIVISION_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[A-Z]{2}-[A-Z0-9]{1,3}$").unwrap());
@@ -27,7 +27,7 @@ static SUBDIVISION_RE: LazyLock<Regex> =
     responses((status = 200, description = "List of users in the org", body = Vec<OrgMember>))
 )]
 pub async fn list_users(
-    ctx: Require<IsAdmin>,
+    ctx: Require<IsOwner>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
     let users = state.db.list_org_members(&ctx.org_id.0).await;
@@ -48,7 +48,7 @@ pub struct UpdateUserRoleRequest {
     )
 )]
 pub async fn update_user_role(
-    ctx: Require<IsAdmin>,
+    ctx: Require<IsOwner>,
     State(state): State<AppState>,
     Path(user_id): Path<String>,
     Json(payload): Json<UpdateUserRoleRequest>,
@@ -71,7 +71,7 @@ pub async fn update_user_role(
     )
 )]
 pub async fn remove_user(
-    ctx: Require<IsAdmin>,
+    ctx: Require<IsOwner>,
     State(state): State<AppState>,
     Path(user_id): Path<String>,
 ) -> Result<impl IntoResponse, RbacError> {
@@ -139,7 +139,7 @@ pub async fn get_org_identity(
     )
 )]
 pub async fn update_org_identity(
-    ctx: Require<IsAdmin>,
+    ctx: Require<IsOwner>,
     State(state): State<AppState>,
     Json(payload): Json<UpdateOrgIdentityPayload>,
 ) -> Result<impl IntoResponse, RbacError> {
@@ -208,15 +208,9 @@ pub async fn update_org_identity(
 #[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct OrgInviteEntry {
     pub token: String,
-    pub role: String,
     pub status: String,
     pub created_at: String,
     pub expires_at: String,
-}
-
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct CreateOrgInviteRequest {
-    pub role: String,
 }
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
@@ -225,22 +219,19 @@ pub struct CreateOrgInviteResponse {
     pub invite_url: String,
 }
 
+/// Create a reusable, Discord-style invite link. No body: joining via the link
+/// always grants `member`. The link is valid for 7 days and reusable.
 #[utoipa::path(post, path = "/v1/org/invites", tag = "Organization",
-    request_body = CreateOrgInviteRequest,
     responses(
         (status = 201, description = "Invite created", body = CreateOrgInviteResponse),
         (status = 403, description = "Insufficient role"),
     )
 )]
 pub async fn create_org_invite(
-    ctx: Require<IsAdmin>,
+    ctx: Require<IsOwner>,
     axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
     State(state): State<AppState>,
-    Json(payload): Json<CreateOrgInviteRequest>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let role: MemberRole = payload.role.parse()
-        .map_err(RbacError::Internal)?;
-
     let now = jiff::Timestamp::now().to_string();
     let token_value = uuid::Uuid::new_v4().to_string();
     let expires_at = {
@@ -253,7 +244,6 @@ pub async fn create_org_invite(
     let invite = InviteToken {
         token: token_value.clone(),
         org_id: ctx.org_id.0.clone(),
-        role: role.as_str().to_string(),
         created_by: auth_user.user_id.clone(),
         expires_at,
         created_at: now,
@@ -278,7 +268,7 @@ pub async fn create_org_invite(
     responses((status = 200, description = "List of org invite tokens", body = Vec<OrgInviteEntry>))
 )]
 pub async fn list_org_invites(
-    ctx: Require<IsAdmin>,
+    ctx: Require<IsOwner>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
     let tokens = state.db.list_invite_tokens_for_org(&ctx.org_id.0).await;
@@ -289,7 +279,6 @@ pub async fn list_org_invites(
             let status = if now > t.expires_at { "expired" } else { "active" };
             OrgInviteEntry {
                 token: t.token,
-                role: t.role,
                 status: status.to_string(),
                 created_at: t.created_at,
                 expires_at: t.expires_at,
@@ -307,7 +296,7 @@ pub async fn list_org_invites(
     )
 )]
 pub async fn revoke_org_invite(
-    ctx: Require<IsAdmin>,
+    ctx: Require<IsOwner>,
     Path(token): Path<String>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {

@@ -8,7 +8,7 @@ use secrecy::{ExposeSecret, SecretString};
 
 use crate::AppState;
 use crate::error::{data_response, error_body};
-use crate::middleware::tenant::{AnyRole, IsAdmin, IsMember, IsOwner, Require};
+use crate::middleware::tenant::{IsMember, IsOwner, Require};
 use crate::settings::ai::{AiSettings, AiSettingsPayload};
 use crate::settings::org::OrgSettings;
 use crate::settings::preferences::Preferences;
@@ -44,7 +44,7 @@ pub async fn get_org_settings(_ctx: Require<IsMember>, State(state): State<AppSt
     )
 )]
 pub async fn save_org_settings(
-    _ctx: Require<IsAdmin>,
+    _ctx: Require<IsOwner>,
     State(state): State<AppState>,
     Json(payload): Json<OrgSettings>,
 ) -> Response {
@@ -61,7 +61,7 @@ pub async fn save_org_settings(
 #[utoipa::path(get, path = "/v1/settings/preferences", tag = "Settings",
     responses((status = 200, description = "UI preferences", body = Preferences))
 )]
-pub async fn get_preferences(_ctx: Require<AnyRole>, State(state): State<AppState>) -> impl IntoResponse {
+pub async fn get_preferences(_ctx: Require<IsMember>, State(state): State<AppState>) -> impl IntoResponse {
     data_response(state.db.get_preferences().await)
 }
 
@@ -73,7 +73,7 @@ pub async fn get_preferences(_ctx: Require<AnyRole>, State(state): State<AppStat
     )
 )]
 pub async fn save_preferences(
-    _ctx: Require<AnyRole>,
+    _ctx: Require<IsMember>,
     State(state): State<AppState>,
     Json(payload): Json<Preferences>,
 ) -> Response {
@@ -113,7 +113,7 @@ pub async fn list_ai_providers(_ctx: Require<IsMember>, State(state): State<AppS
     )
 )]
 pub async fn save_ai_provider(
-    _ctx: Require<IsAdmin>,
+    _ctx: Require<IsOwner>,
     State(state): State<AppState>,
     Path(provider_id): Path<String>,
     Json(payload): Json<AiSettingsPayload>,
@@ -152,7 +152,7 @@ pub async fn save_ai_provider(
     )
 )]
 pub async fn delete_ai_provider(
-    _ctx: Require<IsAdmin>,
+    _ctx: Require<IsOwner>,
     State(state): State<AppState>,
     Path(provider_id): Path<String>,
 ) -> Response {

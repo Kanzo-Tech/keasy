@@ -17,22 +17,20 @@ use crate::error::error_body;
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::tenant::OrgId;
 
-/// Flat role assigned to a tenant context. No hierarchy — each variant
-/// is distinct. `Owner` owns the workspace; `Admin`/`Member` reflect the
-/// user's role within their workspace (Slack-style membership).
+/// Role assigned to a tenant context. Two hierarchical roles: `Owner` ⊇
+/// `Member`. The owner is bootstrapped from config (W7); everyone else joins
+/// as a member via an invite link (Slack/Discord-style membership).
 #[derive(Clone, Debug, PartialEq)]
 pub enum TenantRole {
-    /// Workspace owner
+    /// Workspace owner — bootstrapped from config, can invite + administer.
     Owner,
-    /// Workspace admin
-    Admin,
-    /// Regular workspace member
+    /// Regular workspace member — joined via invite link.
     Member,
 }
 
 /// Authenticated, tenant-scoped request context. Injected into request
 /// extensions by `tenant_context_required` middleware. Route handlers
-/// extract this via `Require<P>` (e.g. `Require<IsOwner>`, `Require<IsAdmin>`).
+/// extract this via `Require<P>` (e.g. `Require<IsOwner>`, `Require<IsMember>`).
 #[derive(Clone, Debug)]
 pub struct TenantContext {
     pub org_id: OrgId,
@@ -126,24 +124,13 @@ macro_rules! define_policy {
 }
 
 define_policy!(
-    /// Any authenticated user with a tenant context (owner, admin, or member).
-    AnyRole, |_role| true
-);
-define_policy!(
-    /// Workspace owner only.
+    /// Workspace owner only — invite + administer surfaces.
     IsOwner, |role| *role == TenantRole::Owner
 );
 define_policy!(
-    /// Any regular workspace user (Admin or Member). Rejects owner.
-    IsMember, |role| matches!(role, TenantRole::Admin | TenantRole::Member)
-);
-define_policy!(
-    /// Workspace admin only. Rejects owner and member.
-    IsAdmin, |role| *role == TenantRole::Admin
-);
-define_policy!(
-    /// Workspace admin or owner. Rejects member.
-    IsAdminOrOwner, |role| matches!(role, TenantRole::Admin | TenantRole::Owner)
+    /// Any authenticated workspace user (owner or member) — the data surface.
+    /// Roles are hierarchical, so the owner passes too.
+    IsMember, |role| matches!(role, TenantRole::Owner | TenantRole::Member)
 );
 
 /// Generic policy-based extractor. Replaces `RequireOwner`, `RequireParticipant`,
@@ -183,8 +170,8 @@ where
 /// Middleware: resolves TenantContext from session and DB, injects into extensions.
 ///
 /// Must run AFTER session_required (which inserts AuthenticatedUser).
-/// Reads the user's org membership and determines tenant role from
-/// organizations.role and user_org_memberships.role.
+/// Reads the user's membership and determines the tenant role from
+/// `org_members.role` (`owner` → Owner, else Member).
 #[allow(dead_code)]
 pub async fn tenant_context_required(
     State(state): State<AppState>,
@@ -198,39 +185,25 @@ pub async fn tenant_context_required(
         .cloned()
         .ok_or(RbacError::AuthRequired)?;
 
-    // 2. Get org membership
+    // 2. Get membership (the sole source of the tenant role)
     let member = state
         .db
         .get_org_membership(&user.user_id)
         .await
         .ok_or(RbacError::NoMembership)?;
 
-    // 3. Get the org to read its workspace role (owner/member)
-    let org = state
-        .db
-        .get_organization(&member.org_id)
-        .await
-        .ok_or(RbacError::NoMembership)?;
-
-    // 4. Determine TenantRole
-    let role = if org.role == "owner" {
-        TenantRole::Owner
-    } else {
-        match member.role.parse::<MemberRole>() {
-            Ok(MemberRole::Admin) => TenantRole::Admin,
-            _ => TenantRole::Member,
-        }
+    // 3. Determine TenantRole from the membership role
+    let role = match member.role.parse::<MemberRole>() {
+        Ok(MemberRole::Owner) => TenantRole::Owner,
+        _ => TenantRole::Member,
     };
 
-    // 5. Build TenantContext
+    // 4. Build and inject the TenantContext
     let ctx = TenantContext {
         org_id: OrgId(member.org_id),
         role,
     };
-
-    // 6. Insert into extensions
     request.extensions_mut().insert(ctx);
 
-    // 7. Continue
     Ok(next.run(request).await)
 }

@@ -42,195 +42,6 @@
         }
       }
     },
-    "/v1/admin/invites": {
-      "get": {
-        "tags": [
-          "Admin"
-        ],
-        "operationId": "list_invites",
-        "responses": {
-          "200": {
-            "description": "List all invite tokens",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AdminInviteEntry"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Admin"
-        ],
-        "operationId": "create_invite",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateInviteRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Invite created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminInviteResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Insufficient role"
-          }
-        }
-      }
-    },
-    "/v1/admin/invites/{token}": {
-      "delete": {
-        "tags": [
-          "Admin"
-        ],
-        "operationId": "revoke_invite",
-        "parameters": [
-          {
-            "name": "token",
-            "in": "path",
-            "description": "Invite token to revoke",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Invite revoked"
-          },
-          "403": {
-            "description": "Insufficient role"
-          }
-        }
-      }
-    },
-    "/v1/admin/oidc-clients": {
-      "get": {
-        "tags": [
-          "Admin"
-        ],
-        "operationId": "list_registered_workspaces",
-        "responses": {
-          "200": {
-            "description": "List of registered OIDC clients",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Workspace"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Admin"
-        ],
-        "operationId": "register_workspace",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterOidcClientRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "OIDC client registered",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RegisterWorkspaceResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Insufficient role"
-          }
-        }
-      }
-    },
-    "/v1/admin/organizations": {
-      "get": {
-        "tags": [
-          "Admin"
-        ],
-        "operationId": "list_all_orgs",
-        "responses": {
-          "200": {
-            "description": "List all organizations",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Organization"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Admin"
-        ],
-        "operationId": "create_org_and_invite",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateOrgAndInviteRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Organization created with invite",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateOrgResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Insufficient role"
-          }
-        }
-      }
-    },
     "/v1/assistant/generate-stream": {
       "post": {
         "tags": [
@@ -1407,17 +1218,8 @@
         "tags": [
           "Organization"
         ],
+        "summary": "Create a reusable, Discord-style invite link. No body: joining via the link\nalways grants `member`. The link is valid for 7 days and reusable.",
         "operationId": "create_org_invite",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateOrgInviteRequest"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "201": {
             "description": "Invite created",
@@ -1867,60 +1669,6 @@
   },
   "components": {
     "schemas": {
-      "AdminInviteEntry": {
-        "type": "object",
-        "required": [
-          "token",
-          "org_id",
-          "org_name",
-          "status",
-          "created_at",
-          "expires_at"
-        ],
-        "properties": {
-          "created_at": {
-            "type": "string"
-          },
-          "expires_at": {
-            "type": "string"
-          },
-          "org_id": {
-            "type": "string"
-          },
-          "org_name": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "token": {
-            "type": "string"
-          }
-        }
-      },
-      "AdminInviteResult": {
-        "type": "object",
-        "required": [
-          "token",
-          "org_id",
-          "org_name",
-          "invite_url"
-        ],
-        "properties": {
-          "invite_url": {
-            "type": "string"
-          },
-          "org_id": {
-            "type": "string"
-          },
-          "org_name": {
-            "type": "string"
-          },
-          "token": {
-            "type": "string"
-          }
-        }
-      },
       "AiSettingsPayload": {
         "type": "object",
         "required": [
@@ -2358,17 +2106,6 @@
           }
         }
       },
-      "CreateInviteRequest": {
-        "type": "object",
-        "required": [
-          "org_name"
-        ],
-        "properties": {
-          "org_name": {
-            "type": "string"
-          }
-        }
-      },
       "CreateJobRequest": {
         "type": "object",
         "required": [
@@ -2411,28 +2148,6 @@
           }
         }
       },
-      "CreateOrgAndInviteRequest": {
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          }
-        }
-      },
-      "CreateOrgInviteRequest": {
-        "type": "object",
-        "required": [
-          "role"
-        ],
-        "properties": {
-          "role": {
-            "type": "string"
-          }
-        }
-      },
       "CreateOrgInviteResponse": {
         "type": "object",
         "required": [
@@ -2444,25 +2159,6 @@
             "type": "string"
           },
           "token": {
-            "type": "string"
-          }
-        }
-      },
-      "CreateOrgResponse": {
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "status"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "status": {
             "type": "string"
           }
         }
@@ -2663,7 +2359,6 @@
         "required": [
           "token",
           "org_id",
-          "role",
           "created_by",
           "expires_at",
           "created_at"
@@ -2679,9 +2374,6 @@
             "type": "string"
           },
           "org_id": {
-            "type": "string"
-          },
-          "role": {
             "type": "string"
           },
           "token": {
@@ -2874,17 +2566,13 @@
         "type": "object",
         "required": [
           "id",
-          "name",
-          "role"
+          "name"
         ],
         "properties": {
           "id": {
             "type": "string"
           },
           "name": {
-            "type": "string"
-          },
-          "role": {
             "type": "string"
           }
         }
@@ -2969,7 +2657,6 @@
         "type": "object",
         "required": [
           "token",
-          "role",
           "status",
           "created_at",
           "expires_at"
@@ -2979,9 +2666,6 @@
             "type": "string"
           },
           "expires_at": {
-            "type": "string"
-          },
-          "role": {
             "type": "string"
           },
           "status": {
@@ -3085,7 +2769,6 @@
           "slug",
           "legal_name",
           "country",
-          "role",
           "created_at",
           "updated_at"
         ],
@@ -3122,9 +2805,6 @@
               "string",
               "null"
             ]
-          },
-          "role": {
-            "type": "string"
           },
           "slug": {
             "type": "string"
@@ -3225,72 +2905,6 @@
             "type": "string"
           },
           "label": {
-            "type": "string"
-          }
-        }
-      },
-      "RegisterOidcClientRequest": {
-        "type": "object",
-        "required": [
-          "name",
-          "url"
-        ],
-        "properties": {
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "logo": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "url": {
-            "type": "string"
-          }
-        }
-      },
-      "RegisterWorkspaceResponse": {
-        "type": "object",
-        "required": [
-          "id",
-          "client_id",
-          "client_secret",
-          "name",
-          "url"
-        ],
-        "properties": {
-          "client_id": {
-            "type": "string"
-          },
-          "client_secret": {
-            "type": "string"
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "logo": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "url": {
             "type": "string"
           }
         }

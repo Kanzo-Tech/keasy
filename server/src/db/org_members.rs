@@ -4,17 +4,18 @@ use rusqlite::params;
 
 use super::Database;
 
-/// Role of a user within their organization.
+/// Role of a user within their workspace. Two hierarchical roles: the `Owner`
+/// is bootstrapped from config; everyone else joins as a `Member` via invite.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MemberRole {
-    Admin,
+    Owner,
     Member,
 }
 
 impl MemberRole {
     pub fn as_str(&self) -> &'static str {
         match self {
-            MemberRole::Admin => "admin",
+            MemberRole::Owner => "owner",
             MemberRole::Member => "member",
         }
     }
@@ -24,9 +25,9 @@ impl std::str::FromStr for MemberRole {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "admin" => Ok(MemberRole::Admin),
+            "owner" => Ok(MemberRole::Owner),
             "member" => Ok(MemberRole::Member),
-            other => Err(format!("invalid role: '{other}', expected 'admin' or 'member'")),
+            other => Err(format!("invalid role: '{other}', expected 'owner' or 'member'")),
         }
     }
 }

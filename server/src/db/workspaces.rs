@@ -36,27 +36,6 @@ impl Database {
         Ok(())
     }
 
-    pub async fn create_workspace(&self, ds: &Workspace) -> Result<(), String> {
-        let conn = self.write().await;
-        conn.execute(
-            "INSERT INTO workspaces
-             (id, client_id, name, url, description, logo, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            params![
-                ds.id,
-                ds.client_id,
-                ds.name,
-                ds.url,
-                ds.description,
-                ds.logo,
-                ds.created_at,
-                ds.updated_at,
-            ],
-        )
-        .map_err(|e| format!("failed to insert workspace: {e}"))?;
-        Ok(())
-    }
-
     pub async fn get_workspace(&self, id: &str) -> Option<Workspace> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
@@ -102,19 +81,6 @@ impl Database {
             .collect()
     }
 
-    pub async fn list_workspaces(&self) -> Vec<Workspace> {
-        let (_permit, conn) = self.read().await;
-        let mut stmt = conn
-            .prepare(
-                "SELECT id, client_id, name, url, description, logo, created_at, updated_at
-                 FROM workspaces ORDER BY name",
-            )
-            .expect("prepare list workspaces");
-        stmt.query_map([], row_to_workspace)
-            .expect("query workspaces")
-            .filter_map(|r| r.ok())
-            .collect()
-    }
 }
 
 fn row_to_workspace(row: &rusqlite::Row<'_>) -> rusqlite::Result<Workspace> {

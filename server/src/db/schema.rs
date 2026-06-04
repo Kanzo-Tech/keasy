@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS organizations (
     country_subdivision_code TEXT,
     registration_number_type TEXT CHECK(registration_number_type IN ('vatID', 'leiCode', 'EORI')),
     country             TEXT NOT NULL CHECK(length(country) = 2),
-    role                TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('owner', 'member')),
     created_at          TEXT NOT NULL,
     updated_at          TEXT NOT NULL
 );
@@ -20,7 +19,7 @@ CREATE TABLE IF NOT EXISTS organizations (
 CREATE TABLE IF NOT EXISTS org_members (
     user_id    TEXT NOT NULL,
     org_id     TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    role       TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('admin', 'member')),
+    role       TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('owner', 'member')),
     email      TEXT NOT NULL DEFAULT '',
     first_name TEXT NOT NULL DEFAULT '',
     last_name  TEXT NOT NULL DEFAULT '',
@@ -105,11 +104,11 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     created_at TEXT NOT NULL
 );
 
--- Invite tokens for invite-only registration (reusable, Slack-style)
+-- Invite tokens for invite-only registration (reusable link, Discord-style).
+-- Joining via a link always grants `member`; the owner is bootstrapped.
 CREATE TABLE IF NOT EXISTS invite_tokens (
     token      TEXT PRIMARY KEY,
     org_id     TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    role       TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('admin', 'member')),
     created_by TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     created_at TEXT NOT NULL

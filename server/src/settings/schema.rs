@@ -25,11 +25,36 @@ fn is_false(v: &bool) -> bool {
     !v
 }
 
+/// How an account's stored credentials project onto a DuckDB `CREATE SECRET` for
+/// the fossil pipeline. Declared per provider (methodless, e.g. S3) or per auth
+/// method (method-ful, e.g. Azure), so [`cloud_secret`] is `match strategy`, not
+/// `match provider_id` — a new provider/method wires its secret here in the
+/// registry, not by branching in code.
+///
+/// [`cloud_secret`]: crate::jobs::run_creds::cloud_secret
+#[derive(Debug, Clone)]
+pub enum SecretStrategy {
+    /// No pipeline secret wired: fossil reads the source as public and the real
+    /// auth error surfaces from DuckDB, rather than guessing credentials.
+    Pending,
+    /// Built 1:1 from the active fields' `duckdb_config_key`s; `extra` adds any
+    /// literal params the secret needs beyond fields (e.g. Azure SPN `PROVIDER`).
+    Fields {
+        secret_type: &'static str,
+        extra: &'static [(&'static str, &'static str)],
+    },
+    /// Azure account-key: synthesise a `CONNECTION_STRING` from `account_name`
+    /// + `account_key`.
+    AzureConnectionString,
+}
+
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct AuthMethodSchema {
     pub name: &'static str,
     pub label: &'static str,
     pub fields: &'static [FieldSchema],
+    #[serde(skip)]
+    pub secret_strategy: SecretStrategy,
 }
 
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
@@ -41,6 +66,11 @@ pub struct ProviderSchema {
     pub schemes: &'static [&'static str],
     pub common_fields: &'static [FieldSchema],
     pub auth_methods: &'static [AuthMethodSchema],
+    /// Fallback secret strategy for accounts with no matching auth method
+    /// (methodless providers like S3). Method-ful providers resolve via the
+    /// matched [`AuthMethodSchema::secret_strategy`].
+    #[serde(skip)]
+    pub secret_strategy: SecretStrategy,
 }
 
 impl ProviderSchema {
@@ -61,6 +91,15 @@ impl ProviderSchema {
         }
         fields
     }
+
+    /// The secret strategy for the given auth method: the matched method's, or
+    /// the provider fallback when methodless / unmatched.
+    pub fn secret_strategy(&self, auth_method: Option<&str>) -> &SecretStrategy {
+        auth_method
+            .and_then(|m| self.auth_methods.iter().find(|a| a.name == m))
+            .map(|a| &a.secret_strategy)
+            .unwrap_or(&self.secret_strategy)
+    }
 }
 
 pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
@@ -69,6 +108,8 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
         label: "Azure Blob Storage",
         icon: "azure",
         schemes: &["az", "azure", "abfss", "abfs", "adl"],
+        // Azure always resolves via an auth method; no methodless fallback.
+        secret_strategy: SecretStrategy::Pending,
         common_fields: &[FieldSchema {
             name: "account_name",
             label: "Account Name",
@@ -83,6 +124,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
             AuthMethodSchema {
                 name: "account_key",
                 label: "Account Key",
+                secret_strategy: SecretStrategy::AzureConnectionString,
                 fields: &[FieldSchema {
                     name: "account_key",
                     label: "Account Key",
@@ -98,6 +140,8 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
             AuthMethodSchema {
                 name: "sas_token",
                 label: "SAS Token",
+                // SAS-token intake pending.
+                secret_strategy: SecretStrategy::Pending,
                 fields: &[FieldSchema {
                     name: "sas_token",
                     label: "SAS Token",
@@ -112,6 +156,10 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
             AuthMethodSchema {
                 name: "service_principal",
                 label: "Service Principal",
+                secret_strategy: SecretStrategy::Fields {
+                    secret_type: "azure",
+                    extra: &[("PROVIDER", "service_principal")],
+                },
                 fields: &[
                     FieldSchema {
                         name: "client_id",
@@ -152,11 +200,14 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
         label: "Google Cloud Storage",
         icon: "gcp",
         schemes: &["gs", "gcs"],
+        // GCS pipeline secret needs HMAC (KEY_ID/SECRET); intake pending.
+        secret_strategy: SecretStrategy::Pending,
         common_fields: &[],
         auth_methods: &[
             AuthMethodSchema {
                 name: "service_account_key",
                 label: "JSON Key",
+                secret_strategy: SecretStrategy::Pending,
                 fields: &[FieldSchema {
                     name: "service_account_key",
                     label: "Service Account Key (JSON)",
@@ -173,6 +224,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
             AuthMethodSchema {
                 name: "service_account_file",
                 label: "Key File Path",
+                secret_strategy: SecretStrategy::Pending,
                 fields: &[FieldSchema {
                     name: "service_account",
                     label: "Service Account File Path",
@@ -191,6 +243,11 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
         label: "Amazon S3",
         icon: "s3",
         schemes: &["s3", "s3a"],
+        // Methodless: a single S3 secret built table-driven from the fields.
+        secret_strategy: SecretStrategy::Fields {
+            secret_type: "s3",
+            extra: &[],
+        },
         common_fields: &[
             FieldSchema {
                 name: "access_key_id",

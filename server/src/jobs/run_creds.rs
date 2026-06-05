@@ -16,7 +16,7 @@ use secrecy::{ExposeSecret, SecretString};
 use crate::cloud::models::CloudAccount;
 use crate::db::Database;
 use crate::jobs::fossil_runner::{ConnectionCreds, CloudSecret, RunCreds};
-use crate::settings::schema::find_provider;
+use crate::settings::schema::{SecretStrategy, find_provider};
 
 /// Assemble the [`RunCreds`] the fossil subprocess reads on stdin: the dest's
 /// cloud secret (owner storage) plus a per-`@conn-name` source map (each
@@ -55,24 +55,29 @@ pub async fn build_run_creds(
 }
 
 /// Project an account's stored credentials into a DuckDB `CREATE SECRET` spec,
-/// or `None` when the provider's pipeline-secret intake is not yet wired.
+/// or `None` when the provider/method's pipeline-secret intake is not yet wired.
 ///
-/// Reference path is S3 (table-driven from each field's `duckdb_config_key`) and
-/// Azure account-key (a synthesised `CONNECTION_STRING`). Azure SAS and GCS HMAC
-/// return `None`: rather than guess credentials, the caller passes no secret and
-/// the cloud read/write surfaces the real auth failure from DuckDB.
+/// The projection is driven by the [`SecretStrategy`] declared in the provider
+/// registry for the account's `(provider, auth_method)` — no provider-specific
+/// branching here. `Pending` strategies (Azure SAS, GCS HMAC) return `None`:
+/// rather than guess credentials, the caller passes no secret and the cloud
+/// read/write surfaces the real auth failure from DuckDB.
 #[must_use]
 pub fn cloud_secret(account: &CloudAccount) -> Option<CloudSecret> {
-    match account.provider_id.as_str() {
-        "s3" => Some(CloudSecret {
-            secret_type: "s3".to_string(),
-            params: non_empty(table_driven(account))?,
-        }),
-        "azure" => azure_secret(account),
-        // GCS: DuckDB's gcs secret needs HMAC (KEY_ID/SECRET); keasy stores a
-        // service-account JSON, kept for object_store URL signing only. HMAC
-        // intake is a pending product decision.
-        _ => None,
+    let schema = find_provider(&account.provider_id)?;
+    match schema.secret_strategy(account.auth_method.as_deref()) {
+        SecretStrategy::Pending => None,
+        SecretStrategy::Fields { secret_type, extra } => {
+            let mut params = table_driven(account);
+            for (k, v) in *extra {
+                params.insert((*k).to_string(), SecretString::from(*v));
+            }
+            Some(CloudSecret {
+                secret_type: (*secret_type).to_string(),
+                params: non_empty(params)?,
+            })
+        }
+        SecretStrategy::AzureConnectionString => azure_connection_string(account),
     }
 }
 
@@ -106,37 +111,22 @@ fn table_driven(account: &CloudAccount) -> HashMap<String, SecretString> {
         .collect()
 }
 
-fn azure_secret(account: &CloudAccount) -> Option<CloudSecret> {
-    match account.auth_method.as_deref() {
-        Some("account_key") => {
-            let name = account.fields.get("account_name")?;
-            let key = account.secrets.get("account_key")?;
-            let conn = format!(
-                "DefaultEndpointsProtocol=https;AccountName={name};AccountKey={};EndpointSuffix=core.windows.net",
-                key.expose_secret()
-            );
-            Some(CloudSecret {
-                secret_type: "azure".to_string(),
-                params: HashMap::from([(
-                    "CONNECTION_STRING".to_string(),
-                    SecretString::from(conn),
-                )]),
-            })
-        }
-        Some("service_principal") => {
-            let mut params = table_driven(account);
-            params.insert(
-                "PROVIDER".to_string(),
-                SecretString::from("service_principal"),
-            );
-            Some(CloudSecret {
-                secret_type: "azure".to_string(),
-                params: non_empty(params)?,
-            })
-        }
-        // SAS-token intake pending.
-        _ => None,
-    }
+/// Azure account-key projection: synthesise the `CONNECTION_STRING` DuckDB
+/// secrets expect from the stored `account_name` + `account_key`.
+fn azure_connection_string(account: &CloudAccount) -> Option<CloudSecret> {
+    let name = account.fields.get("account_name")?;
+    let key = account.secrets.get("account_key")?;
+    let conn = format!(
+        "DefaultEndpointsProtocol=https;AccountName={name};AccountKey={};EndpointSuffix=core.windows.net",
+        key.expose_secret()
+    );
+    Some(CloudSecret {
+        secret_type: "azure".to_string(),
+        params: HashMap::from([(
+            "CONNECTION_STRING".to_string(),
+            SecretString::from(conn),
+        )]),
+    })
 }
 
 fn non_empty(params: HashMap<String, SecretString>) -> Option<HashMap<String, SecretString>> {

@@ -23,13 +23,16 @@ import type { Connection, ProviderInfo, CreationMode } from "@/lib/types";
 // `ConnectionResolver` contract consumed by <FossilEditor/>'s `@`-prefix
 // autocomplete. Narrow surface — only `list()` is wired:
 //
-//   - `list()`: enumerate `data`-kind connections as `{ name, type, label }`
-//     `Connector` rows. `type` is collapsed to `'public_http'` because the
-//     Tier-1 connector taxonomy (`local_file | public_http | upload |
-//     examples` per ADR-0029) is closed and Keasy's cloud-mediated S3/GCS/
-//     Azure connectors don't slot into it cleanly. The editor uses `type`
-//     only to pick an icon — `'public_http'` produces the generic cloud
-//     glyph which is the correct affordance for Keasy.
+//   - `list()`: enumerate ALL connections (data AND vocab) as `{ name, type,
+//     label }` `Connector` rows. Both kinds are `@`-referenceable: `data` in
+//     the positional/`data =` URI, `vocab` in `schema =`/`select =` positions —
+//     so the autocomplete must offer both (the editor fires `@` regardless of
+//     position). `label` carries a human kind hint shown in the popover. `type`
+//     is collapsed to `'public_http'` because the Tier-1 connector taxonomy
+//     (`local_file | public_http | upload | examples` per ADR-0029) is closed
+//     and Keasy's cloud-mediated S3/GCS/Azure connectors don't slot into it
+//     cleanly. The editor uses `type` only to pick an icon — `'public_http'`
+//     produces the generic cloud glyph which is the correct affordance.
 //   - `resolve()`: not used at edit time — Keasy script execution happens
 //     server-side via `/v1/fossil/lsp` analyze, which already has the org's
 //     PathResolver (`db.build_path_resolver_for_org`). We surface a clear
@@ -43,16 +46,17 @@ function useKeasyResolver(
   _providers: ProviderInfo[],
 ): ConnectionResolver {
   return useMemo<ConnectionResolver>(() => {
-    const dataConnections = connections.filter((c) => c.kind === "data");
     return {
       async list(): Promise<Connector[]> {
-        return dataConnections.map<Connector>((c) => ({
+        return connections.map<Connector>((c) => ({
           name: c.name,
           // Tier-1 enum is closed; 'public_http' is the safe default for
           // host-mediated cloud connectors. The icon in the @-autocomplete
           // popover is the only consumer of this field.
           type: "public_http",
-          label: c.name,
+          // Shown as the popover `info` line — describe the kind so the user
+          // can tell a data source from a vocabulary at the reference site.
+          label: c.kind === "vocab" ? "RDF vocabulary" : "data source",
         }));
       },
       async resolve(ref: SourceRef): Promise<ResolvedSource> {

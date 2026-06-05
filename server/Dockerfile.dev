@@ -14,12 +14,16 @@ RUN cargo install cargo-watch
 
 WORKDIR /src
 
-# Build the `fossil` binary once (rmlext, bundled DuckDB ~3-5 min cold) and put
-# it on PATH via FOSSIL_BIN. rmlext also satisfies keasy-server's path dep.
+# Build the `fossil` + `fossil-mcp` binaries once (rmlext, bundled DuckDB
+# ~3-5 min cold) and put them on PATH. `fossil` runs jobs/catalog; `fossil-mcp`
+# serves the verb surface keasy invokes over MCP for owner `execute_sql`.
+# rmlext also satisfies keasy-server's path dep.
 COPY rmlext /src/rmlext
-RUN cargo build --release --manifest-path /src/rmlext/Cargo.toml -p fossil-cli \
-    && cp /src/rmlext/target/release/fossil /usr/local/bin/fossil
+RUN cargo build --release --manifest-path /src/rmlext/Cargo.toml -p fossil-cli -p fossil-mcp \
+    && cp /src/rmlext/target/release/fossil /usr/local/bin/fossil \
+    && cp /src/rmlext/target/release/fossil-mcp /usr/local/bin/fossil-mcp
 ENV FOSSIL_BIN=/usr/local/bin/fossil
+ENV FOSSIL_MCP_BIN=/usr/local/bin/fossil-mcp
 
 # keasy-keycloak crate (a path dep of keasy-server) must be present before the
 # dep-cache build resolves `../keycloak`.

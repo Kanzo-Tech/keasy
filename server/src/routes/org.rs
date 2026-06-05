@@ -15,7 +15,6 @@ use serde::Deserialize;
 
 use crate::AppState;
 use crate::db::invite_tokens::InviteToken;
-use crate::db::org_members::OrgMember;
 use crate::error::{data_response, error_body};
 use crate::middleware::session_auth::AuthenticatedUser;
 use crate::middleware::tenant::{IsMember, IsOwner, RbacError, Require};
@@ -23,14 +22,58 @@ use crate::middleware::tenant::{IsMember, IsOwner, RbacError, Require};
 static SUBDIVISION_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[A-Z]{2}-[A-Z0-9]{1,3}$").unwrap());
 
+/// A workspace member, resolved from Keycloak client-role mappings.
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
+pub struct WorkspaceMember {
+    pub user_id: String,
+    pub role: String,
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub joined_at: String,
+}
+
 #[utoipa::path(get, path = "/v1/org/users", tag = "Organization",
-    responses((status = 200, description = "List of users in the org", body = Vec<OrgMember>))
+    responses((status = 200, description = "List of users in the org", body = Vec<WorkspaceMember>))
 )]
 pub async fn list_users(
     _ctx: Require<IsOwner>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let users = state.db.list_org_members().await;
+    let (Some(kc), Some(client_id), Some(org_id)) = (
+        &state.auth.keycloak_admin,
+        &state.auth.oidc_client_id,
+        &state.auth.oidc_org_id,
+    ) else {
+        return Err(RbacError::Internal("Keycloak/organization not configured".to_string()));
+    };
+
+    // Members = the organization's members (the canonical membership). Owners
+    // are marked by intersecting with the `owner` client-role holders.
+    let members = kc.list_org_members(org_id).await.map_err(RbacError::Internal)?;
+    let owners: std::collections::HashSet<String> = kc
+        .list_client_role_users(client_id, "owner")
+        .await
+        .map_err(RbacError::Internal)?
+        .into_iter()
+        .collect();
+
+    let users: Vec<WorkspaceMember> = members
+        .into_iter()
+        .map(|m| WorkspaceMember {
+            role: if owners.contains(&m.user_id) { "owner" } else { "member" }.to_string(),
+            user_id: m.user_id,
+            email: m.email,
+            first_name: m.first_name,
+            last_name: m.last_name,
+            joined_at: m
+                .created_timestamp
+                .and_then(|ms| jiff::Timestamp::from_millisecond(ms).ok())
+                .map(|t| t.to_string())
+                .unwrap_or_default(),
+        })
+        .collect();
+
     Ok(data_response(users))
 }
 
@@ -46,11 +89,17 @@ pub async fn remove_user(
     State(state): State<AppState>,
     Path(user_id): Path<String>,
 ) -> Result<impl IntoResponse, RbacError> {
-    state
-        .db
-        .remove_org_member(&user_id)
-        .await
-        .map_err(RbacError::Internal)?;
+    let (Some(kc), Some(client_id), Some(org_id)) = (
+        &state.auth.keycloak_admin,
+        &state.auth.oidc_client_id,
+        &state.auth.oidc_org_id,
+    ) else {
+        return Err(RbacError::Internal("Keycloak/organization not configured".to_string()));
+    };
+
+    // Revoke both the membership (org) and the authorization (client roles).
+    kc.remove_org_member(org_id, &user_id).await.map_err(RbacError::Internal)?;
+    kc.remove_client_roles(&user_id, client_id).await.map_err(RbacError::Internal)?;
     Ok(StatusCode::NO_CONTENT)
 }
 

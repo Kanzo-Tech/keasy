@@ -18,15 +18,15 @@ pub struct MeResponse {
     pub email: String,
     pub first_name: String,
     pub last_name: String,
-    pub membership_role: Option<String>,
     pub effective_role: String,
     pub org: Option<MeOrg>,
 }
 
-/// A workspace the user can switch to, as shown in the switcher.
+/// A workspace the user can switch to, as shown in the switcher. Resolved from
+/// the user's Keycloak Organizations (`id` = organization id).
 #[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct WorkspaceSummary {
-    pub client_id: String,
+    pub id: String,
     pub name: String,
     pub url: String,
 }
@@ -34,7 +34,7 @@ pub struct WorkspaceSummary {
 #[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct WorkspacesResponse {
     pub workspaces: Vec<WorkspaceSummary>,
-    pub current_client_id: String,
+    pub current_id: String,
 }
 
 /// GET /v1/auth/me
@@ -52,32 +52,28 @@ pub async fn get_me(
     State(state): State<AppState>,
     axum::Extension(auth_user): axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
 ) -> Result<impl IntoResponse, AuthError> {
-    let membership = state.db.get_org_membership(&auth_user.user_id).await;
+    // Profile comes from the session values set at OIDC login.
+    let email = session
+        .get::<String>("user_email")
+        .await
+        .map_err(|e| AuthError::Internal(format!("session get user_email: {e}")))?
+        .unwrap_or_default();
+    let first_name = session
+        .get::<String>("user_first_name")
+        .await
+        .map_err(|e| AuthError::Internal(format!("session get user_first_name: {e}")))?
+        .unwrap_or_default();
+    let last_name = session
+        .get::<String>("user_last_name")
+        .await
+        .map_err(|e| AuthError::Internal(format!("session get user_last_name: {e}")))?
+        .unwrap_or_default();
 
-    // Profile: prefer cached org_members data; fall back to session values set at login.
-    let (email, first_name, last_name) = match &membership {
-        Some(m) => (m.email.clone(), m.first_name.clone(), m.last_name.clone()),
-        None => (
-            session
-                .get::<String>("user_email")
-                .await
-                .map_err(|e| AuthError::Internal(format!("session get user_email: {e}")))?
-                .unwrap_or_default(),
-            session
-                .get::<String>("user_first_name")
-                .await
-                .map_err(|e| AuthError::Internal(format!("session get user_first_name: {e}")))?
-                .unwrap_or_default(),
-            session
-                .get::<String>("user_last_name")
-                .await
-                .map_err(|e| AuthError::Internal(format!("session get user_last_name: {e}")))?
-                .unwrap_or_default(),
-        ),
-    };
+    // Role comes from the Keycloak `keasy:role` claim, captured at login.
+    let role = auth_user.role;
 
     // The workspace identity is shown only to actual members.
-    let org = if membership.is_some() {
+    let org = if role.is_some() {
         state
             .db
             .get_workspace_identity()
@@ -87,19 +83,13 @@ pub async fn get_me(
         None
     };
 
-    // Effective role derives solely from the membership: owner or member.
-    let effective_role = match &membership {
-        Some(m) if m.role == "owner" => "owner",
-        Some(_) => "member",
-        None => "none",
-    };
+    let effective_role = role.map(|r| r.as_str()).unwrap_or("none");
 
     Ok(data_response(MeResponse {
         user_id: auth_user.user_id.clone(),
         email,
         first_name,
         last_name,
-        membership_role: membership.as_ref().map(|m| m.role.clone()),
         effective_role: effective_role.to_string(),
         org,
     }))
@@ -139,9 +129,9 @@ pub async fn get_invite_info(
 
 /// GET /v1/auth/workspaces
 ///
-/// Returns the list of workspaces the authenticated user has access to,
-/// resolved from the Keycloak `keasy:workspaces` claim to display info via
-/// the workspaces table. Used by the sidebar workspace switcher.
+/// Returns the workspaces the authenticated user belongs to — their Keycloak
+/// Organizations, each carrying its display name and home URL. Used by the
+/// sidebar workspace switcher.
 #[utoipa::path(get, path = "/v1/auth/workspaces", tag = "Auth",
     responses((status = 200, description = "List of accessible workspaces", body = WorkspacesResponse))
 )]
@@ -150,52 +140,27 @@ pub async fn list_workspaces(
     State(state): State<AppState>,
     auth_user: axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
 ) -> Result<impl IntoResponse, AuthError> {
-    // Read workspaces live from Keycloak (user_id = Keycloak sub).
-    let workspace_ids: Vec<String> = if let Some(kc_admin) = &state.auth.keycloak_admin {
-        match kc_admin.get_user_workspaces(&auth_user.user_id).await {
-            Ok(ids) => {
-                tracing::debug!(user_id = %auth_user.user_id, workspaces = ?ids, "Keycloak workspaces");
-                ids
-            }
+    // "My workspaces" = the Keycloak Organizations the user belongs to. Each org
+    // carries its display name and home URL (the `keasy.url` attribute), so the
+    // whole switcher resolves from identity in a single call — no local cache.
+    let workspaces: Vec<WorkspaceSummary> = if let Some(kc_admin) = &state.auth.keycloak_admin {
+        match kc_admin.list_user_organizations(&auth_user.user_id).await {
+            Ok(orgs) => orgs
+                .into_iter()
+                .map(|w| WorkspaceSummary { id: w.id, name: w.name, url: w.url })
+                .collect(),
             Err(e) => {
-                tracing::warn!(error = %e, user_id = %auth_user.user_id, "Failed to read workspaces from Keycloak");
+                tracing::warn!(error = %e, user_id = %auth_user.user_id, "Failed to read organizations from Keycloak");
                 Vec::new()
             }
         }
     } else {
-        tracing::debug!("No Keycloak admin configured, returning empty workspaces");
         Vec::new()
     };
 
-    let current_client_id = state.auth.oidc_client_id.clone().unwrap_or_default();
+    let current_id = state.auth.oidc_org_id.clone().unwrap_or_default();
 
-    // Batch lookup: resolve all workspaces in a single query
-    let client_id_refs: Vec<&str> = workspace_ids.iter().map(|s| s.as_str()).collect();
-    let cached = state.db.get_workspaces_by_client_ids(&client_id_refs).await;
-    let cached_ids: std::collections::HashSet<String> = cached.iter().map(|d| d.client_id.clone()).collect();
-
-    let mut workspaces: Vec<WorkspaceSummary> = cached
-        .into_iter()
-        .map(|w| WorkspaceSummary { client_id: w.client_id, name: w.name, url: w.url })
-        .collect();
-
-    // Resolve cache misses individually via Keycloak Admin API
-    for client_id in &workspace_ids {
-        if cached_ids.contains(client_id) {
-            continue;
-        }
-        if let Some(kc_admin) = &state.auth.keycloak_admin
-            && let Some(resolved) = kc_admin.resolve_client(client_id).await {
-                let _ = state.db.ensure_workspace(client_id, &resolved.name, &resolved.url).await;
-                workspaces.push(WorkspaceSummary {
-                    client_id: client_id.clone(),
-                    name: resolved.name,
-                    url: resolved.url,
-                });
-            }
-    }
-
-    Ok(data_response(WorkspacesResponse { workspaces, current_client_id }))
+    Ok(data_response(WorkspacesResponse { workspaces, current_id }))
 }
 
 /// POST /v1/auth/logout

@@ -24,14 +24,15 @@ impl Database {
             name: req.name,
             kind: req.kind,
             location_type: req.location_type,
+            direction: req.direction,
             cloud_account_id: req.cloud_account_id,
             url: req.url,
         };
 
         let conn = self.write().await;
         conn.execute(
-            "INSERT INTO connections (id, name, kind, location_type, cloud_account_id, url) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![connection.id, connection.name, connection.kind, connection.location_type, connection.cloud_account_id, connection.url],
+            "INSERT INTO connections (id, name, kind, location_type, direction, cloud_account_id, url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![connection.id, connection.name, connection.kind, connection.location_type, connection.direction, connection.cloud_account_id, connection.url],
         )
         .map_err(|e| format!("failed to create connection: {e}"))?;
 
@@ -41,7 +42,7 @@ impl Database {
     pub async fn get_connection(&self, id: &str) -> Option<Connection> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, kind, location_type, cloud_account_id, url FROM connections WHERE id = ?1",
+            "SELECT id, name, kind, location_type, direction, cloud_account_id, url FROM connections WHERE id = ?1",
             [id],
             row_to_connection,
         )
@@ -51,8 +52,20 @@ impl Database {
     pub async fn get_connection_by_name(&self, name: &str) -> Option<Connection> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, kind, location_type, cloud_account_id, url FROM connections WHERE name = ?1",
+            "SELECT id, name, kind, location_type, direction, cloud_account_id, url FROM connections WHERE name = ?1",
             [name],
+            row_to_connection,
+        )
+        .ok()
+    }
+
+    /// The workspace's write sink (the owner output store), if configured. There
+    /// is at most one (enforced by the `connections_one_sink` unique index).
+    pub async fn get_sink_connection(&self) -> Option<Connection> {
+        let (_permit, conn) = self.read().await;
+        conn.query_row(
+            "SELECT id, name, kind, location_type, direction, cloud_account_id, url FROM connections WHERE direction = 'sink'",
+            [],
             row_to_connection,
         )
         .ok()
@@ -60,13 +73,15 @@ impl Database {
 
     pub async fn list_connections(&self, type_filter: Option<&str>) -> Vec<Connection> {
         let (_permit, conn) = self.read().await;
+        // Only READ sources are listed for the connector UI / `@conn` references;
+        // the sink is the owner output store, managed via catalog-storage settings.
         let (sql, param): (&str, Option<&str>) = match type_filter {
             Some(t) => (
-                "SELECT id, name, kind, location_type, cloud_account_id, url FROM connections WHERE kind = ?1 ORDER BY name",
+                "SELECT id, name, kind, location_type, direction, cloud_account_id, url FROM connections WHERE direction = 'source' AND kind = ?1 ORDER BY name",
                 Some(t),
             ),
             None => (
-                "SELECT id, name, kind, location_type, cloud_account_id, url FROM connections ORDER BY name",
+                "SELECT id, name, kind, location_type, direction, cloud_account_id, url FROM connections WHERE direction = 'source' ORDER BY name",
                 None,
             ),
         };
@@ -94,6 +109,7 @@ impl Database {
         let name = req.name.unwrap_or(existing.name);
         let kind = req.kind.unwrap_or(existing.kind);
         let location_type = req.location_type.unwrap_or(existing.location_type);
+        let direction = req.direction.unwrap_or(existing.direction);
         let cloud_account_id = if req.cloud_account_id.is_some() {
             req.cloud_account_id
         } else {
@@ -107,8 +123,8 @@ impl Database {
 
         let conn = self.write().await;
         conn.execute(
-            "UPDATE connections SET name = ?1, kind = ?2, location_type = ?3, cloud_account_id = ?4, url = ?5 WHERE id = ?6",
-            params![name, kind, location_type, cloud_account_id, url, id],
+            "UPDATE connections SET name = ?1, kind = ?2, location_type = ?3, direction = ?4, cloud_account_id = ?5, url = ?6 WHERE id = ?7",
+            params![name, kind, location_type, direction, cloud_account_id, url, id],
         )
         .map_err(|e| format!("failed to update connection: {e}"))?;
 
@@ -117,6 +133,7 @@ impl Database {
             name,
             kind,
             location_type,
+            direction,
             cloud_account_id,
             url,
         })
@@ -132,25 +149,17 @@ impl Database {
         Ok(())
     }
 
-    pub async fn resolve_cloud_account_ids(&self, connection_ids: &[String]) -> Vec<String> {
-        let mut account_ids = Vec::new();
-        for connection_id in connection_ids {
-            if let Some(connection) = self.get_connection(connection_id).await
-                && let Some(account_id) = &connection.cloud_account_id
-                && !account_ids.contains(account_id)
-            {
-                account_ids.push(account_id.clone());
-            }
-        }
-        account_ids
-    }
-
-    pub async fn build_storage_config_from_connections(
+    /// Object-store creds for the workspace write sink (the owner output store).
+    /// Job output is materialised into the sink, so signing/reading it back uses
+    /// the sink account's creds — never the member source connections'. Empty if
+    /// no cloud sink is configured.
+    pub async fn owner_output_storage_config(
         &self,
-        connection_ids: &[String],
     ) -> std::collections::HashMap<String, String> {
-        let account_ids = self.resolve_cloud_account_ids(connection_ids).await;
-        self.build_storage_config(&account_ids).await
+        match self.get_sink_connection().await.and_then(|c| c.cloud_account_id) {
+            Some(account_id) => self.build_storage_config(std::slice::from_ref(&account_id)).await,
+            None => std::collections::HashMap::new(),
+        }
     }
 }
 
@@ -160,6 +169,7 @@ fn row_to_connection(row: &rusqlite::Row<'_>) -> rusqlite::Result<Connection> {
         name: row.get("name")?,
         kind: row.get("kind")?,
         location_type: row.get("location_type")?,
+        direction: row.get("direction")?,
         cloud_account_id: row.get("cloud_account_id")?,
         url: row.get("url")?,
     })

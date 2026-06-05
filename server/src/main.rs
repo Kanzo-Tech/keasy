@@ -43,25 +43,17 @@ async fn main() {
 
     info!(path = %db_path.display(), "Database opened");
 
-    // W7 bootstrap: the control-plane provisions this workspace and passes the
-    // owner's Keycloak `sub` via config. The instance idempotently ensures the
-    // owner org + membership exist — the single bootstrap datum, replacing the
-    // old SQL seeds. Also self-registers the workspace so the switcher finds it.
-    if let (Some(owner_sub), Some(client_id)) =
-        (&config.owner_keycloak_sub, &config.oidc_client_id)
-    {
-        if let Err(e) = db
-            .ensure_owner_bootstrap(owner_sub, &config.workspace_name)
-            .await
-        {
-            warn!(error = %e, "Failed to ensure owner bootstrap");
-        }
-        if let Err(e) = db
-            .ensure_workspace(client_id, &config.workspace_name, &config.base_url)
-            .await
-        {
-            warn!(error = %e, "Failed to self-register workspace");
-        }
+    // Seed the local workspace identity (compliance metadata) once. Membership,
+    // roles, and the workspace registry are all Keycloak-native now (the
+    // Organization + client roles), so the server keeps no identity state.
+    if config.oidc_client_id.is_some() && db.get_workspace_identity().await.is_none() {
+        db.set_workspace_identity(&keasy_server::settings::org::WorkspaceIdentity {
+            name: config.workspace_name.clone(),
+            legal_name: config.workspace_name.clone(),
+            country: "EU".to_string(),
+            ..Default::default()
+        })
+        .await;
     }
 
     if !db.verify_secret_key().await {
@@ -120,6 +112,23 @@ async fn main() {
         _ => None,
     };
 
+    // Resolve this workspace's Keycloak Organization id from its alias. The org
+    // is the membership container; members, invites, and the switcher key off it.
+    let oidc_org_id = match (&keycloak_admin, &config.org_alias) {
+        (Some(admin), Some(alias)) => match admin.resolve_org_id(alias).await {
+            Ok(Some(id)) => Some(id),
+            Ok(None) => {
+                tracing::warn!(alias = %alias, "Keycloak organization not found for alias");
+                None
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, alias = %alias, "Failed to resolve Keycloak organization");
+                None
+            }
+        },
+        _ => None,
+    };
+
     // Build OIDC relying party client — only when all three config fields are present.
     let oidc_state = match (&config.oidc_issuer_url, &config.oidc_client_id, &config.oidc_client_secret) {
         (Some(issuer), Some(client_id), Some(secret)) => {
@@ -156,6 +165,7 @@ async fn main() {
         oidc_issuer_url: config.oidc_issuer_url,
         oidc_client_id: config.oidc_client_id,
         oidc_client_secret: config.oidc_client_secret,
+        oidc_org_id,
     };
     let state = AppState {
         db,

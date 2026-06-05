@@ -39,10 +39,26 @@ struct ClientSecretResponse {
     value: String,
 }
 
-/// Result of resolving an OIDC client from Keycloak by clientId.
-pub struct ResolvedClient {
+/// A workspace the user belongs to, resolved from a Keycloak Organization.
+/// Backs the workspace switcher (display name + home URL).
+pub struct Workspace {
+    /// The organization id.
+    pub id: String,
     pub name: String,
     pub url: String,
+}
+
+/// A workspace member as resolved from Keycloak client-role mappings — the
+/// Keycloak-native replacement for the old local `org_members` row.
+pub struct WorkspaceMember {
+    pub user_id: String,
+    /// `"owner"` or `"member"`.
+    pub role: String,
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+    /// Keycloak user creation time in epoch milliseconds, if present.
+    pub created_timestamp: Option<i64>,
 }
 
 /// Result of registering a new OIDC client in Keycloak.
@@ -244,48 +260,304 @@ impl KeycloakAdmin {
         }
     }
 
-    /// Ensure the keasy:workspaces protocol mapper exists on the specified client.
-    /// Idempotent: if the mapper already exists, Keycloak returns 409 which is ignored.
-    pub async fn ensure_protocol_mapper(&self, keycloak_client_id: &str) -> Result<(), String> {
-        let token = self.get_admin_token().await?;
+    /// Ensure a Keycloak Organization exists for this workspace — the native
+    /// membership container. Idempotent: returns the existing org id if one
+    /// already has `alias`, otherwise creates it. The workspace's home URL is
+    /// stored as the `keasy.url` attribute (the switcher reads it from there).
+    pub async fn ensure_organization(
+        &self,
+        name: &str,
+        alias: &str,
+        url: &str,
+    ) -> Result<String, String> {
+        if let Some(id) = self.resolve_org_id(alias).await? {
+            return Ok(id);
+        }
 
-        // First, find the Keycloak-internal UUID for the clientId
-        let clients_url = format!(
-            "{}/admin/realms/{}/clients?clientId={}",
-            self.base_url, self.realm, keycloak_client_id
+        let token = self.get_admin_token().await?;
+        let orgs_url = format!(
+            "{}/admin/realms/{}/organizations",
+            self.base_url, self.realm
+        );
+        let body = serde_json::json!({
+            "name": name,
+            "alias": alias,
+            "domains": [{ "name": host_of(url), "verified": true }],
+            "attributes": { "keasy.url": [url] }
+        });
+        let resp = self
+            .http
+            .post(&orgs_url)
+            .bearer_auth(&token)
+            .json(&body)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak create organization failed: {e}"))?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let b = resp.text().await.unwrap_or_default();
+            return Err(format!("Keycloak create organization returned {status}: {b}"));
+        }
+
+        // The new org id arrives in the Location header; fall back to a lookup.
+        if let Some(id) = resp
+            .headers()
+            .get("location")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|l| l.rsplit('/').next())
+            .map(|s| s.to_string())
+            .filter(|s| !s.is_empty())
+        {
+            tracing::info!(alias = %alias, org_id = %id, "Created Keycloak organization");
+            return Ok(id);
+        }
+        self.resolve_org_id(alias)
+            .await?
+            .ok_or_else(|| "organization created but not found".to_string())
+    }
+
+    /// Resolve an organization's id by its alias. `None` if not found.
+    pub async fn resolve_org_id(&self, alias: &str) -> Result<Option<String>, String> {
+        let token = self.get_admin_token().await?;
+        let url = format!(
+            "{}/admin/realms/{}/organizations?search={}",
+            self.base_url, self.realm, alias
         );
         let resp = self
             .http
-            .get(&clients_url)
+            .get(&url)
             .bearer_auth(&token)
             .send()
             .await
-            .map_err(|e| format!("Keycloak client lookup failed: {e}"))?;
-
-        let clients: Vec<serde_json::Value> = resp
+            .map_err(|e| format!("Keycloak list organizations failed: {e}"))?;
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let b = resp.text().await.unwrap_or_default();
+            return Err(format!("Keycloak list organizations returned {status}: {b}"));
+        }
+        let orgs: Vec<serde_json::Value> = resp
             .json()
             .await
-            .map_err(|e| format!("Failed to parse Keycloak clients response: {e}"))?;
+            .map_err(|e| format!("Failed to parse organizations: {e}"))?;
+        Ok(orgs
+            .into_iter()
+            .find(|o| o.get("alias").and_then(|v| v.as_str()) == Some(alias))
+            .and_then(|o| o.get("id").and_then(|v| v.as_str()).map(|s| s.to_string())))
+    }
 
-        let client_uuid = clients
-            .first()
-            .and_then(|c| c["id"].as_str())
-            .ok_or_else(|| format!("Client '{}' not found in Keycloak", keycloak_client_id))?
-            .to_string();
+    /// Add a user as a member of the workspace's organization. Idempotent:
+    /// a 409 (already a member) is treated as success.
+    pub async fn add_org_member(
+        &self,
+        org_id: &str,
+        keycloak_user_id: &str,
+    ) -> Result<(), String> {
+        let token = self.get_admin_token().await?;
+        let url = format!(
+            "{}/admin/realms/{}/organizations/{}/members",
+            self.base_url, self.realm, org_id
+        );
+        // The body is the user id as a raw JSON string.
+        let resp = self
+            .http
+            .post(&url)
+            .bearer_auth(&token)
+            .json(&serde_json::json!(keycloak_user_id))
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak add org member failed: {e}"))?;
+        match resp.status().as_u16() {
+            200 | 201 | 204 | 409 => {
+                tracing::info!(org_id = %org_id, user_id = %keycloak_user_id, "Added org member");
+                Ok(())
+            }
+            status => {
+                let b = resp.text().await.unwrap_or_default();
+                Err(format!("Keycloak add org member returned {status}: {b}"))
+            }
+        }
+    }
 
-        // Create the protocol mapper
+    /// Remove a user from the workspace's organization. Idempotent (404 ok).
+    pub async fn remove_org_member(
+        &self,
+        org_id: &str,
+        keycloak_user_id: &str,
+    ) -> Result<(), String> {
+        let token = self.get_admin_token().await?;
+        let url = format!(
+            "{}/admin/realms/{}/organizations/{}/members/{}",
+            self.base_url, self.realm, org_id, keycloak_user_id
+        );
+        let resp = self
+            .http
+            .delete(&url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak remove org member failed: {e}"))?;
+        if resp.status().is_success() || resp.status() == reqwest::StatusCode::NOT_FOUND {
+            Ok(())
+        } else {
+            let status = resp.status();
+            let b = resp.text().await.unwrap_or_default();
+            Err(format!("Keycloak remove org member returned {status}: {b}"))
+        }
+    }
+
+    /// List the members of the workspace's organization. Every member defaults
+    /// to role `"member"`; the route upgrades owners by intersecting with the
+    /// `owner` client-role holders.
+    pub async fn list_org_members(&self, org_id: &str) -> Result<Vec<WorkspaceMember>, String> {
+        let token = self.get_admin_token().await?;
+        let url = format!(
+            "{}/admin/realms/{}/organizations/{}/members?max=1000",
+            self.base_url, self.realm, org_id
+        );
+        let resp = self
+            .http
+            .get(&url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak list org members failed: {e}"))?;
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let b = resp.text().await.unwrap_or_default();
+            return Err(format!("Keycloak list org members returned {status}: {b}"));
+        }
+        let users: Vec<serde_json::Value> = resp
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse org members: {e}"))?;
+        Ok(users
+            .into_iter()
+            .filter_map(|u| {
+                let user_id = u.get("id").and_then(|v| v.as_str())?.to_string();
+                Some(WorkspaceMember {
+                    user_id,
+                    role: "member".to_string(),
+                    email: u.get("email").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+                    first_name: u.get("firstName").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+                    last_name: u.get("lastName").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+                    created_timestamp: u.get("createdTimestamp").and_then(|v| v.as_i64()),
+                })
+            })
+            .collect())
+    }
+
+    /// List the workspaces (organizations) a user belongs to — the native
+    /// "my workspaces" query. Each org carries its display `name` and home URL
+    /// (the `keasy.url` attribute).
+    pub async fn list_user_organizations(
+        &self,
+        keycloak_user_id: &str,
+    ) -> Result<Vec<Workspace>, String> {
+        let token = self.get_admin_token().await?;
+        let url = format!(
+            "{}/admin/realms/{}/users/{}/organizations",
+            self.base_url, self.realm, keycloak_user_id
+        );
+        let resp = self
+            .http
+            .get(&url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak list user organizations failed: {e}"))?;
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let b = resp.text().await.unwrap_or_default();
+            return Err(format!("Keycloak list user organizations returned {status}: {b}"));
+        }
+        let orgs: Vec<serde_json::Value> = resp
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse user organizations: {e}"))?;
+        Ok(orgs
+            .into_iter()
+            .filter_map(|o| {
+                let id = o.get("id").and_then(|v| v.as_str())?.to_string();
+                let name = o.get("name").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+                let url = o
+                    .get("attributes")
+                    .and_then(|a| a.get("keasy.url"))
+                    .and_then(|v| v.as_array())
+                    .and_then(|arr| arr.first())
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .to_string();
+                Some(Workspace { id, name, url })
+            })
+            .collect())
+    }
+
+    /// Ensure the `owner` and `member` client roles exist on the workspace
+    /// client. These are the two hierarchical roles (owner ⊇ member) that drive
+    /// authorization. Idempotent: a 409 (role already exists) is treated as
+    /// success.
+    ///
+    /// `client_id` is the OIDC clientId string (e.g. "keasy-ws-{uuid}").
+    pub async fn ensure_client_roles(&self, client_id: &str) -> Result<(), String> {
+        let token = self.get_admin_token().await?;
+        let client_uuid = self.lookup_client_uuid(&token, client_id).await?;
+
+        let roles_url = format!(
+            "{}/admin/realms/{}/clients/{}/roles",
+            self.base_url, self.realm, client_uuid
+        );
+
+        for role in ["owner", "member"] {
+            let resp = self
+                .http
+                .post(&roles_url)
+                .bearer_auth(&token)
+                .json(&serde_json::json!({ "name": role }))
+                .send()
+                .await
+                .map_err(|e| format!("Keycloak create client role failed: {e}"))?;
+
+            match resp.status().as_u16() {
+                201 | 409 => {}
+                status => {
+                    let body = resp.text().await.unwrap_or_default();
+                    return Err(format!(
+                        "Keycloak create client role '{role}' returned {status}: {body}"
+                    ));
+                }
+            }
+        }
+
+        tracing::info!(client_id = %client_id, "Ensured owner/member client roles in Keycloak");
+        Ok(())
+    }
+
+    /// Ensure the `keasy:role` protocol mapper exists on the specified client.
+    ///
+    /// Maps the user's client roles *for this client* into a multivalued
+    /// `keasy:role` ID token claim. The `usermodel.clientRoleMapping.clientId`
+    /// restriction is critical: without it Keycloak would emit the user's roles
+    /// across *all* clients, leaking other workspaces' roles into the token.
+    /// Idempotent: a 409 (mapper already exists) is treated as success.
+    ///
+    /// `client_id` is the OIDC clientId string (e.g. "keasy-ws-{uuid}").
+    pub async fn ensure_role_mapper(&self, client_id: &str) -> Result<(), String> {
+        let token = self.get_admin_token().await?;
+        let client_uuid = self.lookup_client_uuid(&token, client_id).await?;
+
         let mapper_url = format!(
             "{}/admin/realms/{}/clients/{}/protocol-mappers/models",
             self.base_url, self.realm, client_uuid
         );
 
         let mapper_body = serde_json::json!({
-            "name": "keasy-workspaces",
+            "name": "keasy-role",
             "protocol": "openid-connect",
-            "protocolMapper": "oidc-usermodel-attribute-mapper",
+            "protocolMapper": "oidc-usermodel-client-role-mapper",
             "config": {
-                "user.attribute": "keasy.workspaces",
-                "claim.name": "keasy:workspaces",
+                "usermodel.clientRoleMapping.clientId": client_id,
+                "claim.name": "keasy:role",
                 "jsonType.label": "String",
                 "multivalued": "true",
                 "id.token.claim": "true",
@@ -301,164 +573,217 @@ impl KeycloakAdmin {
             .json(&mapper_body)
             .send()
             .await
-            .map_err(|e| format!("Keycloak protocol mapper creation failed: {e}"))?;
+            .map_err(|e| format!("Keycloak role mapper creation failed: {e}"))?;
 
         match resp.status().as_u16() {
             201 => {
-                tracing::info!("Created keasy:workspaces protocol mapper in Keycloak");
+                tracing::info!("Created keasy:role protocol mapper in Keycloak");
                 Ok(())
             }
             409 => {
-                tracing::debug!("keasy:workspaces protocol mapper already exists");
+                tracing::debug!("keasy:role protocol mapper already exists");
                 Ok(())
             }
             status => {
                 let body = resp.text().await.unwrap_or_default();
                 Err(format!(
-                    "Keycloak protocol mapper creation returned {status}: {body}"
+                    "Keycloak role mapper creation returned {status}: {body}"
                 ))
             }
         }
     }
 
-    /// Add a workspace client_id to a Keycloak user's `keasy.workspaces` attribute.
+    /// Assign a client role (`owner` or `member`) to a user on the workspace
+    /// client. Used by the control-plane to grant the owner role at
+    /// provisioning, and by the server to grant `member` when an invite is
+    /// accepted. Posting an existing mapping is idempotent in Keycloak.
     ///
-    /// Reads the user's current attributes, appends the client_id (deduped),
-    /// and PUTs the updated attributes back.
-    pub async fn add_user_workspace(
+    /// `client_id` is the OIDC clientId string (e.g. "keasy-ws-{uuid}").
+    pub async fn assign_client_role(
         &self,
         keycloak_user_id: &str,
         client_id: &str,
+        role_name: &str,
     ) -> Result<(), String> {
         let token = self.get_admin_token().await?;
+        let client_uuid = self.lookup_client_uuid(&token, client_id).await?;
 
-        // GET current user representation
-        let user_url = format!(
-            "{}/admin/realms/{}/users/{}",
-            self.base_url, self.realm, keycloak_user_id
+        // Fetch the role representation (Keycloak requires id + name to map it).
+        let role_url = format!(
+            "{}/admin/realms/{}/clients/{}/roles/{}",
+            self.base_url, self.realm, client_uuid, role_name
         );
         let resp = self
             .http
-            .get(&user_url)
+            .get(&role_url)
             .bearer_auth(&token)
             .send()
             .await
-            .map_err(|e| format!("Keycloak get user failed: {e}"))?;
+            .map_err(|e| format!("Keycloak get client role failed: {e}"))?;
 
         if !resp.status().is_success() {
             let status = resp.status();
             let body = resp.text().await.unwrap_or_default();
-            return Err(format!("Keycloak get user returned {status}: {body}"));
+            return Err(format!(
+                "Keycloak get client role '{role_name}' returned {status}: {body}"
+            ));
         }
 
-        let mut user: serde_json::Value = resp
+        let role: serde_json::Value = resp
             .json()
             .await
-            .map_err(|e| format!("Failed to parse Keycloak user response: {e}"))?;
+            .map_err(|e| format!("Failed to parse Keycloak role response: {e}"))?;
 
-        // Read existing workspace_ids attribute
-        let mut workspace_ids: Vec<String> = user
-            .get("attributes")
-            .and_then(|a| a.get("keasy.workspaces"))
-            .and_then(|v| serde_json::from_value(v.clone()).ok())
-            .unwrap_or_default();
-
-        // Dedup — only add if not already present
-        if !workspace_ids.contains(&client_id.to_string()) {
-            workspace_ids.push(client_id.to_string());
-        }
-
-        // Update the user representation
-        let attributes = user
-            .as_object_mut()
-            .ok_or("user is not an object")?
-            .entry("attributes")
-            .or_insert_with(|| serde_json::json!({}));
-        attributes["keasy.workspaces"] = serde_json::json!(workspace_ids);
-
-        // PUT updated user
+        // POST the role-mapping to the user's client role mappings.
+        let mapping_url = format!(
+            "{}/admin/realms/{}/users/{}/role-mappings/clients/{}",
+            self.base_url, self.realm, keycloak_user_id, client_uuid
+        );
         let resp = self
             .http
-            .put(&user_url)
+            .post(&mapping_url)
             .bearer_auth(&token)
-            .json(&user)
+            .json(&serde_json::json!([role]))
             .send()
             .await
-            .map_err(|e| format!("Keycloak update user failed: {e}"))?;
+            .map_err(|e| format!("Keycloak assign client role failed: {e}"))?;
 
         if !resp.status().is_success() {
             let status = resp.status();
             let body = resp.text().await.unwrap_or_default();
-            return Err(format!("Keycloak update user returned {status}: {body}"));
+            return Err(format!(
+                "Keycloak assign client role returned {status}: {body}"
+            ));
         }
 
         tracing::info!(
             user_id = %keycloak_user_id,
             client_id = %client_id,
-            "Added workspace to Keycloak user"
+            role = %role_name,
+            "Assigned client role to Keycloak user"
         );
         Ok(())
     }
 
-    /// Resolve a Keycloak OIDC client by its clientId string.
+    /// List the user ids holding a given client role (`owner`/`member`) on the
+    /// workspace client. Used to mark which organization members are owners.
     ///
-    /// Returns the client's display name and base URL (from webOrigins[0]).
-    /// Used by the workspace switcher to resolve unknown workspace_ids on cache miss.
-    pub async fn resolve_client(&self, client_id: &str) -> Option<ResolvedClient> {
-        let token = self.get_admin_token().await.ok()?;
+    /// `client_id` is the OIDC clientId string (e.g. "keasy-ws-{uuid}").
+    pub async fn list_client_role_users(
+        &self,
+        client_id: &str,
+        role_name: &str,
+    ) -> Result<Vec<String>, String> {
+        let token = self.get_admin_token().await?;
+        let client_uuid = self.lookup_client_uuid(&token, client_id).await?;
 
+        let url = format!(
+            "{}/admin/realms/{}/clients/{}/roles/{}/users?max=1000",
+            self.base_url, self.realm, client_uuid, role_name
+        );
+        let resp = self
+            .http
+            .get(&url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak list role users failed: {e}"))?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            return Err(format!(
+                "Keycloak list role '{role_name}' users returned {status}: {body}"
+            ));
+        }
+
+        let users: Vec<serde_json::Value> = resp
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse Keycloak role users response: {e}"))?;
+
+        Ok(users
+            .into_iter()
+            .filter_map(|u| u.get("id").and_then(|v| v.as_str()).map(|s| s.to_string()))
+            .collect())
+    }
+
+    /// Drop all of a user's client-role mappings (`owner`/`member`) on the
+    /// workspace client — the authorization half of removing a member. Org
+    /// membership is removed separately via `remove_org_member`. Idempotent.
+    ///
+    /// `client_id` is the OIDC clientId string (e.g. "keasy-ws-{uuid}").
+    pub async fn remove_client_roles(
+        &self,
+        keycloak_user_id: &str,
+        client_id: &str,
+    ) -> Result<(), String> {
+        let token = self.get_admin_token().await?;
+        let client_uuid = self.lookup_client_uuid(&token, client_id).await?;
+
+        let mapping_url = format!(
+            "{}/admin/realms/{}/users/{}/role-mappings/clients/{}",
+            self.base_url, self.realm, keycloak_user_id, client_uuid
+        );
+        let resp = self
+            .http
+            .get(&mapping_url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak get user client roles failed: {e}"))?;
+
+        if resp.status().is_success() {
+            let roles: serde_json::Value = resp
+                .json()
+                .await
+                .map_err(|e| format!("Failed to parse user client roles: {e}"))?;
+            if roles.as_array().is_some_and(|a| !a.is_empty()) {
+                let del = self
+                    .http
+                    .delete(&mapping_url)
+                    .bearer_auth(&token)
+                    .json(&roles)
+                    .send()
+                    .await
+                    .map_err(|e| format!("Keycloak delete user client roles failed: {e}"))?;
+                if !del.status().is_success() {
+                    let status = del.status();
+                    let body = del.text().await.unwrap_or_default();
+                    return Err(format!(
+                        "Keycloak delete client roles returned {status}: {body}"
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Resolve a clientId string to its Keycloak-internal UUID. Shared by all
+    /// client-scoped admin operations (mappers, roles, role assignment).
+    async fn lookup_client_uuid(&self, token: &str, client_id: &str) -> Result<String, String> {
         let clients_url = format!(
             "{}/admin/realms/{}/clients?clientId={}",
             self.base_url, self.realm, client_id
         );
-        let resp = self.http
+        let resp = self
+            .http
             .get(&clients_url)
-            .bearer_auth(&token)
+            .bearer_auth(token)
             .send()
             .await
-            .ok()?;
+            .map_err(|e| format!("Keycloak client lookup failed: {e}"))?;
 
-        let clients: Vec<serde_json::Value> = resp.json().await.ok()?;
-        let client = clients.first()?;
+        let clients: Vec<serde_json::Value> = resp
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse Keycloak clients response: {e}"))?;
 
-        let name = client.get("name")
-            .and_then(|v| v.as_str())
-            .unwrap_or(client_id)
-            .to_string();
-
-        let url = client.get("webOrigins")
-            .and_then(|v| v.as_array())
-            .and_then(|arr| arr.first())
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())?;
-
-        Some(ResolvedClient { name, url })
-    }
-
-    /// Read the user's workspaces from Keycloak (`keasy.workspaces` attribute).
-    ///
-    /// Returns the live list from Keycloak (not the stale ID token claim).
-    pub async fn get_user_workspaces(&self, keycloak_user_id: &str) -> Result<Vec<String>, String> {
-        let token = self.get_admin_token().await?;
-        let user_url = format!(
-            "{}/admin/realms/{}/users/{}",
-            self.base_url, self.realm, keycloak_user_id
-        );
-        let resp = self.http.get(&user_url).bearer_auth(&token).send().await
-            .map_err(|e| format!("get user: {e}"))?;
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
-            return Err(format!("get user returned {status}: {body}"));
-        }
-        let user: serde_json::Value = resp.json().await
-            .map_err(|e| format!("parse user: {e}"))?;
-        let workspace_ids: Vec<String> = user
-            .get("attributes")
-            .and_then(|a| a.get("keasy.workspaces"))
-            .and_then(|v| serde_json::from_value(v.clone()).ok())
-            .unwrap_or_default();
-        Ok(workspace_ids)
+        clients
+            .first()
+            .and_then(|c| c["id"].as_str())
+            .map(|s| s.to_string())
+            .ok_or_else(|| format!("Client '{}' not found in Keycloak", client_id))
     }
 
     /// Retrieve the client secret for a given Keycloak-internal client UUID.
@@ -495,4 +820,18 @@ impl KeycloakAdmin {
 
         Ok(secret_resp.value)
     }
+}
+
+/// Extract the bare host from a URL for use as an organization domain
+/// (`https://acme.keasy.tech/x` → `acme.keasy.tech`, `http://localhost:3000` → `localhost`).
+fn host_of(url: &str) -> String {
+    url.trim_start_matches("https://")
+        .trim_start_matches("http://")
+        .split('/')
+        .next()
+        .unwrap_or("")
+        .split(':')
+        .next()
+        .unwrap_or("")
+        .to_string()
 }

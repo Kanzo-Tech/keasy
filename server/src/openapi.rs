@@ -51,6 +51,7 @@ use utoipa::OpenApi;
         crate::auth::routes::list_workspaces,
         // Providers
         crate::routes::providers::list_providers,
+        crate::routes::providers::list_refs,
         // Organization
         crate::routes::org::list_users,
         crate::routes::org::remove_user,
@@ -61,6 +62,9 @@ use utoipa::OpenApi;
         crate::routes::org::revoke_org_invite,
         // Discovery
         crate::discovery::routes::resolve_discover_urls,
+        crate::discovery::routes::resolve_discover_manifest,
+        crate::discovery::routes::resolve_catalog_manifest,
+        crate::discovery::routes::execute_discover_sql,
         // AI / Conversations
         crate::ai::routes::ask_discover_stream,
         crate::ai::routes::create_conversation,
@@ -109,10 +113,8 @@ use utoipa::OpenApi;
         crate::settings::ai::AiSettingsPayload,
         // Invite Tokens
         crate::db::invite_tokens::InviteToken,
-        // Workspaces
-        crate::db::workspaces::Workspace,
         // Org members
-        crate::db::org_members::OrgMember,
+        crate::routes::org::WorkspaceMember,
         // Auth response types
         crate::auth::routes::MeResponse,
         crate::auth::routes::MeOrg,
@@ -134,6 +136,9 @@ use utoipa::OpenApi;
         // Providers
         fossil_run_status::ProviderInfo,
         fossil_run_status::ProviderKind,
+        fossil_run_status::SourceRefInfo,
+        fossil_run_status::RefRole,
+        crate::routes::providers::RefsRequest,
         // AI / Conversations
         crate::ai::routes::AskRequest,
         crate::ai::routes::AskResponse,

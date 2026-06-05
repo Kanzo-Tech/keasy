@@ -6,11 +6,11 @@ use serde::Deserialize;
 
 use crate::cloud::reader;
 use crate::connections::models::{
-    ColumnInfo, Connection, CreateConnectionRequest, FileSchemaResponse, LocationType,
+    ColumnInfo, Connection, CreateConnectionRequest, Direction, FileSchemaResponse, LocationType,
     UpdateConnectionRequest, UploadFileRequest,
 };
 use crate::error::data_response;
-use crate::middleware::tenant::{IsMember, Require};
+use crate::middleware::tenant::{IsMember, Require, TenantRole};
 use crate::AppState;
 
 use super::errors::ConnectionError;
@@ -96,10 +96,16 @@ pub async fn list_connections(
     )
 )]
 pub async fn create_connection(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Json(req): Json<CreateConnectionRequest>,
 ) -> Result<impl IntoResponse, ConnectionError> {
+    if req.direction == Direction::Sink && ctx.role != TenantRole::Owner {
+        return Err(ConnectionError::Forbidden(
+            "only the owner can manage the workspace sink".to_string(),
+        ));
+    }
+
     if req.location_type == LocationType::Cloud
         && let Some(ref account_id) = req.cloud_account_id
     {
@@ -145,11 +151,27 @@ pub async fn get_connection(
     )
 )]
 pub async fn update_connection(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<UpdateConnectionRequest>,
 ) -> Result<impl IntoResponse, ConnectionError> {
+    // The sink is owner-only: gate both editing an existing sink and promoting a
+    // source into one.
+    if ctx.role != TenantRole::Owner {
+        let touches_sink = req.direction == Some(Direction::Sink)
+            || state
+                .db
+                .get_connection(id.as_str())
+                .await
+                .is_some_and(|c| c.direction == Direction::Sink);
+        if touches_sink {
+            return Err(ConnectionError::Forbidden(
+                "only the owner can manage the workspace sink".to_string(),
+            ));
+        }
+    }
+
     match state.db.update_connection(id.as_str(), req).await {
         Ok(connection) => Ok(data_response(connection).into_response()),
         Err(msg) => Err(ConnectionError::InvalidConnection(msg)),
@@ -163,10 +185,22 @@ pub async fn update_connection(
     )
 )]
 pub async fn delete_connection(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
+    if ctx.role != TenantRole::Owner
+        && state
+            .db
+            .get_connection(id.as_str())
+            .await
+            .is_some_and(|c| c.direction == Direction::Sink)
+    {
+        return Err(ConnectionError::Forbidden(
+            "only the owner can manage the workspace sink".to_string(),
+        ));
+    }
+
     state.db.remove_connection(id.as_str()).await
         .map_err(ConnectionError::Internal)?;
     Ok(StatusCode::NO_CONTENT.into_response())

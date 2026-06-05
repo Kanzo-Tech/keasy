@@ -6,6 +6,8 @@ pub enum ConnectionError {
     ContainerNotFound(String),
     #[error("invalid connection: {0}")]
     InvalidConnection(String),
+    #[error("forbidden: {0}")]
+    Forbidden(String),
     #[error("failed to list files: {0}")]
     ListFilesFailed(String),
     #[error("schema inference failed: {0}")]
@@ -32,6 +34,11 @@ impl ConnectionError {
             ConnectionError::InvalidConnection(msg) => (
                 axum::http::StatusCode::BAD_REQUEST,
                 "invalid_connection",
+                msg.clone(),
+            ),
+            ConnectionError::Forbidden(msg) => (
+                axum::http::StatusCode::FORBIDDEN,
+                "forbidden",
                 msg.clone(),
             ),
             ConnectionError::ListFilesFailed(msg) => (

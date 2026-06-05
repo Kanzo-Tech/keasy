@@ -36,14 +36,12 @@ pub struct ServerConfig {
     /// to this internal URL (e.g. `http://keycloak:8080`).
     /// Read from KEASY_OIDC_INTERNAL_BASE_URL.
     pub oidc_internal_base_url: Option<String>,
-    /// Keycloak subject (`sub`) of the workspace owner, provisioned by the
-    /// control-plane. When set, the instance idempotently ensures this user is
-    /// the `owner` of this workspace at boot — the single bootstrap datum that
-    /// replaces the old SQL seeds. Read from `KEASY_OWNER_KEYCLOAK_SUB`.
-    pub owner_keycloak_sub: Option<String>,
     /// Display name of this workspace. Read from `KEASY_WORKSPACE_NAME`,
-    /// default `"Workspace"`. Used for the owner org created at boot.
+    /// default `"Workspace"`. Used to seed the local workspace identity at boot.
     pub workspace_name: String,
+    /// Alias of this workspace's Keycloak Organization (its membership
+    /// container). Read from `KEASY_ORG_ALIAS`; resolved to an org id at boot.
+    pub org_alias: Option<String>,
     /// Session cookie name — allows multiple Keasy instances on the same host.
     /// Read from KEASY_SESSION_COOKIE_NAME. Default "keasy.sid".
     pub session_cookie_name: String,
@@ -139,14 +137,14 @@ impl ServerConfig {
             .ok()
             .filter(|s| !s.trim().is_empty());
 
-        let owner_keycloak_sub = std::env::var("KEASY_OWNER_KEYCLOAK_SUB")
-            .ok()
-            .filter(|s| !s.trim().is_empty());
-
         let workspace_name = std::env::var("KEASY_WORKSPACE_NAME")
             .ok()
             .filter(|s| !s.trim().is_empty())
             .unwrap_or_else(|| "Workspace".to_string());
+
+        let org_alias = std::env::var("KEASY_ORG_ALIAS")
+            .ok()
+            .filter(|s| !s.trim().is_empty());
 
         let session_cookie_name = std::env::var("KEASY_SESSION_COOKIE_NAME")
             .unwrap_or_else(|_| "keasy.sid".to_string());
@@ -172,8 +170,8 @@ impl ServerConfig {
             oidc_client_id,
             oidc_client_secret,
             oidc_internal_base_url,
-            owner_keycloak_sub,
             workspace_name,
+            org_alias,
             session_cookie_name,
         }
     }

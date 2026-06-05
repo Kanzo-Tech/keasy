@@ -8,6 +8,7 @@
   "verifyEmail": false,
   "accessTokenLifespan": 3600,
   "ssoSessionMaxLifespan": 86400,
+  "organizationsEnabled": true,
   "clientScopes": [
     {
       "name": "profile",
@@ -103,17 +104,17 @@
       ]
     },
     {
-      "name": "keasy-workspaces",
-      "description": "Maps keasy.workspaces user attribute to keasy:workspaces ID-token claim",
+      "name": "keasy-role",
+      "description": "Maps the user's keasy-server client roles to the keasy:role ID-token claim",
       "protocol": "openid-connect",
       "protocolMappers": [
         {
-          "name": "keasy-workspaces",
+          "name": "keasy-role",
           "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
           "config": {
-            "user.attribute": "keasy.workspaces",
-            "claim.name": "keasy:workspaces",
+            "usermodel.clientRoleMapping.clientId": "keasy-server",
+            "claim.name": "keasy:role",
             "jsonType.label": "String",
             "multivalued": "true",
             "id.token.claim": "true",
@@ -124,6 +125,14 @@
       ]
     }
   ],
+  "roles": {
+    "client": {
+      "keasy-server": [
+        { "name": "owner", "description": "Workspace owner — metadata plane" },
+        { "name": "member", "description": "Workspace member — data plane" }
+      ]
+    }
+  },
   "clients": [
     {
       "clientId": "keasy-server",
@@ -144,7 +153,7 @@
       "attributes": {
         "post.logout.redirect.uris": "http://localhost:8080/*##http://localhost:3000/*"
       },
-      "defaultClientScopes": ["openid", "profile", "email", "keasy-workspaces"]
+      "defaultClientScopes": ["openid", "profile", "email", "keasy-role"]
     }
   ],
   "users": [
@@ -156,7 +165,8 @@
       "lastName": "Owner",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [{ "type": "password", "value": "owner", "temporary": false }]
+      "credentials": [{ "type": "password", "value": "owner", "temporary": false }],
+      "clientRoles": { "keasy-server": ["owner"] }
     },
     {
       "id": "bbbb0000-0000-0000-0000-000000000001",
@@ -166,7 +176,19 @@
       "lastName": "Member",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [{ "type": "password", "value": "member", "temporary": false }]
+      "credentials": [{ "type": "password", "value": "member", "temporary": false }],
+      "clientRoles": { "keasy-server": ["member"] }
+    },
+    {
+      "username": "service-account-keasy-server",
+      "enabled": true,
+      "serviceAccountClientId": "keasy-server",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users", "view-users", "query-users", "view-clients",
+          "manage-organizations", "view-organizations"
+        ]
+      }
     }
   ]
 }

@@ -14,19 +14,13 @@
 import { useEffect, useRef } from "react";
 import * as vg from "@uwdata/vgplot";
 import type { Selection } from "@uwdata/mosaic-core";
-import { NUMERIC_DUCKDB_TYPES, TEMPORAL_DUCKDB_TYPES } from "@/lib/graph-schema";
+import { isBinnable } from "@/lib/graph-schema";
 
 interface Props {
   tableName: string;
   fieldName: string;
   fieldType: string;
   selection: Selection;
-}
-
-/** Check if a DuckDB type supports binning (numeric or temporal). */
-function isBinnable(type: string): boolean {
-  const upper = type.toUpperCase().replace(/\(.*\)/, "").trim();
-  return NUMERIC_DUCKDB_TYPES.has(upper) || TEMPORAL_DUCKDB_TYPES.has(upper);
 }
 
 export function FieldHistogram({ tableName, fieldName, fieldType, selection }: Props) {

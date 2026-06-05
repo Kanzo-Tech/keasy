@@ -7,6 +7,7 @@ settings:
 overrides:
   '@fossil-lang/codemirror-fossil': file:./vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz
   '@fossil-lang/editor': file:./vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz
+  '@fossil-lang/graph': file:./vendor/fossil-lang/fossil-lang-graph-0.3.0-alpha.1.tgz
   '@fossil-lang/introspect': file:./vendor/fossil-lang/fossil-lang-introspect-0.3.0-alpha.0.tgz
   '@fossil-lang/resolvers': file:./vendor/fossil-lang/fossil-lang-resolvers-0.3.0-alpha.0.tgz
   '@fossil-lang/types': file:./vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz
@@ -52,6 +53,9 @@ importers:
       '@fossil-lang/editor':
         specifier: file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz
         version: file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/lsp-client@6.2.4)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@fossil-lang/graph':
+        specifier: file:vendor/fossil-lang/fossil-lang-graph-0.3.0-alpha.1.tgz
+        version: file:vendor/fossil-lang/fossil-lang-graph-0.3.0-alpha.1.tgz
       '@fossil-lang/resolvers':
         specifier: file:vendor/fossil-lang/fossil-lang-resolvers-0.3.0-alpha.0.tgz
         version: file:vendor/fossil-lang/fossil-lang-resolvers-0.3.0-alpha.0.tgz
@@ -676,7 +680,7 @@ packages:
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
 
   '@fossil-lang/codemirror-fossil@file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz':
-    resolution: {integrity: sha512-mESMBZca6OdTP3COkMRr1+ANZidF+PJbAXCklbHWZpNfOO1L2WJ5+Hou83HsSXnMH8/KMqeisciBcUienmFROQ==, tarball: file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz}
+    resolution: {integrity: sha512-7ZLwNP2zArIpTjj5NvHNKmmxVW+o/1XWeLp0jeoxCPbKpxOg0e+4R0/Owgk6s2ApJ/26YRVlVOOeUNUuuJCX4Q==, tarball: file:vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz}
     version: 0.3.0-alpha.0
     peerDependencies:
       '@codemirror/autocomplete': ^6.0.0
@@ -686,7 +690,7 @@ packages:
       '@codemirror/view': ^6.0.0
 
   '@fossil-lang/editor@file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz':
-    resolution: {integrity: sha512-D0azusfK1olW/cyM7yDCi5IpnhG7tvZhATEi2fBJIlMUYEHFiPkeJcnO/w1+Rv1Qw5zs44seBgl8stkpXlcntQ==, tarball: file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz}
+    resolution: {integrity: sha512-PxaKYAUicUxhfu59Hcn3Q0e6H2pwxMf9WGcuzy4nD9vzLR5Hbh6wVycaQz2DUKMoGDChieLQk85uR2X2CVYDCw==, tarball: file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz}
     version: 0.3.0-alpha.0
     peerDependencies:
       '@codemirror/autocomplete': ^6.0.0
@@ -698,6 +702,10 @@ packages:
       '@lezer/highlight': ^1.0.0
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
+
+  '@fossil-lang/graph@file:vendor/fossil-lang/fossil-lang-graph-0.3.0-alpha.1.tgz':
+    resolution: {integrity: sha512-Wk7Xch3mR3/tZ+X17GJEMjsgGpJvTAbRafNx01bSEaUXNfQwK4B2uPk/bZjnqaA3CD6ZEMTdRHTWhSyoAOX2qQ==, tarball: file:vendor/fossil-lang/fossil-lang-graph-0.3.0-alpha.1.tgz}
+    version: 0.3.0-alpha.1
 
   '@fossil-lang/introspect@file:vendor/fossil-lang/fossil-lang-introspect-0.3.0-alpha.0.tgz':
     resolution: {integrity: sha512-j774q8/oQAoSsoWiK6IfgiR64iYWBbnk87cysg2GR8vNb+iBhX5wIRFFbmnuE1xids84RPLDuizR9FrNUocbCA==, tarball: file:vendor/fossil-lang/fossil-lang-introspect-0.3.0-alpha.0.tgz}
@@ -6363,6 +6371,8 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'
+
+  '@fossil-lang/graph@file:vendor/fossil-lang/fossil-lang-graph-0.3.0-alpha.1.tgz': {}
 
   '@fossil-lang/introspect@file:vendor/fossil-lang/fossil-lang-introspect-0.3.0-alpha.0.tgz': {}
 

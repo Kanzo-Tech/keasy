@@ -1,7 +1,7 @@
 //! OIDC relying party implementation.
 //!
 //! Provides:
-//! - `KeyasyIdTokenClaims` — custom claims struct with `keasy:workspaces` multivalued claim
+//! - `KeyasyIdTokenClaims` — custom claims struct with the `keasy:role` multivalued claim
 //! - `KeyasyClient` — fully-parameterized openidconnect client type alias
 //! - `OidcState` — OIDC client + cached JWKS/provider metadata
 //! - `build_oidc_client()` — async initialization from issuer URL / client credentials
@@ -32,17 +32,18 @@ use crate::AppState;
 use crate::auth::errors::AuthError;
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Custom claims (keasy:workspaces multivalued claim)
+// Custom claims (keasy:role multivalued claim)
 // ──────────────────────────────────────────────────────────────────────────────
 
 /// Additional ID token claims specific to Keasy.
 ///
-/// The `keasy:workspaces` claim is a multivalued list of workspace client_ids
-/// that the authenticated user is a member of.
+/// `keasy:role` is the multivalued list of the user's client roles on *this*
+/// workspace client (`owner` / `member`) — the single source of authorization
+/// truth, replacing the old local `org_members` table.
 #[derive(Debug, serde::Deserialize, serde::Serialize, Clone)]
 pub struct KeyasyIdTokenClaims {
-    #[serde(rename = "keasy:workspaces", default)]
-    pub workspaces: Vec<String>,
+    #[serde(rename = "keasy:role", default)]
+    pub roles: Vec<String>,
 }
 
 impl openidconnect::AdditionalClaims for KeyasyIdTokenClaims {}
@@ -525,6 +526,19 @@ pub async fn oidc_callback(
     // 9. Extract subject (Keycloak user UUID).
     let subject = claims.subject().to_string();
 
+    // 9b. Derive the tenant role from the `keasy:role` client-role claim. Owner
+    // ⊇ member; absence of any role means the user is not a member ("none").
+    let tenant_role = {
+        let roles = &claims.additional_claims().roles;
+        if roles.iter().any(|r| r == "owner") {
+            "owner"
+        } else if roles.iter().any(|r| r == "member") {
+            "member"
+        } else {
+            "none"
+        }
+    };
+
     // 10. Extract profile claims from ID token.
     let email_str = claims.email().map(|e| e.as_str()).unwrap_or("").to_string();
     let first_str = claims
@@ -551,12 +565,6 @@ pub async fn oidc_callback(
         .insert("user_last_name", &last_str)
         .await
         .map_err(|e| AuthError::Internal(format!("session insert user_last_name: {e}")))?;
-
-    // 11. Sync cached profile in org_members (no-op if user has no membership yet).
-    let _ = state
-        .db
-        .sync_member_profile(&subject, &email_str, &first_str, &last_str)
-        .await;
 
     // 12. Read pending invite token BEFORE cycling session ID (cycle_id keeps data).
     let pending_invite_token: Option<String> = session.get("pending_invite_token").await.ok().flatten();
@@ -587,10 +595,12 @@ pub async fn oidc_callback(
         .await
         .map_err(|e| AuthError::Internal(format!("session insert user_id: {e}")))?;
 
+    // Persist the tenant role so middleware and /me read it from the session
+    // (set once at login from the Keycloak claim — no per-request DB lookup).
     session
-        .insert("auth_method", "oidc")
+        .insert("tenant_role", tenant_role)
         .await
-        .map_err(|e| AuthError::Internal(format!("session insert auth_method: {e}")))?;
+        .map_err(|e| AuthError::Internal(format!("session insert tenant_role: {e}")))?;
 
     // 16. Set 24-hour fixed expiry (same as password auth pattern).
     session.set_expiry(Some(Expiry::AtDateTime(
@@ -616,8 +626,15 @@ pub async fn oidc_callback(
         .map_err(|e| AuthError::Internal(format!("upsert_user_session failed: {e}")))?;
 
     // 19. Auto-accept pending invite if one was stored before the OIDC redirect.
+    //     The `keasy:role` claim in *this* token predates the just-granted
+    //     membership, so reflect the new `member` role in the session now —
+    //     otherwise the freshly-invited user would be "none" until re-login.
     if let Some(invite_token) = pending_invite_token {
-        let _ = accept_invite_for_user(&state, &subject, &email_str, &first_str, &last_str, &invite_token).await;
+        if accept_invite_for_user(&state, &subject, &invite_token).await.is_ok()
+            && tenant_role == "none"
+        {
+            let _ = session.insert("tenant_role", "member").await;
+        }
         let _ = session.remove_value("pending_invite_token").await;
         let _ = session.save().await;
     }
@@ -632,16 +649,14 @@ pub async fn oidc_callback(
 
 /// Auto-accept a pending invite for a newly OIDC-authenticated user.
 ///
-/// Validates the token (must not be expired), creates the org membership,
-/// and updates the user's `keasy.workspaces` attribute in Keycloak.
-/// Reusable — the token is not consumed. Silently ignores failures — if the
-/// invite is expired or the user already has a membership, they still log in.
+/// Validates the token (must not be expired), then grants membership entirely
+/// in Keycloak: adds the user to the workspace's Organization (membership) and
+/// assigns the `member` client role (authorization). Joining via a link always
+/// grants `member` — the owner is bootstrapped, never via a link. Reusable: the
+/// token is not consumed.
 async fn accept_invite_for_user(
     state: &AppState,
     user_id: &str,
-    email: &str,
-    first_name: &str,
-    last_name: &str,
     invite_token: &str,
 ) -> Result<(), String> {
     let token = state
@@ -655,31 +670,20 @@ async fn accept_invite_for_user(
         return Err("invite token expired".to_string());
     }
 
-    // Joining via an invite link always grants `member` (the owner is
-    // bootstrapped from config, never via a link).
-    state
-        .db
-        .upsert_org_member(user_id, "member", email, first_name, last_name)
-        .await?;
-
-    // Update Keycloak workspaces attribute — user_id IS the Keycloak UUID.
-    if let (Some(kc_admin), Some(client_id)) = (
+    // Grant membership in Keycloak — user_id IS the Keycloak UUID. Membership is
+    // the organization (federation directory); authorization is the `member`
+    // client role. Both set together at join time.
+    let (Some(kc_admin), Some(client_id), Some(org_id)) = (
         &state.auth.keycloak_admin,
         &state.auth.oidc_client_id,
-    )
-        && let Err(e) = kc_admin.add_user_workspace(user_id, client_id).await {
-            tracing::warn!(
-                error = %e,
-                user_id = %user_id,
-                client_id = %client_id,
-                "Failed to update Keycloak workspaces attribute"
-            );
-        }
+        &state.auth.oidc_org_id,
+    ) else {
+        return Err("Keycloak/organization not configured".to_string());
+    };
 
-    tracing::info!(
-        user_id = %user_id,
-        "OIDC: auto-accepted invite for user"
-    );
+    kc_admin.add_org_member(org_id, user_id).await?;
+    kc_admin.assign_client_role(user_id, client_id, "member").await?;
 
+    tracing::info!(user_id = %user_id, "OIDC: auto-accepted invite for user");
     Ok(())
 }

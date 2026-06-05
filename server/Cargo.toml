@@ -53,6 +53,10 @@ time = "0.3"
 # providers) goes through the `fossil` binary over a subprocess. Path dep while
 # rmlext is a sibling local checkout; → git dep once rmlext is published.
 fossil-run-status = { path = "../../rmlext/crates/fossil-run-status", features = ["utoipa"] }
+# MCP client only — keasy spawns the `fossil-mcp` binary (host-boundary: still a
+# subprocess, NO fossil compiler/runtime crate linked) and calls its verb tools
+# over stdio. Used for owner-gated `execute_sql` (and the future `/ask` loop).
+rmcp = { version = "0.16", features = ["client", "transport-child-process"] }
 base64 = "0.22"
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "jwk"] }
 x509-parser = { version = "0.16", features = ["verify"] }

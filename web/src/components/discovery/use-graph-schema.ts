@@ -4,38 +4,50 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   buildGraphSchema,
-  computeColumnStats,
-  type ColumnStatsMap,
+  foldVertexStats,
+  type FieldStatsMap,
   type GraphSchema,
 } from "@/lib/graph-schema";
 import type { RunStatus } from "@/lib/types";
-import { useCoordinator } from "./use-discovery-store";
+import { useGraphClient } from "./use-discovery-store";
 
 /**
- * Build the graph schema from a `RunStatus` and, once the DuckDB-WASM data
- * space is mounted, refine it with browser-computed column cardinality (so role
- * inference can distinguish identifiers from dimensions). Returns the
- * name/type-only schema until the stats land.
+ * Build the graph schema from a `RunStatus` and, once the verb client is ready,
+ * refine it with authoritative role + cardinality from the `describe_vertex_type`
+ * verb (one call per type — fossil is the single source). Returns the
+ * name/type-only schema (roles default to "dimension") until the stats land.
  */
 export function useGraphSchema(manifest: RunStatus): GraphSchema {
-  const coordinator = useCoordinator();
+  const graphClient = useGraphClient();
   const base = useMemo(() => buildGraphSchema(manifest), [manifest]);
-  const [stats, setStats] = useState<ColumnStatsMap | null>(null);
+  const [stats, setStats] = useState<FieldStatsMap | null>(null);
 
   useEffect(() => {
-    if (!coordinator) return;
+    if (!graphClient) return;
     let cancelled = false;
-    computeColumnStats(coordinator, base)
-      .then((s) => {
-        if (!cancelled) setStats(s);
+    Promise.all(
+      base.types.map(async (t) => ({
+        name: t.name,
+        res: await graphClient.describeVertexType({ vertex_type: t.name }),
+      })),
+    )
+      .then((results) => {
+        if (cancelled) return;
+        const map: FieldStatsMap = new Map();
+        for (const { name, res } of results) {
+          foldVertexStats(map, name, res.count, res.fields);
+        }
+        setStats(map);
       })
-      .catch(() => {
-        /* stats are an enhancement; fall back to the name/type-only schema */
+      .catch((err) => {
+        // Surface the failure (the base schema still renders with phase-1
+        // roles); a silent swallow here masked WASM-init breakage before.
+        console.error("describe_vertex_type failed; using base schema", err);
       });
     return () => {
       cancelled = true;
     };
-  }, [coordinator, base]);
+  }, [graphClient, base]);
 
   return useMemo(
     () => (stats ? buildGraphSchema(manifest, stats) : base),

@@ -108,6 +108,10 @@ pub fn build_router(
                 .post(crate::jobs::routes::create_job),
         )
         .route(
+            "/v1/refs",
+            axum::routing::post(providers::list_refs),
+        )
+        .route(
             "/v1/jobs/{id}",
             axum::routing::get(crate::jobs::routes::get_job)
                 .put(crate::jobs::routes::update_job)
@@ -151,8 +155,20 @@ pub fn build_router(
             axum::routing::get(crate::discovery::routes::resolve_discover_urls),
         )
         .route(
+            "/v1/jobs/{id}/discover/manifest",
+            axum::routing::get(crate::discovery::routes::resolve_discover_manifest),
+        )
+        .route(
+            "/v1/jobs/{id}/discover/execute-sql",
+            axum::routing::post(crate::discovery::routes::execute_discover_sql),
+        )
+        .route(
             "/v1/jobs/{id}/catalog/urls",
             axum::routing::get(crate::discovery::routes::resolve_catalog_urls),
+        )
+        .route(
+            "/v1/jobs/{id}/catalog/manifest",
+            axum::routing::get(crate::discovery::routes::resolve_catalog_manifest),
         )
         .route(
             "/v1/jobs/{id}/discover/ask-stream",
@@ -236,8 +252,7 @@ pub fn build_router(
             "/v1/org/invites/{token}",
             axum::routing::delete(org::revoke_org_invite),
         )
-        .layer(middleware::from_fn_with_state(
-            state.clone(),
+        .layer(middleware::from_fn(
             tenant_context_required, // runs second (inner), after session_required
         ))
         .layer(middleware::from_fn_with_state(

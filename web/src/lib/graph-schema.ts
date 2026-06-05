@@ -1,10 +1,11 @@
-import type { Coordinator } from "@uwdata/mosaic-core";
-
 import type { RunStatus } from "@/lib/types";
+import type { FieldRole, FieldStat } from "@fossil-lang/graph";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
-export type FieldRole = "measure" | "dimension" | "identifier";
+// FieldRole is owned by fossil-graph (the `describe_vertex_type` verb is the
+// single source for role inference — keasy no longer infers roles client-side).
+export type { FieldRole };
 export type YAgg = "count" | "sum" | "avg" | "min" | "max";
 export type MarkType = "barY" | "lineY" | "dot" | "rectY" | "cell";
 
@@ -58,43 +59,32 @@ export interface GraphSchema {
   buildSource(fields: FieldInfo[]): SourceQuery;
 }
 
-// ── Type constants ──────────────────────────────────────────────────────
+// ── Type checks (GraphAr datatype spellings) ─────────────────────────────
+//
+// `data_type` carries GraphAr spelling (`int64`, `double`, `date`, …), NOT
+// DuckDB names. These classify it for vgplot chart binning (the reactive
+// Mosaic layer). Role inference is NOT here — it's the `describe_vertex_type`
+// verb's job (fossil is the single source).
 
-export const NUMERIC_DUCKDB_TYPES = new Set([
-  "INTEGER", "BIGINT", "HUGEINT", "SMALLINT", "TINYINT",
-  "DOUBLE", "FLOAT", "DECIMAL",
+const NUMERIC_GRAPHAR_TYPES = new Set([
+  "int8", "int16", "int32", "int64",
+  "uint8", "uint16", "uint32", "uint64",
+  "float", "double",
 ]);
 
-export const TEMPORAL_DUCKDB_TYPES = new Set([
-  "DATE", "TIMESTAMP", "TIMESTAMP WITH TIME ZONE",
-]);
-
-// ── Type checks ─────────────────────────────────────────────────────────
+const TEMPORAL_GRAPHAR_TYPES = new Set(["date", "timestamp", "time"]);
 
 export function isNumericType(datatype: string): boolean {
-  const upper = datatype.toUpperCase();
-  return NUMERIC_DUCKDB_TYPES.has(upper) || upper.startsWith("DECIMAL(");
+  return NUMERIC_GRAPHAR_TYPES.has(datatype.toLowerCase());
 }
 
-// ── Role inference ──────────────────────────────────────────────────────
+export function isTemporalType(datatype: string): boolean {
+  return TEMPORAL_GRAPHAR_TYPES.has(datatype.toLowerCase());
+}
 
-const IDENTIFIER_PATTERN = /(?:^|[_.])(id|uri|iri)(?:$|[_.])/i;
-
-export function inferRole(
-  name: string,
-  type: string,
-  nUnique?: number,
-  count?: number,
-): FieldRole {
-  if (IDENTIFIER_PATTERN.test(name)) return "identifier";
-  if (isNumericType(type)) return "measure";
-  const upper = type.toUpperCase();
-  if (upper === "BOOLEAN") return "dimension";
-  if (TEMPORAL_DUCKDB_TYPES.has(upper)) return "dimension";
-  if (nUnique != null && count != null && count > 0) {
-    if (nUnique > 200 || nUnique / count > 0.8) return "identifier";
-  }
-  return "dimension";
+/** A field whose chart axis can be binned: numeric or temporal. */
+export function isBinnable(datatype: string): boolean {
+  return isNumericType(datatype) || isTemporalType(datatype);
 }
 
 // ── Field key ───────────────────────────────────────────────────────────
@@ -107,56 +97,43 @@ export function edgeTableName(sourceType: string, name: string, targetType: stri
   return `${sourceType}_${name}_${targetType}`;
 }
 
-// ── Browser-side column statistics ───────────────────────────────────────
-
-/** Per-field cardinality, keyed by `FieldInfo.key`. */
-export type ColumnStatsMap = Map<string, { distinct: number; count: number }>;
-
-function quoteIdent(name: string): string {
-  return `"${name.replace(/"/g, '""')}"`;
-}
+// ── Verb-sourced field stats ─────────────────────────────────────────────
 
 /**
- * Profile each vertex view in DuckDB-WASM: row count + per-column distinct
- * count, in one query per type. RunStatus carries no statistics (host-boundary:
- * the server ships structure, the browser owns stats) — this is where the
- * browser fills that in.
+ * Per-field role + cardinality, keyed by `FieldInfo.key`. Built from the
+ * `describe_vertex_type` verb — the single source. keasy no longer profiles
+ * columns or infers roles client-side ([[feedback_one_idiom_per_concern]]).
  */
-export async function computeColumnStats(
-  coordinator: Coordinator,
-  schema: GraphSchema,
-): Promise<ColumnStatsMap> {
-  const out: ColumnStatsMap = new Map();
-  await Promise.all(
-    schema.types.map(async (t) => {
-      if (t.fields.length === 0) return;
-      const selects = [
-        "COUNT(*) AS n",
-        ...t.fields.map((f, i) => `COUNT(DISTINCT ${quoteIdent(f.name)}) AS d${i}`),
-      ];
-      const sql = `SELECT ${selects.join(", ")} FROM ${quoteIdent(t.name)}`;
-      const rows = (await coordinator.query(sql, { type: "json" })) as
-        | Array<Record<string, number>>
-        | undefined;
-      const row = rows?.[0];
-      if (!row) return;
-      const count = Number(row.n ?? 0);
-      t.fields.forEach((f, i) => {
-        out.set(f.key, { count, distinct: Number(row[`d${i}`] ?? 0) });
-      });
-    }),
-  );
-  return out;
+export type FieldStatsMap = Map<
+  string,
+  { role: FieldRole; distinct: number; count: number }
+>;
+
+/** Fold one vertex type's `describe_vertex_type` result into the stats map. */
+export function foldVertexStats(
+  stats: FieldStatsMap,
+  typeName: string,
+  count: number,
+  fields: FieldStat[],
+): void {
+  for (const f of fields) {
+    stats.set(fieldKey(typeName, f.name), {
+      role: f.role,
+      distinct: f.distinct,
+      count,
+    });
+  }
 }
 
 // ── Build schema from manifest ──────────────────────────────────────────
 
 /**
- * Build the graph schema from the subprocess `RunStatus`. Pass `stats` (from
- * [`computeColumnStats`]) to refine role inference with browser-computed
- * cardinality; without it, roles fall back to name + type heuristics.
+ * Build the graph schema from the subprocess `RunStatus`. Pass `stats` (folded
+ * from the `describe_vertex_type` verb) to attach authoritative role +
+ * cardinality; without it (phase 1) roles default to "dimension" until the verb
+ * result lands.
  */
-export function buildGraphSchema(manifest: RunStatus, stats?: ColumnStatsMap): GraphSchema {
+export function buildGraphSchema(manifest: RunStatus, stats?: FieldStatsMap): GraphSchema {
   const types: VertexType[] = manifest.vertices.map((v) => ({
     name: v.type,
     entityCount: v.count ?? 0,
@@ -167,7 +144,9 @@ export function buildGraphSchema(manifest: RunStatus, stats?: ColumnStatsMap): G
         key,
         name: c.name,
         type: c.data_type,
-        role: inferRole(c.name, c.data_type, s?.distinct, s?.count),
+        // Role comes from the verb; before it lands (phase 1) default to
+        // "dimension" so every field stays visible until refined.
+        role: s?.role ?? "dimension",
         sourceType: v.type,
         distinct: s?.distinct,
         count: s?.count,

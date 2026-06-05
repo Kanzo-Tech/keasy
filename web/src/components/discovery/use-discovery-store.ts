@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { useDiscoveryStoreApi, type DiscoveryState } from "./store";
 import type { Coordinator } from "@uwdata/mosaic-core";
+import type { GraphClient } from "@fossil-lang/graph";
 
 export function useDiscoveryStore<T>(selector: (s: DiscoveryState) => T): T {
   const store = useDiscoveryStoreApi();
@@ -12,6 +13,11 @@ export function useDiscoveryStore<T>(selector: (s: DiscoveryState) => T): T {
 
 export function useCoordinator(): Coordinator | null {
   return useDiscoveryStore((s) => s.coordinator);
+}
+
+/** The fossil-graph verb client — the single source for discrete reads. */
+export function useGraphClient(): GraphClient | null {
+  return useDiscoveryStore((s) => s.graphClient);
 }
 
 // ── useCoordinatorQuery ──────────────────────────────────────────────────

@@ -176,7 +176,7 @@
           "Auth"
         ],
         "summary": "GET /v1/auth/workspaces",
-        "description": "Returns the list of workspaces the authenticated user has access to,\nresolved from the Keycloak `keasy:workspaces` claim to display info via\nthe workspaces table. Used by the sidebar workspace switcher.",
+        "description": "Returns the workspaces the authenticated user belongs to — their Keycloak\nOrganizations, each carrying its display name and home URL. Used by the\nsidebar workspace switcher.",
         "operationId": "list_workspaces",
         "responses": {
           "200": {
@@ -898,6 +898,40 @@
         }
       }
     },
+    "/v1/jobs/{id}/catalog/manifest": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "operationId": "resolve_catalog_manifest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GraphAr manifest YAMLs for the catalog dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManifestResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found or no catalog"
+          }
+        }
+      }
+    },
     "/v1/jobs/{id}/conversations": {
       "get": {
         "tags": [
@@ -1066,6 +1100,80 @@
             "content": {
               "text/event-stream": {}
             }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/discover/execute-sql": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "operationId": "execute_discover_sql",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecuteSqlRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Verb result: { columns, rows, truncated }"
+          },
+          "403": {
+            "description": "Owner role required"
+          },
+          "404": {
+            "description": "Job not found or no output"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/discover/manifest": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "operationId": "resolve_discover_manifest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GraphAr manifest YAMLs, keyed by dataset-relative path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManifestResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found or no output"
           }
         }
       }
@@ -1275,7 +1383,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/OrgMember"
+                    "$ref": "#/components/schemas/WorkspaceMember"
                   }
                 }
               }
@@ -1326,6 +1434,39 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/ProviderInfo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/refs": {
+      "post": {
+        "tags": [
+          "Providers"
+        ],
+        "operationId": "list_refs",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The program's typed external references",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SourceRefInfo"
                   }
                 }
               }
@@ -1893,6 +2034,10 @@
               "null"
             ]
           },
+          "direction": {
+            "$ref": "#/components/schemas/Direction",
+            "description": "Read source vs the workspace write sink. Defaults to `source`."
+          },
           "id": {
             "type": "string"
           },
@@ -2043,6 +2188,10 @@
               "null"
             ]
           },
+          "direction": {
+            "$ref": "#/components/schemas/Direction",
+            "description": "`source` (default) or `sink` (the owner output store; one per workspace)."
+          },
           "kind": {
             "$ref": "#/components/schemas/ConnectionKind"
           },
@@ -2135,6 +2284,14 @@
           "data": {}
         }
       },
+      "Direction": {
+        "type": "string",
+        "description": "Whether a connection is a READ source (programs reference it via `@conn`) or\nthe workspace's WRITE sink (where the owner's job output is materialised).\nOrthogonal to [`ConnectionKind`] (which describes a source's data) and\n[`LocationType`]: a connection is a named, credentialed storage location, and\n`direction` says how it is used. Exactly one `sink` exists per workspace (the\nowner output store); `kind` is source-only and ignored for a sink.",
+        "enum": [
+          "source",
+          "sink"
+        ]
+      },
       "EdgeStatus": {
         "type": "object",
         "description": "One edge type — its CSR/CSC Parquet pair and endpoints.",
@@ -2173,6 +2330,36 @@
           "src_type": {
             "type": "string",
             "description": "Source vertex type."
+          }
+        }
+      },
+      "ExecuteSqlRequest": {
+        "type": "object",
+        "required": [
+          "sql"
+        ],
+        "properties": {
+          "row_cap": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Max rows returned (the verb enforces an outer LIMIT). Default 10k.",
+            "minimum": 0
+          },
+          "sql": {
+            "type": "string",
+            "description": "SQL to run against the GraphAr views (vertex/edge type names)."
+          },
+          "timeout_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Wall-clock cap, milliseconds. Default 10s.",
+            "minimum": 0
           }
         }
       },
@@ -2348,13 +2535,6 @@
           "mode"
         ],
         "properties": {
-          "catalog_base": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Base URL for catalog parquets in owner storage."
-          },
           "catalog_manifest": {
             "oneOf": [
               {
@@ -2362,7 +2542,7 @@
               },
               {
                 "$ref": "#/components/schemas/RunStatus",
-                "description": "DCAT-AP catalog graph structure (`fossil catalog` subprocess output):\nper-type Parquet + counts, stored in owner cloud. Drives the catalog\ngraph view (DuckDB-WASM reads the Parquet directly)."
+                "description": "DCAT-AP catalog graph structure (`fossil catalog` subprocess output):\nper-type Parquet + counts, stored in owner cloud. Its `dest` is the\ncatalog base URL. Drives the catalog graph view (DuckDB-WASM reads the\nParquet directly)."
               }
             ]
           },
@@ -2401,7 +2581,7 @@
               },
               {
                 "$ref": "#/components/schemas/RunStatus",
-                "description": "GraphAr structure from the fossil subprocess: per-type Parquet + row\ncount + columns, per-edge CSR/CSC pair. Column statistics are NOT here —\nthe browser computes them from the Parquet (DuckDB-WASM)."
+                "description": "GraphAr structure from the fossil subprocess: per-type Parquet + row\ncount + columns, per-edge CSR/CSC pair. Its `dest` IS the dataset base\nURL — fossil's single description of the output, so keasy keeps no\nduplicate `rdf_base`. Column statistics are NOT here — the browser\ncomputes them from the Parquet (DuckDB-WASM)."
               }
             ]
           },
@@ -2413,13 +2593,6 @@
               "string",
               "null"
             ]
-          },
-          "rdf_base": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Base URL for RDF Parquet storage (set when job uses Rdf output)."
           },
           "script": {
             "type": [
@@ -2520,6 +2693,24 @@
           }
         }
       },
+      "ManifestResponse": {
+        "type": "object",
+        "required": [
+          "manifest_files"
+        ],
+        "properties": {
+          "manifest_files": {
+            "type": "object",
+            "description": "The GraphAr manifest YAMLs, keyed by dataset-relative path\n(`graph.graph.yml`, `vertex/Person.vertex.yml`, …). Fed verbatim into\n`@fossil-lang/graph`'s `createGraphClient({ manifestFiles })`; keasy\ntreats them as opaque blobs — fossil owns the GraphAr layout.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "MeOrg": {
         "type": "object",
         "required": [
@@ -2552,12 +2743,6 @@
           },
           "last_name": {
             "type": "string"
-          },
-          "membership_role": {
-            "type": [
-              "string",
-              "null"
-            ]
           },
           "org": {
             "oneOf": [
@@ -2630,58 +2815,12 @@
           }
         }
       },
-      "OrgMember": {
-        "type": "object",
-        "description": "A workspace member — a Keycloak user's membership in this instance.\nProfile fields (email, first_name, last_name) are cached from OIDC tokens.",
-        "required": [
-          "user_id",
-          "role",
-          "email",
-          "first_name",
-          "last_name",
-          "joined_at"
-        ],
-        "properties": {
-          "email": {
-            "type": "string"
-          },
-          "first_name": {
-            "type": "string"
-          },
-          "joined_at": {
-            "type": "string"
-          },
-          "last_name": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string"
-          },
-          "user_id": {
-            "type": "string"
-          }
-        }
-      },
       "OrgSettings": {
         "type": "object",
         "required": [
           "publisher_name"
         ],
         "properties": {
-          "catalog_base_url": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Base URL for catalog parquet storage (e.g. s3://owner/catalogs/)."
-          },
-          "catalog_cloud_account_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Cloud account ID for catalog parquet storage (set by owner)."
-          },
           "catalog_description": {
             "type": [
               "string",
@@ -2806,6 +2945,28 @@
           }
         }
       },
+      "RefRole": {
+        "type": "string",
+        "description": "The position a reference plays in an `io.*` source constructor.",
+        "enum": [
+          "data",
+          "schema",
+          "select"
+        ]
+      },
+      "RefsRequest": {
+        "type": "object",
+        "description": "Request body for `POST /v1/refs`: the `.fossil` script to parse.",
+        "required": [
+          "script"
+        ],
+        "properties": {
+          "script": {
+            "type": "string",
+            "description": "The `.fossil` program text whose external references to enumerate."
+          }
+        }
+      },
       "RenameConversationRequest": {
         "type": "object",
         "required": [
@@ -2884,6 +3045,31 @@
         "properties": {
           "oidc": {
             "type": "boolean"
+          }
+        }
+      },
+      "SourceRefInfo": {
+        "type": "object",
+        "description": "One external reference a program makes. `connection` is the `@conn` alias the\nreference targets (`Some(\"cpi\")` for `@cpi/graph.ttl`), or `None` for a direct\nURL / local path. `path` is the remainder after the alias (or the whole\nlocator when there is no alias). This is the program's TYPED lineage — keasy\nderives a job's connection set from the distinct `connection`s, never from a\nregex over the script text.",
+        "required": [
+          "path",
+          "role"
+        ],
+        "properties": {
+          "connection": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The `@conn` alias this reference targets, or `None` for a direct URL/path."
+          },
+          "path": {
+            "type": "string",
+            "description": "The path within the connection, or the whole locator when unaliased."
+          },
+          "role": {
+            "$ref": "#/components/schemas/RefRole",
+            "description": "Where this reference appears in the source constructor."
           }
         }
       },
@@ -2986,6 +3172,16 @@
             "type": [
               "string",
               "null"
+            ]
+          },
+          "direction": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Direction"
+              }
             ]
           },
           "kind": {
@@ -3128,44 +3324,48 @@
           }
         }
       },
-      "Workspace": {
+      "WorkspaceMember": {
         "type": "object",
-        "description": "A registered workspace instance (OIDC client), keyed by `client_id`. Display\nmetadata for the federation switcher; OIDC credentials live in Keycloak only.",
+        "description": "A workspace member, resolved from Keycloak client-role mappings.",
         "required": [
-          "client_id",
-          "name",
-          "url",
-          "created_at",
-          "updated_at"
+          "user_id",
+          "role",
+          "email",
+          "first_name",
+          "last_name",
+          "joined_at"
         ],
         "properties": {
-          "client_id": {
+          "email": {
             "type": "string"
           },
-          "created_at": {
+          "first_name": {
             "type": "string"
           },
-          "name": {
+          "joined_at": {
             "type": "string"
           },
-          "updated_at": {
+          "last_name": {
             "type": "string"
           },
-          "url": {
+          "role": {
+            "type": "string"
+          },
+          "user_id": {
             "type": "string"
           }
         }
       },
       "WorkspaceSummary": {
         "type": "object",
-        "description": "A workspace the user can switch to, as shown in the switcher.",
+        "description": "A workspace the user can switch to, as shown in the switcher. Resolved from\nthe user's Keycloak Organizations (`id` = organization id).",
         "required": [
-          "client_id",
+          "id",
           "name",
           "url"
         ],
         "properties": {
-          "client_id": {
+          "id": {
             "type": "string"
           },
           "name": {
@@ -3180,10 +3380,10 @@
         "type": "object",
         "required": [
           "workspaces",
-          "current_client_id"
+          "current_id"
         ],
         "properties": {
-          "current_client_id": {
+          "current_id": {
             "type": "string"
           },
           "workspaces": {

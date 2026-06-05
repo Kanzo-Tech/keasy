@@ -88,22 +88,19 @@ pub struct Job {
     pub connection_ids: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,
-    /// Base URL for RDF Parquet storage (set when job uses Rdf output).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rdf_base: Option<String>,
     /// GraphAr structure from the fossil subprocess: per-type Parquet + row
-    /// count + columns, per-edge CSR/CSC pair. Column statistics are NOT here —
-    /// the browser computes them from the Parquet (DuckDB-WASM).
+    /// count + columns, per-edge CSR/CSC pair. Its `dest` IS the dataset base
+    /// URL — fossil's single description of the output, so keasy keeps no
+    /// duplicate `rdf_base`. Column statistics are NOT here — the browser
+    /// computes them from the Parquet (DuckDB-WASM).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub manifest: Option<RunStatus>,
     /// DCAT-AP catalog graph structure (`fossil catalog` subprocess output):
-    /// per-type Parquet + counts, stored in owner cloud. Drives the catalog
-    /// graph view (DuckDB-WASM reads the Parquet directly).
+    /// per-type Parquet + counts, stored in owner cloud. Its `dest` is the
+    /// catalog base URL. Drives the catalog graph view (DuckDB-WASM reads the
+    /// Parquet directly).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalog_manifest: Option<RunStatus>,
-    /// Base URL for catalog parquets in owner storage.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub catalog_base: Option<String>,
 }
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]

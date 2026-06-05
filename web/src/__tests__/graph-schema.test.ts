@@ -1,14 +1,16 @@
 import { describe, it, expect } from "vitest";
 import {
-  inferRole,
   isNumericType,
+  isTemporalType,
+  isBinnable,
   fieldKey,
   buildGraphSchema,
-  type ColumnStatsMap,
+  foldVertexStats,
+  type FieldStatsMap,
 } from "@/lib/graph-schema";
 import type { RunStatus } from "@/lib/types";
 
-// ── Test fixtures ───────────────────────────────────────────────────────
+// ── Test fixtures (GraphAr datatype spellings — what RunStatus carries) ───
 
 const manifest: RunStatus = {
   dest: "",
@@ -18,9 +20,9 @@ const manifest: RunStatus = {
       file: "person.parquet",
       count: 100,
       columns: [
-        { name: "subject", data_type: "VARCHAR" },
-        { name: "age", data_type: "DOUBLE" },
-        { name: "dept", data_type: "VARCHAR" },
+        { name: "subject", data_type: "string" },
+        { name: "age", data_type: "int64" },
+        { name: "dept", data_type: "string" },
       ],
     },
     {
@@ -28,8 +30,8 @@ const manifest: RunStatus = {
       file: "org.parquet",
       count: 20,
       columns: [
-        { name: "subject", data_type: "VARCHAR" },
-        { name: "revenue", data_type: "BIGINT" },
+        { name: "subject", data_type: "string" },
+        { name: "revenue", data_type: "int64" },
       ],
     },
   ],
@@ -45,36 +47,24 @@ const manifest: RunStatus = {
   ],
 };
 
-// ── Type checks ─────────────────────────────────────────────────────────
+// ── Type checks (GraphAr spellings; chart-binning concern, not role) ──────
 
-describe("isNumericType", () => {
-  it("recognizes numeric types", () => {
-    expect(isNumericType("INTEGER")).toBe(true);
-    expect(isNumericType("DECIMAL(10,2)")).toBe(true);
-    expect(isNumericType("VARCHAR")).toBe(false);
+describe("type classification", () => {
+  it("isNumericType recognizes GraphAr numeric spellings", () => {
+    expect(isNumericType("int64")).toBe(true);
+    expect(isNumericType("double")).toBe(true);
+    expect(isNumericType("uint32")).toBe(true);
+    expect(isNumericType("string")).toBe(false);
   });
-});
-
-// ── Role inference ──────────────────────────────────────────────────────
-
-describe("inferRole", () => {
-  it("identifier by name pattern", () => {
-    expect(inferRole("entity_id", "VARCHAR")).toBe("identifier");
+  it("isTemporalType recognizes date/timestamp", () => {
+    expect(isTemporalType("date")).toBe(true);
+    expect(isTemporalType("timestamp")).toBe(true);
+    expect(isTemporalType("string")).toBe(false);
   });
-  it("measure for numeric types", () => {
-    expect(inferRole("price", "DOUBLE")).toBe("measure");
-  });
-  it("dimension for boolean", () => {
-    expect(inferRole("active", "BOOLEAN")).toBe("dimension");
-  });
-  it("dimension for temporal", () => {
-    expect(inferRole("created_at", "DATE")).toBe("dimension");
-  });
-  it("identifier for high-cardinality VARCHAR", () => {
-    expect(inferRole("name", "VARCHAR", 900, 1000)).toBe("identifier");
-  });
-  it("dimension for low-cardinality VARCHAR", () => {
-    expect(inferRole("category", "VARCHAR", 5, 1000)).toBe("dimension");
+  it("isBinnable is numeric or temporal", () => {
+    expect(isBinnable("int64")).toBe(true);
+    expect(isBinnable("date")).toBe(true);
+    expect(isBinnable("string")).toBe(false);
   });
 });
 
@@ -97,7 +87,6 @@ describe("buildGraphSchema", () => {
 
   it("field() resolves by key", () => {
     expect(schema.field("person::age")?.name).toBe("age");
-    expect(schema.field("org::revenue")?.role).toBe("measure");
     expect(schema.field("nonexistent")).toBeUndefined();
   });
 
@@ -111,16 +100,20 @@ describe("buildGraphSchema", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it("without stats, infers role from name + type only", () => {
+  it("without verb stats, roles default to dimension (fossil is the source)", () => {
     expect(schema.field("person::dept")?.role).toBe("dimension");
+    expect(schema.field("person::age")?.role).toBe("dimension");
     expect(schema.field("person::dept")?.distinct).toBeUndefined();
   });
 
-  it("refines role with browser-computed cardinality", () => {
-    const stats: ColumnStatsMap = new Map([
-      ["person::dept", { distinct: 95, count: 100 }],
+  it("attaches authoritative role + cardinality from describe_vertex_type", () => {
+    const stats: FieldStatsMap = new Map();
+    foldVertexStats(stats, "person", 100, [
+      { name: "age", datatype: "int64", distinct: 80, role: "measure" },
+      { name: "dept", datatype: "string", distinct: 95, role: "identifier" },
     ]);
     const enriched = buildGraphSchema(manifest, stats);
+    expect(enriched.field("person::age")?.role).toBe("measure");
     expect(enriched.field("person::dept")?.role).toBe("identifier");
     expect(enriched.field("person::dept")?.distinct).toBe(95);
   });
@@ -149,8 +142,8 @@ describe("buildSource", () => {
     const noEdgeManifest: RunStatus = {
       dest: "",
       vertices: [
-        { type: "a", file: "", count: 0, columns: [{ name: "x", data_type: "VARCHAR" }] },
-        { type: "b", file: "", count: 0, columns: [{ name: "y", data_type: "VARCHAR" }] },
+        { type: "a", file: "", count: 0, columns: [{ name: "x", data_type: "string" }] },
+        { type: "b", file: "", count: 0, columns: [{ name: "y", data_type: "string" }] },
       ],
       edges: [],
     };

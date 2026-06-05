@@ -52,5 +52,9 @@ pub struct AuthServices {
     pub oidc_client_id: Option<String>,
     /// OIDC client_secret for admin API calls.
     pub oidc_client_secret: Option<SecretString>,
+    /// Keycloak Organization id of this workspace (resolved at startup from the
+    /// configured alias). The membership container — members, invites, and the
+    /// switcher all key off it. None when Keycloak/org is not configured.
+    pub oidc_org_id: Option<String>,
 }
 

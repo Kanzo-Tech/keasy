@@ -130,9 +130,9 @@ export interface paths {
         };
         /**
          * GET /v1/auth/workspaces
-         * @description Returns the list of workspaces the authenticated user has access to,
-         *     resolved from the Keycloak `keasy:workspaces` claim to display info via
-         *     the workspaces table. Used by the sidebar workspace switcher.
+         * @description Returns the workspaces the authenticated user belongs to — their Keycloak
+         *     Organizations, each carrying its display name and home URL. Used by the
+         *     sidebar workspace switcher.
          */
         get: operations["list_workspaces"];
         put?: never;
@@ -303,6 +303,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/jobs/{id}/catalog/manifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["resolve_catalog_manifest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/jobs/{id}/conversations": {
         parameters: {
             query?: never;
@@ -345,6 +361,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["ask_discover_stream"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{id}/discover/execute-sql": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["execute_discover_sql"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{id}/discover/manifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["resolve_discover_manifest"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -477,6 +525,22 @@ export interface paths {
         get: operations["list_providers"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/refs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["list_refs"];
         delete?: never;
         options?: never;
         head?: never;
@@ -683,6 +747,8 @@ export interface components {
         };
         Connection: {
             cloud_account_id?: string | null;
+            /** @description Read source vs the workspace write sink. Defaults to `source`. */
+            direction?: components["schemas"]["Direction"];
             id: string;
             kind: components["schemas"]["ConnectionKind"];
             location_type: components["schemas"]["LocationType"];
@@ -718,6 +784,8 @@ export interface components {
         };
         CreateConnectionRequest: {
             cloud_account_id?: string | null;
+            /** @description `source` (default) or `sink` (the owner output store; one per workspace). */
+            direction?: components["schemas"]["Direction"];
             kind: components["schemas"]["ConnectionKind"];
             location_type: components["schemas"]["LocationType"];
             name: string;
@@ -742,6 +810,16 @@ export interface components {
         DataResponse_Value: {
             data: unknown;
         };
+        /**
+         * @description Whether a connection is a READ source (programs reference it via `@conn`) or
+         *     the workspace's WRITE sink (where the owner's job output is materialised).
+         *     Orthogonal to [`ConnectionKind`] (which describes a source's data) and
+         *     [`LocationType`]: a connection is a named, credentialed storage location, and
+         *     `direction` says how it is used. Exactly one `sink` exists per workspace (the
+         *     owner output store); `kind` is source-only and ignored for a sink.
+         * @enum {string}
+         */
+        Direction: "source" | "sink";
         /** @description One edge type — its CSR/CSC Parquet pair and endpoints. */
         EdgeStatus: {
             /** @description CSR-ordered (`by_source`) Parquet, dataset-relative. */
@@ -759,6 +837,20 @@ export interface components {
             edge_type: string;
             /** @description Source vertex type. */
             src_type: string;
+        };
+        ExecuteSqlRequest: {
+            /**
+             * Format: int32
+             * @description Max rows returned (the verb enforces an outer LIMIT). Default 10k.
+             */
+            row_cap?: number | null;
+            /** @description SQL to run against the GraphAr views (vertex/edge type names). */
+            sql: string;
+            /**
+             * Format: int32
+             * @description Wall-clock cap, milliseconds. Default 10s.
+             */
+            timeout_ms?: number | null;
         };
         FieldSchema: {
             default_value?: string | null;
@@ -800,8 +892,6 @@ export interface components {
             token: string;
         };
         Job: {
-            /** @description Base URL for catalog parquets in owner storage. */
-            catalog_base?: string | null;
             catalog_manifest?: null | components["schemas"]["RunStatus"];
             completed_at?: string | null;
             connection_ids?: string[];
@@ -811,8 +901,6 @@ export interface components {
             manifest?: null | components["schemas"]["RunStatus"];
             mode: components["schemas"]["RunMode"];
             name?: string | null;
-            /** @description Base URL for RDF Parquet storage (set when job uses Rdf output). */
-            rdf_base?: string | null;
             script?: string | null;
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
@@ -843,6 +931,17 @@ export interface components {
         LogoutResponse: {
             end_session_url?: string | null;
         };
+        ManifestResponse: {
+            /**
+             * @description The GraphAr manifest YAMLs, keyed by dataset-relative path
+             *     (`graph.graph.yml`, `vertex/Person.vertex.yml`, …). Fed verbatim into
+             *     `@fossil-lang/graph`'s `createGraphClient({ manifestFiles })`; keasy
+             *     treats them as opaque blobs — fossil owns the GraphAr layout.
+             */
+            manifest_files: {
+                [key: string]: string;
+            };
+        };
         MeOrg: {
             name: string;
         };
@@ -851,7 +950,6 @@ export interface components {
             email: string;
             first_name: string;
             last_name: string;
-            membership_role?: string | null;
             org?: null | components["schemas"]["MeOrg"];
             user_id: string;
         };
@@ -868,23 +966,7 @@ export interface components {
             status: string;
             token: string;
         };
-        /**
-         * @description A workspace member — a Keycloak user's membership in this instance.
-         *     Profile fields (email, first_name, last_name) are cached from OIDC tokens.
-         */
-        OrgMember: {
-            email: string;
-            first_name: string;
-            joined_at: string;
-            last_name: string;
-            role: string;
-            user_id: string;
-        };
         OrgSettings: {
-            /** @description Base URL for catalog parquet storage (e.g. s3://owner/catalogs/). */
-            catalog_base_url?: string | null;
-            /** @description Cloud account ID for catalog parquet storage (set by owner). */
-            catalog_cloud_account_id?: string | null;
             catalog_description?: string | null;
             contact_email?: string | null;
             license_uri?: string | null;
@@ -922,6 +1004,16 @@ export interface components {
             id: string;
             label: string;
         };
+        /**
+         * @description The position a reference plays in an `io.*` source constructor.
+         * @enum {string}
+         */
+        RefRole: "data" | "schema" | "select";
+        /** @description Request body for `POST /v1/refs`: the `.fossil` script to parse. */
+        RefsRequest: {
+            /** @description The `.fossil` program text whose external references to enumerate. */
+            script: string;
+        };
         RenameConversationRequest: {
             title: string;
         };
@@ -949,6 +1041,22 @@ export interface components {
         ServiceStatusResponse: {
             oidc: boolean;
         };
+        /**
+         * @description One external reference a program makes. `connection` is the `@conn` alias the
+         *     reference targets (`Some("cpi")` for `@cpi/graph.ttl`), or `None` for a direct
+         *     URL / local path. `path` is the remainder after the alias (or the whole
+         *     locator when there is no alias). This is the program's TYPED lineage — keasy
+         *     derives a job's connection set from the distinct `connection`s, never from a
+         *     regex over the script text.
+         */
+        SourceRefInfo: {
+            /** @description The `@conn` alias this reference targets, or `None` for a direct URL/path. */
+            connection?: string | null;
+            /** @description The path within the connection, or the whole locator when unaliased. */
+            path: string;
+            /** @description Where this reference appears in the source constructor. */
+            role: components["schemas"]["RefRole"];
+        };
         SuggestRequest: {
             domain: string;
             schemas: components["schemas"]["FileSchema"][];
@@ -972,6 +1080,7 @@ export interface components {
         };
         UpdateConnectionRequest: {
             cloud_account_id?: string | null;
+            direction?: null | components["schemas"]["Direction"];
             kind?: null | components["schemas"]["ConnectionKind"];
             location_type?: null | components["schemas"]["LocationType"];
             name?: string | null;
@@ -1016,25 +1125,26 @@ export interface components {
             /** @description The vertex type / `GraphAr` `type` (e.g. `Person`). */
             type: string;
         };
-        /**
-         * @description A registered workspace instance (OIDC client), keyed by `client_id`. Display
-         *     metadata for the federation switcher; OIDC credentials live in Keycloak only.
-         */
-        Workspace: {
-            client_id: string;
-            created_at: string;
-            name: string;
-            updated_at: string;
-            url: string;
+        /** @description A workspace member, resolved from Keycloak client-role mappings. */
+        WorkspaceMember: {
+            email: string;
+            first_name: string;
+            joined_at: string;
+            last_name: string;
+            role: string;
+            user_id: string;
         };
-        /** @description A workspace the user can switch to, as shown in the switcher. */
+        /**
+         * @description A workspace the user can switch to, as shown in the switcher. Resolved from
+         *     the user's Keycloak Organizations (`id` = organization id).
+         */
         WorkspaceSummary: {
-            client_id: string;
+            id: string;
             name: string;
             url: string;
         };
         WorkspacesResponse: {
-            current_client_id: string;
+            current_id: string;
             workspaces: components["schemas"]["WorkspaceSummary"][];
         };
     };
@@ -1877,6 +1987,36 @@ export interface operations {
             };
         };
     };
+    resolve_catalog_manifest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description GraphAr manifest YAMLs for the catalog dataset */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManifestResponse"];
+                };
+            };
+            /** @description Job not found or no catalog */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     list_conversations: {
         parameters: {
             query?: never;
@@ -2006,6 +2146,75 @@ export interface operations {
                 content: {
                     "text/event-stream": unknown;
                 };
+            };
+        };
+    };
+    execute_discover_sql: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExecuteSqlRequest"];
+            };
+        };
+        responses: {
+            /** @description Verb result: { columns, rows, truncated } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Owner role required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Job not found or no output */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resolve_discover_manifest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description GraphAr manifest YAMLs, keyed by dataset-relative path */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManifestResponse"];
+                };
+            };
+            /** @description Job not found or no output */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -2210,7 +2419,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OrgMember"][];
+                    "application/json": components["schemas"]["WorkspaceMember"][];
                 };
             };
         };
@@ -2259,6 +2468,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProviderInfo"][];
+                };
+            };
+        };
+    };
+    list_refs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefsRequest"];
+            };
+        };
+        responses: {
+            /** @description The program's typed external references */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceRefInfo"][];
                 };
             };
         };

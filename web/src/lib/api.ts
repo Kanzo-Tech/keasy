@@ -9,6 +9,13 @@ import type {
 export { ApiError };
 export type { ServiceStatus } from "./types";
 
+/** Result of the owner-only `execute_sql` verb (fossil-graph `ExecuteSqlResult`). */
+export interface ExecuteSqlResult {
+  columns: { name: string; duckdb_type: string }[];
+  rows: Record<string, unknown>[];
+  truncated: boolean;
+}
+
 export const api = {
   // ── Jobs ──────────────────────────────────────────────────────────────
   jobs: {
@@ -40,6 +47,13 @@ export const api = {
       }));
     },
   },
+
+  // ── References ─────────────────────────────────────────────────────────
+  // fossil parses the program and reports its external references (the typed
+  // lineage). Used to derive a job's connections from the script's `@conn`
+  // aliases — across data, schema, AND select positions — never by regex.
+  refs: async (script: string): Promise<Schemas["SourceRefInfo"][]> =>
+    unwrap(await client.POST("/v1/refs", { body: { script } })),
 
   // ── Connections ────────────────────────────────────────────────────────
   connections: {
@@ -112,6 +126,24 @@ export const api = {
         ...(opts?.schema ? { schema: opts.schema } : {}),
         ...(opts?.explain ? { explain: opts.explain } : {}),
       }),
+    /** Owner-only raw SQL over the GraphAr views (server-gated `Require<IsOwner>`,
+     *  run natively via fossil-mcp's `execute_sql` verb). */
+    executeSql: async (
+      id: string,
+      sql: string,
+      opts?: { rowCap?: number; timeoutMs?: number },
+    ): Promise<ExecuteSqlResult> => {
+      const res = await fetch(`/v1/jobs/${id}/discover/execute-sql`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sql, row_cap: opts?.rowCap, timeout_ms: opts?.timeoutMs }),
+      });
+      if (!res.ok) {
+        throw new Error(`execute_sql failed (${res.status})`);
+      }
+      return (await res.json()) as ExecuteSqlResult;
+    },
   },
 
   // ── Conversations ─────────────────────────────────────────────────────

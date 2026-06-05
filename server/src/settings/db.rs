@@ -106,17 +106,18 @@ impl Database {
         result
     }
 
-    /// Returns (cloud_account_id, base_url) if the workspace has configured
-    /// catalog storage. Used by the job runner to resolve `catalog_dest` for
-    /// DCAT materialization.
+    /// Returns `(cloud_account_id, base_url)` for the workspace's write sink (the
+    /// owner output store), if one is configured with a cloud account. The job
+    /// runner resolves both the GraphAr `output_dest` and the DCAT `catalog_dest`
+    /// from this; output is read back / signed with the sink's creds via
+    /// [`Database::owner_output_storage_config`].
     pub async fn get_owner_catalog_config(&self) -> Option<(String, String)> {
-        let settings: OrgSettings = self.get_setting("org_settings").await?;
-        let account_id = settings.catalog_cloud_account_id?;
-        let base_url = settings.catalog_base_url?;
-        if account_id.is_empty() || base_url.is_empty() {
+        let sink = self.get_sink_connection().await?;
+        let account_id = sink.cloud_account_id?;
+        if account_id.is_empty() || sink.url.is_empty() {
             return None;
         }
-        Some((account_id, base_url))
+        Some((account_id, sink.url))
     }
 
     pub async fn get_dashboard_layout(&self, job_id: &str) -> Option<serde_json::Value> {

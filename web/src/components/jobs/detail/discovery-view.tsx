@@ -28,6 +28,13 @@ async function resolveSignedUrls(jobId: string): Promise<Record<string, string>>
   return files;
 }
 
+async function resolveManifestFiles(jobId: string): Promise<Record<string, string>> {
+  const res = await fetch(`/v1/jobs/${jobId}/discover/manifest`, { credentials: "same-origin" });
+  if (!res.ok) throw new Error(`Failed to resolve GraphAr manifest (${res.status})`);
+  const { manifest_files } = (await res.json()) as { manifest_files: Record<string, string> };
+  return manifest_files;
+}
+
 function SetupErrorBanner({ error, isCors }: { error: string; isCors: boolean }) {
   if (!isCors) {
     return (
@@ -68,7 +75,12 @@ export function DiscoveryView({ jobId, manifest }: DiscoveryViewProps) {
     queryFn: () => resolveSignedUrls(jobId),
   });
 
-  if (isLoading) {
+  const { data: manifestFiles, isLoading: manifestLoading, error: manifestError } = useQuery({
+    queryKey: [...queryKeys.jobs.detail(jobId), "discover-manifest"],
+    queryFn: () => resolveManifestFiles(jobId),
+  });
+
+  if (isLoading || manifestLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -79,17 +91,18 @@ export function DiscoveryView({ jobId, manifest }: DiscoveryViewProps) {
     );
   }
 
-  if (error || !signedUrls) {
-    const isCors = error instanceof Error && "cors" in error;
+  if (error || manifestError || !signedUrls || !manifestFiles) {
+    const err = error ?? manifestError;
+    const isCors = err instanceof Error && "cors" in err;
     return (
       <div className="p-4">
-        <SetupErrorBanner error={error instanceof Error ? error.message : "Failed to load"} isCors={isCors} />
+        <SetupErrorBanner error={err instanceof Error ? err.message : "Failed to load"} isCors={isCors} />
       </div>
     );
   }
 
   return (
-    <DiscoveryProvider manifest={manifest} signedUrls={signedUrls}>
+    <DiscoveryProvider manifest={manifest} signedUrls={signedUrls} manifestFiles={manifestFiles}>
       <DiscoveryWorkspace jobId={jobId} manifest={manifest} />
     </DiscoveryProvider>
   );
@@ -109,7 +122,7 @@ function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: RunS
   const dragRef = useRef<{ startX: number; startW: number } | null>(null);
   // Global crossfilter Selection — shared by graph, histograms, chat, and rules
   const selection = useMemo(() => Selection.crossfilter(), []);
-  const graphRows = useGraphDataRows(kgSchema);
+  const graphRows = useGraphDataRows();
 
   const handleConfigChange = (patch: Partial<GraphConfigInterface>) => {
     setGraphConfig((prev) => ({ ...prev, ...patch }));

@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PanelHeader } from "@/components/layout/workspace-layout";
-import { NUMERIC_DUCKDB_TYPES, TEMPORAL_DUCKDB_TYPES, type GraphSchema } from "@/lib/graph-schema";
+import { isBinnable, isTemporalType as isTemporal, type GraphSchema } from "@/lib/graph-schema";
 
 // ── Chart config types ───────────────────────────────────────────────────
 
@@ -27,17 +27,6 @@ interface ChartConfig {
   yAgg: Aggregation;
   colorField: string | null;
   hideNulls: boolean;
-}
-
-// ── Helpers ──────────────────────────────────────────────────────────────
-
-function isBinnable(type: string): boolean {
-  const upper = type.toUpperCase().replace(/\(.*\)/, "").trim();
-  return NUMERIC_DUCKDB_TYPES.has(upper) || TEMPORAL_DUCKDB_TYPES.has(upper);
-}
-
-function isTemporal(type: string): boolean {
-  return TEMPORAL_DUCKDB_TYPES.has(type.toUpperCase().replace(/\(.*\)/, "").trim());
 }
 
 function aggFn(agg: Aggregation, field: string | null) {

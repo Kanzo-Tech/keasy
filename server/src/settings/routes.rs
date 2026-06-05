@@ -7,6 +7,9 @@ use axum::{
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::AppState;
+use crate::connections::models::{
+    ConnectionKind, CreateConnectionRequest, Direction, LocationType, UpdateConnectionRequest,
+};
 use crate::error::{data_response, error_body};
 use crate::middleware::tenant::{IsMember, IsOwner, Require};
 use crate::settings::ai::{AiSettings, AiSettingsPayload};
@@ -176,6 +179,13 @@ fn to_payload(s: &AiSettings) -> AiSettingsPayload {
 }
 
 // ── Catalog Storage (Owner) ───────────────────────────────────────────
+//
+// The "catalog storage" is the workspace write sink: the single owner-owned
+// connection (`direction = sink`) where job output is materialised. This page
+// is the dedicated owner surface for it; the connections list shows only
+// sources. Both read/write the same `connections` row.
+
+const SINK_NAME: &str = "Workspace output";
 
 #[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CatalogStoragePayload {
@@ -193,15 +203,15 @@ pub async fn get_catalog_storage(
     _ctx: Require<IsOwner>,
     State(state): State<AppState>,
 ) -> Response {
-    let settings = state.db.get_org_settings().await;
-    match settings {
-        Some(s) if s.catalog_cloud_account_id.is_some() && s.catalog_base_url.is_some() => {
-            data_response(CatalogStoragePayload {
-                cloud_account_id: s.catalog_cloud_account_id.unwrap(),
-                base_url: s.catalog_base_url.unwrap(),
-            }).into_response()
-        }
-        _ => StatusCode::NO_CONTENT.into_response(),
+    match state.db.get_sink_connection().await {
+        Some(sink) => match sink.cloud_account_id {
+            Some(cloud_account_id) => data_response(CatalogStoragePayload {
+                cloud_account_id,
+                base_url: sink.url,
+            }).into_response(),
+            None => StatusCode::NO_CONTENT.into_response(),
+        },
+        None => StatusCode::NO_CONTENT.into_response(),
     }
 }
 
@@ -232,10 +242,27 @@ pub async fn save_catalog_storage(
         ).into_response();
     }
 
-    let mut settings = state.db.get_org_settings().await.unwrap_or_default();
-    settings.catalog_cloud_account_id = Some(payload.cloud_account_id.clone());
-    settings.catalog_base_url = Some(payload.base_url.clone());
-    state.db.set_org_settings(&settings).await;
+    let result = match state.db.get_sink_connection().await {
+        Some(sink) => state.db.update_connection(&sink.id, UpdateConnectionRequest {
+            name: None,
+            kind: None,
+            location_type: Some(LocationType::Cloud),
+            direction: None,
+            cloud_account_id: Some(payload.cloud_account_id.clone()),
+            url: Some(payload.base_url.clone()),
+        }).await.map(|_| ()),
+        None => state.db.create_connection(CreateConnectionRequest {
+            name: SINK_NAME.to_string(),
+            kind: ConnectionKind::Data,
+            location_type: LocationType::Cloud,
+            direction: Direction::Sink,
+            cloud_account_id: Some(payload.cloud_account_id.clone()),
+            url: payload.base_url.clone(),
+        }).await.map(|_| ()),
+    };
 
-    data_response(payload).into_response()
+    match result {
+        Ok(_) => data_response(payload).into_response(),
+        Err(msg) => (StatusCode::BAD_REQUEST, Json(error_body("validation_error", msg))).into_response(),
+    }
 }

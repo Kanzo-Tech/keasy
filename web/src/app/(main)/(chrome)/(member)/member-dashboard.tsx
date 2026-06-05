@@ -37,7 +37,7 @@ export function MemberDashboard() {
 
   const accountCount = accounts?.length ?? 0;
   const connectionCount = connections?.length ?? 0;
-  const catalogCount = completedJobs.filter((j) => j.rdf_base).length;
+  const catalogCount = completedJobs.filter((j) => j.manifest).length;
 
   return (
       <div className="space-y-8">

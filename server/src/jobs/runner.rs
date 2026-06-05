@@ -46,14 +46,12 @@ const TOTAL_PHASES: u8 = 5;
 
 /// Value returned by [`run_job`] after successful script execution.
 struct JobResult {
-    /// Base URL the GraphAr dataset was written under (the subprocess `--dest`).
-    rdf_base: Option<String>,
-    /// GraphAr structure from the subprocess (`RunStatus`).
+    /// GraphAr structure from the subprocess (`RunStatus`). Its `dest` is the
+    /// dataset base URL (the subprocess `--dest`).
     manifest: Option<RunStatus>,
     /// DCAT-AP catalog graph structure (`fossil catalog` subprocess output).
+    /// Its `dest` is the catalog base URL.
     catalog_manifest: Option<RunStatus>,
-    /// Base URL for catalog parquets.
-    catalog_base: Option<String>,
 }
 
 /// Flattened error from the three failure modes of job execution:
@@ -189,17 +187,15 @@ impl JobRunner {
             .and_then(|r| r.map_err(JobFailure::Execution));
 
             match result {
-                Ok(JobResult { rdf_base, manifest, catalog_manifest, catalog_base }) => {
+                Ok(JobResult { manifest, catalog_manifest }) => {
                     // Phase 3: finalizing
                     if tx.send(JobEvent { phase: "finalizing".into(), index: 3, total: TOTAL_PHASES, error: None }).is_err() { warn!("SSE subscriber disconnected"); }
 
                     if let Err(e) = db.update_job(&job_id, |job| {
                         job.status = JobStatus::Completed;
                         job.completed_at = Some(now_iso8601());
-                        job.rdf_base = rdf_base;
                         job.manifest = manifest;
                         job.catalog_manifest = catalog_manifest;
-                        job.catalog_base = catalog_base;
                     }).await {
                         error!(job_id = %job_id, error = %e, "failed to update job");
                     }
@@ -290,29 +286,28 @@ fn run_job(
     // governance + dataset structure (`CatalogInput`) from the run manifest and
     // lets `fossil catalog` build + write the DCAT-AP graph (same GraphAr path
     // as the run). The DCAT-AP *shape* lives in fossil, not here.
-    let (catalog_manifest, catalog_base) = match (org, catalog_dest) {
+    let catalog_manifest = match (org, catalog_dest) {
         (Some(org), Some(base)) => {
             let catalog_input =
                 build_catalog_input(job_id, job_name, &completed_at, org, &run_status, dest_url);
             let dest_with_job =
                 format!("{}/{}/{job_id}", base.trim_end_matches('/'), org.publisher_name);
             // The catalog shares the owner cloud account with the output, so
-            // its dest secret is the run's dest secret.
+            // its dest secret is the run's dest secret. The returned `RunStatus`
+            // carries `dest = dest_with_job`, so keasy keeps no separate base.
             match FossilRunner::from_env().run_catalog(&catalog_input, &dest_with_job, &run_creds.dest) {
-                Ok(cat_status) => (Some(cat_status), Some(dest_with_job)),
+                Ok(cat_status) => Some(cat_status),
                 Err(e) => {
                     warn!("Catalog materialization failed (non-fatal): {e}");
-                    (None, None)
+                    None
                 }
             }
         }
-        _ => (None, None),
+        _ => None,
     };
 
     Ok(JobResult {
-        rdf_base: Some(dest_url.to_string()),
         manifest: Some(run_status),
         catalog_manifest,
-        catalog_base,
     })
 }

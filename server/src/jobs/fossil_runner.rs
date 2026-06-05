@@ -118,7 +118,9 @@ impl RunCreds {
 /// truth: the CLI serialises exactly this struct, keasy deserialises it; the TS
 /// type for the web is `JsonSchema`-codegen'd from the same crate). No
 /// hand-mirrored copy here.
-pub use fossil_run_status::{ColumnStatus, EdgeStatus, ProviderInfo, RunStatus, VertexStatus};
+pub use fossil_run_status::{
+    ColumnStatus, EdgeStatus, ProviderInfo, RunStatus, SourceRefInfo, VertexStatus,
+};
 
 /// Failure modes of a `fossil run` subprocess invocation.
 #[derive(Debug, thiserror::Error)]
@@ -250,6 +252,39 @@ impl FossilRunner {
             "",
             None,
         )?;
+        serde_json::from_str(stdout.trim()).map_err(|source| FossilRunError::Parse {
+            stdout,
+            source,
+        })
+    }
+
+    /// List a program's external references via `fossil refs <file>
+    /// --output-json` — the typed lineage (each `@conn`/URL/path the program
+    /// names, per data + `schema =` + `select =`). keasy reads this to derive a
+    /// job's connections without scanning the script text. Parse-only: no stdin,
+    /// no creds, no dest. The script is written to a temp `.fossil` the CLI reads.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FossilRunError`] if the temp file can't be written, the binary
+    /// can't be spawned, it exits non-zero, or emits an unparseable ref list.
+    pub fn run_refs(&self, script: &str) -> Result<Vec<SourceRefInfo>, FossilRunError> {
+        let file = std::env::temp_dir().join(format!("keasy-refs-{}.fossil", std::process::id()));
+        std::fs::write(&file, script).map_err(|source| FossilRunError::Spawn {
+            binary: file.to_string_lossy().into_owned(),
+            source,
+        })?;
+        let result = self.spawn_capture(
+            vec![
+                "refs".to_string(),
+                file.to_string_lossy().into_owned(),
+                "--output-json".to_string(),
+            ],
+            "",
+            None,
+        );
+        let _ = std::fs::remove_file(&file);
+        let stdout = result?;
         serde_json::from_str(stdout.trim()).map_err(|source| FossilRunError::Parse {
             stdout,
             source,

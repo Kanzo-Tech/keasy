@@ -12,9 +12,10 @@ services:
       - ./server/src:/src/keasy/server/src
       - server-target:/src/keasy/server/target
     environment:
-      # W7: the owner is bootstrapped from config (replaces SQL seeds). In dev,
-      # this is the demo user's fixed Keycloak `sub` pinned in the realm import.
-      KEASY_OWNER_KEYCLOAK_SUB: ${KEASY_OWNER_KEYCLOAK_SUB:-aaaa0000-0000-0000-0000-000000000001}
+      # The workspace's Keycloak Organization (membership container). Its alias
+      # matches the org declared in the realm import; the server resolves the
+      # org id from it at boot.
+      KEASY_ORG_ALIAS: ${KEASY_ORG_ALIAS:-keasy}
       KEASY_WORKSPACE_NAME: ${KEASY_WORKSPACE_NAME:-Keasy}
       KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-keasy.local}
       RUST_LOG: debug

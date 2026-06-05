@@ -6,25 +6,33 @@ use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use axum::extract::State;
 use axum::middleware::Next;
 use axum::body::Body;
 use thiserror::Error;
 
-use crate::AppState;
-use crate::db::org_members::MemberRole;
 use crate::error::error_body;
 use crate::middleware::session_auth::AuthenticatedUser;
 
 /// Role assigned to a tenant context. Two hierarchical roles: `Owner` ⊇
-/// `Member`. The owner is bootstrapped from config (W7); everyone else joins
-/// as a member via an invite link (Slack/Discord-style membership).
-#[derive(Clone, Debug, PartialEq)]
+/// `Member`. Sourced from the Keycloak `keasy:role` client-role claim: the
+/// owner is granted at provisioning, members via an invite link.
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TenantRole {
-    /// Workspace owner — bootstrapped from config, can invite + administer.
+    /// Workspace owner — granted at provisioning, can invite + administer.
     Owner,
     /// Regular workspace member — joined via invite link.
     Member,
+}
+
+impl TenantRole {
+    /// The wire string for this role (`"owner"` / `"member"`), as used in the
+    /// Keycloak claim and the `/me` response.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            TenantRole::Owner => "owner",
+            TenantRole::Member => "member",
+        }
+    }
 }
 
 /// Authenticated request context. Injected into request extensions by
@@ -154,38 +162,24 @@ where
     }
 }
 
-/// Middleware: resolves TenantContext from session and DB, injects into extensions.
+/// Middleware: resolves TenantContext from the authenticated user's role and
+/// injects it into extensions.
 ///
-/// Must run AFTER session_required (which inserts AuthenticatedUser).
-/// Reads the user's membership and determines the tenant role from
-/// `org_members.role` (`owner` → Owner, else Member).
-#[allow(dead_code)]
+/// Must run AFTER session_required (which inserts AuthenticatedUser carrying the
+/// role from the Keycloak `keasy:role` claim). A user with no role is
+/// authenticated but not a workspace member → 403.
 pub async fn tenant_context_required(
-    State(state): State<AppState>,
     mut request: axum::http::Request<Body>,
     next: Next,
 ) -> Result<Response, RbacError> {
-    // 1. Extract AuthenticatedUser inserted by session_required
     let user = request
         .extensions()
         .get::<AuthenticatedUser>()
         .cloned()
         .ok_or(RbacError::AuthRequired)?;
 
-    // 2. Get membership (the sole source of the tenant role)
-    let member = state
-        .db
-        .get_org_membership(&user.user_id)
-        .await
-        .ok_or(RbacError::NoMembership)?;
+    let role = user.role.ok_or(RbacError::NoMembership)?;
 
-    // 3. Determine TenantRole from the membership role
-    let role = match member.role.parse::<MemberRole>() {
-        Ok(MemberRole::Owner) => TenantRole::Owner,
-        _ => TenantRole::Member,
-    };
-
-    // 4. Build and inject the TenantContext
     request.extensions_mut().insert(TenantContext { role });
 
     Ok(next.run(request).await)

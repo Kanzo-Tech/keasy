@@ -7,13 +7,16 @@ use tower_sessions::Session;
 
 use crate::AppState;
 use crate::auth::errors::AuthError;
+use crate::middleware::tenant::TenantRole;
 
 /// Inserted into request extensions by session_required middleware.
-/// Downstream handlers can extract this to get the authenticated user's ID.
+/// Downstream handlers extract this for the authenticated user's ID and role.
 #[derive(Clone, Debug)]
 pub struct AuthenticatedUser {
-    #[allow(dead_code)]
     pub user_id: String,
+    /// Tenant role from the `keasy:role` claim, captured at login. `None` means
+    /// the user is authenticated but not a workspace member.
+    pub role: Option<TenantRole>,
 }
 
 /// Middleware that requires a valid session with a "user_id" key AND
@@ -46,8 +49,21 @@ pub async fn session_required(
 
             match (current_session_id, active_session_id) {
                 (Some(current), Some(active)) if current == active => {
-                    // Session is the active one — allow through
-                    request.extensions_mut().insert(AuthenticatedUser { user_id });
+                    // Session is the active one — allow through. Capture the
+                    // tenant role stashed at login from the `keasy:role` claim.
+                    let role = session
+                        .get::<String>("tenant_role")
+                        .await
+                        .ok()
+                        .flatten()
+                        .and_then(|r| match r.as_str() {
+                            "owner" => Some(TenantRole::Owner),
+                            "member" => Some(TenantRole::Member),
+                            _ => None,
+                        });
+                    request
+                        .extensions_mut()
+                        .insert(AuthenticatedUser { user_id, role });
                     Ok(next.run(request).await)
                 }
                 _ => {

@@ -38,7 +38,7 @@ export type JobError = S["JobRuntimeError"];
 
 // Org types — re-exported from schema with frontend aliases
 export type OrgIdentity = S["OrgIdentityResponse"];
-export type OrgUser = S["OrgMember"];
+export type OrgUser = S["WorkspaceMember"];
 
 // ---------------------------------------------------------------------------
 // Types now in OpenAPI spec — re-exported from schema

@@ -25,8 +25,8 @@ impl Database {
 
         let conn = self.write().await;
         conn.execute(
-            "INSERT INTO jobs (id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, script, rdf_base, manifest, catalog_manifest, catalog_base)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+            "INSERT INTO jobs (id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, script, manifest, catalog_manifest)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
             params![
                 job.id,
                 job.name,
@@ -38,10 +38,8 @@ impl Database {
                 error_json,
                 account_ids_json,
                 job.script,
-                job.rdf_base,
                 manifest_json,
                 catalog_manifest_json,
-                job.catalog_base,
             ],
         )
         .map_err(|e| format!("failed to insert job: {e}"))?;
@@ -52,7 +50,7 @@ impl Database {
     pub async fn get_job(&self, id: &str) -> Option<Job> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, script, rdf_base, manifest, catalog_manifest, catalog_base
+            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, script, manifest, catalog_manifest
              FROM jobs WHERE id = ?1",
             [id],
             |row| Ok(row_to_job(row)),
@@ -84,8 +82,8 @@ impl Database {
 
         let conn = self.write().await;
         conn.execute(
-            "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, error = ?5, connection_ids = ?6, script = ?7, rdf_base = ?8, manifest = ?9, catalog_manifest = ?10, catalog_base = ?11
-             WHERE id = ?12",
+            "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, error = ?5, connection_ids = ?6, script = ?7, manifest = ?8, catalog_manifest = ?9
+             WHERE id = ?10",
             params![
                 job.name,
                 job.status,
@@ -94,10 +92,8 @@ impl Database {
                 error_json,
                 account_ids_json,
                 job.script,
-                job.rdf_base,
                 manifest_json,
                 catalog_manifest_json,
-                job.catalog_base,
                 id,
             ],
         )
@@ -109,7 +105,7 @@ impl Database {
     pub async fn list_jobs(&self) -> Vec<Job> {
         let (_permit, conn) = self.read().await;
         let mut stmt = match conn.prepare(
-            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, script, rdf_base, manifest, catalog_manifest, catalog_base
+            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, script, manifest, catalog_manifest
              FROM jobs ORDER BY created_at DESC",
         ) {
             Ok(s) => s,
@@ -192,14 +188,9 @@ fn row_to_job(row: &rusqlite::Row) -> Job {
         connection_ids: serde_json::from_str::<Vec<String>>(&account_ids_json)
             .unwrap_or_default(),
         script,
-        rdf_base: row.get("rdf_base").unwrap_or_else(|e| {
-            tracing::warn!(error = %e, "row_to_job: rdf_base column type mismatch");
-            None
-        }),
         manifest: manifest_json.and_then(|j| serde_json::from_str::<fossil_run_status::RunStatus>(&j).ok()),
         catalog_manifest: row.get::<_, Option<String>>("catalog_manifest")
             .unwrap_or(None)
             .and_then(|j| serde_json::from_str::<fossil_run_status::RunStatus>(&j).ok()),
-        catalog_base: row.get("catalog_base").unwrap_or(None),
     }
 }

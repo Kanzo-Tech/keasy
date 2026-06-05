@@ -1,10 +1,11 @@
 //! Atomic, idempotent workspace provisioning.
 //!
 //! `POST /workspaces { name, owner_keycloak_sub }` runs the reference reconcile:
-//!   1. register an OIDC client in the shared Keycloak (workspace identity),
-//!   2. attach the `keasy:workspaces` protocol mapper,
-//!   3. grant the owner access to the new workspace,
-//!   4. bring up the instance stack via Docker.
+//!   1. register an OIDC client in the shared Keycloak (authentication),
+//!   2. attach the `keasy:role` mapper + owner/member client roles (authorization),
+//!   3. create the workspace's Organization and add the owner as a member,
+//!   4. grant the owner the `owner` client role,
+//!   5. bring up the instance stack via Docker.
 //!
 //! Any failure after step 1 rolls back the partially-created resources (delete
 //! the OIDC client, tear the stack down), so a failed create leaves nothing
@@ -111,7 +112,6 @@ impl Provisioner {
                 &slug,
                 &url,
                 owner_keycloak_sub,
-                &registered.keycloak_uuid,
                 &registered.client_secret,
             )
             .await;
@@ -148,28 +148,43 @@ impl Provisioner {
         slug: &str,
         url: &str,
         owner_keycloak_sub: &str,
-        keycloak_uuid: &str,
         client_secret: &str,
     ) -> Result<WorkspaceInfo, ProvisionError> {
-        // 2. Attach the keasy:workspaces protocol mapper.
+        // 2. Attach the keasy:role mapper and ensure the owner/member client
+        //    roles exist on this workspace client (authorization).
         self.keycloak
-            .ensure_protocol_mapper(keycloak_uuid)
+            .ensure_role_mapper(workspace_id)
+            .await
+            .map_err(ProvisionError::Keycloak)?;
+        self.keycloak
+            .ensure_client_roles(workspace_id)
             .await
             .map_err(ProvisionError::Keycloak)?;
 
-        // 3. Grant the owner access to the new workspace.
+        // 3. Create the workspace's Organization (membership container, keyed by
+        //    the slug alias, carrying the home URL) and make the owner a member.
+        let org_id = self
+            .keycloak
+            .ensure_organization(name, slug, url)
+            .await
+            .map_err(ProvisionError::Keycloak)?;
         self.keycloak
-            .add_user_workspace(owner_keycloak_sub, workspace_id)
+            .add_org_member(&org_id, owner_keycloak_sub)
             .await
             .map_err(ProvisionError::Keycloak)?;
 
-        // 4. Bring up the instance stack.
+        // 4. Grant the owner the `owner` client role (authorization).
+        self.keycloak
+            .assign_client_role(owner_keycloak_sub, workspace_id, "owner")
+            .await
+            .map_err(ProvisionError::Keycloak)?;
+
+        // 5. Bring up the instance stack.
         let spec = StackSpec {
             workspace_id: workspace_id.to_string(),
             workspace_name: name.to_string(),
             slug: slug.to_string(),
             oidc_client_secret: client_secret.to_string(),
-            owner_keycloak_sub: owner_keycloak_sub.to_string(),
         };
         self.docker.up(&spec).await.map_err(ProvisionError::Docker)?;
 

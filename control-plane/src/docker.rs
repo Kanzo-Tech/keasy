@@ -23,8 +23,6 @@ pub struct StackSpec {
     pub slug: String,
     /// OIDC client secret Keycloak generated for this workspace.
     pub oidc_client_secret: String,
-    /// Keycloak `sub` of the workspace owner (bootstrap datum).
-    pub owner_keycloak_sub: String,
 }
 
 /// Drives `docker compose` for instance stacks. Holds the directory where
@@ -109,7 +107,6 @@ fn render_compose(cfg: &ControlPlaneConfig, spec: &StackSpec) -> String {
         workspace_name,
         slug,
         oidc_client_secret,
-        owner_keycloak_sub,
     } = spec;
     let base_domain = &cfg.base_domain;
     let issuer = &cfg.oidc_issuer_url;
@@ -127,7 +124,7 @@ services:
     environment:
       KEASY_BASE_URL: "https://{slug}.{base_domain}"
       KEASY_WORKSPACE_NAME: "{workspace_name}"
-      KEASY_OWNER_KEYCLOAK_SUB: "{owner_keycloak_sub}"
+      KEASY_ORG_ALIAS: "{slug}"
       KEASY_OIDC_ISSUER_URL: "{issuer}"
       KEASY_OIDC_CLIENT_ID: "{workspace_id}"
       KEASY_OIDC_CLIENT_SECRET: "{oidc_client_secret}"

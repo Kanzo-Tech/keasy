@@ -32,6 +32,17 @@ export function JobEditor() {
 
   const orgConfigured = orgIdentity != null && !!orgIdentity.legal_name;
 
+  // A job's connections are its program's `@conn` references — derived from
+  // fossil's typed lineage (`/v1/refs`), which sees `@conn` in data, schema, AND
+  // select positions. This replaces a regex over the script text (which only saw
+  // the positional data URI and missed `schema =`/`select =` vocab connections).
+  const connectionIdsForScript = async (script: string): Promise<string[] | undefined> => {
+    const refs = await api.refs(script);
+    const names = new Set(refs.map((r) => r.connection).filter((c): c is string => !!c));
+    const ids = connections.filter((s) => names.has(s.name)).map((s) => s.id);
+    return ids.length > 0 ? ids : undefined;
+  };
+
   useEffect(() => {
     if (orgConfigured) store.setDcatEnabled(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -68,15 +79,12 @@ export function JobEditor() {
         });
         return "updated";
       } else {
-        const connectionIds = connections
-          .filter((s) => store.script.includes(`@${s.name}/`))
-          .map((s) => s.id);
         await api.jobs.create({
           script: store.script,
           name: store.name.trim() || undefined,
           mode: store.mode,
           draft: true,
-          connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
+          connection_ids: await connectionIdsForScript(store.script),
         });
         return "created";
       }
@@ -92,9 +100,7 @@ export function JobEditor() {
   const confirmMutation = useMutation({
     mutationFn: async () => {
       const jobName = store.name.trim() || undefined;
-      const connectionIds = connections
-        .filter((s) => store.script.includes(`@${s.name}/`))
-        .map((s) => s.id);
+      const connectionIds = await connectionIdsForScript(store.script);
 
       if (draftId) {
         await api.jobs.remove(draftId).catch(() => {});
@@ -105,7 +111,7 @@ export function JobEditor() {
         name: jobName,
         mode: store.mode,
         dcat_enabled: store.dcatEnabled || undefined,
-        connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
+        connection_ids: connectionIds,
       });
     },
     onSuccess: async (job) => {

@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import { Query, literal, sql } from "@uwdata/mosaic-sql";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PanelHeader } from "@/components/layout/workspace-layout";
-import { useCoordinatorQuery } from "./use-discovery-store";
-import { GROUP_CSS_COLORS } from "./use-graph-data";
+import { useGraphClient } from "./use-discovery-store";
+import { GROUP_CSS_COLORS } from "@fossil-lang/viewer";
 import type { GraphSchema } from "@/lib/graph-schema";
 
 interface Props {
@@ -16,33 +15,40 @@ interface Props {
 
 export function NodeInfo({ schema, selectedVertex }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
+  const graphClient = useGraphClient();
 
-  // Properties query
-  const propertiesQuery = useMemo(() => {
-    if (!selectedVertex) return "";
-    return Query.from(selectedVertex.type)
-      .select("*")
-      .where(sql`"subject" = ${literal(selectedVertex.id)}`)
-      .limit(1)
-      .toString();
-  }, [selectedVertex]);
-
-  const { data: propertiesResult } = useCoordinatorQuery<Record<string, unknown>>({
-    query: propertiesQuery,
-    enabled: !!propertiesQuery,
-  });
+  // Single-vertex lookup via the get_vertex verb (reserved columns already
+  // filtered server-side) — no hand-built SQL.
+  const [vertexProps, setVertexProps] = useState<Record<string, unknown> | null>(null);
+  useEffect(() => {
+    if (!graphClient || !selectedVertex) {
+      setVertexProps(null);
+      return;
+    }
+    let cancelled = false;
+    graphClient
+      .getVertex({ vertex_type: selectedVertex.type, subject: selectedVertex.id })
+      .then((r) => {
+        if (!cancelled) setVertexProps((r.vertex as Record<string, unknown> | null) ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setVertexProps(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [graphClient, selectedVertex]);
 
   const properties = useMemo(() => {
-    if (!propertiesResult || propertiesResult.length === 0 || !selectedVertex) return [];
-    const row = propertiesResult[0];
+    if (!vertexProps || !selectedVertex) return [];
     const fields = schema.fieldsOf(selectedVertex.type);
-    return Object.entries(row)
-      .filter(([key, val]) => key !== "_id" && key !== "subject" && val != null && val !== "")
+    return Object.entries(vertexProps)
+      .filter(([, val]) => val != null && val !== "")
       .map(([key, val]) => {
         const field = fields.find((f) => f.name === key);
         return { predicate: key, value: String(val), role: field?.role };
       });
-  }, [propertiesResult, selectedVertex, schema]);
+  }, [vertexProps, selectedVertex, schema]);
 
   // Type color
   const typeIndex = selectedVertex ? schema.types.findIndex((t) => t.name === selectedVertex.type) : -1;

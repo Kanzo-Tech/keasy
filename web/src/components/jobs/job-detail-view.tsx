@@ -86,13 +86,14 @@ export function JobDetailView({ id }: { id: string }) {
   }
 
   const isCompleted = job.status === "completed";
-  const hasCatalog = isCompleted && (!!job.rdf_base || !!job.catalog_manifest);
+  const hasCatalog = isCompleted && (!!job.manifest || !!job.catalog_manifest);
   const hasManifest = isCompleted && !!job.manifest;
 
-  // The output location is the GraphAr dataset root the run wrote to
-  // (`rdf_base`); pre-run jobs have none. Per-type files + structure live in
-  // the manifest, surfaced by the discovery view.
-  const dests = job.rdf_base ? [reverseMapUrl(job.rdf_base, connections ?? [])] : [];
+  // The output location is the GraphAr dataset root the run wrote to — the
+  // manifest's `dest` (fossil's single description of the output); pre-run jobs
+  // have none. Per-type files + structure live in the manifest, surfaced by the
+  // discovery view.
+  const dests = job.manifest ? [reverseMapUrl(job.manifest.dest, connections ?? [])] : [];
 
   return (
     <Tabs value={tab} onValueChange={setTab} className="flex-1 min-h-0">

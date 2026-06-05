@@ -16,16 +16,25 @@ import { fileURLToPath } from "node:url";
 const require = createRequire(import.meta.url);
 const here = dirname(fileURLToPath(import.meta.url));
 
-// Prefer the package's `./pkg/fossil_wasm_bg.wasm` export; fall back to the
-// physical node_modules path (pnpm symlink — copyFileSync follows it).
-let src;
-try {
-  src = require.resolve("@fossil-lang/wasm/pkg/fossil_wasm_bg.wasm");
-} catch {
-  src = resolve(here, "../node_modules/@fossil-lang/wasm/pkg/fossil_wasm_bg.wasm");
-}
+// Each fossil-wasm artefact the app fetches by a stable static URL:
+//  - @fossil-lang/wasm   → LSP Worker (`/fossil/fossil_wasm_bg.wasm`)
+//  - @fossil-lang/graph  → discovery verb client (`/fossil/fossil_graph_wasm_bg.wasm`)
+const ARTEFACTS = [
+  { pkg: "@fossil-lang/wasm/pkg/fossil_wasm_bg.wasm", file: "fossil_wasm_bg.wasm" },
+  { pkg: "@fossil-lang/graph/pkg/fossil_graph_wasm_bg.wasm", file: "fossil_graph_wasm_bg.wasm" },
+];
 
-const dest = resolve(here, "../public/fossil/fossil_wasm_bg.wasm");
-mkdirSync(dirname(dest), { recursive: true });
-copyFileSync(src, dest);
-console.log(`[copy-fossil-wasm] ${src} → ${dest}`);
+for (const { pkg, file } of ARTEFACTS) {
+  // Prefer the package's `./pkg/*.wasm` export; fall back to the physical
+  // node_modules path (pnpm symlink — copyFileSync follows it).
+  let src;
+  try {
+    src = require.resolve(pkg);
+  } catch {
+    src = resolve(here, `../node_modules/${pkg}`);
+  }
+  const dest = resolve(here, `../public/fossil/${file}`);
+  mkdirSync(dirname(dest), { recursive: true });
+  copyFileSync(src, dest);
+  console.log(`[copy-fossil-wasm] ${src} → ${dest}`);
+}

@@ -37,8 +37,8 @@ export function WorkspaceSwitcher() {
   });
 
   const workspaces = workspacesData?.workspaces ?? [];
-  const currentClientId = workspacesData?.current_client_id ?? "";
-  const currentWorkspace = workspaces.find((ws) => ws.client_id === currentClientId);
+  const currentId = workspacesData?.current_id ?? "";
+  const currentWorkspace = workspaces.find((ws) => ws.id === currentId);
 
   const effectiveRole = me?.effective_role ?? "member";
   const orgName = me?.org?.name ?? "Keasy";
@@ -47,7 +47,7 @@ export function WorkspaceSwitcher() {
   const [switching, setSwitching] = React.useState<string | null>(null);
 
   async function handleSwitch(ws: WorkspaceSummary) {
-    if (ws.client_id === currentClientId) return;
+    if (ws.id === currentId) return;
     setSwitching(ws.name);
     try {
       await queryClient.resetQueries();
@@ -131,7 +131,7 @@ export function WorkspaceSwitcher() {
             </DropdownMenuLabel>
             {workspaces.map((ws) => (
               <DropdownMenuItem
-                key={ws.client_id}
+                key={ws.id}
                 onClick={() => handleSwitch(ws)}
                 className="gap-2 p-2"
               >
@@ -146,7 +146,7 @@ export function WorkspaceSwitcher() {
                     {ws.url}
                   </span>
                 </div>
-                {ws.client_id === currentClientId && (
+                {ws.id === currentId && (
                   <Check className="ml-auto size-4 shrink-0" />
                 )}
               </DropdownMenuItem>

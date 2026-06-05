@@ -2,17 +2,9 @@ const SCHEMA: &str = "
 PRAGMA journal_mode=WAL;
 PRAGMA foreign_keys=ON;
 
--- Workspace members. One workspace per instance, so a user belongs to it or
--- not — no org scoping. The owner is bootstrapped from config; everyone else
--- joins via an invite link as a member. Workspace identity lives in `settings`.
-CREATE TABLE IF NOT EXISTS org_members (
-    user_id    TEXT PRIMARY KEY,
-    role       TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('owner', 'member')),
-    email      TEXT NOT NULL DEFAULT '',
-    first_name TEXT NOT NULL DEFAULT '',
-    last_name  TEXT NOT NULL DEFAULT '',
-    joined_at  TEXT NOT NULL
-);
+-- Workspace membership and roles are Keycloak-native (client roles +
+-- `keasy:role` claim) — there is no local members table. Workspace identity
+-- lives in `settings`.
 
 -- Resource tables. A single workspace per instance owns all data, so these
 -- carry no organization scoping (W8 flatten).
@@ -29,9 +21,13 @@ CREATE TABLE IF NOT EXISTS connections (
     name             TEXT NOT NULL UNIQUE,
     kind             TEXT NOT NULL CHECK(kind IN ('data', 'vocab')),
     location_type    TEXT NOT NULL CHECK(location_type IN ('cloud', 'local')),
+    direction        TEXT NOT NULL DEFAULT 'source' CHECK(direction IN ('source', 'sink')),
     cloud_account_id TEXT REFERENCES cloud_accounts(id) ON DELETE SET NULL,
     url              TEXT NOT NULL
 );
+-- Exactly one write sink per workspace (the owner output store).
+CREATE UNIQUE INDEX IF NOT EXISTS connections_one_sink
+    ON connections(direction) WHERE direction = 'sink';
 
 CREATE TABLE IF NOT EXISTS jobs (
     id              TEXT PRIMARY KEY,
@@ -44,10 +40,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     error           TEXT,
     connection_ids  TEXT NOT NULL DEFAULT '[]',
     script          TEXT,
-    rdf_base        TEXT,
     manifest        TEXT,
-    catalog_manifest TEXT,
-    catalog_base    TEXT
+    catalog_manifest TEXT
 );
 
 CREATE TABLE IF NOT EXISTS conversations (
@@ -97,15 +91,6 @@ CREATE TABLE IF NOT EXISTS invite_tokens (
     created_at TEXT NOT NULL
 );
 
--- Registered workspace instances (OIDC clients in Keycloak), keyed by client_id.
--- Display metadata for the workspace switcher; OIDC credentials live in Keycloak only.
-CREATE TABLE IF NOT EXISTS workspaces (
-    client_id   TEXT PRIMARY KEY,
-    name        TEXT NOT NULL,
-    url         TEXT NOT NULL,
-    created_at  TEXT NOT NULL,
-    updated_at  TEXT NOT NULL
-);
 ";
 
 pub fn apply(conn: &rusqlite::Connection) -> Result<(), String> {

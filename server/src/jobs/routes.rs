@@ -59,10 +59,8 @@ pub async fn create_job(
             mode: payload.mode.unwrap_or(RunMode::Integrated),
             connection_ids: payload.connection_ids.clone(),
             script: Some(payload.script),
-            rdf_base: None,
             manifest: None,
             catalog_manifest: None,
-            catalog_base: None,
         };
         state.db.insert_job(&job).await
             .map_err(JobApiError::Internal)?;
@@ -82,10 +80,8 @@ pub async fn create_job(
         mode: payload.mode.unwrap_or(RunMode::Integrated),
         connection_ids: payload.connection_ids.clone(),
         script: None,
-        rdf_base: None,
         manifest: None,
         catalog_manifest: None,
-        catalog_base: None,
     };
 
     state.db.insert_job(&job).await

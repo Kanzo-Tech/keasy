@@ -19,7 +19,7 @@ WORKDIR /src
 # Heavy (bundled DuckDB, ~3-5 min cold). Built first so it caches across
 # keasy-server source edits (rmlext changes far less often).
 COPY rmlext /src/rmlext
-RUN cargo build --release --manifest-path /src/rmlext/Cargo.toml -p fossil-cli
+RUN cargo build --release --manifest-path /src/rmlext/Cargo.toml -p fossil-cli -p fossil-mcp
 
 # ── keasy-server ──────────────────────────────────────────────────────────
 # Dep cache: build manifests with a dummy main, then swap in real source. The
@@ -53,7 +53,9 @@ USER keasy
 COPY --from=builder /src/keasy/server/target/release/keasy-server /usr/local/bin/keasy-server
 # The fossil subprocess keasy invokes for every run/catalog/providers call.
 COPY --from=builder /src/rmlext/target/release/fossil /usr/local/bin/fossil
+COPY --from=builder /src/rmlext/target/release/fossil-mcp /usr/local/bin/fossil-mcp
 ENV FOSSIL_BIN=/usr/local/bin/fossil
+ENV FOSSIL_MCP_BIN=/usr/local/bin/fossil-mcp
 
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \

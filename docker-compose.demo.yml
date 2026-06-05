@@ -4,6 +4,12 @@
 
 services:
   server:
+    # Build the `fossil` binary in release too (the dev image defaults to debug
+    # for fast iteration — see server/Dockerfile.dev). Demos want representative
+    # runtime speed, matching the release keasy-server below.
+    build:
+      args:
+        FOSSIL_BUILD_PROFILE: release
     command: ["cargo", "run", "--release"]
     environment:
       RUST_LOG: info

@@ -11,6 +11,10 @@ services:
     volumes:
       - ./server/src:/src/keasy/server/src
       - server-target:/src/keasy/server/target
+      # Cargo registry persists across container recreation so the runtime
+      # compile (deps are no longer pre-built in the image — see Dockerfile.dev)
+      # doesn't re-download crates on every `make dev` rebuild.
+      - cargo-registry:/usr/local/cargo/registry
     environment:
       # The workspace's Keycloak Organization (membership container). Its alias
       # matches the org declared in the realm import; the server resolves the
@@ -22,7 +26,11 @@ services:
     healthcheck:
       interval: 10s
       retries: 30
-      start_period: 120s        # first Rust compile is slow
+      # Deps compile at runtime now (not baked into the image), so the FIRST
+      # `up` (empty volumes / post-`make clean`) does a full cold compile of
+      # ~400 crates. Generous window so caddy's depends_on doesn't flap; warm
+      # rebuilds are seconds.
+      start_period: 900s
 
   web:
     build:
@@ -51,4 +59,5 @@ services:
       # web: no hard dependency — avoids startup deadlocks during HMR init
 
 volumes:
-  server-target:                   # persist Rust build cache across restarts
+  server-target:                   # persist Rust build artifacts across restarts
+  cargo-registry:                  # persist downloaded crate sources across container recreation

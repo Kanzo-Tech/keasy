@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Dev image for keasy-server (hot reload). Build CONTEXT is the parent dir
 # holding BOTH `keasy/` and the sibling `rmlext/` — see docker-compose.dev.yml
 # (`context: ..`, `dockerfile: keasy/server/Dockerfile.dev`). rmlext is needed
@@ -14,26 +15,49 @@ RUN cargo install cargo-watch
 
 WORKDIR /src
 
-# Build the `fossil` + `fossil-mcp` binaries once (rmlext, bundled DuckDB
-# ~3-5 min cold) and put them on PATH. `fossil` runs jobs/catalog; `fossil-mcp`
-# serves the verb surface keasy invokes over MCP for owner `execute_sql`.
-# rmlext also satisfies keasy-server's path dep.
+# Build the `fossil` + `fossil-mcp` binaries and put them on PATH. `fossil` runs
+# jobs/catalog; `fossil-mcp` serves the verb surface keasy invokes over MCP for
+# owner `execute_sql`. rmlext also satisfies keasy-server's path dep.
+#
+# Profile: DEBUG by default (dev). rmlext is the actively-migrated sibling repo,
+# so any change busts the `COPY rmlext` layer and re-runs this build. Release
+# re-optimises the bundled DuckDB C++ from scratch (~3-5 min); debug compiles it
+# at -O0 (seconds-to-a-minute) — fast iteration wins over fossil's runtime speed
+# on dev data. `make demo` overrides FOSSIL_BUILD_PROFILE=release (representative
+# runtime speed) via the compose build arg.
+#
+# BuildKit cache mounts make the rebuild INCREMENTAL across layer-cache misses:
+# the cargo registry/git and rmlext `target/` survive between builds, so a small
+# rmlext change recompiles only the changed crates instead of all of DuckDB. The
+# binaries are `cp`-ed out within this RUN (cache mounts aren't committed to the
+# image layer, so the copy must happen here).
+ARG FOSSIL_BUILD_PROFILE=dev
 COPY rmlext /src/rmlext
-RUN cargo build --release --manifest-path /src/rmlext/Cargo.toml -p fossil-cli -p fossil-mcp \
-    && cp /src/rmlext/target/release/fossil /usr/local/bin/fossil \
-    && cp /src/rmlext/target/release/fossil-mcp /usr/local/bin/fossil-mcp
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/src/rmlext/target \
+    cargo build --profile ${FOSSIL_BUILD_PROFILE} --manifest-path /src/rmlext/Cargo.toml -p fossil-cli -p fossil-mcp \
+    && PROFDIR=$([ "${FOSSIL_BUILD_PROFILE}" = dev ] && echo debug || echo "${FOSSIL_BUILD_PROFILE}") \
+    && cp /src/rmlext/target/$PROFDIR/fossil /usr/local/bin/fossil \
+    && cp /src/rmlext/target/$PROFDIR/fossil-mcp /usr/local/bin/fossil-mcp
 ENV FOSSIL_BIN=/usr/local/bin/fossil
 ENV FOSSIL_MCP_BIN=/usr/local/bin/fossil-mcp
 
-# keasy-keycloak crate (a path dep of keasy-server) must be present before the
-# dep-cache build resolves `../keycloak`.
+# keasy-keycloak crate (a path dep of keasy-server) must be present so the
+# runtime `cargo build` resolves `../keycloak`.
 COPY keasy/keycloak /src/keasy/keycloak
 
-# keasy-server dep cache (the real `src/` is bind-mounted at runtime; `target/`
-# is a named volume so rebuilds are fast across restarts).
+# keasy-server manifests, for the RUNTIME compile (`src/` is bind-mounted at
+# runtime). We deliberately DON'T pre-build deps in the image: that step sat
+# below `COPY rmlext`, so every change to rmlext — the repo under active
+# migration — cascade-invalidated its layer and recompiled all ~400 crates from
+# scratch, the dominant cost of `make dev`. Instead the deps compile ONCE at
+# runtime into the persistent `server-target` + `cargo-registry` volumes (see
+# docker-compose.dev.yml); later rebuilds reuse them and cargo-watch recompiles
+# only the changed keasy crates. First `up` (or after `make clean`) pays a single
+# cold compile — covered by the server healthcheck's `start_period`.
 WORKDIR /src/keasy/server
 COPY keasy/server/Cargo.toml keasy/server/Cargo.lock ./
-RUN mkdir src && echo 'fn main() {}' > src/main.rs && cargo build && rm -rf src
 
 # DuckDB (inside `fossil`) looks for CA certs at the CentOS/RHEL path; symlink it.
 RUN mkdir -p /etc/pki/tls/certs \

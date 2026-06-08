@@ -43,11 +43,26 @@ impl ControlPlaneConfig {
         };
         let opt = |key: &str| std::env::var(key).ok().filter(|v| !v.trim().is_empty());
 
+        // `_FILE`-aware: prefers `<KEY>_FILE` (a mounted Swarm/Docker secret) over
+        // the plain env, so the admin secret never lands in the environment.
+        let secret = |key: &str| -> Result<SecretString, String> {
+            let file_var = format!("{key}_FILE");
+            if let Ok(path) = std::env::var(&file_var) {
+                let contents = std::fs::read_to_string(&path)
+                    .map_err(|e| format!("{file_var} points to {path} but could not read it: {e}"))?;
+                let trimmed = contents.trim().to_string();
+                if !trimmed.is_empty() {
+                    return Ok(SecretString::from(trimmed));
+                }
+            }
+            req(key).map(SecretString::from)
+        };
+
         Ok(Self {
             bind_addr: opt("CP_BIND_ADDR").unwrap_or_else(|| "0.0.0.0:9000".to_string()),
             oidc_issuer_url: req("CP_OIDC_ISSUER_URL")?,
             oidc_client_id: req("CP_OIDC_CLIENT_ID")?,
-            oidc_client_secret: SecretString::from(req("CP_OIDC_CLIENT_SECRET")?),
+            oidc_client_secret: secret("CP_OIDC_CLIENT_SECRET")?,
             oidc_internal_base_url: opt("CP_OIDC_INTERNAL_BASE_URL"),
             base_domain: opt("CP_BASE_DOMAIN").unwrap_or_else(|| "keasy.local".to_string()),
             server_image: opt("CP_SERVER_IMAGE").unwrap_or_else(|| "keasy-server:latest".to_string()),

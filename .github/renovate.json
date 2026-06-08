@@ -1,0 +1,44 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "packageRules": [
+    {
+      "description": "One rmlext release = npm packages + OCI image + contract crate at the SAME version. Group their bumps into a single atomic PR so keasy never lands a mismatched set (e.g. npm 0.3.1 with image 0.3.0).",
+      "groupName": "fossil release",
+      "matchPackageNames": [
+        "/^@fossil-lang//",
+        "ghcr.io/kanzo-tech/fossil",
+        "fossil-run-status"
+      ],
+      "schedule": ["at any time"]
+    },
+    {
+      "description": "Pin the fossil base image by digest for reproducible server builds; Renovate refreshes the digest when the tag moves.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/kanzo-tech/fossil"],
+      "pinDigests": true
+    },
+    {
+      "description": "The fossil-run-status git-dep tracks rmlext release tags (vX.Y.Z).",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["fossil-run-status"]
+    }
+  ],
+  "customManagers": [
+    {
+      "description": "Bump the FOSSIL_IMAGE build-arg pin in server/Dockerfile.",
+      "customType": "regex",
+      "managerFilePatterns": ["/server/Dockerfile$/"],
+      "matchStrings": [
+        "ARG FOSSIL_IMAGE=(?<depName>ghcr\\.io/kanzo-tech/fossil):(?<currentValue>[^\\s@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?"
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ]
+}

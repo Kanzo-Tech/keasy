@@ -1,0 +1,44 @@
+name: web-ci
+
+# Next.js CI: lint, type-check, unit tests, production build. Also the gate that
+# auto-validates every `@fossil-lang/*` bump Renovate opens.
+#
+# NOTE: activates with WS-B1 (web consumes `@fossil-lang/*` from the public npm
+# registry). Until then `pnpm install` resolves the vendored `.tgz` — which are
+# gitignored, so a fresh checkout cannot install. The packages are PUBLIC on npm,
+# so no auth token is needed here once migrated.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: web-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: web
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm exec tsc --noEmit
+      - run: pnpm test
+      - run: pnpm build

@@ -1,0 +1,119 @@
+name: images
+
+# Build + push the keasy instance images (server, web, caddy) to GHCR on release
+# tags. The control-plane's reconciler pulls these onto the VPS per the deploy/
+# manifest. Tag-triggered so images map 1:1 to a keasy release.
+#
+# Prereqs (operator):
+#   - the server image's `FROM ghcr.io/kanzo-tech/fossil` base is PRIVATE → grant the
+#     keasy repo read access to the fossil-lang package (or swap the login to a PAT).
+#   - `FOSSIL_LANG_TOKEN` secret (contents: read on fossil-lang) for the sibling
+#     checkout the `fossil-run-status` [patch] needs.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  attestations: write
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: keasy
+      # Sibling rmlext for the fossil-run-status [patch]; the `fossil` binary itself
+      # comes from the FROM base image (server/Dockerfile), not compiled here.
+      - uses: actions/checkout@v4
+        with:
+          repository: Kanzo-Tech/fossil-lang
+          token: ${{ secrets.FOSSIL_LANG_TOKEN }}
+          path: rmlext
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/kanzo-tech/keasy-server
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: keasy/server/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ghcr.io/kanzo-tech/keasy-server
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+  web-caddy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: keasy-web
+            context: web
+          - name: keasy-caddy
+            context: infra/caddy
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/kanzo-tech/${{ matrix.name }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ghcr.io/kanzo-tech/${{ matrix.name }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true

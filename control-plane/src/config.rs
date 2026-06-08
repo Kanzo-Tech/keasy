@@ -26,7 +26,8 @@ pub struct ControlPlaneConfig {
     pub server_image: String,
     /// Container image used for each instance's web frontend.
     pub web_image: String,
-    /// Docker network the instance containers attach to (shared with Keycloak).
+    /// Shared external Swarm overlay the instance services + Traefik attach to
+    /// (the ingress edge network).
     pub network: String,
 }
 
@@ -51,7 +52,7 @@ impl ControlPlaneConfig {
             base_domain: opt("CP_BASE_DOMAIN").unwrap_or_else(|| "keasy.local".to_string()),
             server_image: opt("CP_SERVER_IMAGE").unwrap_or_else(|| "keasy-server:latest".to_string()),
             web_image: opt("CP_WEB_IMAGE").unwrap_or_else(|| "keasy-web:latest".to_string()),
-            network: opt("CP_NETWORK").unwrap_or_else(|| "keasy_default".to_string()),
+            network: opt("CP_NETWORK").unwrap_or_else(|| "keasy-edge".to_string()),
         })
     }
 }

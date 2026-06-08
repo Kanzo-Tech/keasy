@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
-use secrecy::SecretString;
+use secrecy::{ExposeSecret, SecretString};
 
 pub struct ServerConfig {
     pub bind_addr: SocketAddr,
@@ -60,18 +60,16 @@ impl ServerConfig {
             }
         };
 
-        let api_key = match std::env::var("KEASY_API_KEY") {
-            Ok(key) => key,
-            Err(_) => {
-                eprintln!("FATAL: KEASY_API_KEY environment variable is required");
+        // Resolve via the `_FILE`-aware path so the key can arrive as a Swarm/Docker
+        // secret mounted at `KEASY_API_KEY_FILE` (the deployment default) or as a
+        // plain `KEASY_API_KEY` env (dev). `resolve_secret` already drops empties.
+        let api_key = match resolve_secret("KEASY_API_KEY") {
+            Some(key) => key.expose_secret().to_string(),
+            None => {
+                eprintln!("FATAL: KEASY_API_KEY (or KEASY_API_KEY_FILE) is required");
                 std::process::exit(1);
             }
         };
-
-        if api_key.trim().is_empty() {
-            eprintln!("FATAL: KEASY_API_KEY must not be empty");
-            std::process::exit(1);
-        }
 
         // Each concurrent job spawns a `fossil` subprocess whose DuckDB is capped
         // at `FOSSIL_DUCKDB_MEMORY_LIMIT` (default 512MB). Peak job RAM on a host

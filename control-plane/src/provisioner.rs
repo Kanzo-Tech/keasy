@@ -23,7 +23,7 @@ use std::sync::Arc;
 use keasy_keycloak::admin::KeycloakAdmin;
 
 use crate::config::ControlPlaneConfig;
-use crate::docker::{DockerOrchestrator, StackSpec};
+use crate::docker::{DockerOrchestrator, StackSpec, TenantSecrets};
 use crate::manifest::DesiredTenant;
 use crate::store::{Store, StoredWorkspace};
 
@@ -183,8 +183,8 @@ impl Provisioner {
         keycloak_uuid: &str,
         original: ProvisionError,
     ) -> ProvisionError {
-        if let Err(re) = self.docker.down(workspace_id).await {
-            tracing::warn!(error = %re, %workspace_id, "rollback: docker down failed");
+        if let Err(re) = self.docker.remove(workspace_id).await {
+            tracing::warn!(error = %re, %workspace_id, "rollback: docker stack remove failed");
         }
         if let Err(re) = self.keycloak.delete_client(keycloak_uuid).await {
             tracing::warn!(error = %re, %workspace_id, "rollback: keycloak delete failed");
@@ -233,16 +233,22 @@ impl Provisioner {
             .await
             .map_err(ProvisionError::Keycloak)?;
 
-        // 5. Bring up the instance stack.
+        // 5. Mint + create the workspace's Swarm secrets (the generated ones fix the
+        //    FATAL-if-missing boot bug; OIDC comes from Keycloak), then deploy the
+        //    Swarm stack. Secrets are immutable and reused across rollouts.
+        let secrets = TenantSecrets::mint(client_secret);
+        self.docker
+            .create_secrets(workspace_id, &secrets)
+            .await
+            .map_err(ProvisionError::Docker)?;
         let spec = StackSpec {
             workspace_id: workspace_id.to_string(),
             workspace_name: name.to_string(),
             slug: slug.to_string(),
-            oidc_client_secret: client_secret.to_string(),
             server_image: server_image.to_string(),
             web_image: web_image.to_string(),
         };
-        self.docker.up(&spec).await.map_err(ProvisionError::Docker)?;
+        self.docker.deploy(&spec).await.map_err(ProvisionError::Docker)?;
 
         Ok(WorkspaceInfo {
             id: workspace_id.to_string(),
@@ -259,7 +265,7 @@ impl Provisioner {
             return Err(ProvisionError::NotFound(workspace_id.to_string()));
         };
         self.docker
-            .down(workspace_id)
+            .remove(workspace_id)
             .await
             .map_err(ProvisionError::Docker)?;
         self.keycloak
@@ -329,15 +335,16 @@ impl Provisioner {
         record: &StoredWorkspace,
         desired: &DesiredTenant,
     ) -> Result<(), ProvisionError> {
+        // A rollout re-deploys with the new image; the Swarm secrets created at
+        // provision are reused (immutable), so no secret is re-passed here.
         let spec = StackSpec {
             workspace_id: record.id.clone(),
             workspace_name: record.name.clone(),
             slug: record.slug.clone(),
-            oidc_client_secret: record.oidc_client_secret.clone(),
             server_image: desired.server_image.clone(),
             web_image: desired.web_image.clone(),
         };
-        self.docker.up(&spec).await.map_err(ProvisionError::Docker)?;
+        self.docker.deploy(&spec).await.map_err(ProvisionError::Docker)?;
         let updated = StoredWorkspace {
             server_image: desired.server_image.clone(),
             ..record.clone()

@@ -16,8 +16,13 @@ axum = "0.8"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# Per-tenant declarative specs (`deploy/environments/<env>/tenants/*.yaml`).
+serde_yaml_ng = "0.10"
 secrecy = { version = "0.10", features = ["serde"] }
 thiserror = "2"
+# Durable workspace registry (the one piece of provisioner state). Bundled SQLite,
+# same as keasy-server — schema-in-code + `PRAGMA user_version` migrations.
+rusqlite = { version = "0.37", features = ["bundled"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1", features = ["v4"] }
@@ -25,3 +30,7 @@ uuid = { version = "1", features = ["v4"] }
 # The control-plane renders a parameterized compose template per workspace and
 # drives `docker compose` over the Docker socket — the ONLY component with that
 # (privileged) access, isolated from the tenant instances.
+
+[dev-dependencies]
+# Temp dirs for the manifest fs-loader test (real versions.env + tenants/*.yaml).
+tempfile = "3"

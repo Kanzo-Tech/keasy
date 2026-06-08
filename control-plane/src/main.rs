@@ -13,7 +13,9 @@
 
 mod config;
 mod docker;
+mod manifest;
 mod provisioner;
+mod store;
 
 use std::sync::Arc;
 
@@ -52,7 +54,8 @@ async fn main() {
     let bind_addr = config.bind_addr.clone();
 
     let stacks_dir = std::env::var("CP_STACKS_DIR").unwrap_or_else(|_| "/var/lib/keasy/stacks".into());
-    let provisioner = match Provisioner::new(config, stacks_dir) {
+    let db_path = std::env::var("CP_DB_PATH").unwrap_or_else(|_| "/var/lib/keasy/control-plane.db".into());
+    let provisioner = match Provisioner::new(config, stacks_dir, db_path) {
         Ok(p) => p,
         Err(e) => {
             eprintln!("FATAL: failed to init provisioner: {e}");
@@ -60,10 +63,13 @@ async fn main() {
         }
     };
 
+    spawn_reconcile_loop(provisioner.clone());
+
     let app = Router::new()
         .route("/healthz", get(|| async { StatusCode::OK }))
         .route("/workspaces", get(list_workspaces).post(create_workspace))
         .route("/workspaces/{id}", axum::routing::delete(delete_workspace))
+        .route("/reconcile", axum::routing::post(reconcile))
         .with_state(provisioner);
 
     let listener = match tokio::net::TcpListener::bind(&bind_addr).await {
@@ -101,7 +107,61 @@ async fn delete_workspace(
 }
 
 async fn list_workspaces(State(provisioner): State<Arc<Provisioner>>) -> Response {
-    Json(provisioner.list().await).into_response()
+    match provisioner.list() {
+        Ok(workspaces) => Json(workspaces).into_response(),
+        Err(e) => error_response(&e),
+    }
+}
+
+/// Reconcile the live registry against the declarative manifest at `CP_DEPLOY_DIR`.
+async fn reconcile(State(provisioner): State<Arc<Provisioner>>) -> Response {
+    let Ok(dir) = std::env::var("CP_DEPLOY_DIR") else {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "CP_DEPLOY_DIR not set" })),
+        )
+            .into_response();
+    };
+    match manifest::load_environment(std::path::Path::new(&dir)) {
+        Ok(desired) => match provisioner.reconcile(&desired).await {
+            Ok(summary) => Json(summary).into_response(),
+            Err(e) => error_response(&e),
+        },
+        Err(e) => {
+            (StatusCode::BAD_REQUEST, Json(serde_json::json!({ "error": e }))).into_response()
+        }
+    }
+}
+
+/// Pull-based reconcile: every `CP_RECONCILE_INTERVAL_SECS` (0 = disabled, the
+/// default) re-read the manifest and converge. Self-healing — a control-plane
+/// restart rebuilds nothing; the next tick reconciles git against the SQLite registry.
+fn spawn_reconcile_loop(provisioner: Arc<Provisioner>) {
+    let secs: u64 = std::env::var("CP_RECONCILE_INTERVAL_SECS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0);
+    if secs == 0 {
+        tracing::info!("pull-based reconcile disabled (set CP_RECONCILE_INTERVAL_SECS > 0)");
+        return;
+    }
+    let Ok(dir) = std::env::var("CP_DEPLOY_DIR") else {
+        tracing::warn!("CP_RECONCILE_INTERVAL_SECS set but CP_DEPLOY_DIR missing — loop not started");
+        return;
+    };
+    tokio::spawn(async move {
+        let mut tick = tokio::time::interval(std::time::Duration::from_secs(secs));
+        loop {
+            tick.tick().await;
+            match manifest::load_environment(std::path::Path::new(&dir)) {
+                Ok(desired) => match provisioner.reconcile(&desired).await {
+                    Ok(s) => tracing::info!(summary = ?s, "reconcile complete"),
+                    Err(e) => tracing::error!(error = %e, "reconcile failed"),
+                },
+                Err(e) => tracing::error!(error = %e, "reconcile: load manifest failed"),
+            }
+        }
+    });
 }
 
 fn error_response(e: &ProvisionError) -> Response {

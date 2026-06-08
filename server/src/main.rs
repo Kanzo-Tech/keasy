@@ -7,7 +7,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tracing::{info, warn};
+use tracing::info;
 
 use tower_sessions::ExpiredDeletion;
 
@@ -28,8 +28,13 @@ async fn main() {
         std::process::exit(1);
     }
 
+    // Fail closed: without the encryption key, stored tenant connection creds
+    // would be written in plaintext. Required (the deployment injects it as a
+    // Swarm secret via KEASY_SECRET_KEY_FILE). See W4 in the deploy plan.
     if config.secret_key.is_none() {
-        warn!("KEASY_SECRET_KEY is not set — secrets will be stored unencrypted");
+        eprintln!("FATAL: KEASY_SECRET_KEY is required to encrypt stored credentials");
+        eprintln!("       Generate one with: openssl rand -base64 32");
+        std::process::exit(1);
     }
 
     let db_path = config.data_dir.join("keasy.db");

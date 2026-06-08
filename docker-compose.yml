@@ -69,8 +69,11 @@ services:
       FOSSIL_DUCKDB_THREADS: "2"
       FOSSIL_DUCKDB_TEMP_DIR: /var/lib/keasy/duckdb-tmp
       KEASY_DATA_DIR: /var/lib/keasy
-      KEASY_SECRET_KEY: ${KEASY_SECRET_KEY:-change-me-in-production}
-      KEASY_SESSION_SECRET: "8VVnhO7zkhlc+oelkbjrKnlpkz4S2+HCQLOnz9/gnR/Rwlc2/8gZe+W7EURQDUa53j8oP+miZ5MpMuL4ZLvjoA=="
+      # DEV-ONLY placeholders. Prod injects both as Swarm secrets (*_FILE); never
+      # commit a real secret here. Override locally via .env (gitignored) or
+      # `KEASY_SESSION_SECRET=$(openssl rand -base64 64) docker compose up`.
+      KEASY_SECRET_KEY: ${KEASY_SECRET_KEY:-dev-only-insecure-secret-key-change-me}
+      KEASY_SESSION_SECRET: ${KEASY_SESSION_SECRET:-dev-only-insecure-session-secret-change-me}
       KEASY_BASE_URL: http://localhost:3000
       KEASY_OIDC_ISSUER_URL: http://localhost:3000/auth/realms/keasy
       KEASY_OIDC_CLIENT_ID: keasy-server

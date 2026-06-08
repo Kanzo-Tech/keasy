@@ -48,6 +48,7 @@ pub fn build_router(
     let health_routes = Router::new()
         .route("/healthz/live", axum::routing::get(health::liveness))
         .route("/healthz/ready", axum::routing::get(health::readiness))
+        .route("/version", axum::routing::get(health::version))
         .with_state(state.clone());
 
     let public_api_routes = Router::new()

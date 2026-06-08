@@ -11,6 +11,7 @@ use utoipa::OpenApi;
         // Health
         crate::routes::health::liveness,
         crate::routes::health::readiness,
+        crate::routes::health::version,
         crate::routes::health::service_status,
         // Jobs
         crate::jobs::routes::list_jobs,
@@ -124,6 +125,7 @@ use utoipa::OpenApi;
         crate::auth::routes::LogoutResponse,
         // Health
         crate::routes::health::ServiceStatusResponse,
+        crate::routes::health::VersionResponse,
         // Organization
         crate::routes::org::OrgInviteEntry,
         crate::routes::org::UpdateOrgIdentityPayload,

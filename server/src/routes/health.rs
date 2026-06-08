@@ -31,6 +31,28 @@ pub async fn readiness(State(state): State<AppState>) -> impl IntoResponse {
     }
 }
 
+/// The running build's version — announced so operators (and the fleet view) can
+/// see exactly which image a tenant is on. `git_sha`/`built_at` are stamped at
+/// build time (CI sets `KEASY_GIT_SHA`/`KEASY_BUILT_AT`); `version` is the crate
+/// version. See [[project_keasy_swarm_deploy_architecture]] (W0.6).
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct VersionResponse {
+    pub version: &'static str,
+    pub git_sha: Option<&'static str>,
+    pub built_at: Option<&'static str>,
+}
+
+#[utoipa::path(get, path = "/version", tag = "Health",
+    responses((status = 200, description = "Running build version", body = VersionResponse))
+)]
+pub async fn version() -> impl IntoResponse {
+    data_response(VersionResponse {
+        version: env!("CARGO_PKG_VERSION"),
+        git_sha: option_env!("KEASY_GIT_SHA"),
+        built_at: option_env!("KEASY_BUILT_AT"),
+    })
+}
+
 #[utoipa::path(get, path = "/v1/status", tag = "Health",
     responses((status = 200, description = "External service status", body = ServiceStatusResponse))
 )]

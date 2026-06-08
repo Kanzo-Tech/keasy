@@ -50,9 +50,11 @@ time = "0.3"
 # CatalogInput, ProviderInfo), reused verbatim — one source of truth, the
 # `fossil` CLI serialises these exact structs and keasy deserialises them. keasy
 # links NO fossil compiler/runtime crate: every fossil capability (run, catalog,
-# providers) goes through the `fossil` binary over a subprocess. Path dep while
-# rmlext is a sibling local checkout; → git dep once rmlext is published.
-fossil-run-status = { path = "../../rmlext/crates/fossil-run-status", features = ["utoipa"] }
+# providers) goes through the `fossil` binary over a subprocess. Consumed as a
+# git-dep pinned to the rmlext release tag (Renovate bumps it); local dev resolves
+# it to the sibling checkout via the [patch] below, so `make dev` never clones the
+# private repo.
+fossil-run-status = { git = "https://github.com/Kanzo-Tech/fossil-lang.git", tag = "v0.3.0", features = ["utoipa"] }
 # MCP client only — keasy spawns the `fossil-mcp` binary (host-boundary: still a
 # subprocess, NO fossil compiler/runtime crate linked) and calls its verb tools
 # over stdio. Used for owner-gated `execute_sql` (and the future `/ask` loop).
@@ -78,3 +80,12 @@ tempfile = "3"
 lto = "thin"
 panic = "abort"
 strip = "debuginfo"
+
+# The `fossil-run-status` git-dep above resolves through this patch to a sibling
+# `rmlext/crates/fossil-run-status` checkout — Cargo uses the patch as the source,
+# so it never clones (or authenticates to) the private repo or needs the tag to
+# exist. The sibling is the real working tree locally; CI/Docker check out ONLY
+# this one contract crate at the pinned tag into the same relative path (not the
+# whole rmlext / DuckDB build). Renovate bumps the tag in lockstep with releases.
+[patch."https://github.com/Kanzo-Tech/fossil-lang.git"]
+fossil-run-status = { path = "../../rmlext/crates/fossil-run-status" }

@@ -3,11 +3,15 @@
 
 services:
   server:
-    # Context is the parent of keasy/ + rmlext/ (the fossil-run-status path dep
-    # + the bundled fossil subprocess binary both come from rmlext).
+    # Context is the parent of keasy/ + rmlext/: rmlext is present only so the
+    # `fossil-run-status` git-dep resolves through its [patch] (workspace inheritance
+    # needs the root manifest). The `fossil` + `fossil-mcp` binaries are NOT compiled
+    # here — they come from the FOSSIL_IMAGE producer image via COPY --from.
     build:
       context: ..
       dockerfile: keasy/server/Dockerfile
+      args:
+        FOSSIL_IMAGE: ${FOSSIL_IMAGE:-ghcr.io/kanzo-tech/fossil:0.3.0}
     environment:
       KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-}
       KEASY_CADDY_CERTS_DIR: /caddy-data

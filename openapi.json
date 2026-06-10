@@ -896,6 +896,49 @@
             "description": "Job is still running"
           }
         }
+      },
+      "patch": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Browser-driven completion: the client (`@fossil-lang/executor`) ran the\nmapping, signed-PUT the output, and reports the outcome here. `Completed`\nstores the executor's `RunStatus` (the discovery + DCAT views read it); the\nserver never touches the data — only the metadata.",
+        "operationId": "complete_job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Job status updated from the browser run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
       }
     },
     "/v1/jobs/{id}/catalog/manifest": {
@@ -1208,6 +1251,134 @@
           },
           "404": {
             "description": "Job not found or no output"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/output/urls": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Sign PUT URLs so the browser uploads the GraphAr output it just produced\ndirectly to owner storage (no data through the server). The output lives at\n`{owner_base}/{job_id}/<key>` — the same dest the completion `RunStatus`\nreports. Mirrors `resolve_discover_urls` but signs `PUT` for upload.",
+        "operationId": "resolve_output_urls",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutputUrlsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Signed PUT URLs for the output keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No owner output storage configured"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/source-refs": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "The job's connection ref-map (name → base URL). The browser feeds it to the\nexecutor's `sources()`/`run()` to resolve `@conn` aliases. No credentials —\nonly the base URLs (signing is a separate, per-URL call).",
+        "operationId": "resolve_source_refs",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connection ref-map for the job's sources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceRefsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/sources/urls": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Sign GET URLs so the browser fetches the program's cloud sources directly\n(no data through the server). Each cloud URI is signed with the creds of the\njob connection whose base URL prefixes it; non-cloud (HTTP/public) URIs pass\nthrough verbatim.",
+        "operationId": "resolve_source_urls",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceUrlsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Fetch URLs (signed GET for cloud) per source URI",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceUrlsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found"
           }
         }
       }
@@ -1768,6 +1939,26 @@
           }
         }
       }
+    },
+    "/version": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "operationId": "version",
+        "responses": {
+          "200": {
+            "description": "Running build version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2015,6 +2206,48 @@
           },
           "rationale": {
             "type": "string"
+          }
+        }
+      },
+      "CompleteJobRequest": {
+        "type": "object",
+        "description": "The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running\nthe mapping in the browser (`@fossil-lang/executor`) and uploading the output\nby signed PUT, the client reports the run's outcome. `manifest` is the\nexecutor's `RunStatus` — the SAME type the old subprocess produced — so the\ndiscovery + DCAT paths consume it unchanged.",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "catalog_manifest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunStatus",
+                "description": "The DCAT-AP catalog `RunStatus`, when the client also built the catalog."
+              }
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Failure message (on `Failed`) — classified into a `JobRuntimeError`."
+          },
+          "manifest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunStatus",
+                "description": "The GraphAr `RunStatus` for the uploaded output (on `Completed`)."
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "The terminal (or `Running`) status the client is transitioning the job to."
           }
         }
       },
@@ -2850,6 +3083,21 @@
           }
         }
       },
+      "OutputUrlsRequest": {
+        "type": "object",
+        "required": [
+          "paths"
+        ],
+        "properties": {
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Dataset-relative output keys the browser executor produced\n(`vertex/Person.parquet`, `edge/<dir>/by_source.parquet`,\n`graph.graph.yml`, …)."
+          }
+        }
+      },
       "Preferences": {
         "type": "object",
         "required": [
@@ -2950,8 +3198,7 @@
         "description": "The position a reference plays in an `io.*` source constructor.",
         "enum": [
           "data",
-          "schema",
-          "select"
+          "schema"
         ]
       },
       "RefsRequest": {
@@ -3070,6 +3317,57 @@
           "role": {
             "$ref": "#/components/schemas/RefRole",
             "description": "Where this reference appears in the source constructor."
+          }
+        }
+      },
+      "SourceRefsResponse": {
+        "type": "object",
+        "required": [
+          "refs"
+        ],
+        "properties": {
+          "refs": {
+            "type": "object",
+            "description": "Connection ref-map `{ name: baseUrl }` — the browser passes it to the\nexecutor (`@fossil-lang/executor`) so `@name/path` source aliases resolve\nto `{baseUrl}/path`, identically to the native engine.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SourceUrlsRequest": {
+        "type": "object",
+        "required": [
+          "uris"
+        ],
+        "properties": {
+          "uris": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The RESOLVED source URIs the executor's `sources()` returned (already\n`@conn`-resolved, e.g. `s3://bucket/prefix/users.csv`)."
+          }
+        }
+      },
+      "SourceUrlsResponse": {
+        "type": "object",
+        "required": [
+          "urls"
+        ],
+        "properties": {
+          "urls": {
+            "type": "object",
+            "description": "Each input URI → a fetch URL: a signed GET for cloud sources, or the URI\nverbatim for public/HTTP ones. The browser fetches each and stages the\nbytes for the executor under the SAME URI.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
           }
         }
       },
@@ -3279,6 +3577,30 @@
             "type": "string"
           },
           "path": {
+            "type": "string"
+          }
+        }
+      },
+      "VersionResponse": {
+        "type": "object",
+        "description": "The running build's version — announced so operators (and the fleet view) can\nsee exactly which image a tenant is on. `git_sha`/`built_at` are stamped at\nbuild time (CI sets `KEASY_GIT_SHA`/`KEASY_BUILT_AT`); `version` is the crate\nversion. See [[project_keasy_swarm_deploy_architecture]] (W0.6).",
+        "required": [
+          "version"
+        ],
+        "properties": {
+          "built_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "git_sha": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
             "type": "string"
           }
         }

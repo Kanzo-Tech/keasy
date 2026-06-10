@@ -31,6 +31,12 @@ export const api = {
     update: async (id: string, req: Schemas["UpdateJobRequest"]) =>
       unwrap(await client.PUT("/v1/jobs/{id}", { params: { path: { id } }, body: req })),
 
+    /// Browser-driven completion (PATCH): after running the mapping in the
+    /// browser and uploading the output by signed PUT, report the outcome —
+    /// `status` + the executor's `RunStatus` `manifest` (or `error`).
+    complete: async (id: string, req: Schemas["CompleteJobRequest"]) =>
+      unwrap(await client.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body: req })),
+
     remove: async (id: string) => {
       unwrap(await client.DELETE("/v1/jobs/{id}", { params: { path: { id } } }));
     },

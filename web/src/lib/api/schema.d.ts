@@ -300,7 +300,13 @@ export interface paths {
         delete: operations["delete_job"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Browser-driven completion: the client (`@fossil-lang/executor`) ran the
+         *     mapping, signed-PUT the output, and reports the outcome here. `Completed`
+         *     stores the executor's `RunStatus` (the discovery + DCAT views read it); the
+         *     server never touches the data — only the metadata.
+         */
+        patch: operations["complete_job"];
         trace?: never;
     };
     "/v1/jobs/{id}/catalog/manifest": {
@@ -409,6 +415,71 @@ export interface paths {
         get: operations["resolve_discover_urls"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{id}/output/urls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign PUT URLs so the browser uploads the GraphAr output it just produced
+         *     directly to owner storage (no data through the server). The output lives at
+         *     `{owner_base}/{job_id}/<key>` — the same dest the completion `RunStatus`
+         *     reports. Mirrors `resolve_discover_urls` but signs `PUT` for upload.
+         */
+        post: operations["resolve_output_urls"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{id}/source-refs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The job's connection ref-map (name → base URL). The browser feeds it to the
+         *     executor's `sources()`/`run()` to resolve `@conn` aliases. No credentials —
+         *     only the base URLs (signing is a separate, per-URL call).
+         */
+        get: operations["resolve_source_refs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{id}/sources/urls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign GET URLs so the browser fetches the program's cloud sources directly
+         *     (no data through the server). Each cloud URI is signed with the creds of the
+         *     job connection whose base URL prefixes it; non-cloud (HTTP/public) URIs pass
+         *     through verbatim.
+         */
+        post: operations["resolve_source_urls"];
         delete?: never;
         options?: never;
         head?: never;
@@ -659,6 +730,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["version"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -744,6 +831,21 @@ export interface components {
             id: string;
             question: string;
             rationale: string;
+        };
+        /**
+         * @description The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
+         *     the mapping in the browser (`@fossil-lang/executor`) and uploading the output
+         *     by signed PUT, the client reports the run's outcome. `manifest` is the
+         *     executor's `RunStatus` — the SAME type the old subprocess produced — so the
+         *     discovery + DCAT paths consume it unchanged.
+         */
+        CompleteJobRequest: {
+            catalog_manifest?: null | components["schemas"]["RunStatus"];
+            /** @description Failure message (on `Failed`) — classified into a `JobRuntimeError`. */
+            error?: string | null;
+            manifest?: null | components["schemas"]["RunStatus"];
+            /** @description The terminal (or `Running`) status the client is transitioning the job to. */
+            status: components["schemas"]["JobStatus"];
         };
         Connection: {
             cloud_account_id?: string | null;
@@ -973,6 +1075,14 @@ export interface components {
             publisher_name: string;
             publisher_uri?: string | null;
         };
+        OutputUrlsRequest: {
+            /**
+             * @description Dataset-relative output keys the browser executor produced
+             *     (`vertex/Person.parquet`, `edge/<dir>/by_source.parquet`,
+             *     `graph.graph.yml`, …).
+             */
+            paths: string[];
+        };
         Preferences: {
             accent_color: string;
             font_family: string;
@@ -1008,7 +1118,7 @@ export interface components {
          * @description The position a reference plays in an `io.*` source constructor.
          * @enum {string}
          */
-        RefRole: "data" | "schema" | "select";
+        RefRole: "data" | "schema";
         /** @description Request body for `POST /v1/refs`: the `.fossil` script to parse. */
         RefsRequest: {
             /** @description The `.fossil` program text whose external references to enumerate. */
@@ -1057,6 +1167,33 @@ export interface components {
             /** @description Where this reference appears in the source constructor. */
             role: components["schemas"]["RefRole"];
         };
+        SourceRefsResponse: {
+            /**
+             * @description Connection ref-map `{ name: baseUrl }` — the browser passes it to the
+             *     executor (`@fossil-lang/executor`) so `@name/path` source aliases resolve
+             *     to `{baseUrl}/path`, identically to the native engine.
+             */
+            refs: {
+                [key: string]: string;
+            };
+        };
+        SourceUrlsRequest: {
+            /**
+             * @description The RESOLVED source URIs the executor's `sources()` returned (already
+             *     `@conn`-resolved, e.g. `s3://bucket/prefix/users.csv`).
+             */
+            uris: string[];
+        };
+        SourceUrlsResponse: {
+            /**
+             * @description Each input URI → a fetch URL: a signed GET for cloud sources, or the URI
+             *     verbatim for public/HTTP ones. The browser fetches each and stages the
+             *     bytes for the executor under the SAME URI.
+             */
+            urls: {
+                [key: string]: string;
+            };
+        };
         SuggestRequest: {
             domain: string;
             schemas: components["schemas"]["FileSchema"][];
@@ -1100,6 +1237,17 @@ export interface components {
         UploadFileRequest: {
             content: string;
             path: string;
+        };
+        /**
+         * @description The running build's version — announced so operators (and the fleet view) can
+         *     see exactly which image a tenant is on. `git_sha`/`built_at` are stamped at
+         *     build time (CI sets `KEASY_GIT_SHA`/`KEASY_BUILT_AT`); `version` is the crate
+         *     version. See [[project_keasy_swarm_deploy_architecture]] (W0.6).
+         */
+        VersionResponse: {
+            built_at?: string | null;
+            git_sha?: string | null;
+            version: string;
         };
         /**
          * @description One vertex type — its dataset-relative Parquet, row count, and property
@@ -1987,6 +2135,40 @@ export interface operations {
             };
         };
     };
+    complete_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteJobRequest"];
+            };
+        };
+        responses: {
+            /** @description Job status updated from the browser run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     resolve_catalog_manifest: {
         parameters: {
             query?: never;
@@ -2240,6 +2422,111 @@ export interface operations {
                 };
             };
             /** @description Job not found or no output */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resolve_output_urls: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutputUrlsRequest"];
+            };
+        };
+        responses: {
+            /** @description Signed PUT URLs for the output keys */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolveResponse"];
+                };
+            };
+            /** @description No owner output storage configured */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resolve_source_refs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Connection ref-map for the job's sources */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceRefsResponse"];
+                };
+            };
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resolve_source_urls: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceUrlsRequest"];
+            };
+        };
+        responses: {
+            /** @description Fetch URLs (signed GET for cloud) per source URI */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceUrlsResponse"];
+                };
+            };
+            /** @description Job not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2781,6 +3068,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServiceStatusResponse"];
+                };
+            };
+        };
+    };
+    version: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Running build version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionResponse"];
                 };
             };
         };

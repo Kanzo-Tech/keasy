@@ -209,7 +209,17 @@ pub async fn complete_job(
     Json(payload): Json<CompleteJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
     let now = now_iso8601();
-    let CompleteJobRequest { status, manifest, catalog_manifest, error } = payload;
+    let CompleteJobRequest { status, mut manifest, catalog_manifest, error } = payload;
+
+    // The output lives where the signed PUTs wrote it — `{owner_base}/{job_id}`
+    // (the same dest `resolve_output_urls` signs). keasy is authoritative over
+    // it, so stamp `manifest.dest` server-side rather than trust the browser:
+    // discovery reads `manifest.dest` as the dataset base for signed GETs.
+    if matches!(status, JobStatus::Completed) {
+        if let (Some(m), Some((_, base))) = (manifest.as_mut(), state.db.get_owner_catalog_config().await) {
+            m.dest = format!("{}/{}", base.trim_end_matches('/'), id);
+        }
+    }
 
     let updated = state
         .db

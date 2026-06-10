@@ -157,6 +157,14 @@ pub fn build_router(
             axum::routing::post(crate::discovery::routes::resolve_output_urls),
         )
         .route(
+            "/v1/jobs/{id}/source-refs",
+            axum::routing::get(crate::discovery::routes::resolve_source_refs),
+        )
+        .route(
+            "/v1/jobs/{id}/sources/urls",
+            axum::routing::post(crate::discovery::routes::resolve_source_urls),
+        )
+        .route(
             "/v1/jobs/{id}/discover/urls",
             axum::routing::get(crate::discovery::routes::resolve_discover_urls),
         )

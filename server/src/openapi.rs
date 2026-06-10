@@ -64,6 +64,8 @@ use utoipa::OpenApi;
         crate::routes::org::revoke_org_invite,
         // Discovery
         crate::discovery::routes::resolve_output_urls,
+        crate::discovery::routes::resolve_source_refs,
+        crate::discovery::routes::resolve_source_urls,
         crate::discovery::routes::resolve_discover_urls,
         crate::discovery::routes::resolve_discover_manifest,
         crate::discovery::routes::resolve_catalog_manifest,

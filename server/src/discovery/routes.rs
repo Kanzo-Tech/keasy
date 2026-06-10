@@ -121,6 +121,115 @@ pub async fn resolve_output_urls(
     }
 }
 
+// ── Browser source access (ref-map + signed GET) ───────────────────────────
+
+#[derive(Serialize, utoipa::ToSchema)]
+struct SourceRefsResponse {
+    /// Connection ref-map `{ name: baseUrl }` — the browser passes it to the
+    /// executor (`@fossil-lang/executor`) so `@name/path` source aliases resolve
+    /// to `{baseUrl}/path`, identically to the native engine.
+    refs: HashMap<String, String>,
+}
+
+#[utoipa::path(get, path = "/v1/jobs/{id}/source-refs", tag = "Discovery",
+    params(("id" = String, Path, description = "Job ID")),
+    responses(
+        (status = 200, description = "Connection ref-map for the job's sources", body = SourceRefsResponse),
+        (status = 404, description = "Job not found"),
+    )
+)]
+/// The job's connection ref-map (name → base URL). The browser feeds it to the
+/// executor's `sources()`/`run()` to resolve `@conn` aliases. No credentials —
+/// only the base URLs (signing is a separate, per-URL call).
+pub async fn resolve_source_refs(
+    _ctx: Require<IsMember>,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Response {
+    let Some(job) = state.db.get_job(id.as_str()).await else {
+        return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response();
+    };
+    let mut refs = HashMap::new();
+    for cid in &job.connection_ids {
+        if let Some(c) = state.db.get_connection(cid).await {
+            refs.insert(c.name, c.url);
+        }
+    }
+    Json(SourceRefsResponse { refs }).into_response()
+}
+
+#[derive(Deserialize, utoipa::ToSchema)]
+pub struct SourceUrlsRequest {
+    /// The RESOLVED source URIs the executor's `sources()` returned (already
+    /// `@conn`-resolved, e.g. `s3://bucket/prefix/users.csv`).
+    uris: Vec<String>,
+}
+
+#[derive(Serialize, utoipa::ToSchema)]
+struct SourceUrlsResponse {
+    /// Each input URI → a fetch URL: a signed GET for cloud sources, or the URI
+    /// verbatim for public/HTTP ones. The browser fetches each and stages the
+    /// bytes for the executor under the SAME URI.
+    urls: HashMap<String, String>,
+}
+
+#[utoipa::path(post, path = "/v1/jobs/{id}/sources/urls", tag = "Discovery",
+    params(("id" = String, Path, description = "Job ID")),
+    request_body = SourceUrlsRequest,
+    responses(
+        (status = 200, description = "Fetch URLs (signed GET for cloud) per source URI", body = SourceUrlsResponse),
+        (status = 404, description = "Job not found"),
+    )
+)]
+/// Sign GET URLs so the browser fetches the program's cloud sources directly
+/// (no data through the server). Each cloud URI is signed with the creds of the
+/// job connection whose base URL prefixes it; non-cloud (HTTP/public) URIs pass
+/// through verbatim.
+pub async fn resolve_source_urls(
+    _ctx: Require<IsMember>,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(req): Json<SourceUrlsRequest>,
+) -> Response {
+    let Some(job) = state.db.get_job(id.as_str()).await else {
+        return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response();
+    };
+    // (base URL, cloud account) of each connection — used to pick the creds for
+    // a cloud source by longest-prefix match on its base URL.
+    let mut conns: Vec<(String, Option<String>)> = Vec::new();
+    for cid in &job.connection_ids {
+        if let Some(c) = state.db.get_connection(cid).await {
+            conns.push((c.url, c.cloud_account_id));
+        }
+    }
+
+    let mut urls = HashMap::with_capacity(req.uris.len());
+    for uri in &req.uris {
+        if !crate::cloud::is_cloud_url(uri) {
+            urls.insert(uri.clone(), uri.clone()); // public / HTTP — fetch directly
+            continue;
+        }
+        let account = conns
+            .iter()
+            .filter(|(base, _)| uri.starts_with(base.as_str()))
+            .max_by_key(|(base, _)| base.len())
+            .and_then(|(_, acct)| acct.clone());
+        let creds = match account {
+            Some(acct) => state.db.build_storage_config(&[acct]).await,
+            None => HashMap::new(),
+        };
+        let (store, path) = match crate::cloud::build_store(uri, &creds) {
+            Ok(sp) => sp,
+            Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("store_error", e.to_string()))).into_response(),
+        };
+        match store.sign_url(Method::GET, &path, SIGNED_URL_EXPIRES).await {
+            Ok(signed) => { urls.insert(uri.clone(), signed.to_string()); }
+            Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("sign_error", e.to_string()))).into_response(),
+        }
+    }
+    Json(SourceUrlsResponse { urls }).into_response()
+}
+
 // ── Discovery parquet URLs ──────────────────────────────────────────────
 
 #[utoipa::path(get, path = "/v1/jobs/{id}/discover/urls", tag = "Discovery",

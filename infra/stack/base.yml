@@ -1,0 +1,152 @@
+# Shared Swarm base stack — the keasy fleet's edge + identity + control-plane.
+#
+#   docker stack deploy -c infra/stack/base.yml keasy-base
+#
+# The per-tenant stacks are rendered + deployed by the control-plane (one stack
+# per workspace) and attach to the `keasy-edge` overlay defined here. Traefik
+# discovers every service by its `deploy.labels` — adding a tenant needs no edit
+# to this file. See infra/stack/README.md for the one-time bootstrap (swarm init,
+# overlay network, the three base secrets).
+#
+# Required env (interpolated by `docker stack deploy`):
+#   KC_HOSTNAME               e.g. auth.keasy.example.com   (Keycloak's public host)
+#   KEASY_BASE_DOMAIN         e.g. keasy.example.com         (tenants at <slug>.<this>)
+#   ACME_EMAIL                Let's Encrypt registration email
+#   KEASY_SERVER_IMAGE        ghcr.io/kanzo-tech/keasy-server:<ver>  (per-tenant default)
+#   KEASY_WEB_IMAGE           ghcr.io/kanzo-tech/keasy-web:<ver>
+#   KEASY_CONTROL_PLANE_IMAGE ghcr.io/kanzo-tech/keasy-control-plane:<ver>  (must ship the docker CLI)
+#   KEASY_DEPLOY_DIR          absolute path on the manager node to this repo's keasy/
+version: "3.9"
+
+services:
+  # ── Ingress: Traefik v3 (Swarm provider + automatic TLS) ────────────────────
+  traefik:
+    image: traefik:v3.3
+    command:
+      - --providers.swarm=true
+      - --providers.swarm.exposedByDefault=false
+      - --providers.swarm.network=keasy-edge
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.le.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.tlschallenge=true
+    ports:
+      - target: 80
+        published: 80
+        mode: host
+      - target: 443
+        published: 443
+        mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-acme:/letsencrypt
+    networks: [keasy-edge]
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: any
+
+  # ── Identity: Keycloak + its Postgres ───────────────────────────────────────
+  keycloak-postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD_FILE: /run/secrets/kc-db-password
+    secrets: [kc-db-password]
+    volumes:
+      - keycloak-postgres:/var/lib/postgresql/data
+    networks: [keasy-edge]
+    deploy:
+      restart_policy:
+        condition: any
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    command: ["start", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD_FILE: /run/secrets/kc-db-password
+      KC_HOSTNAME: "https://${KC_HOSTNAME}/auth"
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HEALTH_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD_FILE: /run/secrets/kc-admin-password
+    secrets: [kc-db-password, kc-admin-password]
+    volumes:
+      - type: bind
+        source: ${KEASY_DEPLOY_DIR}/infra/keycloak/realm-import
+        target: /opt/keycloak/data/import
+        read_only: true
+    networks: [keasy-edge]
+    deploy:
+      restart_policy:
+        condition: any
+      labels:
+        traefik.enable: "true"
+        traefik.docker.network: keasy-edge
+        traefik.http.routers.keycloak.rule: "Host(`${KC_HOSTNAME}`)"
+        traefik.http.routers.keycloak.entrypoints: websecure
+        traefik.http.routers.keycloak.tls.certresolver: le
+        traefik.http.services.keycloak.loadbalancer.server.port: "8080"
+
+  # ── Control-plane: the per-tenant provisioner (owns the Docker socket) ───────
+  control-plane:
+    image: ${KEASY_CONTROL_PLANE_IMAGE}
+    environment:
+      CP_BIND_ADDR: "0.0.0.0:9000"
+      CP_OIDC_ISSUER_URL: "https://${KC_HOSTNAME}/auth/realms/keasy"
+      CP_OIDC_INTERNAL_BASE_URL: "http://keycloak:8080/auth"
+      CP_OIDC_CLIENT_ID: keasy-control-plane
+      CP_OIDC_CLIENT_SECRET_FILE: /run/secrets/cp-oidc-secret
+      CP_BASE_DOMAIN: ${KEASY_BASE_DOMAIN}
+      CP_SERVER_IMAGE: ${KEASY_SERVER_IMAGE}
+      CP_WEB_IMAGE: ${KEASY_WEB_IMAGE}
+      CP_NETWORK: keasy-edge
+      CP_STACKS_DIR: /var/lib/keasy/stacks
+      CP_DB_PATH: /var/lib/keasy/control-plane.db
+      CP_DEPLOY_DIR: /deploy/environments/prod
+      CP_RECONCILE_INTERVAL_SECS: "30"
+    secrets: [cp-oidc-secret]
+    volumes:
+      # The control-plane shells out to `docker stack deploy` / `docker secret`
+      # against the manager's Engine — it MUST run on a manager and own the socket.
+      - /var/run/docker.sock:/var/run/docker.sock
+      - control-plane-data:/var/lib/keasy
+      - type: bind
+        source: ${KEASY_DEPLOY_DIR}/deploy
+        target: /deploy
+        read_only: true
+    networks: [keasy-edge]
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: any
+
+secrets:
+  kc-db-password:
+    external: true
+  kc-admin-password:
+    external: true
+  cp-oidc-secret:
+    external: true
+
+volumes:
+  traefik-acme:
+  keycloak-postgres:
+  control-plane-data:
+
+networks:
+  keasy-edge:
+    driver: overlay
+    attachable: true
+    name: keasy-edge

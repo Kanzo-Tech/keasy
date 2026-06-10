@@ -1,0 +1,3721 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Keasy API",
+    "description": "Keasy — data pipeline execution and cloud storage API",
+    "contact": {
+      "name": "Ángel Iglesias Préstamo",
+      "email": "angel.iglesias.prestamo@gmail.com"
+    },
+    "license": {
+      "name": ""
+    },
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/healthz/live": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "operationId": "liveness",
+        "responses": {
+          "200": {
+            "description": "Service is alive"
+          }
+        }
+      }
+    },
+    "/healthz/ready": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "operationId": "readiness",
+        "responses": {
+          "200": {
+            "description": "Service is ready"
+          },
+          "503": {
+            "description": "Service is not ready"
+          }
+        }
+      }
+    },
+    "/v1/assistant/generate-stream": {
+      "post": {
+        "tags": [
+          "Assistant"
+        ],
+        "operationId": "generate_script_stream",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "SSE stream: delta events + complete with GenerateResponse"
+          },
+          "400": {
+            "description": "AI provider not configured"
+          }
+        }
+      }
+    },
+    "/v1/assistant/suggest-stream": {
+      "post": {
+        "tags": [
+          "Assistant"
+        ],
+        "operationId": "suggest_cqs_stream",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "SSE stream: delta events + complete with SuggestResponse"
+          },
+          "400": {
+            "description": "AI provider not configured"
+          }
+        }
+      }
+    },
+    "/v1/auth/invite-info": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "get_invite_info",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "description": "Invite token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invite token validity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteInfoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "logout",
+        "responses": {
+          "200": {
+            "description": "Logout successful, returns end_session_url",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "GET /v1/auth/me",
+        "description": "Returns the authenticated user's profile, org, and effective role.\nProtected by session_required but NOT tenant_context_required.",
+        "operationId": "get_me",
+        "responses": {
+          "200": {
+            "description": "Authenticated user profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/v1/auth/workspaces": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "GET /v1/auth/workspaces",
+        "description": "Returns the workspaces the authenticated user belongs to — their Keycloak\nOrganizations, each carrying its display name and home URL. Used by the\nsidebar workspace switcher.",
+        "operationId": "list_workspaces",
+        "responses": {
+          "200": {
+            "description": "List of accessible workspaces",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspacesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cloud-accounts": {
+      "get": {
+        "tags": [
+          "Cloud Accounts"
+        ],
+        "operationId": "list_accounts",
+        "responses": {
+          "200": {
+            "description": "List of cloud accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CloudAccountSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Cloud Accounts"
+        ],
+        "operationId": "create_account",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCloudAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Cloud account created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAccountSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/v1/cloud-accounts/{id}": {
+      "get": {
+        "tags": [
+          "Cloud Accounts"
+        ],
+        "operationId": "get_account",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Cloud account ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cloud account details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAccountSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cloud account not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Cloud Accounts"
+        ],
+        "operationId": "update_account",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Cloud account ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCloudAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Cloud account updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudAccountSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Cloud Accounts"
+        ],
+        "operationId": "delete_account",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Cloud account ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Cloud account deleted"
+          }
+        }
+      }
+    },
+    "/v1/connections": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "list_connections",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Filter by connection type",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of connections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Connection"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "create_connection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Connection created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid connection or container not found"
+          }
+        }
+      }
+    },
+    "/v1/connections/{id}": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "get_connection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Connection ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connection details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Connection not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "update_connection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Connection ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Connection updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid connection"
+          },
+          "404": {
+            "description": "Connection not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "delete_connection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Connection ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Connection deleted"
+          }
+        }
+      }
+    },
+    "/v1/connections/{id}/files": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "list_connection_files",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Connection ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of files in the connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FileEntry"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "File listing not supported"
+          },
+          "404": {
+            "description": "Connection not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "upload_file",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Connection ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "File uploaded"
+          },
+          "400": {
+            "description": "Upload not supported"
+          },
+          "404": {
+            "description": "Connection not found"
+          },
+          "502": {
+            "description": "Upload failed"
+          }
+        }
+      }
+    },
+    "/v1/connections/{id}/schema": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "get_file_schema",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Connection ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "description": "Relative file path within the connection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSchemaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Schema inference failed or unsupported file type"
+          },
+          "404": {
+            "description": "Connection not found"
+          }
+        }
+      }
+    },
+    "/v1/conversations/{id}": {
+      "put": {
+        "tags": [
+          "Conversations"
+        ],
+        "operationId": "rename_conversation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Conversation ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameConversationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Conversation renamed"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Conversations"
+        ],
+        "operationId": "delete_conversation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Conversation ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Conversation deleted"
+          }
+        }
+      }
+    },
+    "/v1/conversations/{id}/messages": {
+      "get": {
+        "tags": [
+          "Conversations"
+        ],
+        "operationId": "get_conversation_messages",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Conversation ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConversationMessage"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/v1/jobs": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "list_jobs",
+        "responses": {
+          "200": {
+            "description": "List of jobs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Job"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "create_job",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Draft job created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Job submitted for execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "get_job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "update_job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Job updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Job is not a draft"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "delete_job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Job deleted"
+          },
+          "404": {
+            "description": "Job not found"
+          },
+          "409": {
+            "description": "Job is still running"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Browser-driven completion: the client (`@fossil-lang/executor`) ran the\nmapping, signed-PUT the output, and reports the outcome here. `Completed`\nstores the executor's `RunStatus` (the discovery + DCAT views read it); the\nserver never touches the data — only the metadata.",
+        "operationId": "complete_job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Job status updated from the browser run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/catalog/manifest": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "operationId": "resolve_catalog_manifest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GraphAr manifest YAMLs for the catalog dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManifestResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found or no catalog"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/conversations": {
+      "get": {
+        "tags": [
+          "Conversations"
+        ],
+        "operationId": "list_conversations",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of conversations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Conversation"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "operationId": "create_conversation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Conversation created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/dashboard-layout": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "get_dashboard_layout",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard layout",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "204": {
+            "description": "No layout saved"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "save_dashboard_layout",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Layout saved"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/discover/ask-stream": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "operationId": "ask_discover_stream",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "SSE stream of LLM deltas",
+            "content": {
+              "text/event-stream": {}
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/discover/execute-sql": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "operationId": "execute_discover_sql",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecuteSqlRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Verb result: { columns, rows, truncated }"
+          },
+          "403": {
+            "description": "Owner role required"
+          },
+          "404": {
+            "description": "Job not found or no output"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/discover/manifest": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "operationId": "resolve_discover_manifest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GraphAr manifest YAMLs, keyed by dataset-relative path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManifestResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found or no output"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/discover/urls": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "operationId": "resolve_discover_urls",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed URLs for direct Parquet access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found or no output"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/output/urls": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Sign PUT URLs so the browser uploads the GraphAr output it just produced\ndirectly to owner storage (no data through the server). The output lives at\n`{owner_base}/{job_id}/<key>` — the same dest the completion `RunStatus`\nreports. Mirrors `resolve_discover_urls` but signs `PUT` for upload.",
+        "operationId": "resolve_output_urls",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutputUrlsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Signed PUT URLs for the output keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No owner output storage configured"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/source-refs": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "The job's connection ref-map (name → base URL). The browser feeds it to the\nexecutor's `sources()`/`run()` to resolve `@conn` aliases. No credentials —\nonly the base URLs (signing is a separate, per-URL call).",
+        "operationId": "resolve_source_refs",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connection ref-map for the job's sources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceRefsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/sources/urls": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Sign GET URLs so the browser fetches the program's cloud sources directly\n(no data through the server). Each cloud URI is signed with the creds of the\njob connection whose base URL prefixes it; non-cloud (HTTP/public) URIs pass\nthrough verbatim.",
+        "operationId": "resolve_source_urls",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceUrlsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Fetch URLs (signed GET for cloud) per source URI",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceUrlsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/stream": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "stream_job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE stream of job progress events",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobEvent"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/v1/org/identity": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "get_org_identity",
+        "responses": {
+          "200": {
+            "description": "Workspace identity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgIdentityResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "update_org_identity",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrgIdentityPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Identity updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgIdentityResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/org/invites": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "list_org_invites",
+        "responses": {
+          "200": {
+            "description": "List of org invite tokens",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrgInviteEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Create a reusable, Discord-style invite link. No body: joining via the link\nalways grants `member`. The link is valid for 7 days and reusable.",
+        "operationId": "create_org_invite",
+        "responses": {
+          "201": {
+            "description": "Invite created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateOrgInviteResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      }
+    },
+    "/v1/org/invites/{token}": {
+      "delete": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "revoke_org_invite",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "Invite token to revoke",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Invite revoked"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      }
+    },
+    "/v1/org/users": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "list_users",
+        "responses": {
+          "200": {
+            "description": "List of users in the org",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkspaceMember"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/org/users/{id}": {
+      "delete": {
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "remove_user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "User removed"
+          },
+          "403": {
+            "description": "Insufficient role"
+          }
+        }
+      }
+    },
+    "/v1/providers": {
+      "get": {
+        "tags": [
+          "Providers"
+        ],
+        "operationId": "list_providers",
+        "responses": {
+          "200": {
+            "description": "List of available data providers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderInfo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/refs": {
+      "post": {
+        "tags": [
+          "Providers"
+        ],
+        "operationId": "list_refs",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The program's typed external references",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SourceRefInfo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/settings/ai/providers": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "list_ai_providers",
+        "responses": {
+          "200": {
+            "description": "List of AI providers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AiSettingsPayload"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/settings/ai/providers/{provider_id}": {
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "save_ai_provider",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "description": "Provider ID (e.g. anthropic, openai)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiSettingsPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Provider saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiSettingsPayload"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown provider"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "delete_ai_provider",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "description": "Provider ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Provider deleted"
+          },
+          "400": {
+            "description": "Unknown provider"
+          }
+        }
+      }
+    },
+    "/v1/settings/catalog-storage": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "get_catalog_storage",
+        "responses": {
+          "200": {
+            "description": "Catalog storage config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogStoragePayload"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Not configured"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "save_catalog_storage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogStoragePayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Catalog storage saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogStoragePayload"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/settings/organization": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "get_org_settings",
+        "responses": {
+          "200": {
+            "description": "Organization settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgSettings"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No settings configured"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "save_org_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrgSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Settings saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/settings/preferences": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "get_preferences",
+        "responses": {
+          "200": {
+            "description": "UI preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "save_preferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Preferences"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Preferences saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/settings/schema": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "operationId": "get_schema",
+        "responses": {
+          "200": {
+            "description": "Provider registry schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderSchema"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/status": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "operationId": "service_status",
+        "responses": {
+          "200": {
+            "description": "External service status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/version": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "operationId": "version",
+        "responses": {
+          "200": {
+            "description": "Running build version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AiSettingsPayload": {
+        "type": "object",
+        "required": [
+          "provider",
+          "api_key"
+        ],
+        "properties": {
+          "api_key": {
+            "type": "string"
+          },
+          "max_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider": {
+            "type": "string"
+          }
+        }
+      },
+      "AskRequest": {
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "properties": {
+          "conversation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "explain": {
+            "type": "boolean",
+            "description": "When true, the LLM acts as a data analyst explaining query results\ninstead of generating SQL. The question should contain the original\nquestion, SQL, and result rows."
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "question": {
+            "type": "string"
+          },
+          "schema": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "DuckDB table schema from the frontend (column names, types, sample values).\nWhen provided, this is used as context for SQL generation instead of the\npipeline summary."
+          }
+        }
+      },
+      "AskResponse": {
+        "type": "object",
+        "required": [
+          "answer",
+          "code"
+        ],
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "code": {
+            "$ref": "#/components/schemas/AskResultCode"
+          },
+          "conversation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reasoning": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sql": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "DuckDB SQL query generated by the LLM (executed client-side via DuckDB-WASM)."
+          }
+        }
+      },
+      "AskResultCode": {
+        "type": "string",
+        "description": "Result code for AI ask responses — replaces raw string literals.",
+        "enum": [
+          "success",
+          "parse_failed",
+          "query_failed",
+          "insufficient_credits",
+          "llm_failed"
+        ]
+      },
+      "AuthMethodSchema": {
+        "type": "object",
+        "required": [
+          "name",
+          "label",
+          "fields"
+        ],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldSchema"
+            }
+          },
+          "label": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CatalogStoragePayload": {
+        "type": "object",
+        "required": [
+          "cloud_account_id",
+          "base_url"
+        ],
+        "properties": {
+          "base_url": {
+            "type": "string"
+          },
+          "cloud_account_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CloudAccountSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "provider_id",
+          "fields"
+        ],
+        "properties": {
+          "auth_method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "provider_id": {
+            "type": "string"
+          }
+        }
+      },
+      "ColumnInfo": {
+        "type": "object",
+        "required": [
+          "name",
+          "data_type"
+        ],
+        "properties": {
+          "data_type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ColumnStatus": {
+        "type": "object",
+        "description": "A property column of a [`VertexStatus`].",
+        "required": [
+          "name",
+          "data_type"
+        ],
+        "properties": {
+          "data_type": {
+            "type": "string",
+            "description": "`GraphAr` data-type spelling (`string`, `int64`, `double`, …)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Column / predicate local name."
+          },
+          "rdf_uri": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The full RDF predicate IRI this column maps (e.g.\n`https://example.org/name`); `None` when the output has no RDF predicate."
+          },
+          "xsd_datatype": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The XSD datatype IRI of the literal value (e.g.\n`http://www.w3.org/2001/XMLSchema#string`); `None` when not an RDF\nliteral. Part of the output spec the governance layer (DCAT) consumes."
+          }
+        }
+      },
+      "CompetencyQuestion": {
+        "type": "object",
+        "required": [
+          "id",
+          "question",
+          "rationale"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          }
+        }
+      },
+      "CompleteJobRequest": {
+        "type": "object",
+        "description": "The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running\nthe mapping in the browser (`@fossil-lang/executor`) and uploading the output\nby signed PUT, the client reports the run's outcome. `manifest` is the\nexecutor's `RunStatus` — the SAME type the old subprocess produced — so the\ndiscovery + DCAT paths consume it unchanged.",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "catalog_manifest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunStatus",
+                "description": "The DCAT-AP catalog `RunStatus`, when the client also built the catalog."
+              }
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Failure message (on `Failed`) — classified into a `JobRuntimeError`."
+          },
+          "manifest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunStatus",
+                "description": "The GraphAr `RunStatus` for the uploaded output (on `Completed`)."
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "The terminal (or `Running`) status the client is transitioning the job to."
+          }
+        }
+      },
+      "Connection": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "location_type",
+          "url"
+        ],
+        "properties": {
+          "cloud_account_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "direction": {
+            "$ref": "#/components/schemas/Direction",
+            "description": "Read source vs the workspace write sink. Defaults to `source`."
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ConnectionKind"
+          },
+          "location_type": {
+            "$ref": "#/components/schemas/LocationType"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "ConnectionKind": {
+        "type": "string",
+        "enum": [
+          "data",
+          "vocab"
+        ]
+      },
+      "Conversation": {
+        "type": "object",
+        "required": [
+          "id",
+          "job_id",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "job_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ConversationMessage": {
+        "type": "object",
+        "required": [
+          "id",
+          "conversation_id",
+          "role",
+          "content",
+          "created_at"
+        ],
+        "properties": {
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "conversation_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TabularData"
+              }
+            ]
+          },
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "sql": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "CreateCloudAccountRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "provider_id",
+          "fields"
+        ],
+        "properties": {
+          "auth_method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "provider_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateConnectionRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "location_type",
+          "url"
+        ],
+        "properties": {
+          "cloud_account_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "direction": {
+            "$ref": "#/components/schemas/Direction",
+            "description": "`source` (default) or `sink` (the owner output store; one per workspace)."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ConnectionKind"
+          },
+          "location_type": {
+            "$ref": "#/components/schemas/LocationType"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateConversationRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "CreateJobRequest": {
+        "type": "object",
+        "required": [
+          "script"
+        ],
+        "properties": {
+          "connection_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dcat_enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "draft": {
+            "type": "boolean"
+          },
+          "mode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunMode"
+              }
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "script": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateOrgInviteResponse": {
+        "type": "object",
+        "required": [
+          "token",
+          "invite_url"
+        ],
+        "properties": {
+          "invite_url": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "DataResponse_Value": {
+        "type": "object",
+        "description": "Typed envelope for successful API responses: `{ \"data\": T }`.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {}
+        }
+      },
+      "Direction": {
+        "type": "string",
+        "description": "Whether a connection is a READ source (programs reference it via `@conn`) or\nthe workspace's WRITE sink (where the owner's job output is materialised).\nOrthogonal to [`ConnectionKind`] (which describes a source's data) and\n[`LocationType`]: a connection is a named, credentialed storage location, and\n`direction` says how it is used. Exactly one `sink` exists per workspace (the\nowner output store); `kind` is source-only and ignored for a sink.",
+        "enum": [
+          "source",
+          "sink"
+        ]
+      },
+      "EdgeStatus": {
+        "type": "object",
+        "description": "One edge type — its CSR/CSC Parquet pair and endpoints.",
+        "required": [
+          "edge_type",
+          "src_type",
+          "dst_type",
+          "by_source",
+          "by_target"
+        ],
+        "properties": {
+          "by_source": {
+            "type": "string",
+            "description": "CSR-ordered (`by_source`) Parquet, dataset-relative."
+          },
+          "by_target": {
+            "type": "string",
+            "description": "CSC-ordered (`by_target`) Parquet, dataset-relative."
+          },
+          "count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Edge count (Parquet footer metadata); `None` if the count query failed."
+          },
+          "dst_type": {
+            "type": "string",
+            "description": "Destination vertex type."
+          },
+          "edge_type": {
+            "type": "string",
+            "description": "The edge type / predicate local name."
+          },
+          "src_type": {
+            "type": "string",
+            "description": "Source vertex type."
+          }
+        }
+      },
+      "ExecuteSqlRequest": {
+        "type": "object",
+        "required": [
+          "sql"
+        ],
+        "properties": {
+          "row_cap": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Max rows returned (the verb enforces an outer LIMIT). Default 10k.",
+            "minimum": 0
+          },
+          "sql": {
+            "type": "string",
+            "description": "SQL to run against the GraphAr views (vertex/edge type names)."
+          },
+          "timeout_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Wall-clock cap, milliseconds. Default 10s.",
+            "minimum": 0
+          }
+        }
+      },
+      "FieldSchema": {
+        "type": "object",
+        "required": [
+          "name",
+          "label",
+          "secret"
+        ],
+        "properties": {
+          "default_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "env_var": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "optional": {
+            "type": "boolean"
+          },
+          "secret": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FileEntry": {
+        "type": "object",
+        "required": [
+          "path",
+          "size"
+        ],
+        "properties": {
+          "last_modified": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "FileSchema": {
+        "type": "object",
+        "required": [
+          "connection_name",
+          "file_path",
+          "columns"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ColumnInfo"
+            }
+          },
+          "connection_name": {
+            "type": "string"
+          },
+          "file_path": {
+            "type": "string"
+          }
+        }
+      },
+      "FileSchemaResponse": {
+        "type": "object",
+        "required": [
+          "columns"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ColumnInfo"
+            }
+          }
+        }
+      },
+      "GenerateRequest": {
+        "type": "object",
+        "required": [
+          "domain",
+          "competency_questions",
+          "schemas"
+        ],
+        "properties": {
+          "competency_questions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "domain": {
+            "type": "string"
+          },
+          "schemas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileSchema"
+            }
+          }
+        }
+      },
+      "GenerateResponse": {
+        "type": "object",
+        "required": [
+          "script"
+        ],
+        "properties": {
+          "script": {
+            "type": "string"
+          }
+        }
+      },
+      "InviteInfoResponse": {
+        "type": "object",
+        "required": [
+          "valid"
+        ],
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          }
+        }
+      },
+      "InviteToken": {
+        "type": "object",
+        "required": [
+          "token",
+          "created_by",
+          "expires_at",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "Job": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "created_at",
+          "mode"
+        ],
+        "properties": {
+          "catalog_manifest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunStatus",
+                "description": "DCAT-AP catalog graph structure (`fossil catalog` subprocess output):\nper-type Parquet + counts, stored in owner cloud. Its `dest` is the\ncatalog base URL. Drives the catalog graph view (DuckDB-WASM reads the\nParquet directly)."
+              }
+            ]
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "connection_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "error": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JobRuntimeError"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "manifest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunStatus",
+                "description": "GraphAr structure from the fossil subprocess: per-type Parquet + row\ncount + columns, per-edge CSR/CSC pair. Its `dest` IS the dataset base\nURL — fossil's single description of the output, so keasy keeps no\nduplicate `rdf_base`. Column statistics are NOT here — the browser\ncomputes them from the Parquet (DuckDB-WASM)."
+              }
+            ]
+          },
+          "mode": {
+            "$ref": "#/components/schemas/RunMode"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "script": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          }
+        }
+      },
+      "JobEvent": {
+        "type": "object",
+        "description": "SSE event emitted by the job runner at each execution phase.",
+        "required": [
+          "phase",
+          "index",
+          "total"
+        ],
+        "properties": {
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "phase": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "JobRuntimeError": {
+        "type": "object",
+        "description": "Runtime job error — stored in the database as JSON on a failed job.\nThis is NOT an API error type; it is a serializable record of what went wrong during execution.",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "pending",
+          "running",
+          "completed",
+          "failed",
+          "cancelled"
+        ]
+      },
+      "LocationType": {
+        "type": "string",
+        "enum": [
+          "cloud",
+          "local"
+        ]
+      },
+      "LogoutResponse": {
+        "type": "object",
+        "description": "POST /v1/auth/logout",
+        "properties": {
+          "end_session_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ManifestResponse": {
+        "type": "object",
+        "required": [
+          "manifest_files"
+        ],
+        "properties": {
+          "manifest_files": {
+            "type": "object",
+            "description": "The GraphAr manifest YAMLs, keyed by dataset-relative path\n(`graph.graph.yml`, `vertex/Person.vertex.yml`, …). Fed verbatim into\n`@fossil-lang/graph`'s `createGraphClient({ manifestFiles })`; keasy\ntreats them as opaque blobs — fossil owns the GraphAr layout.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "MeOrg": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "MeResponse": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "email",
+          "first_name",
+          "last_name",
+          "effective_role"
+        ],
+        "properties": {
+          "effective_role": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "org": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MeOrg"
+              }
+            ]
+          },
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
+      "OrgIdentityResponse": {
+        "type": "object",
+        "required": [
+          "legal_name",
+          "country"
+        ],
+        "properties": {
+          "country": {
+            "type": "string"
+          },
+          "country_subdivision_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "legal_name": {
+            "type": "string"
+          },
+          "registration_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "registration_number_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "OrgInviteEntry": {
+        "type": "object",
+        "required": [
+          "token",
+          "status",
+          "created_at",
+          "expires_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "OrgSettings": {
+        "type": "object",
+        "required": [
+          "publisher_name"
+        ],
+        "properties": {
+          "catalog_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contact_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "license_uri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "publisher_name": {
+            "type": "string"
+          },
+          "publisher_uri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "OutputUrlsRequest": {
+        "type": "object",
+        "required": [
+          "paths"
+        ],
+        "properties": {
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Dataset-relative output keys the browser executor produced\n(`vertex/Person.parquet`, `edge/<dir>/by_source.parquet`,\n`graph.graph.yml`, …)."
+          }
+        }
+      },
+      "Preferences": {
+        "type": "object",
+        "required": [
+          "accent_color",
+          "font_family",
+          "mono_font_family",
+          "font_size",
+          "mono_font_size"
+        ],
+        "properties": {
+          "accent_color": {
+            "type": "string"
+          },
+          "font_family": {
+            "type": "string"
+          },
+          "font_size": {
+            "type": "string"
+          },
+          "mono_font_family": {
+            "type": "string"
+          },
+          "mono_font_size": {
+            "type": "string"
+          }
+        }
+      },
+      "ProviderInfo": {
+        "type": "object",
+        "description": "One data-source provider fossil exposes: its short name, the file extensions\nit reads, and how it can be used.",
+        "required": [
+          "name",
+          "extensions",
+          "kind"
+        ],
+        "properties": {
+          "extensions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "File extensions this provider reads (no leading dot)."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ProviderKind",
+            "description": "Whether the provider defines a type, loads data, or both."
+          },
+          "name": {
+            "type": "string",
+            "description": "Short provider name (e.g. `csv`, `json`, `parquet`)."
+          }
+        }
+      },
+      "ProviderKind": {
+        "type": "string",
+        "description": "What a provider can appear as in a program.",
+        "enum": [
+          "schema",
+          "data",
+          "both"
+        ]
+      },
+      "ProviderSchema": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "icon",
+          "common_fields",
+          "auth_methods"
+        ],
+        "properties": {
+          "auth_methods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuthMethodSchema"
+            }
+          },
+          "common_fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldSchema"
+            }
+          },
+          "icon": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "RefRole": {
+        "type": "string",
+        "description": "The position a reference plays in an `io.*` source constructor.",
+        "enum": [
+          "data",
+          "schema"
+        ]
+      },
+      "RefsRequest": {
+        "type": "object",
+        "description": "Request body for `POST /v1/refs`: the `.fossil` script to parse.",
+        "required": [
+          "script"
+        ],
+        "properties": {
+          "script": {
+            "type": "string",
+            "description": "The `.fossil` program text whose external references to enumerate."
+          }
+        }
+      },
+      "RenameConversationRequest": {
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "ResolveResponse": {
+        "type": "object",
+        "required": [
+          "files"
+        ],
+        "properties": {
+          "files": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "RunMode": {
+        "type": "string",
+        "enum": [
+          "integrated",
+          "scheduled"
+        ]
+      },
+      "RunStatus": {
+        "type": "object",
+        "description": "The status object `fossil run --output-json` writes to stdout.",
+        "required": [
+          "dest",
+          "vertices",
+          "edges"
+        ],
+        "properties": {
+          "dest": {
+            "type": "string",
+            "description": "Destination URL the `GraphAr` dataset was written under (echoes `--dest`)."
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EdgeStatus"
+            },
+            "description": "One entry per emitted edge type (empty until a shape/Phase-B adds edges)."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Wire-contract version this payload was produced with (see [`WIRE_VERSION`]).",
+            "minimum": 0
+          },
+          "vertices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VertexStatus"
+            },
+            "description": "One entry per emitted vertex type."
+          }
+        }
+      },
+      "ServiceStatusResponse": {
+        "type": "object",
+        "required": [
+          "oidc"
+        ],
+        "properties": {
+          "oidc": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SourceRefInfo": {
+        "type": "object",
+        "description": "One external reference a program makes. `connection` is the `@conn` alias the\nreference targets (`Some(\"cpi\")` for `@cpi/graph.ttl`), or `None` for a direct\nURL / local path. `path` is the remainder after the alias (or the whole\nlocator when there is no alias). This is the program's TYPED lineage — keasy\nderives a job's connection set from the distinct `connection`s, never from a\nregex over the script text.",
+        "required": [
+          "path",
+          "role"
+        ],
+        "properties": {
+          "connection": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The `@conn` alias this reference targets, or `None` for a direct URL/path."
+          },
+          "path": {
+            "type": "string",
+            "description": "The path within the connection, or the whole locator when unaliased."
+          },
+          "role": {
+            "$ref": "#/components/schemas/RefRole",
+            "description": "Where this reference appears in the source constructor."
+          }
+        }
+      },
+      "SourceRefsResponse": {
+        "type": "object",
+        "required": [
+          "refs"
+        ],
+        "properties": {
+          "refs": {
+            "type": "object",
+            "description": "Connection ref-map `{ name: baseUrl }` — the browser passes it to the\nexecutor (`@fossil-lang/executor`) so `@name/path` source aliases resolve\nto `{baseUrl}/path`, identically to the native engine.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SourceUrlsRequest": {
+        "type": "object",
+        "required": [
+          "uris"
+        ],
+        "properties": {
+          "uris": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The RESOLVED source URIs the executor's `sources()` returned (already\n`@conn`-resolved, e.g. `s3://bucket/prefix/users.csv`)."
+          }
+        }
+      },
+      "SourceUrlsResponse": {
+        "type": "object",
+        "required": [
+          "urls"
+        ],
+        "properties": {
+          "urls": {
+            "type": "object",
+            "description": "Each input URI → a fetch URL: a signed GET for cloud sources, or the URI\nverbatim for public/HTTP ones. The browser fetches each and stages the\nbytes for the executor under the SAME URI.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SuggestRequest": {
+        "type": "object",
+        "required": [
+          "domain",
+          "schemas"
+        ],
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "schemas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileSchema"
+            }
+          }
+        }
+      },
+      "SuggestResponse": {
+        "type": "object",
+        "required": [
+          "competency_questions"
+        ],
+        "properties": {
+          "competency_questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompetencyQuestion"
+            }
+          }
+        }
+      },
+      "TabularData": {
+        "type": "object",
+        "required": [
+          "columns",
+          "rows",
+          "column_types"
+        ],
+        "properties": {
+          "column_types": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "UpdateCloudAccountRequest": {
+        "type": "object",
+        "properties": {
+          "auth_method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fields": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UpdateConnectionRequest": {
+        "type": "object",
+        "properties": {
+          "cloud_account_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "direction": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Direction"
+              }
+            ]
+          },
+          "kind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConnectionKind"
+              }
+            ]
+          },
+          "location_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LocationType"
+              }
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UpdateJobRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "script": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UpdateOrgIdentityPayload": {
+        "type": "object",
+        "required": [
+          "legal_name",
+          "country"
+        ],
+        "properties": {
+          "country": {
+            "type": "string"
+          },
+          "country_subdivision_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "legal_name": {
+            "type": "string"
+          },
+          "registration_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "registration_number_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UploadFileRequest": {
+        "type": "object",
+        "required": [
+          "path",
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      },
+      "VersionResponse": {
+        "type": "object",
+        "description": "The running build's version — announced so operators (and the fleet view) can\nsee exactly which image a tenant is on. `git_sha`/`built_at` are stamped at\nbuild time (CI sets `KEASY_GIT_SHA`/`KEASY_BUILT_AT`); `version` is the crate\nversion. See [[project_keasy_swarm_deploy_architecture]] (W0.6).",
+        "required": [
+          "version"
+        ],
+        "properties": {
+          "built_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "git_sha": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "VertexStatus": {
+        "type": "object",
+        "description": "One vertex type — its dataset-relative Parquet, row count, and property\ncolumns.",
+        "required": [
+          "type",
+          "file",
+          "columns"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ColumnStatus"
+            },
+            "description": "The vertex's property columns."
+          },
+          "count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Row count (Parquet footer metadata); `None` if the count query failed."
+          },
+          "file": {
+            "type": "string",
+            "description": "Dataset-relative Parquet path, e.g. `vertex/Person.parquet`."
+          },
+          "rdf_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The full RDF type IRI the mapping declares for this vertex (the shape IRI,\ne.g. `https://example.org/Person`); `None` when the output has no RDF\ntype. This is the output *spec* fossil owns — the governance layer (DCAT)\nreads it from the manifest instead of re-deriving it from the program."
+          },
+          "type": {
+            "type": "string",
+            "description": "The vertex type / `GraphAr` `type` (e.g. `Person`)."
+          }
+        }
+      },
+      "WorkspaceMember": {
+        "type": "object",
+        "description": "A workspace member, resolved from Keycloak client-role mappings.",
+        "required": [
+          "user_id",
+          "role",
+          "email",
+          "first_name",
+          "last_name",
+          "joined_at"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "joined_at": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkspaceSummary": {
+        "type": "object",
+        "description": "A workspace the user can switch to, as shown in the switcher. Resolved from\nthe user's Keycloak Organizations (`id` = organization id).",
+        "required": [
+          "id",
+          "name",
+          "url"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkspacesResponse": {
+        "type": "object",
+        "required": [
+          "workspaces",
+          "current_id"
+        ],
+        "properties": {
+          "current_id": {
+            "type": "string"
+          },
+          "workspaces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceSummary"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,172 +1,305 @@
+import client, { ApiError, unwrap } from "./api/client";
+import type { Schemas } from "./api/client";
+import { fetchSSE } from "./api/sse";
 import type {
-  Job,
-  CreateJobRequest,
-  UpdateJobRequest,
-  ValidationResult,
   ProviderSchema,
   ProviderInfo,
-  OrgSettings,
-  Preferences,
-  AiSettings,
-  AskResponse,
-  GraphData,
-  Conversation,
-  ConversationMessage,
-  FileEntry,
-  SearchResult,
-  ShapeValidationResult,
-  TabularData,
-  CloudAccountSummary,
-  CreateCloudAccountRequest,
-  UpdateCloudAccountRequest,
-  Connection,
-  CreateConnectionRequest,
-  UpdateConnectionRequest,
 } from "./types";
 
-export class ApiError extends Error {
-  constructor(public readonly code: string, message: string) {
-    super(message);
-  }
+export { ApiError };
+export type { ServiceStatus } from "./types";
+
+/** Result of the owner-only `execute_sql` verb (fossil-graph `ExecuteSqlResult`). */
+export interface ExecuteSqlResult {
+  columns: { name: string; duckdb_type: string }[];
+  rows: Record<string, unknown>[];
+  truncated: boolean;
 }
 
-async function throwResponseError(
-  res: Response,
-  fallback: string
-): Promise<never> {
-  const body = await res.json().catch(() => null);
-  const code = body?.error?.code ?? "UNKNOWN";
-  const message = body?.error?.message ?? `${fallback} (${res.status})`;
-  throw new ApiError(code, message);
-}
+export const api = {
+  // ── Jobs ──────────────────────────────────────────────────────────────
+  jobs: {
+    list: async () =>
+      unwrap(await client.GET("/v1/jobs")),
 
-async function request<T>(path: string, method: string, body?: unknown): Promise<T> {
-  const res = await fetch(path, {
-    method,
-    ...(body != null ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}),
-  });
-  if (!res.ok) await throwResponseError(res, "Request failed");
-  if (res.status === 204) return undefined as T;
-  return res.json();
-}
+    get: async (id: string) =>
+      unwrap(await client.GET("/v1/jobs/{id}", { params: { path: { id } } })),
 
-const get = <T>(path: string) => request<T>(path, "GET");
-const post = <T>(path: string, body?: unknown) => request<T>(path, "POST", body);
-const put = <T>(path: string, body: unknown) => request<T>(path, "PUT", body);
-const del = (path: string) => request<void>(path, "DELETE");
+    create: async (req: Schemas["CreateJobRequest"]) =>
+      unwrap(await client.POST("/v1/jobs", { body: req })),
 
+    update: async (id: string, req: Schemas["UpdateJobRequest"]) =>
+      unwrap(await client.PUT("/v1/jobs/{id}", { params: { path: { id } }, body: req })),
 
-export const fetchJobs = () => get<Job[]>("/api/jobs");
-export const fetchJob = (id: string) => get<Job>(`/api/jobs/${id}`);
-export const createJob = (req: CreateJobRequest) => post<Job>("/api/jobs", req);
-export const updateJob = (id: string, req: UpdateJobRequest) => put<Job>(`/api/jobs/${id}`, req);
-export const cancelJob = (id: string) => post<Job>(`/api/jobs/${id}/cancel`);
-export const deleteJob = (id: string) => del(`/api/jobs/${id}`);
-export const fetchJobGraph = (id: string) => get<GraphData>(`/api/jobs/${id}/graph`);
-export const fetchUnifiedGraph = () => get<GraphData>("/api/graph");
+    /// Browser-driven completion (PATCH): after running the mapping in the
+    /// browser and uploading the output by signed PUT, report the outcome —
+    /// `status` + the executor's `RunStatus` `manifest` (or `error`).
+    complete: async (id: string, req: Schemas["CompleteJobRequest"]) =>
+      unwrap(await client.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body: req })),
 
-export async function fetchJobCatalog(id: string, format: string): Promise<string> {
-  const data = await get<{ catalog: string }>(`/api/jobs/${id}/catalog?format=${encodeURIComponent(format)}`);
-  return data.catalog;
-}
+    remove: async (id: string) => {
+      unwrap(await client.DELETE("/v1/jobs/{id}", { params: { path: { id } } }));
+    },
 
-export const validateScript = (script: string) =>
-  post<ValidationResult>("/api/scripts/validate", { script });
+    dashboardLayout: async (id: string) =>
+      unwrap(await client.GET("/v1/jobs/{id}/dashboard-layout", {
+        params: { path: { id } },
+      })) as unknown as Record<string, unknown> | undefined,
 
+    saveDashboardLayout: async (id: string, layout: unknown) => {
+      unwrap(await client.PUT("/v1/jobs/{id}/dashboard-layout", {
+        params: { path: { id } },
+        body: layout,
+      }));
+    },
+  },
 
-export function validateJob(
-  dataUrl: string,
-  sourceId: string,
-  shapePath: string,
-): Promise<ShapeValidationResult> {
-  return post<ShapeValidationResult>("/api/validate", {
-    data_url: dataUrl,
-    connection_id: sourceId,
-    shape_path: shapePath,
-  });
-}
+  // ── References ─────────────────────────────────────────────────────────
+  // fossil parses the program and reports its external references (the typed
+  // lineage). Used to derive a job's connections from the script's `@conn`
+  // aliases — across data, schema, AND select positions — never by regex.
+  refs: async (script: string): Promise<Schemas["SourceRefInfo"][]> =>
+    unwrap(await client.POST("/v1/refs", { body: { script } })),
 
+  // ── Connections ────────────────────────────────────────────────────────
+  connections: {
+    list: async (type?: string) =>
+      unwrap(await client.GET("/v1/connections", {
+        params: { query: type ? { type } : {} },
+      })),
 
-export const fetchDashboardLayout = (jobId: string) =>
-  get<Record<string, unknown> | undefined>(`/api/jobs/${jobId}/dashboard-layout`);
-export const saveDashboardLayout = (jobId: string, layout: unknown) =>
-  put<void>(`/api/jobs/${jobId}/dashboard-layout`, layout);
+    get: async (id: string) =>
+      unwrap(await client.GET("/v1/connections/{id}", { params: { path: { id } } })),
 
+    create: async (req: Schemas["CreateConnectionRequest"]) =>
+      unwrap(await client.POST("/v1/connections", { body: req })),
 
-export function searchGraphNodes(query: string, jobId?: string): Promise<SearchResult[]> {
-  const body: Record<string, unknown> = { query };
-  if (jobId) body.job_id = jobId;
-  return post<SearchResult[]>("/api/graph/search", body);
-}
+    remove: async (id: string) => {
+      unwrap(await client.DELETE("/v1/connections/{id}", { params: { path: { id } } }));
+    },
 
-export function expandGraphNode(nodeId: string, jobId?: string): Promise<GraphData> {
-  const body: Record<string, unknown> = { node_id: nodeId };
-  if (jobId) body.job_id = jobId;
-  return post<GraphData>("/api/graph/expand", body);
-}
+    files: async (id: string) =>
+      unwrap(await client.GET("/v1/connections/{id}/files", {
+        params: { path: { id } },
+      })),
 
-export const loadJobDiscovery = (jobId: string) =>
-  post<{ loaded: boolean; triple_count: number; subject_count: number }>(`/api/jobs/${jobId}/discover/load`);
+    schema: async (id: string, path: string) =>
+      unwrap(await client.GET("/v1/connections/{id}/schema", {
+        params: { path: { id }, query: { path } },
+      })),
 
-export const chartJobData = (
-  jobId: string,
-  request: {
-    x_predicate: string;
-    y_predicate?: string;
-    group_predicate?: string;
-    aggregation?: string;
-  }
-) => post<TabularData>(`/api/jobs/${jobId}/discover/chart`, request);
+    upload: async (id: string, path: string, content: string) => {
+      await client.PUT("/v1/connections/{id}/files", {
+        params: { path: { id } },
+        body: { path, content },
+      });
+    },
+  },
 
-export const askDiscover = (jobId: string, question: string, conversationId?: string, provider?: string) =>
-  post<AskResponse>(`/api/jobs/${jobId}/discover/ask`, {
-    question, conversation_id: conversationId, ...(provider ? { provider } : {}),
-  });
+  // ── Cloud Accounts ────────────────────────────────────────────────────
+  cloud: {
+    list: async () =>
+      unwrap(await client.GET("/v1/cloud-accounts")),
 
+    get: async (id: string) =>
+      unwrap(await client.GET("/v1/cloud-accounts/{id}", { params: { path: { id } } })),
 
-export const createConversation = (jobId: string, title?: string) =>
-  post<Conversation>(`/api/jobs/${jobId}/conversations`, { title });
-export const listConversations = (jobId: string) =>
-  get<Conversation[]>(`/api/jobs/${jobId}/conversations`);
-export const getMessages = (conversationId: string) =>
-  get<ConversationMessage[]>(`/api/conversations/${conversationId}/messages`);
-export const renameConversation = (conversationId: string, title: string) =>
-  put<void>(`/api/conversations/${conversationId}`, { title });
-export const deleteConversation = (conversationId: string) =>
-  del(`/api/conversations/${conversationId}`);
+    create: async (req: Schemas["CreateCloudAccountRequest"]) =>
+      unwrap(await client.POST("/v1/cloud-accounts", { body: req })),
 
+    update: async (id: string, req: Schemas["UpdateCloudAccountRequest"]) =>
+      unwrap(await client.PUT("/v1/cloud-accounts/{id}", {
+        params: { path: { id } },
+        body: req,
+      })),
 
-export const fetchAiProviders = () => get<AiSettings[]>("/api/settings/ai/providers");
-export const saveAiProvider = (providerId: string, config: { api_key: string; model?: string; max_tokens?: number }) =>
-  put<AiSettings>(`/api/settings/ai/providers/${providerId}`, { ...config, provider: providerId });
-export const deleteAiProvider = (providerId: string) =>
-  del(`/api/settings/ai/providers/${providerId}`);
+    remove: async (id: string) => {
+      unwrap(await client.DELETE("/v1/cloud-accounts/{id}", { params: { path: { id } } }));
+    },
+  },
 
+  // ── Discovery ─────────────────────────────────────────────────────────
+  discovery: {
+    askStream: (
+      id: string,
+      question: string,
+      opts?: { conversationId?: string; provider?: string; schema?: string; explain?: boolean },
+    ) =>
+      fetchSSE(`/v1/jobs/${id}/discover/ask-stream`, {
+        question,
+        conversation_id: opts?.conversationId,
+        ...(opts?.provider ? { provider: opts.provider } : {}),
+        ...(opts?.schema ? { schema: opts.schema } : {}),
+        ...(opts?.explain ? { explain: opts.explain } : {}),
+      }),
+    /** Owner-only raw SQL over the GraphAr views (server-gated `Require<IsOwner>`,
+     *  run natively via fossil-mcp's `execute_sql` verb). */
+    executeSql: async (
+      id: string,
+      sql: string,
+      opts?: { rowCap?: number; timeoutMs?: number },
+    ): Promise<ExecuteSqlResult> => {
+      const res = await fetch(`/v1/jobs/${id}/discover/execute-sql`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sql, row_cap: opts?.rowCap, timeout_ms: opts?.timeoutMs }),
+      });
+      if (!res.ok) {
+        throw new Error(`execute_sql failed (${res.status})`);
+      }
+      return (await res.json()) as ExecuteSqlResult;
+    },
+  },
 
-export const fetchSchema = () => get<ProviderSchema[]>("/api/settings/schema");
-export const fetchProviders = () => get<ProviderInfo[]>("/api/providers");
+  // ── Conversations ─────────────────────────────────────────────────────
+  conversations: {
+    list: async (id: string) =>
+      unwrap(await client.GET("/v1/jobs/{id}/conversations", {
+        params: { path: { id } },
+      })),
 
+    messages: async (id: string) =>
+      unwrap(await client.GET("/v1/conversations/{id}/messages", {
+        params: { path: { id } },
+      })),
 
-export const fetchCloudAccounts = () => get<CloudAccountSummary[]>("/api/cloud-accounts");
-export const fetchCloudAccount = (id: string) => get<CloudAccountSummary>(`/api/cloud-accounts/${id}`);
-export const createCloudAccount = (req: CreateCloudAccountRequest) => post<CloudAccountSummary>("/api/cloud-accounts", req);
-export const updateCloudAccount = (id: string, req: UpdateCloudAccountRequest) => put<CloudAccountSummary>(`/api/cloud-accounts/${id}`, req);
-export const deleteCloudAccount = (id: string) => del(`/api/cloud-accounts/${id}`);
+    rename: async (id: string, title: string) => {
+      unwrap(await client.PUT("/v1/conversations/{id}", {
+        params: { path: { id } },
+        body: { title },
+      }));
+    },
 
+    remove: async (id: string) => {
+      unwrap(await client.DELETE("/v1/conversations/{id}", {
+        params: { path: { id } },
+      }));
+    },
+  },
 
+  // ── Settings ──────────────────────────────────────────────────────────
+  settings: {
+    schema: async (): Promise<ProviderSchema[]> =>
+      unwrap(await client.GET("/v1/settings/schema")),
 
-export const fetchPreferences = () => get<Preferences>("/api/settings/preferences");
-export const savePreferences = (prefs: Preferences) => put<Preferences>("/api/settings/preferences", prefs);
+    providers: async (): Promise<ProviderInfo[]> =>
+      unwrap(await client.GET("/v1/providers")),
 
+    org: async () => {
+      const result = await client.GET("/v1/settings/organization");
+      if (result.data === undefined) return null;
+      return result.data;
+    },
 
-export const fetchOrgSettings = () => get<OrgSettings | null>("/api/settings/organization");
-export const saveOrgSettings = (settings: OrgSettings) => put<OrgSettings>("/api/settings/organization", settings);
+    preferences: async () =>
+      unwrap(await client.GET("/v1/settings/preferences")),
 
+    savePreferences: async (prefs: Schemas["Preferences"]) =>
+      unwrap(await client.PUT("/v1/settings/preferences", { body: prefs })),
 
-export const fetchConnections = (type?: string) =>
-  get<Connection[]>(type ? `/api/connections?type=${encodeURIComponent(type)}` : "/api/connections");
-export const fetchConnection = (id: string) => get<Connection>(`/api/connections/${id}`);
-export const createConnection = (req: CreateConnectionRequest) => post<Connection>("/api/connections", req);
-export const updateConnection = (id: string, req: UpdateConnectionRequest) => put<Connection>(`/api/connections/${id}`, req);
-export const deleteConnection = (id: string) => del(`/api/connections/${id}`);
-export const fetchConnectionFiles = (id: string) => get<FileEntry[]>(`/api/connections/${id}/files`);
+    catalogStorage: async (): Promise<{ cloud_account_id: string; base_url: string } | null> => {
+      const res = await fetch("/v1/settings/catalog-storage", { credentials: "same-origin" });
+      if (res.status === 204 || !res.ok) return null;
+      const json = await res.json();
+      return json?.data ?? json;
+    },
+
+    saveCatalogStorage: async (data: { cloud_account_id: string; base_url: string }) => {
+      const res = await fetch("/v1/settings/catalog-storage", {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new ApiError(body?.error ?? "unknown", body?.message ?? "Failed to save");
+      }
+      const json = await res.json();
+      return json?.data ?? json;
+    },
+  },
+
+  // ── AI Providers ──────────────────────────────────────────────────────
+  ai: {
+    providers: async () =>
+      unwrap(await client.GET("/v1/settings/ai/providers")),
+
+    saveProvider: async (
+      providerId: string,
+      config: { api_key: string; model?: string; max_tokens?: number },
+    ) =>
+      unwrap(await client.PUT("/v1/settings/ai/providers/{provider_id}", {
+        params: { path: { provider_id: providerId } },
+        body: { ...config, provider: providerId },
+      })),
+
+    removeProvider: async (providerId: string) => {
+      unwrap(await client.DELETE("/v1/settings/ai/providers/{provider_id}", {
+        params: { path: { provider_id: providerId } },
+      }));
+    },
+  },
+
+  // ── Auth ───────────────────────────────────────────────────────────────
+  auth: {
+    me: async () =>
+      unwrap(await client.GET("/v1/auth/me")),
+
+    workspaces: async () =>
+      unwrap(await client.GET("/v1/auth/workspaces")),
+
+    logout: async () =>
+      unwrap(await client.POST("/v1/auth/logout")),
+
+    inviteInfo: async (token: string) =>
+      unwrap(await client.GET("/v1/auth/invite-info", {
+        params: { query: { token } },
+      })),
+  },
+
+  // ── Org ────────────────────────────────────────────────────────────────
+  org: {
+    identity: async () =>
+      unwrap(await client.GET("/v1/org/identity")),
+
+    saveIdentity: async (data: Schemas["UpdateOrgIdentityPayload"]) =>
+      unwrap(await client.PUT("/v1/org/identity", { body: data })),
+
+    users: async () =>
+      unwrap(await client.GET("/v1/org/users")),
+
+    removeUser: async (id: string) => {
+      unwrap(await client.DELETE("/v1/org/users/{id}", { params: { path: { id } } }));
+    },
+
+    invites: async () =>
+      unwrap(await client.GET("/v1/org/invites")),
+
+    createInvite: async () =>
+      unwrap(await client.POST("/v1/org/invites")),
+
+    revokeInvite: async (token: string) => {
+      unwrap(await client.DELETE("/v1/org/invites/{token}", {
+        params: { path: { token } },
+      }));
+    },
+  },
+
+  // ── Status ────────────────────────────────────────────────────────────
+  status: {
+    services: async () =>
+      unwrap(await client.GET("/v1/status")),
+  },
+
+  // ── Assistant (SSE streaming) ───────────────────────────────────────────
+  assistant: {
+    suggestStream: (req: Schemas["SuggestRequest"]) =>
+      fetchSSE("/v1/assistant/suggest-stream", req),
+
+    generateStream: (req: Schemas["GenerateRequest"]) =>
+      fetchSSE("/v1/assistant/generate-stream", req),
+  },
+
+};

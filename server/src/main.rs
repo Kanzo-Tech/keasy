@@ -1,59 +1,15 @@
-mod ai;
-mod cloud;
-mod config;
-mod crypto;
-mod db;
-mod dcat;
-mod graph;
-mod job;
-mod middleware;
-mod pipeline;
-mod rdf;
-mod routes;
-mod script;
-mod settings;
-mod validation;
+use keasy_server::{AppState, AuthServices, Database, JobRunner};
+use keasy_server::config::ServerConfig;
+use keasy_server::routes::{build_router, SessionConfig};
+use secrecy::ExposeSecret;
 
-use std::num::NonZeroUsize;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use secrecy::SecretString;
-use tokio::sync::Mutex;
-use tracing::{info, warn};
+use tracing::info;
 
-use config::ServerConfig;
-use db::Database;
-use graph::rdf_graph::RdfGraph;
-use job::runner::JobRunner;
-
-pub struct OutputCache(lru::LruCache<String, Arc<RdfGraph>>);
-
-impl OutputCache {
-    pub fn new(cap: usize) -> Self {
-        Self(lru::LruCache::new(NonZeroUsize::new(cap).unwrap()))
-    }
-    pub fn get(&mut self, key: &str) -> Option<Arc<RdfGraph>> {
-        self.0.get(key).cloned()
-    }
-    pub fn insert(&mut self, key: String, graph: RdfGraph) -> Arc<RdfGraph> {
-        let arc = Arc::new(graph);
-        self.0.put(key, arc.clone());
-        arc
-    }
-    pub fn remove(&mut self, key: &str) {
-        self.0.pop(key);
-    }
-}
-
-#[derive(Clone)]
-pub struct AppState {
-    pub db: Database,
-    pub runner: Arc<JobRunner>,
-    pub catalog: Arc<RdfGraph>,
-    pub output_cache: Arc<Mutex<OutputCache>>,
-    pub api_key: SecretString,
-}
+use tower_sessions::ExpiredDeletion;
 
 #[tokio::main]
 async fn main() {
@@ -72,8 +28,13 @@ async fn main() {
         std::process::exit(1);
     }
 
+    // Fail closed: without the encryption key, stored tenant connection creds
+    // would be written in plaintext. Required (the deployment injects it as a
+    // Swarm secret via KEASY_SECRET_KEY_FILE). See W4 in the deploy plan.
     if config.secret_key.is_none() {
-        warn!("KEASY_SECRET_KEY is not set — secrets will be stored unencrypted");
+        eprintln!("FATAL: KEASY_SECRET_KEY is required to encrypt stored credentials");
+        eprintln!("       Generate one with: openssl rand -base64 32");
+        std::process::exit(1);
     }
 
     let db_path = config.data_dir.join("keasy.db");
@@ -87,6 +48,19 @@ async fn main() {
 
     info!(path = %db_path.display(), "Database opened");
 
+    // Seed the local workspace identity (compliance metadata) once. Membership,
+    // roles, and the workspace registry are all Keycloak-native now (the
+    // Organization + client roles), so the server keeps no identity state.
+    if config.oidc_client_id.is_some() && db.get_workspace_identity().await.is_none() {
+        db.set_workspace_identity(&keasy_server::settings::org::WorkspaceIdentity {
+            name: config.workspace_name.clone(),
+            legal_name: config.workspace_name.clone(),
+            country: "EU".to_string(),
+            ..Default::default()
+        })
+        .await;
+    }
+
     if !db.verify_secret_key().await {
         eprintln!("FATAL: KEASY_SECRET_KEY does not match the key used to encrypt stored secrets");
         eprintln!("       Cloud account credentials will not be accessible.");
@@ -94,39 +68,129 @@ async fn main() {
         std::process::exit(1);
     }
 
-    let catalog = Arc::new(RdfGraph::new());
+    // Session store — separate tokio-rusqlite connection (safe in WAL mode).
+    // tower-sessions-rusqlite-store manages its own schema via migrate().
+    // Access tokio_rusqlite through the re-export from tower-sessions-rusqlite-store.
+    let session_conn = tower_sessions_rusqlite_store::tokio_rusqlite::Connection::open(&db_path)
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!("FATAL: Failed to open session store connection: {e}");
+            std::process::exit(1);
+        });
+    let session_store = tower_sessions_rusqlite_store::RusqliteStore::new(session_conn);
+    session_store.migrate().await.unwrap_or_else(|e| {
+        eprintln!("FATAL: Failed to migrate session store: {e}");
+        std::process::exit(1);
+    });
 
-    let mut restored = 0usize;
-    for (job_id, turtle) in &db.completed_catalogs().await {
-        match graph::loader::parse_rdf_to_triples(turtle.as_bytes(), "catalog.ttl") {
-            Ok(triples) => {
-                catalog.insert_triples(Some(&format!("urn:keasy:job:{job_id}")), &triples);
-                restored += 1;
-            }
-            Err(e) => warn!(job_id = %job_id, error = %e, "Failed to restore catalog"),
-        }
-    }
-    if restored > 0 {
-        info!(count = restored, "Restored catalogs into graph store");
-    }
+    // Background task: continuously delete expired sessions (every 60 seconds)
+    let deletion_task = tokio::task::spawn(
+        session_store
+            .clone()
+            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
+    );
 
-    let output_cache = Arc::new(Mutex::new(OutputCache::new(config.cache_capacity)));
     let runner = Arc::new(JobRunner::new(
         db.clone(),
-        catalog.clone(),
         config.max_concurrent_jobs,
         config.job_timeout_secs,
     ));
 
+    // Keycloak admin client — only active when all three OIDC config fields are present.
+    // Uses internal_base_url when set so admin API calls reach Keycloak via Docker DNS
+    // (the public issuer URL resolves to this server container, not Keycloak).
+    let keycloak_admin = match (&config.oidc_issuer_url, &config.oidc_client_id, &config.oidc_client_secret) {
+        (Some(issuer), Some(client_id), Some(secret)) => {
+            match keasy_server::keycloak::admin::KeycloakAdmin::new(
+                issuer,
+                client_id,
+                secret.clone(),
+                config.oidc_internal_base_url.as_deref(),
+            ) {
+                Ok(admin) => Some(admin),
+                Err(e) => {
+                    tracing::warn!(error = %e, "Failed to configure Keycloak admin client — instance registration will be unavailable");
+                    None
+                }
+            }
+        }
+        _ => None,
+    };
+
+    // Resolve this workspace's Keycloak Organization id from its alias. The org
+    // is the membership container; members, invites, and the switcher key off it.
+    let oidc_org_id = match (&keycloak_admin, &config.org_alias) {
+        (Some(admin), Some(alias)) => match admin.resolve_org_id(alias).await {
+            Ok(Some(id)) => Some(id),
+            Ok(None) => {
+                tracing::warn!(alias = %alias, "Keycloak organization not found for alias");
+                None
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, alias = %alias, "Failed to resolve Keycloak organization");
+                None
+            }
+        },
+        _ => None,
+    };
+
+    // Build OIDC relying party client — only when all three config fields are present.
+    let oidc_state = match (&config.oidc_issuer_url, &config.oidc_client_id, &config.oidc_client_secret) {
+        (Some(issuer), Some(client_id), Some(secret)) => {
+            let redirect_uri = format!(
+                "{}/v1/auth/oidc-callback",
+                config.base_url.trim_end_matches('/')
+            );
+            match keasy_server::auth::oidc::build_oidc_client(
+                issuer,
+                client_id,
+                secret.expose_secret(),
+                &redirect_uri,
+                config.oidc_internal_base_url.as_deref(),
+            )
+            .await
+            {
+                Ok(state) => Some(Arc::new(state)),
+                Err(e) => {
+                    tracing::warn!(
+                        error = %e,
+                        "Failed to initialize OIDC client — OIDC auth will be unavailable"
+                    );
+                    None
+                }
+            }
+        }
+        _ => None,
+    };
+
     let shutdown_grace = Duration::from_secs(config.shutdown_grace_secs);
+    let auth = AuthServices {
+        oidc_state,
+        keycloak_admin,
+        oidc_issuer_url: config.oidc_issuer_url,
+        oidc_client_id: config.oidc_client_id,
+        oidc_client_secret: config.oidc_client_secret,
+        oidc_org_id,
+    };
     let state = AppState {
         db,
         runner: runner.clone(),
-        catalog,
-        output_cache,
         api_key: config.api_key,
+        base_url: config.base_url,
+        auth,
     };
-    let app = routes::build_router(state, config.cors_origins);
+    info!(
+        oidc = if state.auth.oidc_state.is_some() { "ready" } else { "not configured" },
+        "External services"
+    );
+
+    let session_config = SessionConfig {
+        store: session_store,
+        secret: config.session_secret,
+        cookie_name: config.session_cookie_name,
+        secure: config.session_secure,
+    };
+    let app = build_router(state, config.cors_origins, session_config);
 
     let listener = match tokio::net::TcpListener::bind(config.bind_addr).await {
         Ok(l) => l,
@@ -138,15 +202,19 @@ async fn main() {
 
     info!(addr = %config.bind_addr, "Keasy server listening");
 
-    if let Err(e) = axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
+    if let Err(e) = axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
     {
         eprintln!("FATAL: Server error: {e}");
         std::process::exit(1);
     }
 
     runner.shutdown(shutdown_grace).await;
+    deletion_task.abort();
 }
 
 async fn shutdown_signal() {

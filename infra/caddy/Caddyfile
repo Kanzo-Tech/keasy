@@ -1,0 +1,17 @@
+:3000 {
+	handle /v1/* {
+		reverse_proxy server:8080
+	}
+
+	handle /auth/* {
+		reverse_proxy keycloak:8080
+	}
+
+	handle /.well-known/* {
+		reverse_proxy server:8080
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

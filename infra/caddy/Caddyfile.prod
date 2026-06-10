@@ -1,0 +1,24 @@
+# Production Caddyfile — app routing
+#
+# Requires env vars:
+#   KEASY_BASE_DOMAIN    — e.g. "keasy.example.com"
+#   CLOUDFLARE_API_TOKEN — for TLS via DNS-01
+
+# Main domain — full app routing
+{$KEASY_BASE_DOMAIN} {
+	tls {
+		dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+	}
+
+	handle /v1/* {
+		reverse_proxy server:8080
+	}
+
+	handle /auth/* {
+		reverse_proxy keycloak:8080
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

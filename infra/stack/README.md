@@ -1,0 +1,62 @@
+# infra/stack — the keasy fleet on Docker Swarm
+
+The reference deployment substrate. **Swarm** owns the generic ops (health-gated
+rolling updates, automatic rollback, encrypted secrets, overlay isolation);
+**Traefik v3** owns ingress + TLS via service labels; the **control-plane** owns
+the keasy-specific provisioning (Keycloak + rendering each tenant's stack). See
+`/Users/angel.ip/.claude/plans/lively-wibbling-muffin.md` for the full design.
+
+## Topology
+
+- `base.yml` — one shared stack: Traefik (edge), Keycloak + Postgres (identity),
+  control-plane (provisioner). Defines the `keasy-edge` overlay.
+- **Per-tenant stacks** — rendered + `docker stack deploy`-ed by the control-plane
+  (one per workspace, project name = workspace id). They attach to `keasy-edge`;
+  Traefik routes `<slug>.<base_domain>` to them from their `deploy.labels`. No edit
+  to `base.yml` is needed to add/remove a tenant.
+
+## One-time bootstrap (single manager node)
+
+```sh
+# 1. Init Swarm (single node is fine; can grow to multi-node later).
+docker swarm init
+
+# 2. The three base secrets (created out-of-band; never in git).
+printf '%s' "$KC_DB_PASSWORD"    | docker secret create kc-db-password -
+printf '%s' "$KC_ADMIN_PASSWORD" | docker secret create kc-admin-password -
+printf '%s' "$CP_OIDC_SECRET"    | docker secret create cp-oidc-secret -
+
+# 3. Required env (the control-plane image must ship the `docker` CLI).
+export KC_HOSTNAME=auth.keasy.example.com
+export KEASY_BASE_DOMAIN=keasy.example.com
+export ACME_EMAIL=ops@kanzo.tech
+export KEASY_SERVER_IMAGE=ghcr.io/kanzo-tech/keasy-server:0.4.0
+export KEASY_WEB_IMAGE=ghcr.io/kanzo-tech/keasy-web:0.4.0
+export KEASY_CONTROL_PLANE_IMAGE=ghcr.io/kanzo-tech/keasy-control-plane:0.4.0
+export KEASY_DEPLOY_DIR=/opt/keasy/keasy   # this repo's keasy/ on the manager
+
+# 4. Deploy the base stack.
+docker stack deploy -c infra/stack/base.yml keasy-base
+```
+
+DNS: point `*.${KEASY_BASE_DOMAIN}` and `${KC_HOSTNAME}` at the manager's IP.
+Traefik issues per-host certs via the ACME TLS-challenge automatically.
+
+## Per-tenant lifecycle (driven by `deploy/`)
+
+`deploy/environments/prod/tenants/<slug>.yaml` is the source of truth. The
+control-plane reconciles the live fleet toward it every `CP_RECONCILE_INTERVAL_SECS`
+(or on `POST /reconcile`): it mints the tenant's Swarm secrets, renders the stack,
+and `docker stack deploy`s it. Rollback = `git revert` the pin (or Swarm's automatic
+rollback on a failed health-gate). See `deploy/README.md`.
+
+## On-the-fly version switch
+
+Bump `deploy/environments/prod/versions.env` (fleet) or a tenant override →
+reconcile. Swarm performs a **start-first** rolling update (new task healthy before
+the old retires = zero-downtime) and auto-rolls-back on health failure — both from
+the `update_config`/`rollback_config` the control-plane renders into each stack.
+
+> NOTE: the dev loop still uses `docker compose` (`docker-compose*.yml` + Caddy).
+> The Caddy ingress is superseded by Traefik for the Swarm/prod path; `infra/caddy/**`
+> is removed as part of the prod cutover.

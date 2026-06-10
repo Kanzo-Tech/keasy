@@ -1,0 +1,52 @@
+# Production overlay — optimized builds, no seed data.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+
+services:
+  server:
+    # Context is the parent of keasy/ + rmlext/: rmlext is present only so the
+    # `fossil-run-status` git-dep resolves through its [patch] (workspace inheritance
+    # needs the root manifest). The `fossil` + `fossil-mcp` binaries are NOT compiled
+    # here — they come from the FOSSIL_IMAGE producer image via COPY --from.
+    build:
+      context: ..
+      dockerfile: keasy/server/Dockerfile
+      args:
+        FOSSIL_IMAGE: ${FOSSIL_IMAGE:-ghcr.io/kanzo-tech/fossil:0.3.0}
+    environment:
+      KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-}
+      KEASY_CADDY_CERTS_DIR: /caddy-data
+      RUST_LOG: info
+    volumes:
+      - caddy_data:/caddy-data:ro
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  caddy:
+    build:
+      context: ./infra/caddy
+      dockerfile: Dockerfile
+    volumes:
+      - ./infra/caddy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    environment:
+      KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-localhost}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+    depends_on:
+      web:
+        condition: service_healthy
+      server:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+volumes:
+  caddy_data:

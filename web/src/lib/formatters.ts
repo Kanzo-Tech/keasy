@@ -1,4 +1,4 @@
-import type { Job, Connection, PipelineSummary } from "@/lib/types";
+import type { Job, Connection } from "@/lib/types";
 
 export function formatDuration(startIso: string, endIso: string): string {
   const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
@@ -17,28 +17,21 @@ export function formatJobDuration(job: Job): string {
   return formatDuration(job.started_at, end);
 }
 
-export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString();
+export function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "Unknown";
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(dateStr));
 }
 
 export function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-const SHAPE_EXTENSIONS = [".shex", ".ttl", ".shapes.ttl"];
-
-export function isShapeFile(path: string): boolean {
-  return SHAPE_EXTENSIONS.some((ext) => path.toLowerCase().endsWith(ext));
-}
-
-/** Detect the shape format from a file path extension. */
-export function detectShapeFormat(path: string): "ShEx" | "SHACL" | null {
-  const lower = path.toLowerCase();
-  if (lower.endsWith(".shex")) return "ShEx";
-  if (lower.endsWith(".ttl")) return "SHACL";
-  return null;
 }
 
 /** Extract the local name from a full IRI (after last `/` or `#`). */
@@ -59,18 +52,6 @@ export function reverseMapUrl(url: string, connections: Connection[]): string {
     }
   }
   return url;
-}
-
-/** Apply reverse mapping to all destinations in a pipeline summary. */
-export function reverseMapPipeline(pipeline: PipelineSummary, connections: Connection[]): PipelineSummary {
-  if (connections.length === 0) return pipeline;
-  return {
-    ...pipeline,
-    outputs: pipeline.outputs.map((out) => ({
-      ...out,
-      destination: out.destination ? reverseMapUrl(out.destination, connections) : out.destination,
-    })),
-  };
 }
 
 export function cleanValidationMessage(message: string, node: string): string {

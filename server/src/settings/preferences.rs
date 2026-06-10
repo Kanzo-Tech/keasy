@@ -1,16 +1,21 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct Preferences {
     #[serde(default = "default_accent_color")]
+    #[schema(required = true)]
     pub accent_color: String,
     #[serde(default = "default_font_family")]
+    #[schema(required = true)]
     pub font_family: String,
     #[serde(default = "default_mono_font_family")]
+    #[schema(required = true)]
     pub mono_font_family: String,
     #[serde(default = "default_font_size")]
+    #[schema(required = true)]
     pub font_size: String,
     #[serde(default = "default_font_size")]
+    #[schema(required = true)]
     pub mono_font_size: String,
 }
 

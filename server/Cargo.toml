@@ -8,49 +8,84 @@ documentation = ""
 license = ""
 categories = ["database"]
 keywords = [""]
+default-run = "keasy-server"
 authors = ["Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>"]
 edition = "2024"
 rust-version = "1.90.0"
 
 [dependencies]
+keasy-keycloak = { path = "../keycloak" }
+thiserror = "2"
 jiff = "0.2"
 tokio = { version = "1", features = ["full"] }
 axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["v4"] }
-rusqlite = { version = "0.32", features = ["bundled"] }
-tower-http = { version = "0.6", features = ["trace", "cors"] }
+rusqlite = { version = "0.37", features = ["bundled"] }
+tower-http = { version = "0.6", features = ["trace", "cors", "set-header"] }
+tower = { version = "0.5", features = ["util"] }
+tower_governor = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
-oxrdf = "0.3.3"
-oxrdfio = "0.2.3"
-oxigraph = "0.5"
 object_store = { version = "0.12", features = ["aws", "gcp", "azure"] }
 futures = "0.3"
-lru = "0.12"
-shex_ast = "0.1"
-shex_validation = "0.1"
-shacl_rdf = "0.1"
-shacl_ir = "0.1"
-shacl_validation = "0.1"
-rudof_rdf = "0.1"
-iri_s = "0.1"
+tokio-stream = { version = "0.1", features = ["sync"] }
 url = "2"
 regex = "1"
 aes-gcm = "0.10"
+hmac = "0.12"
 pbkdf2 = { version = "0.12", features = ["hmac"] }
 sha2 = "0.10"
 getrandom = "0.2"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
+openidconnect = { version = "4.0", features = ["reqwest"] }
+oauth2 = "5.0"
+http = "1"
 secrecy = { version = "0.10", features = ["serde"] }
-subtle = "2"
-fossil-lang = { git = "https://github.com/angelip2303/fossil-lang.git" }
-fossil-stdlib = { git = "https://github.com/angelip2303/fossil-lang.git" }
-fossil-providers = { git = "https://github.com/angelip2303/fossil-lang.git" }
-fossil-ifc = { git = "https://github.com/angelip2303/fossil-lang.git" }
+tower-sessions = { version = "0.14", features = ["signed"] }
+tower-sessions-rusqlite-store = "0.14.1"
+time = "0.3"
+# The ONLY fossil dependency: the subprocess wire contracts (RunStatus,
+# CatalogInput, ProviderInfo), reused verbatim — one source of truth, the
+# `fossil` CLI serialises these exact structs and keasy deserialises them. keasy
+# links NO fossil compiler/runtime crate: every fossil capability (run, catalog,
+# providers) goes through the `fossil` binary over a subprocess. Consumed as a
+# git-dep pinned to the rmlext release tag (Renovate bumps it); local dev resolves
+# it to the sibling checkout via the [patch] below, so `make dev` never clones the
+# private repo.
+fossil-run-status = { git = "https://github.com/Kanzo-Tech/fossil-lang.git", tag = "v0.3.0", features = ["utoipa"] }
+# MCP client only — keasy spawns the `fossil-mcp` binary (host-boundary: still a
+# subprocess, NO fossil compiler/runtime crate linked) and calls its verb tools
+# over stdio. Used for owner-gated `execute_sql` (and the future `/ask` loop).
+rmcp = { version = "0.16", features = ["client", "transport-child-process"] }
+base64 = "0.22"
+p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "jwk"] }
+x509-parser = { version = "0.16", features = ["verify"] }
+pem = "3"
+urlencoding = "2"
+rcgen = "0.13"
+rand_core06 = { package = "rand_core", version = "0.6", features = ["getrandom"] }
+utoipa = { version = "5", features = ["axum_extras"] }
+csv = "1"
+oxrdf = "0.3.3"
+oxrdfio = "0.2.3"
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+tempfile = "3"
 
 [profile.release]
 lto = "thin"
 panic = "abort"
 strip = "debuginfo"
+
+# The `fossil-run-status` git-dep above resolves through this patch to a sibling
+# `rmlext/crates/fossil-run-status` checkout — Cargo uses the patch as the source,
+# so it never clones (or authenticates to) the private repo or needs the tag to
+# exist. The sibling is the real working tree locally; CI/Docker check out ONLY
+# this one contract crate at the pinned tag into the same relative path (not the
+# whole rmlext / DuckDB build). Renovate bumps the tag in lockstep with releases.
+[patch."https://github.com/Kanzo-Tech/fossil-lang.git"]
+fossil-run-status = { path = "../../rmlext/crates/fossil-run-status" }

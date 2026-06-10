@@ -1,0 +1,63 @@
+# Development overlay — hot reload, demo data, relaxed healthchecks.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+services:
+  server:
+    # Context is the parent of keasy/ + rmlext/ (the fossil-run-status path dep
+    # + the fossil subprocess binary both come from rmlext).
+    build:
+      context: ..
+      dockerfile: keasy/server/Dockerfile.dev
+    volumes:
+      - ./server/src:/src/keasy/server/src
+      - server-target:/src/keasy/server/target
+      # Cargo registry persists across container recreation so the runtime
+      # compile (deps are no longer pre-built in the image — see Dockerfile.dev)
+      # doesn't re-download crates on every `make dev` rebuild.
+      - cargo-registry:/usr/local/cargo/registry
+    environment:
+      # The workspace's Keycloak Organization (membership container). Its alias
+      # matches the org declared in the realm import; the server resolves the
+      # org id from it at boot.
+      KEASY_ORG_ALIAS: ${KEASY_ORG_ALIAS:-keasy}
+      KEASY_WORKSPACE_NAME: ${KEASY_WORKSPACE_NAME:-Keasy}
+      KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-keasy.local}
+      RUST_LOG: debug
+    healthcheck:
+      interval: 10s
+      retries: 30
+      # Deps compile at runtime now (not baked into the image), so the FIRST
+      # `up` (empty volumes / post-`make clean`) does a full cold compile of
+      # ~400 crates. Generous window so caddy's depends_on doesn't flap; warm
+      # rebuilds are seconds.
+      start_period: 900s
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./web/src:/app/src
+      - ./web/public:/app/public
+      # The dev image is deps-only (source is bind-mounted for hot reload). `scripts/`
+      # is part of that source — `predev` runs `scripts/copy-fossil-wasm.mjs` — so it
+      # must be mounted like src/public, else the container exits 1 (→ Caddy 502).
+      - ./web/scripts:/app/scripts
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  caddy:
+    depends_on:
+      server:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      # web: no hard dependency — avoids startup deadlocks during HMR init
+
+volumes:
+  server-target:                   # persist Rust build artifacts across restarts
+  cargo-registry:                  # persist downloaded crate sources across container recreation

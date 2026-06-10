@@ -44,12 +44,13 @@ struct ResolveResponse {
     files: HashMap<String, String>,
 }
 
-/// Sign the given dataset-relative parquet paths under `base_url`. Shared by the
-/// discover and catalog endpoints (both subprocess `RunStatus`) —
-/// each caller flattens its own manifest type into the file list. The output
+/// Sign the given dataset-relative paths under `base_url` for `method`. Shared
+/// by the discover + catalog readers (`Method::GET`) and the browser output
+/// uploader (`Method::PUT`) — each caller supplies its file list. The output
 /// lives in the owner sink, so it is signed with the sink's creds.
 async fn sign_manifest_urls(
     state: &AppState,
+    method: Method,
     base_url: &str,
     files: &[String],
 ) -> Result<Response, Response> {
@@ -68,7 +69,7 @@ async fn sign_manifest_urls(
         paths.push(p);
     }
 
-    let urls = store.sign_urls(Method::GET, &paths, SIGNED_URL_EXPIRES).await
+    let urls = store.sign_urls(method, &paths, SIGNED_URL_EXPIRES).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("sign_error", e.to_string()))).into_response())?;
 
     let files: HashMap<String, String> = all_files.into_iter()
@@ -76,6 +77,48 @@ async fn sign_manifest_urls(
         .collect();
 
     Ok(Json(ResolveResponse { files }).into_response())
+}
+
+// ── Browser output upload URLs (signed PUT) ─────────────────────────────────
+
+#[derive(Deserialize, utoipa::ToSchema)]
+pub struct OutputUrlsRequest {
+    /// Dataset-relative output keys the browser executor produced
+    /// (`vertex/Person.parquet`, `edge/<dir>/by_source.parquet`,
+    /// `graph.graph.yml`, …).
+    paths: Vec<String>,
+}
+
+#[utoipa::path(post, path = "/v1/jobs/{id}/output/urls", tag = "Discovery",
+    params(("id" = String, Path, description = "Job ID")),
+    request_body = OutputUrlsRequest,
+    responses(
+        (status = 200, description = "Signed PUT URLs for the output keys", body = ResolveResponse),
+        (status = 400, description = "No owner output storage configured"),
+        (status = 404, description = "Job not found"),
+    )
+)]
+/// Sign PUT URLs so the browser uploads the GraphAr output it just produced
+/// directly to owner storage (no data through the server). The output lives at
+/// `{owner_base}/{job_id}/<key>` — the same dest the completion `RunStatus`
+/// reports. Mirrors `resolve_discover_urls` but signs `PUT` for upload.
+pub async fn resolve_output_urls(
+    _ctx: Require<IsMember>,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(req): Json<OutputUrlsRequest>,
+) -> Response {
+    if state.db.get_job(id.as_str()).await.is_none() {
+        return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response();
+    }
+    let Some((_, base_url)) = state.db.get_owner_catalog_config().await else {
+        return (StatusCode::BAD_REQUEST, Json(error_body("no_owner_storage", "No owner output storage is configured"))).into_response();
+    };
+    let dest = format!("{}/{}", base_url.trim_end_matches('/'), id);
+
+    match sign_manifest_urls(&state, Method::PUT, &dest, &req.paths).await {
+        Ok(resp) | Err(resp) => resp,
+    }
 }
 
 // ── Discovery parquet URLs ──────────────────────────────────────────────
@@ -110,7 +153,7 @@ pub async fn resolve_discover_urls(
         .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
         .collect();
 
-    match sign_manifest_urls(&state, base, &files).await {
+    match sign_manifest_urls(&state, Method::GET, base, &files).await {
         Ok(resp) => resp,
         Err(resp) => resp,
     }
@@ -222,7 +265,7 @@ pub async fn resolve_catalog_urls(
         .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
         .collect();
 
-    match sign_manifest_urls(&state, base, &files).await {
+    match sign_manifest_urls(&state, Method::GET, base, &files).await {
         Ok(resp) => resp,
         Err(resp) => resp,
     }

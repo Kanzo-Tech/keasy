@@ -121,6 +121,26 @@ pub struct UpdateJobRequest {
     pub name: Option<String>,
 }
 
+/// The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
+/// the mapping in the browser (`@fossil-lang/executor`) and uploading the output
+/// by signed PUT, the client reports the run's outcome. `manifest` is the
+/// executor's `RunStatus` — the SAME type the old subprocess produced — so the
+/// discovery + DCAT paths consume it unchanged.
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct CompleteJobRequest {
+    /// The terminal (or `Running`) status the client is transitioning the job to.
+    pub status: JobStatus,
+    /// The GraphAr `RunStatus` for the uploaded output (on `Completed`).
+    #[serde(default)]
+    pub manifest: Option<RunStatus>,
+    /// The DCAT-AP catalog `RunStatus`, when the client also built the catalog.
+    #[serde(default)]
+    pub catalog_manifest: Option<RunStatus>,
+    /// Failure message (on `Failed`) — classified into a `JobRuntimeError`.
+    #[serde(default)]
+    pub error: Option<String>,
+}
+
 pub fn now_iso8601() -> String {
     jiff::Timestamp::now().strftime("%Y-%m-%dT%H:%M:%SZ").to_string()
 }

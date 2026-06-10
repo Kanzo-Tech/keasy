@@ -18,6 +18,7 @@ use utoipa::OpenApi;
         crate::jobs::routes::create_job,
         crate::jobs::routes::get_job,
         crate::jobs::routes::update_job,
+        crate::jobs::routes::complete_job,
         crate::jobs::routes::delete_job,
         crate::jobs::routes::stream_job,
         // Connections
@@ -62,6 +63,7 @@ use utoipa::OpenApi;
         crate::routes::org::list_org_invites,
         crate::routes::org::revoke_org_invite,
         // Discovery
+        crate::discovery::routes::resolve_output_urls,
         crate::discovery::routes::resolve_discover_urls,
         crate::discovery::routes::resolve_discover_manifest,
         crate::discovery::routes::resolve_catalog_manifest,
@@ -90,6 +92,7 @@ use utoipa::OpenApi;
         crate::jobs::models::RunMode,
         crate::jobs::models::CreateJobRequest,
         crate::jobs::models::UpdateJobRequest,
+        crate::jobs::models::CompleteJobRequest,
         fossil_run_status::RunStatus,
         fossil_run_status::VertexStatus,
         fossil_run_status::EdgeStatus,

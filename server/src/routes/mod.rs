@@ -116,6 +116,7 @@ pub fn build_router(
             "/v1/jobs/{id}",
             axum::routing::get(crate::jobs::routes::get_job)
                 .put(crate::jobs::routes::update_job)
+                .patch(crate::jobs::routes::complete_job)
                 .delete(crate::jobs::routes::delete_job),
         )
         .route(
@@ -150,6 +151,10 @@ pub fn build_router(
             "/v1/jobs/{id}/dashboard-layout",
             axum::routing::get(crate::jobs::routes::get_dashboard_layout)
                 .put(crate::jobs::routes::save_dashboard_layout),
+        )
+        .route(
+            "/v1/jobs/{id}/output/urls",
+            axum::routing::post(crate::discovery::routes::resolve_output_urls),
         )
         .route(
             "/v1/jobs/{id}/discover/urls",

@@ -14,11 +14,13 @@ use tracing::warn;
 
 use crate::AppState;
 use crate::error::data_response;
-use crate::jobs::models::{CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601};
+use crate::jobs::models::{
+    CompleteJobRequest, CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601,
+};
 use super::runner::JobEvent;
 use crate::middleware::tenant::{IsMember, Require};
 
-use super::errors::JobApiError;
+use super::errors::{classify_error, JobApiError, JobRuntimeError};
 
 #[utoipa::path(get, path = "/v1/jobs", tag = "Jobs",
     responses(
@@ -184,6 +186,64 @@ pub async fn update_job(
     }).await.map_err(JobApiError::Internal)? {
         Some(job) if job.status == JobStatus::Draft => Ok(data_response(job).into_response()),
         Some(_) => Err(JobApiError::NotDraft),
+        None => Err(JobApiError::NotFound),
+    }
+}
+
+#[utoipa::path(patch, path = "/v1/jobs/{id}", tag = "Jobs",
+    params(("id" = String, Path, description = "Job ID")),
+    request_body = CompleteJobRequest,
+    responses(
+        (status = 200, description = "Job status updated from the browser run", body = Job),
+        (status = 404, description = "Job not found"),
+    )
+)]
+/// Browser-driven completion: the client (`@fossil-lang/executor`) ran the
+/// mapping, signed-PUT the output, and reports the outcome here. `Completed`
+/// stores the executor's `RunStatus` (the discovery + DCAT views read it); the
+/// server never touches the data — only the metadata.
+pub async fn complete_job(
+    _ctx: Require<IsMember>,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(payload): Json<CompleteJobRequest>,
+) -> Result<impl IntoResponse, JobApiError> {
+    let now = now_iso8601();
+    let CompleteJobRequest { status, manifest, catalog_manifest, error } = payload;
+
+    let updated = state
+        .db
+        .update_job(id.as_str(), move |job| {
+            match &status {
+                JobStatus::Completed => {
+                    job.started_at.get_or_insert_with(|| now.clone());
+                    job.completed_at = Some(now);
+                    job.manifest = manifest;
+                    job.catalog_manifest = catalog_manifest;
+                    job.error = None;
+                }
+                JobStatus::Failed => {
+                    job.started_at.get_or_insert_with(|| now.clone());
+                    job.completed_at = Some(now);
+                    job.error = Some(error.as_deref().map_or_else(
+                        || JobRuntimeError::new("EXECUTION_ERROR", "execution failed"),
+                        classify_error,
+                    ));
+                }
+                JobStatus::Running => {
+                    if job.started_at.is_none() {
+                        job.started_at = Some(now);
+                    }
+                }
+                _ => {}
+            }
+            job.status = status;
+        })
+        .await
+        .map_err(JobApiError::Internal)?;
+
+    match updated {
+        Some(job) => Ok(data_response(job).into_response()),
         None => Err(JobApiError::NotFound),
     }
 }

@@ -25,6 +25,7 @@
     "@codemirror/view": "^6.39.15",
     "@fossil-lang/codemirror-fossil": "file:./vendor/fossil-lang/fossil-lang-codemirror-fossil-0.3.0-alpha.0.tgz",
     "@fossil-lang/editor": "file:./vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz",
+    "@fossil-lang/executor": "0.3.0-alpha.1",
     "@fossil-lang/graph": "file:./vendor/fossil-lang/fossil-lang-graph-0.3.0-alpha.1.tgz",
     "@fossil-lang/resolvers": "file:./vendor/fossil-lang/fossil-lang-resolvers-0.3.0-alpha.0.tgz",
     "@fossil-lang/types": "file:./vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz",

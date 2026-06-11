@@ -37,6 +37,21 @@ export const api = {
     complete: async (id: string, req: Schemas["CompleteJobRequest"]) =>
       unwrap(await client.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body: req })),
 
+    /// The job's connection ref-map (`name → baseUrl`) — the browser executor
+    /// feeds it to `sources()`/`run()` to resolve `@conn` aliases. No creds.
+    sourceRefs: async (id: string): Promise<Record<string, string>> =>
+      (unwrap(await client.GET("/v1/jobs/{id}/source-refs", { params: { path: { id } } }))).refs,
+
+    /// Sign GET URLs so the browser fetches the program's cloud sources directly
+    /// (signed GET for cloud, verbatim for public/HTTP). Returns `uri → fetchUrl`.
+    signSourceUrls: async (id: string, uris: string[]): Promise<Record<string, string>> =>
+      (unwrap(await client.POST("/v1/jobs/{id}/sources/urls", { params: { path: { id } }, body: { uris } }))).urls,
+
+    /// Sign PUT URLs so the browser uploads the GraphAr output it produced
+    /// directly to owner storage. Returns `outputKey → putUrl`.
+    signOutputUrls: async (id: string, paths: string[]): Promise<Record<string, string>> =>
+      (unwrap(await client.POST("/v1/jobs/{id}/output/urls", { params: { path: { id } }, body: { paths } }))).files,
+
     remove: async (id: string) => {
       unwrap(await client.DELETE("/v1/jobs/{id}", { params: { path: { id } } }));
     },

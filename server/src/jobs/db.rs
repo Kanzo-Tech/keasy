@@ -151,7 +151,12 @@ fn row_to_job(row: &rusqlite::Row) -> Job {
         tracing::warn!(error = %e, "row_to_job: script column type mismatch");
         None
     });
-    let script = if status == JobStatus::Draft { script } else { None };
+    // The browser executor reads the program to run a `Pending` job (and to
+    // re-run a `Running` one); terminal jobs expose only their manifest.
+    let script = match status {
+        JobStatus::Draft | JobStatus::Pending | JobStatus::Running => script,
+        _ => None,
+    };
 
     let manifest_json: Option<String> = row.get("manifest").unwrap_or_else(|e| {
         tracing::warn!(error = %e, "row_to_job: manifest column type mismatch");

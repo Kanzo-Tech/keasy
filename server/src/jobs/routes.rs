@@ -69,8 +69,11 @@ pub async fn create_job(
         return Ok((StatusCode::CREATED, data_response(job)).into_response());
     }
 
-    let dcat_enabled = payload.dcat_enabled.unwrap_or(false);
-
+    // Browser-driven execution: persist the program as `Pending` and let the
+    // client run it on DataFusion-WASM — sources via signed GET, GraphAr output
+    // via signed PUT, outcome via `PATCH /v1/jobs/{id}`. The server never runs
+    // the mapping (no subprocess, no data through the host). The runner is still
+    // linked but no longer spawned; its deletion is B6.
     let job = Job {
         id: id.clone(),
         status: JobStatus::Pending,
@@ -81,61 +84,13 @@ pub async fn create_job(
         error: None,
         mode: payload.mode.unwrap_or(RunMode::Integrated),
         connection_ids: payload.connection_ids.clone(),
-        script: None,
+        script: Some(payload.script),
         manifest: None,
         catalog_manifest: None,
     };
 
     state.db.insert_job(&job).await
         .map_err(JobApiError::Internal)?;
-
-    let org_settings = if dcat_enabled {
-        state.db.get_workspace_identity().await.map(|identity| {
-            crate::settings::org::OrgSettings {
-                publisher_name: identity.legal_name,
-                ..Default::default()
-            }
-        })
-    } else {
-        None
-    };
-
-    // Owner cloud storage backs both the job's GraphAr output (always, when
-    // configured) and — for dcat jobs — the DCAT-AP catalog. Fetch once.
-    let owner_storage = state.db.get_owner_catalog_config().await;
-
-    let output_dest = owner_storage
-        .as_ref()
-        .map(|(_, base_url)| format!("{}/{}", base_url.trim_end_matches('/'), id));
-
-    let run_creds = crate::jobs::run_creds::build_run_creds(
-        &state.db,
-        &payload.connection_ids,
-        owner_storage.as_ref().map(|(account, _)| account.clone()),
-    )
-    .await;
-
-    // The catalog is written to owner storage via the `fossil catalog`
-    // subprocess (cloud secret reused from the run's dest). keasy only supplies
-    // the base URL; cloud auth rides the subprocess stdin, not a host resolver.
-    let catalog_dest = if dcat_enabled {
-        owner_storage
-            .as_ref()
-            .map(|(_, base_url)| base_url.clone())
-    } else {
-        None
-    };
-
-    use crate::jobs::runner::SpawnParams;
-    state.runner.spawn(SpawnParams {
-        job_id: id,
-        script: payload.script,
-        org_settings,
-        dcat_enabled,
-        output_dest,
-        run_creds,
-        catalog_dest,
-    });
 
     Ok((StatusCode::ACCEPTED, data_response(job)).into_response())
 }

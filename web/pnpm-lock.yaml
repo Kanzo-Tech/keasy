@@ -52,6 +52,9 @@ importers:
       '@fossil-lang/editor':
         specifier: file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz
         version: file:vendor/fossil-lang/fossil-lang-editor-0.3.0-alpha.0.tgz(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/lsp-client@6.2.4)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@fossil-lang/executor':
+        specifier: 0.3.0-alpha.1
+        version: 0.3.0-alpha.1
       '@fossil-lang/graph':
         specifier: file:vendor/fossil-lang/fossil-lang-graph-0.3.0-alpha.1.tgz
         version: file:vendor/fossil-lang/fossil-lang-graph-0.3.0-alpha.1.tgz
@@ -698,6 +701,9 @@ packages:
       '@lezer/highlight': ^1.0.0
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
+
+  '@fossil-lang/executor@0.3.0-alpha.1':
+    resolution: {integrity: sha512-yuJp3nQokr2v7facaQKgpn1eVplkYwzSIpu8hTYB/jOmVZEfcQ5Ysgq5t+zNkLRMvFrp4KDjH3f5xaudpc9r4A==}
 
   '@fossil-lang/graph@file:vendor/fossil-lang/fossil-lang-graph-0.3.0-alpha.1.tgz':
     resolution: {integrity: sha512-Wk7Xch3mR3/tZ+X17GJEMjsgGpJvTAbRafNx01bSEaUXNfQwK4B2uPk/bZjnqaA3CD6ZEMTdRHTWhSyoAOX2qQ==, tarball: file:vendor/fossil-lang/fossil-lang-graph-0.3.0-alpha.1.tgz}
@@ -6360,6 +6366,8 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'
+
+  '@fossil-lang/executor@0.3.0-alpha.1': {}
 
   '@fossil-lang/graph@file:vendor/fossil-lang/fossil-lang-graph-0.3.0-alpha.1.tgz': {}
 

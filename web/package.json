@@ -31,7 +31,6 @@
     "@fossil-lang/viewer": "file:./vendor/fossil-lang/fossil-lang-viewer-0.3.0-alpha.0.tgz",
     "@fossil-lang/wasm": "file:./vendor/fossil-lang/fossil-lang-wasm-0.3.0-alpha.0.tgz",
     "@hookform/resolvers": "^5.2.2",
-    "@kanzo/theme": "file:./vendor/fossil-lang/kanzo-theme-0.3.0-alpha.0.tgz",
     "@lezer/highlight": "^1.2.3",
     "@sqlrooms/cosmos": "^0.28.0",
     "@sqlrooms/duckdb": "^0.28.0",
@@ -97,8 +96,7 @@
       "@fossil-lang/types": "file:./vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz",
       "@fossil-lang/ui": "file:./vendor/fossil-lang/fossil-lang-ui-0.3.0-alpha.0.tgz",
       "@fossil-lang/viewer": "file:./vendor/fossil-lang/fossil-lang-viewer-0.3.0-alpha.0.tgz",
-      "@fossil-lang/wasm": "file:./vendor/fossil-lang/fossil-lang-wasm-0.3.0-alpha.0.tgz",
-      "@kanzo/theme": "file:./vendor/fossil-lang/kanzo-theme-0.3.0-alpha.0.tgz"
+      "@fossil-lang/wasm": "file:./vendor/fossil-lang/fossil-lang-wasm-0.3.0-alpha.0.tgz"
     }
   }
 }

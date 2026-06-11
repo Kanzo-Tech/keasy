@@ -14,7 +14,6 @@ overrides:
   '@fossil-lang/ui': file:./vendor/fossil-lang/fossil-lang-ui-0.3.0-alpha.0.tgz
   '@fossil-lang/viewer': file:./vendor/fossil-lang/fossil-lang-viewer-0.3.0-alpha.0.tgz
   '@fossil-lang/wasm': file:./vendor/fossil-lang/fossil-lang-wasm-0.3.0-alpha.0.tgz
-  '@kanzo/theme': file:./vendor/fossil-lang/kanzo-theme-0.3.0-alpha.0.tgz
 
 importers:
 
@@ -71,9 +70,6 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.72.0(react@19.2.3))
-      '@kanzo/theme':
-        specifier: file:vendor/fossil-lang/kanzo-theme-0.3.0-alpha.0.tgz
-        version: file:vendor/fossil-lang/kanzo-theme-0.3.0-alpha.0.tgz(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
@@ -959,13 +955,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
-
-  '@kanzo/theme@file:vendor/fossil-lang/kanzo-theme-0.3.0-alpha.0.tgz':
-    resolution: {integrity: sha512-wYLujnKtusZqc66EpOtR2SzhZaUCpCHcv1Bnf5rzUmw1RZLtMKNEC8JLYkWJq09hDPn6C0oCVDyD4zVjvXi9Cg==, tarball: file:vendor/fossil-lang/kanzo-theme-0.3.0-alpha.0.tgz}
-    version: 0.3.0-alpha.0
-    peerDependencies:
-      react: ^18.0.0 || ^19.0.0
-      react-dom: ^18.0.0 || ^19.0.0
 
   '@lezer/common@1.5.1':
     resolution: {integrity: sha512-6YRVG9vBkaY7p1IVxL4s44n5nUnaNnGM2/AckNgYOnxTG2kWh1vR8BMxPseWPjRNpb5VtXnMpeYAEAADoRV1Iw==}
@@ -6591,12 +6580,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  '@kanzo/theme@file:vendor/fossil-lang/kanzo-theme-0.3.0-alpha.0.tgz(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@fossil-lang/types': file:vendor/fossil-lang/fossil-lang-types-0.3.0-alpha.0.tgz
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
 
   '@lezer/common@1.5.1': {}
 

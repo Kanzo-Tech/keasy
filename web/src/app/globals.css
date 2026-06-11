@@ -88,9 +88,9 @@
      ACTUAL consumed --fossil-* names (not just the ADR-0034 spec list); the
      authoritative list (26 names) is reproduced below grouped by namespace.
      Non-shadcn tokens (motion/spacing/focus/size/font-sizes/radii-full) take
-     literal values mirroring @kanzo/theme's kanzoTheme defaults so a Keasy
-     page hosting an @fossil-lang/* component renders byte-identical to the
-     same component rendered inside <KanzoThemeProvider/> on landing. */
+     literal brand values owned by Keasy — the source of truth for these tokens.
+     (Formerly mirrored from the @kanzo/theme package, now retired; the brand
+     tokens live here.) */
 
   /* Colors — sourced from Keasy's shadcn palette (light values here, .dark
      block swaps the underlying shadcn tokens; the var() indirection cascades
@@ -107,7 +107,7 @@
 
   /* Fonts — sizeBase/sizeSmall/sizeXs are IDE-grade overrides (smaller than
      Keasy's Tailwind defaults to match the @fossil-lang/* IDE typography
-     signature established in kanzoTheme.fonts). */
+     signature). */
   --fossil-fonts-sizeBase: 13px;
   --fossil-fonts-sizeSmall: 11px;
   --fossil-fonts-sizeXs: 10px;
@@ -122,7 +122,7 @@
 
   /* Spacing — literal defaults; Keasy uses Tailwind utility classes for
      spacing rather than CSS-var tokens, so there is no shadcn source to
-     alias to. Values mirror kanzoTheme.spacing. */
+     alias to. Literal brand values, owned by Keasy. */
   --fossil-spacing-1: 4px;
   --fossil-spacing-2: 8px;
   --fossil-spacing-3: 12px;

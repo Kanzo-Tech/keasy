@@ -169,10 +169,6 @@ pub fn build_router(
             axum::routing::get(crate::discovery::routes::resolve_discover_manifest),
         )
         .route(
-            "/v1/jobs/{id}/discover/execute-sql",
-            axum::routing::post(crate::discovery::routes::execute_discover_sql),
-        )
-        .route(
             "/v1/jobs/{id}/catalog/urls",
             axum::routing::get(crate::discovery::routes::resolve_catalog_urls),
         )

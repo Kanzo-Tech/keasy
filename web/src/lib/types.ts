@@ -99,5 +99,3 @@ export type ProviderInfo = S["ProviderInfo"];
 export type MeResponse = S["MeResponse"];
 export type WorkspaceSummary = S["WorkspaceSummary"];
 export type WorkspacesResponse = S["WorkspacesResponse"];
-
-export type JobEvent = S["JobEvent"];

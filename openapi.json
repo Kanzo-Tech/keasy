@@ -1144,46 +1144,6 @@
         }
       }
     },
-    "/v1/jobs/{id}/discover/execute-sql": {
-      "post": {
-        "tags": [
-          "Discovery"
-        ],
-        "operationId": "execute_discover_sql",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ExecuteSqlRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Verb result: { columns, rows, truncated }"
-          },
-          "403": {
-            "description": "Owner role required"
-          },
-          "404": {
-            "description": "Job not found or no output"
-          }
-        }
-      }
-    },
     "/v1/jobs/{id}/discover/manifest": {
       "get": {
         "tags": [
@@ -2526,36 +2486,6 @@
           "src_type": {
             "type": "string",
             "description": "Source vertex type."
-          }
-        }
-      },
-      "ExecuteSqlRequest": {
-        "type": "object",
-        "required": [
-          "sql"
-        ],
-        "properties": {
-          "row_cap": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "Max rows returned (the verb enforces an outer LIMIT). Default 10k.",
-            "minimum": 0
-          },
-          "sql": {
-            "type": "string",
-            "description": "SQL to run against the GraphAr views (vertex/edge type names)."
-          },
-          "timeout_ms": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "Wall-clock cap, milliseconds. Default 10s.",
-            "minimum": 0
           }
         }
       },

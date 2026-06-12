@@ -68,7 +68,6 @@ use utoipa::OpenApi;
         crate::discovery::routes::resolve_discover_urls,
         crate::discovery::routes::resolve_discover_manifest,
         crate::discovery::routes::resolve_catalog_manifest,
-        crate::discovery::routes::execute_discover_sql,
         // AI / Conversations
         crate::ai::routes::ask_discover_stream,
         crate::ai::routes::create_conversation,

@@ -373,22 +373,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/discover/execute-sql": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["execute_discover_sql"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/jobs/{id}/discover/manifest": {
         parameters: {
             query?: never;
@@ -923,20 +907,6 @@ export interface components {
             edge_type: string;
             /** @description Source vertex type. */
             src_type: string;
-        };
-        ExecuteSqlRequest: {
-            /**
-             * Format: int32
-             * @description Max rows returned (the verb enforces an outer LIMIT). Default 10k.
-             */
-            row_cap?: number | null;
-            /** @description SQL to run against the GraphAr views (vertex/edge type names). */
-            sql: string;
-            /**
-             * Format: int32
-             * @description Wall-clock cap, milliseconds. Default 10s.
-             */
-            timeout_ms?: number | null;
         };
         FieldSchema: {
             default_value?: string | null;
@@ -2302,45 +2272,6 @@ export interface operations {
                 content: {
                     "text/event-stream": unknown;
                 };
-            };
-        };
-    };
-    execute_discover_sql: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExecuteSqlRequest"];
-            };
-        };
-        responses: {
-            /** @description Verb result: { columns, rows, truncated } */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Owner role required */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Job not found or no output */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

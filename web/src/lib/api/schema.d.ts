@@ -432,9 +432,9 @@ export interface paths {
         put?: never;
         /**
          * Sign PUT URLs so the browser uploads the GraphAr output it just produced
-         *     directly to owner storage (no data through the server). The output lives at
-         *     `{owner_base}/{job_id}/<key>` — the same dest the completion `RunStatus`
-         *     reports. Mirrors `resolve_discover_urls` but signs `PUT` for upload.
+         *     directly to the data space substrate (no data through the server). The output
+         *     lives at `{substrate}/{created_by}/{job_id}/<key>` — the same dest the
+         *     completion `RunStatus` reports. Mirrors `resolve_discover_urls` but PUT.
          */
         post: operations["resolve_output_urls"];
         delete?: never;
@@ -2461,7 +2461,7 @@ export interface operations {
                     "application/json": components["schemas"]["ResolveResponse"];
                 };
             };
-            /** @description No owner output storage configured */
+            /** @description No data space substrate configured */
             400: {
                 headers: {
                     [name: string]: unknown;

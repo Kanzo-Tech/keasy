@@ -47,14 +47,14 @@ struct ResolveResponse {
 /// Sign the given dataset-relative paths under `base_url` for `method`. Shared
 /// by the discover + catalog readers (`Method::GET`) and the browser output
 /// uploader (`Method::PUT`) — each caller supplies its file list. The output
-/// lives in the owner sink, so it is signed with the sink's creds.
+/// lives in the data space substrate, so it is signed with the substrate's creds.
 async fn sign_manifest_urls(
     state: &AppState,
     method: Method,
     base_url: &str,
     files: &[String],
 ) -> Result<Response, Response> {
-    let creds = state.db.owner_output_storage_config().await;
+    let creds = state.db.substrate_storage_config().await;
 
     let (store, prefix) = crate::cloud::build_store(base_url, &creds)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("store_error", e.to_string()))).into_response())?;
@@ -94,14 +94,14 @@ pub struct OutputUrlsRequest {
     request_body = OutputUrlsRequest,
     responses(
         (status = 200, description = "Signed PUT URLs for the output keys", body = ResolveResponse),
-        (status = 400, description = "No owner output storage configured"),
+        (status = 400, description = "No data space substrate configured"),
         (status = 404, description = "Job not found"),
     )
 )]
 /// Sign PUT URLs so the browser uploads the GraphAr output it just produced
-/// directly to owner storage (no data through the server). The output lives at
-/// `{owner_base}/{job_id}/<key>` — the same dest the completion `RunStatus`
-/// reports. Mirrors `resolve_discover_urls` but signs `PUT` for upload.
+/// directly to the data space substrate (no data through the server). The output
+/// lives at `{substrate}/{created_by}/{job_id}/<key>` — the same dest the
+/// completion `RunStatus` reports. Mirrors `resolve_discover_urls` but PUT.
 pub async fn resolve_output_urls(
     _ctx: Require<IsMember>,
     State(state): State<AppState>,
@@ -111,8 +111,8 @@ pub async fn resolve_output_urls(
     let Some(job) = state.db.get_job(id.as_str()).await else {
         return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response();
     };
-    let Some((_, base_url)) = state.db.get_owner_catalog_config().await else {
-        return (StatusCode::BAD_REQUEST, Json(error_body("no_owner_storage", "No owner output storage is configured"))).into_response();
+    let Some((_, base_url)) = state.db.substrate_config().await else {
+        return (StatusCode::BAD_REQUEST, Json(error_body("no_substrate", "No data space substrate (output storage) is configured"))).into_response();
     };
     // Member prefix = the data-product owner; mirrors the dest stamped at
     // completion (`jobs::complete_job`). Both must match so the signed PUT
@@ -306,7 +306,7 @@ pub async fn resolve_discover_manifest(
     };
     let base = &manifest.dest;
 
-    let creds = state.db.owner_output_storage_config().await;
+    let creds = state.db.substrate_storage_config().await;
 
     match read_manifest_files(base, &creds).await {
         Ok(manifest_files) => Json(ManifestResponse { manifest_files }).into_response(),
@@ -409,7 +409,7 @@ pub async fn resolve_catalog_manifest(
     };
     let base = &manifest.dest;
 
-    let creds = state.db.owner_output_storage_config().await;
+    let creds = state.db.substrate_storage_config().await;
 
     match read_manifest_files(base, &creds).await {
         Ok(manifest_files) => Json(ManifestResponse { manifest_files }).into_response(),
@@ -472,7 +472,7 @@ pub async fn execute_discover_sql(
 
     // The owner storage account backs the GraphAr output; its DuckDB secret
     // reads it over httpfs inside fossil-mcp.
-    let secret = match state.db.get_owner_catalog_config().await {
+    let secret = match state.db.substrate_config().await {
         Some((account_id, _)) => state
             .db
             .get_cloud_account(&account_id)
@@ -483,7 +483,7 @@ pub async fn execute_discover_sql(
         None => None,
     };
 
-    let creds = state.db.owner_output_storage_config().await;
+    let creds = state.db.substrate_storage_config().await;
     let manifest_files = match read_manifest_files(base, &creds).await {
         Ok(m) => m,
         Err(e) => {

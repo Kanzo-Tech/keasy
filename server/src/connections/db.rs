@@ -149,11 +149,12 @@ impl Database {
         Ok(())
     }
 
-    /// Object-store creds for the workspace write sink (the owner output store).
-    /// Job output is materialised into the sink, so signing/reading it back uses
-    /// the sink account's creds — never the member source connections'. Empty if
-    /// no cloud sink is configured.
-    pub async fn owner_output_storage_config(
+    /// Object-store creds for the **data space substrate** (the single workspace
+    /// write sink). All job output lands under the substrate (prefixed by the
+    /// producing member), so signing/reading it back uses the substrate account's
+    /// creds — never the member source connections'. Empty if no cloud sink is
+    /// configured.
+    pub async fn substrate_storage_config(
         &self,
     ) -> std::collections::HashMap<String, String> {
         match self.get_sink_connection().await.and_then(|c| c.cloud_account_id) {

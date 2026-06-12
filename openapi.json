@@ -1260,7 +1260,7 @@
         "tags": [
           "Discovery"
         ],
-        "summary": "Sign PUT URLs so the browser uploads the GraphAr output it just produced\ndirectly to owner storage (no data through the server). The output lives at\n`{owner_base}/{job_id}/<key>` — the same dest the completion `RunStatus`\nreports. Mirrors `resolve_discover_urls` but signs `PUT` for upload.",
+        "summary": "Sign PUT URLs so the browser uploads the GraphAr output it just produced\ndirectly to the data space substrate (no data through the server). The output\nlives at `{substrate}/{created_by}/{job_id}/<key>` — the same dest the\ncompletion `RunStatus` reports. Mirrors `resolve_discover_urls` but PUT.",
         "operationId": "resolve_output_urls",
         "parameters": [
           {
@@ -1295,7 +1295,7 @@
             }
           },
           "400": {
-            "description": "No owner output storage configured"
+            "description": "No data space substrate configured"
           },
           "404": {
             "description": "Job not found"

@@ -176,7 +176,7 @@ pub async fn complete_job(
     // `manifest.dest` as the dataset base for signed GETs.
     if matches!(status, JobStatus::Completed) {
         let creator = state.db.get_job(&id).await.map(|j| j.created_by).unwrap_or_default();
-        if let (Some(m), Some((_, base))) = (manifest.as_mut(), state.db.get_owner_catalog_config().await) {
+        if let (Some(m), Some((_, base))) = (manifest.as_mut(), state.db.substrate_config().await) {
             m.dest = format!("{}/{}/{}", base.trim_end_matches('/'), creator, id);
         }
     }

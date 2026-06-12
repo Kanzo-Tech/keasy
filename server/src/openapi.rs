@@ -20,7 +20,6 @@ use utoipa::OpenApi;
         crate::jobs::routes::update_job,
         crate::jobs::routes::complete_job,
         crate::jobs::routes::delete_job,
-        crate::jobs::routes::stream_job,
         // Connections
         crate::connections::routes::list_connections,
         crate::connections::routes::create_connection,
@@ -136,8 +135,6 @@ use utoipa::OpenApi;
         crate::routes::org::UpdateOrgIdentityPayload,
         crate::routes::org::CreateOrgInviteResponse,
         crate::routes::org::OrgIdentityResponse,
-        // Jobs
-        crate::jobs::runner::JobEvent,
         // Discovery
         crate::graph::types::TabularData,
         // Providers

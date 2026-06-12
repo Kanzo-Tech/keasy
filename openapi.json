@@ -35,9 +35,6 @@
         "responses": {
           "200": {
             "description": "Service is ready"
-          },
-          "503": {
-            "description": "Service is not ready"
           }
         }
       }
@@ -1373,40 +1370,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SourceUrlsResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Job not found"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/stream": {
-      "get": {
-        "tags": [
-          "Jobs"
-        ],
-        "operationId": "stream_job",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "SSE stream of job progress events",
-            "content": {
-              "text/event-stream": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobEvent"
                 }
               }
             }
@@ -2845,36 +2808,6 @@
           },
           "status": {
             "$ref": "#/components/schemas/JobStatus"
-          }
-        }
-      },
-      "JobEvent": {
-        "type": "object",
-        "description": "SSE event emitted by the job runner at each execution phase.",
-        "required": [
-          "phase",
-          "index",
-          "total"
-        ],
-        "properties": {
-          "error": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "index": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "phase": {
-            "type": "string"
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
           }
         }
       },

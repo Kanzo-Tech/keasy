@@ -486,22 +486,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["stream_job"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/org/identity": {
         parameters: {
             query?: never;
@@ -1013,15 +997,6 @@ export interface components {
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
         };
-        /** @description SSE event emitted by the job runner at each execution phase. */
-        JobEvent: {
-            error?: string | null;
-            /** Format: int32 */
-            index: number;
-            phase: string;
-            /** Format: int32 */
-            total: number;
-        };
         /**
          * @description Runtime job error — stored in the database as JSON on a failed job.
          *     This is NOT an API error type; it is a serializable record of what went wrong during execution.
@@ -1339,13 +1314,6 @@ export interface operations {
         responses: {
             /** @description Service is ready */
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Service is not ready */
-            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2530,36 +2498,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SourceUrlsResponse"];
-                };
-            };
-            /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    stream_job: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description SSE stream of job progress events */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": components["schemas"]["JobEvent"];
                 };
             };
             /** @description Job not found */

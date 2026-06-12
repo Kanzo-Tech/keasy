@@ -23,7 +23,6 @@ pub mod settings;
 
 // Re-export types integration tests need
 pub use db::Database;
-pub use jobs::runner::JobRunner;
 
 use secrecy::SecretString;
 use std::sync::Arc;
@@ -31,7 +30,6 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct AppState {
     pub db: Database,
-    pub runner: Arc<JobRunner>,
     pub api_key: SecretString,
     pub base_url: String,
     pub auth: AuthServices,

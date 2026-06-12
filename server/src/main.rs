@@ -1,11 +1,10 @@
-use keasy_server::{AppState, AuthServices, Database, JobRunner};
+use keasy_server::{AppState, AuthServices, Database};
 use keasy_server::config::ServerConfig;
 use keasy_server::routes::{build_router, SessionConfig};
 use secrecy::ExposeSecret;
 
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::time::Duration;
 
 use tracing::info;
 
@@ -90,12 +89,6 @@ async fn main() {
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
     );
 
-    let runner = Arc::new(JobRunner::new(
-        db.clone(),
-        config.max_concurrent_jobs,
-        config.job_timeout_secs,
-    ));
-
     // Keycloak admin client — only active when all three OIDC config fields are present.
     // Uses internal_base_url when set so admin API calls reach Keycloak via Docker DNS
     // (the public issuer URL resolves to this server container, not Keycloak).
@@ -163,7 +156,6 @@ async fn main() {
         _ => None,
     };
 
-    let shutdown_grace = Duration::from_secs(config.shutdown_grace_secs);
     let auth = AuthServices {
         oidc_state,
         keycloak_admin,
@@ -174,7 +166,6 @@ async fn main() {
     };
     let state = AppState {
         db,
-        runner: runner.clone(),
         api_key: config.api_key,
         base_url: config.base_url,
         auth,
@@ -213,7 +204,6 @@ async fn main() {
         std::process::exit(1);
     }
 
-    runner.shutdown(shutdown_grace).await;
     deletion_task.abort();
 }
 

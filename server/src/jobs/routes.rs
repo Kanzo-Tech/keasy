@@ -1,23 +1,15 @@
-use std::convert::Infallible;
-
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
-    response::{IntoResponse, Response},
-    response::sse::{Event, KeepAlive, Sse},
+    response::IntoResponse,
 };
-use tokio_stream::wrappers::BroadcastStream;
-use tokio_stream::StreamExt;
-
-use tracing::warn;
 
 use crate::AppState;
 use crate::error::data_response;
 use crate::jobs::models::{
     CompleteJobRequest, CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601,
 };
-use super::runner::JobEvent;
 use crate::middleware::tenant::{IsMember, Require};
 
 use super::errors::{classify_error, JobApiError, JobRuntimeError};
@@ -216,66 +208,6 @@ pub async fn complete_job(
         Some(job) => Ok(data_response(job).into_response()),
         None => Err(JobApiError::NotFound),
     }
-}
-
-#[utoipa::path(get, path = "/v1/jobs/{id}/stream", tag = "Jobs",
-    params(("id" = String, Path, description = "Job ID")),
-    responses(
-        (status = 200, description = "SSE stream of job progress events", body = JobEvent, content_type = "text/event-stream"),
-        (status = 404, description = "Job not found"),
-    )
-)]
-pub async fn stream_job(
-    _ctx: Require<IsMember>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Result<Response, JobApiError> {
-    let job = state.db.get_job(id.as_str()).await
-        .ok_or(JobApiError::NotFound)?;
-
-    fn is_terminal(status: &JobStatus) -> bool {
-        matches!(status, JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled)
-    }
-
-    fn terminal_event(job: &Job) -> JobEvent {
-        let (phase, error) = match job.status {
-            JobStatus::Completed => ("complete", None),
-            JobStatus::Failed => ("error", job.error.as_ref().map(|e| e.message.clone())),
-            JobStatus::Cancelled => ("complete", None),
-            _ => ("complete", None),
-        };
-        JobEvent { phase: phase.into(), index: 4, total: 5, error }
-    }
-
-    // Already terminal → single event + close
-    if is_terminal(&job.status) {
-        let evt = terminal_event(&job);
-        let stream = futures::stream::once(async move {
-            Ok::<_, Infallible>(Event::default().data(serde_json::to_string(&evt).unwrap_or_else(|e| { warn!("SSE serialization failed: {e}"); "{}".to_string() })))
-        });
-        return Ok(Sse::new(stream).keep_alive(KeepAlive::default()).into_response());
-    }
-
-    // Subscribe to broadcast channel
-    let rx = match state.runner.subscribe(&id) {
-        Some(rx) => rx,
-        None => {
-            // Channel gone — job may have finished between DB read and subscribe; refetch
-            let job = state.db.get_job(id.as_str()).await
-                .ok_or(JobApiError::NotFound)?;
-            let evt = terminal_event(&job);
-            let stream = futures::stream::once(async move {
-                Ok::<_, Infallible>(Event::default().data(serde_json::to_string(&evt).unwrap_or_else(|e| { warn!("SSE serialization failed: {e}"); "{}".to_string() })))
-            });
-            return Ok(Sse::new(stream).keep_alive(KeepAlive::default()).into_response());
-        }
-    };
-
-    let stream = BroadcastStream::new(rx)
-        .filter_map(|r| r.ok())
-        .map(|evt| Ok::<_, Infallible>(Event::default().data(serde_json::to_string(&evt).unwrap_or_else(|e| { warn!("SSE serialization failed: {e}"); "{}".to_string() }))));
-
-    Ok(Sse::new(stream).keep_alive(KeepAlive::default()).into_response())
 }
 
 #[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs",

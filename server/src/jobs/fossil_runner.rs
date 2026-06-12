@@ -36,32 +36,11 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use secrecy::{ExposeSecret, SecretString};
+use secrecy::SecretString;
 
 /// Environment variable overriding the `fossil` binary location. Falls back to
 /// `fossil` on `PATH` when unset.
 const FOSSIL_BIN_ENV: &str = "FOSSIL_BIN";
-
-/// Cloud secrets + source connections piped to `fossil run --creds-stdin`.
-/// Secret values are [`SecretString`] so they stay off `Debug`/logs; they are
-/// exposed only when serialising to the child's stdin pipe
-/// ([`RunCreds::to_stdin_json`]).
-#[derive(Debug, Default, Clone)]
-pub struct RunCreds {
-    /// Cloud secret for the `--dest` URL (`None` ⇒ local/public dest).
-    pub dest: Option<CloudSecret>,
-    /// Per-`@conn-name` source resolution: base URL + read secret.
-    pub connections: HashMap<String, ConnectionCreds>,
-}
-
-/// A `.fossil` `@conn-name` source: its base URL plus the read secret.
-#[derive(Debug, Default, Clone)]
-pub struct ConnectionCreds {
-    /// Base URL the connection resolves to (e.g. `s3://bucket/prefix`).
-    pub url: String,
-    /// Cloud secret for reading under `url` (`None` ⇒ public-URL source).
-    pub secret: Option<CloudSecret>,
-}
 
 /// A DuckDB `CREATE SECRET` spec: provider type + parameters. The keasy host
 /// projects a connection's provider + stored credentials into this from its
@@ -72,45 +51,6 @@ pub struct CloudSecret {
     pub secret_type: String,
     /// `CREATE SECRET` parameter names (`KEY_ID`, `SECRET`, `REGION`, …) → values.
     pub params: HashMap<String, SecretString>,
-}
-
-/// Serialise an optional cloud secret to the `{ "type", "params" }` JSON the CLI
-/// expects (or `null`). Secret values are exposed ONLY here, for the child's
-/// stdin pipe — never logged. Shared by the `run` and `catalog` payloads.
-fn secret_json(s: &Option<CloudSecret>) -> serde_json::Value {
-    match s {
-        Some(cs) => {
-            let params: serde_json::Map<String, serde_json::Value> = cs
-                .params
-                .iter()
-                .map(|(k, v)| (k.clone(), serde_json::Value::String(v.expose_secret().to_owned())))
-                .collect();
-            serde_json::json!({ "type": cs.secret_type, "params": params })
-        }
-        None => serde_json::Value::Null,
-    }
-}
-
-impl RunCreds {
-    /// Serialise to the `--creds-stdin` JSON the CLI expects. Secret values are
-    /// exposed ONLY here, to be written to the child's stdin pipe — never logged.
-    fn to_stdin_json(&self) -> String {
-        let connections: serde_json::Map<String, serde_json::Value> = self
-            .connections
-            .iter()
-            .map(|(name, c)| {
-                (
-                    name.clone(),
-                    serde_json::json!({ "url": c.url, "secret": secret_json(&c.secret) }),
-                )
-            })
-            .collect();
-        serde_json::json!({
-            "dest": { "secret": secret_json(&self.dest) },
-            "connections": connections,
-        })
-        .to_string()
-    }
 }
 
 /// The `fossil run --output-json` status — `RunStatus { dest, vertices, edges }`
@@ -179,21 +119,6 @@ impl FossilRunner {
         }
     }
 
-    /// The argv passed to the binary (split out so arg construction is unit-
-    /// testable without spawning a process). No `--shape` — the descriptor is
-    /// program-resident; `--creds-stdin` is always set (the payload may be empty
-    /// for a fully-local run).
-    fn run_args(fossil_file: &Path, dest_url: &str) -> Vec<String> {
-        vec![
-            "run".to_string(),
-            fossil_file.to_string_lossy().into_owned(),
-            "--dest".to_string(),
-            dest_url.to_string(),
-            "--output-json".to_string(),
-            "--creds-stdin".to_string(),
-        ]
-    }
-
     /// Bound the child `fossil`/`DuckDB` memory + CPU — multi-instance OOM
     /// protection. An uncapped DuckDB targets ~80% of physical RAM, so a few
     /// concurrent jobs (across keasy instances sharing a small host) can OOM the
@@ -213,28 +138,6 @@ impl FossilRunner {
             let tmp = anchor.map_or_else(std::env::temp_dir, Path::to_path_buf);
             command.env("FOSSIL_DUCKDB_TEMP_DIR", tmp);
         }
-    }
-
-    /// Run a fossil pipeline to GraphAr under `dest_url`. `fossil_file` is a
-    /// filesystem path the CLI reads; the working directory is anchored to its
-    /// parent so any relative source paths resolve. `creds` is piped on stdin.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`FossilRunError`] if the binary cannot be spawned, its stdin
-    /// cannot be written, it exits non-zero, or emits unparseable `--output-json`.
-    pub fn run(
-        &self,
-        fossil_file: &Path,
-        dest_url: &str,
-        creds: &RunCreds,
-    ) -> Result<RunStatus, FossilRunError> {
-        let stdout = self.spawn_capture(
-            Self::run_args(fossil_file, dest_url),
-            &creds.to_stdin_json(),
-            fossil_file.parent().filter(|p| !p.as_os_str().is_empty()),
-        )?;
-        Self::parse_status(&stdout)
     }
 
     /// List the data-source providers fossil supports via `fossil providers
@@ -291,47 +194,12 @@ impl FossilRunner {
         })
     }
 
-    /// Argv for `fossil catalog`. No file argument — the catalog data rides
-    /// stdin (the `CatalogInput` + dest secret); `--output-json` is always set.
-    fn catalog_args(dest_url: &str) -> Vec<String> {
-        vec![
-            "catalog".to_string(),
-            "--dest".to_string(),
-            dest_url.to_string(),
-            "--output-json".to_string(),
-        ]
-    }
-
-    /// Materialise a DCAT-AP catalog graph via `fossil catalog` — the catalog is
-    /// "just another output graph", written by the same GraphAr path as a run.
-    /// The `catalog` (governance + dataset structure) and the dest secret ride
-    /// stdin; returns the catalog graph's [`RunStatus`] (per-type Parquet +
-    /// counts), which keasy persists as the job's `catalog_manifest`.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`FossilRunError`] under the same conditions as [`Self::run`].
-    pub fn run_catalog(
-        &self,
-        catalog: &fossil_run_status::CatalogInput,
-        dest_url: &str,
-        dest_secret: &Option<CloudSecret>,
-    ) -> Result<RunStatus, FossilRunError> {
-        let payload = serde_json::json!({
-            "catalog": catalog,
-            "dest": { "secret": secret_json(dest_secret) },
-        })
-        .to_string();
-        let stdout = self.spawn_capture(Self::catalog_args(dest_url), &payload, None)?;
-        Self::parse_status(&stdout)
-    }
-
     /// Spawn the `fossil` binary with `args`, pipe `stdin_payload`, and capture
     /// its stdout (the `--output-json` document). `anchor` (when set) is the
     /// child's working directory (so a program's relative source paths resolve)
     /// AND the DuckDB spill dir. The single subprocess path shared by
-    /// [`Self::run`], [`Self::run_catalog`] and [`Self::run_providers`]; each
-    /// caller parses the captured stdout into its own contract type.
+    /// [`Self::run_providers`] and [`Self::run_refs`]; each caller parses the
+    /// captured stdout into its own contract type.
     fn spawn_capture(
         &self,
         args: Vec<String>,
@@ -379,156 +247,5 @@ impl FossilRunner {
         }
 
         Ok(String::from_utf8_lossy(&output.stdout).into_owned())
-    }
-
-    /// Parse the `--output-json` stdout into a [`RunStatus`], rejecting a payload
-    /// whose wire-contract version this host can't read (binary/host drift).
-    fn parse_status(stdout: &str) -> Result<RunStatus, FossilRunError> {
-        let status: RunStatus =
-            serde_json::from_str(stdout.trim()).map_err(|source| FossilRunError::Parse {
-                stdout: stdout.to_string(),
-                source,
-            })?;
-        if !fossil_run_status::is_compatible(status.version) {
-            return Err(FossilRunError::WireVersion {
-                got: status.version,
-                expected: fossil_run_status::WIRE_VERSION,
-            });
-        }
-        Ok(status)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn run_args_match_the_cli_contract() {
-        let args = FossilRunner::run_args(
-            Path::new("/tmp/job/pipeline.fossil"),
-            "s3://bucket/job-123",
-        );
-        assert_eq!(
-            args,
-            vec![
-                "run",
-                "/tmp/job/pipeline.fossil",
-                "--dest",
-                "s3://bucket/job-123",
-                "--output-json",
-                "--creds-stdin",
-            ]
-        );
-    }
-
-    #[test]
-    fn catalog_args_match_the_cli_contract() {
-        let args = FossilRunner::catalog_args("s3://bucket/catalogs/job-1");
-        assert_eq!(
-            args,
-            vec!["catalog", "--dest", "s3://bucket/catalogs/job-1", "--output-json"]
-        );
-    }
-
-    fn s3_secret(pairs: &[(&str, &str)]) -> CloudSecret {
-        CloudSecret {
-            secret_type: "s3".to_string(),
-            params: pairs
-                .iter()
-                .map(|(k, v)| ((*k).to_string(), SecretString::from(*v)))
-                .collect(),
-        }
-    }
-
-    #[test]
-    fn creds_serialise_to_the_stdin_contract() {
-        let mut connections = HashMap::new();
-        connections.insert(
-            "sales".to_string(),
-            ConnectionCreds {
-                url: "s3://bucket/prefix".to_string(),
-                secret: Some(s3_secret(&[("KEY_ID", "AKIA")])),
-            },
-        );
-        let creds = RunCreds {
-            dest: Some(s3_secret(&[("REGION", "eu-west-1")])),
-            connections,
-        };
-
-        let json: serde_json::Value =
-            serde_json::from_str(&creds.to_stdin_json()).expect("valid JSON");
-        assert_eq!(json["dest"]["secret"]["type"], "s3");
-        assert_eq!(json["dest"]["secret"]["params"]["REGION"], "eu-west-1");
-        assert_eq!(json["connections"]["sales"]["url"], "s3://bucket/prefix");
-        assert_eq!(
-            json["connections"]["sales"]["secret"]["params"]["KEY_ID"],
-            "AKIA"
-        );
-    }
-
-    #[test]
-    fn no_secret_serialises_as_null() {
-        let creds = RunCreds::default();
-        let json: serde_json::Value =
-            serde_json::from_str(&creds.to_stdin_json()).expect("valid JSON");
-        assert!(json["dest"]["secret"].is_null());
-    }
-
-    #[test]
-    fn secrets_never_appear_in_debug() {
-        let creds = RunCreds {
-            dest: Some(s3_secret(&[("SECRET", "leaky-value")])),
-            connections: HashMap::new(),
-        };
-        assert!(
-            !format!("{creds:?}").contains("leaky-value"),
-            "secret leaked through Debug"
-        );
-    }
-
-    #[test]
-    fn parses_the_structured_output_json() {
-        // Mirrors crates/fossil-cli/src/main.rs cmd_run_w0b `--output-json`.
-        let stdout = r#"{
-            "dest": "s3://bucket/job-123",
-            "vertices": [
-                { "type": "Person", "rdf_type": "https://example.org/Person",
-                  "file": "vertex/Person.parquet", "count": 5,
-                  "columns": [ { "name": "name", "data_type": "string",
-                                 "rdf_uri": "https://example.org/name",
-                                 "xsd_datatype": "http://www.w3.org/2001/XMLSchema#string" } ] }
-            ],
-            "edges": [
-                { "edge_type": "knows", "src_type": "Person", "dst_type": "Person",
-                  "by_source": "edge/Person_knows_Person/by_source.parquet",
-                  "by_target": "edge/Person_knows_Person/by_target.parquet", "count": 2 }
-            ]
-        }"#;
-        let parsed = FossilRunner::parse_status(stdout).expect("parse status");
-        assert_eq!(parsed.dest, "s3://bucket/job-123");
-        assert_eq!(parsed.vertices.len(), 1);
-        let v = &parsed.vertices[0];
-        assert_eq!(v.vertex_type, "Person");
-        assert_eq!(v.file, "vertex/Person.parquet");
-        assert_eq!(v.count, Some(5));
-        // The enriched manifest carries the RDF output spec (#5a) the DCAT
-        // governance layer reads from the manifest instead of re-deriving it.
-        assert_eq!(v.rdf_type.as_deref(), Some("https://example.org/Person"));
-        assert_eq!(v.columns, vec![ColumnStatus {
-            name: "name".to_string(),
-            data_type: "string".to_string(),
-            rdf_uri: Some("https://example.org/name".to_string()),
-            xsd_datatype: Some("http://www.w3.org/2001/XMLSchema#string".to_string()),
-        }]);
-        assert_eq!(parsed.edges.len(), 1);
-        assert_eq!(parsed.edges[0].edge_type, "knows");
-        assert_eq!(parsed.edges[0].count, Some(2));
-    }
-
-    #[test]
-    fn surfaces_unparseable_stdout_as_parse_error() {
-        let err = FossilRunner::parse_status("not json").unwrap_err();
-        assert!(matches!(err, FossilRunError::Parse { .. }));
     }
 }

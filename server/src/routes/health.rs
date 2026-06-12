@@ -18,17 +18,12 @@ pub async fn liveness() -> impl IntoResponse {
 }
 
 #[utoipa::path(get, path = "/healthz/ready", tag = "Health",
-    responses(
-        (status = 200, description = "Service is ready"),
-        (status = 503, description = "Service is not ready"),
-    )
+    responses((status = 200, description = "Service is ready"))
 )]
-pub async fn readiness(State(state): State<AppState>) -> impl IntoResponse {
-    if state.runner.available_permits() > 0 {
-        StatusCode::OK
-    } else {
-        StatusCode::SERVICE_UNAVAILABLE
-    }
+pub async fn readiness() -> impl IntoResponse {
+    // Client-compute: the server runs no mappings, so readiness has no execution
+    // capacity to gate on — it is ready whenever it is serving.
+    StatusCode::OK
 }
 
 /// The running build's version — announced so operators (and the fleet view) can

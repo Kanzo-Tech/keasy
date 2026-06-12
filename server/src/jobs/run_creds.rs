@@ -14,45 +14,8 @@ use std::collections::HashMap;
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::cloud::models::CloudAccount;
-use crate::db::Database;
-use crate::jobs::fossil_runner::{ConnectionCreds, CloudSecret, RunCreds};
+use crate::jobs::fossil_runner::CloudSecret;
 use crate::settings::schema::{SecretStrategy, find_provider};
-
-/// Assemble the [`RunCreds`] the fossil subprocess reads on stdin: the dest's
-/// cloud secret (owner storage) plus a per-`@conn-name` source map (each
-/// connection's base URL + read secret).
-///
-/// A connection with no cloud account, or a provider whose secret intake is
-/// pending, contributes a `None` secret — fossil then reads it as a public
-/// source rather than guessing credentials.
-pub async fn build_run_creds(
-    db: &Database,
-    connection_ids: &[String],
-    dest_account: Option<String>,
-) -> RunCreds {
-    let dest = match dest_account {
-        Some(account_id) => {
-            db.get_cloud_account(&account_id).await.as_ref().and_then(cloud_secret)
-        }
-        None => None,
-    };
-
-    let mut connections = HashMap::new();
-    for id in connection_ids {
-        let Some(conn) = db.get_connection(id).await else {
-            continue;
-        };
-        let secret = match &conn.cloud_account_id {
-            Some(account_id) => {
-                db.get_cloud_account(account_id).await.as_ref().and_then(cloud_secret)
-            }
-            None => None,
-        };
-        connections.insert(conn.name, ConnectionCreds { url: conn.url, secret });
-    }
-
-    RunCreds { dest, connections }
-}
 
 /// Project an account's stored credentials into a DuckDB `CREATE SECRET` spec,
 /// or `None` when the provider/method's pipeline-secret intake is not yet wired.

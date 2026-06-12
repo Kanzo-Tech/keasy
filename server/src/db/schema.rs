@@ -52,6 +52,7 @@ const MIGRATIONS: &[&str] = &[
         completed_at    TEXT,
         error           TEXT,
         connection_ids  TEXT NOT NULL DEFAULT '[]',
+        created_by      TEXT NOT NULL DEFAULT '',
         script          TEXT,
         manifest        TEXT,
         catalog_manifest TEXT

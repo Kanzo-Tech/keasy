@@ -998,6 +998,12 @@ export interface components {
             completed_at?: string | null;
             connection_ids?: string[];
             created_at: string;
+            /**
+             * @description Keycloak `sub` of the member who created the job — the data-product owner.
+             *     Server-derived (never from the client); drives the output prefix
+             *     `{substrate}/{created_by}/{job_id}` (logical sovereignty) + DCAT publisher.
+             */
+            created_by?: string;
             error?: null | components["schemas"]["JobRuntimeError"];
             id: string;
             manifest?: null | components["schemas"]["RunStatus"];

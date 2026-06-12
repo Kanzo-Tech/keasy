@@ -108,13 +108,16 @@ pub async fn resolve_output_urls(
     Path(id): Path<String>,
     Json(req): Json<OutputUrlsRequest>,
 ) -> Response {
-    if state.db.get_job(id.as_str()).await.is_none() {
+    let Some(job) = state.db.get_job(id.as_str()).await else {
         return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response();
-    }
+    };
     let Some((_, base_url)) = state.db.get_owner_catalog_config().await else {
         return (StatusCode::BAD_REQUEST, Json(error_body("no_owner_storage", "No owner output storage is configured"))).into_response();
     };
-    let dest = format!("{}/{}", base_url.trim_end_matches('/'), id);
+    // Member prefix = the data-product owner; mirrors the dest stamped at
+    // completion (`jobs::complete_job`). Both must match so the signed PUT
+    // target and the recorded `manifest.dest` are the same.
+    let dest = format!("{}/{}/{}", base_url.trim_end_matches('/'), job.created_by, id);
 
     match sign_manifest_urls(&state, Method::PUT, &dest, &req.paths).await {
         Ok(resp) | Err(resp) => resp,

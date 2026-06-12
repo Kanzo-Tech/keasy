@@ -38,10 +38,14 @@ impl TenantRole {
 /// Authenticated request context. Injected into request extensions by
 /// `tenant_context_required` middleware. Route handlers extract this via
 /// `Require<P>` (e.g. `Require<IsOwner>`, `Require<IsMember>`). With one
-/// workspace per instance the context carries only the member's role.
+/// workspace per instance the context carries the member's role and identity.
 #[derive(Clone, Debug)]
 pub struct TenantContext {
     pub role: TenantRole,
+    /// Keycloak `sub` of the authenticated member (from `AuthenticatedUser`).
+    /// Attributes resources to their creator — e.g. a job's output lands under
+    /// `{substrate}/{user_id}/{job_id}` (logical data-product ownership).
+    pub user_id: String,
 }
 
 /// RBAC error type. All 403 responses are intentionally opaque.
@@ -180,7 +184,7 @@ pub async fn tenant_context_required(
 
     let role = user.role.ok_or(RbacError::NoMembership)?;
 
-    request.extensions_mut().insert(TenantContext { role });
+    request.extensions_mut().insert(TenantContext { role, user_id: user.user_id });
 
     Ok(next.run(request).await)
 }

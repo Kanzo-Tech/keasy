@@ -43,7 +43,7 @@ pub async fn list_jobs(
     )
 )]
 pub async fn create_job(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -60,6 +60,7 @@ pub async fn create_job(
             error: None,
             mode: payload.mode.unwrap_or(RunMode::Integrated),
             connection_ids: payload.connection_ids.clone(),
+            created_by: ctx.user_id.clone(),
             script: Some(payload.script),
             manifest: None,
             catalog_manifest: None,
@@ -84,6 +85,7 @@ pub async fn create_job(
         error: None,
         mode: payload.mode.unwrap_or(RunMode::Integrated),
         connection_ids: payload.connection_ids.clone(),
+        created_by: ctx.user_id.clone(),
         script: Some(payload.script),
         manifest: None,
         catalog_manifest: None,
@@ -166,13 +168,16 @@ pub async fn complete_job(
     let now = now_iso8601();
     let CompleteJobRequest { status, mut manifest, catalog_manifest, error } = payload;
 
-    // The output lives where the signed PUTs wrote it — `{owner_base}/{job_id}`
-    // (the same dest `resolve_output_urls` signs). keasy is authoritative over
-    // it, so stamp `manifest.dest` server-side rather than trust the browser:
-    // discovery reads `manifest.dest` as the dataset base for signed GETs.
+    // The output lives where the signed PUTs wrote it —
+    // `{substrate}/{created_by}/{job_id}` (the same dest `resolve_output_urls`
+    // signs). The member prefix is the data-product owner (logical sovereignty);
+    // keasy is authoritative over the dest, so stamp `manifest.dest` server-side
+    // from the job's creator rather than trust the browser. Discovery reads
+    // `manifest.dest` as the dataset base for signed GETs.
     if matches!(status, JobStatus::Completed) {
+        let creator = state.db.get_job(&id).await.map(|j| j.created_by).unwrap_or_default();
         if let (Some(m), Some((_, base))) = (manifest.as_mut(), state.db.get_owner_catalog_config().await) {
-            m.dest = format!("{}/{}", base.trim_end_matches('/'), id);
+            m.dest = format!("{}/{}/{}", base.trim_end_matches('/'), creator, id);
         }
     }
 

@@ -86,6 +86,11 @@ pub struct Job {
     pub mode: RunMode,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub connection_ids: Vec<String>,
+    /// Keycloak `sub` of the member who created the job — the data-product owner.
+    /// Server-derived (never from the client); drives the output prefix
+    /// `{substrate}/{created_by}/{job_id}` (logical sovereignty) + DCAT publisher.
+    #[serde(default)]
+    pub created_by: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,
     /// GraphAr structure from the fossil subprocess: per-type Parquet + row

@@ -2794,6 +2794,10 @@
           "created_at": {
             "type": "string"
           },
+          "created_by": {
+            "type": "string",
+            "description": "Keycloak `sub` of the member who created the job — the data-product owner.\nServer-derived (never from the client); drives the output prefix\n`{substrate}/{created_by}/{job_id}` (logical sovereignty) + DCAT publisher."
+          },
           "error": {
             "oneOf": [
               {

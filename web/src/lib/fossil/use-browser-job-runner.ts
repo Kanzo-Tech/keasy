@@ -16,6 +16,21 @@ const DF_WASM_URL = "/fossil/fossil_df_wasm_bg.wasm";
 // waste work — this avoids even that within a tab.
 const started = new Set<string>();
 
+// Azure block-blob uploads via SAS REQUIRE the `x-ms-blob-type: BlockBlob`
+// header; the executor's uploader is provider-agnostic and omits it → Azure
+// rejects the PUT with 400 (MissingRequiredHeader). Inject it on PUTs through
+// the executor's `fetchImpl` hook. S3/GCS presigned PUTs ignore the unsigned
+// header, so this is safe across providers. (Proper home is the executor's
+// uploader in `@fossil-lang/executor`; this unblocks Azure destinations now.)
+const uploadFetch: typeof fetch = (input, init) => {
+  if (init?.method === "PUT") {
+    const headers = new Headers(init.headers);
+    headers.set("x-ms-blob-type", "BlockBlob");
+    return fetch(input, { ...init, headers });
+  }
+  return fetch(input, init);
+};
+
 /**
  * Browser-driven execution (client-compute): when a job is `Pending`, the
  * browser is its worker. Reads the program from the job record, marks it
@@ -47,7 +62,7 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         await mod.initFossilExecutor({ wasmUrl: DF_WASM_URL });
         exec = new mod.FossilExecutor();
         // runJob reports the terminal `completed`/`failed` PATCH itself.
-        await mod.runJob(exec, program, makeJobTransport(jobId));
+        await mod.runJob(exec, program, makeJobTransport(jobId), { fetchImpl: uploadFetch });
       } catch (err) {
         // runJob already best-effort PATCHes `failed`; nothing else to do but log.
         console.error(`browser job run failed (${jobId})`, err);

@@ -12,8 +12,25 @@ use serde::{Deserialize, Serialize};
 use crate::AppState;
 use crate::error::error_body;
 use crate::jobs::fossil_runner::CloudSecret;
-use crate::jobs::models::JobStatus;
+use crate::jobs::models::{Job, JobStatus};
 use crate::middleware::tenant::{IsMember, IsOwner, Require};
+
+/// Data sovereignty: only the job's producer (`created_by`) may read or run its
+/// DATA — sources, output Parquet, the GraphAr manifest. The CATALOG (DCAT
+/// metadata) stays open to every member: the owner discovers the space at the
+/// metadata level, never the bytes (IDS/Solid model).
+fn forbid_non_producer(job: &Job, user_id: &str) -> Option<Response> {
+    (job.created_by != user_id).then(|| {
+        (
+            StatusCode::FORBIDDEN,
+            Json(error_body(
+                "not_producer",
+                "Only the data producer can access this dataset's data",
+            )),
+        )
+            .into_response()
+    })
+}
 
 /// Checks that output is ready and returns Ok(()) or appropriate error.
 pub(crate) async fn require_output_ready(
@@ -103,7 +120,7 @@ pub struct OutputUrlsRequest {
 /// lives at `{substrate}/{created_by}/{job_id}/<key>` — the same dest the
 /// completion `RunStatus` reports. Mirrors `resolve_discover_urls` but PUT.
 pub async fn resolve_output_urls(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<OutputUrlsRequest>,
@@ -111,6 +128,9 @@ pub async fn resolve_output_urls(
     let Some(job) = state.db.get_job(id.as_str()).await else {
         return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response();
     };
+    if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
+        return resp;
+    }
     let Some((_, base_url)) = state.db.substrate_config().await else {
         return (StatusCode::BAD_REQUEST, Json(error_body("no_substrate", "No data space substrate (output storage) is configured"))).into_response();
     };
@@ -145,13 +165,16 @@ struct SourceRefsResponse {
 /// executor's `sources()`/`run()` to resolve `@conn` aliases. No credentials —
 /// only the base URLs (signing is a separate, per-URL call).
 pub async fn resolve_source_refs(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
     let Some(job) = state.db.get_job(id.as_str()).await else {
         return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response();
     };
+    if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
+        return resp;
+    }
     let mut refs = HashMap::new();
     for cid in &job.connection_ids {
         if let Some(c) = state.db.get_connection(cid).await {
@@ -189,7 +212,7 @@ struct SourceUrlsResponse {
 /// job connection whose base URL prefixes it; non-cloud (HTTP/public) URIs pass
 /// through verbatim.
 pub async fn resolve_source_urls(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<SourceUrlsRequest>,
@@ -197,6 +220,9 @@ pub async fn resolve_source_urls(
     let Some(job) = state.db.get_job(id.as_str()).await else {
         return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response();
     };
+    if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
+        return resp;
+    }
     // (base URL, cloud account) of each connection — used to pick the creds for
     // a cloud source by longest-prefix match on its base URL.
     let mut conns: Vec<(String, Option<String>)> = Vec::new();
@@ -243,7 +269,7 @@ pub async fn resolve_source_urls(
     )
 )]
 pub async fn resolve_discover_urls(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
@@ -251,6 +277,9 @@ pub async fn resolve_discover_urls(
         Some(j) => j,
         None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
     };
+    if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
+        return resp;
+    }
     if job.status != JobStatus::Completed {
         return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
     }
@@ -290,7 +319,7 @@ struct ManifestResponse {
     )
 )]
 pub async fn resolve_discover_manifest(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
@@ -298,6 +327,9 @@ pub async fn resolve_discover_manifest(
         Some(j) => j,
         None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
     };
+    if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
+        return resp;
+    }
     if job.status != JobStatus::Completed {
         return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
     }

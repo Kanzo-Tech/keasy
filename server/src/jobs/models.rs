@@ -87,10 +87,16 @@ pub struct Job {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub connection_ids: Vec<String>,
     /// Keycloak `sub` of the member who created the job — the data-product owner.
-    /// Server-derived (never from the client); drives the output prefix
-    /// `{substrate}/{created_by}/{job_id}` (logical sovereignty) + DCAT publisher.
+    /// Server-derived (never from the client); used for producer-scoped data
+    /// access (only the producer reads/runs the job's data) + DCAT publisher.
     #[serde(default)]
     pub created_by: String,
+    /// Connection the member chose as the output destination (where the GraphAr
+    /// output lands). The producer owns where their data product goes — output is
+    /// signed with this connection's cloud creds, under `{conn.url}/{job_id}`.
+    /// `None` falls back to the workspace substrate (transitional).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sink_connection_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,
     /// GraphAr structure from the fossil subprocess: per-type Parquet + row
@@ -116,6 +122,9 @@ pub struct CreateJobRequest {
     pub dcat_enabled: Option<bool>,
     #[serde(default)]
     pub connection_ids: Vec<String>,
+    /// The connection the member picked as the output destination (job config).
+    #[serde(default)]
+    pub sink_connection_id: Option<String>,
     #[serde(default)]
     pub draft: bool,
 }

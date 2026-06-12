@@ -61,17 +61,16 @@ struct ResolveResponse {
 
 /// Sign the given dataset-relative paths under `base_url` for `method`. Shared
 /// by the discover + catalog readers (`Method::GET`) and the browser output
-/// uploader (`Method::PUT`) — each caller supplies its file list. The output
-/// lives in the data space substrate, so it is signed with the substrate's creds.
+/// uploader (`Method::PUT`) — each caller supplies its file list and the creds
+/// of the job's output target (the connection the member chose, or the
+/// substrate fallback), so reads/writes are signed against the right store.
 async fn sign_manifest_urls(
-    state: &AppState,
     method: Method,
     base_url: &str,
+    creds: &HashMap<String, String>,
     files: &[String],
 ) -> Result<Response, Response> {
-    let creds = state.db.substrate_storage_config().await;
-
-    let (store, prefix) = crate::cloud::build_store(base_url, &creds)
+    let (store, prefix) = crate::cloud::build_store(base_url, creds)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("store_error", e.to_string()))).into_response())?;
 
     let all_files: Vec<String> = files.to_vec();
@@ -114,9 +113,10 @@ pub struct OutputUrlsRequest {
     )
 )]
 /// Sign PUT URLs so the browser uploads the GraphAr output it just produced
-/// directly to the data space substrate (no data through the server). The output
-/// lives at `{substrate}/{created_by}/{job_id}/<key>` — the same dest the
-/// completion `RunStatus` reports. Mirrors `resolve_discover_urls` but PUT.
+/// directly to the member's chosen destination (no data through the server).
+/// The output lives at `{dest_base}/{job_id}/<key>` where `dest_base` is the
+/// connection the member picked (`sink_connection_id`), or the substrate
+/// fallback — the same dest the completion `RunStatus` reports.
 pub async fn resolve_output_urls(
     ctx: Require<IsMember>,
     State(state): State<AppState>,
@@ -129,15 +129,12 @@ pub async fn resolve_output_urls(
     if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
         return resp;
     }
-    let Some((_, base_url)) = state.db.substrate_config().await else {
-        return (StatusCode::BAD_REQUEST, Json(error_body("no_substrate", "No data space substrate (output storage) is configured"))).into_response();
+    let Some((base, creds)) = state.db.job_output_target(&job).await else {
+        return (StatusCode::BAD_REQUEST, Json(error_body("no_destination", "No output destination configured — pick one in the job config"))).into_response();
     };
-    // Member prefix = the data-product owner; mirrors the dest stamped at
-    // completion (`jobs::complete_job`). Both must match so the signed PUT
-    // target and the recorded `manifest.dest` are the same.
-    let dest = format!("{}/{}/{}", base_url.trim_end_matches('/'), job.created_by, id);
+    let dest = format!("{}/{}", base.trim_end_matches('/'), id);
 
-    match sign_manifest_urls(&state, Method::PUT, &dest, &req.paths).await {
+    match sign_manifest_urls(Method::PUT, &dest, &creds, &req.paths).await {
         Ok(resp) | Err(resp) => resp,
     }
 }
@@ -292,7 +289,8 @@ pub async fn resolve_discover_urls(
         .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
         .collect();
 
-    match sign_manifest_urls(&state, Method::GET, base, &files).await {
+    let creds = state.db.job_output_target(&job).await.map(|(_, c)| c).unwrap_or_default();
+    match sign_manifest_urls(Method::GET, base, &creds, &files).await {
         Ok(resp) => resp,
         Err(resp) => resp,
     }
@@ -336,7 +334,7 @@ pub async fn resolve_discover_manifest(
     };
     let base = &manifest.dest;
 
-    let creds = state.db.substrate_storage_config().await;
+    let creds = state.db.job_output_target(&job).await.map(|(_, c)| c).unwrap_or_default();
 
     match read_manifest_files(base, &creds).await {
         Ok(manifest_files) => Json(ManifestResponse { manifest_files }).into_response(),
@@ -407,7 +405,8 @@ pub async fn resolve_catalog_urls(
         .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
         .collect();
 
-    match sign_manifest_urls(&state, Method::GET, base, &files).await {
+    let creds = state.db.job_output_target(&job).await.map(|(_, c)| c).unwrap_or_default();
+    match sign_manifest_urls(Method::GET, base, &creds, &files).await {
         Ok(resp) => resp,
         Err(resp) => resp,
     }
@@ -439,7 +438,7 @@ pub async fn resolve_catalog_manifest(
     };
     let base = &manifest.dest;
 
-    let creds = state.db.substrate_storage_config().await;
+    let creds = state.db.job_output_target(&job).await.map(|(_, c)| c).unwrap_or_default();
 
     match read_manifest_files(base, &creds).await {
         Ok(manifest_files) => Json(ManifestResponse { manifest_files }).into_response(),

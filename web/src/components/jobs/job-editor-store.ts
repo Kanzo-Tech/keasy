@@ -16,6 +16,8 @@ interface JobEditorState {
   name: string;
   mode: RunMode;
   dcatEnabled: boolean;
+  // The connection the member picks as the output destination (job config).
+  sinkConnectionId: string | null;
 
   // Validation — the editor's browser LSP validates inline; the wizard only
   // tracks the transient spinner while advancing to review.
@@ -28,6 +30,7 @@ interface JobEditorState {
   setName: (name: string) => void;
   setMode: (mode: RunMode) => void;
   setDcatEnabled: (enabled: boolean) => void;
+  setSinkConnectionId: (id: string | null) => void;
   setValidating: (validating: boolean) => void;
 
   // Compound actions
@@ -48,6 +51,7 @@ export const useJobEditorStore = create<JobEditorState>((set) => ({
   name: "",
   mode: "integrated",
   dcatEnabled: false,
+  sinkConnectionId: null,
   validating: false,
 
   setStep: (step) => set({ step }),
@@ -56,6 +60,7 @@ export const useJobEditorStore = create<JobEditorState>((set) => ({
   setName: (name) => set({ name }),
   setMode: (mode) => set({ mode }),
   setDcatEnabled: (dcatEnabled) => set({ dcatEnabled }),
+  setSinkConnectionId: (sinkConnectionId) => set({ sinkConnectionId }),
   setValidating: (validating) => set({ validating }),
 
   selectMode: (mode) => set({ creationMode: mode, step: 1 }),
@@ -72,6 +77,6 @@ export const useJobEditorStore = create<JobEditorState>((set) => ({
   restoreDraft: (script, name, mode) => set({ script, name, mode, creationMode: "studio", step: 1 }),
   reset: () => set({
     step: 0, creationMode: null, script: "", name: "",
-    mode: "integrated", dcatEnabled: false, validating: false,
+    mode: "integrated", dcatEnabled: false, sinkConnectionId: null, validating: false,
   }),
 }));

@@ -53,6 +53,7 @@ pub async fn create_job(
             mode: payload.mode.unwrap_or(RunMode::Integrated),
             connection_ids: payload.connection_ids.clone(),
             created_by: ctx.user_id.clone(),
+            sink_connection_id: payload.sink_connection_id.clone(),
             script: Some(payload.script),
             manifest: None,
             catalog_manifest: None,
@@ -78,6 +79,7 @@ pub async fn create_job(
         mode: payload.mode.unwrap_or(RunMode::Integrated),
         connection_ids: payload.connection_ids.clone(),
         created_by: ctx.user_id.clone(),
+        sink_connection_id: payload.sink_connection_id.clone(),
         script: Some(payload.script),
         manifest: None,
         catalog_manifest: None,
@@ -160,17 +162,17 @@ pub async fn complete_job(
     let now = now_iso8601();
     let CompleteJobRequest { status, mut manifest, catalog_manifest, error } = payload;
 
-    // The output lives where the signed PUTs wrote it —
-    // `{substrate}/{created_by}/{job_id}` (the same dest `resolve_output_urls`
-    // signs). The member prefix is the data-product owner (logical sovereignty);
-    // keasy is authoritative over the dest, so stamp `manifest.dest` server-side
-    // from the job's creator rather than trust the browser. Discovery reads
-    // `manifest.dest` as the dataset base for signed GETs.
-    if matches!(status, JobStatus::Completed) {
-        let creator = state.db.get_job(&id).await.map(|j| j.created_by).unwrap_or_default();
-        if let (Some(m), Some((_, base))) = (manifest.as_mut(), state.db.substrate_config().await) {
-            m.dest = format!("{}/{}/{}", base.trim_end_matches('/'), creator, id);
-        }
+    // The output lives where the signed PUTs wrote it — `{dest_base}/{job_id}`,
+    // where `dest_base` is the connection the member chose as the destination
+    // (`sink_connection_id`), or the workspace substrate as fallback. keasy is
+    // authoritative over the dest, so stamp `manifest.dest` server-side (the same
+    // base `resolve_output_urls` signs) rather than trust the browser. Discovery
+    // reads `manifest.dest` as the dataset base for signed GETs.
+    if matches!(status, JobStatus::Completed)
+        && let Some(job) = state.db.get_job(&id).await
+        && let (Some(m), Some((base, _))) = (manifest.as_mut(), state.db.job_output_target(&job).await)
+    {
+        m.dest = format!("{}/{}", base.trim_end_matches('/'), id);
     }
 
     let updated = state

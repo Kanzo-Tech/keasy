@@ -112,6 +112,7 @@ export function JobEditor() {
         mode: store.mode,
         dcat_enabled: store.dcatEnabled || undefined,
         connection_ids: connectionIds,
+        sink_connection_id: store.sinkConnectionId ?? undefined,
       });
     },
     onSuccess: async (job) => {
@@ -165,6 +166,9 @@ export function JobEditor() {
           onNameChange={store.setName}
           mode={store.mode}
           onModeChange={store.setMode}
+          connections={connections}
+          sinkConnectionId={store.sinkConnectionId}
+          onSinkChange={store.setSinkConnectionId}
           dcatEnabled={store.dcatEnabled}
           onDcatToggle={store.setDcatEnabled}
           orgConfigured={orgConfigured}

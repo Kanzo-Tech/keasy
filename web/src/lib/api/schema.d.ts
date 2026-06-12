@@ -416,9 +416,10 @@ export interface paths {
         put?: never;
         /**
          * Sign PUT URLs so the browser uploads the GraphAr output it just produced
-         *     directly to the data space substrate (no data through the server). The output
-         *     lives at `{substrate}/{created_by}/{job_id}/<key>` — the same dest the
-         *     completion `RunStatus` reports. Mirrors `resolve_discover_urls` but PUT.
+         *     directly to the member's chosen destination (no data through the server).
+         *     The output lives at `{dest_base}/{job_id}/<key>` where `dest_base` is the
+         *     connection the member picked (`sink_connection_id`), or the substrate
+         *     fallback — the same dest the completion `RunStatus` reports.
          */
         post: operations["resolve_output_urls"];
         delete?: never;
@@ -871,6 +872,8 @@ export interface components {
             mode?: null | components["schemas"]["RunMode"];
             name?: string | null;
             script: string;
+            /** @description The connection the member picked as the output destination (job config). */
+            sink_connection_id?: string | null;
         };
         CreateOrgInviteResponse: {
             invite_url: string;
@@ -954,8 +957,8 @@ export interface components {
             created_at: string;
             /**
              * @description Keycloak `sub` of the member who created the job — the data-product owner.
-             *     Server-derived (never from the client); drives the output prefix
-             *     `{substrate}/{created_by}/{job_id}` (logical sovereignty) + DCAT publisher.
+             *     Server-derived (never from the client); used for producer-scoped data
+             *     access (only the producer reads/runs the job's data) + DCAT publisher.
              */
             created_by?: string;
             error?: null | components["schemas"]["JobRuntimeError"];
@@ -964,6 +967,13 @@ export interface components {
             mode: components["schemas"]["RunMode"];
             name?: string | null;
             script?: string | null;
+            /**
+             * @description Connection the member chose as the output destination (where the GraphAr
+             *     output lands). The producer owns where their data product goes — output is
+             *     signed with this connection's cloud creds, under `{conn.url}/{job_id}`.
+             *     `None` falls back to the workspace substrate (transitional).
+             */
+            sink_connection_id?: string | null;
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
         };

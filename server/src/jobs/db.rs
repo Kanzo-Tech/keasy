@@ -25,8 +25,8 @@ impl Database {
 
         let conn = self.write().await;
         conn.execute(
-            "INSERT INTO jobs (id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, script, manifest, catalog_manifest)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+            "INSERT INTO jobs (id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, sink_connection_id, script, manifest, catalog_manifest)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
             params![
                 job.id,
                 job.name,
@@ -38,6 +38,7 @@ impl Database {
                 error_json,
                 account_ids_json,
                 job.created_by,
+                job.sink_connection_id,
                 job.script,
                 manifest_json,
                 catalog_manifest_json,
@@ -51,7 +52,7 @@ impl Database {
     pub async fn get_job(&self, id: &str) -> Option<Job> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, script, manifest, catalog_manifest
+            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, sink_connection_id, script, manifest, catalog_manifest
              FROM jobs WHERE id = ?1",
             [id],
             |row| Ok(row_to_job(row)),
@@ -106,7 +107,7 @@ impl Database {
     pub async fn list_jobs(&self) -> Vec<Job> {
         let (_permit, conn) = self.read().await;
         let mut stmt = match conn.prepare(
-            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, script, manifest, catalog_manifest
+            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, sink_connection_id, script, manifest, catalog_manifest
              FROM jobs ORDER BY created_at DESC",
         ) {
             Ok(s) => s,
@@ -194,6 +195,7 @@ fn row_to_job(row: &rusqlite::Row) -> Job {
         connection_ids: serde_json::from_str::<Vec<String>>(&account_ids_json)
             .unwrap_or_default(),
         created_by: row.get("created_by").unwrap_or_default(),
+        sink_connection_id: row.get("sink_connection_id").unwrap_or(None),
         script,
         manifest: manifest_json.and_then(|j| serde_json::from_str::<fossil_run_status::RunStatus>(&j).ok()),
         catalog_manifest: row.get::<_, Option<String>>("catalog_manifest")

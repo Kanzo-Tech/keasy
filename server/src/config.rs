@@ -6,9 +6,6 @@ use secrecy::{ExposeSecret, SecretString};
 pub struct ServerConfig {
     pub bind_addr: SocketAddr,
     pub api_key: SecretString,
-    pub max_concurrent_jobs: usize,
-    pub job_timeout_secs: u64,
-    pub shutdown_grace_secs: u64,
     pub cors_origins: Option<Vec<String>>,
     pub data_dir: PathBuf,
     pub secret_key: Option<SecretString>,
@@ -17,6 +14,12 @@ pub struct ServerConfig {
     /// Set the Secure flag on session cookies (requires HTTPS).
     /// Read from KEASY_SESSION_SECURE. Default false (local dev).
     pub session_secure: bool,
+    /// Whether the catalog reconciler actually DELETES orphaned storage prefixes
+    /// (a job's output whose job no longer exists). Read from
+    /// `KEASY_CATALOG_ORPHAN_SWEEP`. **Default false** — the sweep runs in
+    /// dry-run, logging what it would delete, so a destructive sweep is opt-in
+    /// only after an operator has inspected those logs.
+    pub catalog_orphan_delete: bool,
     pub cache_capacity: usize,
     /// Base URL for the frontend — used to construct invite links.
     /// Read from KEASY_BASE_URL, default "http://localhost:3000".
@@ -70,26 +73,6 @@ impl ServerConfig {
                 std::process::exit(1);
             }
         };
-
-        // Each concurrent job spawns a `fossil` subprocess whose DuckDB is capped
-        // at `FOSSIL_DUCKDB_MEMORY_LIMIT` (default 512MB). Peak job RAM on a host
-        // ≈ (instances on host) × max_concurrent_jobs × memory_limit, so the
-        // default is conservative for small shared boxes (raise it per-deployment
-        // on dedicated hardware).
-        let max_concurrent_jobs = std::env::var("KEASY_MAX_CONCURRENT_JOBS")
-            .ok()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(2);
-
-        let job_timeout_secs = std::env::var("KEASY_JOB_TIMEOUT_SECS")
-            .ok()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(300);
-
-        let shutdown_grace_secs = std::env::var("KEASY_SHUTDOWN_GRACE_SECS")
-            .ok()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(30);
 
         let cors_origins = std::env::var("KEASY_CORS_ORIGINS").ok().map(|v| {
             v.split(',')
@@ -151,17 +134,19 @@ impl ServerConfig {
             .map(|v| v == "true" || v == "1")
             .unwrap_or(false);
 
+        let catalog_orphan_delete = std::env::var("KEASY_CATALOG_ORPHAN_SWEEP")
+            .map(|v| v == "true" || v == "1")
+            .unwrap_or(false);
+
         Self {
             bind_addr,
             api_key: SecretString::from(api_key),
-            max_concurrent_jobs,
-            job_timeout_secs,
-            shutdown_grace_secs,
             cors_origins,
             data_dir,
             secret_key,
             session_secret,
             session_secure,
+            catalog_orphan_delete,
             cache_capacity,
             base_url,
             oidc_issuer_url,

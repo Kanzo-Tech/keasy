@@ -31,7 +31,7 @@ import type { Connection, ProviderInfo, CreationMode } from "@/lib/types";
 //     position). `label` carries a human kind hint shown in the popover. `type`
 //     is collapsed to `'public_http'` because the Tier-1 connector taxonomy
 //     (`local_file | public_http | upload | examples` per ADR-0029) is closed
-//     and Keasy's cloud-mediated S3/GCS/Azure connectors don't slot into it
+//     and Keasy's cloud-mediated S3/Azure connectors don't slot into it
 //     cleanly. The editor uses `type` only to pick an icon — `'public_http'`
 //     produces the generic cloud glyph which is the correct affordance.
 //   - `resolve()`: not used at edit time — Keasy script execution happens

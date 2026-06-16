@@ -1,5 +1,4 @@
 import type { ComponentType } from "react";
-import { SiGooglecloud } from "react-icons/si";
 // react-icons 5.6.0 dropped the Simple Icons Amazon/AWS brand glyphs
 // (trademark cleanup); the AWS mark now lives in the Font Awesome set.
 import { FaAws } from "react-icons/fa";
@@ -8,7 +7,6 @@ import { Cloud } from "lucide-react";
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   azure: VscAzure,
-  gcp: SiGooglecloud,
   s3: FaAws,
 };
 

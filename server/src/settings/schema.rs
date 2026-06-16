@@ -137,41 +137,6 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
         ],
     },
     ProviderSchema {
-        id: "gcp",
-        label: "Google Cloud Storage",
-        icon: "gcp",
-        schemes: &["gs", "gcs"],
-        common_fields: &[],
-        auth_methods: &[
-            AuthMethodSchema {
-                name: "service_account_key",
-                label: "JSON Key",
-                fields: &[FieldSchema {
-                    name: "service_account_key",
-                    label: "Service Account Key (JSON)",
-                    secret: true,
-                    optional: false,
-                    default_value: None,
-                    env_var: Some("GOOGLE_SERVICE_ACCOUNT_KEY"),
-                    store_config_key: Some("service_account_key"),
-                }],
-            },
-            AuthMethodSchema {
-                name: "service_account_file",
-                label: "Key File Path",
-                fields: &[FieldSchema {
-                    name: "service_account",
-                    label: "Service Account File Path",
-                    secret: false,
-                    optional: false,
-                    default_value: None,
-                    env_var: Some("GOOGLE_SERVICE_ACCOUNT"),
-                    store_config_key: Some("service_account"),
-                }],
-            },
-        ],
-    },
-    ProviderSchema {
         id: "s3",
         label: "Amazon S3",
         icon: "s3",

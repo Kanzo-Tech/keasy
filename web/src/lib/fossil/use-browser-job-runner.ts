@@ -20,7 +20,7 @@ const started = new Set<string>();
 // Azure block-blob uploads via SAS REQUIRE the `x-ms-blob-type: BlockBlob`
 // header; the executor's uploader is provider-agnostic and omits it → Azure
 // rejects the PUT with 400 (MissingRequiredHeader). Inject it on PUTs through
-// the executor's `fetchImpl` hook. S3/GCS presigned PUTs ignore the unsigned
+// the executor's `fetchImpl` hook. S3 presigned PUTs ignore the unsigned
 // header, so this is safe across providers. (Proper home is the executor's
 // uploader in `@fossil-lang/executor`; this unblocks Azure destinations now.)
 const uploadFetch: typeof fetch = (input, init) => {

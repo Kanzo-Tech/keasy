@@ -94,9 +94,9 @@ impl Catalog {
     /// schema in the same transaction, so the count never doubles.
     ///
     /// `creds` is the object_store config keasy signs the output with; for a
-    /// remote dataset (S3/Azure/GCS) it is translated, by the dataset's URL
-    /// scheme, into a scoped DuckDB secret so httpfs/azure can read the Parquet
-    /// footers. A `file://`/local dataset needs no secret.
+    /// remote dataset (S3/Azure) it is translated, by the dataset's URL scheme,
+    /// into a scoped DuckDB secret so httpfs/azure can read the Parquet footers.
+    /// A `file://`/local dataset needs no secret.
     pub fn register(
         &self,
         job_id: &str,
@@ -106,8 +106,8 @@ impl Catalog {
         let conn = self.conn.lock().expect("catalog mutex poisoned");
 
         // Authorise reads of this dataset's prefix. Local needs nothing; a remote
-        // dataset whose creds we can't translate (e.g. GCS service-account JSON)
-        // is a registration miss, not a silent partial. A single fixed-name
+        // dataset whose creds we can't translate is a registration miss, not a
+        // silent partial. A single fixed-name
         // secret, replaced each call: the `Mutex` serialises registrations so
         // only this dataset's secret is ever live — no per-job accumulation on
         // the long-lived connection.

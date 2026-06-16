@@ -10,7 +10,7 @@
 //
 // The translation is driven by the dataset's URL SCHEME (the provider keasy
 // already chose), not by guessing from the map: `s3`/`s3a` → S3 secret,
-// `az`/`azure`/`abfss`/`abfs`/`adl` → Azure secret, `gs`/`gcs` → GCS secret.
+// `az`/`azure`/`abfss`/`abfs`/`adl` → Azure secret.
 
 use std::collections::HashMap;
 
@@ -20,10 +20,9 @@ pub(crate) enum SecretPlan {
     None,
     /// Run this `CREATE SECRET` to authorise reads of the dataset's prefix.
     Sql(String),
-    /// Remote, but the creds keasy holds can't be expressed as a DuckDB secret
-    /// (e.g. GCS service-account JSON — DuckDB's GCS path wants HMAC keys). The
-    /// caller treats this as a registration miss (logged; the reconciler retries
-    /// only if creds change).
+    /// Remote, but the creds keasy holds can't be expressed as a DuckDB secret.
+    /// The caller treats this as a registration miss (logged; the reconciler
+    /// retries only if creds change).
     Unsupported,
 }
 
@@ -38,7 +37,6 @@ pub(crate) fn plan(name: &str, base: &str, config: &HashMap<String, String>) -> 
         "file" => SecretPlan::None,
         "s3" | "s3a" => opt(s3(name, base, config)),
         "az" | "azure" | "abfss" | "abfs" | "adl" => opt(azure(name, base, config)),
-        "gs" | "gcs" => opt(gcs(name, base, config)),
         _ => SecretPlan::None, // unknown scheme: let the read attempt speak for itself
     }
 }
@@ -101,22 +99,6 @@ fn azure(name: &str, scope: &str, config: &HashMap<String, String>) -> Option<St
         return None; // account name but no usable auth material
     }
     p.push(("SCOPE", q(scope)));
-    Some(stmt(name, &p))
-}
-
-/// Google Cloud Storage. DuckDB reads GCS through an S3-compatible secret keyed
-/// by HMAC (`TYPE gcs`). keasy's GCS provider stores a service-account JSON, NOT
-/// HMAC keys — DuckDB can't use that for reads — so unless HMAC keys are present
-/// this is `None` → `Unsupported`.
-fn gcs(name: &str, scope: &str, config: &HashMap<String, String>) -> Option<String> {
-    let key_id = config.get("GCS_KEY_ID").or_else(|| config.get("AWS_ACCESS_KEY_ID"))?;
-    let secret = config.get("GCS_SECRET").or_else(|| config.get("AWS_SECRET_ACCESS_KEY"))?;
-    let p = vec![
-        ("TYPE", "gcs".to_string()),
-        ("KEY_ID", q(key_id)),
-        ("SECRET", q(secret)),
-        ("SCOPE", q(scope)),
-    ];
     Some(stmt(name, &p))
 }
 
@@ -210,15 +192,6 @@ mod tests {
         assert!(s.contains("PROVIDER service_principal"));
         assert!(s.contains("TENANT_ID 't'") && s.contains("CLIENT_ID 'ci'") && s.contains("CLIENT_SECRET 'cs'"));
         assert!(s.contains("ACCOUNT_NAME 'acc'"));
-    }
-
-    #[test]
-    fn gcs_service_account_json_is_unsupported() {
-        // keasy's GCS provider stores JSON, not HMAC — DuckDB can't read with it.
-        assert!(matches!(
-            plan("j", "gs://b", &map(&[("GOOGLE_SERVICE_ACCOUNT_KEY", "{...}")])),
-            SecretPlan::Unsupported,
-        ));
     }
 
     #[test]

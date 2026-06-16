@@ -11,7 +11,6 @@ use futures::stream::BoxStream;
 use http::Method;
 use object_store::aws::{AmazonS3, AmazonS3Builder, AmazonS3ConfigKey};
 use object_store::azure::{AzureConfigKey, MicrosoftAzure, MicrosoftAzureBuilder};
-use object_store::gcp::{GoogleCloudStorage, GoogleCloudStorageBuilder, GoogleConfigKey};
 use object_store::path::Path as ObjectPath;
 use object_store::signer::Signer;
 use object_store::{GetResult, ObjectMeta, ObjectStore, PutPayload, PutResult};
@@ -72,7 +71,6 @@ macro_rules! apply_creds {
 pub enum CloudStore {
     Azure(MicrosoftAzure),
     S3(AmazonS3),
-    Gcs(GoogleCloudStorage),
 }
 
 impl CloudStore {
@@ -88,7 +86,6 @@ impl CloudStore {
         match self {
             Self::Azure(s) => s.signed_url(method, path, expires_in).await,
             Self::S3(s) => s.signed_url(method, path, expires_in).await,
-            Self::Gcs(s) => s.signed_url(method, path, expires_in).await,
         }
     }
 
@@ -103,7 +100,6 @@ impl CloudStore {
         match self {
             Self::Azure(s) => s.signed_urls(method, paths, expires_in).await,
             Self::S3(s) => s.signed_urls(method, paths, expires_in).await,
-            Self::Gcs(s) => s.signed_urls(method, paths, expires_in).await,
         }
     }
 
@@ -113,7 +109,6 @@ impl CloudStore {
         match self {
             Self::Azure(s) => s.head(path).await,
             Self::S3(s) => s.head(path).await,
-            Self::Gcs(s) => s.head(path).await,
         }
     }
 
@@ -121,7 +116,6 @@ impl CloudStore {
         match self {
             Self::Azure(s) => s.get(path).await,
             Self::S3(s) => s.get(path).await,
-            Self::Gcs(s) => s.get(path).await,
         }
     }
 
@@ -133,7 +127,6 @@ pub async fn put(
         match self {
             Self::Azure(s) => s.put(path, payload).await,
             Self::S3(s) => s.put(path, payload).await,
-            Self::Gcs(s) => s.put(path, payload).await,
         }
     }
 
@@ -141,7 +134,6 @@ pub async fn put(
         match self {
             Self::Azure(s) => s.list(prefix),
             Self::S3(s) => s.list(prefix),
-            Self::Gcs(s) => s.list(prefix),
         }
     }
 }
@@ -162,10 +154,6 @@ pub fn build_store(
         "s3" => CloudStore::S3(apply_creds!(
             AmazonS3Builder::new().with_bucket_name(&bucket),
             AmazonS3ConfigKey, &fields, creds
-        ).build()?),
-        "gcp" => CloudStore::Gcs(apply_creds!(
-            GoogleCloudStorageBuilder::new().with_bucket_name(&bucket),
-            GoogleConfigKey, &fields, creds
         ).build()?),
         _ => return Err(format!("no builder for provider: {}", provider.id).into()),
     };

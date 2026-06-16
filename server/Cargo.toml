@@ -66,6 +66,13 @@ utoipa = { version = "5", features = ["axum_extras"] }
 csv = "1"
 oxrdf = "0.3.3"
 oxrdfio = "0.2.3"
+# Server-side DuckLake catalog (W1): keasy is the trusted host of the metadata
+# catalog. Pinned to the SAME duckdb as rmlext (1.10502) so writer (keasy) and
+# any future reader share a version (I7). `bundled` builds DuckDB from source so
+# the binary is self-contained. The catalog is server-side ONLY — the browser
+# never attaches ducklake (it reads flat Parquet by signed URL), so the
+# version-pin obligation is keasy↔keasy (trivial).
+duckdb = { version = "1.10502", features = ["bundled"] }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

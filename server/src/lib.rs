@@ -5,6 +5,7 @@
 pub mod ai;
 pub mod assistant;
 pub mod auth;
+pub mod catalog;
 pub mod cloud;
 pub mod config;
 pub mod connections;
@@ -33,6 +34,10 @@ pub struct AppState {
     pub api_key: SecretString,
     pub base_url: String,
     pub auth: AuthServices,
+    /// Server-side DuckLake catalog — the authority over output metadata. `None`
+    /// when it could not be opened at startup (the host still serves jobs; the
+    /// reconciler picks up unregistered datasets once it is available).
+    pub catalog: Option<Arc<catalog::Catalog>>,
 }
 
 /// Authentication and identity services (Keycloak / OIDC).

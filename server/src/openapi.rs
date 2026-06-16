@@ -65,6 +65,7 @@ use utoipa::OpenApi;
         crate::discovery::routes::resolve_discover_urls,
         crate::discovery::routes::resolve_discover_manifest,
         crate::discovery::routes::resolve_catalog_manifest,
+        crate::catalog::routes::list_catalog_datasets,
         // AI / Conversations
         crate::ai::routes::ask_discover_stream,
         crate::ai::routes::create_conversation,
@@ -133,6 +134,11 @@ use utoipa::OpenApi;
         crate::routes::org::OrgIdentityResponse,
         // Discovery
         crate::graph::types::TabularData,
+        // Catalog (governance)
+        crate::catalog::routes::DatasetsResponse,
+        crate::catalog::view::CatalogDataset,
+        crate::catalog::view::CatalogTable,
+        crate::catalog::view::CatalogColumn,
         // AI / Conversations
         crate::ai::routes::AskRequest,
         crate::ai::routes::AskResponse,

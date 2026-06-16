@@ -189,6 +189,30 @@
         }
       }
     },
+    "/v1/catalog/datasets": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "List the workspace catalog: every registered dataset (a completed job's\noutput) with its types, columns and row counts. Governance metadata — open to\nevery member (the IDS/Solid model: members discover the space at the metadata\nlevel, the bytes stay producer-scoped).",
+        "operationId": "list_catalog_datasets",
+        "responses": {
+          "200": {
+            "description": "Registered datasets with their types/columns/rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetsResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Catalog unavailable"
+          }
+        }
+      }
+    },
     "/v1/cloud-accounts": {
       "get": {
         "tags": [
@@ -1960,6 +1984,43 @@
           }
         }
       },
+      "CatalogColumn": {
+        "type": "object",
+        "required": [
+          "name",
+          "data_type"
+        ],
+        "properties": {
+          "data_type": {
+            "type": "string",
+            "description": "DuckDB type spelling (`VARCHAR`, `BIGINT`, …)."
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CatalogDataset": {
+        "type": "object",
+        "description": "One registered dataset (a completed job's output) as the catalog sees it.",
+        "required": [
+          "job_id",
+          "tables"
+        ],
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "description": "The job id (the `job_` schema suffix), the dataset's stable handle."
+          },
+          "tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogTable"
+            },
+            "description": "One entry per registered vertex/edge type."
+          }
+        }
+      },
       "CatalogStoragePayload": {
         "type": "object",
         "required": [
@@ -1972,6 +2033,35 @@
           },
           "cloud_account_id": {
             "type": "string"
+          }
+        }
+      },
+      "CatalogTable": {
+        "type": "object",
+        "description": "A registered type within a dataset and its SQL shape.",
+        "required": [
+          "name",
+          "columns"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogColumn"
+            },
+            "description": "Property columns, in declaration order."
+          },
+          "name": {
+            "type": "string",
+            "description": "Type / table name (e.g. `Person`, `knows_by_source`)."
+          },
+          "rows": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Row count from the Parquet footers (cheap — no full scan)."
           }
         }
       },
@@ -2389,6 +2479,21 @@
         ],
         "properties": {
           "data": {}
+        }
+      },
+      "DatasetsResponse": {
+        "type": "object",
+        "required": [
+          "datasets"
+        ],
+        "properties": {
+          "datasets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogDataset"
+            },
+            "description": "Every registered dataset in the workspace catalog."
+          }
         }
       },
       "Direction": {

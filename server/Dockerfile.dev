@@ -11,6 +11,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     clang libclang-dev curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# The catalog's DuckLake `azure` extension reads remote Parquet footers via the
+# Azure SDK, whose default transport looks for the CA bundle at the RHEL path
+# `/etc/pki/tls/certs/ca-bundle.crt` and ignores `azure_transport_option_type`
+# (duckdb/ducklake#272). Debian puts it elsewhere — symlink it so Azure
+# registration doesn't fail with "Problem with the SSL CA cert".
+RUN mkdir -p /etc/pki/tls/certs \
+    && ln -sf /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
+
 RUN cargo install cargo-watch
 
 WORKDIR /src

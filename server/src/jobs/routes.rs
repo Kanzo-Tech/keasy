@@ -168,12 +168,20 @@ pub async fn complete_job(
     // authoritative over the dest, so stamp `manifest.dest` server-side (the same
     // base `resolve_output_urls` signs) rather than trust the browser. Discovery
     // reads `manifest.dest` as the dataset base for signed GETs.
+    // Creds the output was signed with — reused to register it in the catalog
+    // (the same account that wrote the Parquet reads its footers). Captured here
+    // because `status`/`manifest` move into the writer closure below.
+    let mut output_creds: Option<std::collections::HashMap<String, String>> = None;
     if matches!(status, JobStatus::Completed)
         && let Some(job) = state.db.get_job(&id).await
-        && let (Some(m), Some((base, _))) = (manifest.as_mut(), state.db.job_output_target(&job).await)
+        && let (Some(m), Some((base, creds))) = (manifest.as_mut(), state.db.job_output_target(&job).await)
     {
         m.dest = format!("{}/{}", base.trim_end_matches('/'), id);
+        output_creds = Some(creds);
     }
+
+    // Snapshot the stamped manifest for catalog registration before it moves.
+    let to_register = manifest.clone();
 
     let updated = state
         .db
@@ -206,6 +214,24 @@ pub async fn complete_job(
         .await
         .map_err(JobApiError::Internal)?;
 
+    // Register the output in the DuckLake catalog as one atomic snapshot —
+    // FIRE-AND-FORGET. The data is already durable at the sink, so a slow or
+    // failing catalog write must never delay (or fail) job completion. The
+    // detached task does the remote footer reads off the request path; whatever
+    // it misses, the reconciler (§11) picks up on its next pass.
+    if let (Some(catalog), Some(dataset), Some(creds)) =
+        (state.catalog.clone(), to_register, output_creds)
+    {
+        let job_id = id.clone();
+        tokio::spawn(async move {
+            match tokio::task::spawn_blocking(move || catalog.register(&job_id, &dataset, &creds)).await {
+                Ok(Ok(())) => {}
+                Ok(Err(e)) => tracing::warn!(error = %e, "catalog registration failed (reconciler will retry)"),
+                Err(e) => tracing::warn!(error = %e, "catalog registration task panicked"),
+            }
+        });
+    }
+
     match updated {
         Some(job) => Ok(data_response(job).into_response()),
         None => Err(JobApiError::NotFound),
@@ -234,6 +260,18 @@ pub async fn delete_job(
 
     state.db.remove_job(id.as_str()).await
         .map_err(JobApiError::Internal)?;
+
+    // Drop the job's dataset from the catalog so governance stops listing a ghost
+    // — BYOS-safe (only catalog metadata, never the member's Parquet). Whatever
+    // this misses, the reconciler's deregister sweep cleans up.
+    if let Some(catalog) = state.catalog.clone() {
+        let job_id = id.clone();
+        tokio::spawn(async move {
+            if let Ok(Err(e)) = tokio::task::spawn_blocking(move || catalog.unregister(&job_id)).await {
+                tracing::warn!(error = %e, "catalog unregister failed (reconciler will retry)");
+            }
+        });
+    }
 
     Ok(StatusCode::NO_CONTENT.into_response())
 }

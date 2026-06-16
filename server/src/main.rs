@@ -164,16 +164,45 @@ async fn main() {
         oidc_client_secret: config.oidc_client_secret,
         oidc_org_id,
     };
+    // Server-side DuckLake catalog (authority over output metadata). Non-fatal
+    // if it fails to open — the host keeps serving jobs and the reconciler
+    // registers their output once the catalog is back.
+    let catalog = match keasy_server::catalog::Catalog::open(&config.data_dir) {
+        Ok(c) => {
+            info!("DuckLake catalog opened");
+            Some(std::sync::Arc::new(c))
+        }
+        Err(e) => {
+            tracing::warn!(error = %e, "Failed to open DuckLake catalog — output registration disabled until reconcile");
+            None
+        }
+    };
+
     let state = AppState {
         db,
         api_key: config.api_key,
         base_url: config.base_url,
         auth,
+        catalog,
     };
     info!(
         oidc = if state.auth.oidc_state.is_some() { "ready" } else { "not configured" },
         "External services"
     );
+
+    // Catalog durability net: periodically register any completed job whose
+    // output never made it into the catalog (a miss at completion, a restart).
+    if state.catalog.is_some() {
+        keasy_server::catalog::reconcile::spawn(
+            state.clone(),
+            tokio::time::Duration::from_secs(60),
+            config.catalog_orphan_delete,
+        );
+        info!(
+            orphan_delete = config.catalog_orphan_delete,
+            "Catalog reconciler started (60s)"
+        );
+    }
 
     let session_config = SessionConfig {
         store: session_store,

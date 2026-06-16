@@ -144,6 +144,28 @@ pub async fn put(
             Self::Gcs(s) => s.list(prefix),
         }
     }
+
+    /// List one level under `prefix`: `common_prefixes` are the immediate
+    /// "subdirectories" (used by the orphan sweep to enumerate per-job prefixes
+    /// under the substrate without walking every object).
+    pub async fn list_with_delimiter(
+        &self,
+        prefix: Option<&ObjectPath>,
+    ) -> object_store::Result<object_store::ListResult> {
+        match self {
+            Self::Azure(s) => s.list_with_delimiter(prefix).await,
+            Self::S3(s) => s.list_with_delimiter(prefix).await,
+            Self::Gcs(s) => s.list_with_delimiter(prefix).await,
+        }
+    }
+
+    pub async fn delete(&self, path: &ObjectPath) -> object_store::Result<()> {
+        match self {
+            Self::Azure(s) => s.delete(path).await,
+            Self::S3(s) => s.delete(path).await,
+            Self::Gcs(s) => s.delete(path).await,
+        }
+    }
 }
 
 /// Build a cloud store from a URL and credentials.

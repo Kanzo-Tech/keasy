@@ -168,6 +168,10 @@ pub fn build_router(
             axum::routing::get(crate::discovery::routes::resolve_catalog_manifest),
         )
         .route(
+            "/v1/catalog/datasets",
+            axum::routing::get(crate::catalog::routes::list_catalog_datasets),
+        )
+        .route(
             "/v1/jobs/{id}/discover/ask-stream",
             axum::routing::post(crate::ai::routes::ask_discover_stream),
         )

@@ -108,10 +108,9 @@ impl Database {
 
     /// Returns `(cloud_account_id, base_url)` for the **data space substrate** —
     /// the single workspace write sink the owner provisions once. Job output and
-    /// DCAT catalog land under it, prefixed by the producer: each job writes to
-    /// `{base_url}/{job.created_by}/{job_id}` (logical data-product ownership).
-    /// Output is read back / signed with the substrate's creds via
-    /// [`Database::substrate_storage_config`].
+    /// DCAT catalog land under it at `{base_url}/{job_id}` (the dataset base the
+    /// completion `RunStatus.dest` records). Output is read back / signed with the
+    /// substrate's creds via [`Database::substrate_storage_config`].
     pub async fn substrate_config(&self) -> Option<(String, String)> {
         let sink = self.get_sink_connection().await?;
         let account_id = sink.cloud_account_id?;

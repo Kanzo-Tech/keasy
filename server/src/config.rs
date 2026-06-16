@@ -14,12 +14,6 @@ pub struct ServerConfig {
     /// Set the Secure flag on session cookies (requires HTTPS).
     /// Read from KEASY_SESSION_SECURE. Default false (local dev).
     pub session_secure: bool,
-    /// Whether the catalog reconciler actually DELETES orphaned storage prefixes
-    /// (a job's output whose job no longer exists). Read from
-    /// `KEASY_CATALOG_ORPHAN_SWEEP`. **Default false** — the sweep runs in
-    /// dry-run, logging what it would delete, so a destructive sweep is opt-in
-    /// only after an operator has inspected those logs.
-    pub catalog_orphan_delete: bool,
     pub cache_capacity: usize,
     /// Base URL for the frontend — used to construct invite links.
     /// Read from KEASY_BASE_URL, default "http://localhost:3000".
@@ -134,10 +128,6 @@ impl ServerConfig {
             .map(|v| v == "true" || v == "1")
             .unwrap_or(false);
 
-        let catalog_orphan_delete = std::env::var("KEASY_CATALOG_ORPHAN_SWEEP")
-            .map(|v| v == "true" || v == "1")
-            .unwrap_or(false);
-
         Self {
             bind_addr,
             api_key: SecretString::from(api_key),
@@ -146,7 +136,6 @@ impl ServerConfig {
             secret_key,
             session_secret,
             session_secure,
-            catalog_orphan_delete,
             cache_capacity,
             base_url,
             oidc_issuer_url,

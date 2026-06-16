@@ -76,9 +76,9 @@ impl Catalog {
         }
         // BYOS: ducklake compaction/cleanup is MANUAL (no auto-compaction to
         // disable). keasy never calls `ducklake_merge_adjacent_files` /
-        // `ducklake_cleanup_old_files`, so the member's referenced Parquet is
-        // never rewritten or deleted by the catalog (the orphan sweep is the
-        // host's own job, the only deleter).
+        // `ducklake_cleanup_old_files`, and never deletes the member's storage at
+        // all — the referenced Parquet lives in the member's sink, whose lifecycle
+        // is the member's. The catalog only ever touches its own metadata.
         conn.execute_batch(&format!(
             "ATTACH 'ducklake:sqlite:{}' AS lake (DATA_PATH '{}');",
             catalog_db.display(),
@@ -152,7 +152,7 @@ impl Catalog {
     /// Drop a job's dataset from the catalog (its `job_<id>` schema). BYOS-safe:
     /// `DROP SCHEMA CASCADE` removes only the catalog metadata — the member's
     /// referenced Parquet at the sink is never touched. Idempotent (no-op if the
-    /// schema is absent). Used when a job is deleted and by the deregister sweep.
+    /// schema is absent). Used when a job is deleted and by the deregister pass.
     pub fn unregister(&self, job_id: &str) -> Result<(), CatalogError> {
         let conn = self.conn.lock().expect("catalog mutex poisoned");
         let schema = format!("job_{}", sanitize(job_id));

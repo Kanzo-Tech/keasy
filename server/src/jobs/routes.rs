@@ -263,7 +263,7 @@ pub async fn delete_job(
 
     // Drop the job's dataset from the catalog so governance stops listing a ghost
     // — BYOS-safe (only catalog metadata, never the member's Parquet). Whatever
-    // this misses, the reconciler's deregister sweep cleans up.
+    // this misses, the reconciler's deregister pass cleans up.
     if let Some(catalog) = state.catalog.clone() {
         let job_id = id.clone();
         tokio::spawn(async move {

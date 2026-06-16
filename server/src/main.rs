@@ -191,17 +191,11 @@ async fn main() {
     );
 
     // Catalog durability net: periodically register any completed job whose
-    // output never made it into the catalog (a miss at completion, a restart).
+    // output never made it into the catalog (a miss at completion, a restart) and
+    // deregister datasets whose job was deleted.
     if state.catalog.is_some() {
-        keasy_server::catalog::reconcile::spawn(
-            state.clone(),
-            tokio::time::Duration::from_secs(60),
-            config.catalog_orphan_delete,
-        );
-        info!(
-            orphan_delete = config.catalog_orphan_delete,
-            "Catalog reconciler started (60s)"
-        );
+        keasy_server::catalog::reconcile::spawn(state.clone(), tokio::time::Duration::from_secs(60));
+        info!("Catalog reconciler started (60s)");
     }
 
     let session_config = SessionConfig {

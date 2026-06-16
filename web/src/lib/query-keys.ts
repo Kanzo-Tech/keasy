@@ -20,6 +20,11 @@ export const queryKeys = {
     init: (tab: ConnectionKind) => ["connections-init", tab] as const,
   },
 
+  // Catalog (governance)
+  catalog: {
+    datasets: ["catalog-datasets"] as const,
+  },
+
   // Cloud
   cloud: {
     accounts: ["cloud-accounts"] as const,

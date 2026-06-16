@@ -136,6 +136,12 @@ export const api = {
       }),
   },
 
+  // ── Catalog (governance) ──────────────────────────────────────────────
+  catalog: {
+    datasets: async () =>
+      (unwrap(await client.GET("/v1/catalog/datasets"))).datasets,
+  },
+
   // ── Conversations ─────────────────────────────────────────────────────
   conversations: {
     list: async (id: string) =>

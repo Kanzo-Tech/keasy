@@ -143,6 +143,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/catalog/datasets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the workspace catalog: every registered dataset (a completed job's
+         *     output) with its types, columns and row counts. Governance metadata — open to
+         *     every member (the IDS/Solid model: members discover the space at the metadata
+         *     level, the bytes stay producer-scoped).
+         */
+        get: operations["list_catalog_datasets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/cloud-accounts": {
         parameters: {
             query?: never;
@@ -729,9 +751,33 @@ export interface components {
             label: string;
             name: string;
         };
+        CatalogColumn: {
+            /** @description DuckDB type spelling (`VARCHAR`, `BIGINT`, …). */
+            data_type: string;
+            name: string;
+        };
+        /** @description One registered dataset (a completed job's output) as the catalog sees it. */
+        CatalogDataset: {
+            /** @description The job id (the `job_` schema suffix), the dataset's stable handle. */
+            job_id: string;
+            /** @description One entry per registered vertex/edge type. */
+            tables: components["schemas"]["CatalogTable"][];
+        };
         CatalogStoragePayload: {
             base_url: string;
             cloud_account_id: string;
+        };
+        /** @description A registered type within a dataset and its SQL shape. */
+        CatalogTable: {
+            /** @description Property columns, in declaration order. */
+            columns: components["schemas"]["CatalogColumn"][];
+            /** @description Type / table name (e.g. `Person`, `knows_by_source`). */
+            name: string;
+            /**
+             * Format: int64
+             * @description Row count from the Parquet footers (cheap — no full scan).
+             */
+            rows?: number | null;
         };
         CloudAccountSummary: {
             auth_method?: string | null;
@@ -850,6 +896,10 @@ export interface components {
         /** @description Typed envelope for successful API responses: `{ "data": T }`. */
         DataResponse_Value: {
             data: unknown;
+        };
+        DatasetsResponse: {
+            /** @description Every registered dataset in the workspace catalog. */
+            datasets: components["schemas"]["CatalogDataset"][];
         };
         /**
          * @description Whether a connection is a READ source (programs reference it via `@conn`) or
@@ -1371,6 +1421,33 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["WorkspacesResponse"];
                 };
+            };
+        };
+    };
+    list_catalog_datasets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Registered datasets with their types/columns/rows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetsResponse"];
+                };
+            };
+            /** @description Catalog unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

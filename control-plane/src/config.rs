@@ -29,6 +29,11 @@ pub struct ControlPlaneConfig {
     /// Shared external Swarm overlay the instance services + Traefik attach to
     /// (the ingress edge network).
     pub network: String,
+    /// Base replica URL for Litestream, into a keasy-operated bucket — each
+    /// tenant's SQLite stores replicate under `{base}/{workspace_id}/…`. `None`
+    /// disables durability (the rendered server runs without Litestream). The
+    /// replica credentials are the shared external secret `keasy-litestream`.
+    pub litestream_replica_base: Option<String>,
 }
 
 impl ControlPlaneConfig {
@@ -68,6 +73,7 @@ impl ControlPlaneConfig {
             server_image: opt("CP_SERVER_IMAGE").unwrap_or_else(|| "keasy-server:latest".to_string()),
             web_image: opt("CP_WEB_IMAGE").unwrap_or_else(|| "keasy-web:latest".to_string()),
             network: opt("CP_NETWORK").unwrap_or_else(|| "keasy-edge".to_string()),
+            litestream_replica_base: opt("CP_LITESTREAM_REPLICA_BASE"),
         })
     }
 }

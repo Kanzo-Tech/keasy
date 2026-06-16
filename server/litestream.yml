@@ -1,0 +1,19 @@
+# Litestream — continuously replicate keasy's authoritative SQLite store to a
+# keasy-operated bucket so a node loss or instance migration never drops a
+# workspace's metadata (connections, jobs, encrypted secrets, settings).
+#
+# Only keasy.db is replicated: the DuckLake catalog (catalog.sqlite) is a DERIVED
+# projection — on a fresh node the reconciler rebuilds it from the jobs (in
+# keasy.db) + the Parquet in the sink. So it needs no replication, and we avoid
+# depending on the WAL compatibility of the file DuckDB's sqlite backend writes.
+#
+# Active only when LITESTREAM_REPLICA_URL is set (the control-plane sets it to the
+# per-tenant prefix, e.g. s3://bucket/<workspace> or abs://…/<workspace>); unset →
+# entrypoint.sh runs the server directly with no replication (dev / local).
+# Credentials come from the LITESTREAM_* env (a shared keasy-operated secret):
+#   S3:    LITESTREAM_ACCESS_KEY_ID / LITESTREAM_SECRET_ACCESS_KEY
+#   Azure: LITESTREAM_AZURE_ACCOUNT_KEY (account in the abs:// URL)
+dbs:
+  - path: /var/lib/keasy/keasy.db
+    replicas:
+      - url: ${LITESTREAM_REPLICA_URL}/keasy.db

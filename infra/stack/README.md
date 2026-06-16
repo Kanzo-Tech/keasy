@@ -42,6 +42,31 @@ docker stack deploy -c infra/stack/base.yml keasy-base
 DNS: point `*.${KEASY_BASE_DOMAIN}` and `${KC_HOSTNAME}` at the manager's IP.
 Traefik issues per-host certs via the ACME TLS-challenge automatically.
 
+## Durability — Litestream (optional but recommended)
+
+Each tenant's `keasy.db` (connections, jobs, encrypted secrets, settings) lives on
+a local Swarm volume. To survive a node loss / instance migration, the server
+image runs it under **Litestream**, continuously replicating to a **keasy-operated
+bucket** (one bucket, per-tenant prefix) and restoring on a fresh node before the
+server starts. The DuckLake `catalog.sqlite` is **not** replicated — it is a
+derived projection the reconciler rebuilds from the jobs. Off unless configured —
+the server then runs with no replication.
+
+```sh
+# 1. The shared replica credentials, as a KEY=value env-file secret. S3:
+printf 'LITESTREAM_ACCESS_KEY_ID=%s\nLITESTREAM_SECRET_ACCESS_KEY=%s\n' \
+  "$AKID" "$SECRET" | docker secret create keasy-litestream -
+#    …or Azure: LITESTREAM_AZURE_ACCOUNT_KEY=<key>  (account is in the abs:// URL).
+
+# 2. Point the control-plane at the bucket base (each tenant gets <base>/<id>/).
+export KEASY_LITESTREAM_REPLICA_BASE=s3://keasy-backups/litestream
+#    …or abs://<container>@<account>.blob.core.windows.net/litestream
+```
+
+The control-plane injects `LITESTREAM_REPLICA_URL` + the `keasy-litestream` secret
+into every rendered tenant stack. Leave `KEASY_LITESTREAM_REPLICA_BASE` unset to
+disable.
+
 ## Per-tenant lifecycle (driven by `deploy/`)
 
 `deploy/environments/prod/tenants/<slug>.yaml` is the source of truth. The

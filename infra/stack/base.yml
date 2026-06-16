@@ -115,6 +115,13 @@ services:
       CP_DB_PATH: /var/lib/keasy/control-plane.db
       CP_DEPLOY_DIR: /deploy/environments/prod
       CP_RECONCILE_INTERVAL_SECS: "30"
+      # Litestream durability for the tenant's keasy.db (the catalog.sqlite is a
+      # derived projection the reconciler rebuilds). Set to a keasy-operated
+      # bucket base (e.g. `s3://keasy-backups/litestream` or `abs://…`); each
+      # tenant replicates under `<base>/<workspace_id>/`. Empty → no replication.
+      # Creds: the shared external secret `keasy-litestream` (`KEY=value` env-file
+      # — see README).
+      CP_LITESTREAM_REPLICA_BASE: ${KEASY_LITESTREAM_REPLICA_BASE:-}
     secrets: [cp-oidc-secret]
     volumes:
       # The control-plane shells out to `docker stack deploy` / `docker secret`

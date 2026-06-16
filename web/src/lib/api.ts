@@ -1,10 +1,7 @@
 import client, { ApiError, unwrap } from "./api/client";
 import type { Schemas } from "./api/client";
 import { fetchSSE } from "./api/sse";
-import type {
-  ProviderSchema,
-  ProviderInfo,
-} from "./types";
+import type { ProviderSchema } from "./types";
 
 export { ApiError };
 export type { ServiceStatus } from "./types";
@@ -62,12 +59,9 @@ export const api = {
     },
   },
 
-  // ── References ─────────────────────────────────────────────────────────
-  // fossil parses the program and reports its external references (the typed
-  // lineage). Used to derive a job's connections from the script's `@conn`
-  // aliases — across data, schema, AND select positions — never by regex.
-  refs: async (script: string): Promise<Schemas["SourceRefInfo"][]> =>
-    unwrap(await client.POST("/v1/refs", { body: { script } })),
+  // (refs + providers moved client-side — `@fossil-lang/wasm` via
+  // `lib/fossil/lineage.ts`. keasy no longer subprocesses the `fossil` binary
+  // for lineage/providers; host-boundary, no /v1/refs · /v1/providers.)
 
   // ── Connections ────────────────────────────────────────────────────────
   connections: {
@@ -172,9 +166,6 @@ export const api = {
   settings: {
     schema: async (): Promise<ProviderSchema[]> =>
       unwrap(await client.GET("/v1/settings/schema")),
-
-    providers: async (): Promise<ProviderInfo[]> =>
-      unwrap(await client.GET("/v1/providers")),
 
     org: async () => {
       const result = await client.GET("/v1/settings/organization");

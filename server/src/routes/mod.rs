@@ -1,6 +1,5 @@
 pub mod health;
 pub mod org;
-pub mod providers;
 
 use axum::{middleware, Router};
 use axum::extract::DefaultBodyLimit;
@@ -58,10 +57,6 @@ pub fn build_router(
             "/v1/settings/schema",
             axum::routing::get(crate::settings::routes::get_schema),
         )
-        .route(
-            "/v1/providers",
-            axum::routing::get(providers::list_providers),
-        )
         .with_state(state.clone());
 
     // Public auth routes (no session middleware)
@@ -107,10 +102,6 @@ pub fn build_router(
             "/v1/jobs",
             axum::routing::get(crate::jobs::routes::list_jobs)
                 .post(crate::jobs::routes::create_job),
-        )
-        .route(
-            "/v1/refs",
-            axum::routing::post(providers::list_refs),
         )
         .route(
             "/v1/jobs/{id}",

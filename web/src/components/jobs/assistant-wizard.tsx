@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { FossilEditor } from "@fossil-lang/editor";
+import { useFossilWasmReady } from "@/lib/fossil/use-fossil-wasm";
 import { PageShell } from "@/components/layout/page-shell";
 import {
   Table,
@@ -313,6 +314,9 @@ function StepDescribe({
   domain: string;
   onDomainChange: (v: string) => void;
 }) {
+  // FossilEditor always composes the fossil() language, which tokenizes via
+  // @fossil-lang/wasm on the main thread — gate on a main-thread wasm init.
+  const wasmReady = useFossilWasmReady();
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-2">
       <p className="text-sm text-muted-foreground">
@@ -325,12 +329,18 @@ function StepDescribe({
         deferred-items.md from 16-04); empty-state copy is conveyed by the
         sibling <p> above instead.
       */}
-      <FossilEditor
-        value={domain}
-        onChange={onDomainChange}
-        lspTransport={null}
-        className="flex-1"
-      />
+      {wasmReady ? (
+        <FossilEditor
+          value={domain}
+          onChange={onDomainChange}
+          lspTransport={null}
+          className="flex-1"
+        />
+      ) : (
+        <div className="flex-1 flex items-center justify-center text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+        </div>
+      )}
     </div>
   );
 }

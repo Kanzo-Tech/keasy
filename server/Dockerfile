@@ -1,17 +1,13 @@
 # Release image for keasy-server. Build CONTEXT is the parent dir holding BOTH
 # the keasy repo (`keasy/`) and the sibling `rmlext/` checkout.
 #
-# keasy NO LONGER compiles the `fossil` binary here (that was ~3-5 min of bundled
-# DuckDB): the `fossil` + `fossil-mcp` binaries come from the published producer
-# image `ghcr.io/kanzo-tech/fossil` via `COPY --from=fossil`. The only fossil code
-# keasy compiles is the tiny `fossil-run-status` wire contract, which resolves
-# through the [patch] in server/Cargo.toml to the sibling rmlext workspace (still
-# in the context — workspace inheritance needs the root manifest; NOT compiled to a
-# binary). POST-publish this migrates to a sibling-free git-dep clone of the tag.
-# See docker-compose.prod.yml: `context: ..`, plus the FOSSIL_IMAGE build-arg.
-
-ARG FOSSIL_IMAGE=ghcr.io/kanzo-tech/fossil:0.3.0
-FROM ${FOSSIL_IMAGE} AS fossil
+# keasy is a PURE HOST: NO fossil binary in the image. All fossil compute runs in
+# the browser (DuckDB-WASM + `@fossil-lang/*`: executor / refs / providers). The
+# only fossil code keasy compiles is the tiny `fossil-run-status` wire contract,
+# which resolves through the [patch] in server/Cargo.toml to the sibling rmlext
+# workspace (still in the context — workspace inheritance needs the root manifest;
+# NOT a binary). POST-publish this migrates to a sibling-free git-dep clone of the
+# tag. See docker-compose.prod.yml: `context: ..`.
 
 FROM rust:1.90-bookworm AS builder
 WORKDIR /src
@@ -38,23 +34,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl libstdc++6 \
     && rm -rf /var/lib/apt/lists/*
 
-# DuckDB (inside `fossil`) looks for CA certs at the CentOS/RHEL path when
-# fetching httpfs/azure extensions + reading cloud sources; symlink it.
-RUN mkdir -p /etc/pki/tls/certs \
-    && ln -s /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
-
 RUN useradd -r -s /bin/false keasy \
     && mkdir -p /var/lib/keasy \
     && chown keasy: /var/lib/keasy
 USER keasy
 
 COPY --from=builder /src/keasy/server/target/release/keasy-server /usr/local/bin/keasy-server
-# The fossil subprocess keasy invokes for every run/catalog/providers call —
-# from the published producer image, not compiled here.
-COPY --from=fossil /usr/local/bin/fossil /usr/local/bin/fossil
-COPY --from=fossil /usr/local/bin/fossil-mcp /usr/local/bin/fossil-mcp
-ENV FOSSIL_BIN=/usr/local/bin/fossil
-ENV FOSSIL_MCP_BIN=/usr/local/bin/fossil-mcp
 
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \

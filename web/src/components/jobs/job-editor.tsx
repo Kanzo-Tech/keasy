@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
 import { queryKeys } from "@/lib/query-keys";
 import { api } from "@/lib/api";
+import { refs as fossilRefs, providers as fossilProviders } from "@/lib/fossil/lineage";
 import { ModePicker } from "@/components/jobs/mode-picker";
 import { StepScript } from "@/components/jobs/step-script";
 import { StepConfig } from "@/components/jobs/step-config";
@@ -28,16 +29,16 @@ export function JobEditor() {
 
   const { data: orgIdentity } = useQuery({ queryKey: queryKeys.org.identity, queryFn: api.org.identity });
   const { data: connections = [] } = useQuery({ queryKey: queryKeys.connections.all(), queryFn: () => api.connections.list() });
-  const { data: providers = [] } = useQuery({ queryKey: queryKeys.settings.providers, queryFn: api.settings.providers });
+  const { data: providers = [] } = useQuery({ queryKey: queryKeys.settings.providers, queryFn: fossilProviders });
 
   const orgConfigured = orgIdentity != null && !!orgIdentity.legal_name;
 
   // A job's connections are its program's `@conn` references — derived from
-  // fossil's typed lineage (`/v1/refs`), which sees `@conn` in data, schema, AND
+  // fossil's typed lineage (client-compute `refs()`), which sees `@conn` in data, schema, AND
   // select positions. This replaces a regex over the script text (which only saw
   // the positional data URI and missed `schema =`/`select =` vocab connections).
   const connectionIdsForScript = async (script: string): Promise<string[] | undefined> => {
-    const refs = await api.refs(script);
+    const refs = await fossilRefs(script);
     const names = new Set(refs.map((r) => r.connection).filter((c): c is string => !!c));
     const ids = connections.filter((s) => names.has(s.name)).map((s) => s.id);
     return ids.length > 0 ? ids : undefined;

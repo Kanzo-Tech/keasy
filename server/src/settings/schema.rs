@@ -25,13 +25,13 @@ fn is_false(v: &bool) -> bool {
     !v
 }
 
-/// How an account's stored credentials project onto a DuckDB `CREATE SECRET` for
-/// the fossil pipeline. Declared per provider (methodless, e.g. S3) or per auth
-/// method (method-ful, e.g. Azure), so [`cloud_secret`] is `match strategy`, not
-/// `match provider_id` — a new provider/method wires its secret here in the
-/// registry, not by branching in code.
+/// How an account's stored credentials project onto a DuckDB `CREATE SECRET`.
+/// Declared per provider (methodless, e.g. S3) or per auth method (method-ful,
+/// e.g. Azure) in the registry, not by branching in code.
 ///
-/// [`cloud_secret`]: crate::jobs::run_creds::cloud_secret
+/// NOTE: its consumer (`cloud_secret`) was removed with the native fossil
+/// subprocess — this projection is now unused (the browser receives signed URLs,
+/// not DuckDB secrets) and is a candidate for removal (F5/3).
 #[derive(Debug, Clone)]
 pub enum SecretStrategy {
     /// No pipeline secret wired: fossil reads the source as public and the real

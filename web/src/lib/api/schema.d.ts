@@ -555,38 +555,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/providers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_providers"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/refs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["list_refs"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/settings/ai/providers": {
         parameters: {
             query?: never;
@@ -1051,39 +1019,12 @@ export interface components {
             mono_font_family: string;
             mono_font_size: string;
         };
-        /**
-         * @description One data-source provider fossil exposes: its short name, the file extensions
-         *     it reads, and how it can be used.
-         */
-        ProviderInfo: {
-            /** @description File extensions this provider reads (no leading dot). */
-            extensions: string[];
-            /** @description Whether the provider defines a type, loads data, or both. */
-            kind: components["schemas"]["ProviderKind"];
-            /** @description Short provider name (e.g. `csv`, `json`, `parquet`). */
-            name: string;
-        };
-        /**
-         * @description What a provider can appear as in a program.
-         * @enum {string}
-         */
-        ProviderKind: "schema" | "data" | "both";
         ProviderSchema: {
             auth_methods: components["schemas"]["AuthMethodSchema"][];
             common_fields: components["schemas"]["FieldSchema"][];
             icon: string;
             id: string;
             label: string;
-        };
-        /**
-         * @description The position a reference plays in an `io.*` source constructor.
-         * @enum {string}
-         */
-        RefRole: "data" | "schema";
-        /** @description Request body for `POST /v1/refs`: the `.fossil` script to parse. */
-        RefsRequest: {
-            /** @description The `.fossil` program text whose external references to enumerate. */
-            script: string;
         };
         RenameConversationRequest: {
             title: string;
@@ -1111,22 +1052,6 @@ export interface components {
         };
         ServiceStatusResponse: {
             oidc: boolean;
-        };
-        /**
-         * @description One external reference a program makes. `connection` is the `@conn` alias the
-         *     reference targets (`Some("cpi")` for `@cpi/graph.ttl`), or `None` for a direct
-         *     URL / local path. `path` is the remainder after the alias (or the whole
-         *     locator when there is no alias). This is the program's TYPED lineage — keasy
-         *     derives a job's connection set from the distinct `connection`s, never from a
-         *     regex over the script text.
-         */
-        SourceRefInfo: {
-            /** @description The `@conn` alias this reference targets, or `None` for a direct URL/path. */
-            connection?: string | null;
-            /** @description The path within the connection, or the whole locator when unaliased. */
-            path: string;
-            /** @description Where this reference appears in the source constructor. */
-            role: components["schemas"]["RefRole"];
         };
         SourceRefsResponse: {
             /**
@@ -2621,50 +2546,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    list_providers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of available data providers */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProviderInfo"][];
-                };
-            };
-        };
-    };
-    list_refs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RefsRequest"];
-            };
-        };
-        responses: {
-            /** @description The program's typed external references */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SourceRefInfo"][];
-                };
             };
         };
     };

@@ -50,9 +50,6 @@ use utoipa::OpenApi;
         crate::auth::routes::get_me,
         crate::auth::routes::logout,
         crate::auth::routes::list_workspaces,
-        // Providers
-        crate::routes::providers::list_providers,
-        crate::routes::providers::list_refs,
         // Organization
         crate::routes::org::list_users,
         crate::routes::org::remove_user,
@@ -136,12 +133,6 @@ use utoipa::OpenApi;
         crate::routes::org::OrgIdentityResponse,
         // Discovery
         crate::graph::types::TabularData,
-        // Providers
-        fossil_run_status::ProviderInfo,
-        fossil_run_status::ProviderKind,
-        fossil_run_status::SourceRefInfo,
-        fossil_run_status::RefRole,
-        crate::routes::providers::RefsRequest,
         // AI / Conversations
         crate::ai::routes::AskRequest,
         crate::ai::routes::AskResponse,

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { api } from "@/lib/api";
+import { refs as fossilRefs } from "./lineage";
 import type { Schemas } from "@/lib/api/client";
 // Type-only — erased at compile time, so it does NOT eager-load the heavy wasm
 // module (the runtime values come from the dynamic `import()` below).
@@ -32,6 +33,38 @@ const uploadFetch: typeof fetch = (input, init) => {
 };
 
 /**
+ * Resolve the program's output ShEx so the executor shapes the GraphAr graph
+ * (edges + typed props). The browser executor stubs out its filesystem, so it
+ * never reads the `schema = "@conn/x.shex"` the program declares in `io.rdf`;
+ * with no `shex` it falls back to `ACCEPT_ALL_DEFAULT` → every RDF object
+ * becomes a literal vertex property and NO edges are emitted. We hand it the
+ * same schema the program already references: ask fossil for the program's
+ * typed lineage (client-compute `refs()` in `@fossil-lang/wasm` — no regex, no
+ * server), take the `schema` ref, resolve it through the job's connection
+ * ref-map exactly like the executor's
+ * `resolve_source_uri` (`@name/path` → `{base}/path`), sign it, and fetch the
+ * text. Returns `undefined` when the program declares no schema ref (then the
+ * executor keeps its accept-all behaviour, as before).
+ */
+async function resolveOutputShex(program: string, jobId: string): Promise<string | undefined> {
+  const schemaRef = (await fossilRefs(program)).find((r) => r.role === "schema");
+  if (!schemaRef) return undefined;
+
+  const refMap = await api.jobs.sourceRefs(jobId);
+  const base = schemaRef.connection ? refMap[schemaRef.connection] : undefined;
+  const uri = base
+    ? `${base.replace(/\/+$/, "")}/${schemaRef.path}`
+    : schemaRef.connection
+      ? `@${schemaRef.connection}/${schemaRef.path}` // unknown alias: leave verbatim (the fetch surfaces the real error)
+      : schemaRef.path;
+
+  const signed = await api.jobs.signSourceUrls(jobId, [uri]);
+  const res = await fetch(signed[uri] ?? uri);
+  if (!res.ok) throw new Error(`fetch output ShEx ${uri}: ${res.status}`);
+  return res.text();
+}
+
+/**
  * Browser-driven execution (client-compute): when a job is `Pending`, the
  * browser is its worker. Reads the program from the job record, marks it
  * `Running` (reusing the completion PATCH), then runs the mapping on
@@ -58,11 +91,15 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         // the UI (and any other viewer) sees it in progress.
         await api.jobs.complete(jobId, { status: "running" });
 
+        // Resolve the output shape BEFORE loading the heavy executor — a cheap
+        // `/v1/refs` + sign + fetch. Drives edge generation (see helper).
+        const shex = await resolveOutputShex(program, jobId);
+
         const mod = await import("@fossil-lang/executor");
         await mod.initFossilExecutor({ wasmUrl: DF_WASM_URL });
         exec = new mod.FossilExecutor();
         // runJob reports the terminal `completed`/`failed` PATCH itself.
-        await mod.runJob(exec, program, makeJobTransport(jobId), { fetchImpl: uploadFetch });
+        await mod.runJob(exec, program, makeJobTransport(jobId), { fetchImpl: uploadFetch, shex });
       } catch (err) {
         // runJob already best-effort PATCHes `failed`; nothing else to do but log.
         console.error(`browser job run failed (${jobId})`, err);

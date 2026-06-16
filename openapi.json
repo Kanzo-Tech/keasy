@@ -1513,62 +1513,6 @@
         }
       }
     },
-    "/v1/providers": {
-      "get": {
-        "tags": [
-          "Providers"
-        ],
-        "operationId": "list_providers",
-        "responses": {
-          "200": {
-            "description": "List of available data providers",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ProviderInfo"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/refs": {
-      "post": {
-        "tags": [
-          "Providers"
-        ],
-        "operationId": "list_refs",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RefsRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "The program's typed external references",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SourceRefInfo"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/settings/ai/providers": {
       "get": {
         "tags": [
@@ -3006,41 +2950,6 @@
           }
         }
       },
-      "ProviderInfo": {
-        "type": "object",
-        "description": "One data-source provider fossil exposes: its short name, the file extensions\nit reads, and how it can be used.",
-        "required": [
-          "name",
-          "extensions",
-          "kind"
-        ],
-        "properties": {
-          "extensions": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "File extensions this provider reads (no leading dot)."
-          },
-          "kind": {
-            "$ref": "#/components/schemas/ProviderKind",
-            "description": "Whether the provider defines a type, loads data, or both."
-          },
-          "name": {
-            "type": "string",
-            "description": "Short provider name (e.g. `csv`, `json`, `parquet`)."
-          }
-        }
-      },
-      "ProviderKind": {
-        "type": "string",
-        "description": "What a provider can appear as in a program.",
-        "enum": [
-          "schema",
-          "data",
-          "both"
-        ]
-      },
       "ProviderSchema": {
         "type": "object",
         "required": [
@@ -3071,27 +2980,6 @@
           },
           "label": {
             "type": "string"
-          }
-        }
-      },
-      "RefRole": {
-        "type": "string",
-        "description": "The position a reference plays in an `io.*` source constructor.",
-        "enum": [
-          "data",
-          "schema"
-        ]
-      },
-      "RefsRequest": {
-        "type": "object",
-        "description": "Request body for `POST /v1/refs`: the `.fossil` script to parse.",
-        "required": [
-          "script"
-        ],
-        "properties": {
-          "script": {
-            "type": "string",
-            "description": "The `.fossil` program text whose external references to enumerate."
           }
         }
       },
@@ -3173,31 +3061,6 @@
         "properties": {
           "oidc": {
             "type": "boolean"
-          }
-        }
-      },
-      "SourceRefInfo": {
-        "type": "object",
-        "description": "One external reference a program makes. `connection` is the `@conn` alias the\nreference targets (`Some(\"cpi\")` for `@cpi/graph.ttl`), or `None` for a direct\nURL / local path. `path` is the remainder after the alias (or the whole\nlocator when there is no alias). This is the program's TYPED lineage — keasy\nderives a job's connection set from the distinct `connection`s, never from a\nregex over the script text.",
-        "required": [
-          "path",
-          "role"
-        ],
-        "properties": {
-          "connection": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The `@conn` alias this reference targets, or `None` for a direct URL/path."
-          },
-          "path": {
-            "type": "string",
-            "description": "The path within the connection, or the whole locator when unaliased."
-          },
-          "role": {
-            "$ref": "#/components/schemas/RefRole",
-            "description": "Where this reference appears in the source constructor."
           }
         }
       },

@@ -75,6 +75,27 @@ control-plane reconciles the live fleet toward it every `CP_RECONCILE_INTERVAL_S
 and `docker stack deploy`s it. Rollback = `git revert` the pin (or Swarm's automatic
 rollback on a failed health-gate). See `deploy/README.md`.
 
+## Users (identity is runtime, never seeded in the realm)
+
+The realm import carries only structure (clients, scopes, roles) — never people.
+Users enter through Keycloak's own flows:
+
+1. **Owner signs up** — Keycloak self-registration is enabled on the `keasy` realm
+   (`registrationAllowed`); the person registers at `https://${KC_HOSTNAME}/auth/realms/keasy/account`.
+2. **Admin provisions their workspace** with the owner's Keycloak `sub` (Admin
+   console → realm `keasy` → Users → the user → ID):
+   ```sh
+   make tenant slug=acme name="Acme" owner=<keycloak-sub>
+   git add deploy/environments/prod/tenants/acme.yaml && git commit && git push
+   # the reconcile loop creates the OIDC client + Organization + owner role-mapping
+   ```
+3. **Members are invited** to the workspace's Keycloak Organization (the control-plane's
+   `add_org_member` + `assign_client_role` wire membership + owner/member authz).
+
+The only non-human users in the realm are the two **service accounts** — the machine
+identities of keasy-server and the control-plane (OAuth2 client-credentials), which
+carry the `realm-management` roles those services need to call the admin API.
+
 ## On-the-fly version switch
 
 Bump `deploy/environments/prod/versions.env` (fleet) or a tenant override →

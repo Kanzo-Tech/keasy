@@ -1,23 +1,15 @@
-use std::convert::Infallible;
-
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
-    response::{IntoResponse, Response},
-    response::sse::{Event, KeepAlive, Sse},
+    response::IntoResponse,
 };
-use tokio_stream::wrappers::BroadcastStream;
-use tokio_stream::StreamExt;
-
-use tracing::warn;
 
 use crate::AppState;
 use crate::error::data_response;
 use crate::jobs::models::{
     CompleteJobRequest, CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601,
 };
-use super::runner::JobEvent;
 use crate::middleware::tenant::{IsMember, Require};
 
 use super::errors::{classify_error, JobApiError, JobRuntimeError};
@@ -43,7 +35,7 @@ pub async fn list_jobs(
     )
 )]
 pub async fn create_job(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -60,6 +52,8 @@ pub async fn create_job(
             error: None,
             mode: payload.mode.unwrap_or(RunMode::Integrated),
             connection_ids: payload.connection_ids.clone(),
+            created_by: ctx.user_id.clone(),
+            sink_connection_id: payload.sink_connection_id.clone(),
             script: Some(payload.script),
             manifest: None,
             catalog_manifest: None,
@@ -69,8 +63,11 @@ pub async fn create_job(
         return Ok((StatusCode::CREATED, data_response(job)).into_response());
     }
 
-    let dcat_enabled = payload.dcat_enabled.unwrap_or(false);
-
+    // Browser-driven execution: persist the program as `Pending` and let the
+    // client run it on DataFusion-WASM — sources via signed GET, GraphAr output
+    // via signed PUT, outcome via `PATCH /v1/jobs/{id}`. The server never runs
+    // the mapping (no subprocess, no data through the host). The runner is still
+    // linked but no longer spawned; its deletion is B6.
     let job = Job {
         id: id.clone(),
         status: JobStatus::Pending,
@@ -81,61 +78,15 @@ pub async fn create_job(
         error: None,
         mode: payload.mode.unwrap_or(RunMode::Integrated),
         connection_ids: payload.connection_ids.clone(),
-        script: None,
+        created_by: ctx.user_id.clone(),
+        sink_connection_id: payload.sink_connection_id.clone(),
+        script: Some(payload.script),
         manifest: None,
         catalog_manifest: None,
     };
 
     state.db.insert_job(&job).await
         .map_err(JobApiError::Internal)?;
-
-    let org_settings = if dcat_enabled {
-        state.db.get_workspace_identity().await.map(|identity| {
-            crate::settings::org::OrgSettings {
-                publisher_name: identity.legal_name,
-                ..Default::default()
-            }
-        })
-    } else {
-        None
-    };
-
-    // Owner cloud storage backs both the job's GraphAr output (always, when
-    // configured) and — for dcat jobs — the DCAT-AP catalog. Fetch once.
-    let owner_storage = state.db.get_owner_catalog_config().await;
-
-    let output_dest = owner_storage
-        .as_ref()
-        .map(|(_, base_url)| format!("{}/{}", base_url.trim_end_matches('/'), id));
-
-    let run_creds = crate::jobs::run_creds::build_run_creds(
-        &state.db,
-        &payload.connection_ids,
-        owner_storage.as_ref().map(|(account, _)| account.clone()),
-    )
-    .await;
-
-    // The catalog is written to owner storage via the `fossil catalog`
-    // subprocess (cloud secret reused from the run's dest). keasy only supplies
-    // the base URL; cloud auth rides the subprocess stdin, not a host resolver.
-    let catalog_dest = if dcat_enabled {
-        owner_storage
-            .as_ref()
-            .map(|(_, base_url)| base_url.clone())
-    } else {
-        None
-    };
-
-    use crate::jobs::runner::SpawnParams;
-    state.runner.spawn(SpawnParams {
-        job_id: id,
-        script: payload.script,
-        org_settings,
-        dcat_enabled,
-        output_dest,
-        run_creds,
-        catalog_dest,
-    });
 
     Ok((StatusCode::ACCEPTED, data_response(job)).into_response())
 }
@@ -211,15 +162,26 @@ pub async fn complete_job(
     let now = now_iso8601();
     let CompleteJobRequest { status, mut manifest, catalog_manifest, error } = payload;
 
-    // The output lives where the signed PUTs wrote it — `{owner_base}/{job_id}`
-    // (the same dest `resolve_output_urls` signs). keasy is authoritative over
-    // it, so stamp `manifest.dest` server-side rather than trust the browser:
-    // discovery reads `manifest.dest` as the dataset base for signed GETs.
-    if matches!(status, JobStatus::Completed) {
-        if let (Some(m), Some((_, base))) = (manifest.as_mut(), state.db.get_owner_catalog_config().await) {
-            m.dest = format!("{}/{}", base.trim_end_matches('/'), id);
-        }
+    // The output lives where the signed PUTs wrote it — `{dest_base}/{job_id}`,
+    // where `dest_base` is the connection the member chose as the destination
+    // (`sink_connection_id`), or the workspace substrate as fallback. keasy is
+    // authoritative over the dest, so stamp `manifest.dest` server-side (the same
+    // base `resolve_output_urls` signs) rather than trust the browser. Discovery
+    // reads `manifest.dest` as the dataset base for signed GETs.
+    // Creds the output was signed with — reused to register it in the catalog
+    // (the same account that wrote the Parquet reads its footers). Captured here
+    // because `status`/`manifest` move into the writer closure below.
+    let mut output_creds: Option<std::collections::HashMap<String, String>> = None;
+    if matches!(status, JobStatus::Completed)
+        && let Some(job) = state.db.get_job(&id).await
+        && let (Some(m), Some((base, creds))) = (manifest.as_mut(), state.db.job_output_target(&job).await)
+    {
+        m.dest = format!("{}/{}", base.trim_end_matches('/'), id);
+        output_creds = Some(creds);
     }
+
+    // Snapshot the stamped manifest for catalog registration before it moves.
+    let to_register = manifest.clone();
 
     let updated = state
         .db
@@ -252,70 +214,28 @@ pub async fn complete_job(
         .await
         .map_err(JobApiError::Internal)?;
 
+    // Register the output in the DuckLake catalog as one atomic snapshot —
+    // FIRE-AND-FORGET. The data is already durable at the sink, so a slow or
+    // failing catalog write must never delay (or fail) job completion. The
+    // detached task does the remote footer reads off the request path; whatever
+    // it misses, the reconciler (§11) picks up on its next pass.
+    if let (Some(catalog), Some(dataset), Some(creds)) =
+        (state.catalog.clone(), to_register, output_creds)
+    {
+        let job_id = id.clone();
+        tokio::spawn(async move {
+            match tokio::task::spawn_blocking(move || catalog.register(&job_id, &dataset, &creds)).await {
+                Ok(Ok(())) => {}
+                Ok(Err(e)) => tracing::warn!(error = %e, "catalog registration failed (reconciler will retry)"),
+                Err(e) => tracing::warn!(error = %e, "catalog registration task panicked"),
+            }
+        });
+    }
+
     match updated {
         Some(job) => Ok(data_response(job).into_response()),
         None => Err(JobApiError::NotFound),
     }
-}
-
-#[utoipa::path(get, path = "/v1/jobs/{id}/stream", tag = "Jobs",
-    params(("id" = String, Path, description = "Job ID")),
-    responses(
-        (status = 200, description = "SSE stream of job progress events", body = JobEvent, content_type = "text/event-stream"),
-        (status = 404, description = "Job not found"),
-    )
-)]
-pub async fn stream_job(
-    _ctx: Require<IsMember>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Result<Response, JobApiError> {
-    let job = state.db.get_job(id.as_str()).await
-        .ok_or(JobApiError::NotFound)?;
-
-    fn is_terminal(status: &JobStatus) -> bool {
-        matches!(status, JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled)
-    }
-
-    fn terminal_event(job: &Job) -> JobEvent {
-        let (phase, error) = match job.status {
-            JobStatus::Completed => ("complete", None),
-            JobStatus::Failed => ("error", job.error.as_ref().map(|e| e.message.clone())),
-            JobStatus::Cancelled => ("complete", None),
-            _ => ("complete", None),
-        };
-        JobEvent { phase: phase.into(), index: 4, total: 5, error }
-    }
-
-    // Already terminal → single event + close
-    if is_terminal(&job.status) {
-        let evt = terminal_event(&job);
-        let stream = futures::stream::once(async move {
-            Ok::<_, Infallible>(Event::default().data(serde_json::to_string(&evt).unwrap_or_else(|e| { warn!("SSE serialization failed: {e}"); "{}".to_string() })))
-        });
-        return Ok(Sse::new(stream).keep_alive(KeepAlive::default()).into_response());
-    }
-
-    // Subscribe to broadcast channel
-    let rx = match state.runner.subscribe(&id) {
-        Some(rx) => rx,
-        None => {
-            // Channel gone — job may have finished between DB read and subscribe; refetch
-            let job = state.db.get_job(id.as_str()).await
-                .ok_or(JobApiError::NotFound)?;
-            let evt = terminal_event(&job);
-            let stream = futures::stream::once(async move {
-                Ok::<_, Infallible>(Event::default().data(serde_json::to_string(&evt).unwrap_or_else(|e| { warn!("SSE serialization failed: {e}"); "{}".to_string() })))
-            });
-            return Ok(Sse::new(stream).keep_alive(KeepAlive::default()).into_response());
-        }
-    };
-
-    let stream = BroadcastStream::new(rx)
-        .filter_map(|r| r.ok())
-        .map(|evt| Ok::<_, Infallible>(Event::default().data(serde_json::to_string(&evt).unwrap_or_else(|e| { warn!("SSE serialization failed: {e}"); "{}".to_string() }))));
-
-    Ok(Sse::new(stream).keep_alive(KeepAlive::default()).into_response())
 }
 
 #[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -340,6 +260,18 @@ pub async fn delete_job(
 
     state.db.remove_job(id.as_str()).await
         .map_err(JobApiError::Internal)?;
+
+    // Drop the job's dataset from the catalog so governance stops listing a ghost
+    // — BYOS-safe (only catalog metadata, never the member's Parquet). Whatever
+    // this misses, the reconciler's deregister pass cleans up.
+    if let Some(catalog) = state.catalog.clone() {
+        let job_id = id.clone();
+        tokio::spawn(async move {
+            if let Ok(Err(e)) = tokio::task::spawn_blocking(move || catalog.unregister(&job_id)).await {
+                tracing::warn!(error = %e, "catalog unregister failed (reconciler will retry)");
+            }
+        });
+    }
 
     Ok(StatusCode::NO_CONTENT.into_response())
 }

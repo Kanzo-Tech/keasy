@@ -31,14 +31,12 @@ import type { ConnectionKind, LocationType } from "@/lib/types";
 /** URL schemes per provider. First entry is the default. */
 const PROVIDER_SCHEMES: Record<string, string[]> = {
   azure: ["az://", "azure://", "abfss://", "abfs://", "adl://"],
-  gcp: ["gs://"],
   s3: ["s3://"],
 };
 
 const PROVIDER_PLACEHOLDERS: Record<string, string> = {
   azure: "my-container",
   s3: "my-bucket/prefix/",
-  gcp: "my-bucket/prefix/",
 };
 
 export function ConnectionEditor() {
@@ -186,7 +184,7 @@ export function ConnectionEditor() {
             <RadioGroupItem value="cloud" id="loc-cloud" className="sr-only" />
             <p className="text-sm font-medium leading-none">Cloud</p>
             <p className="text-xs text-muted-foreground">
-              S3, GCS, or Azure storage
+              S3 or Azure storage
             </p>
           </Label>
           <ComingSoon placement="inline">

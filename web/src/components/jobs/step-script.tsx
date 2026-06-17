@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/layout/page-shell";
 import { FossilEditor } from "@fossil-lang/editor";
 import { useFossilLspTransport } from "@/lib/fossil/use-fossil-lsp-transport";
+import { useFossilWasmReady } from "@/lib/fossil/use-fossil-wasm";
 import { useSourceDescriptors } from "@/lib/fossil/use-source-descriptors";
 import type {
   ConnectionResolver,
@@ -30,7 +31,7 @@ import type { Connection, ProviderInfo, CreationMode } from "@/lib/types";
 //     position). `label` carries a human kind hint shown in the popover. `type`
 //     is collapsed to `'public_http'` because the Tier-1 connector taxonomy
 //     (`local_file | public_http | upload | examples` per ADR-0029) is closed
-//     and Keasy's cloud-mediated S3/GCS/Azure connectors don't slot into it
+//     and Keasy's cloud-mediated S3/Azure connectors don't slot into it
 //     cleanly. The editor uses `type` only to pick an icon — `'public_http'`
 //     produces the generic cloud glyph which is the correct affordance.
 //   - `resolve()`: not used at edit time — Keasy script execution happens
@@ -106,6 +107,10 @@ export function StepScript({
   // mount effect from tearing down across renders.
   const lspTransport = useFossilLspTransport();
 
+  // The codemirror language tokenizes via @fossil-lang/wasm on the MAIN thread —
+  // gate the editor on a main-thread wasm init (the LSP worker has its own copy).
+  const wasmReady = useFossilWasmReady();
+
   const resolver = useKeasyResolver(connections, providers);
 
   // Schema-aware completion: introspect each `@conn/path` source binding
@@ -167,14 +172,20 @@ export function StepScript({
           connections" hint above the editor stands in as the empty-state
           cue.
         */}
-        <FossilEditor
-          value={script}
-          onChange={onScriptChange}
-          lspTransport={lspTransport}
-          resolver={resolver}
-          descriptors={descriptors}
-          className="flex-1"
-        />
+        {wasmReady ? (
+          <FossilEditor
+            value={script}
+            onChange={onScriptChange}
+            lspTransport={lspTransport}
+            resolver={resolver}
+            descriptors={descriptors}
+            className="flex-1"
+          />
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </div>
+        )}
       </PageShell.Content>
 
       <PageShell.Footer>

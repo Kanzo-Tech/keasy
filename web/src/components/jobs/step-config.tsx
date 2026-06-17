@@ -5,18 +5,28 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FormField } from "@/components/shared/form-layout";
 import { PageShell } from "@/components/layout/page-shell";
 import { ComingSoon } from "@/components/shared/coming-soon";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { RunMode } from "@/lib/types";
+import type { RunMode, Connection } from "@/lib/types";
 
 interface StepConfigProps {
   name: string;
   onNameChange: (name: string) => void;
   mode: RunMode;
   onModeChange: (mode: RunMode) => void;
+  connections: Connection[];
+  sinkConnectionId: string | null;
+  onSinkChange: (id: string) => void;
   dcatEnabled: boolean;
   onDcatToggle: (enabled: boolean) => void;
   orgConfigured: boolean;
@@ -30,6 +40,9 @@ export function StepConfig({
   onNameChange,
   mode,
   onModeChange,
+  connections,
+  sinkConnectionId,
+  onSinkChange,
   dcatEnabled,
   onDcatToggle,
   orgConfigured,
@@ -84,6 +97,26 @@ export function StepConfig({
               </Label>
             </ComingSoon>
           </RadioGroup>
+        </FormField>
+
+        <FormField label="Output destination">
+          <Select value={sinkConnectionId ?? undefined} onValueChange={onSinkChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Where to save the generated graph…" />
+            </SelectTrigger>
+            <SelectContent>
+              {connections.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name} — {c.url}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-1">
+            {connections.length === 0
+              ? "No connections yet — add one in Connections to choose a destination."
+              : "The output lands under this connection: {destination}/{job id}."}
+          </p>
         </FormField>
 
         {/* DCAT toggle */}

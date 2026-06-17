@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toastError } from "@/lib/toast-error";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
+import { useBrowserJobRunner } from "@/lib/fossil/use-browser-job-runner";
 import { queryKeys } from "@/lib/query-keys";
 import { reverseMapUrl } from "@/lib/formatters";
 import { isTerminalStatus } from "@/lib/utils";
@@ -34,6 +35,10 @@ export function JobDetailView({ id }: { id: string }) {
     queryKey: queryKeys.connections.all(),
     queryFn: () => api.connections.list(),
   });
+
+  // Browser-driven execution: a `Pending` job runs on DataFusion-WASM here in
+  // the client (the server never runs the mapping). No-op for any other status.
+  useBrowserJobRunner(job);
 
   const showSkeleton = useDelayedLoading(isLoading);
 

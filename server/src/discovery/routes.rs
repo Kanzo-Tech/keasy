@@ -6,14 +6,29 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use http::Method;
-use secrecy::ExposeSecret;
 use serde::{Deserialize, Serialize};
 
 use crate::AppState;
 use crate::error::error_body;
-use crate::jobs::fossil_runner::CloudSecret;
-use crate::jobs::models::JobStatus;
-use crate::middleware::tenant::{IsMember, IsOwner, Require};
+use crate::jobs::models::{Job, JobStatus};
+use crate::middleware::tenant::{IsMember, Require};
+
+/// Data sovereignty: only the job's producer (`created_by`) may read or run its
+/// DATA — sources, output Parquet, the GraphAr manifest. The CATALOG (DCAT
+/// metadata) stays open to every member: the owner discovers the space at the
+/// metadata level, never the bytes (IDS/Solid model).
+fn forbid_non_producer(job: &Job, user_id: &str) -> Option<Response> {
+    (job.created_by != user_id).then(|| {
+        (
+            StatusCode::FORBIDDEN,
+            Json(error_body(
+                "not_producer",
+                "Only the data producer can access this dataset's data",
+            )),
+        )
+            .into_response()
+    })
+}
 
 /// Checks that output is ready and returns Ok(()) or appropriate error.
 pub(crate) async fn require_output_ready(
@@ -46,17 +61,16 @@ struct ResolveResponse {
 
 /// Sign the given dataset-relative paths under `base_url` for `method`. Shared
 /// by the discover + catalog readers (`Method::GET`) and the browser output
-/// uploader (`Method::PUT`) — each caller supplies its file list. The output
-/// lives in the owner sink, so it is signed with the sink's creds.
+/// uploader (`Method::PUT`) — each caller supplies its file list and the creds
+/// of the job's output target (the connection the member chose, or the
+/// substrate fallback), so reads/writes are signed against the right store.
 async fn sign_manifest_urls(
-    state: &AppState,
     method: Method,
     base_url: &str,
+    creds: &HashMap<String, String>,
     files: &[String],
 ) -> Result<Response, Response> {
-    let creds = state.db.owner_output_storage_config().await;
-
-    let (store, prefix) = crate::cloud::build_store(base_url, &creds)
+    let (store, prefix) = crate::cloud::build_store(base_url, creds)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("store_error", e.to_string()))).into_response())?;
 
     let all_files: Vec<String> = files.to_vec();
@@ -94,29 +108,33 @@ pub struct OutputUrlsRequest {
     request_body = OutputUrlsRequest,
     responses(
         (status = 200, description = "Signed PUT URLs for the output keys", body = ResolveResponse),
-        (status = 400, description = "No owner output storage configured"),
+        (status = 400, description = "No data space substrate configured"),
         (status = 404, description = "Job not found"),
     )
 )]
 /// Sign PUT URLs so the browser uploads the GraphAr output it just produced
-/// directly to owner storage (no data through the server). The output lives at
-/// `{owner_base}/{job_id}/<key>` — the same dest the completion `RunStatus`
-/// reports. Mirrors `resolve_discover_urls` but signs `PUT` for upload.
+/// directly to the member's chosen destination (no data through the server).
+/// The output lives at `{dest_base}/{job_id}/<key>` where `dest_base` is the
+/// connection the member picked (`sink_connection_id`), or the substrate
+/// fallback — the same dest the completion `RunStatus` reports.
 pub async fn resolve_output_urls(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<OutputUrlsRequest>,
 ) -> Response {
-    if state.db.get_job(id.as_str()).await.is_none() {
+    let Some(job) = state.db.get_job(id.as_str()).await else {
         return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response();
-    }
-    let Some((_, base_url)) = state.db.get_owner_catalog_config().await else {
-        return (StatusCode::BAD_REQUEST, Json(error_body("no_owner_storage", "No owner output storage is configured"))).into_response();
     };
-    let dest = format!("{}/{}", base_url.trim_end_matches('/'), id);
+    if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
+        return resp;
+    }
+    let Some((base, creds)) = state.db.job_output_target(&job).await else {
+        return (StatusCode::BAD_REQUEST, Json(error_body("no_destination", "No output destination configured — pick one in the job config"))).into_response();
+    };
+    let dest = format!("{}/{}", base.trim_end_matches('/'), id);
 
-    match sign_manifest_urls(&state, Method::PUT, &dest, &req.paths).await {
+    match sign_manifest_urls(Method::PUT, &dest, &creds, &req.paths).await {
         Ok(resp) | Err(resp) => resp,
     }
 }
@@ -142,13 +160,16 @@ struct SourceRefsResponse {
 /// executor's `sources()`/`run()` to resolve `@conn` aliases. No credentials —
 /// only the base URLs (signing is a separate, per-URL call).
 pub async fn resolve_source_refs(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
     let Some(job) = state.db.get_job(id.as_str()).await else {
         return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response();
     };
+    if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
+        return resp;
+    }
     let mut refs = HashMap::new();
     for cid in &job.connection_ids {
         if let Some(c) = state.db.get_connection(cid).await {
@@ -186,7 +207,7 @@ struct SourceUrlsResponse {
 /// job connection whose base URL prefixes it; non-cloud (HTTP/public) URIs pass
 /// through verbatim.
 pub async fn resolve_source_urls(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<SourceUrlsRequest>,
@@ -194,6 +215,9 @@ pub async fn resolve_source_urls(
     let Some(job) = state.db.get_job(id.as_str()).await else {
         return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response();
     };
+    if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
+        return resp;
+    }
     // (base URL, cloud account) of each connection — used to pick the creds for
     // a cloud source by longest-prefix match on its base URL.
     let mut conns: Vec<(String, Option<String>)> = Vec::new();
@@ -240,7 +264,7 @@ pub async fn resolve_source_urls(
     )
 )]
 pub async fn resolve_discover_urls(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
@@ -248,6 +272,9 @@ pub async fn resolve_discover_urls(
         Some(j) => j,
         None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
     };
+    if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
+        return resp;
+    }
     if job.status != JobStatus::Completed {
         return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
     }
@@ -262,7 +289,8 @@ pub async fn resolve_discover_urls(
         .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
         .collect();
 
-    match sign_manifest_urls(&state, Method::GET, base, &files).await {
+    let creds = state.db.job_output_target(&job).await.map(|(_, c)| c).unwrap_or_default();
+    match sign_manifest_urls(Method::GET, base, &creds, &files).await {
         Ok(resp) => resp,
         Err(resp) => resp,
     }
@@ -287,7 +315,7 @@ struct ManifestResponse {
     )
 )]
 pub async fn resolve_discover_manifest(
-    _ctx: Require<IsMember>,
+    ctx: Require<IsMember>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
@@ -295,6 +323,9 @@ pub async fn resolve_discover_manifest(
         Some(j) => j,
         None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
     };
+    if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
+        return resp;
+    }
     if job.status != JobStatus::Completed {
         return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
     }
@@ -303,7 +334,7 @@ pub async fn resolve_discover_manifest(
     };
     let base = &manifest.dest;
 
-    let creds = state.db.owner_output_storage_config().await;
+    let creds = state.db.job_output_target(&job).await.map(|(_, c)| c).unwrap_or_default();
 
     match read_manifest_files(base, &creds).await {
         Ok(manifest_files) => Json(ManifestResponse { manifest_files }).into_response(),
@@ -374,7 +405,8 @@ pub async fn resolve_catalog_urls(
         .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
         .collect();
 
-    match sign_manifest_urls(&state, Method::GET, base, &files).await {
+    let creds = state.db.job_output_target(&job).await.map(|(_, c)| c).unwrap_or_default();
+    match sign_manifest_urls(Method::GET, base, &creds, &files).await {
         Ok(resp) => resp,
         Err(resp) => resp,
     }
@@ -406,106 +438,10 @@ pub async fn resolve_catalog_manifest(
     };
     let base = &manifest.dest;
 
-    let creds = state.db.owner_output_storage_config().await;
+    let creds = state.db.job_output_target(&job).await.map(|(_, c)| c).unwrap_or_default();
 
     match read_manifest_files(base, &creds).await {
         Ok(manifest_files) => Json(ManifestResponse { manifest_files }).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("manifest_error", e))).into_response(),
-    }
-}
-
-// ── Owner-gated execute_sql (server-side via fossil-mcp) ─────────────────
-
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct ExecuteSqlRequest {
-    /// SQL to run against the GraphAr views (vertex/edge type names).
-    pub sql: String,
-    /// Max rows returned (the verb enforces an outer LIMIT). Default 10k.
-    #[serde(default)]
-    pub row_cap: Option<u32>,
-    /// Wall-clock cap, milliseconds. Default 10s.
-    #[serde(default)]
-    pub timeout_ms: Option<u32>,
-}
-
-/// Project the owner storage account's DuckDB secret to `{ type, params }` JSON
-/// for the fossil-mcp dataset. Secret values are exposed ONLY here, into the
-/// JSON written to the MCP child's stdin pipe — never logged.
-fn secret_to_json(cs: &CloudSecret) -> serde_json::Value {
-    let params: serde_json::Map<String, serde_json::Value> = cs
-        .params
-        .iter()
-        .map(|(k, v)| (k.clone(), serde_json::Value::String(v.expose_secret().to_owned())))
-        .collect();
-    serde_json::json!({ "type": cs.secret_type, "params": params })
-}
-
-#[utoipa::path(post, path = "/v1/jobs/{id}/discover/execute-sql", tag = "Discovery",
-    params(("id" = String, Path, description = "Job ID")),
-    request_body = ExecuteSqlRequest,
-    responses(
-        (status = 200, description = "Verb result: { columns, rows, truncated }"),
-        (status = 403, description = "Owner role required"),
-        (status = 404, description = "Job not found or no output"),
-    )
-)]
-pub async fn execute_discover_sql(
-    _ctx: Require<IsOwner>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-    Json(req): Json<ExecuteSqlRequest>,
-) -> Response {
-    let job = match state.db.get_job(id.as_str()).await {
-        Some(j) => j,
-        None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
-    };
-    if job.status != JobStatus::Completed {
-        return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
-    }
-    let Some(manifest) = &job.manifest else {
-        return (StatusCode::NOT_FOUND, Json(error_body("no_output", "Job has no RDF output"))).into_response();
-    };
-    let base = &manifest.dest;
-
-    // The owner storage account backs the GraphAr output; its DuckDB secret
-    // reads it over httpfs inside fossil-mcp.
-    let secret = match state.db.get_owner_catalog_config().await {
-        Some((account_id, _)) => state
-            .db
-            .get_cloud_account(&account_id)
-            .await
-            .as_ref()
-            .and_then(crate::jobs::run_creds::cloud_secret)
-            .map(|cs| secret_to_json(&cs)),
-        None => None,
-    };
-
-    let creds = state.db.owner_output_storage_config().await;
-    let manifest_files = match read_manifest_files(base, &creds).await {
-        Ok(m) => m,
-        Err(e) => {
-            return (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("manifest_error", e))).into_response();
-        }
-    };
-
-    let dataset = serde_json::json!({
-        "dest": base,
-        "secret": secret,
-        "manifest_files": manifest_files,
-    });
-    let mut params = serde_json::json!({ "sql": req.sql });
-    if let Some(rc) = req.row_cap {
-        params["row_cap"] = rc.into();
-    }
-    if let Some(t) = req.timeout_ms {
-        params["timeout_ms"] = t.into();
-    }
-    let operation = serde_json::json!({ "verb": "execute_sql", "params": params });
-
-    match super::mcp::dispatch_verb(dataset, operation).await {
-        Ok(result) => Json(result).into_response(),
-        Err(e) => {
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("execute_sql_error", e))).into_response()
-        }
     }
 }

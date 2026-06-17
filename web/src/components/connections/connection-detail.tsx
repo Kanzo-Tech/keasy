@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
+import { providers as fossilProviders } from "@/lib/fossil/lineage";
 import { queryKeys } from "@/lib/query-keys";
 import { MetaItem } from "@/components/shared/meta-item";
 import { PageShell } from "@/components/layout/page-shell";
@@ -34,7 +35,7 @@ export function ConnectionDetail({ id }: { id: string }) {
   });
   const { data: providers = [], isLoading: providersLoading } = useQuery({
     queryKey: queryKeys.settings.providers,
-    queryFn: () => api.settings.providers(),
+    queryFn: () => fossilProviders(),
   });
 
   const isLoading = connLoading || schemaLoading || accountsLoading || providersLoading;

@@ -1,5 +1,6 @@
 import {
   Bot,
+  Boxes,
   Building2,
   Database,
   GalleryVerticalEnd,
@@ -41,7 +42,8 @@ const ROUTES: Record<string, RouteDef> = {
   // Owner plane (metadata + people)
   "/members":                     { name: "Members", icon: Users, sidebar: ["owner"] },
   "/identity":                    { name: "Identity", icon: Building2, sidebar: ["owner"] },
-  "/catalog":                     { name: "Catalog", icon: GalleryVerticalEnd, sidebar: ["owner"] },
+  "/datasets":                    { name: "Data Catalog", icon: Boxes, sidebar: ["owner"] },
+  "/catalog":                     { name: "Catalog Storage", icon: GalleryVerticalEnd, sidebar: ["owner"] },
   // Settings (not in main sidebar — reached via the user menu)
   "/settings":                    { name: "Settings", icon: Settings2 },
   "/settings/preferences":        { name: "Preferences" },

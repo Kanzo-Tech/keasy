@@ -128,8 +128,14 @@
   "roles": {
     "client": {
       "keasy-server": [
-        { "name": "owner", "description": "Workspace owner — metadata plane" },
-        { "name": "member", "description": "Workspace member — data plane" }
+        {
+          "name": "owner",
+          "description": "Workspace owner — metadata plane"
+        },
+        {
+          "name": "member",
+          "description": "Workspace member — data plane"
+        }
       ]
     }
   },
@@ -149,11 +155,41 @@
         "http://localhost:8080/v1/auth/oidc-callback",
         "http://localhost:3000/v1/auth/oidc-callback"
       ],
-      "webOrigins": ["+"],
+      "webOrigins": [
+        "+"
+      ],
       "attributes": {
         "post.logout.redirect.uris": "http://localhost:8080/*##http://localhost:3000/*"
       },
-      "defaultClientScopes": ["openid", "profile", "email", "keasy-role"]
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "keasy-role"
+      ]
+    },
+    {
+      "clientId": "keasy-control-plane",
+      "name": "Keasy Control Plane",
+      "description": "Provisioner service account — creates per-tenant OIDC clients via the admin API.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "keasy-control-plane-dev-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [],
+      "webOrigins": [],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:8080/*##http://localhost:3000/*"
+      },
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "keasy-role"
+      ]
     }
   ],
   "users": [
@@ -165,8 +201,18 @@
       "lastName": "Owner",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [{ "type": "password", "value": "owner", "temporary": false }],
-      "clientRoles": { "keasy-server": ["owner"] }
+      "credentials": [
+        {
+          "type": "password",
+          "value": "owner",
+          "temporary": false
+        }
+      ],
+      "clientRoles": {
+        "keasy-server": [
+          "owner"
+        ]
+      }
     },
     {
       "id": "bbbb0000-0000-0000-0000-000000000001",
@@ -176,8 +222,18 @@
       "lastName": "Member",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [{ "type": "password", "value": "member", "temporary": false }],
-      "clientRoles": { "keasy-server": ["member"] }
+      "credentials": [
+        {
+          "type": "password",
+          "value": "member",
+          "temporary": false
+        }
+      ],
+      "clientRoles": {
+        "keasy-server": [
+          "member"
+        ]
+      }
     },
     {
       "username": "service-account-keasy-server",
@@ -185,8 +241,28 @@
       "serviceAccountClientId": "keasy-server",
       "clientRoles": {
         "realm-management": [
-          "manage-users", "view-users", "query-users", "view-clients",
-          "manage-organizations", "view-organizations"
+          "manage-users",
+          "view-users",
+          "query-users",
+          "view-clients",
+          "manage-organizations",
+          "view-organizations"
+        ]
+      }
+    },
+    {
+      "username": "service-account-keasy-control-plane",
+      "enabled": true,
+      "serviceAccountClientId": "keasy-server",
+      "clientRoles": {
+        "realm-management": [
+          "manage-clients",
+          "manage-organizations",
+          "manage-users",
+          "query-users",
+          "view-clients",
+          "view-organizations",
+          "view-users"
         ]
       }
     }

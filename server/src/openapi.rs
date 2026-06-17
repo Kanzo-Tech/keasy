@@ -20,7 +20,6 @@ use utoipa::OpenApi;
         crate::jobs::routes::update_job,
         crate::jobs::routes::complete_job,
         crate::jobs::routes::delete_job,
-        crate::jobs::routes::stream_job,
         // Connections
         crate::connections::routes::list_connections,
         crate::connections::routes::create_connection,
@@ -51,9 +50,6 @@ use utoipa::OpenApi;
         crate::auth::routes::get_me,
         crate::auth::routes::logout,
         crate::auth::routes::list_workspaces,
-        // Providers
-        crate::routes::providers::list_providers,
-        crate::routes::providers::list_refs,
         // Organization
         crate::routes::org::list_users,
         crate::routes::org::remove_user,
@@ -69,7 +65,7 @@ use utoipa::OpenApi;
         crate::discovery::routes::resolve_discover_urls,
         crate::discovery::routes::resolve_discover_manifest,
         crate::discovery::routes::resolve_catalog_manifest,
-        crate::discovery::routes::execute_discover_sql,
+        crate::catalog::routes::list_catalog_datasets,
         // AI / Conversations
         crate::ai::routes::ask_discover_stream,
         crate::ai::routes::create_conversation,
@@ -136,16 +132,13 @@ use utoipa::OpenApi;
         crate::routes::org::UpdateOrgIdentityPayload,
         crate::routes::org::CreateOrgInviteResponse,
         crate::routes::org::OrgIdentityResponse,
-        // Jobs
-        crate::jobs::runner::JobEvent,
         // Discovery
         crate::graph::types::TabularData,
-        // Providers
-        fossil_run_status::ProviderInfo,
-        fossil_run_status::ProviderKind,
-        fossil_run_status::SourceRefInfo,
-        fossil_run_status::RefRole,
-        crate::routes::providers::RefsRequest,
+        // Catalog (governance)
+        crate::catalog::routes::DatasetsResponse,
+        crate::catalog::view::CatalogDataset,
+        crate::catalog::view::CatalogTable,
+        crate::catalog::view::CatalogColumn,
         // AI / Conversations
         crate::ai::routes::AskRequest,
         crate::ai::routes::AskResponse,

@@ -143,6 +143,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/catalog/datasets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the workspace catalog: every registered dataset (a completed job's
+         *     output) with its types, columns and row counts. Governance metadata — open to
+         *     every member (the IDS/Solid model: members discover the space at the metadata
+         *     level, the bytes stay producer-scoped).
+         */
+        get: operations["list_catalog_datasets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/cloud-accounts": {
         parameters: {
             query?: never;
@@ -373,22 +395,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/discover/execute-sql": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["execute_discover_sql"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/jobs/{id}/discover/manifest": {
         parameters: {
             query?: never;
@@ -432,9 +438,10 @@ export interface paths {
         put?: never;
         /**
          * Sign PUT URLs so the browser uploads the GraphAr output it just produced
-         *     directly to owner storage (no data through the server). The output lives at
-         *     `{owner_base}/{job_id}/<key>` — the same dest the completion `RunStatus`
-         *     reports. Mirrors `resolve_discover_urls` but signs `PUT` for upload.
+         *     directly to the member's chosen destination (no data through the server).
+         *     The output lives at `{dest_base}/{job_id}/<key>` where `dest_base` is the
+         *     connection the member picked (`sink_connection_id`), or the substrate
+         *     fallback — the same dest the completion `RunStatus` reports.
          */
         post: operations["resolve_output_urls"];
         delete?: never;
@@ -480,22 +487,6 @@ export interface paths {
          *     through verbatim.
          */
         post: operations["resolve_source_urls"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["stream_job"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -581,38 +572,6 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["remove_user"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/providers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_providers"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/refs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["list_refs"];
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -792,9 +751,33 @@ export interface components {
             label: string;
             name: string;
         };
+        CatalogColumn: {
+            /** @description DuckDB type spelling (`VARCHAR`, `BIGINT`, …). */
+            data_type: string;
+            name: string;
+        };
+        /** @description One registered dataset (a completed job's output) as the catalog sees it. */
+        CatalogDataset: {
+            /** @description The job id (the `job_` schema suffix), the dataset's stable handle. */
+            job_id: string;
+            /** @description One entry per registered vertex/edge type. */
+            tables: components["schemas"]["CatalogTable"][];
+        };
         CatalogStoragePayload: {
             base_url: string;
             cloud_account_id: string;
+        };
+        /** @description A registered type within a dataset and its SQL shape. */
+        CatalogTable: {
+            /** @description Property columns, in declaration order. */
+            columns: components["schemas"]["CatalogColumn"][];
+            /** @description Type / table name (e.g. `Person`, `knows_by_source`). */
+            name: string;
+            /**
+             * Format: int64
+             * @description Row count from the Parquet footers (cheap — no full scan).
+             */
+            rows?: number | null;
         };
         CloudAccountSummary: {
             auth_method?: string | null;
@@ -903,6 +886,8 @@ export interface components {
             mode?: null | components["schemas"]["RunMode"];
             name?: string | null;
             script: string;
+            /** @description The connection the member picked as the output destination (job config). */
+            sink_connection_id?: string | null;
         };
         CreateOrgInviteResponse: {
             invite_url: string;
@@ -911,6 +896,10 @@ export interface components {
         /** @description Typed envelope for successful API responses: `{ "data": T }`. */
         DataResponse_Value: {
             data: unknown;
+        };
+        DatasetsResponse: {
+            /** @description Every registered dataset in the workspace catalog. */
+            datasets: components["schemas"]["CatalogDataset"][];
         };
         /**
          * @description Whether a connection is a READ source (programs reference it via `@conn`) or
@@ -939,20 +928,6 @@ export interface components {
             edge_type: string;
             /** @description Source vertex type. */
             src_type: string;
-        };
-        ExecuteSqlRequest: {
-            /**
-             * Format: int32
-             * @description Max rows returned (the verb enforces an outer LIMIT). Default 10k.
-             */
-            row_cap?: number | null;
-            /** @description SQL to run against the GraphAr views (vertex/edge type names). */
-            sql: string;
-            /**
-             * Format: int32
-             * @description Wall-clock cap, milliseconds. Default 10s.
-             */
-            timeout_ms?: number | null;
         };
         FieldSchema: {
             default_value?: string | null;
@@ -998,23 +973,27 @@ export interface components {
             completed_at?: string | null;
             connection_ids?: string[];
             created_at: string;
+            /**
+             * @description Keycloak `sub` of the member who created the job — the data-product owner.
+             *     Server-derived (never from the client); used for producer-scoped data
+             *     access (only the producer reads/runs the job's data) + DCAT publisher.
+             */
+            created_by?: string;
             error?: null | components["schemas"]["JobRuntimeError"];
             id: string;
             manifest?: null | components["schemas"]["RunStatus"];
             mode: components["schemas"]["RunMode"];
             name?: string | null;
             script?: string | null;
+            /**
+             * @description Connection the member chose as the output destination (where the GraphAr
+             *     output lands). The producer owns where their data product goes — output is
+             *     signed with this connection's cloud creds, under `{conn.url}/{job_id}`.
+             *     `None` falls back to the workspace substrate (transitional).
+             */
+            sink_connection_id?: string | null;
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
-        };
-        /** @description SSE event emitted by the job runner at each execution phase. */
-        JobEvent: {
-            error?: string | null;
-            /** Format: int32 */
-            index: number;
-            phase: string;
-            /** Format: int32 */
-            total: number;
         };
         /**
          * @description Runtime job error — stored in the database as JSON on a failed job.
@@ -1090,39 +1069,12 @@ export interface components {
             mono_font_family: string;
             mono_font_size: string;
         };
-        /**
-         * @description One data-source provider fossil exposes: its short name, the file extensions
-         *     it reads, and how it can be used.
-         */
-        ProviderInfo: {
-            /** @description File extensions this provider reads (no leading dot). */
-            extensions: string[];
-            /** @description Whether the provider defines a type, loads data, or both. */
-            kind: components["schemas"]["ProviderKind"];
-            /** @description Short provider name (e.g. `csv`, `json`, `parquet`). */
-            name: string;
-        };
-        /**
-         * @description What a provider can appear as in a program.
-         * @enum {string}
-         */
-        ProviderKind: "schema" | "data" | "both";
         ProviderSchema: {
             auth_methods: components["schemas"]["AuthMethodSchema"][];
             common_fields: components["schemas"]["FieldSchema"][];
             icon: string;
             id: string;
             label: string;
-        };
-        /**
-         * @description The position a reference plays in an `io.*` source constructor.
-         * @enum {string}
-         */
-        RefRole: "data" | "schema";
-        /** @description Request body for `POST /v1/refs`: the `.fossil` script to parse. */
-        RefsRequest: {
-            /** @description The `.fossil` program text whose external references to enumerate. */
-            script: string;
         };
         RenameConversationRequest: {
             title: string;
@@ -1150,22 +1102,6 @@ export interface components {
         };
         ServiceStatusResponse: {
             oidc: boolean;
-        };
-        /**
-         * @description One external reference a program makes. `connection` is the `@conn` alias the
-         *     reference targets (`Some("cpi")` for `@cpi/graph.ttl`), or `None` for a direct
-         *     URL / local path. `path` is the remainder after the alias (or the whole
-         *     locator when there is no alias). This is the program's TYPED lineage — keasy
-         *     derives a job's connection set from the distinct `connection`s, never from a
-         *     regex over the script text.
-         */
-        SourceRefInfo: {
-            /** @description The `@conn` alias this reference targets, or `None` for a direct URL/path. */
-            connection?: string | null;
-            /** @description The path within the connection, or the whole locator when unaliased. */
-            path: string;
-            /** @description Where this reference appears in the source constructor. */
-            role: components["schemas"]["RefRole"];
         };
         SourceRefsResponse: {
             /**
@@ -1338,13 +1274,6 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Service is not ready */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
         };
     };
     generate_script_stream: {
@@ -1492,6 +1421,33 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["WorkspacesResponse"];
                 };
+            };
+        };
+    };
+    list_catalog_datasets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Registered datasets with their types/columns/rows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetsResponse"];
+                };
+            };
+            /** @description Catalog unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -2331,45 +2287,6 @@ export interface operations {
             };
         };
     };
-    execute_discover_sql: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExecuteSqlRequest"];
-            };
-        };
-        responses: {
-            /** @description Verb result: { columns, rows, truncated } */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Owner role required */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Job not found or no output */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     resolve_discover_manifest: {
         parameters: {
             query?: never;
@@ -2455,7 +2372,7 @@ export interface operations {
                     "application/json": components["schemas"]["ResolveResponse"];
                 };
             };
-            /** @description No owner output storage configured */
+            /** @description No data space substrate configured */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2524,36 +2441,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SourceUrlsResponse"];
-                };
-            };
-            /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    stream_job: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description SSE stream of job progress events */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": components["schemas"]["JobEvent"];
                 };
             };
             /** @description Job not found */
@@ -2736,50 +2623,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    list_providers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of available data providers */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProviderInfo"][];
-                };
-            };
-        };
-    };
-    list_refs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RefsRequest"];
-            };
-        };
-        responses: {
-            /** @description The program's typed external references */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SourceRefInfo"][];
-                };
             };
         };
     };

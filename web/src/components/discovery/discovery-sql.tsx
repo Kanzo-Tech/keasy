@@ -2,28 +2,32 @@
 
 import { useState } from "react";
 import { Loader2, Play } from "lucide-react";
+import type { ExecuteSqlResult } from "@fossil-lang/graph";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PanelHeader } from "@/components/layout/workspace-layout";
-import { api, type ExecuteSqlResult } from "@/lib/api";
+import { useGraphClient } from "./use-discovery-store";
 
 /**
- * Owner-only raw SQL panel. The request is gated server-side
- * (`Require<IsOwner>`) and executed natively via fossil-mcp's `execute_sql`
- * verb — this panel is only mounted for owners (see the discover page).
+ * Raw SQL over the producer's own dataset. Runs entirely in the browser via
+ * `graphClient.executeSql` (DuckDB-WASM over the signed-URL Parquet) — the server
+ * never executes the query. Data sovereignty is enforced at the signed-URL layer
+ * (only the producer gets URLs for their job), so this is the producer's tool
+ * over their own data; the owner discovers the space at the catalog level.
  */
-export function DiscoverySql({ jobId }: { jobId: string }) {
+export function DiscoverySql() {
+  const graphClient = useGraphClient();
   const [sql, setSql] = useState("");
   const [result, setResult] = useState<ExecuteSqlResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
 
   const run = async () => {
-    if (!sql.trim() || running) return;
+    if (!sql.trim() || running || !graphClient) return;
     setRunning(true);
     setError(null);
     try {
-      setResult(await api.discovery.executeSql(jobId, sql));
+      setResult(await graphClient.executeSql({ sql }));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setResult(null);
@@ -47,7 +51,7 @@ export function DiscoverySql({ jobId }: { jobId: string }) {
           spellCheck={false}
           className="w-full h-24 resize-none rounded-sm border bg-transparent p-2 font-mono text-[11px] outline-none focus:ring-1 focus:ring-ring"
         />
-        <Button size="sm" className="w-full h-7" onClick={run} disabled={running || !sql.trim()}>
+        <Button size="sm" className="w-full h-7" onClick={run} disabled={running || !sql.trim() || !graphClient}>
           {running ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play size={12} />}
           <span className="ml-1.5 text-xs">Run (⌘↵)</span>
         </Button>
@@ -75,11 +79,14 @@ export function DiscoverySql({ jobId }: { jobId: string }) {
                   <tbody>
                     {result.rows.map((row, i) => (
                       <tr key={i} className="even:bg-muted/30">
-                        {result.columns.map((c) => (
-                          <td key={c.name} className="px-1.5 py-1 font-mono text-[11px] whitespace-nowrap">
-                            {row[c.name] == null ? "" : String(row[c.name])}
-                          </td>
-                        ))}
+                        {result.columns.map((c) => {
+                          const v = (row as Record<string, unknown>)[c.name];
+                          return (
+                            <td key={c.name} className="px-1.5 py-1 font-mono text-[11px] whitespace-nowrap">
+                              {v == null ? "" : String(v)}
+                            </td>
+                          );
+                        })}
                       </tr>
                     ))}
                   </tbody>

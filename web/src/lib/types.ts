@@ -11,6 +11,9 @@ export type RunMode = S["RunMode"];
 export type Job = S["Job"];
 export type CreateJobRequest = S["CreateJobRequest"];
 export type UpdateJobRequest = S["UpdateJobRequest"];
+export type CatalogDataset = S["CatalogDataset"];
+export type CatalogTable = S["CatalogTable"];
+export type CatalogColumn = S["CatalogColumn"];
 export type CloudAccountSummary = S["CloudAccountSummary"];
 export type CreateCloudAccountRequest = S["CreateCloudAccountRequest"];
 export type UpdateCloudAccountRequest = S["UpdateCloudAccountRequest"];
@@ -88,9 +91,10 @@ export type FieldSchema = S["FieldSchema"];
 export type AuthMethodSchema = S["AuthMethodSchema"];
 export type ProviderSchema = S["ProviderSchema"];
 
-// Data-source providers fossil supports (`/v1/providers`). Codegen'd from the
-// shared `fossil-run-status` contract via openapi — no hand-mirrored shape.
-export type ProviderInfo = S["ProviderInfo"];
+// Data-source providers fossil supports. Sourced from `@fossil-lang/wasm` (the
+// rmlext package — client-compute `providers()`), NOT openapi: keasy no longer
+// serves /v1/providers. Same `fossil_run_status::ProviderInfo` shape.
+export type { ProviderInfo } from "@fossil-lang/wasm";
 
 // ---------------------------------------------------------------------------
 // Auth types — re-exported from schema
@@ -99,5 +103,3 @@ export type ProviderInfo = S["ProviderInfo"];
 export type MeResponse = S["MeResponse"];
 export type WorkspaceSummary = S["WorkspaceSummary"];
 export type WorkspacesResponse = S["WorkspacesResponse"];
-
-export type JobEvent = S["JobEvent"];

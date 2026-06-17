@@ -35,9 +35,6 @@
         "responses": {
           "200": {
             "description": "Service is ready"
-          },
-          "503": {
-            "description": "Service is not ready"
           }
         }
       }
@@ -188,6 +185,30 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/catalog/datasets": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "List the workspace catalog: every registered dataset (a completed job's\noutput) with its types, columns and row counts. Governance metadata — open to\nevery member (the IDS/Solid model: members discover the space at the metadata\nlevel, the bytes stay producer-scoped).",
+        "operationId": "list_catalog_datasets",
+        "responses": {
+          "200": {
+            "description": "Registered datasets with their types/columns/rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetsResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Catalog unavailable"
           }
         }
       }
@@ -1147,46 +1168,6 @@
         }
       }
     },
-    "/v1/jobs/{id}/discover/execute-sql": {
-      "post": {
-        "tags": [
-          "Discovery"
-        ],
-        "operationId": "execute_discover_sql",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ExecuteSqlRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Verb result: { columns, rows, truncated }"
-          },
-          "403": {
-            "description": "Owner role required"
-          },
-          "404": {
-            "description": "Job not found or no output"
-          }
-        }
-      }
-    },
     "/v1/jobs/{id}/discover/manifest": {
       "get": {
         "tags": [
@@ -1260,7 +1241,7 @@
         "tags": [
           "Discovery"
         ],
-        "summary": "Sign PUT URLs so the browser uploads the GraphAr output it just produced\ndirectly to owner storage (no data through the server). The output lives at\n`{owner_base}/{job_id}/<key>` — the same dest the completion `RunStatus`\nreports. Mirrors `resolve_discover_urls` but signs `PUT` for upload.",
+        "summary": "Sign PUT URLs so the browser uploads the GraphAr output it just produced\ndirectly to the member's chosen destination (no data through the server).\nThe output lives at `{dest_base}/{job_id}/<key>` where `dest_base` is the\nconnection the member picked (`sink_connection_id`), or the substrate\nfallback — the same dest the completion `RunStatus` reports.",
         "operationId": "resolve_output_urls",
         "parameters": [
           {
@@ -1295,7 +1276,7 @@
             }
           },
           "400": {
-            "description": "No owner output storage configured"
+            "description": "No data space substrate configured"
           },
           "404": {
             "description": "Job not found"
@@ -1373,40 +1354,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SourceUrlsResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Job not found"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/stream": {
-      "get": {
-        "tags": [
-          "Jobs"
-        ],
-        "operationId": "stream_job",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "SSE stream of job progress events",
-            "content": {
-              "text/event-stream": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobEvent"
                 }
               }
             }
@@ -1586,62 +1533,6 @@
           },
           "403": {
             "description": "Insufficient role"
-          }
-        }
-      }
-    },
-    "/v1/providers": {
-      "get": {
-        "tags": [
-          "Providers"
-        ],
-        "operationId": "list_providers",
-        "responses": {
-          "200": {
-            "description": "List of available data providers",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ProviderInfo"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/refs": {
-      "post": {
-        "tags": [
-          "Providers"
-        ],
-        "operationId": "list_refs",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RefsRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "The program's typed external references",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SourceRefInfo"
-                  }
-                }
-              }
-            }
           }
         }
       }
@@ -2093,6 +1984,43 @@
           }
         }
       },
+      "CatalogColumn": {
+        "type": "object",
+        "required": [
+          "name",
+          "data_type"
+        ],
+        "properties": {
+          "data_type": {
+            "type": "string",
+            "description": "DuckDB type spelling (`VARCHAR`, `BIGINT`, …)."
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CatalogDataset": {
+        "type": "object",
+        "description": "One registered dataset (a completed job's output) as the catalog sees it.",
+        "required": [
+          "job_id",
+          "tables"
+        ],
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "description": "The job id (the `job_` schema suffix), the dataset's stable handle."
+          },
+          "tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogTable"
+            },
+            "description": "One entry per registered vertex/edge type."
+          }
+        }
+      },
       "CatalogStoragePayload": {
         "type": "object",
         "required": [
@@ -2105,6 +2033,35 @@
           },
           "cloud_account_id": {
             "type": "string"
+          }
+        }
+      },
+      "CatalogTable": {
+        "type": "object",
+        "description": "A registered type within a dataset and its SQL shape.",
+        "required": [
+          "name",
+          "columns"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogColumn"
+            },
+            "description": "Property columns, in declaration order."
+          },
+          "name": {
+            "type": "string",
+            "description": "Type / table name (e.g. `Person`, `knows_by_source`)."
+          },
+          "rows": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Row count from the Parquet footers (cheap — no full scan)."
           }
         }
       },
@@ -2489,6 +2446,13 @@
           },
           "script": {
             "type": "string"
+          },
+          "sink_connection_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The connection the member picked as the output destination (job config)."
           }
         }
       },
@@ -2515,6 +2479,21 @@
         ],
         "properties": {
           "data": {}
+        }
+      },
+      "DatasetsResponse": {
+        "type": "object",
+        "required": [
+          "datasets"
+        ],
+        "properties": {
+          "datasets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogDataset"
+            },
+            "description": "Every registered dataset in the workspace catalog."
+          }
         }
       },
       "Direction": {
@@ -2563,36 +2542,6 @@
           "src_type": {
             "type": "string",
             "description": "Source vertex type."
-          }
-        }
-      },
-      "ExecuteSqlRequest": {
-        "type": "object",
-        "required": [
-          "sql"
-        ],
-        "properties": {
-          "row_cap": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "Max rows returned (the verb enforces an outer LIMIT). Default 10k.",
-            "minimum": 0
-          },
-          "sql": {
-            "type": "string",
-            "description": "SQL to run against the GraphAr views (vertex/edge type names)."
-          },
-          "timeout_ms": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "Wall-clock cap, milliseconds. Default 10s.",
-            "minimum": 0
           }
         }
       },
@@ -2794,6 +2743,10 @@
           "created_at": {
             "type": "string"
           },
+          "created_by": {
+            "type": "string",
+            "description": "Keycloak `sub` of the member who created the job — the data-product owner.\nServer-derived (never from the client); used for producer-scoped data\naccess (only the producer reads/runs the job's data) + DCAT publisher."
+          },
           "error": {
             "oneOf": [
               {
@@ -2833,6 +2786,13 @@
               "null"
             ]
           },
+          "sink_connection_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Connection the member chose as the output destination (where the GraphAr\noutput lands). The producer owns where their data product goes — output is\nsigned with this connection's cloud creds, under `{conn.url}/{job_id}`.\n`None` falls back to the workspace substrate (transitional)."
+          },
           "started_at": {
             "type": [
               "string",
@@ -2841,36 +2801,6 @@
           },
           "status": {
             "$ref": "#/components/schemas/JobStatus"
-          }
-        }
-      },
-      "JobEvent": {
-        "type": "object",
-        "description": "SSE event emitted by the job runner at each execution phase.",
-        "required": [
-          "phase",
-          "index",
-          "total"
-        ],
-        "properties": {
-          "error": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "index": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "phase": {
-            "type": "string"
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
           }
         }
       },
@@ -3125,41 +3055,6 @@
           }
         }
       },
-      "ProviderInfo": {
-        "type": "object",
-        "description": "One data-source provider fossil exposes: its short name, the file extensions\nit reads, and how it can be used.",
-        "required": [
-          "name",
-          "extensions",
-          "kind"
-        ],
-        "properties": {
-          "extensions": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "File extensions this provider reads (no leading dot)."
-          },
-          "kind": {
-            "$ref": "#/components/schemas/ProviderKind",
-            "description": "Whether the provider defines a type, loads data, or both."
-          },
-          "name": {
-            "type": "string",
-            "description": "Short provider name (e.g. `csv`, `json`, `parquet`)."
-          }
-        }
-      },
-      "ProviderKind": {
-        "type": "string",
-        "description": "What a provider can appear as in a program.",
-        "enum": [
-          "schema",
-          "data",
-          "both"
-        ]
-      },
       "ProviderSchema": {
         "type": "object",
         "required": [
@@ -3190,27 +3085,6 @@
           },
           "label": {
             "type": "string"
-          }
-        }
-      },
-      "RefRole": {
-        "type": "string",
-        "description": "The position a reference plays in an `io.*` source constructor.",
-        "enum": [
-          "data",
-          "schema"
-        ]
-      },
-      "RefsRequest": {
-        "type": "object",
-        "description": "Request body for `POST /v1/refs`: the `.fossil` script to parse.",
-        "required": [
-          "script"
-        ],
-        "properties": {
-          "script": {
-            "type": "string",
-            "description": "The `.fossil` program text whose external references to enumerate."
           }
         }
       },
@@ -3292,31 +3166,6 @@
         "properties": {
           "oidc": {
             "type": "boolean"
-          }
-        }
-      },
-      "SourceRefInfo": {
-        "type": "object",
-        "description": "One external reference a program makes. `connection` is the `@conn` alias the\nreference targets (`Some(\"cpi\")` for `@cpi/graph.ttl`), or `None` for a direct\nURL / local path. `path` is the remainder after the alias (or the whole\nlocator when there is no alias). This is the program's TYPED lineage — keasy\nderives a job's connection set from the distinct `connection`s, never from a\nregex over the script text.",
-        "required": [
-          "path",
-          "role"
-        ],
-        "properties": {
-          "connection": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The `@conn` alias this reference targets, or `None` for a direct URL/path."
-          },
-          "path": {
-            "type": "string",
-            "description": "The path within the connection, or the whole locator when unaliased."
-          },
-          "role": {
-            "$ref": "#/components/schemas/RefRole",
-            "description": "Where this reference appears in the source constructor."
           }
         }
       },

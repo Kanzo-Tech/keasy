@@ -55,10 +55,6 @@ time = "0.3"
 # it to the sibling checkout via the [patch] below, so `make dev` never clones the
 # private repo.
 fossil-run-status = { git = "https://github.com/Kanzo-Tech/fossil-lang.git", tag = "v0.3.0", features = ["utoipa"] }
-# MCP client only — keasy spawns the `fossil-mcp` binary (host-boundary: still a
-# subprocess, NO fossil compiler/runtime crate linked) and calls its verb tools
-# over stdio. Used for owner-gated `execute_sql` (and the future `/ask` loop).
-rmcp = { version = "0.16", features = ["client", "transport-child-process"] }
 base64 = "0.22"
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "jwk"] }
 x509-parser = { version = "0.16", features = ["verify"] }
@@ -70,6 +66,13 @@ utoipa = { version = "5", features = ["axum_extras"] }
 csv = "1"
 oxrdf = "0.3.3"
 oxrdfio = "0.2.3"
+# Server-side DuckLake catalog (W1): keasy is the trusted host of the metadata
+# catalog. Pinned to the SAME duckdb as rmlext (1.10502) so writer (keasy) and
+# any future reader share a version (I7). `bundled` builds DuckDB from source so
+# the binary is self-contained. The catalog is server-side ONLY — the browser
+# never attaches ducklake (it reads flat Parquet by signed URL), so the
+# version-pin obligation is keasy↔keasy (trivial).
+duckdb = { version = "1.10502", features = ["bundled"] }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

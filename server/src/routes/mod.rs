@@ -1,6 +1,5 @@
 pub mod health;
 pub mod org;
-pub mod providers;
 
 use axum::{middleware, Router};
 use axum::extract::DefaultBodyLimit;
@@ -58,10 +57,6 @@ pub fn build_router(
             "/v1/settings/schema",
             axum::routing::get(crate::settings::routes::get_schema),
         )
-        .route(
-            "/v1/providers",
-            axum::routing::get(providers::list_providers),
-        )
         .with_state(state.clone());
 
     // Public auth routes (no session middleware)
@@ -109,19 +104,11 @@ pub fn build_router(
                 .post(crate::jobs::routes::create_job),
         )
         .route(
-            "/v1/refs",
-            axum::routing::post(providers::list_refs),
-        )
-        .route(
             "/v1/jobs/{id}",
             axum::routing::get(crate::jobs::routes::get_job)
                 .put(crate::jobs::routes::update_job)
                 .patch(crate::jobs::routes::complete_job)
                 .delete(crate::jobs::routes::delete_job),
-        )
-        .route(
-            "/v1/jobs/{id}/stream",
-            axum::routing::get(crate::jobs::routes::stream_job),
         )
         .route(
             "/v1/settings/organization",
@@ -173,16 +160,16 @@ pub fn build_router(
             axum::routing::get(crate::discovery::routes::resolve_discover_manifest),
         )
         .route(
-            "/v1/jobs/{id}/discover/execute-sql",
-            axum::routing::post(crate::discovery::routes::execute_discover_sql),
-        )
-        .route(
             "/v1/jobs/{id}/catalog/urls",
             axum::routing::get(crate::discovery::routes::resolve_catalog_urls),
         )
         .route(
             "/v1/jobs/{id}/catalog/manifest",
             axum::routing::get(crate::discovery::routes::resolve_catalog_manifest),
+        )
+        .route(
+            "/v1/catalog/datasets",
+            axum::routing::get(crate::catalog::routes::list_catalog_datasets),
         )
         .route(
             "/v1/jobs/{id}/discover/ask-stream",

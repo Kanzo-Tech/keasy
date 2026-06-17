@@ -53,3 +53,6 @@ data/
 
 # next.js
 .next/
+
+# Rendered Keycloak realm (bootstrap injects generated secrets)
+infra/keycloak/realm-rendered/

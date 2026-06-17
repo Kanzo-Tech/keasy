@@ -83,8 +83,6 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
 
 function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: RunStatus }) {
   const coordinator = useCoordinator();
-  const { data: me } = useQuery({ queryKey: ["auth", "me"], queryFn: () => api.auth.me() });
-  const isOwner = me?.effective_role === "owner";
   const kgSchema = useGraphSchema(manifest);
   const graphRef = useRef<CosmosGraphHandle>(null);
   const [selectedVertex, setSelectedVertex] = useState<{ id: string; type: string; label: string } | null>(null);
@@ -125,17 +123,15 @@ function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: RunS
       label: "Rules",
       content: <RuleBuilder jobId={jobId} schema={kgSchema} />,
     },
-    // Owner-only: raw SQL (server-gated Require<IsOwner>, run via fossil-mcp).
-    ...(isOwner
-      ? [
-          {
-            id: "sql",
-            icon: Terminal,
-            label: "SQL",
-            content: <DiscoverySql jobId={jobId} />,
-          },
-        ]
-      : []),
+    // Raw SQL over the producer's own dataset — runs in the browser
+    // (graphClient.executeSql, DuckDB-WASM). Producer-scoped at the signed-URL
+    // layer, so it lives in the data-discovery surface, not owner-gated.
+    {
+      id: "sql",
+      icon: Terminal,
+      label: "SQL",
+      content: <DiscoverySql />,
+    },
     {
       id: "analysis",
       icon: BarChart3,

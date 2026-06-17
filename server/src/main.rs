@@ -1,11 +1,10 @@
-use keasy_server::{AppState, AuthServices, Database, JobRunner};
+use keasy_server::{AppState, AuthServices, Database};
 use keasy_server::config::ServerConfig;
 use keasy_server::routes::{build_router, SessionConfig};
 use secrecy::ExposeSecret;
 
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::time::Duration;
 
 use tracing::info;
 
@@ -90,12 +89,6 @@ async fn main() {
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
     );
 
-    let runner = Arc::new(JobRunner::new(
-        db.clone(),
-        config.max_concurrent_jobs,
-        config.job_timeout_secs,
-    ));
-
     // Keycloak admin client — only active when all three OIDC config fields are present.
     // Uses internal_base_url when set so admin API calls reach Keycloak via Docker DNS
     // (the public issuer URL resolves to this server container, not Keycloak).
@@ -163,7 +156,6 @@ async fn main() {
         _ => None,
     };
 
-    let shutdown_grace = Duration::from_secs(config.shutdown_grace_secs);
     let auth = AuthServices {
         oidc_state,
         keycloak_admin,
@@ -172,17 +164,39 @@ async fn main() {
         oidc_client_secret: config.oidc_client_secret,
         oidc_org_id,
     };
+    // Server-side DuckLake catalog (authority over output metadata). Non-fatal
+    // if it fails to open — the host keeps serving jobs and the reconciler
+    // registers their output once the catalog is back.
+    let catalog = match keasy_server::catalog::Catalog::open(&config.data_dir) {
+        Ok(c) => {
+            info!("DuckLake catalog opened");
+            Some(std::sync::Arc::new(c))
+        }
+        Err(e) => {
+            tracing::warn!(error = %e, "Failed to open DuckLake catalog — output registration disabled until reconcile");
+            None
+        }
+    };
+
     let state = AppState {
         db,
-        runner: runner.clone(),
         api_key: config.api_key,
         base_url: config.base_url,
         auth,
+        catalog,
     };
     info!(
         oidc = if state.auth.oidc_state.is_some() { "ready" } else { "not configured" },
         "External services"
     );
+
+    // Catalog durability net: periodically register any completed job whose
+    // output never made it into the catalog (a miss at completion, a restart) and
+    // deregister datasets whose job was deleted.
+    if state.catalog.is_some() {
+        keasy_server::catalog::reconcile::spawn(state.clone(), tokio::time::Duration::from_secs(60));
+        info!("Catalog reconciler started (60s)");
+    }
 
     let session_config = SessionConfig {
         store: session_store,
@@ -213,7 +227,6 @@ async fn main() {
         std::process::exit(1);
     }
 
-    runner.shutdown(shutdown_grace).await;
     deletion_task.abort();
 }
 

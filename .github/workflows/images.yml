@@ -29,12 +29,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: keasy
-      # Sibling rmlext for the fossil-run-status [patch]; the `fossil` binary itself
-      # comes from the FROM base image (server/Dockerfile), not compiled here.
+      # Sibling rmlext for the fossil-run-status [patch]. The repo is public, so
+      # the default GITHUB_TOKEN reads it — no PAT needed.
       - uses: actions/checkout@v4
         with:
           repository: Kanzo-Tech/fossil-lang
-          token: ${{ secrets.FOSSIL_LANG_TOKEN }}
           path: rmlext
 
       - uses: docker/setup-buildx-action@v3
@@ -68,6 +67,48 @@ jobs:
       - uses: actions/attest-build-provenance@v2
         with:
           subject-name: ghcr.io/kanzo-tech/keasy-server
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+  control-plane:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: keasy
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/kanzo-tech/keasy-control-plane
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: keasy/control-plane/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ghcr.io/kanzo-tech/keasy-control-plane
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 

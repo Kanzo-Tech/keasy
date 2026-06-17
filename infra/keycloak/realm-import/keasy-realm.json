@@ -162,7 +162,8 @@
         "post.logout.redirect.uris": "http://localhost:8080/*##http://localhost:3000/*"
       },
       "defaultClientScopes": [
-        "openid",
+        "roles",
+        "web-origins",
         "profile",
         "email",
         "keasy-role"
@@ -185,7 +186,8 @@
         "post.logout.redirect.uris": "http://localhost:8080/*##http://localhost:3000/*"
       },
       "defaultClientScopes": [
-        "openid",
+        "roles",
+        "web-origins",
         "profile",
         "email",
         "keasy-role"

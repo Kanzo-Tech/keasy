@@ -61,3 +61,16 @@ shell-%: ## Open shell in container (e.g., make shell-server)
 
 ps: ## Show running services
 	$(COMPOSE_DEV) ps
+
+# ── Prod / Swarm deploy ────────────────────────────────────────────────────
+deploy-base: ## Bootstrap the Swarm base stack (idempotent) — reads deploy/environments/prod/.env
+	infra/stack/bootstrap.sh
+
+tenant: ## Provision a tenant: make tenant slug=acme name="Acme Corp" owner=<keycloak-sub>
+	@test -n "$(slug)" && test -n "$(name)" && test -n "$(owner)" \
+	  || { echo "usage: make tenant slug=<slug> name=<name> owner=<keycloak-sub>"; exit 1; }
+	@printf 'name: %s\nowner_keycloak_sub: %s\n' "$(name)" "$(owner)" \
+	  > deploy/environments/prod/tenants/$(slug).yaml
+	@echo "✓ wrote deploy/environments/prod/tenants/$(slug).yaml"
+	@echo "  commit it; the control-plane reconciles every CP_RECONCILE_INTERVAL_SECS"
+	@echo "  (or force now from the manager: curl -fsS -X POST http://localhost:9000/reconcile)"

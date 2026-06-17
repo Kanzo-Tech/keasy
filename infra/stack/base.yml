@@ -21,7 +21,13 @@ version: "3.9"
 services:
   # ── Ingress: Traefik v3 (Swarm provider + automatic TLS) ────────────────────
   traefik:
-    image: traefik:v3.3
+    # v3.3's swarm provider talks Docker API 1.24, which Docker 25+/29 rejects
+    # ("client version 1.24 is too old") → reads no services, every route 404s.
+    # v3.5 negotiates the modern API; DOCKER_API_VERSION pins it as a belt-and-
+    # suspenders so it works on any recent daemon.
+    image: traefik:v3.5
+    environment:
+      - DOCKER_API_VERSION=1.44
     command:
       - --providers.swarm=true
       - --providers.swarm.exposedByDefault=false

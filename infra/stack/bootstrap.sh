@@ -49,12 +49,12 @@ if [ -n "${KEASY_LITESTREAM_REPLICA_BASE:-}" ] && ! docker secret inspect keasy-
 fi
 
 # 3. Render the realm with CP_OIDC_SECRET injected into the keasy-control-plane
-#    client → the control-plane's Swarm secret and the applied realm carry the SAME
+#    client → the control-plane's Swarm secret and the imported realm carry the SAME
 #    generated value, automatically. Always re-rendered from the source (gitignored,
-#    bound by base.yml into the keycloak-config job): the render is pure (source +
-#    .env → output), so a fix to keasy-realm.json flows on the next `make deploy-base`
-#    with no manual step. The realm is reconciled by keycloak-config-cli (managed=
-#    no-delete), not imported on Keycloak boot — re-applying is idempotent.
+#    bound by base.yml into Keycloak's import dir): the render is pure (source + .env
+#    → output), so a fix to keasy-realm.json flows on the next `make deploy-base` with
+#    no manual step. Keycloak imports it with IGNORE_EXISTING, so re-rendering only
+#    matters on a fresh DB and never clobbers an already-seeded realm.
 RENDERED=infra/keycloak/realm-rendered
 mkdir -p "$RENDERED"
 python3 - infra/keycloak/realm-import/keasy-realm.json "$RENDERED/keasy-realm.json" "$CP_OIDC_SECRET" <<'PY'
@@ -68,11 +68,6 @@ json.dump(realm, open(dst, "w"), indent=2)
 PY
 echo "✓ rendered realm with the control-plane secret injected"
 
-# The rendered realm's content hash drives the keycloak-config job's spec: Swarm only
-# re-runs a job when its spec changes, so this makes the realm get re-applied exactly
-# when (and only when) its content changes. Unchanged realm → no-op, no wasted run.
-export KC_REALM_HASH="$(sha256sum "$RENDERED/keasy-realm.json" | cut -c1-16)"
-
-# 4. Deploy the base stack (Traefik + Keycloak + keycloak-config reconciler + CP).
+# 4. Deploy the base stack (Traefik + Keycloak [native realm import] + control-plane).
 docker stack deploy --detach=false -c infra/stack/base.yml keasy-base
 echo "✓ base stack up. Add a tenant: make tenant slug=acme name='Acme' owner=<keycloak-sub>"

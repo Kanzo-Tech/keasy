@@ -35,6 +35,9 @@ importers:
       '@codemirror/view':
         specifier: ^6.39.15
         version: 6.40.0
+      '@cosmos.gl/graph':
+        specifier: 2.6.4
+        version: 2.6.4
       '@fossil-lang/codemirror-fossil':
         specifier: alpha
         version: 0.3.0-alpha.3(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)

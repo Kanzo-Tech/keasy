@@ -23,6 +23,7 @@
     "@codemirror/state": "^6.5.4",
     "@codemirror/theme-one-dark": "^6.1.3",
     "@codemirror/view": "^6.39.15",
+    "@cosmos.gl/graph": "2.6.4",
     "@fossil-lang/codemirror-fossil": "alpha",
     "@fossil-lang/editor": "alpha",
     "@fossil-lang/executor": "alpha",

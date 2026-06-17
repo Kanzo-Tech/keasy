@@ -67,7 +67,23 @@ services:
     volumes:
       - keycloak-postgres:/var/lib/postgresql/data
     networks: [keasy-edge]
+    # pg_isready ships in the image → a non-fragile readiness signal Swarm can see.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     deploy:
+      # Stateful single-volume service: there must NEVER be two postmasters on the
+      # same data dir at once (the second invalidates the first's lock file → both
+      # take an immediate shutdown). One replica, one per node, stop-the-old-before-
+      # starting-the-new on every update.
+      replicas: 1
+      placement:
+        max_replicas_per_node: 1
+      update_config:
+        order: stop-first
       restart_policy:
         condition: any
 
@@ -102,7 +118,11 @@ services:
         # so updates have no auth downtime (raise replicas for true HA).
         order: start-first
       restart_policy:
+        # Keycloak does not retry the initial DB connect; on a cold boot it may lose
+        # the race with Postgres and exit. Swarm just restarts it — the delay paces
+        # the retries so it isn't hammering a DB that is still coming up.
         condition: any
+        delay: 5s
       labels:
         traefik.enable: "true"
         traefik.docker.network: keasy-edge

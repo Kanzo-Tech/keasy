@@ -71,9 +71,14 @@ services:
       restart_policy:
         condition: any
 
+  # Keycloak just RUNS — it never imports. The realm is reconciled out-of-band by
+  # the `keycloak-config` job below (keycloak-config-cli), so `start` is stateless
+  # w.r.t. config and concurrency-safe: scale `replicas` to N once the swarm has N
+  # nodes (single node today → 1; raise it for real HA, no import race to fear).
+  # Image pinned to the exact Keycloak the config-cli image is built against.
   keycloak:
-    image: quay.io/keycloak/keycloak:26.2
-    command: ["start", "--import-realm"]
+    image: quay.io/keycloak/keycloak:26.5.5
+    command: ["start"]
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
@@ -88,16 +93,14 @@ services:
       KC_PROXY_HEADERS: xforwarded
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
-    volumes:
-      - type: bind
-        # The RENDERED realm (bootstrap.sh injects the generated control-plane
-        # secret into the keasy-control-plane client) — so Keycloak's import and
-        # the cp-oidc-secret Swarm secret carry the same value automatically.
-        source: ${KEASY_DEPLOY_DIR}/infra/keycloak/realm-rendered
-        target: /opt/keycloak/data/import
-        read_only: true
     networks: [keasy-edge]
     deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        # No import on boot → a new task is safe to come up before the old exits,
+        # so updates have no auth downtime (raise replicas for true HA).
+        order: start-first
       restart_policy:
         condition: any
       labels:
@@ -107,6 +110,63 @@ services:
         traefik.http.routers.keycloak.entrypoints: websecure
         traefik.http.routers.keycloak.tls.certresolver: le
         traefik.http.services.keycloak.loadbalancer.server.port: "8080"
+
+  # ── Realm reconciler: keycloak-config-cli as a run-to-completion job ──────────
+  # Declarative GitOps for the realm: applies the rendered keasy-realm.json against
+  # the running Keycloak, idempotently, every deploy. `managed.*=no-delete` means it
+  # only creates/updates what the file declares and NEVER deletes anything else — so
+  # the clients/orgs/users the control-plane provisions at runtime survive untouched.
+  # KC_REALM_HASH (the rendered realm's sha256, injected by bootstrap.sh) changes the
+  # service spec exactly when the realm content changes, which is what makes Swarm
+  # actually re-run the job on a redeploy (jobs only re-run when their spec differs).
+  keycloak-config:
+    image: adorsys/keycloak-config-cli:latest-26.5.5
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080/auth
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: ${KC_ADMIN_PASSWORD}
+      KEYCLOAK_AVAILABILITYCHECK_ENABLED: "true"
+      # Generous: a cold first boot does Quarkus augmentation + DB schema creation
+      # before the API answers; the job returns as soon as it's up, so a high cap
+      # only ever helps.
+      KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: 300s
+      IMPORT_FILES_LOCATIONS: /config/keasy-realm.json
+      KC_REALM_HASH: ${KC_REALM_HASH:-unset}
+      # Reconcile-don't-delete for every resource type config-cli manages, so the
+      # file is additive over whatever the control-plane created at runtime.
+      IMPORT_MANAGED_GROUP: no-delete
+      IMPORT_MANAGED_SUB_GROUP: no-delete
+      IMPORT_MANAGED_REQUIRED_ACTION: no-delete
+      IMPORT_MANAGED_CLIENT_SCOPE: no-delete
+      IMPORT_MANAGED_SCOPE_MAPPING: no-delete
+      IMPORT_MANAGED_CLIENT_SCOPE_MAPPING: no-delete
+      IMPORT_MANAGED_ROLE: no-delete
+      IMPORT_MANAGED_COMPONENT: no-delete
+      IMPORT_MANAGED_SUB_COMPONENT: no-delete
+      IMPORT_MANAGED_AUTHENTICATION_FLOW: no-delete
+      IMPORT_MANAGED_IDENTITY_PROVIDER: no-delete
+      IMPORT_MANAGED_IDENTITY_PROVIDER_MAPPER: no-delete
+      IMPORT_MANAGED_CLIENT: no-delete
+      IMPORT_MANAGED_CLIENT_AUTHORIZATION_RESOURCES: no-delete
+      IMPORT_MANAGED_CLIENT_AUTHORIZATION_POLICIES: no-delete
+      IMPORT_MANAGED_CLIENT_AUTHORIZATION_SCOPES: no-delete
+      IMPORT_MANAGED_MESSAGE_BUNDLES: no-delete
+    volumes:
+      - type: bind
+        # The RENDERED realm (bootstrap.sh injects the generated control-plane secret
+        # into the keasy-control-plane client) — so the applied realm and the
+        # cp-oidc-secret Swarm secret carry the same value automatically.
+        source: ${KEASY_DEPLOY_DIR}/infra/keycloak/realm-rendered
+        target: /config
+        read_only: true
+    networks: [keasy-edge]
+    deploy:
+      mode: replicated-job
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
 
   # ── Control-plane: the per-tenant provisioner (owns the Docker socket) ───────
   control-plane:

@@ -253,7 +253,7 @@
     {
       "username": "service-account-keasy-control-plane",
       "enabled": true,
-      "serviceAccountClientId": "keasy-server",
+      "serviceAccountClientId": "keasy-control-plane",
       "clientRoles": {
         "realm-management": [
           "manage-clients",

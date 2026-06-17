@@ -5,5 +5,5 @@ owner_keycloak_sub: 00000000-0000-0000-0000-000000000000  # the owner's Keycloak
 
 # Optional overrides (omit to inherit versions.env):
 # slug: acme-eu
-# server_image: ghcr.io/kanzo-tech/keasy-server:0.4.0-rc.1   # canary this tenant
-# web_image: ghcr.io/kanzo-tech/keasy-web:0.4.0-rc.1
+# server_image: ghcr.io/kanzo-tech/keasy-server:0.0.3-rc.1   # canary this tenant
+# web_image: ghcr.io/kanzo-tech/keasy-web:0.0.3-rc.1

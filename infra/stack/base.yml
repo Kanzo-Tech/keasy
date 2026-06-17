@@ -83,7 +83,10 @@ services:
     secrets: [kc-db-password, kc-admin-password]
     volumes:
       - type: bind
-        source: ${KEASY_DEPLOY_DIR}/infra/keycloak/realm-import
+        # The RENDERED realm (bootstrap.sh injects the generated control-plane
+        # secret into the keasy-control-plane client) — so Keycloak's import and
+        # the cp-oidc-secret Swarm secret carry the same value automatically.
+        source: ${KEASY_DEPLOY_DIR}/infra/keycloak/realm-rendered
         target: /opt/keycloak/data/import
         read_only: true
     networks: [keasy-edge]

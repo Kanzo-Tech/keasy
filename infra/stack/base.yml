@@ -67,18 +67,37 @@ services:
     volumes:
       - keycloak-postgres:/var/lib/postgresql/data
     networks: [keasy-edge]
+    # pg_isready ships in the image → a non-fragile readiness signal Swarm can see.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     deploy:
+      # Stateful single-volume service: there must NEVER be two postmasters on the
+      # same data dir at once (the second invalidates the first's lock file → both
+      # take an immediate shutdown). One replica, one per node, stop-the-old-before-
+      # starting-the-new on every update.
+      replicas: 1
+      placement:
+        max_replicas_per_node: 1
+      update_config:
+        order: stop-first
       restart_policy:
         condition: any
 
-  # Keycloak just RUNS — it never imports. The realm is reconciled out-of-band by
-  # the `keycloak-config` job below (keycloak-config-cli), so `start` is stateless
-  # w.r.t. config and concurrency-safe: scale `replicas` to N once the swarm has N
-  # nodes (single node today → 1; raise it for real HA, no import race to fear).
-  # Image pinned to the exact Keycloak the config-cli image is built against.
+  # Keycloak OWNS realm creation via native --import-realm (IGNORE_EXISTING): only
+  # the native import path generates the built-in realm-management admin roles for
+  # enabled features — notably manage-organizations / view-organizations, which the
+  # control-plane's service account needs. Creating the realm over the REST API
+  # (as keycloak-config-cli does) does NOT generate them, so config-cli cannot be
+  # the realm's creator. It is the reconciler instead: the keycloak-config job below
+  # applies declared changes on top of the natively-seeded realm, where those roles
+  # already exist. Image pinned to the exact Keycloak the config-cli image targets.
   keycloak:
     image: quay.io/keycloak/keycloak:26.5.5
-    command: ["start"]
+    command: ["start", "--import-realm"]
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
@@ -93,16 +112,29 @@ services:
       KC_PROXY_HEADERS: xforwarded
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
+    volumes:
+      - type: bind
+        # The RENDERED realm (bootstrap.sh injects the generated control-plane secret
+        # into the keasy-control-plane client) — so the natively-imported realm and
+        # the cp-oidc-secret Swarm secret carry the same value automatically.
+        source: ${KEASY_DEPLOY_DIR}/infra/keycloak/realm-rendered
+        target: /opt/keycloak/data/import
+        read_only: true
     networks: [keasy-edge]
     deploy:
       replicas: 1
       update_config:
         parallelism: 1
-        # No import on boot → a new task is safe to come up before the old exits,
-        # so updates have no auth downtime (raise replicas for true HA).
-        order: start-first
+        # --import-realm runs on every boot, and it is NOT concurrency-safe on a
+        # fresh DB → never let two tasks overlap: stop the old before starting the
+        # new (brief auth blip on update; this is a single node anyway).
+        order: stop-first
       restart_policy:
+        # Keycloak does not retry the initial DB connect; on a cold boot it may lose
+        # the race with Postgres and exit. Swarm just restarts it — the delay paces
+        # the retries so it isn't hammering a DB that is still coming up.
         condition: any
+        delay: 5s
       labels:
         traefik.enable: "true"
         traefik.docker.network: keasy-edge

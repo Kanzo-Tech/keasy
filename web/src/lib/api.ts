@@ -244,6 +244,18 @@ export const api = {
       unwrap(await client.GET("/v1/auth/invite-info", {
         params: { query: { token } },
       })),
+
+    /// Self-service onboarding (central instance): provision the caller's
+    /// workspace and become its owner. Returns its home URL to redirect to.
+    onboard: async (name: string, handle: string) =>
+      unwrap(await client.POST("/v1/onboard", { body: { name, handle } })),
+
+    /// Whether a workspace handle is free (+ its normalized form) — debounced by
+    /// the onboarding form so the user never submits a taken handle.
+    checkHandle: async (handle: string) =>
+      unwrap(await client.GET("/v1/onboard/check", {
+        params: { query: { handle } },
+      })),
   },
 
   // ── Org ────────────────────────────────────────────────────────────────

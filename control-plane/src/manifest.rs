@@ -1,4 +1,6 @@
-//! The declarative source of truth for which workspaces should exist.
+//! An optional declarative SEED for workspaces (break-glass / migrating an existing
+//! tenant). The live source of truth is the registry ([`crate::store`]); most
+//! workspaces are created self-service via the API and never appear here.
 //!
 //! An environment is a directory:
 //!
@@ -10,10 +12,11 @@
 //!     globex.yaml
 //! ```
 //!
-//! Git history of this directory is the audit log: adding a tenant file provisions
-//! it, deleting it deprovisions it, and bumping `versions.env` rolls every tenant
-//! to the new image. [`load_environment`] reads it into the desired state the
-//! reconciler diffs against the live registry.
+//! Adding a tenant file provisions it if absent, and bumping `versions.env` rolls
+//! tenants to the new image. NOTE: deleting a tenant file does NOT deprovision —
+//! teardown is the explicit `DELETE /workspaces/{id}`, so self-serve tenants (absent
+//! from git) are never reaped. [`load_environment`] reads this into the desired
+//! state the reconciler diffs against the live registry.
 
 use std::collections::BTreeMap;
 use std::path::Path;

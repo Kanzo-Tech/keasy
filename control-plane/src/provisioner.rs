@@ -289,17 +289,22 @@ impl Provisioner {
             .collect())
     }
 
-    /// Reconcile the live registry toward `desired` (the manifest): provision
-    /// missing tenants, roll out version changes, deprovision removed ones. Each
-    /// action is independent — a per-tenant failure is recorded and the rest still
-    /// run, so one broken tenant doesn't stall the fleet.
+    /// Reconcile the live registry toward `desired` (the git seed): provision
+    /// git-declared tenants that are absent, and roll out version changes. The
+    /// registry is the source of truth for *existence* — workspaces are NEVER
+    /// deprovisioned for being absent from git (self-serve tenants live only in the
+    /// registry); teardown is the explicit `DELETE /workspaces/{id}`. Each action is
+    /// independent — a per-tenant failure is recorded and the rest still run, so one
+    /// broken tenant doesn't stall the fleet.
     pub async fn reconcile(
         &self,
         desired: &[DesiredTenant],
     ) -> Result<ReconcileSummary, ProvisionError> {
         let real = self.store.list().map_err(ProvisionError::Store)?;
         let mut summary = ReconcileSummary::default();
-        for action in plan_reconcile(desired, &real) {
+        for action in
+            plan_reconcile(desired, &real, &self.config.server_image, &self.config.web_image)
+        {
             match action {
                 ReconcileAction::Provision(d) => {
                     match self
@@ -314,12 +319,6 @@ impl Provisioner {
                     match self.rollout(&record, &desired).await {
                         Ok(()) => summary.rolled_out.push(desired.slug),
                         Err(e) => summary.record_error("rollout", &desired.slug, &e),
-                    }
-                }
-                ReconcileAction::Deprovision { workspace_id, slug } => {
-                    match self.deprovision(&workspace_id).await {
-                        Ok(()) => summary.deprovisioned.push(slug),
-                        Err(e) => summary.record_error("deprovision", &slug, &e),
                     }
                 }
             }
@@ -354,7 +353,7 @@ impl Provisioner {
     }
 }
 
-/// What reconciling one round implies. Matched by slug (the manifest's stable key).
+/// What reconciling one round implies. Matched by slug (the stable key).
 #[derive(Debug, PartialEq, Eq)]
 enum ReconcileAction {
     Provision(DesiredTenant),
@@ -362,19 +361,27 @@ enum ReconcileAction {
         record: StoredWorkspace,
         desired: DesiredTenant,
     },
-    Deprovision {
-        workspace_id: String,
-        slug: String,
-    },
 }
 
 /// Pure diff of desired-vs-real, keyed by slug. No side effects — unit-tested.
-fn plan_reconcile(desired: &[DesiredTenant], real: &[StoredWorkspace]) -> Vec<ReconcileAction> {
+///
+/// The registry is the source of truth for *existence*: git-declared tenants that
+/// are absent from the registry are provisioned (seed), declared tenants whose pin
+/// changed are rolled out, and self-serve tenants (in the registry but NOT in git)
+/// are kept — only rolled to the fleet default image when they've drifted, so they
+/// still receive version bumps. Nothing is ever deprovisioned here.
+fn plan_reconcile(
+    desired: &[DesiredTenant],
+    real: &[StoredWorkspace],
+    default_server_image: &str,
+    default_web_image: &str,
+) -> Vec<ReconcileAction> {
     let real_by_slug: HashMap<&str, &StoredWorkspace> =
         real.iter().map(|r| (r.slug.as_str(), r)).collect();
     let desired_slugs: HashSet<&str> = desired.iter().map(|d| d.slug.as_str()).collect();
 
     let mut actions = Vec::new();
+    // Git-declared tenants: provision if absent, roll out if the pin changed.
     for d in desired {
         match real_by_slug.get(d.slug.as_str()) {
             None => actions.push(ReconcileAction::Provision(d.clone())),
@@ -385,11 +392,19 @@ fn plan_reconcile(desired: &[DesiredTenant], real: &[StoredWorkspace]) -> Vec<Re
             Some(_) => {} // already in sync
         }
     }
+    // Self-serve tenants (in the registry, not in git): never reaped; only rolled to
+    // the fleet default image when drifted, so API-created tenants get version bumps.
     for r in real {
-        if !desired_slugs.contains(r.slug.as_str()) {
-            actions.push(ReconcileAction::Deprovision {
-                workspace_id: r.id.clone(),
-                slug: r.slug.clone(),
+        if !desired_slugs.contains(r.slug.as_str()) && r.server_image != default_server_image {
+            actions.push(ReconcileAction::Rollout {
+                record: r.clone(),
+                desired: DesiredTenant {
+                    slug: r.slug.clone(),
+                    name: r.name.clone(),
+                    owner_keycloak_sub: r.owner_keycloak_sub.clone(),
+                    server_image: default_server_image.to_string(),
+                    web_image: default_web_image.to_string(),
+                },
             });
         }
     }
@@ -452,8 +467,11 @@ mod tests {
         }
     }
 
+    const DEFAULT_SERVER: &str = "server:default";
+    const DEFAULT_WEB: &str = "web:default";
+
     #[test]
-    fn provisions_missing_rolls_out_changed_deprovisions_removed_and_skips_in_sync() {
+    fn provisions_missing_rolls_out_changed_and_keeps_self_serve() {
         let desired = vec![
             desired("acme", "server:1.0"),   // in sync (real has 1.0)
             desired("globex", "server:2.0"), // changed → rollout (real has 1.0)
@@ -462,36 +480,54 @@ mod tests {
         let real = vec![
             real("acme", "server:1.0"),
             real("globex", "server:1.0"),
-            real("umbrella", "server:1.0"), // not desired → deprovision
+            real("selfserve", DEFAULT_SERVER), // not in git, at default → KEPT, no action
         ];
 
-        let actions = plan_reconcile(&desired, &real);
+        let actions = plan_reconcile(&desired, &real, DEFAULT_SERVER, DEFAULT_WEB);
 
         assert!(actions.contains(&ReconcileAction::Provision(desired[2].clone())));
         assert!(actions.contains(&ReconcileAction::Rollout {
             record: real[1].clone(),
             desired: desired[1].clone(),
         }));
-        assert!(actions.contains(&ReconcileAction::Deprovision {
-            workspace_id: "keasy-ws-umbrella".into(),
-            slug: "umbrella".into(),
-        }));
-        // acme is in sync → no action mentioning it.
-        assert_eq!(actions.len(), 3);
+        // The self-serve tenant (registry-only, at the default image) is left alone —
+        // never reaped for being absent from git.
+        assert!(!actions.iter().any(|a| matches!(
+            a,
+            ReconcileAction::Rollout { desired, .. } if desired.slug == "selfserve"
+        )));
+        assert_eq!(actions.len(), 2);
     }
 
     #[test]
-    fn empty_desired_deprovisions_everything() {
-        let real = vec![real("acme", "server:1.0"), real("globex", "server:1.0")];
-        let actions = plan_reconcile(&[], &real);
-        assert_eq!(actions.len(), 2);
-        assert!(actions.iter().all(|a| matches!(a, ReconcileAction::Deprovision { .. })));
+    fn self_serve_tenant_rolls_to_default_not_reaped() {
+        // A registry-only (API-created) tenant on an old image is rolled to the fleet
+        // default — and crucially NOT deprovisioned for being absent from git.
+        let real = vec![real("selfserve", "server:old")];
+        let actions = plan_reconcile(&[], &real, DEFAULT_SERVER, DEFAULT_WEB);
+        assert_eq!(actions.len(), 1);
+        match &actions[0] {
+            ReconcileAction::Rollout { record, desired } => {
+                assert_eq!(record.slug, "selfserve");
+                assert_eq!(desired.server_image, DEFAULT_SERVER);
+            }
+            other => panic!("expected rollout, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn empty_desired_is_a_noop_when_in_sync() {
+        // No git manifests + registry tenants already on the default image → nothing
+        // happens (previously, empty desired reaped everything).
+        let real = vec![real("acme", DEFAULT_SERVER), real("globex", DEFAULT_SERVER)];
+        let actions = plan_reconcile(&[], &real, DEFAULT_SERVER, DEFAULT_WEB);
+        assert!(actions.is_empty());
     }
 
     #[test]
     fn steady_state_is_a_noop() {
         let desired = vec![desired("acme", "server:1.0")];
         let real = vec![real("acme", "server:1.0")];
-        assert!(plan_reconcile(&desired, &real).is_empty());
+        assert!(plan_reconcile(&desired, &real, DEFAULT_SERVER, DEFAULT_WEB).is_empty());
     }
 }

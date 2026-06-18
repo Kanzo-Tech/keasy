@@ -8,6 +8,10 @@ use secrecy::SecretString;
 pub struct ControlPlaneConfig {
     /// Address the control-plane HTTP API binds to (e.g. `0.0.0.0:9000`).
     pub bind_addr: String,
+    /// Shared API key required on the mutating endpoints (create/delete
+    /// workspace). `_FILE`-aware. `None` → endpoints are open (dev only);
+    /// production sets `CP_API_KEY` / `CP_API_KEY_FILE`.
+    pub api_key: Option<SecretString>,
 
     // ── Shared Keycloak (admin service account) ──────────────────────────
     /// Public OIDC issuer URL of the shared Keycloak (`{base}/realms/{realm}`).
@@ -63,8 +67,24 @@ impl ControlPlaneConfig {
             req(key).map(SecretString::from)
         };
 
+        // Like `secret`, but optional — `None` when neither `<KEY>_FILE` nor `<KEY>`
+        // is set (the endpoint is then ungated; production always sets it).
+        let opt_secret = |key: &str| -> Result<Option<SecretString>, String> {
+            let file_var = format!("{key}_FILE");
+            if let Ok(path) = std::env::var(&file_var) {
+                let contents = std::fs::read_to_string(&path)
+                    .map_err(|e| format!("{file_var} points to {path} but could not read it: {e}"))?;
+                let trimmed = contents.trim().to_string();
+                if !trimmed.is_empty() {
+                    return Ok(Some(SecretString::from(trimmed)));
+                }
+            }
+            Ok(opt(key).map(SecretString::from))
+        };
+
         Ok(Self {
             bind_addr: opt("CP_BIND_ADDR").unwrap_or_else(|| "0.0.0.0:9000".to_string()),
+            api_key: opt_secret("CP_API_KEY")?,
             oidc_issuer_url: req("CP_OIDC_ISSUER_URL")?,
             oidc_client_id: req("CP_OIDC_CLIENT_ID")?,
             oidc_client_secret: secret("CP_OIDC_CLIENT_SECRET")?,

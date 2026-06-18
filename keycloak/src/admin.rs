@@ -346,6 +346,31 @@ impl KeycloakAdmin {
             .and_then(|o| o.get("id").and_then(|v| v.as_str()).map(|s| s.to_string())))
     }
 
+    /// Delete an Organization by its Keycloak id — used to roll back a
+    /// half-provisioned workspace so no orphan org is left behind. A 404 is
+    /// treated as success (idempotent).
+    pub async fn delete_organization(&self, org_id: &str) -> Result<(), String> {
+        let token = self.get_admin_token().await?;
+        let url = format!(
+            "{}/admin/realms/{}/organizations/{}",
+            self.base_url, self.realm, org_id
+        );
+        let resp = self
+            .http
+            .delete(&url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak organization deletion failed: {e}"))?;
+        if resp.status().is_success() || resp.status() == reqwest::StatusCode::NOT_FOUND {
+            Ok(())
+        } else {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            Err(format!("Keycloak organization deletion returned {status}: {body}"))
+        }
+    }
+
     /// Add a user as a member of the workspace's organization. Idempotent:
     /// a 409 (already a member) is treated as success.
     pub async fn add_org_member(

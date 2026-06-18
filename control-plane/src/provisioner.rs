@@ -59,6 +59,8 @@ pub enum ProvisionError {
     Store(String),
     #[error("unknown workspace: {0}")]
     NotFound(String),
+    #[error("invalid: {0}")]
+    Invalid(String),
 }
 
 /// The provisioner: shared Keycloak admin client + Docker orchestrator + the
@@ -92,18 +94,35 @@ impl Provisioner {
         }))
     }
 
-    /// Provision a workspace via the HTTP API: derive the slug from the name and
-    /// use the environment's default images.
+    /// Provision a workspace via the HTTP API. `name` is the display label; `handle`
+    /// is the unique routing identity (subdomain + Keycloak org alias), slugified
+    /// here so the caller can't smuggle an invalid host. Uses the env default images.
     pub async fn provision(
         &self,
         name: &str,
+        handle: &str,
         owner_keycloak_sub: &str,
     ) -> Result<WorkspaceInfo, ProvisionError> {
-        let slug = slugify(name);
+        let slug = slugify(handle);
+        if slug.is_empty() {
+            return Err(ProvisionError::Invalid(
+                "handle must contain a letter or digit".into(),
+            ));
+        }
         let server_image = self.config.server_image.clone();
         let web_image = self.config.web_image.clone();
         self.provision_with(name, &slug, owner_keycloak_sub, &server_image, &web_image)
             .await
+    }
+
+    /// Check a presented bearer key against the configured `CP_API_KEY`. With no key
+    /// configured (dev), all callers pass; production always sets it.
+    pub fn verify_api_key(&self, presented: Option<&str>) -> bool {
+        use secrecy::ExposeSecret;
+        match &self.config.api_key {
+            None => true,
+            Some(key) => presented.map(str::to_owned) == Some(key.expose_secret().to_string()),
+        }
     }
 
     /// Provision a workspace atomically with an explicit slug + images (the
@@ -152,7 +171,11 @@ impl Provisioner {
 
         let info = match result {
             Ok(info) => info,
-            Err(e) => return Err(self.rollback(&workspace_id, &registered.keycloak_uuid, e).await),
+            Err(e) => {
+                return Err(self
+                    .rollback(&workspace_id, &registered.keycloak_uuid, slug, e)
+                    .await)
+            }
         };
 
         // Persist the registry record. A write failure here rolls the stack +
@@ -169,7 +192,7 @@ impl Provisioner {
         };
         if let Err(e) = self.store.upsert(&stored) {
             return Err(self
-                .rollback(&workspace_id, &registered.keycloak_uuid, ProvisionError::Store(e))
+                .rollback(&workspace_id, &registered.keycloak_uuid, slug, ProvisionError::Store(e))
                 .await);
         }
         Ok(info)
@@ -181,13 +204,25 @@ impl Provisioner {
         &self,
         workspace_id: &str,
         keycloak_uuid: &str,
+        slug: &str,
         original: ProvisionError,
     ) -> ProvisionError {
         if let Err(re) = self.docker.remove(workspace_id).await {
             tracing::warn!(error = %re, %workspace_id, "rollback: docker stack remove failed");
         }
         if let Err(re) = self.keycloak.delete_client(keycloak_uuid).await {
-            tracing::warn!(error = %re, %workspace_id, "rollback: keycloak delete failed");
+            tracing::warn!(error = %re, %workspace_id, "rollback: keycloak client delete failed");
+        }
+        // Delete the Organization if it was created (idempotent: skip if absent), so
+        // a failed provision leaves no orphan org for the next same-handle attempt.
+        match self.keycloak.resolve_org_id(slug).await {
+            Ok(Some(org_id)) => {
+                if let Err(re) = self.keycloak.delete_organization(&org_id).await {
+                    tracing::warn!(error = %re, %workspace_id, "rollback: keycloak org delete failed");
+                }
+            }
+            Ok(None) => {}
+            Err(re) => tracing::warn!(error = %re, %workspace_id, "rollback: resolve org failed"),
         }
         original
     }
@@ -287,6 +322,29 @@ impl Provisioner {
             .into_iter()
             .map(WorkspaceInfo::from)
             .collect())
+    }
+
+    /// Workspaces owned by a Keycloak sub — onboarding short-circuits on this so a
+    /// user who already has a workspace is never re-provisioned.
+    pub fn list_by_owner(&self, sub: &str) -> Result<Vec<WorkspaceInfo>, ProvisionError> {
+        Ok(self
+            .store
+            .list_by_owner(sub)
+            .map_err(ProvisionError::Store)?
+            .into_iter()
+            .map(WorkspaceInfo::from)
+            .collect())
+    }
+
+    /// Whether a handle is free, plus its normalized (slugified) form — the
+    /// onboarding availability check, so the user never hits a failed provision.
+    pub fn handle_status(&self, handle: &str) -> Result<(bool, String), ProvisionError> {
+        let slug = slugify(handle);
+        if slug.is_empty() {
+            return Ok((false, slug));
+        }
+        let taken = self.store.slug_taken(&slug).map_err(ProvisionError::Store)?;
+        Ok((!taken, slug))
     }
 
     /// Reconcile the live registry toward `desired` (the git seed): provision

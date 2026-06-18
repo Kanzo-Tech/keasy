@@ -3,13 +3,16 @@
 //! A small service, separate from the tenant instances, that owns the Docker
 //! socket and a Keycloak admin service account. It exposes a reconcile API:
 //!
-//!   POST   /workspaces  { name, owner_keycloak_sub }  → create (atomic)
-//!   DELETE /workspaces/{id}                            → tear down
-//!   GET    /workspaces                                 → list
-//!   GET    /healthz                                    → liveness
+//!   POST   /workspaces  { name, handle, owner_keycloak_sub }  → create (atomic, keyed)
+//!   DELETE /workspaces/{id}                                    → tear down (keyed)
+//!   GET    /workspaces                                         → list
+//!   GET    /workspaces/by-owner?sub=…                          → a user's workspaces
+//!   GET    /workspaces/by-handle?h=…                           → handle availability
+//!   GET    /healthz                                            → liveness
 //!
-//! It replaces the old SQL-seed + manual-compose bootstrap: a workspace exists
-//! if and only if the control-plane created it.
+//! Mutating endpoints require `Authorization: Bearer <CP_API_KEY>`. The service is
+//! internal-only (the keasy-edge overlay), reached only by the trusted central
+//! server, which derives the owner sub from a fully-verified OIDC token.
 
 mod config;
 mod docker;
@@ -19,8 +22,8 @@ mod store;
 
 use std::sync::Arc;
 
-use axum::extract::{Path, State};
-use axum::http::StatusCode;
+use axum::extract::{Path, Query, State};
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router};
@@ -31,8 +34,30 @@ use crate::provisioner::{ProvisionError, Provisioner};
 
 #[derive(Deserialize)]
 struct CreateWorkspaceRequest {
+    /// Display label.
     name: String,
+    /// Unique routing identity (subdomain + Keycloak org alias); slugified server-side.
+    handle: String,
     owner_keycloak_sub: String,
+}
+
+#[derive(Deserialize)]
+struct OwnerQuery {
+    sub: String,
+}
+
+#[derive(Deserialize)]
+struct HandleQuery {
+    h: String,
+}
+
+/// Extract the `Authorization: Bearer <key>` value, if present.
+fn bearer(headers: &HeaderMap) -> Option<&str> {
+    headers
+        .get(axum::http::header::AUTHORIZATION)?
+        .to_str()
+        .ok()?
+        .strip_prefix("Bearer ")
 }
 
 #[tokio::main]
@@ -68,6 +93,8 @@ async fn main() {
     let app = Router::new()
         .route("/healthz", get(|| async { StatusCode::OK }))
         .route("/workspaces", get(list_workspaces).post(create_workspace))
+        .route("/workspaces/by-owner", get(workspaces_by_owner))
+        .route("/workspaces/by-handle", get(handle_available))
         .route("/workspaces/{id}", axum::routing::delete(delete_workspace))
         .route("/reconcile", axum::routing::post(reconcile))
         .with_state(provisioner);
@@ -88,9 +115,16 @@ async fn main() {
 
 async fn create_workspace(
     State(provisioner): State<Arc<Provisioner>>,
+    headers: HeaderMap,
     Json(req): Json<CreateWorkspaceRequest>,
 ) -> Response {
-    match provisioner.provision(&req.name, &req.owner_keycloak_sub).await {
+    if !provisioner.verify_api_key(bearer(&headers)) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    match provisioner
+        .provision(&req.name, &req.handle, &req.owner_keycloak_sub)
+        .await
+    {
         Ok(info) => (StatusCode::CREATED, Json(info)).into_response(),
         Err(e) => error_response(&e),
     }
@@ -98,8 +132,12 @@ async fn create_workspace(
 
 async fn delete_workspace(
     State(provisioner): State<Arc<Provisioner>>,
+    headers: HeaderMap,
     Path(id): Path<String>,
 ) -> Response {
+    if !provisioner.verify_api_key(bearer(&headers)) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
     match provisioner.deprovision(&id).await {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(e) => error_response(&e),
@@ -109,6 +147,30 @@ async fn delete_workspace(
 async fn list_workspaces(State(provisioner): State<Arc<Provisioner>>) -> Response {
     match provisioner.list() {
         Ok(workspaces) => Json(workspaces).into_response(),
+        Err(e) => error_response(&e),
+    }
+}
+
+/// A user's workspaces (onboarding idempotency). Internal read on the overlay.
+async fn workspaces_by_owner(
+    State(provisioner): State<Arc<Provisioner>>,
+    Query(q): Query<OwnerQuery>,
+) -> Response {
+    match provisioner.list_by_owner(&q.sub) {
+        Ok(workspaces) => Json(workspaces).into_response(),
+        Err(e) => error_response(&e),
+    }
+}
+
+/// Whether a workspace handle is available (+ its normalized form). Internal read.
+async fn handle_available(
+    State(provisioner): State<Arc<Provisioner>>,
+    Query(q): Query<HandleQuery>,
+) -> Response {
+    match provisioner.handle_status(&q.h) {
+        Ok((available, handle)) => {
+            Json(serde_json::json!({ "available": available, "handle": handle })).into_response()
+        }
         Err(e) => error_response(&e),
     }
 }
@@ -167,6 +229,7 @@ fn spawn_reconcile_loop(provisioner: Arc<Provisioner>) {
 fn error_response(e: &ProvisionError) -> Response {
     let status = match e {
         ProvisionError::NotFound(_) => StatusCode::NOT_FOUND,
+        ProvisionError::Invalid(_) => StatusCode::BAD_REQUEST,
         _ => StatusCode::BAD_GATEWAY,
     };
     tracing::error!(error = %e, "provisioning error");

@@ -46,6 +46,9 @@ const MIGRATIONS: &[&str] = &[
         oidc_client_secret TEXT NOT NULL
     );
     ",
+    "
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_workspaces_slug ON workspaces(slug);
+    ",
 ];
 
 const COLS: &str =
@@ -118,6 +121,30 @@ impl Store {
             .map_err(|e| format!("query list: {e}"))?;
         rows.collect::<Result<Vec<_>, _>>()
             .map_err(|e| format!("read list: {e}"))
+    }
+
+    /// Workspaces owned by a given Keycloak sub (onboarding idempotency check).
+    pub fn list_by_owner(&self, sub: &str) -> Result<Vec<StoredWorkspace>, String> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare(&format!(
+                "SELECT {COLS} FROM workspaces WHERE owner_keycloak_sub=?1 ORDER BY slug"
+            ))
+            .map_err(|e| format!("prepare list_by_owner: {e}"))?;
+        let rows = stmt
+            .query_map([sub], row_to_workspace)
+            .map_err(|e| format!("query list_by_owner: {e}"))?;
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format!("read list_by_owner: {e}"))
+    }
+
+    /// Whether a slug is already taken (the onboarding handle availability check).
+    pub fn slug_taken(&self, slug: &str) -> Result<bool, String> {
+        let conn = self.conn.lock().unwrap();
+        let n: i64 = conn
+            .query_row("SELECT COUNT(*) FROM workspaces WHERE slug=?1", [slug], |r| r.get(0))
+            .map_err(|e| format!("count slug: {e}"))?;
+        Ok(n > 0)
     }
 }
 
@@ -218,6 +245,26 @@ mod tests {
     fn remove_absent_is_none() {
         let s = mem_store();
         assert!(s.remove("nope").unwrap().is_none());
+    }
+
+    #[test]
+    fn list_by_owner_filters_and_unique_slug_is_enforced() {
+        let s = mem_store();
+        let mut a = sample("keasy-ws-a", "acme");
+        a.owner_keycloak_sub = "alice".into();
+        let mut b = sample("keasy-ws-b", "globex");
+        b.owner_keycloak_sub = "bob".into();
+        s.upsert(&a).unwrap();
+        s.upsert(&b).unwrap();
+
+        assert_eq!(s.list_by_owner("alice").unwrap(), vec![a]);
+        assert!(s.list_by_owner("carol").unwrap().is_empty());
+        assert!(s.slug_taken("acme").unwrap());
+        assert!(!s.slug_taken("free").unwrap());
+
+        // A different id reusing an existing slug must violate the unique index.
+        let dup = sample("keasy-ws-c", "acme");
+        assert!(s.upsert(&dup).is_err());
     }
 
     #[test]

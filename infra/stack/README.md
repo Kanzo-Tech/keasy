@@ -70,42 +70,46 @@ disable.
 
 ## Per-tenant lifecycle (driven by `deploy/`)
 
-`deploy/environments/prod/tenants/<slug>.yaml` is the source of truth. The
-control-plane reconciles the live fleet toward it every `CP_RECONCILE_INTERVAL_SECS`
-(or on `POST /reconcile`): it mints the tenant's Swarm secrets, renders the stack,
-and `docker stack deploy`s it. Rollback = `git revert` the pin (or Swarm's automatic
+`deploy/environments/prod/tenants/<slug>.yaml` is the desired-state inventory. There
+is **no control-plane service** — provisioning is an operator-run CLI (the
+`keasy-control-plane` image), invoked on a manager via `infra/stack/cp.sh` (wrapped
+by `make tenant` / `make reconcile`). `cp.sh reconcile` reads the manifests and
+converges the fleet: mint the tenant's Swarm secrets, render the stack, and
+`docker stack deploy` it. Rollback = `git revert` the pin (or Swarm's automatic
 rollback on a failed health-gate). See `deploy/README.md`.
 
 ## Users (identity is runtime, never seeded in the realm)
 
 The realm import carries only structure (clients, scopes, roles) — never people.
 Project creation is **operator-driven** (instance-per-tenant, like GitLab
-Dedicated): a full stack per workspace makes open self-service a resource/cost
-DoS, so creation is gated behind the operator's `cp-api-key`. Keycloak
-self-registration stays open, but an account is **not** a workspace.
+Dedicated): a full stack per workspace makes open self-service a resource/cost DoS,
+so the only way to create one is the operator running the provisioner CLI on a
+manager. Keycloak self-registration stays open, but an account is **not** a workspace.
 
 1. **A person self-registers** in Keycloak (or the operator invites them) — this is
    identity only, it provisions nothing.
-2. **The operator creates the workspace** with the owner's Keycloak `sub`, either
-   declaratively via git (`make tenant slug=… name=… owner=<sub>`) or directly with
-   `POST /workspaces` carrying `cp-api-key`. The control-plane wires the OIDC client
-   + Organization + owner role-mapping; the owner lands in it at `<slug>.<base>`.
-3. **Members are invited** to the workspace's Keycloak Organization (the control-plane's
-   `add_org_member` + `assign_client_role` wire membership + owner/member authz) and
-   log in at the tenant URL via the invite link.
+2. **The operator creates the workspace** with the owner's Keycloak `sub`:
+   `make tenant slug=… name=… owner=<sub>` writes the git manifest and runs
+   `cp.sh reconcile`, which wires the OIDC client + Organization + owner role-mapping
+   and brings the stack up at `<slug>.<base>`. (Onboarding the owner by *email*
+   instead of `sub`, via native Keycloak Organization invitations, is the next
+   workstream — see `.claude/plans/keasy-clean-arch-cli-native.md`.)
+3. **Members are invited** to the workspace's Keycloak Organization (`add_org_member`
+   + `assign_client_role` wire membership + owner/member authz) and log in at the
+   tenant URL via the invite link.
 
-The registry (control-plane SQLite) is the source of truth for which workspaces
-exist; `make tenant` git manifests are an import-if-absent + version-pin seed —
-deleting a manifest no longer deprovisions. Teardown is only explicit
-`DELETE /workspaces/{id}`.
+Git (`deploy/environments/<env>/tenants/*.yaml`) is the desired-state inventory; the
+CLI keeps a local SQLite registry (the `control-plane-data` volume) as bookkeeping
+across runs. Teardown is explicit: `make deprovision id=<workspace-id>`.
 
 The only non-human users in the realm are the **service accounts** — the machine
-identities of keasy-server and the control-plane (OAuth2 client-credentials), which
+identities of keasy-server and the provisioner (OAuth2 client-credentials), which
 carry the `realm-management` roles those services need to call the admin API.
 
-> **Secret rotation:** `cp-api-key` is the operator's workspace-creation gate, held
-> only by the control-plane. `bootstrap.sh` generates it on first run and persists
-> it in `.env`; rotating it means redeploying the control-plane.
+> **Secret rotation:** `CP_OIDC_SECRET` (in `deploy/environments/prod/.env`) is the
+> provisioner's Keycloak client-credentials secret; `bootstrap.sh` generates it and
+> injects the same value into the rendered realm. Rotating it means re-running
+> bootstrap (re-renders the realm) — the CLI reads the new value from `.env`.
 
 ## On-the-fly version switch
 

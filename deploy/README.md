@@ -34,12 +34,13 @@ owner_keycloak_sub: <uuid>   # the Keycloak user who owns the workspace
 
 ## Reconcile
 
-- **Pull-based** (default off): set `CP_RECONCILE_INTERVAL_SECS` + `CP_DEPLOY_DIR`
-  on the control-plane; it re-reads this dir every interval and converges.
-- **On demand**: `POST /reconcile` against the control-plane.
+Operator-run, on demand: `make reconcile` (or `infra/stack/cp.sh reconcile`) on a
+manager re-reads this dir and converges the fleet — provisioning new tenant manifests
+and rolling out version-pin changes. There is no standing reconcile daemon; re-run it
+after editing a manifest or `versions.env` (or wire it to CI on merge).
 
-A rollout is health-gated — `docker compose up --wait` only succeeds once the new
-image passes the instance's `/healthz/live` check. **Rollback = `git revert`** the
+A rollout is health-gated — `docker stack deploy --detach=false` only succeeds once
+the new image passes the instance's health check. **Rollback = `git revert`** the
 `versions.env` (or tenant file) change and reconcile.
 
 > Files ending in `.example` are templates and are NOT loaded (only `*.yaml` / `*.yml`).

@@ -17,7 +17,7 @@ COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 # so a re-run after a small rmlext change is incremental (seconds), not a full
 # DuckDB rebuild. Only `make clean` wipes those caches.
 
-.PHONY: help dev demo down prod build logs restart clean ps
+.PHONY: help dev demo down prod build logs restart clean ps deploy-base tenant reconcile deprovision workspaces
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -71,6 +71,15 @@ tenant: ## Provision a tenant: make tenant slug=acme name="Acme Corp" owner=<key
 	  || { echo "usage: make tenant slug=<slug> name=<name> owner=<keycloak-sub>"; exit 1; }
 	@printf 'name: %s\nowner_keycloak_sub: %s\n' "$(name)" "$(owner)" \
 	  > deploy/environments/prod/tenants/$(slug).yaml
-	@echo "✓ wrote deploy/environments/prod/tenants/$(slug).yaml"
-	@echo "  commit it; the control-plane reconciles every CP_RECONCILE_INTERVAL_SECS"
-	@echo "  (or force now from the manager: curl -fsS -X POST http://localhost:9000/reconcile)"
+	@echo "✓ wrote deploy/environments/prod/tenants/$(slug).yaml — commit it (git is the inventory)"
+	@infra/stack/cp.sh reconcile
+
+reconcile: ## Converge all tenants from git manifests (run on a manager)
+	@infra/stack/cp.sh reconcile
+
+deprovision: ## Tear a tenant down: make deprovision id=keasy-ws-...
+	@test -n "$(id)" || { echo "usage: make deprovision id=<workspace-id>"; exit 1; }
+	@infra/stack/cp.sh deprovision $(id)
+
+workspaces: ## List provisioned workspaces
+	@infra/stack/cp.sh list

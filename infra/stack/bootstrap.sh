@@ -29,10 +29,10 @@ gen() {  # <ENV_VAR>
 }
 gen KC_DB_PASSWORD
 gen KC_ADMIN_PASSWORD
+# The provisioner CLI authenticates to Keycloak as the keasy-control-plane client
+# with this secret (passed via .env by cp.sh, and injected into the rendered realm
+# below — same value both sides). No Swarm secret: the CLI is not a service.
 gen CP_OIDC_SECRET
-# Operator gate for the control-plane's POST/DELETE /workspaces (the only
-# workspace-creation credential).
-gen CP_API_KEY
 
 # 1. Swarm (idempotent).
 docker info 2>/dev/null | grep -q 'Swarm: active' || docker swarm init
@@ -45,8 +45,6 @@ secret() {  # <secret-name> <env-var>
 }
 secret kc-db-password    KC_DB_PASSWORD
 secret kc-admin-password KC_ADMIN_PASSWORD
-secret cp-oidc-secret    CP_OIDC_SECRET
-secret cp-api-key        CP_API_KEY
 if [ -n "${KEASY_LITESTREAM_REPLICA_BASE:-}" ] && ! docker secret inspect keasy-litestream >/dev/null 2>&1; then
   [ -n "${KEASY_LITESTREAM_CREDS:-}" ] || { echo "✗ KEASY_LITESTREAM_REPLICA_BASE set but KEASY_LITESTREAM_CREDS missing"; exit 1; }
   printf '%s' "$KEASY_LITESTREAM_CREDS" | docker secret create keasy-litestream - >/dev/null && echo "✓ created secret keasy-litestream"

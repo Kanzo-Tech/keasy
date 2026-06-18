@@ -363,8 +363,6 @@ mod tests {
 
     fn cfg() -> ControlPlaneConfig {
         ControlPlaneConfig {
-            bind_addr: "0.0.0.0:9000".into(),
-            api_key: None,
             oidc_issuer_url: "https://kc/realms/keasy".into(),
             oidc_client_id: "cp".into(),
             oidc_client_secret: secrecy::SecretString::from("s".to_string()),

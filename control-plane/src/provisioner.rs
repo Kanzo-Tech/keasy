@@ -1,6 +1,6 @@
 //! Atomic, idempotent workspace provisioning.
 //!
-//! `POST /workspaces { name, owner_keycloak_sub }` runs the reference reconcile:
+//! `provision(name, handle, owner_keycloak_sub)` runs the reference reconcile:
 //!   1. register an OIDC client in the shared Keycloak (authentication),
 //!   2. attach the `keasy:role` mapper + owner/member client roles (authorization),
 //!   3. create the workspace's Organization and add the owner as a member,
@@ -9,12 +9,11 @@
 //!
 //! Any failure after step 1 rolls back the partially-created resources (delete
 //! the OIDC client, tear the stack down), so a failed create leaves nothing
-//! behind. `DELETE /workspaces/{id}` is the inverse and is idempotent.
+//! behind. `deprovision(id)` is the inverse and is idempotent.
 //!
 //! The registry maps `workspace_id → {keycloak_uuid, …}` so teardown can find the
 //! client to delete and the reconciler can diff desired-vs-real. It is persisted
-//! in SQLite ([`crate::store`]) so it survives a control-plane restart — the
-//! provisioner is otherwise stateless.
+//! in SQLite ([`crate::store`]) as the CLI's local bookkeeping across invocations.
 
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
@@ -113,16 +112,6 @@ impl Provisioner {
         let web_image = self.config.web_image.clone();
         self.provision_with(name, &slug, owner_keycloak_sub, &server_image, &web_image)
             .await
-    }
-
-    /// Check a presented bearer key against the configured `CP_API_KEY`. With no key
-    /// configured (dev), all callers pass; production always sets it.
-    pub fn verify_api_key(&self, presented: Option<&str>) -> bool {
-        use secrecy::ExposeSecret;
-        match &self.config.api_key {
-            None => true,
-            Some(key) => presented.map(str::to_owned) == Some(key.expose_secret().to_string()),
-        }
     }
 
     /// Provision a workspace atomically with an explicit slug + images (the
@@ -322,29 +311,6 @@ impl Provisioner {
             .into_iter()
             .map(WorkspaceInfo::from)
             .collect())
-    }
-
-    /// Workspaces owned by a Keycloak sub — lists a user's projects (a user owns
-    /// many; this is not a per-owner cap).
-    pub fn list_by_owner(&self, sub: &str) -> Result<Vec<WorkspaceInfo>, ProvisionError> {
-        Ok(self
-            .store
-            .list_by_owner(sub)
-            .map_err(ProvisionError::Store)?
-            .into_iter()
-            .map(WorkspaceInfo::from)
-            .collect())
-    }
-
-    /// Whether a handle is free, plus its normalized (slugified) form — the
-    /// operator's pre-create availability check, so `create` never hits a UNIQUE fail.
-    pub fn handle_status(&self, handle: &str) -> Result<(bool, String), ProvisionError> {
-        let slug = slugify(handle);
-        if slug.is_empty() {
-            return Ok((false, slug));
-        }
-        let taken = self.store.slug_taken(&slug).map_err(ProvisionError::Store)?;
-        Ok((!taken, slug))
     }
 
     /// Reconcile the live registry toward `desired` (the git seed): provision

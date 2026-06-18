@@ -1,12 +1,13 @@
-# Shared Swarm base stack — the keasy fleet's edge + identity + control-plane.
+# Shared Swarm base stack — the keasy fleet's edge + identity.
 #
 #   docker stack deploy -c infra/stack/base.yml keasy-base
 #
-# The per-tenant stacks are rendered + deployed by the control-plane (one stack
-# per workspace) and attach to the `keasy-edge` overlay defined here. Traefik
-# discovers every service by its `deploy.labels` — adding a tenant needs no edit
-# to this file. See infra/stack/README.md for the one-time bootstrap (swarm init,
-# overlay network, the three base secrets).
+# The per-tenant stacks are rendered + deployed by the provisioner CLI (the
+# `keasy-control-plane` image, run on a manager via infra/stack/cp.sh — NOT a
+# service in this stack) and attach to the `keasy-edge` overlay defined here.
+# Traefik discovers every service by its `deploy.labels` — adding a tenant needs
+# no edit to this file. See infra/stack/README.md for the one-time bootstrap
+# (swarm init, overlay network, base secrets).
 #
 # Required env (interpolated by `docker stack deploy`):
 #   KC_HOSTNAME               e.g. auth.keasy.example.com   (Keycloak's public host)
@@ -145,65 +146,21 @@ services:
         traefik.http.routers.keycloak.tls.certresolver: le
         traefik.http.services.keycloak.loadbalancer.server.port: "8080"
 
-  # ── Control-plane: the per-tenant provisioner (owns the Docker socket) ───────
-  control-plane:
-    image: ${KEASY_CONTROL_PLANE_IMAGE}
-    environment:
-      CP_BIND_ADDR: "0.0.0.0:9000"
-      CP_OIDC_ISSUER_URL: "https://${KC_HOSTNAME}/auth/realms/keasy"
-      CP_OIDC_INTERNAL_BASE_URL: "http://keycloak:8080/auth"
-      CP_OIDC_CLIENT_ID: keasy-control-plane
-      CP_OIDC_CLIENT_SECRET_FILE: /run/secrets/cp-oidc-secret
-      CP_BASE_DOMAIN: ${KEASY_BASE_DOMAIN}
-      CP_SERVER_IMAGE: ${KEASY_SERVER_IMAGE}
-      CP_WEB_IMAGE: ${KEASY_WEB_IMAGE}
-      CP_NETWORK: keasy-edge
-      CP_STACKS_DIR: /var/lib/keasy/stacks
-      CP_DB_PATH: /var/lib/keasy/control-plane.db
-      CP_DEPLOY_DIR: /deploy/environments/prod
-      CP_RECONCILE_INTERVAL_SECS: "30"
-      # Litestream durability for the tenant's keasy.db (the catalog.sqlite is a
-      # derived projection the reconciler rebuilds). Set to a keasy-operated
-      # bucket base (e.g. `s3://keasy-backups/litestream` or `abs://…`); each
-      # tenant replicates under `<base>/<workspace_id>/`. Empty → no replication.
-      # Creds: the shared external secret `keasy-litestream` (`KEY=value` env-file
-      # — see README).
-      CP_LITESTREAM_REPLICA_BASE: ${KEASY_LITESTREAM_REPLICA_BASE:-}
-      # Operator gate: the key callers must present on POST/DELETE /workspaces.
-      # The only workspace-creation credential — held by the operator (make tenant
-      # / direct API), never by end users.
-      CP_API_KEY_FILE: /run/secrets/cp-api-key
-    secrets: [cp-oidc-secret, cp-api-key]
-    volumes:
-      # The control-plane shells out to `docker stack deploy` / `docker secret`
-      # against the manager's Engine — it MUST run on a manager and own the socket.
-      - /var/run/docker.sock:/var/run/docker.sock
-      - control-plane-data:/var/lib/keasy
-      - type: bind
-        source: ${KEASY_DEPLOY_DIR}/deploy
-        target: /deploy
-        read_only: true
-    networks: [keasy-edge]
-    deploy:
-      placement:
-        constraints: [node.role == manager]
-      restart_policy:
-        condition: any
+  # ── Provisioning ─────────────────────────────────────────────────────────
+  # There is NO control-plane service. Provisioning is operator-driven: the
+  # `keasy-control-plane` image is a CLI (`provision`/`deprovision`/`reconcile`/
+  # `list`), run on a manager via `infra/stack/cp.sh` (see Makefile + README).
+  # Git (deploy/environments/<env>/tenants/*.yaml) is the desired-state inventory.
 
 secrets:
   kc-db-password:
     external: true
   kc-admin-password:
     external: true
-  cp-oidc-secret:
-    external: true
-  cp-api-key:
-    external: true
 
 volumes:
   traefik-acme:
   keycloak-postgres:
-  control-plane-data:
 
 networks:
   keasy-edge:

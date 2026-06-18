@@ -1,46 +1,34 @@
-# deploy/ — declarative source of truth for the VPS fleet
+# deploy/ — environment config for the VPS fleet
 
-Each environment is a directory the control-plane reconciles the live fleet toward.
-Git history here is the audit log: **add a tenant file → provision**, **delete it →
-deprovision**, **bump `versions.env` → roll every tenant to the new image**.
+> **The tenant fleet is no longer declared here.** A tenant **is** a Keycloak
+> Organization (the source of truth); the control-plane has no git inventory and no
+> local registry. The `tenants/*.yaml` files and `versions.env` are **obsolete** —
+> the control-plane does not read them. They are kept only as historical artifacts.
 
 ```
 deploy/environments/<env>/
-  versions.env          # image pins for the whole environment (the rollout knob)
-  tenants/
-    acme.yaml           # one file per workspace; filename stem = default slug
-    globex.yaml
+  .env                  # operator env: hostnames, secrets, fleet image pins (live)
+  versions.env          # OBSOLETE — no longer read by the control-plane
+  tenants/              # OBSOLETE — tenants live in Keycloak, not git
 ```
 
-## `versions.env`
+## Image pins (live)
 
-```
-KEASY_SERVER_IMAGE=ghcr.io/kanzo-tech/keasy-server:0.3.0
-KEASY_WEB_IMAGE=ghcr.io/kanzo-tech/keasy-web:0.3.0
-```
+The fleet default images come from `KEASY_SERVER_IMAGE` / `KEASY_WEB_IMAGE` in
+`deploy/environments/<env>/.env` (consumed by `infra/stack/cp.sh` as
+`CP_SERVER_IMAGE` / `CP_WEB_IMAGE`). To canary a single tenant, pin its org
+`server_image` attribute instead of the fleet default.
 
-Renovate bumps these when a new keasy release is published; merging the bump rolls
-the fleet on the next reconcile.
+## Tenant lifecycle
 
-## `tenants/<slug>.yaml`
+Operator-run on a manager (no standing daemon):
 
-```yaml
-name: Acme Corp              # display name
-owner_keycloak_sub: <uuid>   # the Keycloak user who owns the workspace
-# slug: acme                 # optional; defaults to the filename stem
-# server_image: ...          # optional per-tenant override (canary a pilot tenant)
-# web_image: ...             # optional override
-```
-
-## Reconcile
-
-Operator-run, on demand: `make reconcile` (or `infra/stack/cp.sh reconcile`) on a
-manager re-reads this dir and converges the fleet — provisioning new tenant manifests
-and rolling out version-pin changes. There is no standing reconcile daemon; re-run it
-after editing a manifest or `versions.env` (or wire it to CI on merge).
-
-A rollout is health-gated — `docker stack deploy --detach=false` only succeeds once
-the new image passes the instance's health check. **Rollback = `git revert`** the
-`versions.env` (or tenant file) change and reconcile.
-
-> Files ending in `.example` are templates and are NOT loaded (only `*.yaml` / `*.yml`).
+- **Provision:** `make tenant slug=… name=… owner=<email>` → `cp.sh provision`
+  creates the Keycloak Organization (the tenant record) + OIDC client and brings the
+  stack up. Idempotent.
+- **Reconcile:** `make reconcile` lists every Organization and re-ensures its stack
+  at the org's pinned `server_image` attribute (or the fleet default) — drift heal +
+  version rollout. A rollout is health-gated (`docker stack deploy --detach=false`)
+  and Swarm auto-rolls-back on health failure.
+- **Deprovision:** `make deprovision slug=…` tears down the stack, OIDC client, and
+  Organization.

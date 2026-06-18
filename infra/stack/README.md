@@ -68,15 +68,21 @@ The control-plane injects `LITESTREAM_REPLICA_URL` + the `keasy-litestream` secr
 into every rendered tenant stack. Leave `KEASY_LITESTREAM_REPLICA_BASE` unset to
 disable.
 
-## Per-tenant lifecycle (driven by `deploy/`)
+## Per-tenant lifecycle (Keycloak Organizations are the source of truth)
 
-`deploy/environments/prod/tenants/<slug>.yaml` is the desired-state inventory. There
-is **no control-plane service** — provisioning is an operator-run CLI (the
-`keasy-control-plane` image), invoked on a manager via `infra/stack/cp.sh` (wrapped
-by `make tenant` / `make reconcile`). `cp.sh reconcile` reads the manifests and
-converges the fleet: mint the tenant's Swarm secrets, render the stack, and
-`docker stack deploy` it. Rollback = `git revert` the pin (or Swarm's automatic
-rollback on a failed health-gate). See `deploy/README.md`.
+A tenant **is** a Keycloak Organization — there is no local registry and no git
+inventory. The `workspace_id` is derived deterministically from the org alias
+(`keasy-ws-{slug}`), and the owner email + per-tenant image pin are stored as org
+**attributes**. There is **no control-plane service** — provisioning is an
+operator-run CLI (the `keasy-control-plane` image), invoked on a manager via
+`infra/stack/cp.sh` (wrapped by `make tenant` / `make reconcile`).
+
+`cp.sh provision` creates the org + OIDC client and brings the stack up directly
+(idempotent — re-running re-ensures the org/invite/stack, never duplicating the
+immutable Swarm secrets). `cp.sh reconcile` lists every org and re-ensures its stack
+at the org's pinned `server_image` attribute (or the fleet default), healing drift
+and rolling out version bumps. Rollback = Swarm's automatic rollback on a failed
+health-gate. See `deploy/README.md`.
 
 ## Users (identity is runtime, never seeded in the realm)
 
@@ -88,19 +94,16 @@ manager. Keycloak self-registration stays open, but an account is **not** a work
 
 1. **A person self-registers** in Keycloak (or the operator invites them) — this is
    identity only, it provisions nothing.
-2. **The operator creates the workspace** with the owner's Keycloak `sub`:
-   `make tenant slug=… name=… owner=<sub>` writes the git manifest and runs
-   `cp.sh reconcile`, which wires the OIDC client + Organization + owner role-mapping
-   and brings the stack up at `<slug>.<base>`. (Onboarding the owner by *email*
-   instead of `sub`, via native Keycloak Organization invitations, is the next
-   workstream — see `.claude/plans/keasy-clean-arch-cli-native.md`.)
+2. **The operator creates the workspace** with the owner's *email*:
+   `make tenant slug=… name=… owner=<email>` runs `cp.sh provision`, which wires the
+   OIDC client + Organization (the tenant record) + a native Keycloak Organization
+   invitation to the owner, and brings the stack up at `<slug>.<base>`.
 3. **Members are invited** to the workspace's Keycloak Organization (`add_org_member`
    + `assign_client_role` wire membership + owner/member authz) and log in at the
    tenant URL via the invite link.
 
-Git (`deploy/environments/<env>/tenants/*.yaml`) is the desired-state inventory; the
-CLI keeps a local SQLite registry (the `control-plane-data` volume) as bookkeeping
-across runs. Teardown is explicit: `make deprovision id=<workspace-id>`.
+The Keycloak Organizations ARE the tenant fleet — no git inventory, no local
+registry. Teardown is explicit: `make deprovision slug=<slug>`.
 
 The only non-human users in the realm are the **service accounts** — the machine
 identities of keasy-server and the provisioner (OAuth2 client-credentials), which
@@ -113,10 +116,11 @@ carry the `realm-management` roles those services need to call the admin API.
 
 ## On-the-fly version switch
 
-Bump `deploy/environments/prod/versions.env` (fleet) or a tenant override →
-reconcile. Swarm performs a **start-first** rolling update (new task healthy before
-the old retires = zero-downtime) and auto-rolls-back on health failure — both from
-the `update_config`/`rollback_config` the control-plane renders into each stack.
+Bump `KEASY_SERVER_IMAGE`/`KEASY_WEB_IMAGE` in `deploy/environments/prod/.env`
+(fleet default), or pin a single tenant via its org `server_image` attribute (canary)
+→ `make reconcile`. Swarm performs a **start-first** rolling update (new task healthy
+before the old retires = zero-downtime) and auto-rolls-back on health failure — both
+from the `update_config`/`rollback_config` the control-plane renders into each stack.
 
 > NOTE: the dev loop still uses `docker compose` (`docker-compose*.yml` + Caddy).
 > The Caddy ingress is superseded by Traefik for the Swarm/prod path; `infra/caddy/**`

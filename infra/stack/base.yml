@@ -150,7 +150,8 @@ services:
   # There is NO control-plane service. Provisioning is operator-driven: the
   # `keasy-control-plane` image is a CLI (`provision`/`deprovision`/`reconcile`/
   # `list`), run on a manager via `infra/stack/cp.sh` (see Makefile + README).
-  # Git (deploy/environments/<env>/tenants/*.yaml) is the desired-state inventory.
+  # The Keycloak Organizations are the source of truth for the tenant fleet — no
+  # local registry, no git inventory.
 
 secrets:
   kc-db-password:

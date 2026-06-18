@@ -69,17 +69,14 @@ deploy-base: ## Bootstrap the Swarm base stack (idempotent) — reads deploy/env
 tenant: ## Provision a tenant: make tenant slug=acme name="Acme Corp" owner=owner@acme.com
 	@test -n "$(slug)" && test -n "$(name)" && test -n "$(owner)" \
 	  || { echo "usage: make tenant slug=<slug> name=<name> owner=<owner-email>"; exit 1; }
-	@printf 'name: %s\nowner_email: %s\n' "$(name)" "$(owner)" \
-	  > deploy/environments/prod/tenants/$(slug).yaml
-	@echo "✓ wrote deploy/environments/prod/tenants/$(slug).yaml — commit it (git is the inventory)"
+	@infra/stack/cp.sh provision --name "$(name)" --handle "$(slug)" --owner-email "$(owner)"
+
+reconcile: ## Re-ensure every tenant's stack (drift heal + version rollout)
 	@infra/stack/cp.sh reconcile
 
-reconcile: ## Converge all tenants from git manifests (run on a manager)
-	@infra/stack/cp.sh reconcile
+deprovision: ## Tear a tenant down: make deprovision slug=acme
+	@test -n "$(slug)" || { echo "usage: make deprovision slug=<slug>"; exit 1; }
+	@infra/stack/cp.sh deprovision $(slug)
 
-deprovision: ## Tear a tenant down: make deprovision id=keasy-ws-...
-	@test -n "$(id)" || { echo "usage: make deprovision id=<workspace-id>"; exit 1; }
-	@infra/stack/cp.sh deprovision $(id)
-
-workspaces: ## List provisioned workspaces
+workspaces: ## List provisioned workspaces (Keycloak Organizations)
 	@infra/stack/cp.sh list

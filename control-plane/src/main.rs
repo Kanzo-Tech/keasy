@@ -4,22 +4,18 @@
 //! Docker socket and a Keycloak admin service account. It wraps the reference
 //! [`Provisioner`] reconcile with four subcommands:
 //!
-//!   provision   --name --handle --owner-email → create (atomic, keyed)
-//!   deprovision <id>                           → tear down (idempotent)
-//!   reconcile                                  → converge the registry toward the
-//!                                                manifest at `CP_DEPLOY_DIR`
-//!   list                                       → the live registry, as JSON
+//!   provision   --name --handle --owner-email → create (atomic, idempotent)
+//!   deprovision <slug>                         → tear down (idempotent)
+//!   reconcile                                  → re-ensure every tenant's stack at
+//!                                                its pinned image (drift + rollout)
+//!   list                                       → the live tenants, as JSON
 //!
-//! The durable workspace registry ([`crate::store`]) is the CLI's local state, so
-//! provision/deprovision/list/reconcile all see the same map across invocations.
+//! There is no local state: the Keycloak Organizations are the source of truth, so
+//! provision/deprovision/list/reconcile all read the same fleet across invocations.
 
 mod config;
 mod docker;
-mod manifest;
 mod provisioner;
-mod store;
-
-use std::path::Path;
 
 use clap::{Parser, Subcommand};
 
@@ -47,14 +43,16 @@ enum Command {
         #[arg(long = "owner-email")]
         owner_email: String,
     },
-    /// Tear a workspace down by id (idempotent).
+    /// Tear a workspace down by slug (idempotent). Accepts the bare slug or the
+    /// full `keasy-ws-{slug}` id.
     Deprovision {
-        /// Workspace id (`keasy-ws-…`).
-        id: String,
+        /// Workspace slug (org alias) or `keasy-ws-{slug}` id.
+        slug: String,
     },
-    /// Reconcile the live registry against the manifest at `CP_DEPLOY_DIR`.
+    /// Re-ensure every tenant's stack at its pinned image (heals drift + rolls out
+    /// version bumps). The Keycloak Organizations are the desired set.
     Reconcile,
-    /// List the live workspaces (durable registry snapshot).
+    /// List the live workspaces (projected from the Keycloak Organizations).
     List,
 }
 
@@ -77,9 +75,10 @@ async fn main() {
         }
     };
 
-    let stacks_dir = std::env::var("CP_STACKS_DIR").unwrap_or_else(|_| "/var/lib/keasy/stacks".into());
-    let db_path = std::env::var("CP_DB_PATH").unwrap_or_else(|_| "/var/lib/keasy/control-plane.db".into());
-    let provisioner = match Provisioner::new(config, stacks_dir, db_path) {
+    // Rendered stack files are transient — `docker stack deploy` reads them only at
+    // deploy time — so this can be an ephemeral path inside the container.
+    let stacks_dir = std::env::var("CP_STACKS_DIR").unwrap_or_else(|_| "/tmp/keasy-stacks".into());
+    let provisioner = match Provisioner::new(config, stacks_dir) {
         Ok(p) => p,
         Err(e) => {
             eprintln!("FATAL: failed to init provisioner: {e}");
@@ -97,37 +96,21 @@ async fn main() {
                 }
             }
         }
-        Command::Deprovision { id } => match provisioner.deprovision(&id).await {
-            Ok(()) => println!("deprovisioned {id}"),
+        Command::Deprovision { slug } => match provisioner.deprovision(&slug).await {
+            Ok(()) => println!("deprovisioned {slug}"),
             Err(e) => {
                 eprintln!("deprovision failed: {e}");
                 std::process::exit(1);
             }
         },
-        Command::Reconcile => {
-            let dir = match std::env::var("CP_DEPLOY_DIR") {
-                Ok(d) => d,
-                Err(_) => {
-                    eprintln!("FATAL: CP_DEPLOY_DIR not set");
-                    std::process::exit(1);
-                }
-            };
-            let desired = match manifest::load_environment(Path::new(&dir)) {
-                Ok(d) => d,
-                Err(e) => {
-                    eprintln!("reconcile failed: load manifest: {e}");
-                    std::process::exit(1);
-                }
-            };
-            match provisioner.reconcile(&desired).await {
-                Ok(summary) => println!("{}", serde_json::to_string_pretty(&summary).unwrap()),
-                Err(e) => {
-                    eprintln!("reconcile failed: {e}");
-                    std::process::exit(1);
-                }
+        Command::Reconcile => match provisioner.reconcile().await {
+            Ok(summary) => println!("{}", serde_json::to_string_pretty(&summary).unwrap()),
+            Err(e) => {
+                eprintln!("reconcile failed: {e}");
+                std::process::exit(1);
             }
-        }
-        Command::List => match provisioner.list() {
+        },
+        Command::List => match provisioner.list().await {
             Ok(workspaces) => println!("{}", serde_json::to_string_pretty(&workspaces).unwrap()),
             Err(e) => {
                 eprintln!("list failed: {e}");

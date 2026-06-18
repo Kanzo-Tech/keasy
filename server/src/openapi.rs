@@ -81,9 +81,6 @@ use utoipa::OpenApi;
         crate::jobs::routes::save_dashboard_layout,
         // Auth (additional)
         crate::auth::routes::get_invite_info,
-        // Onboarding (central mode)
-        crate::auth::onboard::onboard,
-        crate::auth::onboard::check_handle,
     ),
     components(schemas(
         crate::error::DataResponse<serde_json::Value>,
@@ -127,9 +124,6 @@ use utoipa::OpenApi;
         crate::auth::routes::WorkspacesResponse,
         crate::auth::routes::InviteInfoResponse,
         crate::auth::routes::LogoutResponse,
-        crate::auth::onboard::OnboardRequest,
-        crate::auth::onboard::OnboardResponse,
-        crate::auth::onboard::HandleCheckResponse,
         // Health
         crate::routes::health::ServiceStatusResponse,
         crate::routes::health::VersionResponse,

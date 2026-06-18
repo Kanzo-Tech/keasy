@@ -169,7 +169,9 @@ services:
       # Creds: the shared external secret `keasy-litestream` (`KEY=value` env-file
       # — see README).
       CP_LITESTREAM_REPLICA_BASE: ${KEASY_LITESTREAM_REPLICA_BASE:-}
-      # Shared key the central onboarding server presents on POST/DELETE /workspaces.
+      # Operator gate: the key callers must present on POST/DELETE /workspaces.
+      # The only workspace-creation credential — held by the operator (make tenant
+      # / direct API), never by end users.
       CP_API_KEY_FILE: /run/secrets/cp-api-key
     secrets: [cp-oidc-secret, cp-api-key]
     volumes:
@@ -188,70 +190,6 @@ services:
       restart_policy:
         condition: any
 
-  # ── Central onboarding instance: keasy-server + web at the apex ──────────────
-  # Serves KEASY_BASE_DOMAIN for users who have no workspace yet. Same images as
-  # the tenants, run in CENTRAL mode (no KEASY_ORG_ALIAS): post-login it routes a
-  # workspace-less user to /onboard and provisions their workspace via the
-  # control-plane (server-to-server with cp-api-key). Stateless → scale freely.
-  central-server:
-    image: ${KEASY_SERVER_IMAGE}
-    environment:
-      KEASY_BASE_URL: "https://${KEASY_BASE_DOMAIN}"
-      KEASY_CENTRAL_MODE: "true"
-      KEASY_CONTROL_PLANE_URL: "http://control-plane:9000"
-      KEASY_CONTROL_PLANE_KEY_FILE: /run/secrets/cp-api-key
-      KEASY_OIDC_ISSUER_URL: "https://${KC_HOSTNAME}/auth/realms/keasy"
-      KEASY_OIDC_CLIENT_ID: keasy-central
-      KEASY_OIDC_INTERNAL_BASE_URL: "http://keycloak:8080/auth"
-      KEASY_OIDC_CLIENT_SECRET_FILE: /run/secrets/central-oidc-secret
-      KEASY_SESSION_SECRET_FILE: /run/secrets/central-session
-      KEASY_API_KEY_FILE: /run/secrets/central-api-key
-      KEASY_SESSION_SECURE: "true"
-      KEASY_CORS_ORIGINS: "https://${KEASY_BASE_DOMAIN}"
-    secrets: [cp-api-key, central-oidc-secret, central-session, central-api-key]
-    networks: [keasy-edge]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz/ready"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    deploy:
-      replicas: 1
-      update_config:
-        order: start-first
-      restart_policy:
-        condition: any
-        delay: 5s
-      labels:
-        traefik.enable: "true"
-        traefik.docker.network: keasy-edge
-        traefik.http.routers.central-api.rule: "Host(`${KEASY_BASE_DOMAIN}`) && (PathPrefix(`/v1`) || PathPrefix(`/.well-known`))"
-        traefik.http.routers.central-api.entrypoints: websecure
-        traefik.http.routers.central-api.tls.certresolver: le
-        traefik.http.routers.central-api.service: central-api
-        traefik.http.services.central-api.loadbalancer.server.port: "8080"
-
-  central-web:
-    image: ${KEASY_WEB_IMAGE}
-    networks: [keasy-edge]
-    deploy:
-      replicas: 1
-      update_config:
-        order: start-first
-      restart_policy:
-        condition: any
-        delay: 5s
-      labels:
-        traefik.enable: "true"
-        traefik.docker.network: keasy-edge
-        traefik.http.routers.central-web.rule: "Host(`${KEASY_BASE_DOMAIN}`)"
-        traefik.http.routers.central-web.entrypoints: websecure
-        traefik.http.routers.central-web.tls.certresolver: le
-        traefik.http.routers.central-web.priority: "1"
-        traefik.http.routers.central-web.service: central-web
-        traefik.http.services.central-web.loadbalancer.server.port: "3000"
-
 secrets:
   kc-db-password:
     external: true
@@ -260,12 +198,6 @@ secrets:
   cp-oidc-secret:
     external: true
   cp-api-key:
-    external: true
-  central-oidc-secret:
-    external: true
-  central-session:
-    external: true
-  central-api-key:
     external: true
 
 volumes:

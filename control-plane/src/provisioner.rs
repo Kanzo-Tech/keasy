@@ -324,8 +324,8 @@ impl Provisioner {
             .collect())
     }
 
-    /// Workspaces owned by a Keycloak sub — onboarding short-circuits on this so a
-    /// user who already has a workspace is never re-provisioned.
+    /// Workspaces owned by a Keycloak sub — lists a user's projects (a user owns
+    /// many; this is not a per-owner cap).
     pub fn list_by_owner(&self, sub: &str) -> Result<Vec<WorkspaceInfo>, ProvisionError> {
         Ok(self
             .store
@@ -337,7 +337,7 @@ impl Provisioner {
     }
 
     /// Whether a handle is free, plus its normalized (slugified) form — the
-    /// onboarding availability check, so the user never hits a failed provision.
+    /// operator's pre-create availability check, so `create` never hits a UNIQUE fail.
     pub fn handle_status(&self, handle: &str) -> Result<(bool, String), ProvisionError> {
         let slug = slugify(handle);
         if slug.is_empty() {

@@ -493,47 +493,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/onboard": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * POST /v1/onboard — provision the caller's workspace and make them owner.
-         * @description Idempotent: a user who already owns a workspace gets its URL back rather than a
-         *     second one. Session required (central mode only).
-         */
-        post: operations["onboard"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/onboard/check": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * GET /v1/onboard/check?handle=… — handle availability (proxies the control-plane
-         *     so the browser never touches the internal-only control-plane). Session required.
-         */
-        get: operations["check_handle"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/org/identity": {
         parameters: {
             query?: never;
@@ -1000,11 +959,6 @@ export interface components {
         GenerateResponse: {
             script: string;
         };
-        HandleCheckResponse: {
-            available: boolean;
-            /** @description The normalized (slugified) handle. */
-            handle: string;
-        };
         InviteInfoResponse: {
             valid: boolean;
         };
@@ -1079,16 +1033,6 @@ export interface components {
             last_name: string;
             org?: null | components["schemas"]["MeOrg"];
             user_id: string;
-        };
-        OnboardRequest: {
-            /** @description Desired handle (subdomain); validated + slugified by the control-plane. */
-            handle: string;
-            /** @description Display label for the workspace. */
-            name: string;
-        };
-        OnboardResponse: {
-            /** @description The new (or already-owned) workspace's home URL — the client redirects here. */
-            url: string;
         };
         OrgIdentityResponse: {
             country: string;
@@ -2505,60 +2449,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    onboard: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["OnboardRequest"];
-            };
-        };
-        responses: {
-            /** @description Workspace ready */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OnboardResponse"];
-                };
-            };
-            /** @description Invalid or taken handle */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    check_handle: {
-        parameters: {
-            query: {
-                /** @description Desired handle */
-                handle: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Handle availability */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HandleCheckResponse"];
-                };
             };
         };
     };

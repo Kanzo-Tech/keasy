@@ -192,26 +192,6 @@
         "email",
         "keasy-role"
       ]
-    },
-    {
-      "clientId": "keasy-central",
-      "name": "Keasy Central (onboarding)",
-      "description": "Apex onboarding instance — identity-only relying party (carries no keasy:role).",
-      "enabled": true,
-      "protocol": "openid-connect",
-      "publicClient": false,
-      "secret": "set-by-bootstrap",
-      "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": false,
-      "redirectUris": [],
-      "webOrigins": [],
-      "defaultClientScopes": [
-        "roles",
-        "web-origins",
-        "profile",
-        "email"
-      ]
     }
   ],
   "users": [

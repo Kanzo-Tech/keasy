@@ -281,6 +281,11 @@ services:
     networks: [edge]
     deploy:
       replicas: 1
+      # Bound each tenant's blast radius: a single workspace can't starve the node.
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
       update_config:
         order: start-first
         failure_action: rollback
@@ -305,6 +310,10 @@ services:
     networks: [edge]
     deploy:
       replicas: 1
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
       update_config:
         order: start-first
         failure_action: rollback

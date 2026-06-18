@@ -9,8 +9,8 @@ the keasy-specific provisioning (Keycloak + rendering each tenant's stack). See
 ## Topology
 
 - `base.yml` — one shared stack: Traefik (edge), Keycloak + Postgres (identity),
-  control-plane (provisioner), and the **central onboarding instance** (keasy-server
-  + web at the apex `KEASY_BASE_DOMAIN`, central mode). Defines the `keasy-edge` overlay.
+  control-plane (provisioner). Defines the `keasy-edge` overlay. No app serves the
+  apex `KEASY_BASE_DOMAIN` — members log in at their own tenant URL.
 - **Per-tenant stacks** — rendered + `docker stack deploy`-ed by the control-plane
   (one per workspace, project name = workspace id). They attach to `keasy-edge`;
   Traefik routes `<slug>.<base_domain>` to them from their `deploy.labels`. No edit
@@ -79,28 +79,33 @@ rollback on a failed health-gate). See `deploy/README.md`.
 ## Users (identity is runtime, never seeded in the realm)
 
 The realm import carries only structure (clients, scopes, roles) — never people.
-Onboarding is **self-service** (first-user-becomes-owner), no admin step:
+Project creation is **operator-driven** (instance-per-tenant, like GitLab
+Dedicated): a full stack per workspace makes open self-service a resource/cost
+DoS, so creation is gated behind the operator's `cp-api-key`. Keycloak
+self-registration stays open, but an account is **not** a workspace.
 
-1. A person opens the app at `https://${KEASY_BASE_DOMAIN}` (the central instance)
-   and signs up — Keycloak self-registration is enabled on the `keasy` realm.
-2. On first login with no workspace, the central server provisions their workspace
-   via the control-plane (server-to-server, keyed with `cp-api-key`) and makes the
-   verified token sub the **owner**; the user lands in it.
+1. **A person self-registers** in Keycloak (or the operator invites them) — this is
+   identity only, it provisions nothing.
+2. **The operator creates the workspace** with the owner's Keycloak `sub`, either
+   declaratively via git (`make tenant slug=… name=… owner=<sub>`) or directly with
+   `POST /workspaces` carrying `cp-api-key`. The control-plane wires the OIDC client
+   + Organization + owner role-mapping; the owner lands in it at `<slug>.<base>`.
 3. **Members are invited** to the workspace's Keycloak Organization (the control-plane's
-   `add_org_member` + `assign_client_role` wire membership + owner/member authz).
+   `add_org_member` + `assign_client_role` wire membership + owner/member authz) and
+   log in at the tenant URL via the invite link.
 
 The registry (control-plane SQLite) is the source of truth for which workspaces
-exist. The git manifests + `make tenant slug=… name=… owner=<sub>` remain an
-optional **seed / break-glass** path (import-if-absent + version pin) — deleting a
-manifest no longer deprovisions.
+exist; `make tenant` git manifests are an import-if-absent + version-pin seed —
+deleting a manifest no longer deprovisions. Teardown is only explicit
+`DELETE /workspaces/{id}`.
 
 The only non-human users in the realm are the **service accounts** — the machine
 identities of keasy-server and the control-plane (OAuth2 client-credentials), which
 carry the `realm-management` roles those services need to call the admin API.
 
-> **Secret rotation:** `cp-api-key` is shared by the control-plane and the central
-> server — rotating it means redeploying both. `bootstrap.sh` generates it (plus the
-> central client/session/api-key secrets) on first run and persists them in `.env`.
+> **Secret rotation:** `cp-api-key` is the operator's workspace-creation gate, held
+> only by the control-plane. `bootstrap.sh` generates it on first run and persists
+> it in `.env`; rotating it means redeploying the control-plane.
 
 ## On-the-fly version switch
 

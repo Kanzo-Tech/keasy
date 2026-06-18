@@ -30,11 +30,9 @@ gen() {  # <ENV_VAR>
 gen KC_DB_PASSWORD
 gen KC_ADMIN_PASSWORD
 gen CP_OIDC_SECRET
-# The apex onboarding instance (central-server) + the control-plane API it calls.
+# Operator gate for the control-plane's POST/DELETE /workspaces (the only
+# workspace-creation credential).
 gen CP_API_KEY
-gen CENTRAL_OIDC_SECRET
-gen CENTRAL_SESSION
-gen CENTRAL_API_KEY
 
 # 1. Swarm (idempotent).
 docker info 2>/dev/null | grep -q 'Swarm: active' || docker swarm init
@@ -49,9 +47,6 @@ secret kc-db-password    KC_DB_PASSWORD
 secret kc-admin-password KC_ADMIN_PASSWORD
 secret cp-oidc-secret    CP_OIDC_SECRET
 secret cp-api-key        CP_API_KEY
-secret central-oidc-secret CENTRAL_OIDC_SECRET
-secret central-session   CENTRAL_SESSION
-secret central-api-key   CENTRAL_API_KEY
 if [ -n "${KEASY_LITESTREAM_REPLICA_BASE:-}" ] && ! docker secret inspect keasy-litestream >/dev/null 2>&1; then
   [ -n "${KEASY_LITESTREAM_CREDS:-}" ] || { echo "✗ KEASY_LITESTREAM_REPLICA_BASE set but KEASY_LITESTREAM_CREDS missing"; exit 1; }
   printf '%s' "$KEASY_LITESTREAM_CREDS" | docker secret create keasy-litestream - >/dev/null && echo "✓ created secret keasy-litestream"
@@ -66,22 +61,16 @@ fi
 #    matters on a fresh DB and never clobbers an already-seeded realm.
 RENDERED=infra/keycloak/realm-rendered
 mkdir -p "$RENDERED"
-python3 - infra/keycloak/realm-import/keasy-realm.json "$RENDERED/keasy-realm.json" \
-  "$CP_OIDC_SECRET" "$CENTRAL_OIDC_SECRET" "$KEASY_BASE_DOMAIN" <<'PY'
+python3 - infra/keycloak/realm-import/keasy-realm.json "$RENDERED/keasy-realm.json" "$CP_OIDC_SECRET" <<'PY'
 import json, sys
-src, dst, cp_secret, central_secret, base = sys.argv[1:6]
+src, dst, secret = sys.argv[1:4]
 realm = json.load(open(src))
 for c in realm.get("clients", []):
     if c.get("clientId") == "keasy-control-plane":
-        c["secret"] = cp_secret
-    elif c.get("clientId") == "keasy-central":
-        # The apex onboarding client: secret + its production redirect/origin.
-        c["secret"] = central_secret
-        c["redirectUris"] = [f"https://{base}/v1/auth/oidc-callback"]
-        c["webOrigins"] = [f"https://{base}"]
+        c["secret"] = secret
 json.dump(realm, open(dst, "w"), indent=2)
 PY
-echo "✓ rendered realm with the control-plane + central client secrets injected"
+echo "✓ rendered realm with the control-plane secret injected"
 
 # 4. Deploy the base stack (Traefik + Keycloak [native realm import] + control-plane).
 docker stack deploy --detach=false -c infra/stack/base.yml keasy-base

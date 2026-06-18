@@ -90,15 +90,6 @@ pub fn build_router(
             "/v1/auth/workspaces",
             axum::routing::get(crate::auth::routes::list_workspaces),
         )
-        // Self-service onboarding (central mode): provision the caller's workspace.
-        .route(
-            "/v1/onboard",
-            axum::routing::post(crate::auth::onboard::onboard),
-        )
-        .route(
-            "/v1/onboard/check",
-            axum::routing::get(crate::auth::onboard::check_handle),
-        )
         .layer(middleware::from_fn_with_state(
             state.clone(),
             session_required,

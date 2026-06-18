@@ -639,34 +639,8 @@ pub async fn oidc_callback(
         let _ = session.save().await;
     }
 
-    // 20. Redirect. In central mode (the apex onboarding instance) the user has no
-    //     tenant to land in: route by workspace membership — no workspace yet →
-    //     /onboard; otherwise into their first workspace (where the real keasy:role
-    //     applies). Tenant instances always land on their own dashboard.
-    if state.auth.central_mode {
-        return Ok(central_post_login_redirect(&state, &subject).await);
-    }
+    // 20. Always redirect to dashboard.
     Ok(Redirect::to("/").into_response())
-}
-
-/// Central-mode post-login routing: send a member into their (first) workspace and a
-/// brand-new user with no workspace to onboarding. Keyed off Keycloak org membership
-/// (the central client carries no `keasy:role` claim).
-async fn central_post_login_redirect(state: &AppState, subject: &str) -> axum::response::Response {
-    if let Some(kc) = &state.auth.keycloak_admin {
-        match kc.list_user_organizations(subject).await {
-            Ok(orgs) => {
-                if let Some(first) = orgs.into_iter().next() {
-                    let dest = format!("{}/v1/auth/oidc-start", first.url.trim_end_matches('/'));
-                    return Redirect::to(&dest).into_response();
-                }
-            }
-            Err(e) => {
-                tracing::warn!(error = %e, %subject, "central: failed to list organizations")
-            }
-        }
-    }
-    Redirect::to("/onboard").into_response()
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

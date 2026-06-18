@@ -163,9 +163,6 @@ async fn main() {
         oidc_client_id: config.oidc_client_id,
         oidc_client_secret: config.oidc_client_secret,
         oidc_org_id,
-        central_mode: config.central_mode,
-        control_plane_url: config.control_plane_url,
-        control_plane_key: config.control_plane_key,
     };
     // Server-side DuckLake catalog (authority over output metadata). Non-fatal
     // if it fails to open — the host keeps serving jobs and the reconciler

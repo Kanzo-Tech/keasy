@@ -123,7 +123,7 @@ impl Store {
             .map_err(|e| format!("read list: {e}"))
     }
 
-    /// Workspaces owned by a given Keycloak sub (onboarding idempotency check).
+    /// Workspaces owned by a given Keycloak sub (list a user's projects).
     pub fn list_by_owner(&self, sub: &str) -> Result<Vec<StoredWorkspace>, String> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn
@@ -138,7 +138,7 @@ impl Store {
             .map_err(|e| format!("read list_by_owner: {e}"))
     }
 
-    /// Whether a slug is already taken (the onboarding handle availability check).
+    /// Whether a slug is already taken (the handle availability check).
     pub fn slug_taken(&self, slug: &str) -> Result<bool, String> {
         let conn = self.conn.lock().unwrap();
         let n: i64 = conn

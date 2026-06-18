@@ -1364,73 +1364,6 @@
         }
       }
     },
-    "/v1/onboard": {
-      "post": {
-        "tags": [
-          "Auth"
-        ],
-        "summary": "POST /v1/onboard — provision the caller's workspace and make them owner.",
-        "description": "Idempotent: a user who already owns a workspace gets its URL back rather than a\nsecond one. Session required (central mode only).",
-        "operationId": "onboard",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OnboardRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Workspace ready",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OnboardResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid or taken handle"
-          }
-        }
-      }
-    },
-    "/v1/onboard/check": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "summary": "GET /v1/onboard/check?handle=… — handle availability (proxies the control-plane\nso the browser never touches the internal-only control-plane). Session required.",
-        "operationId": "check_handle",
-        "parameters": [
-          {
-            "name": "handle",
-            "in": "query",
-            "description": "Desired handle",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Handle availability",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HandleCheckResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/org/identity": {
       "get": {
         "tags": [
@@ -2741,22 +2674,6 @@
           }
         }
       },
-      "HandleCheckResponse": {
-        "type": "object",
-        "required": [
-          "available",
-          "handle"
-        ],
-        "properties": {
-          "available": {
-            "type": "boolean"
-          },
-          "handle": {
-            "type": "string",
-            "description": "The normalized (slugified) handle."
-          }
-        }
-      },
       "InviteInfoResponse": {
         "type": "object",
         "required": [
@@ -3002,35 +2919,6 @@
           },
           "user_id": {
             "type": "string"
-          }
-        }
-      },
-      "OnboardRequest": {
-        "type": "object",
-        "required": [
-          "name",
-          "handle"
-        ],
-        "properties": {
-          "handle": {
-            "type": "string",
-            "description": "Desired handle (subdomain); validated + slugified by the control-plane."
-          },
-          "name": {
-            "type": "string",
-            "description": "Display label for the workspace."
-          }
-        }
-      },
-      "OnboardResponse": {
-        "type": "object",
-        "required": [
-          "url"
-        ],
-        "properties": {
-          "url": {
-            "type": "string",
-            "description": "The new (or already-owned) workspace's home URL — the client redirects here."
           }
         }
       },

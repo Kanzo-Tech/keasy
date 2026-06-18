@@ -214,9 +214,6 @@ mod tests {
                 oidc_client_id: None,
                 oidc_client_secret: None,
                 oidc_org_id: None,
-                central_mode: false,
-                control_plane_url: None,
-                control_plane_key: None,
             },
             catalog: Some(catalog.clone()),
         };

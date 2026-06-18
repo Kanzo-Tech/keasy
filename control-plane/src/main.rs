@@ -151,7 +151,7 @@ async fn list_workspaces(State(provisioner): State<Arc<Provisioner>>) -> Respons
     }
 }
 
-/// A user's workspaces (onboarding idempotency). Internal read on the overlay.
+/// A user's workspaces (list their projects). Internal read on the overlay.
 async fn workspaces_by_owner(
     State(provisioner): State<Arc<Provisioner>>,
     Query(q): Query<OwnerQuery>,

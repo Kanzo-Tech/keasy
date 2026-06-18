@@ -59,5 +59,12 @@ pub struct AuthServices {
     /// configured alias). The membership container — members, invites, and the
     /// switcher all key off it. None when Keycloak/org is not configured.
     pub oidc_org_id: Option<String>,
+    /// Central onboarding mode (the apex instance) — routes workspace-less users to
+    /// onboarding and provisions via the control-plane.
+    pub central_mode: bool,
+    /// Control-plane base URL (internal) for provisioning (central mode only).
+    pub control_plane_url: Option<String>,
+    /// Shared key for the control-plane's mutating endpoints (central mode only).
+    pub control_plane_key: Option<SecretString>,
 }
 

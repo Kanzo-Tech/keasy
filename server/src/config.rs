@@ -42,6 +42,16 @@ pub struct ServerConfig {
     /// Session cookie name — allows multiple Keasy instances on the same host.
     /// Read from KEASY_SESSION_COOKIE_NAME. Default "keasy.sid".
     pub session_cookie_name: String,
+    /// Central onboarding mode (the apex instance): post-login routes a
+    /// workspace-less user to /onboard and provisions via the control-plane rather
+    /// than serving a tenant. Read from KEASY_CENTRAL_MODE. Default false.
+    pub central_mode: bool,
+    /// Control-plane base URL (internal), e.g. `http://control-plane:9000` — used by
+    /// central mode to provision workspaces. Read from KEASY_CONTROL_PLANE_URL.
+    pub control_plane_url: Option<String>,
+    /// Shared API key for the control-plane's mutating endpoints (`_FILE`-aware).
+    /// Read from KEASY_CONTROL_PLANE_KEY.
+    pub control_plane_key: Option<SecretString>,
 }
 
 impl ServerConfig {
@@ -128,6 +138,16 @@ impl ServerConfig {
             .map(|v| v == "true" || v == "1")
             .unwrap_or(false);
 
+        let central_mode = std::env::var("KEASY_CENTRAL_MODE")
+            .map(|v| v == "true" || v == "1")
+            .unwrap_or(false);
+
+        let control_plane_url = std::env::var("KEASY_CONTROL_PLANE_URL")
+            .ok()
+            .filter(|s| !s.trim().is_empty());
+
+        let control_plane_key = resolve_secret("KEASY_CONTROL_PLANE_KEY");
+
         Self {
             bind_addr,
             api_key: SecretString::from(api_key),
@@ -145,6 +165,9 @@ impl ServerConfig {
             workspace_name,
             org_alias,
             session_cookie_name,
+            central_mode,
+            control_plane_url,
+            control_plane_key,
         }
     }
 }

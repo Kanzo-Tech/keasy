@@ -404,6 +404,40 @@ impl KeycloakAdmin {
         }
     }
 
+    /// Invite a person to the workspace's organization by **email** — the native
+    /// Keycloak Organization invitation. Keycloak emails a registration link (or a
+    /// confirm-membership link if the email already has an account); on accept the
+    /// person is added to the org as a member. The owner/member client role is NOT
+    /// assigned here — the tenant server grants it on first login. Requires the
+    /// service account to hold the `manage-organizations` realm-management role and
+    /// SMTP configured on the realm. The endpoint takes form-urlencoded `email` and
+    /// returns 204; 200 is also treated as success.
+    pub async fn invite_user_to_org(&self, org_id: &str, email: &str) -> Result<(), String> {
+        let token = self.get_admin_token().await?;
+        let url = format!(
+            "{}/admin/realms/{}/organizations/{}/members/invite-user",
+            self.base_url, self.realm, org_id
+        );
+        let resp = self
+            .http
+            .post(&url)
+            .bearer_auth(&token)
+            .form(&[("email", email)])
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak invite user to org failed: {e}"))?;
+        match resp.status().as_u16() {
+            200 | 204 => {
+                tracing::info!(org_id = %org_id, email = %email, "Invited user to org");
+                Ok(())
+            }
+            status => {
+                let b = resp.text().await.unwrap_or_default();
+                Err(format!("Keycloak invite user to org returned {status}: {b}"))
+            }
+        }
+    }
+
     /// Remove a user from the workspace's organization. Idempotent (404 ok).
     pub async fn remove_org_member(
         &self,

@@ -66,10 +66,10 @@ ps: ## Show running services
 deploy-base: ## Bootstrap the Swarm base stack (idempotent) — reads deploy/environments/prod/.env
 	infra/stack/bootstrap.sh
 
-tenant: ## Provision a tenant: make tenant slug=acme name="Acme Corp" owner=<keycloak-sub>
+tenant: ## Provision a tenant: make tenant slug=acme name="Acme Corp" owner=owner@acme.com
 	@test -n "$(slug)" && test -n "$(name)" && test -n "$(owner)" \
-	  || { echo "usage: make tenant slug=<slug> name=<name> owner=<keycloak-sub>"; exit 1; }
-	@printf 'name: %s\nowner_keycloak_sub: %s\n' "$(name)" "$(owner)" \
+	  || { echo "usage: make tenant slug=<slug> name=<name> owner=<owner-email>"; exit 1; }
+	@printf 'name: %s\nowner_email: %s\n' "$(name)" "$(owner)" \
 	  > deploy/environments/prod/tenants/$(slug).yaml
 	@echo "✓ wrote deploy/environments/prod/tenants/$(slug).yaml — commit it (git is the inventory)"
 	@infra/stack/cp.sh reconcile

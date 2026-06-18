@@ -1,7 +1,7 @@
 {
   "realm": "keasy",
   "enabled": true,
-  "registrationAllowed": true,
+  "registrationAllowed": false,
   "registrationEmailAsUsername": true,
   "loginWithEmailAllowed": true,
   "resetPasswordAllowed": true,

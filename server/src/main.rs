@@ -163,6 +163,7 @@ async fn main() {
         oidc_client_id: config.oidc_client_id,
         oidc_client_secret: config.oidc_client_secret,
         oidc_org_id,
+        owner_email: config.owner_email,
     };
     // Server-side DuckLake catalog (authority over output metadata). Non-fatal
     // if it fails to open — the host keeps serving jobs and the reconciler

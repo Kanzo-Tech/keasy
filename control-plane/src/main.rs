@@ -4,7 +4,7 @@
 //! Docker socket and a Keycloak admin service account. It wraps the reference
 //! [`Provisioner`] reconcile with four subcommands:
 //!
-//!   provision   --name --handle --owner-sub   → create (atomic, keyed)
+//!   provision   --name --handle --owner-email → create (atomic, keyed)
 //!   deprovision <id>                           → tear down (idempotent)
 //!   reconcile                                  → converge the registry toward the
 //!                                                manifest at `CP_DEPLOY_DIR`
@@ -43,9 +43,9 @@ enum Command {
         /// Unique routing identity (subdomain + Keycloak org alias); slugified.
         #[arg(long)]
         handle: String,
-        /// Owner's Keycloak sub.
-        #[arg(long = "owner-sub")]
-        owner_sub: String,
+        /// Owner's email. Keycloak invites them to the org; they register-on-accept.
+        #[arg(long = "owner-email")]
+        owner_email: String,
     },
     /// Tear a workspace down by id (idempotent).
     Deprovision {
@@ -88,8 +88,8 @@ async fn main() {
     };
 
     match cli.command {
-        Command::Provision { name, handle, owner_sub } => {
-            match provisioner.provision(&name, &handle, &owner_sub).await {
+        Command::Provision { name, handle, owner_email } => {
+            match provisioner.provision(&name, &handle, &owner_email).await {
                 Ok(info) => println!("{}", serde_json::to_string_pretty(&info).unwrap()),
                 Err(e) => {
                     eprintln!("provision failed: {e}");

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run the keasy provisioner CLI against this manager's Docker Engine.
 #
-#   infra/stack/cp.sh provision --name "Acme" --handle acme --owner-sub <sub>
+#   infra/stack/cp.sh provision --name "Acme" --handle acme --owner-email <email>
 #   infra/stack/cp.sh reconcile          # converge all git tenant manifests
 #   infra/stack/cp.sh deprovision <id>
 #   infra/stack/cp.sh list

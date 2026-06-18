@@ -19,7 +19,7 @@ pub struct StoredWorkspace {
     pub name: String,
     pub slug: String,
     pub url: String,
-    pub owner_keycloak_sub: String,
+    pub owner_email: String,
     /// Keycloak-internal client UUID, needed to delete the OIDC client on teardown.
     pub keycloak_uuid: String,
     /// The keasy-server image this instance is provisioned at — the reconciler
@@ -40,7 +40,7 @@ const MIGRATIONS: &[&str] = &[
         name               TEXT NOT NULL,
         slug               TEXT NOT NULL,
         url                TEXT NOT NULL,
-        owner_keycloak_sub TEXT NOT NULL,
+        owner_email        TEXT NOT NULL,
         keycloak_uuid      TEXT NOT NULL,
         server_image       TEXT NOT NULL,
         oidc_client_secret TEXT NOT NULL
@@ -52,7 +52,7 @@ const MIGRATIONS: &[&str] = &[
 ];
 
 const COLS: &str =
-    "id, name, slug, url, owner_keycloak_sub, keycloak_uuid, server_image, oidc_client_secret";
+    "id, name, slug, url, owner_email, keycloak_uuid, server_image, oidc_client_secret";
 
 /// SQLite-backed workspace registry. A single mutex-guarded connection — the
 /// provisioner is low-traffic, so brief synchronous critical sections are fine.
@@ -77,15 +77,15 @@ impl Store {
     pub fn upsert(&self, w: &StoredWorkspace) -> Result<(), String> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
-            "INSERT INTO workspaces (id, name, slug, url, owner_keycloak_sub, keycloak_uuid, server_image, oidc_client_secret)
+            "INSERT INTO workspaces (id, name, slug, url, owner_email, keycloak_uuid, server_image, oidc_client_secret)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
              ON CONFLICT(id) DO UPDATE SET
                 name=excluded.name, slug=excluded.slug, url=excluded.url,
-                owner_keycloak_sub=excluded.owner_keycloak_sub,
+                owner_email=excluded.owner_email,
                 keycloak_uuid=excluded.keycloak_uuid, server_image=excluded.server_image,
                 oidc_client_secret=excluded.oidc_client_secret",
             rusqlite::params![
-                w.id, w.name, w.slug, w.url, w.owner_keycloak_sub, w.keycloak_uuid,
+                w.id, w.name, w.slug, w.url, w.owner_email, w.keycloak_uuid,
                 w.server_image, w.oidc_client_secret
             ],
         )
@@ -144,7 +144,7 @@ fn row_to_workspace(r: &rusqlite::Row) -> rusqlite::Result<StoredWorkspace> {
         name: r.get(1)?,
         slug: r.get(2)?,
         url: r.get(3)?,
-        owner_keycloak_sub: r.get(4)?,
+        owner_email: r.get(4)?,
         keycloak_uuid: r.get(5)?,
         server_image: r.get(6)?,
         oidc_client_secret: r.get(7)?,
@@ -177,7 +177,7 @@ mod tests {
             name: slug.into(),
             slug: slug.into(),
             url: format!("https://{slug}.keasy.local"),
-            owner_keycloak_sub: "sub-123".into(),
+            owner_email: "owner@example.test".into(),
             keycloak_uuid: format!("kc-{id}"),
             server_image: "ghcr.io/kanzo-tech/keasy-server:0.3.0".into(),
             oidc_client_secret: "shh".into(),

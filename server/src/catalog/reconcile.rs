@@ -214,6 +214,7 @@ mod tests {
                 oidc_client_id: None,
                 oidc_client_secret: None,
                 oidc_org_id: None,
+                owner_email: None,
             },
             catalog: Some(catalog.clone()),
         };

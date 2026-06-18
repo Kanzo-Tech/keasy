@@ -29,7 +29,7 @@ use serde::Deserialize;
 pub struct DesiredTenant {
     pub slug: String,
     pub name: String,
-    pub owner_keycloak_sub: String,
+    pub owner_email: String,
     pub server_image: String,
     pub web_image: String,
 }
@@ -38,7 +38,7 @@ pub struct DesiredTenant {
 #[derive(Deserialize)]
 struct TenantFile {
     name: String,
-    owner_keycloak_sub: String,
+    owner_email: String,
     slug: Option<String>,
     server_image: Option<String>,
     web_image: Option<String>,
@@ -118,7 +118,7 @@ fn parse_tenant(body: &str, default_slug: &str, versions: &Versions) -> Result<D
     Ok(DesiredTenant {
         slug: f.slug.unwrap_or_else(|| default_slug.to_string()),
         name: f.name,
-        owner_keycloak_sub: f.owner_keycloak_sub,
+        owner_email: f.owner_email,
         server_image: f.server_image.unwrap_or_else(|| versions.server_image.clone()),
         web_image: f.web_image.unwrap_or_else(|| versions.web_image.clone()),
     })
@@ -153,7 +153,7 @@ mod tests {
     #[test]
     fn tenant_inherits_env_images() {
         let t = parse_tenant(
-            "name: Acme Corp\nowner_keycloak_sub: sub-1\n",
+            "name: Acme Corp\nowner_email: owner@acme.test\n",
             "acme",
             &versions(),
         )
@@ -163,7 +163,7 @@ mod tests {
             DesiredTenant {
                 slug: "acme".into(),
                 name: "Acme Corp".into(),
-                owner_keycloak_sub: "sub-1".into(),
+                owner_email: "owner@acme.test".into(),
                 server_image: "ghcr.io/kanzo-tech/keasy-server:0.3.0".into(),
                 web_image: "ghcr.io/kanzo-tech/keasy-web:0.3.0".into(),
             }
@@ -181,10 +181,10 @@ mod tests {
         .unwrap();
         let tenants = env.join("tenants");
         std::fs::create_dir_all(&tenants).unwrap();
-        std::fs::write(tenants.join("acme.yaml"), "name: Acme\nowner_keycloak_sub: sub-a\n").unwrap();
+        std::fs::write(tenants.join("acme.yaml"), "name: Acme\nowner_email: a@acme.test\n").unwrap();
         std::fs::write(
             tenants.join("globex.yml"), // .yml extension + image override
-            "name: Globex\nowner_keycloak_sub: sub-g\nserver_image: s:2\n",
+            "name: Globex\nowner_email: g@globex.test\nserver_image: s:2\n",
         )
         .unwrap();
         std::fs::write(tenants.join("template.yaml.example"), "name: nope\n").unwrap();
@@ -203,7 +203,7 @@ mod tests {
     #[test]
     fn tenant_can_override_slug_and_image_for_canary() {
         let t = parse_tenant(
-            "name: Globex\nowner_keycloak_sub: sub-2\nslug: globex-eu\nserver_image: ghcr.io/kanzo-tech/keasy-server:0.4.0-rc.1\n",
+            "name: Globex\nowner_email: g@globex.test\nslug: globex-eu\nserver_image: ghcr.io/kanzo-tech/keasy-server:0.4.0-rc.1\n",
             "globex",
             &versions(),
         )

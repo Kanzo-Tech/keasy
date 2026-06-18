@@ -1,11 +1,13 @@
 //! Atomic, idempotent workspace provisioning.
 //!
-//! `provision(name, handle, owner_keycloak_sub)` runs the reference reconcile:
+//! `provision(name, handle, owner_email)` runs the reference reconcile:
 //!   1. register an OIDC client in the shared Keycloak (authentication),
 //!   2. attach the `keasy:role` mapper + owner/member client roles (authorization),
-//!   3. create the workspace's Organization and add the owner as a member,
-//!   4. grant the owner the `owner` client role,
-//!   5. bring up the instance stack via Docker.
+//!   3. create the workspace's Organization and invite the owner by email (native
+//!      Keycloak Organization invitation — they register-on-accept and join as a
+//!      member; the `owner` client role is granted by the tenant server on first
+//!      login, keyed on `KEASY_OWNER_EMAIL`),
+//!   4. bring up the instance stack via Docker.
 //!
 //! Any failure after step 1 rolls back the partially-created resources (delete
 //! the OIDC client, tear the stack down), so a failed create leaves nothing
@@ -33,7 +35,7 @@ pub struct WorkspaceInfo {
     pub name: String,
     pub slug: String,
     pub url: String,
-    pub owner_keycloak_sub: String,
+    pub owner_email: String,
 }
 
 impl From<StoredWorkspace> for WorkspaceInfo {
@@ -43,7 +45,7 @@ impl From<StoredWorkspace> for WorkspaceInfo {
             name: w.name,
             slug: w.slug,
             url: w.url,
-            owner_keycloak_sub: w.owner_keycloak_sub,
+            owner_email: w.owner_email,
         }
     }
 }
@@ -100,7 +102,7 @@ impl Provisioner {
         &self,
         name: &str,
         handle: &str,
-        owner_keycloak_sub: &str,
+        owner_email: &str,
     ) -> Result<WorkspaceInfo, ProvisionError> {
         let slug = slugify(handle);
         if slug.is_empty() {
@@ -110,7 +112,7 @@ impl Provisioner {
         }
         let server_image = self.config.server_image.clone();
         let web_image = self.config.web_image.clone();
-        self.provision_with(name, &slug, owner_keycloak_sub, &server_image, &web_image)
+        self.provision_with(name, &slug, owner_email, &server_image, &web_image)
             .await
     }
 
@@ -122,7 +124,7 @@ impl Provisioner {
         &self,
         name: &str,
         slug: &str,
-        owner_keycloak_sub: &str,
+        owner_email: &str,
         server_image: &str,
         web_image: &str,
     ) -> Result<WorkspaceInfo, ProvisionError> {
@@ -151,7 +153,7 @@ impl Provisioner {
                 name,
                 slug,
                 &url,
-                owner_keycloak_sub,
+                owner_email,
                 &registered.client_secret,
                 server_image,
                 web_image,
@@ -174,7 +176,7 @@ impl Provisioner {
             name: info.name.clone(),
             slug: info.slug.clone(),
             url: info.url.clone(),
-            owner_keycloak_sub: info.owner_keycloak_sub.clone(),
+            owner_email: info.owner_email.clone(),
             keycloak_uuid: registered.keycloak_uuid.clone(),
             server_image: server_image.to_string(),
             oidc_client_secret: registered.client_secret.clone(),
@@ -223,7 +225,7 @@ impl Provisioner {
         name: &str,
         slug: &str,
         url: &str,
-        owner_keycloak_sub: &str,
+        owner_email: &str,
         client_secret: &str,
         server_image: &str,
         web_image: &str,
@@ -240,24 +242,21 @@ impl Provisioner {
             .map_err(ProvisionError::Keycloak)?;
 
         // 3. Create the workspace's Organization (membership container, keyed by
-        //    the slug alias, carrying the home URL) and make the owner a member.
+        //    the slug alias, carrying the home URL) and invite the owner by email.
+        //    Keycloak emails them a registration/confirm link; on accept they join
+        //    the org as a member. The `owner` client role is NOT assigned here — the
+        //    tenant server grants it on first login, keyed on KEASY_OWNER_EMAIL.
         let org_id = self
             .keycloak
             .ensure_organization(name, slug, url)
             .await
             .map_err(ProvisionError::Keycloak)?;
         self.keycloak
-            .add_org_member(&org_id, owner_keycloak_sub)
+            .invite_user_to_org(&org_id, owner_email)
             .await
             .map_err(ProvisionError::Keycloak)?;
 
-        // 4. Grant the owner the `owner` client role (authorization).
-        self.keycloak
-            .assign_client_role(owner_keycloak_sub, workspace_id, "owner")
-            .await
-            .map_err(ProvisionError::Keycloak)?;
-
-        // 5. Mint + create the workspace's Swarm secrets (the generated ones fix the
+        // 4. Mint + create the workspace's Swarm secrets (the generated ones fix the
         //    FATAL-if-missing boot bug; OIDC comes from Keycloak), then deploy the
         //    Swarm stack. Secrets are immutable and reused across rollouts.
         let secrets = TenantSecrets::mint(client_secret);
@@ -269,6 +268,7 @@ impl Provisioner {
             workspace_id: workspace_id.to_string(),
             workspace_name: name.to_string(),
             slug: slug.to_string(),
+            owner_email: owner_email.to_string(),
             server_image: server_image.to_string(),
             web_image: web_image.to_string(),
         };
@@ -279,7 +279,7 @@ impl Provisioner {
             name: name.to_string(),
             slug: slug.to_string(),
             url: url.to_string(),
-            owner_keycloak_sub: owner_keycloak_sub.to_string(),
+            owner_email: owner_email.to_string(),
         })
     }
 
@@ -332,7 +332,7 @@ impl Provisioner {
             match action {
                 ReconcileAction::Provision(d) => {
                     match self
-                        .provision_with(&d.name, &d.slug, &d.owner_keycloak_sub, &d.server_image, &d.web_image)
+                        .provision_with(&d.name, &d.slug, &d.owner_email, &d.server_image, &d.web_image)
                         .await
                     {
                         Ok(_) => summary.provisioned.push(d.slug),
@@ -364,6 +364,7 @@ impl Provisioner {
             workspace_id: record.id.clone(),
             workspace_name: record.name.clone(),
             slug: record.slug.clone(),
+            owner_email: record.owner_email.clone(),
             server_image: desired.server_image.clone(),
             web_image: desired.web_image.clone(),
         };
@@ -425,7 +426,7 @@ fn plan_reconcile(
                 desired: DesiredTenant {
                     slug: r.slug.clone(),
                     name: r.name.clone(),
-                    owner_keycloak_sub: r.owner_keycloak_sub.clone(),
+                    owner_email: r.owner_email.clone(),
                     server_image: default_server_image.to_string(),
                     web_image: default_web_image.to_string(),
                 },
@@ -472,7 +473,7 @@ mod tests {
         DesiredTenant {
             slug: slug.into(),
             name: slug.into(),
-            owner_keycloak_sub: "sub".into(),
+            owner_email: "owner@example.test".into(),
             server_image: image.into(),
             web_image: "web:0".into(),
         }
@@ -484,7 +485,7 @@ mod tests {
             name: slug.into(),
             slug: slug.into(),
             url: format!("https://{slug}.x"),
-            owner_keycloak_sub: "sub".into(),
+            owner_email: "owner@example.test".into(),
             keycloak_uuid: format!("kc-{slug}"),
             server_image: image.into(),
             oidc_client_secret: "shh".into(),

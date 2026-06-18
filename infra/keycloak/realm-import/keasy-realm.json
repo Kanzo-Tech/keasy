@@ -9,6 +9,15 @@
   "accessTokenLifespan": 3600,
   "ssoSessionMaxLifespan": 86400,
   "organizationsEnabled": true,
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "noreply@keasy.local",
+    "fromDisplayName": "Keasy",
+    "ssl": "false",
+    "starttls": "false",
+    "auth": "false"
+  },
   "clientScopes": [
     {
       "name": "profile",

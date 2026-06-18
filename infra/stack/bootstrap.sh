@@ -54,23 +54,47 @@ fi
 
 # 3. Render the realm with CP_OIDC_SECRET injected into the keasy-control-plane
 #    client → the control-plane's Swarm secret and the imported realm carry the SAME
-#    generated value, automatically. Always re-rendered from the source (gitignored,
-#    bound by base.yml into Keycloak's import dir): the render is pure (source + .env
-#    → output), so a fix to keasy-realm.json flows on the next `make deploy-base` with
-#    no manual step. Keycloak imports it with IGNORE_EXISTING, so re-rendering only
-#    matters on a fresh DB and never clobbers an already-seeded realm.
+#    generated value, automatically. Also overrides the realm's smtpServer with the
+#    production relay (KEASY_SMTP_*) — the source JSON carries dev (mailpit) values, so
+#    prod points Keycloak at a real transactional sender for Organization invitations.
+#    Always re-rendered from the source (gitignored, bound by base.yml into Keycloak's
+#    import dir): the render is pure (source + .env → output), so a fix to
+#    keasy-realm.json flows on the next `make deploy-base` with no manual step. Keycloak
+#    imports it with IGNORE_EXISTING, so re-rendering only matters on a fresh DB and
+#    never clobbers an already-seeded realm.
 RENDERED=infra/keycloak/realm-rendered
 mkdir -p "$RENDERED"
 python3 - infra/keycloak/realm-import/keasy-realm.json "$RENDERED/keasy-realm.json" "$CP_OIDC_SECRET" <<'PY'
-import json, sys
+import json, os, sys
 src, dst, secret = sys.argv[1:4]
 realm = json.load(open(src))
 for c in realm.get("clients", []):
     if c.get("clientId") == "keasy-control-plane":
         c["secret"] = secret
+# Production SMTP relay (Organization invitations need a real sender; the source JSON's
+# mailpit values are dev-only). Set when KEASY_SMTP_HOST is present; auth fields are
+# optional (omit user/password for an open relay).
+host = os.environ.get("KEASY_SMTP_HOST")
+if host:
+    smtp = {
+        "host": host,
+        "port": os.environ.get("KEASY_SMTP_PORT", "587"),
+        "from": os.environ.get("KEASY_SMTP_FROM", "noreply@" + os.environ.get("KEASY_BASE_DOMAIN", "")),
+        "fromDisplayName": os.environ.get("KEASY_SMTP_FROM_NAME", "Keasy"),
+        "ssl": os.environ.get("KEASY_SMTP_SSL", "false"),
+        "starttls": os.environ.get("KEASY_SMTP_STARTTLS", "true"),
+    }
+    user = os.environ.get("KEASY_SMTP_USER")
+    if user:
+        smtp["auth"] = "true"
+        smtp["user"] = user
+        smtp["password"] = os.environ.get("KEASY_SMTP_PASSWORD", "")
+    else:
+        smtp["auth"] = "false"
+    realm["smtpServer"] = smtp
 json.dump(realm, open(dst, "w"), indent=2)
 PY
-echo "✓ rendered realm with the control-plane secret injected"
+echo "✓ rendered realm with the control-plane secret${KEASY_SMTP_HOST:+ + prod SMTP relay} injected"
 
 # 4. Deploy the base stack (Traefik + Keycloak [native realm import] + control-plane).
 docker stack deploy --detach=false -c infra/stack/base.yml keasy-base

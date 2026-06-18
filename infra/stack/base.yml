@@ -98,7 +98,7 @@ services:
   # runtime state. Pinned to 26.2: 26.5.x regressed and duplicates manage-organizations
   # on import of an organizations-enabled realm ("Duplicate resource error").
   keycloak:
-    image: quay.io/keycloak/keycloak:26.2
+    image: quay.io/keycloak/keycloak:26.5
     command: ["start", "--import-realm"]
     environment:
       KC_DB: postgres

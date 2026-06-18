@@ -70,11 +70,8 @@ export type AskResponse = S["AskResponse"];
 
 
 // Aliases for renamed/new response types
-export type OrgInvite = S["OrgInviteEntry"];
 export type ServiceStatus = S["ServiceStatusResponse"];
-export type InviteInfoResponse = S["InviteInfoResponse"];
 export type LogoutResponse = S["LogoutResponse"];
-export type CreateOrgInviteResponse = S["CreateOrgInviteResponse"];
 
 // ---------------------------------------------------------------------------
 // UI-only union types

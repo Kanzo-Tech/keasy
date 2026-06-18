@@ -239,11 +239,6 @@ export const api = {
 
     logout: async () =>
       unwrap(await client.POST("/v1/auth/logout")),
-
-    inviteInfo: async (token: string) =>
-      unwrap(await client.GET("/v1/auth/invite-info", {
-        params: { query: { token } },
-      })),
   },
 
   // ── Org ────────────────────────────────────────────────────────────────
@@ -261,17 +256,8 @@ export const api = {
       unwrap(await client.DELETE("/v1/org/users/{id}", { params: { path: { id } } }));
     },
 
-    invites: async () =>
-      unwrap(await client.GET("/v1/org/invites")),
-
-    createInvite: async () =>
-      unwrap(await client.POST("/v1/org/invites")),
-
-    revokeInvite: async (token: string) => {
-      unwrap(await client.DELETE("/v1/org/invites/{token}", {
-        params: { path: { token } },
-      }));
-    },
+    inviteMember: async (email: string) =>
+      unwrap(await client.POST("/v1/org/invites", { body: { email } })),
   },
 
   // ── Status ────────────────────────────────────────────────────────────

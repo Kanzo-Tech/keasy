@@ -91,37 +91,6 @@
         }
       }
     },
-    "/v1/auth/invite-info": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "operationId": "get_invite_info",
-        "parameters": [
-          {
-            "name": "token",
-            "in": "query",
-            "description": "Invite token",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Invite token validity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InviteInfoResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/auth/logout": {
       "post": {
         "tags": [
@@ -1416,70 +1385,28 @@
       }
     },
     "/v1/org/invites": {
-      "get": {
-        "tags": [
-          "Organization"
-        ],
-        "operationId": "list_org_invites",
-        "responses": {
-          "200": {
-            "description": "List of org invite tokens",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/OrgInviteEntry"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "tags": [
           "Organization"
         ],
-        "summary": "Create a reusable, Discord-style invite link. No body: joining via the link\nalways grants `member`. The link is valid for 7 days and reusable.",
+        "summary": "Invite a person to this workspace by email via a native Keycloak Organization\ninvitation. Keycloak emails them a registration (or confirm-membership) link;\non accept they join the org as a member and the tenant grants `member` on their\nfirst login. Owner-only.",
         "operationId": "create_org_invite",
-        "responses": {
-          "201": {
-            "description": "Invite created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateOrgInviteResponse"
-                }
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrgInvitePayload"
               }
             }
           },
-          "403": {
-            "description": "Insufficient role"
-          }
-        }
-      }
-    },
-    "/v1/org/invites/{token}": {
-      "delete": {
-        "tags": [
-          "Organization"
-        ],
-        "operationId": "revoke_org_invite",
-        "parameters": [
-          {
-            "name": "token",
-            "in": "path",
-            "description": "Invite token to revoke",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+          "required": true
+        },
         "responses": {
           "204": {
-            "description": "Invite revoked"
+            "description": "Invitation sent"
+          },
+          "400": {
+            "description": "Validation error"
           },
           "403": {
             "description": "Insufficient role"
@@ -2456,17 +2383,13 @@
           }
         }
       },
-      "CreateOrgInviteResponse": {
+      "CreateOrgInvitePayload": {
         "type": "object",
         "required": [
-          "token",
-          "invite_url"
+          "email"
         ],
         "properties": {
-          "invite_url": {
-            "type": "string"
-          },
-          "token": {
+          "email": {
             "type": "string"
           }
         }
@@ -2670,40 +2593,6 @@
         ],
         "properties": {
           "script": {
-            "type": "string"
-          }
-        }
-      },
-      "InviteInfoResponse": {
-        "type": "object",
-        "required": [
-          "valid"
-        ],
-        "properties": {
-          "valid": {
-            "type": "boolean"
-          }
-        }
-      },
-      "InviteToken": {
-        "type": "object",
-        "required": [
-          "token",
-          "created_by",
-          "expires_at",
-          "created_at"
-        ],
-        "properties": {
-          "created_at": {
-            "type": "string"
-          },
-          "created_by": {
-            "type": "string"
-          },
-          "expires_at": {
-            "type": "string"
-          },
-          "token": {
             "type": "string"
           }
         }
@@ -2952,29 +2841,6 @@
               "string",
               "null"
             ]
-          }
-        }
-      },
-      "OrgInviteEntry": {
-        "type": "object",
-        "required": [
-          "token",
-          "status",
-          "created_at",
-          "expires_at"
-        ],
-        "properties": {
-          "created_at": {
-            "type": "string"
-          },
-          "expires_at": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "token": {
-            "type": "string"
           }
         }
       },

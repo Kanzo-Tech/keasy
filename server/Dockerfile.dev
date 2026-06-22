@@ -28,10 +28,6 @@ WORKDIR /src
 # keasy is a pure host; fossil compute runs in the browser.
 COPY rmlext /src/rmlext
 
-# keasy-keycloak crate (a path dep of keasy-server) must be present so the
-# runtime `cargo build` resolves `../keycloak`.
-COPY keasy/keycloak /src/keasy/keycloak
-
 # keasy-server manifests, for the RUNTIME compile (`src/` is bind-mounted at
 # runtime). We deliberately DON'T pre-build deps in the image: that step sat
 # below `COPY rmlext`, so every change to rmlext — the repo under active

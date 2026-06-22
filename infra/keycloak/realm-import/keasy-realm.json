@@ -1,7 +1,7 @@
 {
   "realm": "keasy",
   "enabled": true,
-  "registrationAllowed": true,
+  "registrationAllowed": false,
   "registrationEmailAsUsername": true,
   "loginWithEmailAllowed": true,
   "resetPasswordAllowed": true,
@@ -9,6 +9,15 @@
   "accessTokenLifespan": 3600,
   "ssoSessionMaxLifespan": 86400,
   "organizationsEnabled": true,
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "noreply@keasy.local",
+    "fromDisplayName": "Keasy",
+    "ssl": "false",
+    "starttls": "false",
+    "auth": "false"
+  },
   "clientScopes": [
     {
       "name": "profile",
@@ -162,7 +171,8 @@
         "post.logout.redirect.uris": "http://localhost:8080/*##http://localhost:3000/*"
       },
       "defaultClientScopes": [
-        "openid",
+        "roles",
+        "web-origins",
         "profile",
         "email",
         "keasy-role"
@@ -185,7 +195,8 @@
         "post.logout.redirect.uris": "http://localhost:8080/*##http://localhost:3000/*"
       },
       "defaultClientScopes": [
-        "openid",
+        "roles",
+        "web-origins",
         "profile",
         "email",
         "keasy-role"
@@ -193,48 +204,6 @@
     }
   ],
   "users": [
-    {
-      "id": "aaaa0000-0000-0000-0000-000000000001",
-      "username": "owner@keasy.dev",
-      "email": "owner@keasy.dev",
-      "firstName": "Admin",
-      "lastName": "Owner",
-      "enabled": true,
-      "emailVerified": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "owner",
-          "temporary": false
-        }
-      ],
-      "clientRoles": {
-        "keasy-server": [
-          "owner"
-        ]
-      }
-    },
-    {
-      "id": "bbbb0000-0000-0000-0000-000000000001",
-      "username": "member@keasy.dev",
-      "email": "member@keasy.dev",
-      "firstName": "User",
-      "lastName": "Member",
-      "enabled": true,
-      "emailVerified": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "member",
-          "temporary": false
-        }
-      ],
-      "clientRoles": {
-        "keasy-server": [
-          "member"
-        ]
-      }
-    },
     {
       "username": "service-account-keasy-server",
       "enabled": true,

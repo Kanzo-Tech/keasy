@@ -14,9 +14,7 @@ use regex::Regex;
 use serde::Deserialize;
 
 use crate::AppState;
-use crate::db::invite_tokens::InviteToken;
 use crate::error::{data_response, error_body};
-use crate::middleware::session_auth::AuthenticatedUser;
 use crate::middleware::tenant::{IsMember, IsOwner, RbacError, Require};
 
 static SUBDIVISION_RE: LazyLock<Regex> =
@@ -213,104 +211,41 @@ pub async fn update_org_identity(
 
 // ── Org invite management ────────────────────────────────────────────────────
 
-#[derive(serde::Serialize, utoipa::ToSchema)]
-pub struct OrgInviteEntry {
-    pub token: String,
-    pub status: String,
-    pub created_at: String,
-    pub expires_at: String,
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct CreateOrgInvitePayload {
+    pub email: String,
 }
 
-#[derive(serde::Serialize, utoipa::ToSchema)]
-pub struct CreateOrgInviteResponse {
-    pub token: String,
-    pub invite_url: String,
-}
-
-/// Create a reusable, Discord-style invite link. No body: joining via the link
-/// always grants `member`. The link is valid for 7 days and reusable.
+/// Invite a person to this workspace by email via a native Keycloak Organization
+/// invitation. Keycloak emails them a registration (or confirm-membership) link;
+/// on accept they join the org as a member and the tenant grants `member` on their
+/// first login. Owner-only.
 #[utoipa::path(post, path = "/v1/org/invites", tag = "Organization",
+    request_body = CreateOrgInvitePayload,
     responses(
-        (status = 201, description = "Invite created", body = CreateOrgInviteResponse),
+        (status = 204, description = "Invitation sent"),
+        (status = 400, description = "Validation error"),
         (status = 403, description = "Insufficient role"),
     )
 )]
 pub async fn create_org_invite(
     _ctx: Require<IsOwner>,
-    axum::Extension(auth_user): axum::Extension<AuthenticatedUser>,
     State(state): State<AppState>,
+    Json(payload): Json<CreateOrgInvitePayload>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let now = jiff::Timestamp::now().to_string();
-    let token_value = uuid::Uuid::new_v4().to_string();
-    let expires_at = {
-        let ts = jiff::Timestamp::now();
-        ts.checked_add(jiff::SignedDuration::from_hours(7 * 24))
-            .unwrap_or(ts)
-            .to_string()
+    let email = payload.email.trim();
+    if email.is_empty() {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            Json(error_body("bad_request", "email must not be empty")),
+        )
+            .into_response());
+    }
+    let (Some(kc), Some(org_id)) = (&state.auth.keycloak_admin, &state.auth.oidc_org_id) else {
+        return Err(RbacError::Internal("Keycloak/organization not configured".to_string()));
     };
-
-    let invite = InviteToken {
-        token: token_value.clone(),
-        created_by: auth_user.user_id.clone(),
-        expires_at,
-        created_at: now,
-    };
-    state
-        .db
-        .create_invite_token(&invite)
+    kc.invite_user_to_org(org_id, email)
         .await
         .map_err(RbacError::Internal)?;
-
-    let invite_url = format!("{}/invite?token={}", state.base_url, token_value);
-    Ok((
-        StatusCode::CREATED,
-        data_response(CreateOrgInviteResponse {
-            token: token_value,
-            invite_url,
-        }),
-    ))
-}
-
-#[utoipa::path(get, path = "/v1/org/invites", tag = "Organization",
-    responses((status = 200, description = "List of org invite tokens", body = Vec<OrgInviteEntry>))
-)]
-pub async fn list_org_invites(
-    _ctx: Require<IsOwner>,
-    State(state): State<AppState>,
-) -> Result<impl IntoResponse, RbacError> {
-    let tokens = state.db.list_invite_tokens().await;
-    let now = jiff::Timestamp::now().to_string();
-    let result: Vec<OrgInviteEntry> = tokens
-        .into_iter()
-        .map(|t| {
-            let status = if now > t.expires_at { "expired" } else { "active" };
-            OrgInviteEntry {
-                token: t.token,
-                status: status.to_string(),
-                created_at: t.created_at,
-                expires_at: t.expires_at,
-            }
-        })
-        .collect();
-    Ok(data_response(result))
-}
-
-#[utoipa::path(delete, path = "/v1/org/invites/{token}", tag = "Organization",
-    params(("token" = String, Path, description = "Invite token to revoke")),
-    responses(
-        (status = 204, description = "Invite revoked"),
-        (status = 403, description = "Insufficient role"),
-    )
-)]
-pub async fn revoke_org_invite(
-    _ctx: Require<IsOwner>,
-    Path(token): Path<String>,
-    State(state): State<AppState>,
-) -> Result<impl IntoResponse, RbacError> {
-    state
-        .db
-        .delete_invite_token(&token)
-        .await
-        .map_err(RbacError::Internal)?;
-    Ok(StatusCode::NO_CONTENT)
+    Ok(StatusCode::NO_CONTENT.into_response())
 }

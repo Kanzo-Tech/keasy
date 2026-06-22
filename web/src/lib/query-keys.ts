@@ -44,7 +44,6 @@ export const queryKeys = {
   org: {
     identity: ["org-identity"] as const,
     users: ["org-users"] as const,
-    invites: ["org-invites"] as const,
   },
 
   // AI

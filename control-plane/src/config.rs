@@ -6,9 +6,6 @@ use secrecy::SecretString;
 /// and to template the instance stacks it brings up.
 #[derive(Clone)]
 pub struct ControlPlaneConfig {
-    /// Address the control-plane HTTP API binds to (e.g. `0.0.0.0:9000`).
-    pub bind_addr: String,
-
     // ── Shared Keycloak (admin service account) ──────────────────────────
     /// Public OIDC issuer URL of the shared Keycloak (`{base}/realms/{realm}`).
     pub oidc_issuer_url: String,
@@ -64,7 +61,6 @@ impl ControlPlaneConfig {
         };
 
         Ok(Self {
-            bind_addr: opt("CP_BIND_ADDR").unwrap_or_else(|| "0.0.0.0:9000".to_string()),
             oidc_issuer_url: req("CP_OIDC_ISSUER_URL")?,
             oidc_client_id: req("CP_OIDC_CLIENT_ID")?,
             oidc_client_secret: secret("CP_OIDC_CLIENT_SECRET")?,

@@ -316,7 +316,6 @@ pub async fn build_oidc_client(
 
 #[derive(serde::Deserialize)]
 pub struct OidcStartParams {
-    pub invite_token: Option<String>,
     /// `"create"` to send `prompt=create` for Keycloak registration flow
     pub prompt: Option<String>,
 }
@@ -387,14 +386,6 @@ pub async fn oidc_start(
         .await
         .map_err(|e| AuthError::Internal(format!("session insert oidc_nonce: {e}")))?;
 
-    // Store invite token if present — will be auto-accepted after OIDC callback.
-    if let Some(token) = params.invite_token {
-        session
-            .insert("pending_invite_token", token)
-            .await
-            .map_err(|e| AuthError::Internal(format!("session insert pending_invite_token: {e}")))?;
-    }
-
     // CRITICAL: explicitly save so the session cookie is set BEFORE the redirect.
     // tower-sessions (RusqliteStore) is lazy — without save(), the verifier is lost.
     session
@@ -413,7 +404,7 @@ pub async fn oidc_start(
 /// 3. Verifies ID token signature + claims (JWKS, aud, iss, exp, nonce)
 /// 4. Upserts the user in the local DB by Keycloak subject
 /// 5. Creates a new server session (cycles ID for fixation prevention)
-/// 6. Auto-accepts pending invite token if present
+/// 6. Grants the workspace client role on first login (owner/member by email)
 /// 7. Redirects to the dashboard
 pub async fn oidc_callback(
     session: Session,
@@ -566,9 +557,6 @@ pub async fn oidc_callback(
         .await
         .map_err(|e| AuthError::Internal(format!("session insert user_last_name: {e}")))?;
 
-    // 12. Read pending invite token BEFORE cycling session ID (cycle_id keeps data).
-    let pending_invite_token: Option<String> = session.get("pending_invite_token").await.ok().flatten();
-
     // 13. Clean up OIDC session values.
     session
         .remove_value("oidc_pkce_verifier")
@@ -625,65 +613,47 @@ pub async fn oidc_callback(
         .await
         .map_err(|e| AuthError::Internal(format!("upsert_user_session failed: {e}")))?;
 
-    // 19. Auto-accept pending invite if one was stored before the OIDC redirect.
-    //     The `keasy:role` claim in *this* token predates the just-granted
-    //     membership, so reflect the new `member` role in the session now —
-    //     otherwise the freshly-invited user would be "none" until re-login.
-    if let Some(invite_token) = pending_invite_token {
-        if accept_invite_for_user(&state, &subject, &invite_token).await.is_ok()
-            && tenant_role == "none"
-        {
-            let _ = session.insert("tenant_role", "member").await;
+    // 19. First-login role grant. Keycloak owns *membership* (the Organization
+    //     invite added the user on accept); the tenant owns the client *role*. If
+    //     this token's `keasy:role` claim is empty ("none") yet the user is a
+    //     member of this workspace's org, grant the role now — `owner` iff their
+    //     email matches the provisioned owner, else `member` — and reflect it in
+    //     the session so they aren't "none" until the next login.
+    if tenant_role == "none"
+        && let (Some(kc), Some(client_id), Some(org_id)) = (
+            &state.auth.keycloak_admin,
+            &state.auth.oidc_client_id,
+            &state.auth.oidc_org_id,
+        )
+    {
+        match kc.list_user_organizations(&subject).await {
+            Ok(orgs) if orgs.iter().any(|o| &o.id == org_id) => {
+                let role = if state
+                    .auth
+                    .owner_email
+                    .as_deref()
+                    .is_some_and(|owner| owner.eq_ignore_ascii_case(&email_str))
+                {
+                    "owner"
+                } else {
+                    "member"
+                };
+                if let Err(e) = kc.assign_client_role(&subject, client_id, role).await {
+                    tracing::warn!(error = %e, user_id = %subject, "first-login role grant failed");
+                } else {
+                    let _ = session.insert("tenant_role", role).await;
+                    let _ = session.save().await;
+                    tracing::info!(user_id = %subject, role = %role, "first-login role granted");
+                }
+            }
+            // Not a member of this workspace's org → no access (stays "none").
+            Ok(_) => {}
+            Err(e) => {
+                tracing::warn!(error = %e, user_id = %subject, "first-login org membership lookup failed")
+            }
         }
-        let _ = session.remove_value("pending_invite_token").await;
-        let _ = session.save().await;
     }
 
     // 20. Always redirect to dashboard.
     Ok(Redirect::to("/").into_response())
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Invite auto-accept helper
-// ──────────────────────────────────────────────────────────────────────────────
-
-/// Auto-accept a pending invite for a newly OIDC-authenticated user.
-///
-/// Validates the token (must not be expired), then grants membership entirely
-/// in Keycloak: adds the user to the workspace's Organization (membership) and
-/// assigns the `member` client role (authorization). Joining via a link always
-/// grants `member` — the owner is bootstrapped, never via a link. Reusable: the
-/// token is not consumed.
-async fn accept_invite_for_user(
-    state: &AppState,
-    user_id: &str,
-    invite_token: &str,
-) -> Result<(), String> {
-    let token = state
-        .db
-        .get_invite_token(invite_token)
-        .await
-        .ok_or("invite token not found")?;
-
-    let now_str = jiff::Timestamp::now().to_string();
-    if token.expires_at <= now_str {
-        return Err("invite token expired".to_string());
-    }
-
-    // Grant membership in Keycloak — user_id IS the Keycloak UUID. Membership is
-    // the organization (federation directory); authorization is the `member`
-    // client role. Both set together at join time.
-    let (Some(kc_admin), Some(client_id), Some(org_id)) = (
-        &state.auth.keycloak_admin,
-        &state.auth.oidc_client_id,
-        &state.auth.oidc_org_id,
-    ) else {
-        return Err("Keycloak/organization not configured".to_string());
-    };
-
-    kc_admin.add_org_member(org_id, user_id).await?;
-    kc_admin.assign_client_role(user_id, client_id, "member").await?;
-
-    tracing::info!(user_id = %user_id, "OIDC: auto-accepted invite for user");
-    Ok(())
 }

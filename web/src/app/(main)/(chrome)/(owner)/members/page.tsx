@@ -1,22 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, Link2, Trash2, UserCircle } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { Send, UserCircle } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   DataTable,
   ActionItem,
@@ -29,8 +21,7 @@ import { SettingsSection } from "@/components/settings/settings-section";
 import { PageShell } from "@/components/layout/page-shell";
 import { useOrgUsers } from "@/hooks/use-org-users";
 import { api } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
-import type { OrgUser, OrgInvite } from "@/lib/types";
+import type { OrgUser } from "@/lib/types";
 
 function memberColumns(
   onRemove: (userId: string, name: string) => void,
@@ -39,7 +30,7 @@ function memberColumns(
     selectColumn<OrgUser>(),
     {
       id: "name",
-      header: sortableHeader("Name"),
+      header: sortableHeader("Nombre"),
       accessorFn: (row) =>
         [row.first_name, row.last_name].filter(Boolean).join(" ") || row.email,
       cell: ({ getValue }) => (
@@ -55,12 +46,12 @@ function memberColumns(
     },
     {
       accessorKey: "role",
-      header: "Role",
+      header: "Rol",
       cell: ({ row }) => {
         const role = row.original.role;
         return (
           <Badge variant={role === "owner" ? "default" : "secondary"}>
-            {role === "owner" ? "Owner" : "Member"}
+            {role === "owner" ? "Propietario" : "Miembro"}
           </Badge>
         );
       },
@@ -78,204 +69,83 @@ function memberColumns(
             onRemove(user.user_id, displayName);
           }}
         >
-          Remove
+          Eliminar
         </ActionItem>
       );
     }),
   ];
 }
 
-const inviteStatusVariant = (
-  status: OrgInvite["status"],
-): "default" | "destructive" => {
-  if (status === "active") return "default";
-  return "destructive";
-};
-
 export default function MembersPage() {
-  const queryClient = useQueryClient();
   const { users, isLoading, handleRemoveUser } = useOrgUsers();
-  const { data: invites } = useQuery<OrgInvite[]>({
-    queryKey: queryKeys.org.invites,
-    queryFn: api.org.invites,
-  });
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [createdInviteUrl, setCreatedInviteUrl] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const [email, setEmail] = useState("");
 
   const columns = useMemo(
     () => memberColumns(handleRemoveUser),
     [handleRemoveUser],
   );
 
-  async function handleCreateInvite() {
-    setIsCreating(true);
-    try {
-      const data = await api.org.createInvite();
-      const inviteUrl =
-        data.invite_url ??
-        `${window.location.origin}/invite?token=${data.token}`;
-      setCreatedInviteUrl(inviteUrl);
-      setDialogOpen(true);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.org.invites });
-      toast.success("Invite link created");
-    } catch {
-      toast.error("Failed to create invite");
-    } finally {
-      setIsCreating(false);
-    }
-  }
+  const inviteMutation = useMutation({
+    mutationFn: (address: string) => api.org.inviteMember(address),
+    onSuccess: (_, address) => {
+      toast.success(`Invitación enviada a ${address}`);
+      setEmail("");
+    },
+    onError: () => toast.error("No se pudo enviar la invitación"),
+  });
 
-  async function handleRevokeInvite(token: string) {
-    try {
-      await api.org.revokeInvite(token);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.org.invites });
-      toast.success("Invite revoked");
-    } catch {
-      toast.error("Failed to revoke invite");
-    }
+  function handleInvite() {
+    const address = email.trim();
+    if (!address || inviteMutation.isPending) return;
+    inviteMutation.mutate(address);
   }
-
-  function copy(url: string) {
-    navigator.clipboard
-      .writeText(url)
-      .then(() => toast.success("Link copied to clipboard"))
-      .catch(() => toast.error("Failed to copy link"));
-  }
-
-  const inviteButton = (
-    <Button size="sm" onClick={handleCreateInvite} disabled={isCreating}>
-      <Link2 size={14} className="mr-1.5" />
-      {isCreating ? "Creating..." : "Create invite link"}
-    </Button>
-  );
 
   return (
     <PageShell>
-    <PageShell.Content className="gap-8">
-      <SettingsSection
-        title="Members"
-        description="People with access to this workspace. Share an invite link to add more — anyone who joins becomes a member."
-      >
-      {!isLoading && !users.length ? (
-        <EmptyState
-          icon={UserCircle}
-          title="No members yet"
-          description="Share an invite link to add people to your workspace."
-        />
-      ) : (
-        <DataTable
-          columns={columns}
-          data={users}
-          searchKey="email"
-          searchPlaceholder="Search members..."
-          toolbarActions={inviteButton}
-        />
-      )}
+      <PageShell.Content className="gap-8">
+        <SettingsSection
+          title="Miembros"
+          description="Personas con acceso a este espacio de trabajo. Invita a alguien por email — recibirá un correo para unirse como miembro."
+        >
+          <form
+            className="flex items-center gap-2 max-w-md"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleInvite();
+            }}
+          >
+            <Input
+              type="email"
+              placeholder="persona@empresa.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={inviteMutation.isPending}
+            />
+            <Button
+              type="submit"
+              disabled={!email.trim() || inviteMutation.isPending}
+            >
+              <Send size={14} className="mr-1.5" />
+              {inviteMutation.isPending ? "Enviando..." : "Invitar"}
+            </Button>
+          </form>
 
-      {/* Active invite links */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-sm font-semibold">Invite links</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Reusable links valid for 7 days. Anyone with a link joins as a member.
-            </p>
-          </div>
-          {!users.length && inviteButton}
-        </div>
-
-        {invites && invites.length > 0 ? (
-          <div className="rounded-md border divide-y">
-            {invites.map((invite) => (
-              <div
-                key={invite.token}
-                className="flex items-center gap-3 px-4 py-3"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">Invite link</p>
-                  <p className="text-xs text-muted-foreground">
-                    Created {new Date(invite.created_at).toLocaleDateString()}
-                    {" · "}
-                    Expires {new Date(invite.expires_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <Badge variant={inviteStatusVariant(invite.status)}>
-                  {invite.status}
-                </Badge>
-                {invite.status === "active" && (
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() =>
-                        copy(
-                          `${window.location.origin}/invite?token=${invite.token}`,
-                        )
-                      }
-                      title="Copy invite link"
-                    >
-                      <Copy size={13} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => handleRevokeInvite(invite.token)}
-                      title="Revoke invite"
-                    >
-                      <Trash2 size={13} />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No invite links yet. Use the button above to create one.
-          </p>
-        )}
-      </section>
-
-      {/* Created-link dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Invite link created</DialogTitle>
-            <DialogDescription>
-              Share this link to add people to your workspace. They join as a
-              member. The link is reusable for 7 days.
-            </DialogDescription>
-          </DialogHeader>
-
-          {createdInviteUrl && (
-            <div className="flex items-center gap-2">
-              <Input
-                readOnly
-                value={createdInviteUrl}
-                className="font-mono text-xs"
-              />
-              <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0"
-                onClick={() => copy(createdInviteUrl)}
-              >
-                <Copy size={14} />
-              </Button>
-            </div>
+          {!isLoading && !users.length ? (
+            <EmptyState
+              icon={UserCircle}
+              title="Aún no hay miembros"
+              description="Invita a alguien por email para darle acceso a este espacio de trabajo."
+            />
+          ) : (
+            <DataTable
+              columns={columns}
+              data={users}
+              searchKey="email"
+              searchPlaceholder="Buscar miembros..."
+            />
           )}
-
-          <DialogFooter>
-            <Button onClick={() => setDialogOpen(false)}>Done</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      </SettingsSection>
-    </PageShell.Content>
+        </SettingsSection>
+      </PageShell.Content>
     </PageShell>
   );
 }

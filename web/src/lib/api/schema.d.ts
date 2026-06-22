@@ -68,22 +68,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/invite-info": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_invite_info"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/auth/logout": {
         parameters: {
             query?: never;
@@ -516,30 +500,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_org_invites"];
+        get?: never;
         put?: never;
         /**
-         * Create a reusable, Discord-style invite link. No body: joining via the link
-         *     always grants `member`. The link is valid for 7 days and reusable.
+         * Invite a person to this workspace by email via a native Keycloak Organization
+         *     invitation. Keycloak emails them a registration (or confirm-membership) link;
+         *     on accept they join the org as a member and the tenant grants `member` on their
+         *     first login. Owner-only.
          */
         post: operations["create_org_invite"];
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/org/invites/{token}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["revoke_org_invite"];
         options?: never;
         head?: never;
         patch?: never;
@@ -889,9 +859,8 @@ export interface components {
             /** @description The connection the member picked as the output destination (job config). */
             sink_connection_id?: string | null;
         };
-        CreateOrgInviteResponse: {
-            invite_url: string;
-            token: string;
+        CreateOrgInvitePayload: {
+            email: string;
         };
         /** @description Typed envelope for successful API responses: `{ "data": T }`. */
         DataResponse_Value: {
@@ -958,15 +927,6 @@ export interface components {
         };
         GenerateResponse: {
             script: string;
-        };
-        InviteInfoResponse: {
-            valid: boolean;
-        };
-        InviteToken: {
-            created_at: string;
-            created_by: string;
-            expires_at: string;
-            token: string;
         };
         Job: {
             catalog_manifest?: null | components["schemas"]["RunStatus"];
@@ -1040,12 +1000,6 @@ export interface components {
             legal_name: string;
             registration_number?: string | null;
             registration_number_type?: string | null;
-        };
-        OrgInviteEntry: {
-            created_at: string;
-            expires_at: string;
-            status: string;
-            token: string;
         };
         OrgSettings: {
             catalog_description?: string | null;
@@ -1331,29 +1285,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    get_invite_info: {
-        parameters: {
-            query: {
-                /** @description Invite token */
-                token: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Invite token validity */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InviteInfoResponse"];
-                };
             };
         };
     };
@@ -2503,26 +2434,6 @@ export interface operations {
             };
         };
     };
-    list_org_invites: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of org invite tokens */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrgInviteEntry"][];
-                };
-            };
-        };
-    };
     create_org_invite: {
         parameters: {
             query?: never;
@@ -2530,40 +2441,21 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Invite created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CreateOrgInviteResponse"];
-                };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOrgInvitePayload"];
             };
-            /** @description Insufficient role */
-            403: {
+        };
+        responses: {
+            /** @description Invitation sent */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-        };
-    };
-    revoke_org_invite: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Invite token to revoke */
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Invite revoked */
-            204: {
+            /** @description Validation error */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

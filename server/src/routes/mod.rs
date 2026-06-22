@@ -61,10 +61,6 @@ pub fn build_router(
 
     // Public auth routes (no session middleware)
     let auth_routes = Router::new()
-        .route(
-            "/v1/auth/invite-info",
-            axum::routing::get(crate::auth::routes::get_invite_info),
-        )
         // OIDC authorization code flow — public (session is created inside oidc_callback)
         .route(
             "/v1/auth/oidc-start",
@@ -244,14 +240,10 @@ pub fn build_router(
             "/v1/org/users/{id}",
             axum::routing::delete(org::remove_user),
         )
-        // Org invite management — participant org admins only
+        // Org invite — owner invites a person by email (native Keycloak org invite)
         .route(
             "/v1/org/invites",
-            axum::routing::get(org::list_org_invites).post(org::create_org_invite),
-        )
-        .route(
-            "/v1/org/invites/{token}",
-            axum::routing::delete(org::revoke_org_invite),
+            axum::routing::post(org::create_org_invite),
         )
         .layer(middleware::from_fn(
             tenant_context_required, // runs second (inner), after session_required

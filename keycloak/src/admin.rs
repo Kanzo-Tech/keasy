@@ -3,6 +3,7 @@
 //! Provides methods to authenticate via client credentials flow and manage
 //! OIDC client registrations. Uses the keasy-server service account.
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use secrecy::{ExposeSecret, SecretString};
@@ -46,6 +47,23 @@ pub struct Workspace {
     pub id: String,
     pub name: String,
     pub url: String,
+}
+
+/// A Keycloak Organization as listed by the control-plane — the source of truth
+/// for the tenant fleet. `attributes` carries the keasy metadata (home URL,
+/// owner email, per-tenant image pin) the provisioner stores there.
+pub struct OrgSummary {
+    /// Organization id (Keycloak-internal UUID).
+    pub id: String,
+    /// Organization alias — the tenant slug. `workspace_id` is `keasy-ws-{alias}`.
+    pub alias: String,
+    /// Display name.
+    pub name: String,
+    /// Home URL (the `keasy.url` attribute).
+    pub url: String,
+    /// Raw organization attributes (`key → [values]`), incl. `owner_email` and
+    /// `server_image`.
+    pub attributes: HashMap<String, Vec<String>>,
 }
 
 /// A workspace member as resolved from Keycloak client-role mappings — the
@@ -261,16 +279,29 @@ impl KeycloakAdmin {
     }
 
     /// Ensure a Keycloak Organization exists for this workspace — the native
-    /// membership container. Idempotent: returns the existing org id if one
-    /// already has `alias`, otherwise creates it. The workspace's home URL is
-    /// stored as the `keasy.url` attribute (the switcher reads it from there).
+    /// membership container AND (with `attributes`) the tenant's record of truth.
+    /// Idempotent: if one already has `alias` its `attributes` are refreshed (PUT)
+    /// and its id returned; otherwise it is created. The home URL is always stored
+    /// as the `keasy.url` attribute; `attributes` carries the rest (`owner_email`,
+    /// `server_image`).
     pub async fn ensure_organization(
         &self,
         name: &str,
         alias: &str,
         url: &str,
+        attributes: &[(&str, &str)],
     ) -> Result<String, String> {
+        // The attribute set the control-plane manages on the org (keasy.url is
+        // always present; the caller supplies owner_email + server_image).
+        let mut managed = serde_json::Map::new();
+        managed.insert("keasy.url".to_string(), serde_json::json!([url]));
+        for (k, v) in attributes {
+            managed.insert((*k).to_string(), serde_json::json!([v]));
+        }
+
+        // Existing org: refresh the managed attributes in place and return its id.
         if let Some(id) = self.resolve_org_id(alias).await? {
+            self.update_org_attributes(&id, &managed).await?;
             return Ok(id);
         }
 
@@ -283,7 +314,7 @@ impl KeycloakAdmin {
             "name": name,
             "alias": alias,
             "domains": [{ "name": host_of(url), "verified": true }],
-            "attributes": { "keasy.url": [url] }
+            "attributes": serde_json::Value::Object(managed)
         });
         let resp = self
             .http
@@ -317,6 +348,136 @@ impl KeycloakAdmin {
             .ok_or_else(|| "organization created but not found".to_string())
     }
 
+    /// Merge `managed` into an existing org's attributes (GET the representation,
+    /// overwrite the managed keys, PUT it back). Keeps any other attributes Keycloak
+    /// holds intact — only the keasy-managed keys are touched.
+    async fn update_org_attributes(
+        &self,
+        org_id: &str,
+        managed: &serde_json::Map<String, serde_json::Value>,
+    ) -> Result<(), String> {
+        let token = self.get_admin_token().await?;
+        let url = format!(
+            "{}/admin/realms/{}/organizations/{}",
+            self.base_url, self.realm, org_id
+        );
+        let resp = self
+            .http
+            .get(&url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak get organization failed: {e}"))?;
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let b = resp.text().await.unwrap_or_default();
+            return Err(format!("Keycloak get organization returned {status}: {b}"));
+        }
+        let mut rep: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse organization: {e}"))?;
+        let obj = rep
+            .as_object_mut()
+            .ok_or_else(|| "organization representation is not an object".to_string())?;
+        let attrs = obj
+            .entry("attributes")
+            .or_insert_with(|| serde_json::json!({}));
+        if let Some(map) = attrs.as_object_mut() {
+            for (k, v) in managed {
+                map.insert(k.clone(), v.clone());
+            }
+        }
+        let resp = self
+            .http
+            .put(&url)
+            .bearer_auth(&token)
+            .json(&rep)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak update organization failed: {e}"))?;
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let b = resp.text().await.unwrap_or_default();
+            return Err(format!("Keycloak update organization returned {status}: {b}"));
+        }
+        Ok(())
+    }
+
+    /// List every Keycloak Organization — the fleet of tenants. Each carries its
+    /// `attributes` (incl. `owner_email` + `server_image`) so the control-plane can
+    /// reconcile/list without any local registry.
+    pub async fn list_organizations(&self) -> Result<Vec<OrgSummary>, String> {
+        let token = self.get_admin_token().await?;
+        let url = format!(
+            "{}/admin/realms/{}/organizations?max=1000",
+            self.base_url, self.realm
+        );
+        let resp = self
+            .http
+            .get(&url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak list organizations failed: {e}"))?;
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let b = resp.text().await.unwrap_or_default();
+            return Err(format!("Keycloak list organizations returned {status}: {b}"));
+        }
+        let orgs: Vec<serde_json::Value> = resp
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse organizations: {e}"))?;
+        Ok(orgs
+            .into_iter()
+            .filter_map(|o| {
+                let id = o.get("id").and_then(|v| v.as_str())?.to_string();
+                let alias = o.get("alias").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+                let name = o.get("name").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+                let attributes = parse_attributes(&o);
+                let url = attributes
+                    .get("keasy.url")
+                    .and_then(|v| v.first())
+                    .cloned()
+                    .unwrap_or_default();
+                Some(OrgSummary { id, alias, name, url, attributes })
+            })
+            .collect())
+    }
+
+    /// Resolve a clientId string to its Keycloak-internal UUID, or `None` if no
+    /// such client exists. Used by the control-plane to make provision/deprovision
+    /// idempotent (skip create when the client is already there; skip delete when
+    /// it is already gone).
+    pub async fn get_client_uuid(&self, client_id: &str) -> Result<Option<String>, String> {
+        let token = self.get_admin_token().await?;
+        let clients_url = format!(
+            "{}/admin/realms/{}/clients?clientId={}",
+            self.base_url, self.realm, client_id
+        );
+        let resp = self
+            .http
+            .get(&clients_url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak client lookup failed: {e}"))?;
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let b = resp.text().await.unwrap_or_default();
+            return Err(format!("Keycloak client lookup returned {status}: {b}"));
+        }
+        let clients: Vec<serde_json::Value> = resp
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse Keycloak clients response: {e}"))?;
+        Ok(clients
+            .first()
+            .and_then(|c| c["id"].as_str())
+            .map(|s| s.to_string()))
+    }
+
     /// Resolve an organization's id by its alias. `None` if not found.
     pub async fn resolve_org_id(&self, alias: &str) -> Result<Option<String>, String> {
         let token = self.get_admin_token().await?;
@@ -344,6 +505,31 @@ impl KeycloakAdmin {
             .into_iter()
             .find(|o| o.get("alias").and_then(|v| v.as_str()) == Some(alias))
             .and_then(|o| o.get("id").and_then(|v| v.as_str()).map(|s| s.to_string())))
+    }
+
+    /// Delete an Organization by its Keycloak id — used to roll back a
+    /// half-provisioned workspace so no orphan org is left behind. A 404 is
+    /// treated as success (idempotent).
+    pub async fn delete_organization(&self, org_id: &str) -> Result<(), String> {
+        let token = self.get_admin_token().await?;
+        let url = format!(
+            "{}/admin/realms/{}/organizations/{}",
+            self.base_url, self.realm, org_id
+        );
+        let resp = self
+            .http
+            .delete(&url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak organization deletion failed: {e}"))?;
+        if resp.status().is_success() || resp.status() == reqwest::StatusCode::NOT_FOUND {
+            Ok(())
+        } else {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            Err(format!("Keycloak organization deletion returned {status}: {body}"))
+        }
     }
 
     /// Add a user as a member of the workspace's organization. Idempotent:
@@ -375,6 +561,46 @@ impl KeycloakAdmin {
             status => {
                 let b = resp.text().await.unwrap_or_default();
                 Err(format!("Keycloak add org member returned {status}: {b}"))
+            }
+        }
+    }
+
+    /// Invite a person to the workspace's organization by **email** — the native
+    /// Keycloak Organization invitation. Keycloak emails a registration link (or a
+    /// confirm-membership link if the email already has an account); on accept the
+    /// person is added to the org as a member. The owner/member client role is NOT
+    /// assigned here — the tenant server grants it on first login. Requires the
+    /// service account to hold the `manage-organizations` realm-management role and
+    /// SMTP configured on the realm. The endpoint takes form-urlencoded `email` and
+    /// returns 204; 200 is also treated as success.
+    pub async fn invite_user_to_org(&self, org_id: &str, email: &str) -> Result<(), String> {
+        let token = self.get_admin_token().await?;
+        let url = format!(
+            "{}/admin/realms/{}/organizations/{}/members/invite-user",
+            self.base_url, self.realm, org_id
+        );
+        let resp = self
+            .http
+            .post(&url)
+            .bearer_auth(&token)
+            .form(&[("email", email)])
+            .send()
+            .await
+            .map_err(|e| format!("Keycloak invite user to org failed: {e}"))?;
+        match resp.status().as_u16() {
+            200 | 204 => {
+                tracing::info!(org_id = %org_id, email = %email, "Invited user to org");
+                Ok(())
+            }
+            // Already a member — the invitation is a no-op (keeps reconcile, which
+            // re-ensures every tenant, from failing on already-onboarded owners).
+            409 => {
+                tracing::debug!(org_id = %org_id, email = %email, "User already an org member");
+                Ok(())
+            }
+            status => {
+                let b = resp.text().await.unwrap_or_default();
+                Err(format!("Keycloak invite user to org returned {status}: {b}"))
             }
         }
     }
@@ -820,6 +1046,29 @@ impl KeycloakAdmin {
 
         Ok(secret_resp.value)
     }
+}
+
+/// Parse a Keycloak `attributes` object (`{ key: [values] }`) from an org/user
+/// representation into a plain `HashMap<String, Vec<String>>`.
+fn parse_attributes(rep: &serde_json::Value) -> HashMap<String, Vec<String>> {
+    rep.get("attributes")
+        .and_then(|a| a.as_object())
+        .map(|map| {
+            map.iter()
+                .map(|(k, v)| {
+                    let values = v
+                        .as_array()
+                        .map(|arr| {
+                            arr.iter()
+                                .filter_map(|x| x.as_str().map(|s| s.to_string()))
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    (k.clone(), values)
+                })
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// Extract the bare host from a URL for use as an organization domain

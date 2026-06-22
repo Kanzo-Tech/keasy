@@ -50,6 +50,17 @@ services:
       retries: 10
       start_period: 10s
 
+  # SMTP sink for dev: captures Keycloak's outbound mail (Organization invitations,
+  # password resets). The realm's smtpServer points at `mailpit:1025`. Read captured
+  # mail — including the invitation/registration link — at http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:latest
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+    ports:
+      - "8025:8025"
+
   caddy:
     depends_on:
       server:

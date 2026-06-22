@@ -17,7 +17,7 @@ COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 # so a re-run after a small rmlext change is incremental (seconds), not a full
 # DuckDB rebuild. Only `make clean` wipes those caches.
 
-.PHONY: help dev demo down prod build logs restart clean ps
+.PHONY: help dev demo down prod build logs restart clean ps deploy-base tenant reconcile deprovision workspaces
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -66,11 +66,17 @@ ps: ## Show running services
 deploy-base: ## Bootstrap the Swarm base stack (idempotent) — reads deploy/environments/prod/.env
 	infra/stack/bootstrap.sh
 
-tenant: ## Provision a tenant: make tenant slug=acme name="Acme Corp" owner=<keycloak-sub>
+tenant: ## Provision a tenant: make tenant slug=acme name="Acme Corp" owner=owner@acme.com
 	@test -n "$(slug)" && test -n "$(name)" && test -n "$(owner)" \
-	  || { echo "usage: make tenant slug=<slug> name=<name> owner=<keycloak-sub>"; exit 1; }
-	@printf 'name: %s\nowner_keycloak_sub: %s\n' "$(name)" "$(owner)" \
-	  > deploy/environments/prod/tenants/$(slug).yaml
-	@echo "✓ wrote deploy/environments/prod/tenants/$(slug).yaml"
-	@echo "  commit it; the control-plane reconciles every CP_RECONCILE_INTERVAL_SECS"
-	@echo "  (or force now from the manager: curl -fsS -X POST http://localhost:9000/reconcile)"
+	  || { echo "usage: make tenant slug=<slug> name=<name> owner=<owner-email>"; exit 1; }
+	@infra/stack/cp.sh provision --name "$(name)" --handle "$(slug)" --owner-email "$(owner)"
+
+reconcile: ## Re-ensure every tenant's stack (drift heal + version rollout)
+	@infra/stack/cp.sh reconcile
+
+deprovision: ## Tear a tenant down: make deprovision slug=acme
+	@test -n "$(slug)" || { echo "usage: make deprovision slug=<slug>"; exit 1; }
+	@infra/stack/cp.sh deprovision $(slug)
+
+workspaces: ## List provisioned workspaces (Keycloak Organizations)
+	@infra/stack/cp.sh list

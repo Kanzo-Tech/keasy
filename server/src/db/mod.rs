@@ -1,6 +1,6 @@
-pub mod invite_tokens;
 mod schema;
 pub mod secrets;
+mod sessions;
 
 use std::path::Path;
 use std::sync::Arc;

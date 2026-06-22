@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC = ["/v1/auth", "/invite", "/_next", "/favicon"];
+const PUBLIC = ["/v1/auth", "/_next", "/favicon"];
 
 export function middleware(req: NextRequest) {
   if (PUBLIC.some((p) => req.nextUrl.pathname.startsWith(p))) {

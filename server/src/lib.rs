@@ -59,5 +59,9 @@ pub struct AuthServices {
     /// configured alias). The membership container — members, invites, and the
     /// switcher all key off it. None when Keycloak/org is not configured.
     pub oidc_org_id: Option<String>,
+    /// Email the workspace was provisioned for. On first login, a member whose
+    /// token email matches gets `owner`; everyone else who is an org member gets
+    /// `member`. None when not configured.
+    pub owner_email: Option<String>,
 }
 

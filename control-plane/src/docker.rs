@@ -28,6 +28,9 @@ pub struct StackSpec {
     pub workspace_name: String,
     /// URL-safe slug, used for the `{slug}.{base_domain}` host (Traefik router).
     pub slug: String,
+    /// Email of the workspace owner — passed as `KEASY_OWNER_EMAIL` so the server
+    /// grants `owner` (vs `member`) on first login of the matching identity.
+    pub owner_email: String,
     /// keasy-server image for this instance (per-tenant pin; a rollout re-renders
     /// with a new value).
     pub server_image: String,
@@ -228,6 +231,7 @@ fn render_stack(cfg: &ControlPlaneConfig, spec: &StackSpec) -> String {
         workspace_id,
         workspace_name,
         slug,
+        owner_email,
         server_image,
         web_image,
     } = spec;
@@ -262,6 +266,7 @@ services:
       KEASY_BASE_URL: "https://{slug}.{base_domain}"
       KEASY_WORKSPACE_NAME: "{workspace_name}"
       KEASY_ORG_ALIAS: "{slug}"
+      KEASY_OWNER_EMAIL: "{owner_email}"
       KEASY_OIDC_ISSUER_URL: "{issuer}"
       KEASY_OIDC_CLIENT_ID: "{workspace_id}"
       KEASY_OIDC_INTERNAL_BASE_URL: "{internal}"
@@ -281,6 +286,11 @@ services:
     networks: [edge]
     deploy:
       replicas: 1
+      # Bound each tenant's blast radius: a single workspace can't starve the node.
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
       update_config:
         order: start-first
         failure_action: rollback
@@ -305,6 +315,10 @@ services:
     networks: [edge]
     deploy:
       replicas: 1
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
       update_config:
         order: start-first
         failure_action: rollback
@@ -354,7 +368,6 @@ mod tests {
 
     fn cfg() -> ControlPlaneConfig {
         ControlPlaneConfig {
-            bind_addr: "0.0.0.0:9000".into(),
             oidc_issuer_url: "https://kc/realms/keasy".into(),
             oidc_client_id: "cp".into(),
             oidc_client_secret: secrecy::SecretString::from("s".to_string()),
@@ -372,6 +385,7 @@ mod tests {
             workspace_id: "keasy-ws-1".into(),
             workspace_name: "Acme".into(),
             slug: "acme".into(),
+            owner_email: "owner@acme.test".into(),
             server_image: "ghcr.io/kanzo-tech/keasy-server:0.4.0".into(),
             web_image: "ghcr.io/kanzo-tech/keasy-web:0.4.0".into(),
         }

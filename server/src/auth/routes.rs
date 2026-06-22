@@ -1,6 +1,5 @@
 use axum::extract::State;
 use axum::response::IntoResponse;
-use serde::Deserialize;
 use tower_sessions::Session;
 
 use crate::AppState;
@@ -93,38 +92,6 @@ pub async fn get_me(
         effective_role: effective_role.to_string(),
         org,
     }))
-}
-
-/// GET /v1/auth/invite-info?token=<token> — validate an invite token exists and is not expired.
-///
-/// Public endpoint (no session required) — used by the invite page to check
-/// whether the token is valid before showing the accept UI.
-#[derive(Deserialize)]
-pub struct InviteInfoQuery {
-    pub token: String,
-}
-
-#[derive(serde::Serialize, utoipa::ToSchema)]
-pub struct InviteInfoResponse {
-    pub valid: bool,
-}
-
-#[utoipa::path(get, path = "/v1/auth/invite-info", tag = "Auth",
-    params(("token" = String, Query, description = "Invite token")),
-    responses((status = 200, description = "Invite token validity", body = InviteInfoResponse))
-)]
-pub async fn get_invite_info(
-    State(state): State<AppState>,
-    axum::extract::Query(params): axum::extract::Query<InviteInfoQuery>,
-) -> impl IntoResponse {
-    let now = jiff::Timestamp::now().to_string();
-    let valid = state
-        .db
-        .get_invite_token(&params.token)
-        .await
-        .map(|t| t.expires_at > now)
-        .unwrap_or(false);
-    data_response(InviteInfoResponse { valid })
 }
 
 /// GET /v1/auth/workspaces

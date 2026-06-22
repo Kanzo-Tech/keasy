@@ -96,15 +96,6 @@ const MIGRATIONS: &[&str] = &[
         session_id TEXT NOT NULL,
         created_at TEXT NOT NULL
     );
-
-    -- Invite tokens for invite-only registration (reusable link, Discord-style).
-    -- Joining via a link always grants `member`; the owner is bootstrapped.
-    CREATE TABLE IF NOT EXISTS invite_tokens (
-        token      TEXT PRIMARY KEY,
-        created_by TEXT NOT NULL,
-        expires_at TEXT NOT NULL,
-        created_at TEXT NOT NULL
-    );
     ",
 ];
 
@@ -159,7 +150,7 @@ mod tests {
         let n: i64 = conn
             .query_row(
                 "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN \
-                 ('connections','jobs','settings','secrets','invite_tokens')",
+                 ('connections','jobs','settings','secrets','user_sessions')",
                 [],
                 |r| r.get(0),
             )

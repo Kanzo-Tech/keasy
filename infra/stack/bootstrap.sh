@@ -37,8 +37,16 @@ gen KC_ADMIN_PASSWORD
 # below — same value both sides). No Swarm secret: the CLI is not a service.
 gen CP_OIDC_SECRET
 
-# 1. Swarm (idempotent).
+# 1. Swarm + the shared overlay (both idempotent). keasy-edge is created HERE, not
+#    by base.yml, so it outlives `docker stack rm keasy-base` — tenants and cp.sh keep
+#    reaching Keycloak across a base redeploy, and the stack never races the overlay GC.
 docker info 2>/dev/null | grep -q 'Swarm: active' || docker swarm init
+if docker network inspect keasy-edge >/dev/null 2>&1; then
+  echo "• network keasy-edge exists"
+else
+  docker network create --driver overlay --attachable keasy-edge >/dev/null
+  echo "✓ created network keasy-edge"
+fi
 
 # 2. Swarm secrets — created only if absent, from the (now-present) env value.
 secret() {  # <secret-name> <env-var>

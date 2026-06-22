@@ -241,23 +241,14 @@ export const api = {
       unwrap(await client.POST("/v1/auth/logout")),
   },
 
-  // ── Org ────────────────────────────────────────────────────────────────
+  // ── Workspace legal identity ──────────────────────────────────────────────
+  // Membership (owner/member) is declared in Terraform, not managed here.
   org: {
     identity: async () =>
       unwrap(await client.GET("/v1/org/identity")),
 
     saveIdentity: async (data: Schemas["UpdateOrgIdentityPayload"]) =>
       unwrap(await client.PUT("/v1/org/identity", { body: data })),
-
-    users: async () =>
-      unwrap(await client.GET("/v1/org/users")),
-
-    removeUser: async (id: string) => {
-      unwrap(await client.DELETE("/v1/org/users/{id}", { params: { path: { id } } }));
-    },
-
-    inviteMember: async (email: string) =>
-      unwrap(await client.POST("/v1/org/invites", { body: { email } })),
   },
 
   // ── Status ────────────────────────────────────────────────────────────

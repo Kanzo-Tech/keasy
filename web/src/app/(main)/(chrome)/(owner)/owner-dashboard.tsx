@@ -1,16 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Users, Building2, GalleryVerticalEnd } from "lucide-react";
+import { Building2, GalleryVerticalEnd } from "lucide-react";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { SummaryCard } from "@/components/shared/summary-card";
 
 export function OwnerDashboard() {
-  const { data: members, isLoading: loadingMembers } = useQuery({
-    queryKey: queryKeys.org.users,
-    queryFn: api.org.users,
-  });
   const { data: identity, isLoading: loadingIdentity } = useQuery({
     queryKey: queryKeys.org.identity,
     queryFn: api.org.identity,
@@ -20,7 +16,6 @@ export function OwnerDashboard() {
     queryFn: api.settings.catalogStorage,
   });
 
-  const memberCount = members?.length ?? 0;
   const legalName = identity?.legal_name?.trim();
 
   return (
@@ -30,13 +25,6 @@ export function OwnerDashboard() {
           Workspace Overview
         </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <SummaryCard
-            href="/members"
-            icon={Users}
-            title="Members"
-            value={loadingMembers ? undefined : String(memberCount)}
-            description={memberCount === 1 ? "person" : "people"}
-          />
           <SummaryCard
             href="/identity"
             icon={Building2}

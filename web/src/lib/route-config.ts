@@ -6,7 +6,6 @@ import {
   GalleryVerticalEnd,
   Home,
   Settings2,
-  Users,
   Workflow,
   type LucideIcon,
 } from "lucide-react";
@@ -39,8 +38,7 @@ const ROUTES: Record<string, RouteDef> = {
   // Member plane (data)
   "/connections":                 { name: "Connections", icon: Database, sidebar: ["member"] },
   "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: ["member"] },
-  // Owner plane (metadata + people)
-  "/members":                     { name: "Members", icon: Users, sidebar: ["owner"] },
+  // Owner plane (metadata)
   "/identity":                    { name: "Identity", icon: Building2, sidebar: ["owner"] },
   "/datasets":                    { name: "Data Catalog", icon: Boxes, sidebar: ["owner"] },
   "/catalog":                     { name: "Catalog Storage", icon: GalleryVerticalEnd, sidebar: ["owner"] },

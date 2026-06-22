@@ -39,9 +39,8 @@ export type GenerateResponse = S["GenerateResponse"];
 // Alias: server calls it JobRuntimeError, frontend used JobError
 export type JobError = S["JobRuntimeError"];
 
-// Org types — re-exported from schema with frontend aliases
+// Workspace legal identity — re-exported from schema with a frontend alias
 export type OrgIdentity = S["OrgIdentityResponse"];
-export type OrgUser = S["WorkspaceMember"];
 
 // ---------------------------------------------------------------------------
 // Types now in OpenAPI spec — re-exported from schema
@@ -98,5 +97,4 @@ export type { ProviderInfo } from "@fossil-lang/wasm";
 // ---------------------------------------------------------------------------
 
 export type MeResponse = S["MeResponse"];
-export type WorkspaceSummary = S["WorkspaceSummary"];
 export type WorkspacesResponse = S["WorkspacesResponse"];

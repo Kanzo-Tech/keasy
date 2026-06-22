@@ -1822,18 +1822,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "574b0cd5e90ee2ba03a66d0611fc9a09c9a0c28b2ecc2dc8a181dd31a53ca5d7"
 
 [[package]]
-name = "keasy-keycloak"
-version = "0.1.0"
-dependencies = [
- "reqwest",
- "secrecy",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "keasy-server"
 version = "0.1.0"
 dependencies = [
@@ -1849,7 +1837,6 @@ dependencies = [
  "http",
  "http-body-util",
  "jiff",
- "keasy-keycloak",
  "oauth2",
  "object_store",
  "openidconnect",

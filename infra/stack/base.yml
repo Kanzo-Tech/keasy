@@ -4,9 +4,10 @@
 #
 # The per-tenant stacks are rendered + deployed by the provisioner CLI (the
 # `keasy-control-plane` image, run on a manager via infra/stack/cp.sh — NOT a
-# service in this stack) and attach to the `keasy-edge` overlay defined here.
-# Traefik discovers every service by its `deploy.labels` — adding a tenant needs
-# no edit to this file. See infra/stack/README.md for the one-time bootstrap
+# service in this stack) and attach to the shared `keasy-edge` overlay, which is
+# EXTERNAL (created once by bootstrap.sh, not owned by this stack — see the networks
+# section). Traefik discovers every service by its `deploy.labels` — adding a tenant
+# needs no edit to this file. See infra/stack/README.md for the one-time bootstrap
 # (swarm init, overlay network, base secrets).
 #
 # Required env (interpolated by `docker stack deploy`):
@@ -165,7 +166,12 @@ volumes:
   keycloak-postgres:
 
 networks:
+  # External, NOT owned by this stack: it is the shared fabric for the base stack,
+  # every per-tenant stack (which also declares it `external`), and the cp.sh
+  # one-shot (`docker run --network keasy-edge`). bootstrap.sh creates it once. If
+  # the base stack owned it, `docker stack rm keasy-base` would try to delete a
+  # network still in use by live tenants — racing the overlay GC and failing with
+  # "network in use". Externalizing it removes that whole failure class.
   keasy-edge:
-    driver: overlay
-    attachable: true
+    external: true
     name: keasy-edge

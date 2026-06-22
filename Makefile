@@ -17,7 +17,7 @@ COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 # so a re-run after a small rmlext change is incremental (seconds), not a full
 # DuckDB rebuild. Only `make clean` wipes those caches.
 
-.PHONY: help dev demo down prod build logs restart clean ps deploy-base tenant reconcile deprovision workspaces
+.PHONY: help dev demo down prod build logs restart clean ps deploy-base redeploy-base reset-keycloak tenant reconcile deprovision workspaces
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -64,6 +64,20 @@ ps: ## Show running services
 
 # ── Prod / Swarm deploy ────────────────────────────────────────────────────
 deploy-base: ## Bootstrap the Swarm base stack (idempotent) — reads deploy/environments/prod/.env
+	infra/stack/bootstrap.sh
+
+redeploy-base: ## Tear down + re-bootstrap the base stack (keasy-edge is external, so no network race)
+	-docker stack rm keasy-base
+	@echo "waiting for base services to drain..."
+	@while docker service ls --format '{{.Name}}' | grep -q '^keasy-base_'; do sleep 2; done
+	infra/stack/bootstrap.sh
+
+reset-keycloak: ## DESTRUCTIVE: wipe Keycloak's DB so --import-realm re-seeds the realm (drops identity data)
+	@printf 'This deletes the Keycloak Postgres volume (realm, users, orgs). Type the realm name "keasy" to confirm: '; \
+	  read ans; [ "$$ans" = "keasy" ] || { echo "aborted"; exit 1; }
+	-docker stack rm keasy-base
+	@while docker service ls --format '{{.Name}}' | grep -q '^keasy-base_'; do sleep 2; done
+	docker volume rm keasy-base_keycloak-postgres
 	infra/stack/bootstrap.sh
 
 tenant: ## Provision a tenant: make tenant slug=acme name="Acme Corp" owner=owner@acme.com

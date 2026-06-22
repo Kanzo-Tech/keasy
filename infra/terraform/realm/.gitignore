@@ -1,0 +1,9 @@
+# State holds every tenant secret — manager-only, never committed.
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.tfstate.lock.info
+# Operator-local tenant registry + creds (PII/secrets stay off git).
+*.auto.tfvars
+terraform.tfvars
+# Keep .terraform.lock.hcl tracked.

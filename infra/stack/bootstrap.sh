@@ -96,4 +96,4 @@ echo "✓ rendered realm with the control-plane secret${KEASY_SMTP_HOST:+ + prod
 
 # 4. Deploy the base stack (Traefik + Keycloak [native realm import] + control-plane).
 docker stack deploy --detach=false -c infra/stack/base.yml keasy-base
-echo "✓ base stack up. Add a tenant: make tenant slug=acme name='Acme' owner=<keycloak-sub>"
+echo "✓ base stack up. Add a tenant: make tenant slug=acme name='Acme' owner=owner@acme.com"

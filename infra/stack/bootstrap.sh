@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # One-time, idempotent bootstrap of the keasy fleet base stack on a Swarm manager.
-# Generates every secret itself and wires each to BOTH consumers (no hand-matching,
-# no `change-me`): the control-plane secret is minted once and injected into the
-# Swarm secret AND the rendered Keycloak realm. Re-runnable: existing secrets and a
-# rendered realm are left as-is. Reads/writes deploy/environments/prod/.env.
+# Generates every secret itself (no hand-matching, no `change-me`). Brings up the base
+# stack (Traefik + Keycloak + Postgres) with Keycloak EMPTY, then provisions the realm
+# declaratively with Terraform (infra/keycloak/terraform via infra/stack/tf.sh) — the
+# same generated secrets reach Keycloak (TF) and the CLI (cp.sh) from .env. Re-runnable:
+# existing secrets are left as-is and `terraform apply` reconciles in place (no DB wipe).
+# Reads/writes deploy/environments/prod/.env.
 #
 #   infra/stack/bootstrap.sh        # or: make deploy-base
 set -euo pipefail
@@ -20,8 +22,8 @@ req() { eval "v=\${$1:-}"; [ -n "$v" ] || { echo "✗ missing required env: $1 (
 for v in KC_HOSTNAME KEASY_BASE_DOMAIN ACME_EMAIL \
          KEASY_SERVER_IMAGE KEASY_WEB_IMAGE KEASY_CONTROL_PLANE_IMAGE KEASY_DEPLOY_DIR; do req "$v"; done
 
-# Generate any secret the operator didn't pin, persisting it to .env so re-runs
-# (and the realm render below) reuse the exact value — Swarm secrets are
+# Generate any secret the operator didn't pin, persisting it to .env so re-runs reuse
+# the exact value (and so Terraform + cp.sh read the same value). Swarm secrets are
 # write-only, so .env is our single source for the generated material.
 gen() {  # <ENV_VAR>
   eval "cur=\${$1:-}"; [ -n "$cur" ] && return
@@ -32,10 +34,13 @@ gen() {  # <ENV_VAR>
 }
 gen KC_DB_PASSWORD
 gen KC_ADMIN_PASSWORD
-# The provisioner CLI authenticates to Keycloak as the keasy-control-plane client
-# with this secret (passed via .env by cp.sh, and injected into the rendered realm
-# below — same value both sides). No Swarm secret: the CLI is not a service.
+# The provisioner CLI authenticates as the keasy-control-plane client with this secret
+# (cp.sh passes it from .env; Terraform sets the SAME value on the realm client). No
+# Swarm secret: the CLI is not a service.
 gen CP_OIDC_SECRET
+# Terraform authenticates as the dedicated keasy-terraform client with this secret
+# (kc-mint-tf-client.sh sets it on the client; tf.sh passes it to the provider).
+gen KC_TF_CLIENT_SECRET
 
 # 1. Swarm + the shared overlay (both idempotent). keasy-edge is created HERE, not
 #    by base.yml, so it outlives `docker stack rm keasy-base` — tenants and cp.sh keep
@@ -61,50 +66,13 @@ if [ -n "${KEASY_LITESTREAM_REPLICA_BASE:-}" ] && ! docker secret inspect keasy-
   printf '%s' "$KEASY_LITESTREAM_CREDS" | docker secret create keasy-litestream - >/dev/null && echo "✓ created secret keasy-litestream"
 fi
 
-# 3. Render the realm with CP_OIDC_SECRET injected into the keasy-control-plane
-#    client → the control-plane's Swarm secret and the imported realm carry the SAME
-#    generated value, automatically. Also overrides the realm's smtpServer with the
-#    production relay (KEASY_SMTP_*) — the source JSON carries dev (mailpit) values, so
-#    prod points Keycloak at a real transactional sender for Organization invitations.
-#    Always re-rendered from the source (gitignored, bound by base.yml into Keycloak's
-#    import dir): the render is pure (source + .env → output), so a fix to
-#    keasy-realm.json flows on the next `make deploy-base` with no manual step. Keycloak
-#    imports it with IGNORE_EXISTING, so re-rendering only matters on a fresh DB and
-#    never clobbers an already-seeded realm.
-RENDERED=infra/keycloak/realm-rendered
-mkdir -p "$RENDERED"
-python3 - infra/keycloak/realm-import/keasy-realm.json "$RENDERED/keasy-realm.json" "$CP_OIDC_SECRET" <<'PY'
-import json, os, sys
-src, dst, secret = sys.argv[1:4]
-realm = json.load(open(src))
-for c in realm.get("clients", []):
-    if c.get("clientId") == "keasy-control-plane":
-        c["secret"] = secret
-# Production SMTP relay (Organization invitations need a real sender; the source JSON's
-# mailpit values are dev-only). Set when KEASY_SMTP_HOST is present; auth fields are
-# optional (omit user/password for an open relay).
-host = os.environ.get("KEASY_SMTP_HOST")
-if host:
-    smtp = {
-        "host": host,
-        "port": os.environ.get("KEASY_SMTP_PORT", "587"),
-        "from": os.environ.get("KEASY_SMTP_FROM", "noreply@" + os.environ.get("KEASY_BASE_DOMAIN", "")),
-        "fromDisplayName": os.environ.get("KEASY_SMTP_FROM_NAME", "Keasy"),
-        "ssl": os.environ.get("KEASY_SMTP_SSL", "false"),
-        "starttls": os.environ.get("KEASY_SMTP_STARTTLS", "true"),
-    }
-    user = os.environ.get("KEASY_SMTP_USER")
-    if user:
-        smtp["auth"] = "true"
-        smtp["user"] = user
-        smtp["password"] = os.environ.get("KEASY_SMTP_PASSWORD", "")
-    else:
-        smtp["auth"] = "false"
-    realm["smtpServer"] = smtp
-json.dump(realm, open(dst, "w"), indent=2)
-PY
-echo "✓ rendered realm with the control-plane secret${KEASY_SMTP_HOST:+ + prod SMTP relay} injected"
-
-# 4. Deploy the base stack (Traefik + Keycloak [native realm import] + control-plane).
+# 3. Deploy the base stack (Traefik + Keycloak [empty] + Postgres). Keycloak boots with
+#    NO realm — Terraform provisions it next.
 docker stack deploy --detach=false -c infra/stack/base.yml keasy-base
-echo "✓ base stack up. Add a tenant: make tenant slug=acme name='Acme' owner=owner@acme.com"
+echo "✓ base stack up"
+
+# 4. Mint the least-privilege keasy-terraform client (the only step that uses the master
+#    admin), then apply the realm declaratively. tf.sh waits for Keycloak health first.
+infra/stack/kc-mint-tf-client.sh
+infra/stack/tf.sh
+echo "✓ realm applied. Add a tenant: make tenant slug=acme name='Acme' owner=owner@acme.com"

@@ -66,17 +66,14 @@ ps: ## Show running services
 deploy-base: ## Bootstrap the Swarm base stack (idempotent) — reads deploy/environments/prod/.env
 	infra/stack/bootstrap.sh
 
-redeploy-base: ## Tear down + re-bootstrap the base stack (keasy-edge is external, so no network race)
-	-docker stack rm keasy-base
-	@echo "waiting for base services to drain..."
-	@while docker service ls --format '{{.Name}}' | grep -q '^keasy-base_'; do sleep 2; done
+redeploy-base: ## Tear down + re-bootstrap the base stack (realm changes: just re-run, terraform reconciles in place)
+	infra/stack/teardown.sh keasy-base
 	infra/stack/bootstrap.sh
 
-reset-keycloak: ## DESTRUCTIVE: wipe Keycloak's DB so --import-realm re-seeds the realm (drops identity data)
+reset-keycloak: ## DESTRUCTIVE nuke of identity — wipes Keycloak's DB (realm/users/orgs). Rarely needed: terraform reconciles realm config in place.
 	@printf 'This deletes the Keycloak Postgres volume (realm, users, orgs). Type the realm name "keasy" to confirm: '; \
 	  read ans; [ "$$ans" = "keasy" ] || { echo "aborted"; exit 1; }
-	-docker stack rm keasy-base
-	@while docker service ls --format '{{.Name}}' | grep -q '^keasy-base_'; do sleep 2; done
+	infra/stack/teardown.sh keasy-base
 	docker volume rm keasy-base_keycloak-postgres
 	infra/stack/bootstrap.sh
 

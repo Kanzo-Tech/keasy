@@ -10,14 +10,13 @@
 # needs no edit to this file. See infra/stack/README.md for the one-time bootstrap
 # (swarm init, overlay network, base secrets).
 #
-# Required env (interpolated by `docker stack deploy`):
-#   KC_HOSTNAME               e.g. auth.keasy.example.com   (Keycloak's public host)
-#   KEASY_BASE_DOMAIN         e.g. keasy.example.com         (tenants at <slug>.<this>)
-#   ACME_EMAIL                Let's Encrypt registration email
-#   KEASY_SERVER_IMAGE        ghcr.io/kanzo-tech/keasy-server:<ver>  (per-tenant default)
-#   KEASY_WEB_IMAGE           ghcr.io/kanzo-tech/keasy-web:<ver>
-#   KEASY_CONTROL_PLANE_IMAGE ghcr.io/kanzo-tech/keasy-control-plane:<ver>  (must ship the docker CLI)
-#   KEASY_DEPLOY_DIR          absolute path on the manager node to this repo's keasy/
+# Required env (interpolated by `docker stack deploy`; bootstrap.sh sources .env +
+# versions.env and generates KC_DB_PASSWORD / KC_ADMIN_PASSWORD):
+#   KC_HOSTNAME            e.g. auth.keasy.example.com   (Keycloak's public host)
+#   KEASY_BASE_DOMAIN      e.g. keasy.example.com         (tenants at <slug>.<this>)
+#   ACME_EMAIL             Let's Encrypt registration email
+#   KEASY_KEYCLOAK_IMAGE   quay.io/keycloak/keycloak:<ver>   (pinned in versions.env)
+# (The keasy-server/web/control-plane image pins are consumed by cp.sh, not this stack.)
 version: "3.9"
 
 services:
@@ -89,20 +88,17 @@ services:
       restart_policy:
         condition: any
 
-  # Native --import-realm is the whole realm-provisioning story (IGNORE_EXISTING):
-  # it seeds the realm, clients, scopes AND the service accounts with their
-  # realm-management roles (incl. the org roles manage-organizations /
-  # view-organizations the provisioner needs) in one consistent pass. We do NOT
-  # layer keycloak-config-cli: the REST path it uses cannot generate the built-in org
-  # roles, so it could not even create this realm. After seeding, the provisioner CLI
-  # owns runtime provisioning (tenants/orgs/users) via the admin API; re-deploys are
-  # no-ops on the realm (IGNORE_EXISTING), which is what we want — never clobber the
-  # runtime state. Pinned to 26.2: 26.5.x regressed and duplicates manage-organizations
-  # on import of an organizations-enabled realm ("Duplicate resource error"). We don't
-  # need 26.5 — the org-invite-by-email flow works since Organizations GA (26.0).
+  # Keycloak boots EMPTY — the realm is provisioned declaratively by Terraform
+  # (infra/keycloak/terraform, applied by infra/stack/tf.sh) against the admin API after
+  # this stack is up. A realm CREATED via the API auto-creates the built-in client scopes
+  # (roles, web-origins, …), so we never hand-maintain them — which is what killed the old
+  # "--import-realm dropped the `roles` scope → 403" class of bug. `terraform apply`
+  # reconciles in place, so a realm change no longer needs a Postgres volume wipe.
+  # Pinned (KEASY_KEYCLOAK_IMAGE, versions.env) to 26.2: 26.5.x regressed on org-enabled
+  # realms. Organizations GA since 26.0, which is all the invite-by-email flow needs.
   keycloak:
-    image: quay.io/keycloak/keycloak:26.2
-    command: ["start", "--import-realm"]
+    image: ${KEASY_KEYCLOAK_IMAGE}
+    command: ["start"]
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
@@ -115,24 +111,17 @@ services:
       KC_HTTP_RELATIVE_PATH: /auth
       KC_HEALTH_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
+      # The bootstrap admin is used only to mint the keasy-terraform client
+      # (kc-mint-tf-client.sh); Terraform then authenticates as that dedicated client.
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
-    volumes:
-      - type: bind
-        # The RENDERED realm (bootstrap.sh injects the generated control-plane secret
-        # into the keasy-control-plane client) — so the natively-imported realm and
-        # the cp-oidc-secret Swarm secret carry the same value automatically.
-        source: ${KEASY_DEPLOY_DIR}/infra/keycloak/realm-rendered
-        target: /opt/keycloak/data/import
-        read_only: true
     networks: [keasy-edge]
     deploy:
       replicas: 1
       update_config:
         parallelism: 1
-        # --import-realm runs on every boot, and it is NOT concurrency-safe on a
-        # fresh DB → never let two tasks overlap: stop the old before starting the
-        # new (brief auth blip on update; this is a single node anyway).
+        # Single-node identity service over one Postgres: never let two tasks overlap —
+        # stop the old before starting the new (brief auth blip on update).
         order: stop-first
       restart_policy:
         # Keycloak does not retry the initial DB connect; on a cold boot it may lose

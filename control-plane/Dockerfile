@@ -29,8 +29,6 @@ RUN curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${
 RUN mkdir -p /var/lib/keasy
 COPY --from=builder /src/control-plane/target/release/control-plane /usr/local/bin/control-plane
 
-EXPOSE 9000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:9000/healthz || exit 1
-
+# A one-shot CLI: no port, no HTTP health endpoint (the old EXPOSE 9000 + HEALTHCHECK
+# were leftovers from the deleted HTTP control-plane service and never passed).
 ENTRYPOINT ["control-plane"]

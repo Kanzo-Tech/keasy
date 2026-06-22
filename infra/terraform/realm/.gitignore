@@ -4,6 +4,8 @@
 .terraform/
 .terraform.tfstate.lock.info
 # Operator-local tenant registry + creds (PII/secrets stay off git).
-*.auto.tfvars
 terraform.tfvars
 # Keep .terraform.lock.hcl tracked.
+
+# but DO track the git version-of-record:
+!images.auto.tfvars

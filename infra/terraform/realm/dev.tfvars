@@ -5,9 +5,8 @@
 kc_hostname = "localhost:3000"
 base_domain = "localhost"
 
-deploy_stacks = false
-server_image  = "unused-in-dev"
-web_image     = "unused-in-dev"
+deploy_stacks   = false
+release_version = "dev"
 
 # Federate to the local Dex container (offline SSO).
 idp = {

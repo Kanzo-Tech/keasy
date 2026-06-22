@@ -7,8 +7,6 @@ kc_admin_password = "from-platform-output"
 kc_hostname       = "auth.keasy.example.com"
 base_domain       = "keasy.example.com"
 
-server_image = "ghcr.io/kanzo-tech/keasy-server:0.0.3"
-web_image    = "ghcr.io/kanzo-tech/keasy-web:0.0.3"
 
 # SSO IdP — users log in here; Keycloak links to the declared user by email.
 # Google example shown; swap endpoints for any OIDC IdP.

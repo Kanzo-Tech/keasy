@@ -4,7 +4,9 @@
 # Skipped entirely in dev (deploy_stacks=false): the app runs via docker-compose there.
 
 locals {
-  stack_tenants = var.deploy_stacks ? var.tenants : {}
+  stack_tenants        = var.deploy_stacks ? var.tenants : {}
+  default_server_image = "${var.image_repo_prefix}-server:${var.release_version}"
+  default_web_image    = "${var.image_repo_prefix}-web:${var.release_version}"
 }
 
 resource "random_password" "session" {
@@ -55,7 +57,7 @@ resource "docker_service" "server" {
 
   task_spec {
     container_spec {
-      image = coalesce(each.value.server_image, var.server_image)
+      image = coalesce(each.value.server_image, local.default_server_image)
       env = {
         KEASY_BASE_URL                = "https://${each.key}.${var.base_domain}"
         KEASY_WORKSPACE_NAME          = each.value.display_name
@@ -162,7 +164,7 @@ resource "docker_service" "web" {
 
   task_spec {
     container_spec {
-      image = coalesce(each.value.web_image, var.web_image)
+      image = coalesce(each.value.web_image, local.default_web_image)
     }
     resources {
       limits {

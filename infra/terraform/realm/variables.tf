@@ -37,12 +37,15 @@ variable "idp" {
   })
 }
 
-# ── Fleet image defaults ─────────────────────────────────────────────────────
-variable "server_image" {
+# ── Fleet version — ONE value, git-tracked in images.auto.tfvars ─────────────
+# The release tag (e.g. "0.0.5"). server/web image refs are derived from it, so there
+# is a single version-of-record (the git release tag), no per-image pins to drift.
+variable "release_version" {
   type = string
 }
-variable "web_image" {
-  type = string
+variable "image_repo_prefix" {
+  type    = string
+  default = "ghcr.io/kanzo-tech/keasy"
 }
 
 # ── The tenant fleet — the declarative registry (operator-local tfvars) ───────

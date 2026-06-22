@@ -16,7 +16,10 @@ set -euo pipefail
 
 ENV_FILE="${KEASY_ENV_FILE:-deploy/environments/prod/.env}"
 [ -f "$ENV_FILE" ] || { echo "✗ env file not found: $ENV_FILE (run bootstrap first)"; exit 1; }
-set -a; . "$ENV_FILE"; set +a
+# Fleet image pins are git-tracked fleet-config in the sibling versions.env (not in
+# .env, which is operator secrets + hostnames). Source both.
+VERSIONS_FILE="$(dirname "$ENV_FILE")/versions.env"
+set -a; . "$ENV_FILE"; [ -f "$VERSIONS_FILE" ] && . "$VERSIONS_FILE"; set +a
 
 : "${KC_HOSTNAME:?KC_HOSTNAME missing in $ENV_FILE}"
 : "${KEASY_BASE_DOMAIN:?KEASY_BASE_DOMAIN missing in $ENV_FILE}"

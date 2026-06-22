@@ -2,22 +2,25 @@
 
 > **The tenant fleet is no longer declared here.** A tenant **is** a Keycloak
 > Organization (the source of truth); the control-plane has no git inventory and no
-> local registry. The `tenants/*.yaml` files and `versions.env` are **obsolete** —
-> the control-plane does not read them. They are kept only as historical artifacts.
+> local registry. The `tenants/*.yaml` files are **obsolete** — tenants live in
+> Keycloak, not git — and are kept only as historical artifacts.
 
 ```
 deploy/environments/<env>/
-  .env                  # operator env: hostnames, secrets, fleet image pins (live)
-  versions.env          # OBSOLETE — no longer read by the control-plane
+  .env                  # operator secrets + hostnames (gitignored) — NO image pins
+  versions.env          # fleet image pins (git-tracked fleet-config) — the live source
   tenants/              # OBSOLETE — tenants live in Keycloak, not git
 ```
 
 ## Image pins (live)
 
-The fleet default images come from `KEASY_SERVER_IMAGE` / `KEASY_WEB_IMAGE` in
-`deploy/environments/<env>/.env` (consumed by `infra/stack/cp.sh` as
-`CP_SERVER_IMAGE` / `CP_WEB_IMAGE`). To canary a single tenant, pin its org
-`server_image` attribute instead of the fleet default.
+The fleet default images are the three `KEASY_*_IMAGE` pins in
+`deploy/environments/<env>/versions.env` — git-tracked fleet-config (no per-tenant
+data, no PII; just the fleet's version). `infra/stack/bootstrap.sh` and
+`infra/stack/cp.sh` source it alongside `.env` (which holds only operator secrets +
+hostnames), so the pin lives in exactly one place. `cp.sh` passes them on as
+`CP_SERVER_IMAGE` / `CP_WEB_IMAGE`. To canary a single tenant, set its org
+`server_image` attribute instead of bumping the fleet default.
 
 ## Tenant lifecycle
 

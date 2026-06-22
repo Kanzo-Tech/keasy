@@ -19,11 +19,11 @@ services:
       retries: 5
 
   keycloak:
-    # Pinned to 26.2 — 26.5.x regressed on realm import of an organizations-enabled
-    # realm (duplicate manage-organizations → "Duplicate resource error"). We don't
-    # need 26.5: the org-invite-by-email flow (W2) works since Organizations GA (26.0).
-    image: quay.io/keycloak/keycloak:26.2
-    command: ["start-dev", "--import-realm"]
+    # Boots EMPTY — the realm is provisioned declaratively by the keycloak-realm
+    # (terraform) service below, the SAME config prod applies. Pinned to 26.2 (26.5.x
+    # regressed on org-enabled realms); Organizations GA since 26.0.
+    image: ${KEASY_KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.2}
+    command: ["start-dev"]
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
@@ -37,9 +37,6 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-changeme}
       KC_PROXY_HEADERS: xforwarded
-      KEASY_OIDC_CLIENT_SECRET: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
-    volumes:
-      - ./infra/keycloak/realm-import:/opt/keycloak/data/import
     depends_on:
       keycloak-postgres:
         condition: service_healthy
@@ -53,6 +50,54 @@ services:
       timeout: 10s
       retries: 10
       start_period: 300s
+
+  # ── Realm provisioning (declarative — the same Terraform config as prod) ─────
+  # One-shot: mint the least-privilege keasy-terraform client (only create-realm), then
+  # `terraform apply` the realm. Both exit after running; idempotent on re-up.
+  kc-mint:
+    image: ${KEASY_KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.2}
+    restart: "no"
+    entrypoint: ["/bin/bash", "-ec"]
+    command:
+      - |
+        kc(){ /opt/keycloak/bin/kcadm.sh "$$@"; }
+        until kc config credentials --server http://keycloak:8080/auth --realm master \
+            --user admin --password "$$KC_ADMIN_PASSWORD" >/dev/null 2>&1; do
+          echo "waiting for keycloak..."; sleep 3; done
+        cid=$$(kc get clients -r master -q clientId=keasy-terraform --fields id --format csv --noquotes || true)
+        if [ -z "$$cid" ]; then
+          kc create clients -r master -s clientId=keasy-terraform -s enabled=true \
+            -s publicClient=false -s serviceAccountsEnabled=true -s standardFlowEnabled=false \
+            -s secret="$$KC_TF_CLIENT_SECRET"
+        else
+          kc update "clients/$$cid" -r master -s secret="$$KC_TF_CLIENT_SECRET"
+        fi
+        kc add-roles -r master --uusername service-account-keasy-terraform --rolename create-realm || true
+        echo "keasy-terraform ready"
+    environment:
+      KC_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-changeme}
+      KC_TF_CLIENT_SECRET: ${KC_TF_CLIENT_SECRET:-keasy-tf-dev-secret}
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  keycloak-realm:
+    image: ${KEASY_TERRAFORM_IMAGE:-hashicorp/terraform:1.9}
+    restart: "no"
+    working_dir: /work
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - terraform init -input=false && terraform apply -input=false -auto-approve
+    volumes:
+      - ./infra/keycloak/terraform:/work
+    environment:
+      TF_VAR_kc_url: http://keycloak:8080
+      TF_VAR_tf_client_secret: ${KC_TF_CLIENT_SECRET:-keasy-tf-dev-secret}
+      TF_VAR_cp_oidc_secret: ${CP_OIDC_SECRET:-keasy-cp-dev-secret}
+      TF_VAR_server_oidc_secret: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
+    depends_on:
+      kc-mint:
+        condition: service_completed_successfully
 
   # ── Application ─────────────────────────────────────────────────────────────
 
@@ -84,6 +129,8 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
+      keycloak-realm:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/healthz/live"]
       interval: 30s

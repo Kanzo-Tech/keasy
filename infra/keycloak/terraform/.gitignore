@@ -1,6 +1,0 @@
-# Terraform state (contains secrets) + provider plugins live on the manager only.
-*.tfstate
-*.tfstate.*
-.terraform/
-.terraform.tfstate.lock.info
-# Keep .terraform.lock.hcl tracked — it pins provider hashes.

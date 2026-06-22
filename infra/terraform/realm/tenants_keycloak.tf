@@ -30,9 +30,13 @@ resource "keycloak_openid_client" "tenant" {
   name                  = each.value.display_name
   enabled               = true
   access_type           = "CONFIDENTIAL"
+  client_secret         = each.value.client_secret # null ⇒ Keycloak generates
   standard_flow_enabled = true
-  valid_redirect_uris   = ["https://${each.key}.${var.base_domain}/v1/auth/oidc-callback"]
-  web_origins           = ["+"]
+  valid_redirect_uris = [
+    "https://${each.key}.${var.base_domain}/v1/auth/oidc-callback",
+    "http://localhost:3000/v1/auth/oidc-callback", # dev (compose)
+  ]
+  web_origins = ["+"]
 }
 
 resource "keycloak_role" "owner" {

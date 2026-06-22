@@ -1,51 +1,56 @@
 # Per-tenant Swarm stack — the declarative replacement for control-plane/src/docker.rs
 # render_stack + create_secrets. One server + web docker_service per tenant, with the
 # OIDC secret sourced from the tenant's Keycloak client (no hand-off, no minting).
+# Skipped entirely in dev (deploy_stacks=false): the app runs via docker-compose there.
+
+locals {
+  stack_tenants = var.deploy_stacks ? var.tenants : {}
+}
 
 resource "random_password" "session" {
-  for_each = var.tenants
+  for_each = local.stack_tenants
   length   = 48
   special  = false
 }
 resource "random_password" "api_key" {
-  for_each = var.tenants
+  for_each = local.stack_tenants
   length   = 48
   special  = false
 }
 resource "random_password" "secret_key" {
-  for_each = var.tenants
+  for_each = local.stack_tenants
   length   = 48
   special  = false
 }
 
 resource "docker_secret" "oidc" {
-  for_each = var.tenants
+  for_each = local.stack_tenants
   name     = "keasy-ws-${each.key}-oidc"
   data     = base64encode(keycloak_openid_client.tenant[each.key].client_secret)
 }
 resource "docker_secret" "session" {
-  for_each = var.tenants
+  for_each = local.stack_tenants
   name     = "keasy-ws-${each.key}-session"
   data     = base64encode(random_password.session[each.key].result)
 }
 resource "docker_secret" "api_key" {
-  for_each = var.tenants
+  for_each = local.stack_tenants
   name     = "keasy-ws-${each.key}-api-key"
   data     = base64encode(random_password.api_key[each.key].result)
 }
 resource "docker_secret" "secret_key" {
-  for_each = var.tenants
+  for_each = local.stack_tenants
   name     = "keasy-ws-${each.key}-secret-key"
   data     = base64encode(random_password.secret_key[each.key].result)
 }
 
 resource "docker_volume" "data" {
-  for_each = var.tenants
+  for_each = local.stack_tenants
   name     = "keasy-ws-${each.key}-data"
 }
 
 resource "docker_service" "server" {
-  for_each = var.tenants
+  for_each = local.stack_tenants
   name     = "keasy-ws-${each.key}-server"
 
   task_spec {
@@ -152,7 +157,7 @@ resource "docker_service" "server" {
 }
 
 resource "docker_service" "web" {
-  for_each = var.tenants
+  for_each = local.stack_tenants
   name     = "keasy-ws-${each.key}-web"
 
   task_spec {

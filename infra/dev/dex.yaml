@@ -1,0 +1,33 @@
+# Dev SSO IdP (Dex) — gives `make dev` the SAME SSO federation path as prod, offline.
+# Keycloak federates to this as an upstream OIDC IdP; on login Keycloak links to the
+# pre-declared user by email (dev@keasy.local). No internet, no real OAuth client.
+#
+# Dual-URL note (the classic dev-OIDC gotcha): the browser reaches Dex at
+# localhost:5556 (issuer + authorization_url), while Keycloak reaches it server-side at
+# dex:5556 (token_url/user_info_url). The realm's IdP sets these endpoints EXPLICITLY
+# (infra/terraform/realm/dev.tfvars), so no discovery against the issuer is needed.
+issuer: http://localhost:5556/dex
+
+storage:
+  type: memory
+
+web:
+  http: 0.0.0.0:5556
+
+oauth2:
+  skipApprovalScreen: true
+
+staticClients:
+  - id: keycloak
+    name: Keycloak
+    secret: keycloak-dex-secret
+    redirectURIs:
+      - http://localhost:3000/auth/realms/keasy/broker/dex/endpoint
+
+enablePasswordDB: true
+staticPasswords:
+  # Login: dev@keasy.local / password  (bcrypt hash of "password")
+  - email: "dev@keasy.local"
+    hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4i"
+    username: "dev"
+    userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"

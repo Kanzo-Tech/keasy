@@ -54,8 +54,19 @@ variable "tenants" {
     members      = optional(list(string), [])
     server_image = optional(string)
     web_image    = optional(string)
+    # Fixed OIDC client secret — leave null in prod (Keycloak generates it); dev sets a
+    # known value so the compose server can use it without a state handoff.
+    client_secret = optional(string)
   }))
   default = {}
+}
+
+# Whether to create the per-tenant Swarm stacks (server/web docker_service + secrets).
+# Prod: true. Dev: false — the identity (Keycloak) is provisioned by this module, but the
+# app runs via docker-compose for a fast inner loop (dev/prod parity where it matters).
+variable "deploy_stacks" {
+  type    = bool
+  default = true
 }
 
 variable "network_name" {

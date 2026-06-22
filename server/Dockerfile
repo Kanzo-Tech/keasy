@@ -19,8 +19,6 @@ COPY rmlext /src/rmlext
 
 # ── keasy-server ──────────────────────────────────────────────────────────
 # Dep cache: build manifests with a dummy main, then swap in real source.
-# keasy-keycloak is a path dep at ../keycloak — copy it before the dep cache.
-COPY keasy/keycloak /src/keasy/keycloak
 WORKDIR /src/keasy/server
 COPY keasy/server/Cargo.toml keasy/server/Cargo.lock ./
 RUN mkdir src && echo 'fn main() {}' > src/main.rs && cargo build --release && rm -rf src
@@ -47,8 +45,8 @@ RUN mkdir -p /etc/pki/tls/certs \
 # to a keasy-operated bucket so a node loss / instance migration doesn't drop the
 # workspace's metadata. (The DuckLake catalog.sqlite is NOT replicated — it is a
 # derived projection the reconciler rebuilds from the jobs.) The binary ships
-# always; it is only USED when LITESTREAM_REPLICA_URL is set (the control-plane
-# sets it per tenant) — see entrypoint.sh, which otherwise runs the server directly.
+# always; it is only USED when LITESTREAM_REPLICA_URL is set (the tenant's
+# docker_service sets it per tenant) — see entrypoint.sh, which otherwise runs it directly.
 ARG LITESTREAM_VERSION=0.3.13
 RUN curl -fsSL "https://github.com/benbjohnson/litestream/releases/download/v${LITESTREAM_VERSION}/litestream-v${LITESTREAM_VERSION}-linux-amd64.tar.gz" \
       | tar -xz -C /usr/local/bin litestream

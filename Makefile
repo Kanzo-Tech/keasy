@@ -17,7 +17,7 @@ COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 # so a re-run after a small rmlext change is incremental (seconds), not a full
 # DuckDB rebuild. Only `make clean` wipes those caches.
 
-.PHONY: help dev demo down prod build logs restart clean ps deploy-base redeploy-base reset-keycloak tenant reconcile deprovision workspaces
+.PHONY: help dev demo down prod build logs restart clean ps deploy-platform deploy-realm
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -62,32 +62,14 @@ shell-%: ## Open shell in container (e.g., make shell-server)
 ps: ## Show running services
 	$(COMPOSE_DEV) ps
 
-# ── Prod / Swarm deploy ────────────────────────────────────────────────────
-deploy-base: ## Bootstrap the Swarm base stack (idempotent) — reads deploy/environments/prod/.env
-	infra/stack/bootstrap.sh
+# ── Prod / Swarm deploy — Terraform owns everything (see infra/terraform/README.md) ──
+# Two phases: platform (Traefik+Keycloak+Postgres) then realm (SSO + tenants). Adding a
+# tenant = edit infra/terraform/realm/terraform.tfvars + `make deploy-realm`. No shell, no CLI.
+deploy-platform: ## Phase 1 — apply the platform (needs -var kc_hostname=… acme_email=…)
+	terraform -chdir=infra/terraform/platform init -input=false
+	terraform -chdir=infra/terraform/platform apply
 
-redeploy-base: ## Tear down + re-bootstrap the base stack (realm changes: just re-run, terraform reconciles in place)
-	infra/stack/teardown.sh keasy-base
-	infra/stack/bootstrap.sh
-
-reset-keycloak: ## DESTRUCTIVE nuke of identity — wipes Keycloak's DB (realm/users/orgs). Rarely needed: terraform reconciles realm config in place.
-	@printf 'This deletes the Keycloak Postgres volume (realm, users, orgs). Type the realm name "keasy" to confirm: '; \
-	  read ans; [ "$$ans" = "keasy" ] || { echo "aborted"; exit 1; }
-	infra/stack/teardown.sh keasy-base
-	docker volume rm keasy-base_keycloak-postgres
-	infra/stack/bootstrap.sh
-
-tenant: ## Provision a tenant: make tenant slug=acme name="Acme Corp" owner=owner@acme.com
-	@test -n "$(slug)" && test -n "$(name)" && test -n "$(owner)" \
-	  || { echo "usage: make tenant slug=<slug> name=<name> owner=<owner-email>"; exit 1; }
-	@infra/stack/cp.sh provision --name "$(name)" --handle "$(slug)" --owner-email "$(owner)"
-
-reconcile: ## Re-ensure every tenant's stack (drift heal + version rollout)
-	@infra/stack/cp.sh reconcile
-
-deprovision: ## Tear a tenant down: make deprovision slug=acme
-	@test -n "$(slug)" || { echo "usage: make deprovision slug=<slug>"; exit 1; }
-	@infra/stack/cp.sh deprovision $(slug)
-
-workspaces: ## List provisioned workspaces (Keycloak Organizations)
-	@infra/stack/cp.sh list
+deploy-realm: ## Phase 2 — apply the realm + tenants (reads realm/terraform.tfvars; feeds the platform admin pw)
+	terraform -chdir=infra/terraform/realm init -input=false
+	terraform -chdir=infra/terraform/realm apply \
+	  -var kc_admin_password="$$(terraform -chdir=infra/terraform/platform output -raw kc_admin_password)"

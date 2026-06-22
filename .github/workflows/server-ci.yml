@@ -1,10 +1,9 @@
 name: server-ci
 
-# Rust CI for keasy's three independent crates (server, keycloak, control-plane —
-# NOT a single workspace). Mirrors rmlext's ci.yml gates. keasy-server's only fossil
-# dependency, the `fossil-run-status` git-dep, resolves through the [patch] in
-# server/Cargo.toml to a sibling rmlext checkout — so the server job also clones the
-# private fossil-lang repo next to keasy.
+# Rust CI for the keasy-server crate. keasy-server's only fossil dependency, the
+# `fossil-run-status` git-dep, resolves through the [patch] in server/Cargo.toml to a
+# sibling rmlext checkout — so the server job also clones the private fossil-lang repo
+# next to keasy.
 #
 # Prereq (operator): a `FOSSIL_LANG_TOKEN` secret — a token (PAT / fine-grained) with
 # `contents: read` on Kanzo-Tech/fossil-lang, used to clone it for the patch.
@@ -25,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crate: [server, keycloak, control-plane]
+        crate: [server]
     steps:
       - uses: actions/checkout@v4
         with:

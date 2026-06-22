@@ -21,19 +21,13 @@ pub struct MeResponse {
     pub org: Option<MeOrg>,
 }
 
-/// A workspace the user can switch to, as shown in the switcher. Resolved from
-/// the user's Keycloak Organizations (`id` = organization id).
-#[derive(serde::Serialize, utoipa::ToSchema)]
-pub struct WorkspaceSummary {
-    pub id: String,
-    pub name: String,
-    pub url: String,
-}
-
 #[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct WorkspacesResponse {
-    pub workspaces: Vec<WorkspaceSummary>,
-    pub current_id: String,
+    /// Slugs of every workspace the user belongs to, from the `workspaces` token
+    /// claim (captured at login). The web builds each `<slug>.<domain>` link.
+    pub workspaces: Vec<String>,
+    /// This instance's slug — the "current" entry in the switcher.
+    pub current: String,
 }
 
 /// GET /v1/auth/me
@@ -96,38 +90,26 @@ pub async fn get_me(
 
 /// GET /v1/auth/workspaces
 ///
-/// Returns the workspaces the authenticated user belongs to — their Keycloak
-/// Organizations, each carrying its display name and home URL. Used by the
-/// sidebar workspace switcher.
+/// The workspaces the authenticated user belongs to, for the sidebar switcher.
+/// Sourced from the `workspaces` token claim (captured at login) — no runtime
+/// Keycloak call; membership is declared in Terraform.
 #[utoipa::path(get, path = "/v1/auth/workspaces", tag = "Auth",
     responses((status = 200, description = "List of accessible workspaces", body = WorkspacesResponse))
 )]
 pub async fn list_workspaces(
-    _session: Session,
+    session: Session,
     State(state): State<AppState>,
-    auth_user: axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
+    _auth_user: axum::Extension<crate::middleware::session_auth::AuthenticatedUser>,
 ) -> Result<impl IntoResponse, AuthError> {
-    // "My workspaces" = the Keycloak Organizations the user belongs to. Each org
-    // carries its display name and home URL (the `keasy.url` attribute), so the
-    // whole switcher resolves from identity in a single call — no local cache.
-    let workspaces: Vec<WorkspaceSummary> = if let Some(kc_admin) = &state.auth.keycloak_admin {
-        match kc_admin.list_user_organizations(&auth_user.user_id).await {
-            Ok(orgs) => orgs
-                .into_iter()
-                .map(|w| WorkspaceSummary { id: w.id, name: w.name, url: w.url })
-                .collect(),
-            Err(e) => {
-                tracing::warn!(error = %e, user_id = %auth_user.user_id, "Failed to read organizations from Keycloak");
-                Vec::new()
-            }
-        }
-    } else {
-        Vec::new()
-    };
+    let workspaces = session
+        .get::<Vec<String>>("workspaces")
+        .await
+        .map_err(|e| AuthError::Internal(format!("session get workspaces: {e}")))?
+        .unwrap_or_default();
 
-    let current_id = state.auth.oidc_org_id.clone().unwrap_or_default();
+    let current = state.workspace_slug.clone().unwrap_or_default();
 
-    Ok(data_response(WorkspacesResponse { workspaces, current_id }))
+    Ok(data_response(WorkspacesResponse { workspaces, current }))
 }
 
 /// POST /v1/auth/logout

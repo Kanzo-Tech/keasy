@@ -207,14 +207,12 @@ mod tests {
             db,
             api_key: secrecy::SecretString::from("test"),
             base_url: String::new(),
+            workspace_slug: None,
             auth: AuthServices {
                 oidc_state: None,
-                keycloak_admin: None,
                 oidc_issuer_url: None,
                 oidc_client_id: None,
                 oidc_client_secret: None,
-                oidc_org_id: None,
-                owner_email: None,
             },
             catalog: Some(catalog.clone()),
         };

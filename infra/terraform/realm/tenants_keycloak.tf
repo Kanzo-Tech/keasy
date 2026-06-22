@@ -14,6 +14,13 @@ locals {
       { for e in t.members : "${slug}|${e}" => { slug = slug, email = e, role = "member" } },
     )
   ]...)
+
+  # email => the slugs that user belongs to (feeds the `workspaces` switcher claim).
+  user_workspaces = {
+    for e in local.all_emails : e => [
+      for slug, t in var.tenants : slug if contains(concat(t.owners, t.members), e)
+    ]
+  }
 }
 
 resource "keycloak_openid_client" "tenant" {
@@ -63,7 +70,9 @@ resource "keycloak_generic_protocol_mapper" "keasy_role" {
   }
 }
 
-# Pre-declared users (linked from the IdP by email on first SSO login).
+# Pre-declared users (linked from the IdP by email on first SSO login). The
+# `workspaces` attribute (## = multivalued) lists every workspace they belong to —
+# emitted into the token by the per-client mapper below to feed the switcher.
 resource "keycloak_user" "u" {
   for_each       = local.all_emails
   realm_id       = keycloak_realm.keasy.id
@@ -71,6 +80,28 @@ resource "keycloak_user" "u" {
   email          = each.value
   enabled        = true
   email_verified = true
+  attributes = {
+    workspaces = join("##", local.user_workspaces[each.value])
+  }
+}
+
+# Emit the user's `workspaces` attribute as a multivalued token claim, per tenant client.
+resource "keycloak_generic_protocol_mapper" "workspaces" {
+  for_each        = var.tenants
+  realm_id        = keycloak_realm.keasy.id
+  client_id       = keycloak_openid_client.tenant[each.key].id
+  name            = "workspaces"
+  protocol        = "openid-connect"
+  protocol_mapper = "oidc-usermodel-attribute-mapper"
+  config = {
+    "user.attribute"       = "workspaces"
+    "claim.name"           = "workspaces"
+    "jsonType.label"       = "String"
+    "multivalued"          = "true"
+    "id.token.claim"       = "true"
+    "access.token.claim"   = "false"
+    "userinfo.token.claim" = "false"
+  }
 }
 
 # owner/member role on the tenant client — the declarative membership.

@@ -36,12 +36,9 @@ pub struct ServerConfig {
     /// Display name of this workspace. Read from `KEASY_WORKSPACE_NAME`,
     /// default `"Workspace"`. Used to seed the local workspace identity at boot.
     pub workspace_name: String,
-    /// Alias of this workspace's Keycloak Organization (its membership
-    /// container). Read from `KEASY_ORG_ALIAS`; resolved to an org id at boot.
-    pub org_alias: Option<String>,
-    /// Email the workspace was provisioned for. Read from `KEASY_OWNER_EMAIL`.
-    /// On first login, a matching identity is granted `owner` (else `member`).
-    pub owner_email: Option<String>,
+    /// This instance's workspace slug. Read from `KEASY_ORG_ALIAS`. The "current"
+    /// entry in the workspace switcher.
+    pub workspace_slug: Option<String>,
     /// Session cookie name — allows multiple Keasy instances on the same host.
     /// Read from KEASY_SESSION_COOKIE_NAME. Default "keasy.sid".
     pub session_cookie_name: String,
@@ -120,11 +117,7 @@ impl ServerConfig {
             .filter(|s| !s.trim().is_empty())
             .unwrap_or_else(|| "Workspace".to_string());
 
-        let org_alias = std::env::var("KEASY_ORG_ALIAS")
-            .ok()
-            .filter(|s| !s.trim().is_empty());
-
-        let owner_email = std::env::var("KEASY_OWNER_EMAIL")
+        let workspace_slug = std::env::var("KEASY_ORG_ALIAS")
             .ok()
             .filter(|s| !s.trim().is_empty());
 
@@ -150,8 +143,7 @@ impl ServerConfig {
             oidc_client_secret,
             oidc_internal_base_url,
             workspace_name,
-            org_alias,
-            owner_email,
+            workspace_slug,
             session_cookie_name,
         }
     }

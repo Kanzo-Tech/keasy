@@ -19,11 +19,11 @@ services:
       retries: 5
 
   keycloak:
-    # Pinned to 26.2 — 26.5.x regressed on realm import of an organizations-enabled
-    # realm (duplicate manage-organizations → "Duplicate resource error"). We don't
-    # need 26.5: the org-invite-by-email flow (W2) works since Organizations GA (26.0).
-    image: quay.io/keycloak/keycloak:26.2
-    command: ["start-dev", "--import-realm"]
+    # Boots EMPTY — the realm is provisioned declaratively by the keycloak-realm
+    # (terraform) service below, the SAME config prod applies. Pinned to 26.2 (26.5.x
+    # regressed on org-enabled realms); Organizations GA since 26.0.
+    image: ${KEASY_KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.2}
+    command: ["start-dev"]
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
@@ -37,9 +37,6 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-changeme}
       KC_PROXY_HEADERS: xforwarded
-      KEASY_OIDC_CLIENT_SECRET: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
-    volumes:
-      - ./infra/keycloak/realm-import:/opt/keycloak/data/import
     depends_on:
       keycloak-postgres:
         condition: service_healthy
@@ -53,6 +50,38 @@ services:
       timeout: 10s
       retries: 10
       start_period: 300s
+
+  # ── Dev SSO IdP (Dex) ───────────────────────────────────────────────────────
+  # Production-grade dev: the SAME SSO federation path as prod, offline. Keycloak
+  # federates to this; login as dev@keasy.local / password.
+  dex:
+    image: ghcr.io/dexidp/dex:v2.41.1
+    command: ["dex", "serve", "/etc/dex/config.yaml"]
+    volumes:
+      - ./infra/dev/dex.yaml:/etc/dex/config.yaml:ro
+    ports:
+      - "5556:5556"
+
+  # ── Realm provisioning — the SAME Terraform realm module as prod ─────────────
+  # deploy_stacks=false: provisions identity (realm/IdP/clients/users/roles) against the
+  # compose Keycloak; the app itself runs as the compose services below (fast loop). The
+  # provider authenticates as the bootstrap admin. One-shot; idempotent on re-up.
+  keycloak-realm:
+    image: ${KEASY_TERRAFORM_IMAGE:-hashicorp/terraform:1.9}
+    restart: "no"
+    working_dir: /work
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - terraform init -input=false && terraform apply -input=false -auto-approve -var-file=dev.tfvars -var kc_admin_password="$$KC_ADMIN_PASSWORD"
+    volumes:
+      - ./infra/terraform/realm:/work
+    environment:
+      KC_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-changeme}
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      dex:
+        condition: service_started
 
   # ── Application ─────────────────────────────────────────────────────────────
 
@@ -75,8 +104,11 @@ services:
       KEASY_SECRET_KEY: ${KEASY_SECRET_KEY:-dev-only-insecure-secret-key-change-me}
       KEASY_SESSION_SECRET: ${KEASY_SESSION_SECRET:-dev-only-insecure-session-secret-change-me}
       KEASY_BASE_URL: http://localhost:3000
+      # Dev runs as the `dev` tenant (provisioned by the realm module / dev.tfvars).
+      KEASY_ORG_ALIAS: dev
+      KEASY_WORKSPACE_NAME: Dev Workspace
       KEASY_OIDC_ISSUER_URL: http://localhost:3000/auth/realms/keasy
-      KEASY_OIDC_CLIENT_ID: keasy-server
+      KEASY_OIDC_CLIENT_ID: keasy-ws-dev
       KEASY_OIDC_CLIENT_SECRET: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
       KEASY_OIDC_INTERNAL_BASE_URL: http://keycloak:8080
     volumes:
@@ -84,6 +116,8 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
+      keycloak-realm:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/healthz/live"]
       interval: 30s

@@ -1,0 +1,33 @@
+# Copy to terraform.tfvars (gitignored) on the manager. This is the tenant REGISTRY —
+# emails are PII, so this file stays operator-local, never committed.
+
+kc_url            = "http://keycloak:8080"
+kc_admin_username = "admin"
+kc_admin_password = "from-platform-output"
+kc_hostname       = "auth.keasy.example.com"
+base_domain       = "keasy.example.com"
+
+server_image = "ghcr.io/kanzo-tech/keasy-server:0.0.3"
+web_image    = "ghcr.io/kanzo-tech/keasy-web:0.0.3"
+
+# SSO IdP — users log in here; Keycloak links to the declared user by email.
+# Google example shown; swap endpoints for any OIDC IdP.
+idp = {
+  alias             = "google"
+  display_name      = "Google"
+  client_id         = "xxxx.apps.googleusercontent.com"
+  client_secret     = "xxxx"
+  authorization_url = "https://accounts.google.com/o/oauth2/v2/auth"
+  token_url         = "https://oauth2.googleapis.com/token"
+  user_info_url     = "https://openidconnect.googleapis.com/v1/userinfo"
+  issuer            = "https://accounts.google.com"
+}
+
+# The fleet. Adding a tenant = an entry here + `terraform apply`.
+tenants = {
+  acme = {
+    display_name = "Acme"
+    owners       = ["angel.iglesias@kanzo.tech"]
+    members      = []
+  }
+}

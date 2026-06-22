@@ -40,10 +40,9 @@ export const queryKeys = {
     catalogStorage: ["catalog-storage"] as const,
   },
 
-  // Org
+  // Workspace legal identity
   org: {
     identity: ["org-identity"] as const,
-    users: ["org-users"] as const,
   },
 
   // AI

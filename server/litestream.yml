@@ -7,8 +7,8 @@
 # keasy.db) + the Parquet in the sink. So it needs no replication, and we avoid
 # depending on the WAL compatibility of the file DuckDB's sqlite backend writes.
 #
-# Active only when LITESTREAM_REPLICA_URL is set (the control-plane sets it to the
-# per-tenant prefix, e.g. s3://bucket/<workspace> or abs://…/<workspace>); unset →
+# Active only when LITESTREAM_REPLICA_URL is set (the tenant's docker_service sets it to
+# the per-tenant prefix, e.g. s3://bucket/<workspace> or abs://…/<workspace>); unset →
 # entrypoint.sh runs the server directly with no replication (dev / local).
 # Credentials come from the LITESTREAM_* env (a shared keasy-operated secret):
 #   S3:    LITESTREAM_ACCESS_KEY_ID / LITESTREAM_SECRET_ACCESS_KEY

@@ -114,9 +114,9 @@ export interface paths {
         };
         /**
          * GET /v1/auth/workspaces
-         * @description Returns the workspaces the authenticated user belongs to — their Keycloak
-         *     Organizations, each carrying its display name and home URL. Used by the
-         *     sidebar workspace switcher.
+         * @description The workspaces the authenticated user belongs to, for the sidebar switcher.
+         *     Sourced from the `workspaces` token claim (captured at login) — no runtime
+         *     Keycloak call; membership is declared in Terraform.
          */
         get: operations["list_workspaces"];
         put?: never;
@@ -493,60 +493,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/org/invites": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Invite a person to this workspace by email via a native Keycloak Organization
-         *     invitation. Keycloak emails them a registration (or confirm-membership) link;
-         *     on accept they join the org as a member and the tenant grants `member` on their
-         *     first login. Owner-only.
-         */
-        post: operations["create_org_invite"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/org/users": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_users"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/org/users/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["remove_user"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/settings/ai/providers": {
         parameters: {
             query?: never;
@@ -859,9 +805,6 @@ export interface components {
             /** @description The connection the member picked as the output destination (job config). */
             sink_connection_id?: string | null;
         };
-        CreateOrgInvitePayload: {
-            email: string;
-        };
         /** @description Typed envelope for successful API responses: `{ "data": T }`. */
         DataResponse_Value: {
             data: unknown;
@@ -1163,27 +1106,14 @@ export interface components {
             /** @description The vertex type / `GraphAr` `type` (e.g. `Person`). */
             type: string;
         };
-        /** @description A workspace member, resolved from Keycloak client-role mappings. */
-        WorkspaceMember: {
-            email: string;
-            first_name: string;
-            joined_at: string;
-            last_name: string;
-            role: string;
-            user_id: string;
-        };
-        /**
-         * @description A workspace the user can switch to, as shown in the switcher. Resolved from
-         *     the user's Keycloak Organizations (`id` = organization id).
-         */
-        WorkspaceSummary: {
-            id: string;
-            name: string;
-            url: string;
-        };
         WorkspacesResponse: {
-            current_id: string;
-            workspaces: components["schemas"]["WorkspaceSummary"][];
+            /** @description This instance's slug — the "current" entry in the switcher. */
+            current: string;
+            /**
+             * @description Slugs of every workspace the user belongs to, from the `workspaces` token
+             *     claim (captured at login). The web builds each `<slug>.<domain>` link.
+             */
+            workspaces: string[];
         };
     };
     responses: never;
@@ -2427,90 +2357,6 @@ export interface operations {
             };
             /** @description Validation error */
             400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    create_org_invite: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateOrgInvitePayload"];
-            };
-        };
-        responses: {
-            /** @description Invitation sent */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Insufficient role */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    list_users: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of users in the org */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorkspaceMember"][];
-                };
-            };
-        };
-    };
-    remove_user: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description User ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description User removed */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Insufficient role */
-            403: {
                 headers: {
                     [name: string]: unknown;
                 };

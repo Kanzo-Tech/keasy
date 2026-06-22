@@ -142,7 +142,7 @@
           "Auth"
         ],
         "summary": "GET /v1/auth/workspaces",
-        "description": "Returns the workspaces the authenticated user belongs to — their Keycloak\nOrganizations, each carrying its display name and home URL. Used by the\nsidebar workspace switcher.",
+        "description": "The workspaces the authenticated user belongs to, for the sidebar switcher.\nSourced from the `workspaces` token claim (captured at login) — no runtime\nKeycloak call; membership is declared in Terraform.",
         "operationId": "list_workspaces",
         "responses": {
           "200": {
@@ -1384,86 +1384,6 @@
         }
       }
     },
-    "/v1/org/invites": {
-      "post": {
-        "tags": [
-          "Organization"
-        ],
-        "summary": "Invite a person to this workspace by email via a native Keycloak Organization\ninvitation. Keycloak emails them a registration (or confirm-membership) link;\non accept they join the org as a member and the tenant grants `member` on their\nfirst login. Owner-only.",
-        "operationId": "create_org_invite",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateOrgInvitePayload"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "Invitation sent"
-          },
-          "400": {
-            "description": "Validation error"
-          },
-          "403": {
-            "description": "Insufficient role"
-          }
-        }
-      }
-    },
-    "/v1/org/users": {
-      "get": {
-        "tags": [
-          "Organization"
-        ],
-        "operationId": "list_users",
-        "responses": {
-          "200": {
-            "description": "List of users in the org",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/WorkspaceMember"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/org/users/{id}": {
-      "delete": {
-        "tags": [
-          "Organization"
-        ],
-        "operationId": "remove_user",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "User ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "User removed"
-          },
-          "403": {
-            "description": "Insufficient role"
-          }
-        }
-      }
-    },
     "/v1/settings/ai/providers": {
       "get": {
         "tags": [
@@ -2380,17 +2300,6 @@
               "null"
             ],
             "description": "The connection the member picked as the output destination (job config)."
-          }
-        }
-      },
-      "CreateOrgInvitePayload": {
-        "type": "object",
-        "required": [
-          "email"
-        ],
-        "properties": {
-          "email": {
-            "type": "string"
           }
         }
       },
@@ -3361,73 +3270,23 @@
           }
         }
       },
-      "WorkspaceMember": {
-        "type": "object",
-        "description": "A workspace member, resolved from Keycloak client-role mappings.",
-        "required": [
-          "user_id",
-          "role",
-          "email",
-          "first_name",
-          "last_name",
-          "joined_at"
-        ],
-        "properties": {
-          "email": {
-            "type": "string"
-          },
-          "first_name": {
-            "type": "string"
-          },
-          "joined_at": {
-            "type": "string"
-          },
-          "last_name": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string"
-          },
-          "user_id": {
-            "type": "string"
-          }
-        }
-      },
-      "WorkspaceSummary": {
-        "type": "object",
-        "description": "A workspace the user can switch to, as shown in the switcher. Resolved from\nthe user's Keycloak Organizations (`id` = organization id).",
-        "required": [
-          "id",
-          "name",
-          "url"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "url": {
-            "type": "string"
-          }
-        }
-      },
       "WorkspacesResponse": {
         "type": "object",
         "required": [
           "workspaces",
-          "current_id"
+          "current"
         ],
         "properties": {
-          "current_id": {
-            "type": "string"
+          "current": {
+            "type": "string",
+            "description": "This instance's slug — the \"current\" entry in the switcher."
           },
           "workspaces": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/WorkspaceSummary"
-            }
+              "type": "string"
+            },
+            "description": "Slugs of every workspace the user belongs to, from the `workspaces` token\nclaim (captured at login). The web builds each `<slug>.<domain>` link."
           }
         }
       }

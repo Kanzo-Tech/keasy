@@ -89,44 +89,6 @@ async fn main() {
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
     );
 
-    // Keycloak admin client — only active when all three OIDC config fields are present.
-    // Uses internal_base_url when set so admin API calls reach Keycloak via Docker DNS
-    // (the public issuer URL resolves to this server container, not Keycloak).
-    let keycloak_admin = match (&config.oidc_issuer_url, &config.oidc_client_id, &config.oidc_client_secret) {
-        (Some(issuer), Some(client_id), Some(secret)) => {
-            match keasy_server::keycloak::admin::KeycloakAdmin::new(
-                issuer,
-                client_id,
-                secret.clone(),
-                config.oidc_internal_base_url.as_deref(),
-            ) {
-                Ok(admin) => Some(admin),
-                Err(e) => {
-                    tracing::warn!(error = %e, "Failed to configure Keycloak admin client — instance registration will be unavailable");
-                    None
-                }
-            }
-        }
-        _ => None,
-    };
-
-    // Resolve this workspace's Keycloak Organization id from its alias. The org
-    // is the membership container; members, invites, and the switcher key off it.
-    let oidc_org_id = match (&keycloak_admin, &config.org_alias) {
-        (Some(admin), Some(alias)) => match admin.resolve_org_id(alias).await {
-            Ok(Some(id)) => Some(id),
-            Ok(None) => {
-                tracing::warn!(alias = %alias, "Keycloak organization not found for alias");
-                None
-            }
-            Err(e) => {
-                tracing::warn!(error = %e, alias = %alias, "Failed to resolve Keycloak organization");
-                None
-            }
-        },
-        _ => None,
-    };
-
     // Build OIDC relying party client — only when all three config fields are present.
     let oidc_state = match (&config.oidc_issuer_url, &config.oidc_client_id, &config.oidc_client_secret) {
         (Some(issuer), Some(client_id), Some(secret)) => {
@@ -158,12 +120,9 @@ async fn main() {
 
     let auth = AuthServices {
         oidc_state,
-        keycloak_admin,
         oidc_issuer_url: config.oidc_issuer_url,
         oidc_client_id: config.oidc_client_id,
         oidc_client_secret: config.oidc_client_secret,
-        oidc_org_id,
-        owner_email: config.owner_email,
     };
     // Server-side DuckLake catalog (authority over output metadata). Non-fatal
     // if it fails to open — the host keeps serving jobs and the reconciler
@@ -183,6 +142,7 @@ async fn main() {
         db,
         api_key: config.api_key,
         base_url: config.base_url,
+        workspace_slug: config.workspace_slug,
         auth,
         catalog,
     };

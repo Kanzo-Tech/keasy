@@ -50,12 +50,9 @@ use utoipa::OpenApi;
         crate::auth::routes::get_me,
         crate::auth::routes::logout,
         crate::auth::routes::list_workspaces,
-        // Organization
-        crate::routes::org::list_users,
-        crate::routes::org::remove_user,
+        // Workspace legal identity
         crate::routes::org::get_org_identity,
         crate::routes::org::update_org_identity,
-        crate::routes::org::create_org_invite,
         // Discovery
         crate::discovery::routes::resolve_output_urls,
         crate::discovery::routes::resolve_source_refs,
@@ -109,20 +106,16 @@ use utoipa::OpenApi;
         crate::settings::org::OrgSettings,
         crate::settings::preferences::Preferences,
         crate::settings::ai::AiSettingsPayload,
-        // Org members
-        crate::routes::org::WorkspaceMember,
         // Auth response types
         crate::auth::routes::MeResponse,
         crate::auth::routes::MeOrg,
-        crate::auth::routes::WorkspaceSummary,
         crate::auth::routes::WorkspacesResponse,
         crate::auth::routes::LogoutResponse,
         // Health
         crate::routes::health::ServiceStatusResponse,
         crate::routes::health::VersionResponse,
-        // Organization
+        // Workspace legal identity
         crate::routes::org::UpdateOrgIdentityPayload,
-        crate::routes::org::CreateOrgInvitePayload,
         crate::routes::org::OrgIdentityResponse,
         // Discovery
         crate::graph::types::TabularData,

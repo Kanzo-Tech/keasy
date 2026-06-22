@@ -44,6 +44,10 @@ use crate::auth::errors::AuthError;
 pub struct KeyasyIdTokenClaims {
     #[serde(rename = "keasy:role", default)]
     pub roles: Vec<String>,
+    /// Slugs of every workspace this user belongs to — feeds the switcher. Emitted
+    /// declaratively by Keycloak (a per-user `workspaces` attribute mapper).
+    #[serde(default)]
+    pub workspaces: Vec<String>,
 }
 
 impl openidconnect::AdditionalClaims for KeyasyIdTokenClaims {}
@@ -590,6 +594,12 @@ pub async fn oidc_callback(
         .await
         .map_err(|e| AuthError::Internal(format!("session insert tenant_role: {e}")))?;
 
+    // Persist the user's workspace slugs (from the `workspaces` claim) for the switcher.
+    session
+        .insert("workspaces", &claims.additional_claims().workspaces)
+        .await
+        .map_err(|e| AuthError::Internal(format!("session insert workspaces: {e}")))?;
+
     // 16. Set 24-hour fixed expiry (same as password auth pattern).
     session.set_expiry(Some(Expiry::AtDateTime(
         OffsetDateTime::now_utc() + time::Duration::hours(24),
@@ -613,47 +623,9 @@ pub async fn oidc_callback(
         .await
         .map_err(|e| AuthError::Internal(format!("upsert_user_session failed: {e}")))?;
 
-    // 19. First-login role grant. Keycloak owns *membership* (the Organization
-    //     invite added the user on accept); the tenant owns the client *role*. If
-    //     this token's `keasy:role` claim is empty ("none") yet the user is a
-    //     member of this workspace's org, grant the role now — `owner` iff their
-    //     email matches the provisioned owner, else `member` — and reflect it in
-    //     the session so they aren't "none" until the next login.
-    if tenant_role == "none"
-        && let (Some(kc), Some(client_id), Some(org_id)) = (
-            &state.auth.keycloak_admin,
-            &state.auth.oidc_client_id,
-            &state.auth.oidc_org_id,
-        )
-    {
-        match kc.list_user_organizations(&subject).await {
-            Ok(orgs) if orgs.iter().any(|o| &o.id == org_id) => {
-                let role = if state
-                    .auth
-                    .owner_email
-                    .as_deref()
-                    .is_some_and(|owner| owner.eq_ignore_ascii_case(&email_str))
-                {
-                    "owner"
-                } else {
-                    "member"
-                };
-                if let Err(e) = kc.assign_client_role(&subject, client_id, role).await {
-                    tracing::warn!(error = %e, user_id = %subject, "first-login role grant failed");
-                } else {
-                    let _ = session.insert("tenant_role", role).await;
-                    let _ = session.save().await;
-                    tracing::info!(user_id = %subject, role = %role, "first-login role granted");
-                }
-            }
-            // Not a member of this workspace's org → no access (stays "none").
-            Ok(_) => {}
-            Err(e) => {
-                tracing::warn!(error = %e, user_id = %subject, "first-login org membership lookup failed")
-            }
-        }
-    }
+    // Role + membership are assigned declaratively in Keycloak (Terraform), so the
+    // `keasy:role` claim is authoritative from the first login — no app-side grant.
 
-    // 20. Always redirect to dashboard.
+    // 19. Always redirect to dashboard.
     Ok(Redirect::to("/").into_response())
 }

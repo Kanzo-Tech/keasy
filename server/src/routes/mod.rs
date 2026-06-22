@@ -225,25 +225,11 @@ pub fn build_router(
             "/v1/assistant/generate-stream",
             axum::routing::post(crate::assistant::routes::generate_script_stream),
         )
-        // Org identity — read for any member, write for the owner
+        // Workspace legal identity — read for any member, write for the owner
         .route(
             "/v1/org/identity",
             axum::routing::get(org::get_org_identity)
                 .put(org::update_org_identity),
-        )
-        // Org admin routes — participant org admins only
-        .route(
-            "/v1/org/users",
-            axum::routing::get(org::list_users),
-        )
-        .route(
-            "/v1/org/users/{id}",
-            axum::routing::delete(org::remove_user),
-        )
-        // Org invite — owner invites a person by email (native Keycloak org invite)
-        .route(
-            "/v1/org/invites",
-            axum::routing::post(org::create_org_invite),
         )
         .layer(middleware::from_fn(
             tenant_context_required, // runs second (inner), after session_required

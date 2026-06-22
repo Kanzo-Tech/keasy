@@ -11,7 +11,10 @@ cd "$(dirname "$0")/../.."  # repo root (keasy/)
 
 ENV_FILE="${KEASY_ENV_FILE:-deploy/environments/prod/.env}"
 [ -f "$ENV_FILE" ] || { echo "✗ $ENV_FILE not found — copy deploy/environments/prod/.env.example"; exit 1; }
-set -a; . "$ENV_FILE"; set +a
+# .env carries operator secrets + hostnames; the fleet image pins are git-tracked
+# fleet-config in the sibling versions.env (one pin, one place). Source both.
+VERSIONS_FILE="$(dirname "$ENV_FILE")/versions.env"
+set -a; . "$ENV_FILE"; [ -f "$VERSIONS_FILE" ] && . "$VERSIONS_FILE"; set +a
 
 req() { eval "v=\${$1:-}"; [ -n "$v" ] || { echo "✗ missing required env: $1 (in $ENV_FILE)"; exit 1; }; }
 for v in KC_HOSTNAME KEASY_BASE_DOMAIN ACME_EMAIL \
@@ -96,4 +99,4 @@ echo "✓ rendered realm with the control-plane secret${KEASY_SMTP_HOST:+ + prod
 
 # 4. Deploy the base stack (Traefik + Keycloak [native realm import] + control-plane).
 docker stack deploy --detach=false -c infra/stack/base.yml keasy-base
-echo "✓ base stack up. Add a tenant: make tenant slug=acme name='Acme' owner=<keycloak-sub>"
+echo "✓ base stack up. Add a tenant: make tenant slug=acme name='Acme' owner=owner@acme.com"

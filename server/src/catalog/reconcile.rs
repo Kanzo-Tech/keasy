@@ -103,6 +103,20 @@ pub async fn reconcile_once(state: &AppState) -> usize {
     registered_now
 }
 
+/// Spawn the periodic reconciler. Mirrors the session-cleanup background task.
+pub fn spawn(state: AppState, every: Duration) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
+        let mut tick = tokio::time::interval(every);
+        loop {
+            tick.tick().await;
+            let n = reconcile_once(&state).await;
+            if n > 0 {
+                info!(count = n, "reconciler pass registered datasets");
+            }
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -223,18 +237,4 @@ mod tests {
         assert!(!Catalog::is_registered(&registered, "ghost"), "ghost dataset deregistered");
         assert!(parquet.exists(), "deregister never deletes the member's Parquet (BYOS)");
     }
-}
-
-/// Spawn the periodic reconciler. Mirrors the session-cleanup background task.
-pub fn spawn(state: AppState, every: Duration) -> tokio::task::JoinHandle<()> {
-    tokio::spawn(async move {
-        let mut tick = tokio::time::interval(every);
-        loop {
-            tick.tick().await;
-            let n = reconcile_once(&state).await;
-            if n > 0 {
-                info!(count = n, "reconciler pass registered datasets");
-            }
-        }
-    })
 }

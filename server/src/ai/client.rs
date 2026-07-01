@@ -338,11 +338,11 @@ async fn consume_sse_stream(
             for line in event_block.lines() {
                 if let Some(data) = line.strip_prefix("data: ") {
                     if data == "[DONE]" { continue; }
-                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(data) {
-                        if let Some(text) = extract_text(&v) {
-                            accumulated.push_str(text);
-                            let _ = tx.send(text.to_string()).await;
-                        }
+                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(data)
+                        && let Some(text) = extract_text(&v)
+                    {
+                        accumulated.push_str(text);
+                        let _ = tx.send(text.to_string()).await;
                     }
                 }
             }

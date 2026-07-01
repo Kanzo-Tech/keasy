@@ -34,7 +34,7 @@ pub async fn list_files(
             Ok(meta) => {
                 entries.push(FileEntry {
                     path: meta.location.to_string(),
-                    size: meta.size as u64,
+                    size: meta.size,
                     last_modified: Some(meta.last_modified.to_string()),
                 });
             }

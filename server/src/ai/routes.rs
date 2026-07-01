@@ -79,10 +79,10 @@ pub async fn ask_discover_stream(
     let history = state.db.get_messages(&conversation_id).await;
 
     // Don't persist the explain prompt as a user message
-    if !is_explain {
-        if let Err(e) = state.db.add_message(&conversation_id, "user", &req.question, None, None, None).await {
-            warn!("Failed to persist user message: {e}");
-        }
+    if !is_explain
+        && let Err(e) = state.db.add_message(&conversation_id, "user", &req.question, None, None, None).await
+    {
+        warn!("Failed to persist user message: {e}");
     }
 
     // Explain is self-contained; don't load conversation history
@@ -123,10 +123,10 @@ pub async fn ask_discover_stream(
                 if is_explain {
                     let explanation = full_text.trim().to_string();
                     let msgs = db.get_messages(&conversation_id).await;
-                    if let Some(last_assistant) = msgs.iter().rev().find(|m| m.role == "assistant") {
-                        if let Err(e) = db.update_message_explanation(&last_assistant.id, &explanation).await {
-                            warn!("Failed to update explanation: {e}");
-                        }
+                    if let Some(last_assistant) = msgs.iter().rev().find(|m| m.role == "assistant")
+                        && let Err(e) = db.update_message_explanation(&last_assistant.id, &explanation).await
+                    {
+                        warn!("Failed to update explanation: {e}");
                     }
                     let complete = serde_json::json!({
                         "answer": explanation,

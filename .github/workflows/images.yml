@@ -26,6 +26,8 @@ jobs:
   server:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -74,6 +76,8 @@ jobs:
   web:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - uses: actions/checkout@v4
 
@@ -109,3 +113,48 @@ jobs:
           subject-name: ghcr.io/kanzo-tech/keasy-web
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
+
+  # ── Close the release loop ──────────────────────────────────────────────────
+  # Write the just-built digests back to the fleet version-of-record
+  # (tenants-appset.yaml image.server/web) as a PR. Merging the PR is the deploy
+  # gate — Argo CD syncs `main`. Pinning by digest (not the mutable tag) makes the
+  # deployed ref reproducible and sets up cosign/Kyverno verification later.
+  # Note: the PR is opened with GITHUB_TOKEN, so it won't itself trigger other
+  # workflows; a manifest-validation gate (when added) needs a PAT/App here.
+  release:
+    needs: [server, web]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Pin the fleet images by digest
+        env:
+          VERSION: ${{ github.ref_name }}
+          SERVER_REF: ghcr.io/kanzo-tech/keasy-server@${{ needs.server.outputs.digest }}
+          WEB_REF: ghcr.io/kanzo-tech/keasy-web@${{ needs.web.outputs.digest }}
+        run: |
+          yq -i '
+            .spec.template.spec.source.helm.valuesObject.image = {"server": strenv(SERVER_REF), "web": strenv(WEB_REF)}
+            | .spec.template.spec.source.helm.valuesObject.image.server line_comment = strenv(VERSION)
+            | .spec.template.spec.source.helm.valuesObject.image.web    line_comment = strenv(VERSION)
+          ' infra/k8s/platform/tenants-appset.yaml
+
+      - uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "release: pin fleet to ${{ github.ref_name }} by digest"
+          branch: release/${{ github.ref_name }}
+          title: "release: ${{ github.ref_name }}"
+          body: |
+            Bump the fleet **version-of-record** to `${{ github.ref_name }}`, pinned by digest.
+
+            - `keasy-server` → `${{ needs.server.outputs.digest }}`
+            - `keasy-web` → `${{ needs.web.outputs.digest }}`
+
+            Merging this deploys the release — Argo CD syncs `main`.
+          labels: release

@@ -1,7 +1,9 @@
 # Per-tenant Keycloak resources — the declarative replacement for the Rust control-plane's
 # create_client / ensure_client_roles / ensure_role_mapper, plus declarative membership
 # (keycloak_user + keycloak_user_roles) which removes Organizations, invites, AND the
-# app-side first-login role grant (the role is in the token from the first login).
+# app-side first-login role grant (the role is in the token from the first login). The
+# tenant workloads themselves live in k8s (Argo) — the OIDC client_secret minted here
+# crosses to the cluster as a per-tenant Secret in tenants_k8s.tf.
 
 locals {
   # One keycloak_user per UNIQUE email across the whole fleet (Keycloak emails are realm-unique).

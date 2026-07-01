@@ -1,11 +1,19 @@
-# Copy to terraform.tfvars (gitignored) on the manager. This is the tenant REGISTRY —
-# emails are PII, so this file stays operator-local, never committed.
+# Copy to terraform.tfvars (gitignored). This carries identity/membership only —
+# emails are PII, so this file stays operator-local, never committed. Tenant TOPOLOGY
+# (which workspaces exist, display name, image refs) lives in git under
+# infra/k8s/tenants/*.yaml (the Argo ApplicationSet source).
 
-kc_url            = "http://keycloak:8080"
+# Public Keycloak host — the keycloak provider connects through the ingress (the
+# operator runs apply from a machine with kubeconfig + DNS, not from inside the cluster).
+kc_url            = "https://auth.keasy.example.com"
 kc_admin_username = "admin"
-kc_admin_password = "from-platform-output"
+kc_admin_password = "from-platform-admin-secret"
 kc_hostname       = "auth.keasy.example.com"
 base_domain       = "keasy.example.com"
+
+# Optional: kubeconfig for writing the per-tenant Secrets (defaults to ~/.kube/config).
+# kubeconfig_path    = "~/.kube/config"
+# kubeconfig_context = "keasy-prod"
 
 
 # SSO IdP — users log in here; Keycloak links to the declared user by email.

@@ -1,4 +1,6 @@
 # ── Keycloak connection (operator-local tfvars) ──────────────────────────────
+# Default is the dev compose service (make dev relies on it). Prod sets this to the
+# public Keycloak ingress in terraform.tfvars (the operator applies from outside the cluster).
 variable "kc_url" {
   type    = string
   default = "http://keycloak:8080"
@@ -37,26 +39,15 @@ variable "idp" {
   })
 }
 
-# ── Fleet version — ONE value, git-tracked in images.auto.tfvars ─────────────
-# The release tag (e.g. "0.0.5"). server/web image refs are derived from it, so there
-# is a single version-of-record (the git release tag), no per-image pins to drift.
-variable "release_version" {
-  type = string
-}
-variable "image_repo_prefix" {
-  type    = string
-  default = "ghcr.io/kanzo-tech/keasy"
-}
-
 # ── The tenant fleet — the declarative registry (operator-local tfvars) ───────
+# Image refs and topology live in git (infra/k8s/tenants/*.yaml → Argo ApplicationSet);
+# this var carries only identity/membership (owners/members are PII → gitignored tfvars).
 variable "tenants" {
   description = "slug => tenant. owners/members are emails; they must exist at the IdP."
   type = map(object({
     display_name = string
     owners       = list(string)
     members      = optional(list(string), [])
-    server_image = optional(string)
-    web_image    = optional(string)
     # Fixed OIDC client secret — leave null in prod (Keycloak generates it); dev sets a
     # known value so the compose server can use it without a state handoff.
     client_secret = optional(string)
@@ -64,15 +55,29 @@ variable "tenants" {
   default = {}
 }
 
-# Whether to create the per-tenant Swarm stacks (server/web docker_service + secrets).
-# Prod: true. Dev: false — the identity (Keycloak) is provisioned by this module, but the
-# app runs via docker-compose for a fast inner loop (dev/prod parity where it matters).
-variable "deploy_stacks" {
+# Whether to materialize the per-tenant k8s Secrets (+ namespaces). Prod: true. Dev:
+# false — identity (Keycloak) is still provisioned, but the app runs via docker-compose
+# for a fast inner loop, with no cluster to write Secrets into.
+variable "manage_tenant_secrets" {
   type    = bool
   default = true
 }
 
-variable "network_name" {
+# ── Kubernetes target for the per-tenant Secrets ─────────────────────────────
+variable "kubeconfig_path" {
   type    = string
-  default = "keasy-edge"
+  default = "~/.kube/config"
+}
+variable "kubeconfig_context" {
+  type    = string
+  default = ""
+}
+
+# Optional: a docker-registry .dockerconfigjson for pulling private GHCR images. When
+# set, a `ghcr-pull` Secret is created in each tenant namespace; reference it from the
+# ApplicationSet (image.pullSecrets: [{name: ghcr-pull}]). Leave empty for public images.
+variable "image_pull_dockerconfigjson" {
+  type      = string
+  default   = ""
+  sensitive = true
 }

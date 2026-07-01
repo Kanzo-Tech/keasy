@@ -1,12 +1,12 @@
 # Dev registry for `make dev` — committed (no real PII/secrets; the user is a static Dex
-# account). Applied by the docker-compose `keycloak-realm` service with deploy_stacks=false
-# (the app runs via compose, not docker_service). Prod uses terraform.tfvars (gitignored).
+# account). Applied by the docker-compose `keycloak-realm` service with manage_tenant_secrets
+# =false (the app runs via compose, not k8s). Prod uses terraform.tfvars (gitignored).
 
 kc_hostname = "localhost:3000"
 base_domain = "localhost"
 
-deploy_stacks   = false
-release_version = "dev"
+manage_tenant_secrets = false
+kubeconfig_path       = "" # dev has no cluster; keeps the kubernetes provider unconfigured
 
 # Federate to the local Dex container (offline SSO).
 idp = {

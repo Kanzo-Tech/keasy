@@ -1,10 +1,10 @@
 # Phase 2 of "Terraform owns everything": the keasy realm (no Organizations, no SMTP),
-# SSO via an upstream IdP, and every per-tenant resource — Keycloak client/roles/users/
-# role-assignments AND the Swarm server+web services — driven by var.tenants. Replaces
-# the Rust control-plane CLI and the per-tenant render in control-plane/src/docker.rs.
+# SSO via an upstream IdP, and every per-tenant Keycloak resource — client/roles/users/
+# role-assignments — driven by var.tenants, plus the per-tenant k8s Secret that hands the
+# minted OIDC client_secret to the Argo-managed workloads. Replaces the Rust control-plane.
 #
-# Two-phase apply: the platform module brings Keycloak up first; this module configures
-# it (the keycloak provider connects at apply time). Run after Keycloak is healthy.
+# Two-phase apply: the platform (Keycloak via Helm/Argo) comes up first; this module
+# configures it (the keycloak provider connects at apply time). Run after Keycloak is healthy.
 terraform {
   required_version = ">= 1.6.0"
   required_providers {
@@ -12,9 +12,9 @@ terraform {
       source  = "keycloak/keycloak"
       version = "~> 5.1"
     }
-    docker = {
-      source  = "kreuzwerker/docker"
-      version = "~> 3.0"
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.31"
     }
     random = {
       source  = "hashicorp/random"

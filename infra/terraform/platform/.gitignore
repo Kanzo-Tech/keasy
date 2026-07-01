@@ -1,6 +1,0 @@
-*.tfstate
-*.tfstate.*
-.terraform/
-.terraform.tfstate.lock.info
-*.auto.tfvars
-terraform.tfvars

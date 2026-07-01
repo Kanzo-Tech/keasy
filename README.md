@@ -115,7 +115,6 @@ keasy/
 │   └── src/
 ├── docker-compose.yml              # Base: all services, shared config
 ├── docker-compose.dev.yml          # Dev overlay: hot reload, seed
-├── docker-compose.prod.yml         # Prod overlay: optimized builds
 ├── Makefile                        # Task runner
 └── .env.example                    # Environment template
 ```
@@ -144,22 +143,19 @@ cd web && npm run openapi
 
 ## Docker Compose Layering
 
-The compose setup uses a base + overlay pattern:
+Compose runs the **dev/demo** loop only. Production is Kubernetes + GitOps
+(Argo CD) — see `infra/k8s/bootstrap/README.md`. The release images are built
+and pushed by the `images` workflow on version tags, not by compose.
 
 - **`docker-compose.yml`** — defines all services, networks, volumes, and shared environment. Never used alone.
 - **`docker-compose.dev.yml`** — adds hot reload (cargo-watch, Next.js HMR), dev seed data, relaxed healthchecks, and volume mounts for source code.
-- **`docker-compose.prod.yml`** — uses optimized multi-stage builds, no seed data, and strict healthchecks.
 
 ```bash
 # Dev (via Makefile)
 make dev
 
-# Production (via Makefile)
-make prod
-
 # Manual
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
 ```
 
 ## Environment Variables

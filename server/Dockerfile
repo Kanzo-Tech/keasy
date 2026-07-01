@@ -7,7 +7,8 @@
 # which resolves through the [patch] in server/Cargo.toml to the sibling rmlext
 # workspace (still in the context — workspace inheritance needs the root manifest;
 # NOT a binary). POST-publish this migrates to a sibling-free git-dep clone of the
-# tag. See docker-compose.prod.yml: `context: ..`.
+# tag. The build context is the parent of keasy/ + rmlext/ (see the `images` CI
+# workflow, which checks both out side by side).
 
 FROM rust:1.90-bookworm AS builder
 WORKDIR /src

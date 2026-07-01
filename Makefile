@@ -1,6 +1,5 @@
 COMPOSE_DEV  = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 COMPOSE_DEMO = docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.demo.yml
-COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 
 # ── Dev loop: when do I rebuild? ───────────────────────────────────────────
 # The dev image is DEPS-ONLY; `server/src` + `web/src` are bind-mounted and
@@ -17,7 +16,7 @@ COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 # so a re-run after a small rmlext change is incremental (seconds), not a full
 # DuckDB rebuild. Only `make clean` wipes those caches.
 
-.PHONY: help dev demo down prod build logs restart clean ps deploy-platform deploy-realm
+.PHONY: help dev demo down logs restart clean ps deploy-platform deploy-realm
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -32,13 +31,6 @@ demo: ## Start demo environment (release build, no hot-reload)
 
 down: ## Stop all services
 	$(COMPOSE_DEV) down
-	@$(COMPOSE_PROD) down 2>/dev/null || true
-
-prod: ## Start with production builds (local test)
-	$(COMPOSE_PROD) up --build -d
-
-build: ## Build production images without starting
-	$(COMPOSE_PROD) build
 
 logs: ## Tail all service logs
 	$(COMPOSE_DEV) logs -f
@@ -54,7 +46,6 @@ restart-%: ## Restart one service (e.g., make restart-web)
 
 clean: ## Nuclear reset: remove containers, volumes, images
 	$(COMPOSE_DEV) down -v --rmi local
-	@$(COMPOSE_PROD) down -v --rmi local 2>/dev/null || true
 
 shell-%: ## Open shell in container (e.g., make shell-server)
 	$(COMPOSE_DEV) exec $* sh

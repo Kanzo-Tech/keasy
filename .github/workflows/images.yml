@@ -70,17 +70,9 @@ jobs:
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
-  web-caddy:
+  web:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: keasy-web
-            context: web
-          - name: keasy-caddy
-            context: infra/caddy
     steps:
       - uses: actions/checkout@v4
 
@@ -94,7 +86,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/kanzo-tech/${{ matrix.name }}
+          images: ghcr.io/kanzo-tech/keasy-web
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -103,7 +95,7 @@ jobs:
       - id: build
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
+          context: web
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -113,6 +105,6 @@ jobs:
 
       - uses: actions/attest-build-provenance@v2
         with:
-          subject-name: ghcr.io/kanzo-tech/${{ matrix.name }}
+          subject-name: ghcr.io/kanzo-tech/keasy-web
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true

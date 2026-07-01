@@ -1,15 +1,13 @@
-# Per-tenant Kubernetes Secret — the declarative replacement for tenants_docker.tf's
-# docker_secret/docker_service. This module owns the cross-boundary handoff: it holds
-# every tenant secret in state (the Keycloak-generated OIDC client_secret + two randoms:
-# api-key + secret-key) and writes one Secret per tenant. The session cookie key is no
-# longer here — the server generates + persists its own on first boot. The workloads themselves (server/web/
-# Ingress/PVC) are Argo's — the keasy-tenant Helm chart mounts this Secret at
-# /run/secrets, so the server keeps reading KEASY_*_FILE exactly as on Swarm.
+# Per-tenant Kubernetes Secret. Holds the two TF-generated randoms — api-key +
+# secret-key — and writes one Secret per tenant for the Argo-managed keasy-tenant chart
+# to mount at /run/secrets (the server reads KEASY_*_FILE). No OIDC client_secret (the
+# Keycloak client is public + PKCE) and no session key (the server self-generates it) —
+# only these two remain, and both are the last TF→k8s tie pending a secrets mechanism.
 #
 # Namespace + Secret are owned here (they must exist before the pod can mount the
 # Secret regardless); Argo's tenant Application targets the existing namespace with
 # CreateNamespace=false. Skipped in dev (manage_tenant_secrets=false): the app runs
-# via docker-compose with a fixed client_secret, no cluster.
+# via docker-compose, no cluster.
 
 locals {
   k8s_tenants = var.manage_tenant_secrets ? local.tenants : {}
@@ -50,7 +48,6 @@ resource "kubernetes_secret" "tenant" {
     }
   }
   data = {
-    "oidc"       = keycloak_openid_client.tenant[each.key].client_secret
     "api-key"    = random_password.api_key[each.key].result
     "secret-key" = random_password.secret_key[each.key].result
   }

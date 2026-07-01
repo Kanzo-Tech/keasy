@@ -212,7 +212,6 @@ mod tests {
                 oidc_state: None,
                 oidc_issuer_url: None,
                 oidc_client_id: None,
-                oidc_client_secret: None,
             },
             catalog: Some(catalog.clone()),
         };

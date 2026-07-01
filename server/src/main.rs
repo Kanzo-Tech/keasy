@@ -1,7 +1,6 @@
 use keasy_server::{AppState, AuthServices, Database};
 use keasy_server::config::ServerConfig;
 use keasy_server::routes::{build_router, SessionConfig};
-use secrecy::ExposeSecret;
 
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -97,9 +96,10 @@ async fn main() {
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
     );
 
-    // Build OIDC relying party client — only when all three config fields are present.
-    let oidc_state = match (&config.oidc_issuer_url, &config.oidc_client_id, &config.oidc_client_secret) {
-        (Some(issuer), Some(client_id), Some(secret)) => {
+    // Build OIDC relying party client. Public client: no client_secret — PKCE protects
+    // the code exchange. Needs only the issuer + client_id.
+    let oidc_state = match (&config.oidc_issuer_url, &config.oidc_client_id) {
+        (Some(issuer), Some(client_id)) => {
             let redirect_uri = format!(
                 "{}/v1/auth/oidc-callback",
                 config.base_url.trim_end_matches('/')
@@ -107,7 +107,7 @@ async fn main() {
             match keasy_server::auth::oidc::build_oidc_client(
                 issuer,
                 client_id,
-                secret.expose_secret(),
+                None,
                 &redirect_uri,
                 config.oidc_internal_base_url.as_deref(),
             )
@@ -130,7 +130,6 @@ async fn main() {
         oidc_state,
         oidc_issuer_url: config.oidc_issuer_url,
         oidc_client_id: config.oidc_client_id,
-        oidc_client_secret: config.oidc_client_secret,
     };
     // Server-side DuckLake catalog (authority over output metadata). Non-fatal
     // if it fails to open — the host keeps serving jobs and the reconciler

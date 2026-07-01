@@ -244,7 +244,7 @@ impl OidcState {
 pub async fn build_oidc_client(
     issuer_url: &str,
     client_id: &str,
-    client_secret: &str,
+    client_secret: Option<&str>,
     redirect_uri: &str,
     internal_base_url: Option<&str>,
 ) -> Result<OidcState, String> {
@@ -291,10 +291,13 @@ pub async fn build_oidc_client(
     // `from_provider_metadata` returns `KeyasyClientDiscovered` (HasTokenUrl = EndpointMaybeSet).
     // We call `set_token_uri()` to promote the token URL to EndpointSet, producing `KeyasyClient`.
     // This is required because `exchange_code()` is only available when HasTokenUrl = EndpointSet.
+    // Public client: no client_secret is sent — PKCE (verifier held server-side) protects
+    // the code exchange. `client_secret` stays Option so a confidential client is still
+    // expressible, but the deployment registers a public client.
     let client: KeyasyClient = KeyasyClientDiscovered::from_provider_metadata(
         metadata.clone(),
         ClientId::new(client_id.to_string()),
-        Some(ClientSecret::new(client_secret.to_string())),
+        client_secret.map(|s| ClientSecret::new(s.to_string())),
     )
     .set_token_uri(token_url)
     .set_redirect_uri(

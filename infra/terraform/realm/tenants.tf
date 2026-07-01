@@ -18,10 +18,9 @@ locals {
   }
   _prod_tenants = {
     for slug, top in local._git_tenants : slug => {
-      displayName   = top.displayName
-      owners        = try(var.tenant_membership[slug].owners, [])
-      members       = try(var.tenant_membership[slug].members, [])
-      client_secret = try(var.tenant_membership[slug].client_secret, null)
+      displayName = top.displayName
+      owners      = try(var.tenant_membership[slug].owners, [])
+      members     = try(var.tenant_membership[slug].members, [])
     }
   }
 

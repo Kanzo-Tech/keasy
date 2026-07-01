@@ -26,10 +26,6 @@ pub struct ServerConfig {
     /// OIDC client_id registered in Keycloak for this Keasy instance.
     /// Read from KEASY_OIDC_CLIENT_ID. Example: keasy-server
     pub oidc_client_id: Option<String>,
-    /// OIDC client_secret for the keasy-server client. Used for admin API calls
-    /// (client credentials flow) and the authorization code exchange.
-    /// Read from KEASY_OIDC_CLIENT_SECRET.
-    pub oidc_client_secret: Option<SecretString>,
     /// Internal base URL for reaching the OIDC provider (Keycloak) inside Docker.
     /// When set, OIDC discovery and token exchange rewrite the public issuer URL
     /// to this internal URL (e.g. `http://keycloak:8080`).
@@ -103,8 +99,6 @@ impl ServerConfig {
             .ok()
             .filter(|s| !s.trim().is_empty());
 
-        let oidc_client_secret = resolve_secret("KEASY_OIDC_CLIENT_SECRET");
-
         let oidc_internal_base_url = std::env::var("KEASY_OIDC_INTERNAL_BASE_URL")
             .ok()
             .filter(|s| !s.trim().is_empty());
@@ -137,7 +131,6 @@ impl ServerConfig {
             base_url,
             oidc_issuer_url,
             oidc_client_id,
-            oidc_client_secret,
             oidc_internal_base_url,
             workspace_name,
             workspace_slug,

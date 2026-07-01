@@ -108,7 +108,7 @@ services:
       KEASY_WORKSPACE_NAME: Dev Workspace
       KEASY_OIDC_ISSUER_URL: http://localhost:3000/auth/realms/keasy
       KEASY_OIDC_CLIENT_ID: keasy-ws-dev
-      KEASY_OIDC_CLIENT_SECRET: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
+      # Public client + PKCE — no client secret.
       KEASY_OIDC_INTERNAL_BASE_URL: http://keycloak:8080
     volumes:
       - keasy-data:/var/lib/keasy

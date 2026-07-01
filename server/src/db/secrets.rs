@@ -15,10 +15,10 @@ impl Database {
     /// replication. Generated once on first boot — callers use this instead of an
     /// injected KEASY_SESSION_SECRET when none is provided.
     pub async fn get_or_create_session_secret(&self) -> SecretString {
-        if let Some(bytes) = self.get_secret(SESSION_SECRET_KEY).await {
-            if let Ok(existing) = String::from_utf8(bytes) {
-                return SecretString::from(existing);
-            }
+        if let Some(bytes) = self.get_secret(SESSION_SECRET_KEY).await
+            && let Ok(existing) = String::from_utf8(bytes)
+        {
+            return SecretString::from(existing);
         }
         let mut raw = [0u8; 64];
         getrandom::getrandom(&mut raw).expect("OS RNG unavailable");

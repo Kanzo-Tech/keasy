@@ -53,7 +53,5 @@ pub struct AuthServices {
     pub oidc_issuer_url: Option<String>,
     /// OIDC client_id for this Keasy instance.
     pub oidc_client_id: Option<String>,
-    /// OIDC client_secret for the authorization-code exchange.
-    pub oidc_client_secret: Option<SecretString>,
 }
 

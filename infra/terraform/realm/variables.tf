@@ -46,25 +46,22 @@ variable "idp" {
 
 # Dev-only inline fleet. Prod leaves this empty.
 variable "tenants" {
-  description = "Dev-only inline tenants. slug => {displayName, owners, members, client_secret?}."
+  description = "Dev-only inline tenants. slug => {displayName, owners, members}."
   type = map(object({
     displayName = string
     owners      = list(string)
     members     = optional(list(string), [])
-    # Fixed OIDC client secret so the compose server can use it without a state handoff.
-    client_secret = optional(string)
   }))
   default = {}
 }
 
-# Prod membership + secrets, keyed by the same slug as the git topology files. Emails are
-# PII and the client_secret is a secret → operator-local terraform.tfvars, never committed.
+# Prod membership, keyed by the same slug as the git topology files. Emails are PII →
+# operator-local terraform.tfvars, never committed.
 variable "tenant_membership" {
-  description = "slug => {owners, members, client_secret?}. PII/secret → operator-local."
+  description = "slug => {owners, members}. PII → operator-local."
   type = map(object({
-    owners        = list(string)
-    members       = optional(list(string), [])
-    client_secret = optional(string)
+    owners  = list(string)
+    members = optional(list(string), [])
   }))
   default = {}
 }

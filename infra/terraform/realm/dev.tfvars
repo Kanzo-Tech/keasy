@@ -24,8 +24,7 @@ idp = {
 # One dev workspace; the owner email matches the Dex static user.
 tenants = {
   dev = {
-    displayName   = "Dev Workspace"
-    owners        = ["dev@keasy.local"]
-    client_secret = "keasy-dev-secret" # fixed so the compose server can use it directly
+    displayName = "Dev Workspace"
+    owners      = ["dev@keasy.local"]
   }
 }

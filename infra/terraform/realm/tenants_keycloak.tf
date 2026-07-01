@@ -26,14 +26,17 @@ locals {
 }
 
 resource "keycloak_openid_client" "tenant" {
-  for_each              = local.tenants
-  realm_id              = keycloak_realm.keasy.id
-  client_id             = "keasy-ws-${each.key}"
-  name                  = each.value.displayName
-  enabled               = true
-  access_type           = "CONFIDENTIAL"
-  client_secret         = each.value.client_secret # null ⇒ Keycloak generates
-  standard_flow_enabled = true
+  for_each  = local.tenants
+  realm_id  = keycloak_realm.keasy.id
+  client_id = "keasy-ws-${each.key}"
+  name      = each.value.displayName
+  enabled   = true
+  # PUBLIC client: no client_secret. The keasy server holds the PKCE verifier
+  # server-side, which protects the code exchange — nothing to shuttle to k8s.
+  # There is no client-credentials / service-account flow. S256 is enforced.
+  access_type                = "PUBLIC"
+  standard_flow_enabled      = true
+  pkce_code_challenge_method = "S256"
   valid_redirect_uris = [
     "https://${each.key}.${var.base_domain}/v1/auth/oidc-callback",
     "http://localhost:3000/v1/auth/oidc-callback", # dev (compose)

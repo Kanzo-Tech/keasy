@@ -1,0 +1,39 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "keasy-tenant.name" . }}
+  labels:
+    {{- include "keasy-tenant.labels" . | nindent 4 }}
+  annotations:
+    # cert-manager issues a per-host cert for this tenant (no wildcard secret to
+    # replicate across namespaces). Was the Traefik "le" certresolver.
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  tls:
+    - hosts: ["{{ include "keasy-tenant.host" . }}"]
+      secretName: {{ include "keasy-tenant.name" . }}-tls
+  rules:
+    - host: {{ include "keasy-tenant.host" . }}
+      http:
+        paths:
+          # API + OIDC discovery → server. More specific prefixes win over "/".
+          - path: /v1
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "keasy-tenant.name" . }}-server
+                port: { number: {{ .Values.server.port }} }
+          - path: /.well-known
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "keasy-tenant.name" . }}-server
+                port: { number: {{ .Values.server.port }} }
+          # Everything else → web.
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "keasy-tenant.name" . }}-web
+                port: { number: {{ .Values.web.port }} }

@@ -1,0 +1,20 @@
+# Keycloak's Postgres, managed by CloudNativePG. Single instance (it's the identity
+# store for one fleet; HA can come later via `instances: 3`). CNPG generates the app
+# Secret `keycloak-db-app` (keys: username/password/dbname/host/uri/...) which the
+# Keycloak chart consumes. Service for the primary: keycloak-db-rw.keycloak.svc.
+# Wave -1: after the CNPG operator CRDs (wave -3) and the keycloak namespace (wave -4).
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: keycloak-db
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  instances: 1
+  bootstrap:
+    initdb:
+      database: keycloak
+      owner: keycloak
+  storage:
+    size: 5Gi

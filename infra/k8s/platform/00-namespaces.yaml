@@ -1,0 +1,10 @@
+# Namespaces that CRs/workloads land in before their owning Helm app syncs.
+# Wave -4: earliest, so the CNPG Cluster (wave -1) and Keycloak (wave 0) have a home.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+  labels:
+    app.kubernetes.io/part-of: keasy

@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "keasy-tenant.name" . }}-server
+  labels:
+    {{- include "keasy-tenant.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server
+spec:
+  replicas: 1
+  # Single PVC (RWO, local-path) → never two writers on one data dir. Was the
+  # Swarm "stop-first" intent; Recreate enforces it on k8s.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: server
+      com.keasy.workspace: {{ include "keasy-tenant.name" . }}
+  template:
+    metadata:
+      labels:
+        {{- include "keasy-tenant.labels" . | nindent 8 }}
+        app.kubernetes.io/component: server
+    spec:
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: server
+          image: {{ include "keasy-tenant.serverImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.server.port }}
+          env:
+            - name: KEASY_BASE_URL
+              value: "https://{{ include "keasy-tenant.host" . }}"
+            - name: KEASY_WORKSPACE_NAME
+              value: {{ required "displayName is required" .Values.displayName | quote }}
+            - name: KEASY_ORG_ALIAS
+              value: {{ .Values.slug | quote }}
+            - name: KEASY_OIDC_ISSUER_URL
+              value: "https://{{ required "kcHostname is required" .Values.kcHostname }}/auth/realms/keasy"
+            - name: KEASY_OIDC_CLIENT_ID
+              value: "{{ include "keasy-tenant.name" . }}"
+            - name: KEASY_OIDC_INTERNAL_BASE_URL
+              value: {{ .Values.oidc.internalBaseUrl | quote }}
+            - name: KEASY_OIDC_CLIENT_SECRET_FILE
+              value: /run/secrets/oidc
+            - name: KEASY_SESSION_SECRET_FILE
+              value: /run/secrets/session
+            - name: KEASY_API_KEY_FILE
+              value: /run/secrets/api-key
+            - name: KEASY_SECRET_KEY_FILE
+              value: /run/secrets/secret-key
+          volumeMounts:
+            - name: secrets
+              mountPath: /run/secrets
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/keasy
+          readinessProbe:
+            httpGet: { path: /healthz/ready, port: {{ .Values.server.port }} }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          livenessProbe:
+            httpGet: { path: /healthz/ready, port: {{ .Values.server.port }} }
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 5
+          resources:
+            {{- toYaml .Values.server.resources | nindent 12 }}
+      volumes:
+        - name: secrets
+          secret:
+            secretName: {{ include "keasy-tenant.secretName" . }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "keasy-tenant.name" . }}-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "keasy-tenant.name" . }}-server
+  labels:
+    {{- include "keasy-tenant.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server
+spec:
+  selector:
+    app.kubernetes.io/component: server
+    com.keasy.workspace: {{ include "keasy-tenant.name" . }}
+  ports:
+    - port: {{ .Values.server.port }}
+      targetPort: {{ .Values.server.port }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "keasy-tenant.name" . }}-data
+  labels:
+    {{- include "keasy-tenant.labels" . | nindent 4 }}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size }}
+  {{- with .Values.persistence.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}

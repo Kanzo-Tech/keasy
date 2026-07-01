@@ -1,0 +1,50 @@
+# The tenant fleet — one Argo Application per file in infra/k8s/tenants/*.yaml. This is
+# the declarative registry that replaces the Swarm control-plane: adding a workspace =
+# committing a 2-line tenant file (its identity/membership is added to the realm tfvars
+# in the same change). Each Application installs the keasy-tenant chart into the
+# TF-created namespace keasy-ws-<slug> (CreateNamespace=false → Terraform owns the ns +
+# the Secret the pods mount). Wave 1: after the platform (Keycloak) is up.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenants
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/Kanzo-Tech/keasy.git
+        revision: main
+        files:
+          - path: infra/k8s/tenants/*.yaml
+  template:
+    metadata:
+      name: "ws-{{.slug}}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/Kanzo-Tech/keasy.git
+        targetRevision: main
+        path: infra/k8s/tenant-chart
+        helm:
+          # Fleet-wide values live here — single source of record (replaces the old
+          # images.auto.tfvars release_version). Per-tenant params come from the file.
+          valuesObject:
+            slug: "{{.slug}}"
+            displayName: "{{.displayName}}"
+            baseDomain: keasy.example.com
+            kcHostname: auth.keasy.example.com
+            image:
+              tag: "0.0.5"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "keasy-ws-{{.slug}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=false

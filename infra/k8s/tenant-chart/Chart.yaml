@@ -1,0 +1,7 @@
+apiVersion: v2
+name: keasy-tenant
+description: One keasy workspace (server + web + Ingress) — the k8s translation of the per-tenant Swarm stack (was tenants_docker.tf).
+type: application
+version: 0.1.0
+# Matches the keasy fleet release tag by default (overridable per tenant via image.tag).
+appVersion: "0.0.5"

@@ -1,0 +1,29 @@
+# The ONE thing the operator applies after Argo CD is installed (see README.md).
+# App-of-apps: syncs infra/k8s/platform/ recursively. Every child (cert-manager,
+# CloudNativePG, Keycloak, the tenant ApplicationSet) carries a sync-wave so Argo
+# orders operators → CRs → workloads → tenants.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    # EDIT: your keasy git repo (the GitOps source of record).
+    repoURL: https://github.com/Kanzo-Tech/keasy.git
+    targetRevision: main
+    path: infra/k8s/platform
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

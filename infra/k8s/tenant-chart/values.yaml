@@ -1,0 +1,53 @@
+# keasy-tenant — defaults. Per-tenant Applications override slug/displayName (and
+# optionally image refs) via the ApplicationSet; fleet-wide values come from the
+# ApplicationSet template (baseDomain, kcHostname, oidcInternalBaseUrl, image tag).
+
+# ── Identity of this workspace ────────────────────────────────────────────────
+slug: ""          # e.g. "acme" — served at <slug>.<baseDomain>
+displayName: ""   # human name shown in the app (KEASY_WORKSPACE_NAME)
+
+# ── Fleet-wide (same for every tenant) ───────────────────────────────────────
+baseDomain: ""    # tenants at <slug>.<baseDomain>
+kcHostname: ""    # public Keycloak host, e.g. auth.keasy.example.com
+
+image:
+  repoPrefix: ghcr.io/kanzo-tech/keasy
+  tag: "0.0.5"        # the fleet release_version; overridable per tenant
+  server: ""          # full override (else <repoPrefix>-server:<tag>)
+  web: ""             # full override (else <repoPrefix>-web:<tag>)
+  pullPolicy: IfNotPresent
+  # For private GHCR images: name(s) of docker-registry Secret(s) in the tenant namespace.
+  pullSecrets: []
+
+oidc:
+  # In-cluster URL of the platform Keycloak Service (token validation happens over
+  # the cluster network, not the public ingress). Confirm against the keycloakx
+  # chart's Service name. Path must include the relative path (/auth).
+  internalBaseUrl: "http://keycloak-keycloakx-http.keycloak.svc/auth"
+
+# Name of the Secret (created by the realm Terraform) holding this tenant's
+# oidc / session / api-key / secret-key. Defaults to keasy-ws-<slug>.
+secretName: ""
+
+server:
+  port: 8080
+  resources:
+    limits: { cpu: "1", memory: 1Gi }
+    requests: { cpu: 250m, memory: 256Mi }
+
+web:
+  port: 3000
+  resources:
+    limits: { cpu: 500m, memory: 512Mi }
+    requests: { cpu: 100m, memory: 128Mi }
+
+# Persistent data at /var/lib/keasy (was the docker_volume keasy-ws-<slug>-data).
+persistence:
+  size: 5Gi
+  storageClass: ""   # "" → cluster default (local-path on k3s)
+
+ingress:
+  # cert-manager ClusterIssuer that signs this tenant's per-host cert.
+  clusterIssuer: letsencrypt-prod
+  # k3s registers its bundled Traefik under the "traefik" IngressClass.
+  className: traefik

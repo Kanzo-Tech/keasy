@@ -67,6 +67,14 @@ async fn main() {
         std::process::exit(1);
     }
 
+    // Session cookie signing key: honour an injected KEASY_SESSION_SECRET (dev/compat),
+    // otherwise generate-and-persist one on first boot — no per-tenant session secret to
+    // provision or inject.
+    let session_secret = match config.session_secret {
+        Some(s) => s,
+        None => db.get_or_create_session_secret().await,
+    };
+
     // Session store — separate tokio-rusqlite connection (safe in WAL mode).
     // tower-sessions-rusqlite-store manages its own schema via migrate().
     // Access tokio_rusqlite through the re-export from tower-sessions-rusqlite-store.
@@ -161,7 +169,7 @@ async fn main() {
 
     let session_config = SessionConfig {
         store: session_store,
-        secret: config.session_secret,
+        secret: session_secret,
         cookie_name: config.session_cookie_name,
         secure: config.session_secure,
     };

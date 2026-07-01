@@ -1,12 +1,32 @@
+use base64::Engine;
 use rusqlite::params;
-use secrecy::ExposeSecret;
+use secrecy::{ExposeSecret, SecretString};
 use tracing::{error, warn};
 
 use crate::crypto;
 
 use super::Database;
 
+const SESSION_SECRET_KEY: &str = "session_secret";
+
 impl Database {
+    /// The session cookie signing key, persisted (encrypted by the secret key) in the
+    /// `secrets` table so it survives restarts and rides along with keasy.db's
+    /// replication. Generated once on first boot — callers use this instead of an
+    /// injected KEASY_SESSION_SECRET when none is provided.
+    pub async fn get_or_create_session_secret(&self) -> SecretString {
+        if let Some(bytes) = self.get_secret(SESSION_SECRET_KEY).await {
+            if let Ok(existing) = String::from_utf8(bytes) {
+                return SecretString::from(existing);
+            }
+        }
+        let mut raw = [0u8; 64];
+        getrandom::getrandom(&mut raw).expect("OS RNG unavailable");
+        let encoded = base64::engine::general_purpose::STANDARD.encode(raw);
+        self.set_secret(SESSION_SECRET_KEY, encoded.as_bytes()).await;
+        SecretString::from(encoded)
+    }
+
     pub async fn get_secret(&self, key: &str) -> Option<Vec<u8>> {
         let (_permit, conn) = self.read().await;
         let blob: Vec<u8> = conn

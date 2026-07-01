@@ -9,8 +9,10 @@ pub struct ServerConfig {
     pub cors_origins: Option<Vec<String>>,
     pub data_dir: PathBuf,
     pub secret_key: Option<SecretString>,
-    /// Session cookie signing key — required. Read from KEASY_SESSION_SECRET.
-    pub session_secret: SecretString,
+    /// Session cookie signing key. Optional override via KEASY_SESSION_SECRET (dev/compat);
+    /// when absent the server generates and persists one on first boot, so no per-tenant
+    /// session secret has to be provisioned. See `Database::get_or_create_session_secret`.
+    pub session_secret: Option<SecretString>,
     /// Set the Secure flag on session cookies (requires HTTPS).
     /// Read from KEASY_SESSION_SECURE. Default false (local dev).
     pub session_secure: bool,
@@ -81,14 +83,9 @@ impl ServerConfig {
 
         let secret_key = resolve_secret("KEASY_SECRET_KEY");
 
-        let session_secret = match resolve_secret("KEASY_SESSION_SECRET") {
-            Some(s) => s,
-            None => {
-                eprintln!("FATAL: KEASY_SESSION_SECRET is required for session cookie signing");
-                eprintln!("       Generate one with: openssl rand -base64 64");
-                std::process::exit(1);
-            }
-        };
+        // Optional: injected for dev/compat. When absent, the server generates and
+        // persists a signing key on first boot (Database::get_or_create_session_secret).
+        let session_secret = resolve_secret("KEASY_SESSION_SECRET");
 
         let cache_capacity = std::env::var("KEASY_CACHE_CAPACITY")
             .ok()

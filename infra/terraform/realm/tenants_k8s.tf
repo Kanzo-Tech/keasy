@@ -1,7 +1,8 @@
 # Per-tenant Kubernetes Secret — the declarative replacement for tenants_docker.tf's
 # docker_secret/docker_service. This module owns the cross-boundary handoff: it holds
-# every tenant secret in state (the Keycloak-generated OIDC client_secret + three
-# randoms) and writes one Secret per tenant. The workloads themselves (server/web/
+# every tenant secret in state (the Keycloak-generated OIDC client_secret + two randoms:
+# api-key + secret-key) and writes one Secret per tenant. The session cookie key is no
+# longer here — the server generates + persists its own on first boot. The workloads themselves (server/web/
 # Ingress/PVC) are Argo's — the keasy-tenant Helm chart mounts this Secret at
 # /run/secrets, so the server keeps reading KEASY_*_FILE exactly as on Swarm.
 #
@@ -14,11 +15,6 @@ locals {
   k8s_tenants = var.manage_tenant_secrets ? local.tenants : {}
 }
 
-resource "random_password" "session" {
-  for_each = local.k8s_tenants
-  length   = 48
-  special  = false
-}
 resource "random_password" "api_key" {
   for_each = local.k8s_tenants
   length   = 48
@@ -55,7 +51,6 @@ resource "kubernetes_secret" "tenant" {
   }
   data = {
     "oidc"       = keycloak_openid_client.tenant[each.key].client_secret
-    "session"    = random_password.session[each.key].result
     "api-key"    = random_password.api_key[each.key].result
     "secret-key" = random_password.secret_key[each.key].result
   }

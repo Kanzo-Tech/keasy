@@ -89,7 +89,7 @@ dir's README). Push — Argo's ApplicationSet brings up `https://<slug>.<base_do
 | Cluster, ingress, TLS | k3s (Traefik) + cert-manager |
 | Platform Postgres | CloudNativePG (`keycloak-db`) |
 | Identity (realm/IdP/clients/users/roles) | Terraform `realm/` (unchanged from Swarm) |
-| Per-tenant Secret (oidc/session/api-key/secret-key) | Terraform `realm/` → k8s Secret |
+| Per-tenant Secret (oidc/api-key/secret-key) | Terraform `realm/` → k8s Secret |
 | Tenant topology (which workspaces, images) | git `tenants/*.yaml` → Argo ApplicationSet |
 | Tenant workloads (server/web/Ingress/PVC) | `keasy-tenant` Helm chart, Argo-synced |
 | Image builds | unchanged — `.github/workflows/images.yml` → GHCR |

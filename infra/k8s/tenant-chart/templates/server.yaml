@@ -46,8 +46,8 @@ spec:
               value: {{ .Values.oidc.internalBaseUrl | quote }}
             - name: KEASY_OIDC_CLIENT_SECRET_FILE
               value: /run/secrets/oidc
-            - name: KEASY_SESSION_SECRET_FILE
-              value: /run/secrets/session
+            # No KEASY_SESSION_SECRET: the server generates + persists its own cookie
+            # signing key on first boot (rides along with keasy.db).
             - name: KEASY_API_KEY_FILE
               value: /run/secrets/api-key
             - name: KEASY_SECRET_KEY_FILE

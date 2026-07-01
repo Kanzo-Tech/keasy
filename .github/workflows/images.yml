@@ -1,8 +1,9 @@
 name: images
 
-# Build + push the keasy instance images (server, web, caddy) to GHCR on release
-# tags. Terraform pulls these onto the VPS per the image pins in
-# infra/terraform/realm/terraform.tfvars. Tag-triggered so images map 1:1 to a release.
+# Build + push the keasy instance images (server, web) to GHCR on release tags.
+# Tag-triggered so images map 1:1 to a release. The deployed ref lives in git as
+# the fleet version-of-record (infra/k8s/platform/tenants-appset.yaml image.tag);
+# Argo CD pulls it — nothing pushes images onto a host.
 #
 # Prereqs (operator):
 #   - the server image's `FROM ghcr.io/kanzo-tech/fossil` base is PRIVATE → grant the

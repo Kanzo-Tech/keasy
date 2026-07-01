@@ -37,6 +37,12 @@ spec:
             displayName: "{{.displayName}}"
             baseDomain: keasy.example.com
             kcHostname: auth.keasy.example.com
+            # ── FLEET VERSION-OF-RECORD ────────────────────────────────────
+            # The ONE place the deployed release lives. `make`/CI build the
+            # matching images on a `vX.Y.Z` git tag (see .github/workflows/
+            # images.yml); bumping the fleet = change this ref, in git, only
+            # here. A single tenant can pin a different build via its own
+            # tenants/<slug>.yaml image override.
             image:
               tag: "0.0.5"
       destination:

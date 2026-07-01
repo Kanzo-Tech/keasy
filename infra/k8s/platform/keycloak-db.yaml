@@ -18,3 +18,41 @@ spec:
       owner: keycloak
   storage:
     size: 5Gi
+  # DR — the node's local-path PVC is single-copy, so a node loss drops the identity
+  # store unless it is shipped off-box. Continuous WAL archiving + scheduled base backups
+  # to object storage give point-in-time recovery. The `keycloak-db-backup` credentials
+  # Secret is a SealedSecret applied at bootstrap (never committed plaintext) — see
+  # bootstrap/README.md, same pattern as the Cloudflare + Keycloak-admin secrets.
+  # NOTE: barmanObjectStore (in-tree) is supported through CNPG 1.x; the barman-cloud
+  # plugin is the forward path when this cluster moves to CNPG 2.x.
+  backup:
+    retentionPolicy: "30d"
+    barmanObjectStore:
+      destinationPath: s3://EDIT-keasy-backups/keycloak-db # EDIT: your bucket
+      endpointURL: EDIT # EDIT: e.g. https://<account>.r2.cloudflarestorage.com (omit for AWS S3)
+      s3Credentials:
+        accessKeyId:
+          name: keycloak-db-backup
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: keycloak-db-backup
+          key: ACCESS_SECRET_KEY
+      wal:
+        compression: gzip
+      data:
+        compression: gzip
+---
+# Daily base backup (WAL archiving above is continuous). backupOwnerReference=self so
+# the backups are GC'd with the cluster. Schedule is CNPG's 6-field cron (leading seconds).
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: keycloak-db-daily
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  schedule: "0 0 3 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: keycloak-db

@@ -62,14 +62,16 @@ shell-%: ## Open shell in container (e.g., make shell-server)
 ps: ## Show running services
 	$(COMPOSE_DEV) ps
 
-# ── Prod / Swarm deploy — Terraform owns everything (see infra/terraform/README.md) ──
-# Two phases: platform (Traefik+Keycloak+Postgres) then realm (SSO + tenants). Adding a
-# tenant = edit infra/terraform/realm/terraform.tfvars + `make deploy-realm`. No shell, no CLI.
-deploy-platform: ## Phase 1 — apply the platform (needs -var kc_hostname=… acme_email=…)
-	terraform -chdir=infra/terraform/platform init -input=false
-	terraform -chdir=infra/terraform/platform apply
+# ── Prod deploy — k8s + GitOps (see infra/k8s/bootstrap/README.md) ──────────────────
+# The cluster (k3s), Argo CD, cert-manager and the platform are operator-run / Argo-pulled;
+# Terraform still owns Keycloak's realm + tenants and writes each tenant's k8s Secret.
+# Adding a tenant = commit infra/k8s/tenants/<slug>.yaml + add it to realm/terraform.tfvars
+# + `make deploy-realm`.
+deploy-platform: ## Platform is GitOps — bootstrap the cluster + Argo per the README
+	@echo "Platform deploy is GitOps. Follow infra/k8s/bootstrap/README.md:"
+	@echo "  k3s → Argo CD → operator secrets → kubectl apply -f infra/k8s/bootstrap/root-app.yaml"
 
-deploy-realm: ## Phase 2 — apply the realm + tenants (reads realm/terraform.tfvars; feeds the platform admin pw)
+deploy-realm: ## Apply the realm + tenants (reads realm/terraform.tfvars; admin pw from the cluster Secret)
 	terraform -chdir=infra/terraform/realm init -input=false
 	terraform -chdir=infra/terraform/realm apply \
-	  -var kc_admin_password="$$(terraform -chdir=infra/terraform/platform output -raw kc_admin_password)"
+	  -var kc_admin_password="$$(kubectl -n keycloak get secret keycloak-admin -o jsonpath='{.data.password}' | base64 -d)"

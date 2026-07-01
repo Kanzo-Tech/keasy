@@ -51,5 +51,8 @@ CLAUDE.md
 # runtime data
 data/
 
+# local scratch / spikes (binary blobs — never committed)
+scratch/
+
 # next.js
 .next/

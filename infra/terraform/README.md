@@ -1,51 +1,41 @@
-# infra/terraform — the keasy fleet as code
+# infra/terraform — identity as code
 
-Terraform owns the whole deployment on Docker Swarm: the platform (ingress + identity)
-and every tenant (Keycloak client/roles/users + the server/web Swarm stack). This
-replaces the old patchwork — `infra/stack/base.yml`, the `bootstrap`/`cp`/`tf` shell
-scripts, and the Rust `control-plane` CLI.
+Terraform owns **Keycloak**: the keasy realm, the SSO IdP, and every per-tenant
+client/roles/users/role-assignments — plus the per-tenant Kubernetes Secret that hands the
+minted OIDC client secret to the Argo-managed workload. The cluster, ingress, TLS and the
+tenant workloads live in `infra/k8s/` (GitOps); the keycloak provider is agnostic to the
+orchestrator, so identity stays here.
 
 ```
-platform/   phase 1 — keasy-edge overlay, base secrets, Traefik + Keycloak + Postgres
-realm/      phase 2 — the keasy realm, SSO IdP, and per-tenant clients/roles/users/stacks
-spike/      the docker_service gate (one tenant; runtime-validate before trusting the model)
+realm/   the keasy realm, SSO IdP, per-tenant Keycloak clients/roles/users, and the
+         per-tenant k8s Secret (oidc/session/api-key/secret-key) the keasy-tenant chart mounts
 ```
 
-## Two-phase apply (the keycloak provider can't create Keycloak and configure it at once)
+> The Swarm era (`platform/` + `spike/` + the per-tenant `docker_service`) is gone — see
+> `infra/k8s/` for its GitOps replacement (k3s + Argo CD + cert-manager + CloudNativePG +
+> the Keycloak Helm chart). Keycloak now runs in the cluster; this module configures it.
 
-On a Swarm manager, once (`docker swarm init` if not already a manager):
+## Apply (after the platform is up — see `infra/k8s/bootstrap/README.md`)
 
 ```sh
-# Phase 1 — platform. Brings Keycloak up empty; mints the DB + admin passwords.
-terraform -chdir=platform init
-terraform -chdir=platform apply -var kc_hostname=auth.keasy.example.com -var acme_email=ops@kanzo.tech
-
-# Wait for Keycloak health (it has no realm yet, but the admin API must answer):
-until curl -fsS https://auth.keasy.example.com/auth/health/ready >/dev/null; do sleep 3; done
-
-# Phase 2 — realm + tenants. Feed it phase 1's admin password.
-cp realm/terraform.tfvars.example realm/terraform.tfvars   # then edit: IdP creds + tenants
+cp realm/terraform.tfvars.example realm/terraform.tfvars   # edit: kc_url (public ingress),
+                                                           # IdP creds, tenants (identity/PII)
 terraform -chdir=realm init
 terraform -chdir=realm apply \
-  -var kc_admin_password="$(terraform -chdir=platform output -raw kc_admin_password)"
+  -var kc_admin_password="$(kubectl -n keycloak get secret keycloak-admin -o jsonpath='{.data.password}' | base64 -d)"
 ```
 
-- **`realm/terraform.tfvars`** is the tenant **registry** — operator-local, gitignored
-  (emails are PII). Adding a tenant = an entry under `tenants` + `terraform -chdir=realm apply`.
-  No CLI, no shell.
-- **State** holds every secret → it lives on the manager, gitignored. Back it up; a future
-  multi-manager setup moves it to an encrypted S3 backend.
+- **`realm/terraform.tfvars`** carries identity/membership only (owner/member emails are PII
+  → operator-local, gitignored). Tenant **topology** (which workspaces exist, image refs)
+  lives in git under `infra/k8s/tenants/*.yaml`, the Argo ApplicationSet source. Adding a
+  tenant = a file there + an entry here, applied together.
+- **`kc_url`** points at the public Keycloak ingress (`https://auth.<base_domain>`): the
+  operator runs apply from a machine with kubeconfig + DNS, not from inside the cluster.
+- **State** holds every secret (the minted client secrets + the randoms) → keep it
+  operator-local and backed up; move it to an encrypted backend for multi-operator setups.
 
 ## SSO
-Users log in through the IdP configured in `realm/` (`var.idp` — Google example in the
-`.tfvars.example`). Keycloak links the IdP login to the pre-declared `keycloak_user` by
-email (`trust_email`); the owner/member role is already assigned, so the token carries
-`keasy:role` from the first login — the tenant server just reads it (no app-side grant).
-
-## Status / gates
-- All three modules pass `terraform validate` against the real provider schemas.
-- **Runtime gates to confirm on a manager** (then the model is proven):
-  1. `spike/` — `docker_service` does secret mounts + Traefik routing + start-first
-     rolling update with rollback (plan risk #1).
-  2. IdP **auto-link by email** without the "account exists" prompt may need a custom
-     first-broker-login flow (see `realm/idp.tf`, plan risk #2).
+Users log in through the IdP in `realm/` (`var.idp`). Keycloak links the IdP login to the
+pre-declared `keycloak_user` by email (`trust_email`); the owner/member role is already
+assigned, so the token carries `keasy:role` from the first login — the tenant server just
+reads it (no app-side grant).

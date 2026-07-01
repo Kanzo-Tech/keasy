@@ -6,7 +6,8 @@ kc_hostname = "localhost:3000"
 base_domain = "localhost"
 
 manage_tenant_secrets = false
-kubeconfig_path       = "" # dev has no cluster; keeps the kubernetes provider unconfigured
+tenants_from_git      = false # dev defines its one static workspace inline (below), not from git
+kubeconfig_path       = ""    # dev has no cluster; keeps the kubernetes provider unconfigured
 
 # Federate to the local Dex container (offline SSO).
 idp = {
@@ -23,7 +24,7 @@ idp = {
 # One dev workspace; the owner email matches the Dex static user.
 tenants = {
   dev = {
-    display_name  = "Dev Workspace"
+    displayName   = "Dev Workspace"
     owners        = ["dev@keasy.local"]
     client_secret = "keasy-dev-secret" # fixed so the compose server can use it directly
   }

@@ -29,11 +29,12 @@ idp = {
   issuer            = "https://accounts.google.com"
 }
 
-# The fleet. Adding a tenant = an entry here + `terraform apply`.
-tenants = {
+# The fleet TOPOLOGY (slug/displayName/image) lives in git: infra/k8s/tenants/<slug>.yaml.
+# Here go only membership (PII) + the rare fixed client_secret, keyed by the SAME slug.
+# Adding a tenant = commit infra/k8s/tenants/<slug>.yaml + an entry here + `terraform apply`.
+tenant_membership = {
   acme = {
-    display_name = "Acme"
-    owners       = ["angel.iglesias@kanzo.tech"]
-    members      = []
+    owners  = ["angel.iglesias@kanzo.tech"]
+    members = []
   }
 }

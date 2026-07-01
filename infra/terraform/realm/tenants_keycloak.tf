@@ -7,11 +7,11 @@
 
 locals {
   # One keycloak_user per UNIQUE email across the whole fleet (Keycloak emails are realm-unique).
-  all_emails = toset(flatten([for t in var.tenants : concat(t.owners, t.members)]))
+  all_emails = toset(flatten([for t in local.tenants : concat(t.owners, t.members)]))
 
   # One role assignment per (tenant, email, role). Key is "slug|email".
   assignments = merge([
-    for slug, t in var.tenants : merge(
+    for slug, t in local.tenants : merge(
       { for e in t.owners : "${slug}|${e}" => { slug = slug, email = e, role = "owner" } },
       { for e in t.members : "${slug}|${e}" => { slug = slug, email = e, role = "member" } },
     )
@@ -20,16 +20,16 @@ locals {
   # email => the slugs that user belongs to (feeds the `workspaces` switcher claim).
   user_workspaces = {
     for e in local.all_emails : e => [
-      for slug, t in var.tenants : slug if contains(concat(t.owners, t.members), e)
+      for slug, t in local.tenants : slug if contains(concat(t.owners, t.members), e)
     ]
   }
 }
 
 resource "keycloak_openid_client" "tenant" {
-  for_each              = var.tenants
+  for_each              = local.tenants
   realm_id              = keycloak_realm.keasy.id
   client_id             = "keasy-ws-${each.key}"
-  name                  = each.value.display_name
+  name                  = each.value.displayName
   enabled               = true
   access_type           = "CONFIDENTIAL"
   client_secret         = each.value.client_secret # null ⇒ Keycloak generates
@@ -42,7 +42,7 @@ resource "keycloak_openid_client" "tenant" {
 }
 
 resource "keycloak_role" "owner" {
-  for_each    = var.tenants
+  for_each    = local.tenants
   realm_id    = keycloak_realm.keasy.id
   client_id   = keycloak_openid_client.tenant[each.key].id
   name        = "owner"
@@ -50,7 +50,7 @@ resource "keycloak_role" "owner" {
 }
 
 resource "keycloak_role" "member" {
-  for_each    = var.tenants
+  for_each    = local.tenants
   realm_id    = keycloak_realm.keasy.id
   client_id   = keycloak_openid_client.tenant[each.key].id
   name        = "member"
@@ -59,7 +59,7 @@ resource "keycloak_role" "member" {
 
 # keasy:role mapper on each tenant client (scoped to THIS client → no role leakage).
 resource "keycloak_generic_protocol_mapper" "keasy_role" {
-  for_each        = var.tenants
+  for_each        = local.tenants
   realm_id        = keycloak_realm.keasy.id
   client_id       = keycloak_openid_client.tenant[each.key].id
   name            = "keasy-role"
@@ -93,7 +93,7 @@ resource "keycloak_user" "u" {
 
 # Emit the user's `workspaces` attribute as a multivalued token claim, per tenant client.
 resource "keycloak_generic_protocol_mapper" "workspaces" {
-  for_each        = var.tenants
+  for_each        = local.tenants
   realm_id        = keycloak_realm.keasy.id
   client_id       = keycloak_openid_client.tenant[each.key].id
   name            = "workspaces"

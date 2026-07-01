@@ -39,20 +39,40 @@ variable "idp" {
   })
 }
 
-# ── The tenant fleet — the declarative registry (operator-local tfvars) ───────
-# Image refs and topology live in git (infra/k8s/tenants/*.yaml → Argo ApplicationSet);
-# this var carries only identity/membership (owners/members are PII → gitignored tfvars).
+# ── The tenant fleet ──────────────────────────────────────────────────────────
+# Prod defines the fleet in git (infra/k8s/tenants/*.yaml → Argo ApplicationSet + this
+# module reads the same files); `tenant_membership` joins by slug. Dev defines its single
+# static workspace inline in `tenants` (tenants_from_git=false). See tenants.tf.
+
+# Dev-only inline fleet. Prod leaves this empty.
 variable "tenants" {
-  description = "slug => tenant. owners/members are emails; they must exist at the IdP."
+  description = "Dev-only inline tenants. slug => {displayName, owners, members, client_secret?}."
   type = map(object({
-    display_name = string
-    owners       = list(string)
-    members      = optional(list(string), [])
-    # Fixed OIDC client secret — leave null in prod (Keycloak generates it); dev sets a
-    # known value so the compose server can use it without a state handoff.
+    displayName = string
+    owners      = list(string)
+    members     = optional(list(string), [])
+    # Fixed OIDC client secret so the compose server can use it without a state handoff.
     client_secret = optional(string)
   }))
   default = {}
+}
+
+# Prod membership + secrets, keyed by the same slug as the git topology files. Emails are
+# PII and the client_secret is a secret → operator-local terraform.tfvars, never committed.
+variable "tenant_membership" {
+  description = "slug => {owners, members, client_secret?}. PII/secret → operator-local."
+  type = map(object({
+    owners        = list(string)
+    members       = optional(list(string), [])
+    client_secret = optional(string)
+  }))
+  default = {}
+}
+
+# Read the fleet from git (prod) vs the inline `tenants` map (dev/compose, no cluster).
+variable "tenants_from_git" {
+  type    = bool
+  default = true
 }
 
 # Whether to materialize the per-tenant k8s Secrets (+ namespaces). Prod: true. Dev:

@@ -11,7 +11,7 @@
 # via docker-compose with a fixed client_secret, no cluster.
 
 locals {
-  k8s_tenants = var.manage_tenant_secrets ? var.tenants : {}
+  k8s_tenants = var.manage_tenant_secrets ? local.tenants : {}
 }
 
 resource "random_password" "session" {

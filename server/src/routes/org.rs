@@ -3,15 +3,10 @@
 //! identity read uses `Require<IsMember>` (any workspace user).
 //! These routes live inside `api_routes` (session + tenant context required).
 
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::IntoResponse,
-    Json,
-};
-use std::sync::LazyLock;
+use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use regex::Regex;
 use serde::Deserialize;
+use std::sync::LazyLock;
 
 use crate::AppState;
 use crate::error::{data_response, error_body};
@@ -94,23 +89,31 @@ pub async fn update_org_identity(
 
     // Validate registration_number_type
     if let Some(ref rnt) = payload.registration_number_type
-        && !matches!(rnt.as_str(), "vatID" | "leiCode" | "EORI") {
-            return Ok((
-                StatusCode::BAD_REQUEST,
-                Json(error_body("bad_request", "registration_number_type must be vatID, leiCode, or EORI")),
-            )
-                .into_response());
-        }
+        && !matches!(rnt.as_str(), "vatID" | "leiCode" | "EORI")
+    {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            Json(error_body(
+                "bad_request",
+                "registration_number_type must be vatID, leiCode, or EORI",
+            )),
+        )
+            .into_response());
+    }
 
     // Validate country_subdivision_code (ISO 3166-2: XX-YYY)
     if let Some(ref csc) = payload.country_subdivision_code
-        && !SUBDIVISION_RE.is_match(csc) {
-            return Ok((
-                StatusCode::BAD_REQUEST,
-                Json(error_body("bad_request", "country_subdivision_code must match ISO 3166-2 (e.g. DE-BY)")),
-            )
-                .into_response());
-        }
+        && !SUBDIVISION_RE.is_match(csc)
+    {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            Json(error_body(
+                "bad_request",
+                "country_subdivision_code must match ISO 3166-2 (e.g. DE-BY)",
+            )),
+        )
+            .into_response());
+    }
 
     // Read-modify-write so the display `name` (seeded at bootstrap) is preserved.
     let mut identity = state.db.get_workspace_identity().await.unwrap_or_default();

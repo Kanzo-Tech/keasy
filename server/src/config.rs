@@ -73,9 +73,8 @@ impl ServerConfig {
                 .collect()
         });
 
-        let data_dir = PathBuf::from(
-            std::env::var("KEASY_DATA_DIR").unwrap_or_else(|_| "./data".to_string()),
-        );
+        let data_dir =
+            PathBuf::from(std::env::var("KEASY_DATA_DIR").unwrap_or_else(|_| "./data".to_string()));
 
         let secret_key = resolve_secret("KEASY_SECRET_KEY");
 
@@ -88,8 +87,8 @@ impl ServerConfig {
             .and_then(|v| v.parse().ok())
             .unwrap_or(1);
 
-        let base_url = std::env::var("KEASY_BASE_URL")
-            .unwrap_or_else(|_| "http://localhost:3000".to_string());
+        let base_url =
+            std::env::var("KEASY_BASE_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
 
         let oidc_issuer_url = std::env::var("KEASY_OIDC_ISSUER_URL")
             .ok()
@@ -112,8 +111,8 @@ impl ServerConfig {
             .ok()
             .filter(|s| !s.trim().is_empty());
 
-        let session_cookie_name = std::env::var("KEASY_SESSION_COOKIE_NAME")
-            .unwrap_or_else(|_| "keasy.sid".to_string());
+        let session_cookie_name =
+            std::env::var("KEASY_SESSION_COOKIE_NAME").unwrap_or_else(|_| "keasy.sid".to_string());
 
         let session_secure = std::env::var("KEASY_SESSION_SECURE")
             .map(|v| v == "true" || v == "1")

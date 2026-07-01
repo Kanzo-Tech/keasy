@@ -34,7 +34,10 @@ pub async fn list_catalog_datasets(
     let Some(catalog) = state.catalog.clone() else {
         return (
             StatusCode::SERVICE_UNAVAILABLE,
-            Json(error_body("catalog_unavailable", "Catalog is not available")),
+            Json(error_body(
+                "catalog_unavailable",
+                "Catalog is not available",
+            )),
         )
             .into_response();
     };

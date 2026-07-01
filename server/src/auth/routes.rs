@@ -109,7 +109,10 @@ pub async fn list_workspaces(
 
     let current = state.workspace_slug.clone().unwrap_or_default();
 
-    Ok(data_response(WorkspacesResponse { workspaces, current }))
+    Ok(data_response(WorkspacesResponse {
+        workspaces,
+        current,
+    }))
 }
 
 /// POST /v1/auth/logout

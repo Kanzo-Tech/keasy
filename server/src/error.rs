@@ -14,7 +14,10 @@ pub fn error_body(code: &str, message: impl Into<String>) -> Value {
 
 /// Build a validation error body with per-field reasons:
 /// `{ "error": "validation_failed", "message": "...", "fields": { "field": "reason" } }`.
-pub fn validation_error_body(message: impl Into<String>, fields: &HashMap<String, String>) -> Value {
+pub fn validation_error_body(
+    message: impl Into<String>,
+    fields: &HashMap<String, String>,
+) -> Value {
     json!({ "error": "validation_failed", "message": message.into(), "fields": fields })
 }
 
@@ -118,7 +121,10 @@ impl IntoResponse for AppError {
             )
                 .into_response(),
 
-            AppError::ValidationFailed { message, ref fields } => (
+            AppError::ValidationFailed {
+                message,
+                ref fields,
+            } => (
                 StatusCode::BAD_REQUEST,
                 Json(validation_error_body(&message, fields)),
             )
@@ -141,13 +147,18 @@ impl IntoResponse for AppError {
 
             AppError::Unauthorized => (
                 StatusCode::UNAUTHORIZED,
-                Json(error_body("auth/session_required", "Authentication required")),
-            ).into_response(),
+                Json(error_body(
+                    "auth/session_required",
+                    "Authentication required",
+                )),
+            )
+                .into_response(),
 
             AppError::Forbidden => (
                 StatusCode::FORBIDDEN,
                 Json(error_body("auth/forbidden", "Access denied")),
-            ).into_response(),
+            )
+                .into_response(),
 
             AppError::JobApi(e) => e.into_response(),
             AppError::Connection(e) => e.into_response(),

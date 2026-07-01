@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
+use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::Json;
 use http::Method;
 use serde::{Deserialize, Serialize};
 
@@ -31,20 +31,21 @@ fn forbid_non_producer(job: &Job, user_id: &str) -> Option<Response> {
 }
 
 /// Checks that output is ready and returns Ok(()) or appropriate error.
-pub(crate) async fn require_output_ready(
-    state: &AppState,
-    job_id: &str,
-) -> Result<(), Response> {
-    let job = state
-        .db
-        .get_job(job_id)
-        .await
-        .ok_or_else(|| {
-            (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response()
-        })?;
+pub(crate) async fn require_output_ready(state: &AppState, job_id: &str) -> Result<(), Response> {
+    let job = state.db.get_job(job_id).await.ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(error_body("not_found", "Job not found")),
+        )
+            .into_response()
+    })?;
 
     if job.status != JobStatus::Completed {
-        return Err((StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response());
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(error_body("not_completed", "Job is not completed yet")),
+        )
+            .into_response());
     }
 
     Ok(())
@@ -70,23 +71,46 @@ async fn sign_manifest_urls(
     creds: &HashMap<String, String>,
     files: &[String],
 ) -> Result<Response, Response> {
-    let (store, prefix) = crate::cloud::build_store(base_url, creds)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("store_error", e.to_string()))).into_response())?;
+    let (store, prefix) = crate::cloud::build_store(base_url, creds).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(error_body("store_error", e.to_string())),
+        )
+            .into_response()
+    })?;
 
     let all_files: Vec<String> = files.to_vec();
 
     let mut paths = Vec::with_capacity(all_files.len());
     for f in &all_files {
-        let full = if prefix.as_ref().is_empty() { f.to_string() } else { format!("{prefix}/{f}") };
-        let p = object_store::path::Path::parse(&full)
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("path_error", e.to_string()))).into_response())?;
+        let full = if prefix.as_ref().is_empty() {
+            f.to_string()
+        } else {
+            format!("{prefix}/{f}")
+        };
+        let p = object_store::path::Path::parse(&full).map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(error_body("path_error", e.to_string())),
+            )
+                .into_response()
+        })?;
         paths.push(p);
     }
 
-    let urls = store.sign_urls(method, &paths, SIGNED_URL_EXPIRES).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("sign_error", e.to_string()))).into_response())?;
+    let urls = store
+        .sign_urls(method, &paths, SIGNED_URL_EXPIRES)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(error_body("sign_error", e.to_string())),
+            )
+                .into_response()
+        })?;
 
-    let files: HashMap<String, String> = all_files.into_iter()
+    let files: HashMap<String, String> = all_files
+        .into_iter()
         .zip(urls.into_iter().map(|u| u.to_string()))
         .collect();
 
@@ -124,13 +148,24 @@ pub async fn resolve_output_urls(
     Json(req): Json<OutputUrlsRequest>,
 ) -> Response {
     let Some(job) = state.db.get_job(id.as_str()).await else {
-        return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response();
+        return (
+            StatusCode::NOT_FOUND,
+            Json(error_body("not_found", "Job not found")),
+        )
+            .into_response();
     };
     if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
         return resp;
     }
     let Some((base, creds)) = state.db.job_output_target(&job).await else {
-        return (StatusCode::BAD_REQUEST, Json(error_body("no_destination", "No output destination configured — pick one in the job config"))).into_response();
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(error_body(
+                "no_destination",
+                "No output destination configured — pick one in the job config",
+            )),
+        )
+            .into_response();
     };
     let dest = format!("{}/{}", base.trim_end_matches('/'), id);
 
@@ -165,7 +200,11 @@ pub async fn resolve_source_refs(
     Path(id): Path<String>,
 ) -> Response {
     let Some(job) = state.db.get_job(id.as_str()).await else {
-        return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response();
+        return (
+            StatusCode::NOT_FOUND,
+            Json(error_body("not_found", "Job not found")),
+        )
+            .into_response();
     };
     if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
         return resp;
@@ -213,7 +252,11 @@ pub async fn resolve_source_urls(
     Json(req): Json<SourceUrlsRequest>,
 ) -> Response {
     let Some(job) = state.db.get_job(id.as_str()).await else {
-        return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response();
+        return (
+            StatusCode::NOT_FOUND,
+            Json(error_body("not_found", "Job not found")),
+        )
+            .into_response();
     };
     if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
         return resp;
@@ -244,11 +287,25 @@ pub async fn resolve_source_urls(
         };
         let (store, path) = match crate::cloud::build_store(uri, &creds) {
             Ok(sp) => sp,
-            Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("store_error", e.to_string()))).into_response(),
+            Err(e) => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(error_body("store_error", e.to_string())),
+                )
+                    .into_response();
+            }
         };
         match store.sign_url(Method::GET, &path, SIGNED_URL_EXPIRES).await {
-            Ok(signed) => { urls.insert(uri.clone(), signed.to_string()); }
-            Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("sign_error", e.to_string()))).into_response(),
+            Ok(signed) => {
+                urls.insert(uri.clone(), signed.to_string());
+            }
+            Err(e) => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(error_body("sign_error", e.to_string())),
+                )
+                    .into_response();
+            }
         }
     }
     Json(SourceUrlsResponse { urls }).into_response()
@@ -270,26 +327,48 @@ pub async fn resolve_discover_urls(
 ) -> Response {
     let job = match state.db.get_job(id.as_str()).await {
         Some(j) => j,
-        None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(error_body("not_found", "Job not found")),
+            )
+                .into_response();
+        }
     };
     if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
         return resp;
     }
     if job.status != JobStatus::Completed {
-        return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("not_completed", "Job is not completed yet")),
+        )
+            .into_response();
     }
     let Some(manifest) = &job.manifest else {
-        return (StatusCode::NOT_FOUND, Json(error_body("no_output", "Job has no RDF output"))).into_response();
+        return (
+            StatusCode::NOT_FOUND,
+            Json(error_body("no_output", "Job has no RDF output")),
+        )
+            .into_response();
     };
     // The dataset base URL is the manifest's `dest` (fossil's single description
     // of the output) — keasy doesn't store a duplicate.
     let base = &manifest.dest;
 
-    let files: Vec<String> = manifest.vertices.iter().map(|v| v.file.clone())
+    let files: Vec<String> = manifest
+        .vertices
+        .iter()
+        .map(|v| v.file.clone())
         .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
         .collect();
 
-    let creds = state.db.job_output_target(&job).await.map(|(_, c)| c).unwrap_or_default();
+    let creds = state
+        .db
+        .job_output_target(&job)
+        .await
+        .map(|(_, c)| c)
+        .unwrap_or_default();
     match sign_manifest_urls(Method::GET, base, &creds, &files).await {
         Ok(resp) => resp,
         Err(resp) => resp,
@@ -321,24 +400,47 @@ pub async fn resolve_discover_manifest(
 ) -> Response {
     let job = match state.db.get_job(id.as_str()).await {
         Some(j) => j,
-        None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(error_body("not_found", "Job not found")),
+            )
+                .into_response();
+        }
     };
     if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
         return resp;
     }
     if job.status != JobStatus::Completed {
-        return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("not_completed", "Job is not completed yet")),
+        )
+            .into_response();
     }
     let Some(manifest) = &job.manifest else {
-        return (StatusCode::NOT_FOUND, Json(error_body("no_output", "Job has no RDF output"))).into_response();
+        return (
+            StatusCode::NOT_FOUND,
+            Json(error_body("no_output", "Job has no RDF output")),
+        )
+            .into_response();
     };
     let base = &manifest.dest;
 
-    let creds = state.db.job_output_target(&job).await.map(|(_, c)| c).unwrap_or_default();
+    let creds = state
+        .db
+        .job_output_target(&job)
+        .await
+        .map(|(_, c)| c)
+        .unwrap_or_default();
 
     match read_manifest_files(base, &creds).await {
         Ok(manifest_files) => Json(ManifestResponse { manifest_files }).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("manifest_error", e))).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(error_body("manifest_error", e)),
+        )
+            .into_response(),
     }
 }
 
@@ -353,8 +455,16 @@ async fn read_manifest_files(
     use futures::StreamExt;
 
     let (store, prefix) = crate::cloud::build_store(base_url, creds).map_err(|e| e.to_string())?;
-    let prefix_opt = if prefix.as_ref().is_empty() { None } else { Some(&prefix) };
-    let strip = if prefix.as_ref().is_empty() { String::new() } else { format!("{prefix}/") };
+    let prefix_opt = if prefix.as_ref().is_empty() {
+        None
+    } else {
+        Some(&prefix)
+    };
+    let strip = if prefix.as_ref().is_empty() {
+        String::new()
+    } else {
+        format!("{prefix}/")
+    };
 
     let entries = store.list(prefix_opt).collect::<Vec<_>>().await;
 
@@ -391,21 +501,43 @@ pub async fn resolve_catalog_urls(
 ) -> Response {
     let job = match state.db.get_job(id.as_str()).await {
         Some(j) => j,
-        None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(error_body("not_found", "Job not found")),
+            )
+                .into_response();
+        }
     };
     if job.status != JobStatus::Completed {
-        return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("not_completed", "Job is not completed yet")),
+        )
+            .into_response();
     }
     let Some(manifest) = &job.catalog_manifest else {
-        return (StatusCode::NOT_FOUND, Json(error_body("no_catalog", "Job has no catalog output"))).into_response();
+        return (
+            StatusCode::NOT_FOUND,
+            Json(error_body("no_catalog", "Job has no catalog output")),
+        )
+            .into_response();
     };
     let base = &manifest.dest;
 
-    let files: Vec<String> = manifest.vertices.iter().map(|v| v.file.clone())
+    let files: Vec<String> = manifest
+        .vertices
+        .iter()
+        .map(|v| v.file.clone())
         .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
         .collect();
 
-    let creds = state.db.job_output_target(&job).await.map(|(_, c)| c).unwrap_or_default();
+    let creds = state
+        .db
+        .job_output_target(&job)
+        .await
+        .map(|(_, c)| c)
+        .unwrap_or_default();
     match sign_manifest_urls(Method::GET, base, &creds, &files).await {
         Ok(resp) => resp,
         Err(resp) => resp,
@@ -428,20 +560,43 @@ pub async fn resolve_catalog_manifest(
 ) -> Response {
     let job = match state.db.get_job(id.as_str()).await {
         Some(j) => j,
-        None => return (StatusCode::NOT_FOUND, Json(error_body("not_found", "Job not found"))).into_response(),
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(error_body("not_found", "Job not found")),
+            )
+                .into_response();
+        }
     };
     if job.status != JobStatus::Completed {
-        return (StatusCode::BAD_REQUEST, Json(error_body("not_completed", "Job is not completed yet"))).into_response();
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("not_completed", "Job is not completed yet")),
+        )
+            .into_response();
     }
     let Some(manifest) = &job.catalog_manifest else {
-        return (StatusCode::NOT_FOUND, Json(error_body("no_catalog", "Job has no catalog output"))).into_response();
+        return (
+            StatusCode::NOT_FOUND,
+            Json(error_body("no_catalog", "Job has no catalog output")),
+        )
+            .into_response();
     };
     let base = &manifest.dest;
 
-    let creds = state.db.job_output_target(&job).await.map(|(_, c)| c).unwrap_or_default();
+    let creds = state
+        .db
+        .job_output_target(&job)
+        .await
+        .map(|(_, c)| c)
+        .unwrap_or_default();
 
     match read_manifest_files(base, &creds).await {
         Ok(manifest_files) => Json(ManifestResponse { manifest_files }).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(error_body("manifest_error", e))).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(error_body("manifest_error", e)),
+        )
+            .into_response(),
     }
 }

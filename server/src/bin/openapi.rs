@@ -1,5 +1,5 @@
-use utoipa::OpenApi;
 use keasy_server::openapi::ApiDoc;
+use utoipa::OpenApi;
 
 fn main() {
     let doc = ApiDoc::openapi();

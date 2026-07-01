@@ -4,10 +4,7 @@ use axum::response::Response;
 
 use super::session_auth::AuthenticatedUser;
 
-pub async fn audit_log(
-    request: axum::http::Request<Body>,
-    next: Next,
-) -> Response {
+pub async fn audit_log(request: axum::http::Request<Body>, next: Next) -> Response {
     let method = request.method().clone();
     let path = request.uri().path().to_string();
     let user_id = request

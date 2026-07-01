@@ -1,8 +1,8 @@
-pub mod models;
-pub mod errors;
 pub mod db;
-pub mod routes;
+pub mod errors;
+pub mod models;
 pub mod reader;
+pub mod routes;
 
 use std::collections::HashMap;
 use std::time::Duration;
@@ -27,7 +27,16 @@ pub fn is_data_path(s: &str) -> bool {
 }
 
 /// Parse a cloud URL into its components (bucket, object path, provider).
-pub(crate) fn parse_cloud_url(url_str: &str) -> Result<(String, ObjectPath, &'static crate::settings::schema::ProviderSchema), Box<dyn std::error::Error + Send + Sync>> {
+pub(crate) fn parse_cloud_url(
+    url_str: &str,
+) -> Result<
+    (
+        String,
+        ObjectPath,
+        &'static crate::settings::schema::ProviderSchema,
+    ),
+    Box<dyn std::error::Error + Send + Sync>,
+> {
     let parsed = url::Url::parse(url_str)?;
 
     let bucket = parsed
@@ -119,7 +128,7 @@ impl CloudStore {
         }
     }
 
-pub async fn put(
+    pub async fn put(
         &self,
         path: &ObjectPath,
         payload: PutPayload,
@@ -130,7 +139,10 @@ pub async fn put(
         }
     }
 
-    pub fn list(&self, prefix: Option<&ObjectPath>) -> BoxStream<'_, object_store::Result<ObjectMeta>> {
+    pub fn list(
+        &self,
+        prefix: Option<&ObjectPath>,
+    ) -> BoxStream<'_, object_store::Result<ObjectMeta>> {
         match self {
             Self::Azure(s) => s.list(prefix),
             Self::S3(s) => s.list(prefix),
@@ -147,14 +159,24 @@ pub fn build_store(
     let fields = provider.all_fields();
 
     let store = match provider.id {
-        "azure" => CloudStore::Azure(apply_creds!(
-            MicrosoftAzureBuilder::new().with_container_name(&bucket),
-            AzureConfigKey, &fields, creds
-        ).build()?),
-        "s3" => CloudStore::S3(apply_creds!(
-            AmazonS3Builder::new().with_bucket_name(&bucket),
-            AmazonS3ConfigKey, &fields, creds
-        ).build()?),
+        "azure" => CloudStore::Azure(
+            apply_creds!(
+                MicrosoftAzureBuilder::new().with_container_name(&bucket),
+                AzureConfigKey,
+                &fields,
+                creds
+            )
+            .build()?,
+        ),
+        "s3" => CloudStore::S3(
+            apply_creds!(
+                AmazonS3Builder::new().with_bucket_name(&bucket),
+                AmazonS3ConfigKey,
+                &fields,
+                creds
+            )
+            .build()?,
+        ),
         _ => return Err(format!("no builder for provider: {}", provider.id).into()),
     };
 

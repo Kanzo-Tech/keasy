@@ -192,9 +192,11 @@ mod tests {
             .unwrap();
         assert_eq!(v1 as u32, SCHEMA_VERSION);
         let val: String = conn
-            .query_row("SELECT value FROM settings WHERE key='workspace_name'", [], |r| {
-                r.get(0)
-            })
+            .query_row(
+                "SELECT value FROM settings WHERE key='workspace_name'",
+                [],
+                |r| r.get(0),
+            )
             .unwrap();
         assert_eq!(val, "acme"); // data preserved
     }

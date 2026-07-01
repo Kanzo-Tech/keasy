@@ -1,16 +1,18 @@
 use std::fmt::Write as FmtWrite;
 
+use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
 use axum::response::sse::Event;
-use axum::Json;
+use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 
-use crate::AppState;
-use super::client::{AiError, Message, ask_llm_stream, require_ai_settings, setup_sse_channels, into_sse_response};
+use super::client::{
+    AiError, Message, ask_llm_stream, into_sse_response, require_ai_settings, setup_sse_channels,
+};
 use super::models::{AskResultCode, Conversation, ConversationMessage};
+use crate::AppState;
 use crate::error::data_response;
 use crate::middleware::tenant::{IsMember, Require};
 
@@ -55,7 +57,13 @@ pub async fn ask_discover_stream(
         _ => {
             let job = match state.db.get_job(id.as_str()).await {
                 Some(j) => j,
-                None => return (StatusCode::NOT_FOUND, Json(crate::error::error_body("not_found", "Job not found"))).into_response(),
+                None => {
+                    return (
+                        StatusCode::NOT_FOUND,
+                        Json(crate::error::error_body("not_found", "Job not found")),
+                    )
+                        .into_response();
+                }
             };
             build_fallback_schema(&job)
         }
@@ -65,22 +73,30 @@ pub async fn ask_discover_stream(
 
     let conversation_id = match req.conversation_id {
         Some(cid) => cid,
-        None => {
-            match state.db.create_conversation(&id, None).await {
-                Ok(conv) => conv.id,
-                Err(e) => {
-                    warn!("Failed to create conversation: {e}");
-                    return (StatusCode::INTERNAL_SERVER_ERROR, Json(crate::error::error_body("db_error", "Failed to create conversation"))).into_response();
-                }
+        None => match state.db.create_conversation(&id, None).await {
+            Ok(conv) => conv.id,
+            Err(e) => {
+                warn!("Failed to create conversation: {e}");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(crate::error::error_body(
+                        "db_error",
+                        "Failed to create conversation",
+                    )),
+                )
+                    .into_response();
             }
-        }
+        },
     };
 
     let history = state.db.get_messages(&conversation_id).await;
 
     // Don't persist the explain prompt as a user message
     if !is_explain
-        && let Err(e) = state.db.add_message(&conversation_id, "user", &req.question, None, None, None).await
+        && let Err(e) = state
+            .db
+            .add_message(&conversation_id, "user", &req.question, None, None, None)
+            .await
     {
         warn!("Failed to persist user message: {e}");
     }
@@ -91,7 +107,10 @@ pub async fn ask_discover_stream(
     } else {
         build_conversation_messages(&history)
     };
-    messages.push(Message { role: "user".to_string(), content: req.question.clone() });
+    messages.push(Message {
+        role: "user".to_string(),
+        content: req.question.clone(),
+    });
 
     let system_prompt = if is_explain {
         build_explain_prompt()
@@ -105,18 +124,25 @@ pub async fn ask_discover_stream(
 
     // Send conversation_id immediately
     let conv_id = conversation_id.clone();
-    let _ = sse_tx.send(Ok(
-        Event::default()
-            .event("conversation")
-            .data(serde_json::json!({"conversation_id": conv_id}).to_string())
-    )).await;
+    let _ = sse_tx
+        .send(Ok(Event::default().event("conversation").data(
+            serde_json::json!({"conversation_id": conv_id}).to_string(),
+        )))
+        .await;
 
     // Run LLM in background, then parse and send complete event
     let max_tokens = if is_explain { Some(512) } else { Some(2048) };
     let db = state.db.clone();
     let delta_tx = ch.delta_tx;
     tokio::spawn(async move {
-        let result = ask_llm_stream(&ai_settings, &system_prompt, &messages, max_tokens, delta_tx).await;
+        let result = ask_llm_stream(
+            &ai_settings,
+            &system_prompt,
+            &messages,
+            max_tokens,
+            delta_tx,
+        )
+        .await;
 
         match result {
             Ok(full_text) => {
@@ -124,7 +150,9 @@ pub async fn ask_discover_stream(
                     let explanation = full_text.trim().to_string();
                     let msgs = db.get_messages(&conversation_id).await;
                     if let Some(last_assistant) = msgs.iter().rev().find(|m| m.role == "assistant")
-                        && let Err(e) = db.update_message_explanation(&last_assistant.id, &explanation).await
+                        && let Err(e) = db
+                            .update_message_explanation(&last_assistant.id, &explanation)
+                            .await
                     {
                         warn!("Failed to update explanation: {e}");
                     }
@@ -133,16 +161,35 @@ pub async fn ask_discover_stream(
                         "conversation_id": conversation_id,
                         "code": AskResultCode::Success.as_str(),
                     });
-                    let _ = sse_tx.send(Ok(Event::default().event("complete").data(complete.to_string()))).await;
+                    let _ = sse_tx
+                        .send(Ok(Event::default()
+                            .event("complete")
+                            .data(complete.to_string())))
+                        .await;
                 } else {
                     let json_str = strip_markdown_fences(&full_text);
-                    let (sql, explanation, reasoning) = match serde_json::from_str::<LlmResponse>(json_str) {
-                        Ok(resp) => (Some(resp.sql.clone()), resp.explanation, resp.reasoning),
-                        Err(_) => (None, full_text.clone(), String::new()),
-                    };
+                    let (sql, explanation, reasoning) =
+                        match serde_json::from_str::<LlmResponse>(json_str) {
+                            Ok(resp) => (Some(resp.sql.clone()), resp.explanation, resp.reasoning),
+                            Err(_) => (None, full_text.clone(), String::new()),
+                        };
 
-                    let answer = if explanation.is_empty() { "Here is a query for your data.".to_string() } else { explanation };
-                    if let Err(e) = db.add_message(&conversation_id, "assistant", &answer, sql.as_deref(), None, Some(AskResultCode::Success.as_str())).await {
+                    let answer = if explanation.is_empty() {
+                        "Here is a query for your data.".to_string()
+                    } else {
+                        explanation
+                    };
+                    if let Err(e) = db
+                        .add_message(
+                            &conversation_id,
+                            "assistant",
+                            &answer,
+                            sql.as_deref(),
+                            None,
+                            Some(AskResultCode::Success.as_str()),
+                        )
+                        .await
+                    {
                         warn!("Failed to persist assistant message: {e}");
                     }
 
@@ -153,20 +200,32 @@ pub async fn ask_discover_stream(
                         "reasoning": if reasoning.is_empty() { None } else { Some(reasoning) },
                         "code": AskResultCode::Success.as_str(),
                     });
-                    let _ = sse_tx.send(Ok(Event::default().event("complete").data(complete.to_string()))).await;
+                    let _ = sse_tx
+                        .send(Ok(Event::default()
+                            .event("complete")
+                            .data(complete.to_string())))
+                        .await;
                 }
             }
             Err(e) => {
                 let (code, msg) = match &e {
-                    AiError::InsufficientCredits(_) => (AskResultCode::InsufficientCredits.as_str(), "Insufficient credits."),
+                    AiError::InsufficientCredits(_) => (
+                        AskResultCode::InsufficientCredits.as_str(),
+                        "Insufficient credits.",
+                    ),
                     AiError::Failed(_) => (AskResultCode::LlmFailed.as_str(), "LLM call failed."),
                 };
                 warn!("LLM stream failed: {e}");
-                if let Err(e) = db.add_message(&conversation_id, "assistant", msg, None, None, Some(code)).await {
+                if let Err(e) = db
+                    .add_message(&conversation_id, "assistant", msg, None, None, Some(code))
+                    .await
+                {
                     warn!("Failed to persist error message: {e}");
                 }
                 let err = serde_json::json!({"code": code, "answer": msg});
-                let _ = sse_tx.send(Ok(Event::default().event("error").data(err.to_string()))).await;
+                let _ = sse_tx
+                    .send(Ok(Event::default().event("error").data(err.to_string())))
+                    .await;
             }
         }
     });
@@ -255,7 +314,13 @@ fn build_fallback_schema(job: &crate::jobs::models::Job) -> String {
         );
         for (i, c) in t.columns.iter().enumerate() {
             let comma = if i + 1 < t.columns.len() { "," } else { "" };
-            let _ = writeln!(out, "  \"{}\" {}{}", c.name, sql_type_for(&c.data_type), comma);
+            let _ = writeln!(
+                out,
+                "  \"{}\" {}{}",
+                c.name,
+                sql_type_for(&c.data_type),
+                comma
+            );
         }
         let _ = writeln!(out, "); -- rows: {}\n", t.count.unwrap_or(0));
     }
@@ -342,7 +407,14 @@ pub async fn create_conversation(
         Ok(conv) => (StatusCode::CREATED, data_response(conv)).into_response(),
         Err(e) => {
             warn!("Failed to create conversation: {e}");
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(crate::error::error_body("db_error", "Failed to create conversation"))).into_response()
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(crate::error::error_body(
+                    "db_error",
+                    "Failed to create conversation",
+                )),
+            )
+                .into_response()
         }
     }
 }
@@ -375,8 +447,12 @@ pub async fn get_conversation_messages(
     if state.db.get_conversation(&conversation_id).await.is_none() {
         return (
             StatusCode::NOT_FOUND,
-            Json(crate::error::error_body("not_found", "Conversation not found")),
-        ).into_response();
+            Json(crate::error::error_body(
+                "not_found",
+                "Conversation not found",
+            )),
+        )
+            .into_response();
     }
     let messages: Vec<ConversationMessage> = state.db.get_messages(&conversation_id).await;
     data_response(messages).into_response()
@@ -401,13 +477,27 @@ pub async fn rename_conversation(
     if req.title.trim().is_empty() {
         return (
             StatusCode::BAD_REQUEST,
-            Json(crate::error::error_body("validation_error", "title is required")),
+            Json(crate::error::error_body(
+                "validation_error",
+                "title is required",
+            )),
         )
             .into_response();
     }
-    if let Err(e) = state.db.rename_conversation(&conversation_id, req.title.trim()).await {
+    if let Err(e) = state
+        .db
+        .rename_conversation(&conversation_id, req.title.trim())
+        .await
+    {
         warn!("Failed to rename conversation: {e}");
-        return (StatusCode::INTERNAL_SERVER_ERROR, Json(crate::error::error_body("db_error", "Failed to rename conversation"))).into_response();
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(crate::error::error_body(
+                "db_error",
+                "Failed to rename conversation",
+            )),
+        )
+            .into_response();
     }
     StatusCode::NO_CONTENT.into_response()
 }
@@ -423,7 +513,14 @@ pub async fn delete_conversation(
 ) -> Response {
     if let Err(e) = state.db.delete_conversation(&conversation_id).await {
         warn!("Failed to delete conversation: {e}");
-        return (StatusCode::INTERNAL_SERVER_ERROR, Json(crate::error::error_body("db_error", "Failed to delete conversation"))).into_response();
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(crate::error::error_body(
+                "db_error",
+                "Failed to delete conversation",
+            )),
+        )
+            .into_response();
     }
     StatusCode::NO_CONTENT.into_response()
 }

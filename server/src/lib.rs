@@ -20,7 +20,6 @@ pub mod openapi;
 pub mod routes;
 pub mod settings;
 
-
 // Re-export types integration tests need
 pub use db::Database;
 
@@ -54,4 +53,3 @@ pub struct AuthServices {
     /// OIDC client_id for this Keasy instance.
     pub oidc_client_id: Option<String>,
 }
-

@@ -1,5 +1,5 @@
-use aes_gcm::{Aes256Gcm, KeyInit, Nonce};
 use aes_gcm::aead::Aead;
+use aes_gcm::{Aes256Gcm, KeyInit, Nonce};
 use secrecy::zeroize::Zeroizing;
 use sha2::Sha256;
 

@@ -5,9 +5,7 @@ use rusqlite::params;
 use crate::db::Database;
 use crate::jobs::models::Job;
 
-use super::models::{
-    Connection, CreateConnectionRequest, LocationType, UpdateConnectionRequest,
-};
+use super::models::{Connection, CreateConnectionRequest, LocationType, UpdateConnectionRequest};
 
 impl Database {
     pub async fn create_connection(
@@ -144,11 +142,8 @@ impl Database {
 
     pub async fn remove_connection(&self, id: &str) -> Result<(), String> {
         let conn = self.write().await;
-        conn.execute(
-            "DELETE FROM connections WHERE id = ?1",
-            [id],
-        )
-        .map_err(|e| format!("failed to delete connection: {e}"))?;
+        conn.execute("DELETE FROM connections WHERE id = ?1", [id])
+            .map_err(|e| format!("failed to delete connection: {e}"))?;
         Ok(())
     }
 
@@ -157,11 +152,16 @@ impl Database {
     /// producing member), so signing/reading it back uses the substrate account's
     /// creds — never the member source connections'. Empty if no cloud sink is
     /// configured.
-    pub async fn substrate_storage_config(
-        &self,
-    ) -> HashMap<String, String> {
-        match self.get_sink_connection().await.and_then(|c| c.cloud_account_id) {
-            Some(account_id) => self.build_storage_config(std::slice::from_ref(&account_id)).await,
+    pub async fn substrate_storage_config(&self) -> HashMap<String, String> {
+        match self
+            .get_sink_connection()
+            .await
+            .and_then(|c| c.cloud_account_id)
+        {
+            Some(account_id) => {
+                self.build_storage_config(std::slice::from_ref(&account_id))
+                    .await
+            }
             None => HashMap::new(),
         }
     }
@@ -177,7 +177,10 @@ impl Database {
             && let Some(conn) = self.get_connection(cid).await
         {
             let creds = match &conn.cloud_account_id {
-                Some(account_id) => self.build_storage_config(std::slice::from_ref(account_id)).await,
+                Some(account_id) => {
+                    self.build_storage_config(std::slice::from_ref(account_id))
+                        .await
+                }
                 None => HashMap::new(),
             };
             return Some((conn.url, creds));

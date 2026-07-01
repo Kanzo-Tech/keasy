@@ -55,7 +55,8 @@ pub async fn save_org_settings(
         return (
             StatusCode::BAD_REQUEST,
             Json(error_body("validation_error", "publisher_name is required")),
-        ).into_response();
+        )
+            .into_response();
     }
     state.db.set_org_settings(&payload).await;
     data_response(payload).into_response()
@@ -64,7 +65,10 @@ pub async fn save_org_settings(
 #[utoipa::path(get, path = "/v1/settings/preferences", tag = "Settings",
     responses((status = 200, description = "UI preferences", body = Preferences))
 )]
-pub async fn get_preferences(_ctx: Require<IsMember>, State(state): State<AppState>) -> impl IntoResponse {
+pub async fn get_preferences(
+    _ctx: Require<IsMember>,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
     data_response(state.db.get_preferences().await)
 }
 
@@ -90,8 +94,12 @@ pub async fn save_preferences(
         if val.trim().is_empty() {
             return (
                 StatusCode::BAD_REQUEST,
-                Json(error_body("validation_error", format!("{name} is required"))),
-            ).into_response();
+                Json(error_body(
+                    "validation_error",
+                    format!("{name} is required"),
+                )),
+            )
+                .into_response();
         }
     }
     state.db.set_preferences(&payload).await;
@@ -101,7 +109,10 @@ pub async fn save_preferences(
 #[utoipa::path(get, path = "/v1/settings/ai/providers", tag = "Settings",
     responses((status = 200, description = "List of AI providers", body = Vec<AiSettingsPayload>))
 )]
-pub async fn list_ai_providers(_ctx: Require<IsMember>, State(state): State<AppState>) -> impl IntoResponse {
+pub async fn list_ai_providers(
+    _ctx: Require<IsMember>,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
     let providers = state.db.list_ai_providers().await;
     let payloads: Vec<AiSettingsPayload> = providers.iter().map(to_payload).collect();
     data_response(payloads)
@@ -125,11 +136,15 @@ pub async fn save_ai_provider(
         return (
             StatusCode::BAD_REQUEST,
             Json(error_body("validation_error", "Unknown provider")),
-        ).into_response();
+        )
+            .into_response();
     }
 
     let api_key = if payload.api_key.is_empty() {
-        state.db.get_ai_provider(&provider_id).await
+        state
+            .db
+            .get_ai_provider(&provider_id)
+            .await
             .map(|c| c.api_key.expose_secret().to_string())
             .unwrap_or_default()
     } else {
@@ -163,7 +178,8 @@ pub async fn delete_ai_provider(
         return (
             StatusCode::BAD_REQUEST,
             Json(error_body("validation_error", "Unknown provider")),
-        ).into_response();
+        )
+            .into_response();
     }
     state.db.delete_ai_provider(&provider_id).await;
     StatusCode::NO_CONTENT.into_response()
@@ -172,7 +188,11 @@ pub async fn delete_ai_provider(
 fn to_payload(s: &AiSettings) -> AiSettingsPayload {
     AiSettingsPayload {
         provider: s.provider.clone(),
-        api_key: if s.api_key.expose_secret().is_empty() { String::new() } else { "••••".into() },
+        api_key: if s.api_key.expose_secret().is_empty() {
+            String::new()
+        } else {
+            "••••".into()
+        },
         model: s.model.clone(),
         max_tokens: s.max_tokens,
     }
@@ -208,7 +228,8 @@ pub async fn get_catalog_storage(
             Some(cloud_account_id) => data_response(CatalogStoragePayload {
                 cloud_account_id,
                 base_url: sink.url,
-            }).into_response(),
+            })
+            .into_response(),
             None => StatusCode::NO_CONTENT.into_response(),
         },
         None => StatusCode::NO_CONTENT.into_response(),
@@ -230,39 +251,64 @@ pub async fn save_catalog_storage(
     if payload.cloud_account_id.trim().is_empty() || payload.base_url.trim().is_empty() {
         return (
             StatusCode::BAD_REQUEST,
-            Json(error_body("validation_error", "cloud_account_id and base_url are required")),
-        ).into_response();
+            Json(error_body(
+                "validation_error",
+                "cloud_account_id and base_url are required",
+            )),
+        )
+            .into_response();
     }
 
     // Verify the cloud account exists
-    if state.db.get_cloud_account_summary(payload.cloud_account_id.as_str()).await.is_none() {
+    if state
+        .db
+        .get_cloud_account_summary(payload.cloud_account_id.as_str())
+        .await
+        .is_none()
+    {
         return (
             StatusCode::BAD_REQUEST,
             Json(error_body("validation_error", "Cloud account not found")),
-        ).into_response();
+        )
+            .into_response();
     }
 
     let result = match state.db.get_sink_connection().await {
-        Some(sink) => state.db.update_connection(&sink.id, UpdateConnectionRequest {
-            name: None,
-            kind: None,
-            location_type: Some(LocationType::Cloud),
-            direction: None,
-            cloud_account_id: Some(payload.cloud_account_id.clone()),
-            url: Some(payload.base_url.clone()),
-        }).await.map(|_| ()),
-        None => state.db.create_connection(CreateConnectionRequest {
-            name: SINK_NAME.to_string(),
-            kind: ConnectionKind::Data,
-            location_type: LocationType::Cloud,
-            direction: Direction::Sink,
-            cloud_account_id: Some(payload.cloud_account_id.clone()),
-            url: payload.base_url.clone(),
-        }).await.map(|_| ()),
+        Some(sink) => state
+            .db
+            .update_connection(
+                &sink.id,
+                UpdateConnectionRequest {
+                    name: None,
+                    kind: None,
+                    location_type: Some(LocationType::Cloud),
+                    direction: None,
+                    cloud_account_id: Some(payload.cloud_account_id.clone()),
+                    url: Some(payload.base_url.clone()),
+                },
+            )
+            .await
+            .map(|_| ()),
+        None => state
+            .db
+            .create_connection(CreateConnectionRequest {
+                name: SINK_NAME.to_string(),
+                kind: ConnectionKind::Data,
+                location_type: LocationType::Cloud,
+                direction: Direction::Sink,
+                cloud_account_id: Some(payload.cloud_account_id.clone()),
+                url: payload.base_url.clone(),
+            })
+            .await
+            .map(|_| ()),
     };
 
     match result {
         Ok(_) => data_response(payload).into_response(),
-        Err(msg) => (StatusCode::BAD_REQUEST, Json(error_body("validation_error", msg))).into_response(),
+        Err(msg) => (
+            StatusCode::BAD_REQUEST,
+            Json(error_body("validation_error", msg)),
+        )
+            .into_response(),
     }
 }

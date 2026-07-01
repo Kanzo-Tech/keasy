@@ -7,18 +7,24 @@ use super::models::{Job, JobStatus, RunMode};
 
 impl Database {
     pub async fn insert_job(&self, job: &Job) -> Result<(), String> {
-        let error_json = job.error.as_ref()
+        let error_json = job
+            .error
+            .as_ref()
             .map(serde_json::to_string)
             .transpose()
             .map_err(|e| format!("failed to serialize error: {e}"))?;
         let account_ids_json = serde_json::to_string(&job.connection_ids)
             .map_err(|e| format!("failed to serialize connection_ids: {e}"))?;
 
-        let manifest_json = job.manifest.as_ref()
+        let manifest_json = job
+            .manifest
+            .as_ref()
             .map(serde_json::to_string)
             .transpose()
             .map_err(|e| format!("failed to serialize manifest: {e}"))?;
-        let catalog_manifest_json = job.catalog_manifest.as_ref()
+        let catalog_manifest_json = job
+            .catalog_manifest
+            .as_ref()
             .map(serde_json::to_string)
             .transpose()
             .map_err(|e| format!("failed to serialize catalog_manifest: {e}"))?;
@@ -60,24 +66,34 @@ impl Database {
         .ok()
     }
 
-    pub async fn update_job(&self, id: &str, f: impl FnOnce(&mut Job)) -> Result<Option<Job>, String> {
+    pub async fn update_job(
+        &self,
+        id: &str,
+        f: impl FnOnce(&mut Job),
+    ) -> Result<Option<Job>, String> {
         let mut job = match self.get_job(id).await {
             Some(j) => j,
             None => return Ok(None),
         };
         f(&mut job);
 
-        let error_json = job.error.as_ref()
+        let error_json = job
+            .error
+            .as_ref()
             .map(serde_json::to_string)
             .transpose()
             .map_err(|e| format!("failed to serialize error: {e}"))?;
         let account_ids_json = serde_json::to_string(&job.connection_ids)
             .map_err(|e| format!("failed to serialize connection_ids: {e}"))?;
-        let manifest_json = job.manifest.as_ref()
+        let manifest_json = job
+            .manifest
+            .as_ref()
             .map(serde_json::to_string)
             .transpose()
             .map_err(|e| format!("failed to serialize manifest: {e}"))?;
-        let catalog_manifest_json = job.catalog_manifest.as_ref()
+        let catalog_manifest_json = job
+            .catalog_manifest
+            .as_ref()
             .map(serde_json::to_string)
             .transpose()
             .map_err(|e| format!("failed to serialize catalog_manifest: {e}"))?;
@@ -127,11 +143,8 @@ impl Database {
 
     pub async fn remove_job(&self, id: &str) -> Result<(), String> {
         let conn = self.write().await;
-        conn.execute(
-            "DELETE FROM jobs WHERE id = ?1",
-            [id],
-        )
-        .map_err(|e| format!("failed to delete job: {e}"))?;
+        conn.execute("DELETE FROM jobs WHERE id = ?1", [id])
+            .map_err(|e| format!("failed to delete job: {e}"))?;
         Ok(())
     }
 }
@@ -192,13 +205,14 @@ fn row_to_job(row: &rusqlite::Row) -> Job {
             None
         }),
         error: error_json.and_then(|j| serde_json::from_str::<JobRuntimeError>(&j).ok()),
-        connection_ids: serde_json::from_str::<Vec<String>>(&account_ids_json)
-            .unwrap_or_default(),
+        connection_ids: serde_json::from_str::<Vec<String>>(&account_ids_json).unwrap_or_default(),
         created_by: row.get("created_by").unwrap_or_default(),
         sink_connection_id: row.get("sink_connection_id").unwrap_or(None),
         script,
-        manifest: manifest_json.and_then(|j| serde_json::from_str::<fossil_run_status::RunStatus>(&j).ok()),
-        catalog_manifest: row.get::<_, Option<String>>("catalog_manifest")
+        manifest: manifest_json
+            .and_then(|j| serde_json::from_str::<fossil_run_status::RunStatus>(&j).ok()),
+        catalog_manifest: row
+            .get::<_, Option<String>>("catalog_manifest")
             .unwrap_or(None)
             .and_then(|j| serde_json::from_str::<fossil_run_status::RunStatus>(&j).ok()),
     }

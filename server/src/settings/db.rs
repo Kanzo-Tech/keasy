@@ -13,11 +13,9 @@ impl Database {
     pub async fn get_setting<T: DeserializeOwned>(&self, key: &str) -> Option<T> {
         let (_permit, conn) = self.read().await;
         let json = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = ?1",
-                [key],
-                |row| row.get::<_, String>(0),
-            )
+            .query_row("SELECT value FROM settings WHERE key = ?1", [key], |row| {
+                row.get::<_, String>(0)
+            })
             .ok()?;
         serde_json::from_str(&json).ok()
     }

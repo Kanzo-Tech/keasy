@@ -1,13 +1,13 @@
 use std::marker::PhantomData;
 use std::ops::Deref;
 
-use axum::extract::FromRequestParts;
-use axum::http::request::Parts;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
 use axum::Json;
-use axum::middleware::Next;
 use axum::body::Body;
+use axum::extract::FromRequestParts;
+use axum::http::StatusCode;
+use axum::http::request::Parts;
+use axum::middleware::Next;
+use axum::response::{IntoResponse, Response};
 use thiserror::Error;
 
 use crate::error::error_body;
@@ -69,7 +69,10 @@ impl IntoResponse for RbacError {
         match self {
             RbacError::AuthRequired => (
                 StatusCode::UNAUTHORIZED,
-                Json(error_body("auth/session_required", "Authentication required")),
+                Json(error_body(
+                    "auth/session_required",
+                    "Authentication required",
+                )),
             )
                 .into_response(),
 
@@ -84,7 +87,10 @@ impl IntoResponse for RbacError {
 
             RbacError::InsufficientRole => (
                 StatusCode::FORBIDDEN,
-                Json(error_body("rbac/insufficient_role", "Insufficient permissions")),
+                Json(error_body(
+                    "rbac/insufficient_role",
+                    "Insufficient permissions",
+                )),
             )
                 .into_response(),
 
@@ -159,7 +165,10 @@ where
             .cloned()
             .ok_or(RbacError::AuthRequired)?;
         if P::is_allowed(&ctx.role) {
-            Ok(Self { ctx, _p: PhantomData })
+            Ok(Self {
+                ctx,
+                _p: PhantomData,
+            })
         } else {
             Err(RbacError::InsufficientRole)
         }
@@ -184,7 +193,10 @@ pub async fn tenant_context_required(
 
     let role = user.role.ok_or(RbacError::NoMembership)?;
 
-    request.extensions_mut().insert(TenantContext { role, user_id: user.user_id });
+    request.extensions_mut().insert(TenantContext {
+        role,
+        user_id: user.user_id,
+    });
 
     Ok(next.run(request).await)
 }

@@ -36,11 +36,9 @@ impl ConnectionError {
                 "invalid_connection",
                 msg.clone(),
             ),
-            ConnectionError::Forbidden(msg) => (
-                axum::http::StatusCode::FORBIDDEN,
-                "forbidden",
-                msg.clone(),
-            ),
+            ConnectionError::Forbidden(msg) => {
+                (axum::http::StatusCode::FORBIDDEN, "forbidden", msg.clone())
+            }
             ConnectionError::ListFilesFailed(msg) => (
                 axum::http::StatusCode::BAD_GATEWAY,
                 "list_files_failed",

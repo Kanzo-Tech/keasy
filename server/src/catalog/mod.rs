@@ -84,7 +84,9 @@ impl Catalog {
             catalog_db.display(),
             data_path.display(),
         ))?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Register a completed job's output as one atomic snapshot: a per-job schema
@@ -120,7 +122,9 @@ impl Catalog {
 
         let schema = format!("job_{}", sanitize(job_id));
         let mut sql = String::from("BEGIN;\n");
-        sql.push_str(&format!("DROP SCHEMA IF EXISTS lake.\"{schema}\" CASCADE;\n"));
+        sql.push_str(&format!(
+            "DROP SCHEMA IF EXISTS lake.\"{schema}\" CASCADE;\n"
+        ));
         sql.push_str(&format!("CREATE SCHEMA lake.\"{schema}\";\n"));
 
         for v in &dataset.vertices {
@@ -202,7 +206,11 @@ fn push_register(sql: &mut String, schema: &str, ty: &str, url: &str) {
 
 /// Join a dataset base URL with a dataset-relative member path.
 fn join(base: &str, rel: &str) -> String {
-    format!("{}/{}", base.trim_end_matches('/'), rel.trim_start_matches('/'))
+    format!(
+        "{}/{}",
+        base.trim_end_matches('/'),
+        rel.trim_start_matches('/')
+    )
 }
 
 /// Reduce a name to `[A-Za-z0-9_]` (DuckDB type/predicate names are local names;
@@ -211,7 +219,13 @@ fn join(base: &str, rel: &str) -> String {
 /// (by the reconciler) to map a live job id to its schema suffix.
 pub(crate) fn sanitize(raw: &str) -> String {
     raw.chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect()
 }
 
@@ -265,28 +279,56 @@ mod tests {
         };
 
         let catalog = Catalog::open(dir.path()).expect("open catalog");
-        catalog.register("abc123", &dataset, &HashMap::new()).expect("register");
+        catalog
+            .register("abc123", &dataset, &HashMap::new())
+            .expect("register");
 
         let count = |c: &Catalog| -> i64 {
             c.conn
                 .lock()
                 .unwrap()
-                .query_row("SELECT count(*) FROM lake.\"job_abc123\".\"Person\"", [], |r| r.get(0))
+                .query_row(
+                    "SELECT count(*) FROM lake.\"job_abc123\".\"Person\"",
+                    [],
+                    |r| r.get(0),
+                )
                 .expect("query registered table")
         };
-        assert_eq!(count(&catalog), 2, "dataset registered + queryable by reference");
-        assert!(person.exists(), "registered by reference — Parquet not copied away");
+        assert_eq!(
+            count(&catalog),
+            2,
+            "dataset registered + queryable by reference"
+        );
+        assert!(
+            person.exists(),
+            "registered by reference — Parquet not copied away"
+        );
 
-        catalog.register("abc123", &dataset, &HashMap::new()).expect("re-register");
-        assert_eq!(count(&catalog), 2, "idempotent: re-register replaces, never doubles");
+        catalog
+            .register("abc123", &dataset, &HashMap::new())
+            .expect("re-register");
+        assert_eq!(
+            count(&catalog),
+            2,
+            "idempotent: re-register replaces, never doubles"
+        );
         // BYOS: the re-register's DROP SCHEMA CASCADE must NOT delete the
         // member's referenced Parquet — only the catalog metadata.
-        assert!(person.exists(), "referenced Parquet survives DROP SCHEMA CASCADE (BYOS)");
+        assert!(
+            person.exists(),
+            "referenced Parquet survives DROP SCHEMA CASCADE (BYOS)"
+        );
 
         // The catalog is the authority on "is this registered" (reconciler input).
         let registered = catalog.registered_jobs().expect("list registered");
-        assert!(Catalog::is_registered(&registered, "abc123"), "registered job is seen");
-        assert!(!Catalog::is_registered(&registered, "never-ran"), "unknown job is not");
+        assert!(
+            Catalog::is_registered(&registered, "abc123"),
+            "registered job is seen"
+        );
+        assert!(
+            !Catalog::is_registered(&registered, "never-ran"),
+            "unknown job is not"
+        );
 
         // A FAILED registration (here: a dataset whose Parquet doesn't exist)
         // must roll back, NOT leave the connection in an aborted transaction that
@@ -303,20 +345,37 @@ mod tests {
             }],
             edges: vec![],
         };
-        assert!(catalog.register("broken", &broken, &HashMap::new()).is_err(), "missing Parquet fails");
+        assert!(
+            catalog
+                .register("broken", &broken, &HashMap::new())
+                .is_err(),
+            "missing Parquet fails"
+        );
         // The connection is NOT poisoned — this would error "transaction is aborted" without the rollback.
-        assert_eq!(count(&catalog), 2, "catalog still usable after a failed registration");
-        assert!(catalog.registered_jobs().is_ok(), "registered_jobs works after a failed registration");
+        assert_eq!(
+            count(&catalog),
+            2,
+            "catalog still usable after a failed registration"
+        );
+        assert!(
+            catalog.registered_jobs().is_ok(),
+            "registered_jobs works after a failed registration"
+        );
 
         // unregister (job deleted): drops the schema, idempotently, and STILL
         // leaves the member's Parquet at the sink (BYOS).
         catalog.unregister("abc123").expect("unregister");
-        catalog.unregister("abc123").expect("unregister is idempotent");
+        catalog
+            .unregister("abc123")
+            .expect("unregister is idempotent");
         assert!(
             !Catalog::is_registered(&catalog.registered_jobs().unwrap(), "abc123"),
             "unregistered job is gone from the catalog",
         );
-        assert!(person.exists(), "unregister never deletes the member's Parquet (BYOS)");
+        assert!(
+            person.exists(),
+            "unregister never deletes the member's Parquet (BYOS)"
+        );
     }
 
     /// Two edges sharing an `edge_type` but with different endpoints (e.g.
@@ -347,16 +406,27 @@ mod tests {
             version: 1,
             dest: dir.path().display().to_string(),
             vertices: vec![],
-            edges: vec![edge_status("IfcBeam", "Class"), edge_status("IfcColumn", "Class")],
+            edges: vec![
+                edge_status("IfcBeam", "Class"),
+                edge_status("IfcColumn", "Class"),
+            ],
         };
 
         let catalog = Catalog::open(dir.path()).unwrap();
-        catalog.register("e1", &dataset, &HashMap::new()).expect("two same-predicate edges register");
+        catalog
+            .register("e1", &dataset, &HashMap::new())
+            .expect("two same-predicate edges register");
 
         let tables = catalog.datasets().unwrap();
         let names: Vec<&str> = tables[0].tables.iter().map(|t| t.name.as_str()).collect();
-        assert!(names.contains(&"IfcBeam_classifiedAs_Class"), "first edge table: {names:?}");
-        assert!(names.contains(&"IfcColumn_classifiedAs_Class"), "second edge table: {names:?}");
+        assert!(
+            names.contains(&"IfcBeam_classifiedAs_Class"),
+            "first edge table: {names:?}"
+        );
+        assert!(
+            names.contains(&"IfcColumn_classifiedAs_Class"),
+            "second edge table: {names:?}"
+        );
     }
 
     /// De-risk (W1, first step): confirm the pinned `duckdb` 1.10502 crate can
@@ -429,9 +499,16 @@ mod tests {
         // Collect whatever provider env the substrate uses (S3 or Azure), then
         // translate by the URL scheme — same path `register` takes.
         let config: HashMap<String, String> = [
-            "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_DEFAULT_REGION", "AWS_ENDPOINT_URL",
-            "AZURE_STORAGE_ACCOUNT_NAME", "AZURE_STORAGE_ACCOUNT_KEY", "AZURE_STORAGE_SAS_KEY",
-            "AZURE_STORAGE_CLIENT_ID", "AZURE_STORAGE_CLIENT_SECRET", "AZURE_STORAGE_TENANT_ID",
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+            "AWS_DEFAULT_REGION",
+            "AWS_ENDPOINT_URL",
+            "AZURE_STORAGE_ACCOUNT_NAME",
+            "AZURE_STORAGE_ACCOUNT_KEY",
+            "AZURE_STORAGE_SAS_KEY",
+            "AZURE_STORAGE_CLIENT_ID",
+            "AZURE_STORAGE_CLIENT_SECRET",
+            "AZURE_STORAGE_TENANT_ID",
         ]
         .into_iter()
         .filter_map(|k| std::env::var(k).ok().map(|v| (k.to_string(), v)))
@@ -444,8 +521,10 @@ mod tests {
         };
 
         let conn = Connection::open_in_memory().expect("open in-memory duckdb");
-        conn.execute_batch(&format!("INSTALL httpfs; LOAD httpfs; INSTALL azure; LOAD azure; {secret_sql}"))
-            .expect("load httpfs + azure + create secret");
+        conn.execute_batch(&format!(
+            "INSTALL httpfs; LOAD httpfs; INSTALL azure; LOAD azure; {secret_sql}"
+        ))
+        .expect("load httpfs + azure + create secret");
 
         // parquet_file_metadata reads ONLY the footer — no full scan — which is
         // exactly what `ducklake_add_data_files` does to register by reference.
@@ -460,9 +539,3 @@ mod tests {
         eprintln!("✓ remote footer read: {url} → {rows} rows");
     }
 }
-
-
-
-
-
-

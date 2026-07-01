@@ -10,7 +10,6 @@ pub struct FileEntry {
     pub last_modified: Option<String>,
 }
 
-
 pub async fn list_files(
     container_url: &str,
     creds: &HashMap<String, String>,
@@ -24,10 +23,7 @@ pub async fn list_files(
     };
 
     let mut entries = Vec::new();
-    let list = store
-        .list(prefix_opt)
-        .collect::<Vec<_>>()
-        .await;
+    let list = store.list(prefix_opt).collect::<Vec<_>>().await;
 
     for result in list {
         match result {
@@ -52,17 +48,11 @@ pub async fn upload(
 ) -> Result<(), String> {
     let (store, path) = super::build_store(url, creds).map_err(|e| e.to_string())?;
     let payload = object_store::PutPayload::from(content);
-    store
-        .put(&path, payload)
-        .await
-        .map_err(|e| e.to_string())?;
+    store.put(&path, payload).await.map_err(|e| e.to_string())?;
     Ok(())
 }
 
-pub async fn download(
-    url: &str,
-    creds: &HashMap<String, String>,
-) -> Result<Vec<u8>, String> {
+pub async fn download(url: &str, creds: &HashMap<String, String>) -> Result<Vec<u8>, String> {
     let (store, path) = super::build_store(url, creds).map_err(|e| e.to_string())?;
     let result = store.get(&path).await.map_err(|e| e.to_string())?;
     let bytes = result.bytes().await.map_err(|e| e.to_string())?;

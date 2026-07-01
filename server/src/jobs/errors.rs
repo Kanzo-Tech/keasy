@@ -12,11 +12,19 @@ pub struct JobRuntimeError {
 
 impl JobRuntimeError {
     pub fn new(code: &str, message: impl Into<String>) -> Self {
-        Self { code: code.into(), message: message.into(), detail: None }
+        Self {
+            code: code.into(),
+            message: message.into(),
+            detail: None,
+        }
     }
 
     pub fn with_detail(code: &str, message: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self { code: code.into(), message: message.into(), detail: Some(detail.into()) }
+        Self {
+            code: code.into(),
+            message: message.into(),
+            detail: Some(detail.into()),
+        }
     }
 }
 

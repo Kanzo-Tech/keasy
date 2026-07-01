@@ -73,6 +73,24 @@ jobs:
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
+      # Keyless cosign signature (GitHub OIDC → Fulcio/Rekor) — this is what the
+      # in-cluster Kyverno verify-keasy-images policy checks before admitting a pod.
+      - uses: sigstore/cosign-installer@v3
+      - run: cosign sign --yes ghcr.io/kanzo-tech/keasy-server@${{ steps.build.outputs.digest }}
+
+      # SBOM, attested to the image digest (supply-chain visibility).
+      - uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/kanzo-tech/keasy-server@${{ steps.build.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+      - uses: actions/attest-sbom@v2
+        with:
+          subject-name: ghcr.io/kanzo-tech/keasy-server
+          subject-digest: ${{ steps.build.outputs.digest }}
+          sbom-path: sbom.spdx.json
+          push-to-registry: true
+
   web:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -112,6 +130,23 @@ jobs:
         with:
           subject-name: ghcr.io/kanzo-tech/keasy-web
           subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      # Keyless cosign signature — verified in-cluster by verify-keasy-images.
+      - uses: sigstore/cosign-installer@v3
+      - run: cosign sign --yes ghcr.io/kanzo-tech/keasy-web@${{ steps.build.outputs.digest }}
+
+      # SBOM, attested to the image digest.
+      - uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/kanzo-tech/keasy-web@${{ steps.build.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+      - uses: actions/attest-sbom@v2
+        with:
+          subject-name: ghcr.io/kanzo-tech/keasy-web
+          subject-digest: ${{ steps.build.outputs.digest }}
+          sbom-path: sbom.spdx.json
           push-to-registry: true
 
   # ── Close the release loop ──────────────────────────────────────────────────

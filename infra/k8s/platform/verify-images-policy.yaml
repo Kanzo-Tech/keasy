@@ -1,0 +1,42 @@
+# Only admit keasy-* pods whose image carries a valid keyless cosign signature produced
+# by THIS repo's `images` workflow on a version tag (subject pins the workflow identity;
+# issuer pins GitHub's OIDC). Closes the supply-chain loop opened by the digest-pin:
+# build signs + attests → the cluster refuses to run anything it can't verify.
+#
+# Scoped to ghcr.io/kanzo-tech/keasy-* only, so unsigned platform images (Keycloak, CNPG,
+# cert-manager, Kyverno itself) are untouched. mutateDigest:false — the ApplicationSet
+# already pins by @sha256, so Kyverno must not rewrite the ref.
+#
+# NOTE: verifyImages schema shifts between Kyverno versions — validate against the pinned
+# chart (3.8.1) on the cluster. Wave -1: after the Kyverno CRDs (wave -2) exist.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-keasy-images
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  validationFailureAction: Enforce
+  webhookTimeoutSeconds: 30
+  failurePolicy: Fail
+  background: false
+  rules:
+    - name: check-keasy-signature
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "ghcr.io/kanzo-tech/keasy-*"
+          mutateDigest: false
+          required: true
+          attestors:
+            - count: 1
+              entries:
+                - keyless:
+                    subject: "https://github.com/Kanzo-Tech/keasy/.github/workflows/images.yml@refs/tags/*"
+                    issuer: "https://token.actions.githubusercontent.com"
+                    rekor:
+                      url: https://rekor.sigstore.dev

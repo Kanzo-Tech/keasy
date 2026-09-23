@@ -387,6 +387,14 @@ pub fn setup_sse_channels() -> SseChannels {
     }
 }
 
+/// The one shape of the `error` frame. Both stream endpoints go through here so
+/// the payload cannot drift into two spellings again.
+pub fn error_event(code: &str, message: &str) -> Event {
+    Event::default()
+        .event("error")
+        .data(serde_json::json!({"code": code, "message": message}).to_string())
+}
+
 pub fn into_sse_response(sse_rx: mpsc::Receiver<Result<Event, Infallible>>) -> Response {
     Sse::new(ReceiverStream::new(sse_rx))
         .keep_alive(KeepAlive::default())
@@ -425,10 +433,7 @@ pub fn stream_llm_to_sse(
                     AiError::Failed(_) => "llm_failed",
                 };
                 warn!("LLM stream failed: {e}");
-                let err = serde_json::json!({"code": code, "message": e.to_string()});
-                let _ = sse_tx
-                    .send(Ok(Event::default().event("error").data(err.to_string())))
-                    .await;
+                let _ = sse_tx.send(Ok(error_event(code, &e.to_string()))).await;
             }
         }
     });

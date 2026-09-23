@@ -1,6 +1,35 @@
 import { EventSourceParserStream } from "eventsource-parser/stream";
 import { ApiError } from "./client";
 
+export interface SseFrame {
+  event: string;
+  data: string;
+}
+
+/** The `error` frame's payload — one shape, written by `server/src/ai/client.rs::error_event`. */
+export interface SseFailure {
+  code: string;
+  message: string;
+}
+
+export function sseFailure(frame: SseFrame): SseFailure | null {
+  return frame.event === "error" ? (JSON.parse(frame.data) as SseFailure) : null;
+}
+
+/**
+ * The same frames with an `error` turned into a throw, so a caller that has no
+ * use for the code reports it through `useAiStream`'s own failure path.
+ */
+export async function* failOnError(
+  frames: AsyncGenerator<SseFrame>,
+): AsyncGenerator<SseFrame> {
+  for await (const frame of frames) {
+    const failure = sseFailure(frame);
+    if (failure) throw new ApiError(failure.code, failure.message);
+    yield frame;
+  }
+}
+
 /**
  * Parse SSE frames from a fetch Response, yielding `{ event, data }` for each.
  *
@@ -10,12 +39,14 @@ import { ApiError } from "./client";
 export async function* fetchSSE(
   url: string,
   body?: unknown,
-): AsyncGenerator<{ event: string; data: string }> {
+  signal?: AbortSignal,
+): AsyncGenerator<SseFrame> {
   const res = await fetch(url, {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
+    signal,
   });
 
   if (!res.ok) {
@@ -60,17 +91,5 @@ export async function* fetchSSE(
     }
   } finally {
     reader.releaseLock();
-  }
-}
-
-/**
- * Convenience wrapper: yields parsed JSON payloads from an SSE stream.
- */
-export async function* fetchSSEJson<T>(
-  url: string,
-  body?: unknown,
-): AsyncGenerator<T> {
-  for await (const { data } of fetchSSE(url, body)) {
-    yield JSON.parse(data) as T;
   }
 }

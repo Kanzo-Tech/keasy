@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@kanzo-tech/ui";
 import { WorkspaceStatusBar, type StatusBarPanelButton } from "./workspace-status-bar";
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -168,66 +168,64 @@ export function WorkspaceLayout({
 
   return (
     <WorkspaceCtx.Provider value={{ closePanel }}>
-      <TooltipProvider delayDuration={300}>
-        <div className="relative w-full h-full overflow-hidden flex flex-col bg-background">
-          {/* Canvas + Dock area */}
-          <div className="relative flex-1 min-h-0">
-            {/* Canvas */}
-            <div className="absolute inset-0 z-0">{children}</div>
+      <div className="relative w-full h-full overflow-hidden flex flex-col bg-background">
+        {/* Canvas + Dock area */}
+        <div className="relative flex-1 min-h-0">
+          {/* Canvas */}
+          <div className="absolute inset-0 z-0">{children}</div>
 
-            {/* Back button — icon only */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href={backHref}
-                  className="absolute top-3 left-3 z-30 h-7 w-7 inline-flex items-center justify-center rounded-sm bg-background/80 backdrop-blur-sm border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                  aria-label={backLabel}
-                >
-                  <ArrowLeft size={14} />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">{backLabel}</TooltipContent>
-            </Tooltip>
-
-            {/* Floating controls — positioned dynamically */}
-            {floatingControls && (
-              <div
-                className="absolute z-30 bottom-3"
-                style={{ right: dockOpen ? dockWidth + 12 : 12 }}
+          {/* Back button — icon only */}
+          <Tooltip positioning={{ placement: "right" }}>
+            <TooltipTrigger asChild>
+              <Link
+                href={backHref}
+                className="absolute top-3 left-3 z-30 h-7 w-7 inline-flex items-center justify-center rounded-sm bg-background/80 backdrop-blur-sm border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                aria-label={backLabel}
               >
-                {floatingControls}
-              </div>
-            )}
+                <ArrowLeft size={14} />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent className="text-xs">{backLabel}</TooltipContent>
+          </Tooltip>
 
-            {/* Right dock */}
-            {dockOpen && (
+          {/* Floating controls — positioned dynamically */}
+          {floatingControls && (
+            <div
+              className="absolute z-30 bottom-3"
+              style={{ right: dockOpen ? dockWidth + 12 : 12 }}
+            >
+              {floatingControls}
+            </div>
+          )}
+
+          {/* Right dock */}
+          {dockOpen && (
+            <div
+              className="absolute top-0 right-0 bottom-0 z-20 flex"
+              style={{ width: dockWidth }}
+            >
               <div
-                className="absolute top-0 right-0 bottom-0 z-20 flex"
-                style={{ width: dockWidth }}
-              >
-                <div
-                  className="w-1.5 shrink-0 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors"
-                  onPointerDown={onResizeDown}
-                  onDoubleClick={onResizeDoubleClick}
-                  role="separator"
-                  aria-orientation="vertical"
-                />
-                <div className="flex-1 flex flex-col min-w-0 bg-card border-l overflow-hidden">
-                  {activePanelContent}
-                </div>
+                className="w-1.5 shrink-0 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors"
+                onPointerDown={onResizeDown}
+                onDoubleClick={onResizeDoubleClick}
+                role="separator"
+                aria-orientation="vertical"
+              />
+              <div className="flex-1 flex flex-col min-w-0 bg-card border-l overflow-hidden">
+                {activePanelContent}
               </div>
-            )}
-          </div>
-
-          {/* Status bar */}
-          <WorkspaceStatusBar
-            left={statusLeft}
-            panels={statusPanels}
-            activePanel={activePanel}
-            onPanelToggle={togglePanel}
-          />
+            </div>
+          )}
         </div>
-      </TooltipProvider>
+
+        {/* Status bar */}
+        <WorkspaceStatusBar
+          left={statusLeft}
+          panels={statusPanels}
+          activePanel={activePanel}
+          onPanelToggle={togglePanel}
+        />
+      </div>
     </WorkspaceCtx.Provider>
   );
 }

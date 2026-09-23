@@ -9,9 +9,8 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+} from "@kanzo-tech/ui";
 import { generateBreadcrumbs } from "@/lib/route-config";
-import { type LucideIcon } from "lucide-react";
 
 export function DynamicBreadcrumbs() {
   const pathname = usePathname();

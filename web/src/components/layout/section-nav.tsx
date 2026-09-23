@@ -7,9 +7,9 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuItem,
   SidebarMenuButton,
-} from "@/components/ui/sidebar";
+  SidebarMenuItem,
+} from "@kanzo-tech/ui";
 
 export interface NavSection {
   heading: string;

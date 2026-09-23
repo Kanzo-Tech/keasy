@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   type ColumnDef,
@@ -12,7 +12,8 @@ import {
 import { toast } from "@kanzo-tech/ui";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
-import { useLLMStream } from "@/hooks/use-llm-stream";
+import { useAiStream } from "@kanzo-tech/ai";
+import { type SseFrame, failOnError } from "@/lib/api/sse";
 import {
   Button,
   Checkbox,
@@ -331,6 +332,42 @@ function StepDescribe({
       />
     </div>
   );
+}
+
+// ── One LLM stream ──────────────────────────────────────────────────────
+
+/**
+ * The library's engine owns the loop and the abort; what is left here is the
+ * mapping from keasy's SSE frames — deltas accumulate into the preview, the
+ * `complete` payload goes to the caller, and an `error` frame fails the run.
+ */
+function useScriptStream() {
+  const { run, cancel, status } = useAiStream<SseFrame>();
+  const [text, setText] = useState("");
+
+  const start = useCallback(
+    <T,>(
+      source: (signal: AbortSignal) => AsyncGenerator<SseFrame>,
+      onComplete: (result: T) => void,
+    ) => {
+      setText("");
+      let accumulated = "";
+      void run(
+        (signal) => failOnError(source(signal)),
+        (frame) => {
+          if (frame.event === "delta") {
+            accumulated += frame.data;
+            setText(accumulated);
+          } else if (frame.event === "complete") {
+            onComplete(JSON.parse(frame.data) as T);
+          }
+        },
+      );
+    },
+    [run],
+  );
+
+  return { start, cancel, status, text };
 }
 
 // ── Streaming preview (shared between step 2 & 3) ───────────────────────
@@ -668,45 +705,51 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
     return true;
   }, [selectedConnectionIds, connections, schemas]);
 
-  // ── LLM streaming (callbacks read from refs — no useCallback needed) ──
+  // ── LLM streaming ─────────────────────────────────────────────────────
 
-  const suggest = useLLMStream<{ competency_questions: CompetencyQuestion[] }>({
-    streamFn: () => api.assistant.suggestStream({ domain, schemas: fileSchemas }),
-    onComplete: (data) => {
-      setReqs(data.competency_questions.map((cq) => ({ ...cq, enabled: true })));
-    },
-  });
+  const suggest = useScriptStream();
+  const generate = useScriptStream();
 
-  const generate = useLLMStream<{ script: string }>({
-    streamFn: () =>
-      api.assistant.generateStream({
-        domain,
-        competency_questions: reqs
-          .filter((r) => r.enabled && r.question.trim())
-          .map((r) => r.question),
-        schemas: fileSchemas,
-      }),
-    onComplete: (data) => {
-      onComplete(data.script);
-      toast.create({ title: "Script generated — review before submitting", type: "success" });
-    },
-  });
+  const askForRequirements = useCallback(
+    () =>
+      suggest.start<{ competency_questions: CompetencyQuestion[] }>(
+        (signal) => api.assistant.suggestStream({ domain, schemas: fileSchemas }, signal),
+        (data) => setReqs(data.competency_questions.map((cq) => ({ ...cq, enabled: true }))),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [suggest.start, domain, fileSchemas, setReqs],
+  );
 
   // Auto-trigger suggest when entering step 2
   useEffect(() => {
-    if (step === 2 && reqs.length === 0 && !suggest.loading && !suggest.error && schemasReady) {
-      suggest.start();
-    }
-    return suggest.abort;
+    const asked = suggest.status === "loading" || suggest.status === "error";
+    if (step === 2 && reqs.length === 0 && !asked && schemasReady) askForRequirements();
+    return suggest.cancel;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, schemasReady]);
 
   // Auto-trigger generate when entering step 3
   useEffect(() => {
-    if (step === 3 && !generate.loading && !generate.error) {
-      generate.start();
+    if (step === 3 && generate.status !== "loading" && generate.status !== "error") {
+      generate.start<{ script: string }>(
+        (signal) =>
+          api.assistant.generateStream(
+            {
+              domain,
+              competency_questions: reqs
+                .filter((r) => r.enabled && r.question.trim())
+                .map((r) => r.question),
+              schemas: fileSchemas,
+            },
+            signal,
+          ),
+        (data) => {
+          onComplete(data.script);
+          toast.create({ title: "Script generated — review before submitting", type: "success" });
+        },
+      );
     }
-    return generate.abort;
+    return generate.cancel;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
@@ -747,15 +790,15 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
             <StepRequirements
               reqs={reqs}
               setReqs={setReqs}
-              isLoading={suggest.loading}
+              isLoading={suggest.status === "loading"}
               schemasLoading={!schemasReady}
-              hasError={!!suggest.error}
-              onRetry={() => suggest.start()}
-              streamText={suggest.streamText}
+              hasError={suggest.status === "error"}
+              onRetry={askForRequirements}
+              streamText={suggest.text}
             />
           )}
-          {step === 3 && generate.loading && (
-            <StreamingPreview label="Generating Fossil script..." text={generate.streamText} />
+          {step === 3 && generate.status === "loading" && (
+            <StreamingPreview label="Generating Fossil script..." text={generate.text} />
           )}
         </div>
       </PageShell.Content>

@@ -5,6 +5,12 @@
 /* The design system's compiled appearance: the theme catalogue, the axis attributes
    KanzoThemeProvider writes to <html>, and every utility its components use. */
 @import "@kanzo-tech/ui/styles.css";
+/* The AI surfaces' own supplement — only what `@kanzo-tech/ai` adds on top of `ui`. */
+@import "@kanzo-tech/ai/styles.css";
+/* `MessageMarkdown` renders streamdown's element tree, whose classes live in a `.js` that the
+   default scan skips. Without this the markdown has structure and no spacing at all: headings
+   the size of body text, lists with no indent. */
+@source "../../node_modules/streamdown/dist/*.js";
 
 /* The library's dark contract, restated for keasy's own `dark:` call sites — a
    `@custom-variant` is a source directive and does not survive into a compiled sheet. */

@@ -125,7 +125,13 @@ export const api = {
     askStream: (
       id: string,
       question: string,
-      opts?: { conversationId?: string; provider?: string; schema?: string; explain?: boolean },
+      opts?: {
+        conversationId?: string;
+        provider?: string;
+        schema?: string;
+        explain?: boolean;
+        signal?: AbortSignal;
+      },
     ) =>
       fetchSSE(`/v1/jobs/${id}/discover/ask-stream`, {
         question,
@@ -133,7 +139,7 @@ export const api = {
         ...(opts?.provider ? { provider: opts.provider } : {}),
         ...(opts?.schema ? { schema: opts.schema } : {}),
         ...(opts?.explain ? { explain: opts.explain } : {}),
-      }),
+      }, opts?.signal),
   },
 
   // ── Catalog (governance) ──────────────────────────────────────────────
@@ -253,11 +259,11 @@ export const api = {
 
   // ── Assistant (SSE streaming) ───────────────────────────────────────────
   assistant: {
-    suggestStream: (req: Schemas["SuggestRequest"]) =>
-      fetchSSE("/v1/assistant/suggest-stream", req),
+    suggestStream: (req: Schemas["SuggestRequest"], signal?: AbortSignal) =>
+      fetchSSE("/v1/assistant/suggest-stream", req, signal),
 
-    generateStream: (req: Schemas["GenerateRequest"]) =>
-      fetchSSE("/v1/assistant/generate-stream", req),
+    generateStream: (req: Schemas["GenerateRequest"], signal?: AbortSignal) =>
+      fetchSSE("/v1/assistant/generate-stream", req, signal),
   },
 
 };

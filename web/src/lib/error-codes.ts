@@ -29,6 +29,9 @@ const registry: Record<string, ErrorInfo> = {
     message: "AI request failed. Check your AI provider settings.",
     link: { label: "Go to AI Settings", href: "/settings/ai" },
   },
+  stopped: {
+    message: "Stopped.",
+  },
   query_failed: {
     message: "Query execution failed. The AI may have generated invalid SQL. Try rephrasing your question.",
   },

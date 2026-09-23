@@ -18,7 +18,6 @@ export type CloudAccountSummary = S["CloudAccountSummary"];
 export type CreateCloudAccountRequest = S["CreateCloudAccountRequest"];
 export type UpdateCloudAccountRequest = S["UpdateCloudAccountRequest"];
 export type OrgSettings = S["OrgSettings"];
-export type Preferences = S["Preferences"];
 export type ConnectionKind = S["ConnectionKind"];
 export type LocationType = S["LocationType"];
 export type Connection = S["Connection"];

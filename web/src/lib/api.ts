@@ -179,12 +179,6 @@ export const api = {
       return result.data;
     },
 
-    preferences: async () =>
-      unwrap(await client.GET("/v1/settings/preferences")),
-
-    savePreferences: async (prefs: Schemas["Preferences"]) =>
-      unwrap(await client.PUT("/v1/settings/preferences", { body: prefs })),
-
     catalogStorage: async (): Promise<{ cloud_account_id: string; base_url: string } | null> => {
       const res = await fetch("/v1/settings/catalog-storage", { credentials: "same-origin" });
       if (res.status === 204 || !res.ok) return null;

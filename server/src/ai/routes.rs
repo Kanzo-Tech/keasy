@@ -9,7 +9,8 @@ use serde::{Deserialize, Serialize};
 use tracing::warn;
 
 use super::client::{
-    AiError, Message, ask_llm_stream, into_sse_response, require_ai_settings, setup_sse_channels,
+    AiError, Message, ask_llm_stream, error_event, into_sse_response, require_ai_settings,
+    setup_sse_channels,
 };
 use super::models::{AskResultCode, Conversation, ConversationMessage};
 use crate::AppState;
@@ -222,10 +223,7 @@ pub async fn ask_discover_stream(
                 {
                     warn!("Failed to persist error message: {e}");
                 }
-                let err = serde_json::json!({"code": code, "answer": msg});
-                let _ = sse_tx
-                    .send(Ok(Event::default().event("error").data(err.to_string())))
-                    .await;
+                let _ = sse_tx.send(Ok(error_event(code, msg))).await;
             }
         }
     });

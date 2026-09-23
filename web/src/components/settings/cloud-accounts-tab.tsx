@@ -100,7 +100,7 @@ export function CloudAccountsTab() {
 
   const handleDelete = useCallback(
     (id: string) => { deleteMutation.mutate(id); },
-    [deleteMutation.mutate],
+    [deleteMutation],
   );
 
   const columns = useMemo(

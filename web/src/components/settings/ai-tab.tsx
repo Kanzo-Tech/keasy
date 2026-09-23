@@ -104,7 +104,7 @@ export function AiTab() {
 
   const handleDelete = useCallback(
     (providerId: string) => { deleteMutation.mutate(providerId); },
-    [deleteMutation.mutate],
+    [deleteMutation],
   );
 
   const columns = useMemo(() => aiColumns(handleDelete), [handleDelete]);

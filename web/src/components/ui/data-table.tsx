@@ -83,17 +83,19 @@ export function selectColumn<T>(): ColumnDef<T> {
 /** Sortable header button — use as `header: sortableHeader("Name")`. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function sortableHeader(label: string): ColumnDef<any, any>["header"] {
-  return ({ column }) => (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="-ml-3 h-8 gap-1"
-      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-    >
-      {label}
-      <ArrowUpDown className="h-4 w-4" />
-    </Button>
-  )
+  return function SortableHeader({ column }) {
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-3 h-8 gap-1"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        {label}
+        <ArrowUpDown className="h-4 w-4" />
+      </Button>
+    )
+  }
 }
 
 /**

@@ -59,6 +59,27 @@ variable "tenants" {
     client_secret = optional(string)
   }))
   default = {}
+
+  # The planes are disjoint, so `owners` and `members` are disjoint too. An email
+  # in both used to resolve silently — `local.assignments` keys on "slug|email"
+  # and merges members last, so member won and nobody was told — which is the
+  # worst of the three possible outcomes: not the role the operator meant, and no
+  # sign that a choice was made. Being in one workspace's `owners` and another's
+  # `members` is fine and stays fine; this is about one workspace.
+  validation {
+    condition = alltrue([
+      for t in values(var.tenants) :
+      length(setintersection(toset(t.owners), toset(t.members))) == 0
+    ])
+    error_message = format(
+      "A workspace grants one role or the other, never both: an owner administers people, identity and the catalog and has no data plane; a member runs jobs, holds the connections and administers nothing. Listed in owners AND members: %s.",
+      join(", ", flatten([
+        for slug, t in var.tenants : [
+          for e in setintersection(toset(t.owners), toset(t.members)) : "${slug}/${e}"
+        ]
+      ]))
+    )
+  }
 }
 
 # Whether to create the per-tenant Swarm stacks (server/web docker_service + secrets).

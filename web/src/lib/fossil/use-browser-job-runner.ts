@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { api } from "@/lib/api";
-import { refs as fossilRefs } from "./lineage";
+import { refs as fossilRefs } from "./checker";
 import type { Schemas } from "@/lib/api/client";
 // Type-only — erased at compile time, so it does NOT eager-load the heavy wasm
 // module (the runtime values come from the dynamic `import()` below).

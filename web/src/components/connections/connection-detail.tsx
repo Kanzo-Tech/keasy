@@ -9,7 +9,7 @@ import {
   Skeleton,
 } from "@kanzo-tech/ui";
 import { api } from "@/lib/api";
-import { providers as fossilProviders } from "@/lib/fossil/lineage";
+import { providers as fossilProviders } from "@/lib/fossil/checker";
 import { queryKeys } from "@/lib/query-keys";
 import { MetaItem } from "@/components/shared/meta-item";
 import { PageShell } from "@/components/layout/page-shell";

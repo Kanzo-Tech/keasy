@@ -60,7 +60,7 @@ export const api = {
   },
 
   // (refs + providers moved client-side — `@fossil-lang/wasm` via
-  // `lib/fossil/lineage.ts`. keasy no longer subprocesses the `fossil` binary
+  // `lib/fossil/checker.ts`. keasy no longer subprocesses the `fossil` binary
   // for lineage/providers; host-boundary, no /v1/refs · /v1/providers.)
 
   // ── Connections ────────────────────────────────────────────────────────

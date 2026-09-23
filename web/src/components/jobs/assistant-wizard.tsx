@@ -32,8 +32,7 @@ import {
 import {
   selectColumn,
 } from "@kanzo-tech/ui/table";
-import { FossilEditor } from "@fossil-lang/editor";
-import { useFossilWasmReady } from "@/lib/fossil/use-fossil-wasm";
+import { CodeEditor } from "@kanzo-tech/ui/editor";
 import { PageShell } from "@/components/layout/page-shell";
 import { EmptyState } from "@/components/shared/empty-state";
 import Link from "next/link";
@@ -314,33 +313,22 @@ function StepDescribe({
   domain: string;
   onDomainChange: (v: string) => void;
 }) {
-  // FossilEditor always composes the fossil() language, which tokenizes via
-  // @fossil-lang/wasm on the main thread — gate on a main-thread wasm init.
-  const wasmReady = useFossilWasmReady();
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-2">
       <p className="text-sm text-muted-foreground">
         Describe the domain or purpose of your knowledge graph (optional).
       </p>
-      {/*
-        StepDescribe is free-form prose — no Fossil syntax, no autocomplete,
-        no diagnostics. Plain CodeMirror via <FossilEditor lspTransport={null} />.
-        FossilEditor does not yet expose a `placeholder` prop (see
-        deferred-items.md from 16-04); empty-state copy is conveyed by the
-        sibling <p> above instead.
-      */}
-      {wasmReady ? (
-        <FossilEditor
-          value={domain}
-          onChange={onDomainChange}
-          lspTransport={null}
-          className="flex-1"
-        />
-      ) : (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-        </div>
-      )}
+      {/* Free-form prose — no fossil syntax, no diagnostics, so no language
+          extension and nothing to wait for. The library's bare `CodeEditor` is
+          the whole of it; the wasm gate that used to sit here existed only
+          because `FossilEditor` composed the fossil language unconditionally. */}
+      <CodeEditor
+        chrome={false}
+        className="flex-1 min-h-0 rounded-md border"
+        onChange={onDomainChange}
+        placeholder="e.g. daily weather observations from Spanish stations"
+        value={domain}
+      />
     </div>
   );
 }

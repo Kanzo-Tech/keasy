@@ -5,8 +5,9 @@
  * source bindings, driving source-field completion (CONNECTION-SHAPE-MODEL
  * step 2).
  *
- * The introspection LOGIC lives in fossil (@fossil-lang/introspect, re-exported
- * from @fossil-lang/editor): `extractSourceRefs` scrapes `name := io.csv("@c/p")`
+ * The introspection LOGIC lives in fossil (@fossil-lang/introspect — it was
+ * reached through @fossil-lang/editor's re-exports until that package was
+ * deleted; the import moved, the code did not): `extractSourceRefs` scrapes `name := io.csv("@c/p")`
  * bindings and `buildDescriptor` maps DuckDB-ish column types through the
  * canonical fossil primitive table. keasy supplies only the DATA PLANE — and
  * does so server-side via the EXISTING `GET /v1/connections/{id}/schema`
@@ -29,7 +30,7 @@ import {
   extractSourceRefs,
   type DescribeRow,
   type InferredDescriptor,
-} from "@fossil-lang/editor";
+} from "@fossil-lang/introspect";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import type { Connection } from "@/lib/types";
@@ -45,7 +46,11 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 interface ResolvedRef {
-  sourceName: string;
+  /** The URI the PROGRAM wrote (`@stations/stations.csv`) — the key the compiler
+   *  looks a descriptor up under, per `buildDescriptor`. Not the binding name,
+   *  and not the signed URL keasy resolved it to: the written URI is the only
+   *  string the host and the checker both see. */
+  uri: string;
   connId: string;
   path: string;
 }
@@ -79,7 +84,7 @@ export function useSourceDescriptors(
       if (!parsed) continue;
       const connId = idByName.get(parsed.connName);
       if (!connId) continue;
-      out.push({ sourceName: ref.sourceName, connId, path: parsed.path });
+      out.push({ uri: ref.url, connId, path: parsed.path });
     }
     return out;
   }, [debouncedScript, idByName]);
@@ -103,7 +108,7 @@ export function useSourceDescriptors(
     .map((r, i) => {
       const cols = queries[i]?.data?.columns;
       return cols
-        ? `${r.sourceName}=${cols.map((c) => `${c.name}:${c.data_type}`).join(",")}`
+        ? `${r.uri}=${cols.map((c) => `${c.name}:${c.data_type}`).join(",")}`
         : "";
     })
     .join("|");
@@ -117,7 +122,7 @@ export function useSourceDescriptors(
         column_name: c.name,
         column_type: c.data_type,
       }));
-      out.push(buildDescriptor(r.sourceName, rows));
+      out.push(buildDescriptor(r.uri, rows));
     });
     return out;
     // `sig` is the content key for (resolved + query data); recompute only when

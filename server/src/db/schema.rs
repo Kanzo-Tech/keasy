@@ -56,7 +56,7 @@ const MIGRATIONS: &[&str] = &[
         sink_connection_id TEXT,
         script          TEXT,
         manifest        TEXT,
-        catalog_manifest TEXT
+        relations       TEXT
     );
 
     CREATE TABLE IF NOT EXISTS conversations (

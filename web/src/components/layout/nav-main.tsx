@@ -7,8 +7,6 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
@@ -18,7 +16,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@kanzo-tech/ui";
 
 export function NavMain({
   items,
@@ -43,7 +41,7 @@ export function NavMain({
         {items.map((item) => (
           <SidebarMenuItem key={item.title}>
             {item.items?.length ? (
-              <Collapsible asChild defaultOpen={item.isActive} className="group/collapsible">
+              <Collapsible className="group/collapsible" defaultOpen={item.isActive}>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton tooltip={item.title}>
                     {item.icon && <item.icon />}

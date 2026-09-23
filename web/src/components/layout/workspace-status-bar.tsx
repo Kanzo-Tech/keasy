@@ -1,8 +1,12 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  cn,
+} from "@kanzo-tech/ui";
 
 export interface StatusBarPanelButton {
   id: string;
@@ -25,7 +29,7 @@ export function WorkspaceStatusBar({ left, panels, activePanel, onPanelToggle }:
       </div>
       <div className="flex items-center gap-0.5">
         {panels.map(({ id, icon: Icon, label }) => (
-          <Tooltip key={id}>
+          <Tooltip key={id} positioning={{ placement: "top" }}>
             <TooltipTrigger asChild>
               <button
                 className={cn(
@@ -40,7 +44,7 @@ export function WorkspaceStatusBar({ left, panels, activePanel, onPanelToggle }:
                 <Icon size={13} />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">{label}</TooltipContent>
+            <TooltipContent className="text-xs">{label}</TooltipContent>
           </Tooltip>
         ))}
       </div>

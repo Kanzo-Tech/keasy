@@ -2,32 +2,34 @@
 
 import { useState } from "react";
 import { Loader2, Play } from "lucide-react";
-import type { ExecuteSqlResult } from "@fossil-lang/graph";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import type { ExecuteSqlResult } from "@fossil-lang/corpus";
+import {
+  Button,
+  ScrollArea,
+} from "@kanzo-tech/ui";
 import { PanelHeader } from "@/components/layout/workspace-layout";
-import { useGraphClient } from "./use-discovery-store";
+import { useCorpus } from "./use-discovery-store";
 
 /**
  * Raw SQL over the producer's own dataset. Runs entirely in the browser via
- * `graphClient.executeSql` (DuckDB-WASM over the signed-URL Parquet) — the server
+ * `corpus.executeSql` (DuckDB-WASM over the signed-URL Parquet) — the server
  * never executes the query. Data sovereignty is enforced at the signed-URL layer
  * (only the producer gets URLs for their job), so this is the producer's tool
  * over their own data; the owner discovers the space at the catalog level.
  */
 export function DiscoverySql() {
-  const graphClient = useGraphClient();
+  const corpus = useCorpus();
   const [sql, setSql] = useState("");
   const [result, setResult] = useState<ExecuteSqlResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
 
   const run = async () => {
-    if (!sql.trim() || running || !graphClient) return;
+    if (!sql.trim() || running || !corpus) return;
     setRunning(true);
     setError(null);
     try {
-      setResult(await graphClient.executeSql({ sql }));
+      setResult(await corpus.executeSql({ sql }));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setResult(null);
@@ -51,7 +53,7 @@ export function DiscoverySql() {
           spellCheck={false}
           className="w-full h-24 resize-none rounded-sm border bg-transparent p-2 font-mono text-[11px] outline-none focus:ring-1 focus:ring-ring"
         />
-        <Button size="sm" className="w-full h-7" onClick={run} disabled={running || !sql.trim() || !graphClient}>
+        <Button size="sm" className="w-full h-7" onClick={run} disabled={running || !sql.trim() || !corpus}>
           {running ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play size={12} />}
           <span className="ml-1.5 text-xs">Run (⌘↵)</span>
         </Button>

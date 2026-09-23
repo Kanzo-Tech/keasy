@@ -2,10 +2,12 @@
 
 import { useCallback, useMemo, useRef } from "react";
 import { CheckCircle2, Loader2, Play, Plus, ShieldCheck, X, XCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import {
+  Badge,
+  Button,
+  ScrollArea,
+} from "@kanzo-tech/ui";
 import { EmptyState } from "@/components/shared/empty-state";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { PanelHeader } from "@/components/layout/workspace-layout";
 import type { GraphSchema } from "@/lib/graph-schema";
 import type { Query } from "@uwdata/mosaic-sql";
@@ -142,7 +144,7 @@ function RuleRow({ rule, result, schema, conjunction, onUpdate, onRemove }: {
       )}
 
       {/* Delete */}
-      <Button variant="ghost" size="icon" className="shrink-0 h-5 w-5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={onRemove} aria-label="Remove rule">
+      <Button variant="ghost" size="icon-sm" className="shrink-0 h-5 w-5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={onRemove} aria-label="Remove rule">
         <X size={14} />
       </Button>
     </div>

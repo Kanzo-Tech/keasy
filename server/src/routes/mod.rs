@@ -155,19 +155,11 @@ pub fn build_router(
         )
         .route(
             "/v1/jobs/{id}/discover/urls",
-            axum::routing::get(crate::discovery::routes::resolve_discover_urls),
+            axum::routing::post(crate::discovery::routes::resolve_discover_urls),
         )
         .route(
-            "/v1/jobs/{id}/discover/manifest",
-            axum::routing::get(crate::discovery::routes::resolve_discover_manifest),
-        )
-        .route(
-            "/v1/jobs/{id}/catalog/urls",
-            axum::routing::get(crate::discovery::routes::resolve_catalog_urls),
-        )
-        .route(
-            "/v1/jobs/{id}/catalog/manifest",
-            axum::routing::get(crate::discovery::routes::resolve_catalog_manifest),
+            "/v1/jobs/{id}/relations",
+            axum::routing::put(crate::jobs::routes::publish_relations),
         )
         .route(
             "/v1/catalog/datasets",

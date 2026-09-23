@@ -1,13 +1,15 @@
 import type { JobTransport, CompletePayload, ConnectionRefs } from "@fossil-lang/executor";
 import { api } from "@/lib/api";
-import type { Schemas } from "@/lib/api/client";
 
 /**
  * keasy's `JobTransport` for `@fossil-lang/executor`'s `runJob` — wires the four
  * browser-driven job endpoints to `api.jobs.*` so the orchestration carries no
- * server coupling. The executor's `RunStatus` is the same `fossil-run-status`
- * wire shape as the codegen `CompleteJobRequest.manifest`, so the completion
- * mapping is a structural cast (no transformation).
+ * server coupling.
+ *
+ * `report` crosses untouched: `CompleteJobRequest.manifest` is opaque JSON on
+ * the server, so there is nothing to map and nothing keasy could map it to. It
+ * used to be a re-typed `RunStatus` on both sides, which is how the host ended
+ * up asking for files the layout pass had already deleted.
  */
 export function makeJobTransport(id: string): JobTransport {
   return {
@@ -17,7 +19,7 @@ export function makeJobTransport(id: string): JobTransport {
     complete: async (req: CompletePayload): Promise<void> => {
       await api.jobs.complete(id, {
         status: req.status,
-        manifest: req.manifest as Schemas["CompleteJobRequest"]["manifest"],
+        manifest: req.manifest,
         error: req.error,
       });
     },

@@ -1,9 +1,9 @@
-import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+  cn,
+} from "@kanzo-tech/ui";
 
 export function MetaItem({
   label,
@@ -19,7 +19,7 @@ export function MetaItem({
   return (
     <div className="min-w-0">
       <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
-      <Tooltip>
+      <Tooltip positioning={{ placement: "bottom" }}>
         <TooltipTrigger asChild>
           <p
             className={cn("text-sm truncate", mono && "font-mono", capitalize && "capitalize")}
@@ -27,7 +27,7 @@ export function MetaItem({
             {value}
           </p>
         </TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-md break-all font-mono text-xs">
+        <TooltipContent className="max-w-md break-all font-mono text-xs">
           {value}
         </TooltipContent>
       </Tooltip>

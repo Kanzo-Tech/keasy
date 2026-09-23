@@ -1,8 +1,7 @@
 import { forbidden, redirect } from "next/navigation";
+import { SidebarInset, SidebarProvider } from "@kanzo-tech/ui";
 import { getEffectiveRole } from "@/lib/auth-check";
-import { PreferencesProvider } from "@/components/providers/preferences-provider";
 import { AppSidebar } from "@/components/layout/app-sidebar";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
 export default async function MainLayout({
   children,
@@ -14,15 +13,11 @@ export default async function MainLayout({
   if (role === "none") forbidden();
 
   return (
-    <PreferencesProvider>
-      <SidebarProvider>
-        <div className="flex h-dvh w-full overflow-hidden">
-          <AppSidebar />
-          <SidebarInset className="flex-1 flex flex-col overflow-hidden w-full">
-            {children}
-          </SidebarInset>
-        </div>
-      </SidebarProvider>
-    </PreferencesProvider>
+    // The provider IS the viewport frame — it renders the flex row the rail and the
+    // inset sit in, so keasy no longer wraps it in one of its own.
+    <SidebarProvider className="h-dvh min-h-0 overflow-hidden">
+      <AppSidebar />
+      <SidebarInset className="overflow-hidden">{children}</SidebarInset>
+    </SidebarProvider>
   );
 }

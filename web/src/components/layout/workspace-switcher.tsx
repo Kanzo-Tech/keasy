@@ -3,25 +3,29 @@
 import * as React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import {
+  Menu,
+  MenuContent,
+  MenuGroup,
+  MenuItem,
+  MenuTrigger,
+  Show,
+  SidebarIdentity,
+  SidebarIdentityDescription,
+  SidebarIdentityIcon,
+  SidebarIdentityLabel,
+  SidebarIdentityText,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  toast,
+  useSidebar,
+} from "@kanzo-tech/ui";
 
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { ROLE_LABEL } from "@/lib/route-config";
 import type { MeResponse, WorkspacesResponse } from "@/lib/types";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from "@/components/ui/sidebar";
 
 // Each tenant is its own subdomain instance. The switcher gets only slugs (from the
 // `workspaces` token claim) and `current`; it builds each workspace's URL from the
@@ -38,7 +42,7 @@ function workspaceUrl(slug: string, current: string): string {
 const titleCase = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 export function WorkspaceSwitcher() {
-  const { isMobile } = useSidebar();
+  const { isMobile, state } = useSidebar();
   const queryClient = useQueryClient();
 
   const { data: me } = useQuery<MeResponse>({
@@ -56,6 +60,7 @@ export function WorkspaceSwitcher() {
   const effectiveRole = me?.effective_role ?? "member";
   // This instance's display name comes from its workspace identity; others show the slug.
   const displayName = me?.org?.name ?? titleCase(current) ?? "Keasy";
+  const collapsed = state === "collapsed" && !isMobile;
 
   const [switching, setSwitching] = React.useState<string | null>(null);
 
@@ -67,7 +72,10 @@ export function WorkspaceSwitcher() {
       window.location.assign(`${workspaceUrl(slug, current)}/v1/auth/oidc-start`);
     } catch {
       setSwitching(null);
-      toast.error(`Could not switch to ${titleCase(slug)}. Please try again.`);
+      toast.create({
+        title: `Could not switch to ${titleCase(slug)}. Please try again.`,
+        type: "error",
+      });
     }
   }
 
@@ -76,34 +84,44 @@ export function WorkspaceSwitcher() {
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" className="cursor-default">
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <Loader2 className="size-4 animate-spin" />
-            </div>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium text-muted-foreground">
-                Switching to {switching}…
-              </span>
-            </div>
+            <SidebarIdentity collapsed={collapsed} responsive>
+              <SidebarIdentityIcon>
+                <Loader2 className="animate-spin" />
+              </SidebarIdentityIcon>
+              <SidebarIdentityText>
+                <SidebarIdentityLabel className="text-muted-foreground">
+                  Switching to {switching}…
+                </SidebarIdentityLabel>
+              </SidebarIdentityText>
+            </SidebarIdentity>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
     );
   }
 
+  const identity = (
+    <>
+      <SidebarIdentityIcon>
+        <GalleryVerticalEnd />
+      </SidebarIdentityIcon>
+      <SidebarIdentityText>
+        <SidebarIdentityLabel>{displayName}</SidebarIdentityLabel>
+        <SidebarIdentityDescription>
+          {ROLE_LABEL[effectiveRole] ?? effectiveRole}
+        </SidebarIdentityDescription>
+      </SidebarIdentityText>
+    </>
+  );
+
   if (workspaces.length <= 1) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" className="cursor-default">
-            <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-              <GalleryVerticalEnd className="size-4" />
-            </div>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{displayName}</span>
-              <span className="truncate text-xs text-muted-foreground">
-                {ROLE_LABEL[effectiveRole] ?? effectiveRole}
-              </span>
-            </div>
+            <SidebarIdentity collapsed={collapsed} responsive>
+              {identity}
+            </SidebarIdentity>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
@@ -113,54 +131,42 @@ export function WorkspaceSwitcher() {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <Menu positioning={{ placement: isMobile ? "bottom-start" : "right-start", gutter: 4 }}>
+          <MenuTrigger asChild>
             <SidebarMenuButton
+              aria-label={displayName}
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="group-data-[collapsible=icon]:justify-center data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                <span className="text-sm font-bold">
-                  {displayName.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{displayName}</span>
-                <span className="truncate text-xs text-muted-foreground">
-                  {ROLE_LABEL[effectiveRole] ?? effectiveRole}
-                </span>
-              </div>
-              <ChevronsUpDown className="ml-auto" />
+              <SidebarIdentity collapsed={collapsed} responsive>
+                {identity}
+              </SidebarIdentity>
+              <ChevronsUpDown className="ms-auto group-data-[collapsible=icon]:hidden" />
             </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            align="start"
-            side={isMobile ? "bottom" : "right"}
-            sideOffset={4}
-          >
-            <DropdownMenuLabel className="text-muted-foreground text-xs">
-              Workspaces
-            </DropdownMenuLabel>
-            {workspaces.map((slug) => (
-              <DropdownMenuItem
-                key={slug}
-                onClick={() => handleSwitch(slug)}
-                className="gap-2 p-2"
-              >
-                <div className="flex size-6 items-center justify-center rounded-md border">
-                  <span className="text-xs font-bold">
-                    {slug.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate">{titleCase(slug)}</span>
-                </div>
-                {slug === current && <Check className="ml-auto size-4 shrink-0" />}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </MenuTrigger>
+          {/* `--reference-width` is the trigger's width, exposed by Ark on the positioner. */}
+          <MenuContent className="w-(--reference-width) min-w-56">
+            <MenuGroup heading="Workspaces">
+              {workspaces.map((slug) => (
+                <MenuItem key={slug} onSelect={() => handleSwitch(slug)} value={slug}>
+                  <SidebarIdentity>
+                    <SidebarIdentityIcon>
+                      <span className="font-bold text-xs">
+                        {slug.charAt(0).toUpperCase()}
+                      </span>
+                    </SidebarIdentityIcon>
+                    <SidebarIdentityText>
+                      <SidebarIdentityLabel>{titleCase(slug)}</SidebarIdentityLabel>
+                    </SidebarIdentityText>
+                  </SidebarIdentity>
+                  <Show when={slug === current}>
+                    <Check className="ms-auto" />
+                  </Show>
+                </MenuItem>
+              ))}
+            </MenuGroup>
+          </MenuContent>
+        </Menu>
       </SidebarMenuItem>
     </SidebarMenu>
   );

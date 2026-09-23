@@ -4,23 +4,28 @@ import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Briefcase, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import Link from "next/link";
-import type { ColumnDef } from "@tanstack/react-table";
 
 import { PageShell } from "@/components/layout/page-shell";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { hasRunningJobs } from "@/lib/utils";
+import { Button, MenuItem } from "@kanzo-tech/ui";
 import {
-  DataTable,
-  ActionItem,
+  type ColumnDef,
+  DataTableContent,
+  DataTablePagination,
+  DataTableRoot,
+  DataTableSearch,
+  DataTableToolbar,
+  DataTableViewOptions,
   selectColumn,
   sortableHeader,
-  actionsColumn,
-} from "@/components/ui/data-table";
+  useDataTable,
+} from "@kanzo-tech/ui/table";
+import { actionsColumn } from "@/components/shared/actions-column";
 import { EmptyState } from "@/components/shared/empty-state";
-import { Button } from "@/components/ui/button";
 import { JobStatusBadge } from "@/components/jobs/job-status-badge";
 import { formatDate, formatJobDuration } from "@/lib/formatters";
 import type { Job, JobStatus } from "@/lib/types";
@@ -68,15 +73,13 @@ function jobColumns(onDelete: (id: string) => void): ColumnDef<Job>[] {
     },
     actionsColumn<Job>((job) =>
       TERMINAL_STATUSES.includes(job.status) ? (
-        <ActionItem
+        <MenuItem
+          onSelect={() => onDelete(job.id)}
+          value="delete"
           variant="destructive"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(job.id);
-          }}
         >
           Delete
-        </ActionItem>
+        </MenuItem>
       ) : null,
     ),
   ];
@@ -95,10 +98,10 @@ export default function JobsPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.jobs.remove(id),
     onSuccess: () => {
-      toast.success("Job deleted");
+      toast.create({ title: "Job deleted", type: "success" });
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
     },
-    onError: () => toast.error("Failed to delete job"),
+    onError: () => toast.create({ title: "Failed to delete job", type: "error" }),
   });
 
   const handleDelete = useCallback(
@@ -107,6 +110,8 @@ export default function JobsPage() {
   );
 
   const columns = useMemo(() => jobColumns(handleDelete), [handleDelete]);
+
+  const table = useDataTable({ columns, data: jobs ?? [] });
 
   const handleRowClick = useCallback(
     (job: Job) => {
@@ -136,21 +141,22 @@ export default function JobsPage() {
       }
     />
   ) : (
-    <DataTable
-      columns={columns}
-      data={jobs}
-      searchKey="name"
-      searchPlaceholder="Search jobs..."
-      onRowClick={handleRowClick}
-      toolbarActions={
-        <Button asChild size="sm">
-          <Link href="/jobs/new">
-            <Plus size={14} className="mr-1" />
-            Create job
-          </Link>
-        </Button>
-      }
-    />
+    <DataTableRoot table={table}>
+      <DataTableToolbar>
+        <DataTableSearch column="name" placeholder="Search jobs..." />
+        <div className="ms-auto flex items-center gap-2">
+          <DataTableViewOptions />
+          <Button asChild size="sm">
+            <Link href="/jobs/new">
+              <Plus size={14} />
+              Create job
+            </Link>
+          </Button>
+        </div>
+      </DataTableToolbar>
+      <DataTableContent<Job> empty="No jobs match this filter." onRowClick={handleRowClick} />
+      <DataTablePagination />
+    </DataTableRoot>
     )}
     </PageShell.Content>
     </PageShell>

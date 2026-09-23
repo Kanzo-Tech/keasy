@@ -6,11 +6,9 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@kanzo-tech/ui";
 
 export function UnsavedChangesGuard({ isDirty }: { isDirty: boolean }) {
   const isDirtyRef = useRef(isDirty);
@@ -78,20 +76,18 @@ export function UnsavedChangesGuard({ isDirty }: { isDirty: boolean }) {
   }, [pendingNavigation]);
 
   return (
-    <AlertDialog open={pendingNavigation !== null} onOpenChange={(open) => { if (!open) setPendingNavigation(null); }}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Unsaved changes</AlertDialogTitle>
-          <AlertDialogDescription>
-            You have unsaved changes that will be lost.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
+    <AlertDialog
+      onOpenChange={(details) => { if (!details.open) setPendingNavigation(null); }}
+      open={pendingNavigation !== null}
+    >
+      <AlertDialogContent size="sm">
+        <AlertDialogHeader
+          description="You have unsaved changes that will be lost."
+          title="Unsaved changes"
+        />
         <AlertDialogFooter>
           <AlertDialogCancel>Stay</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleConfirm}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
+          <AlertDialogAction onClick={handleConfirm} variant="destructive">
             Leave
           </AlertDialogAction>
         </AlertDialogFooter>

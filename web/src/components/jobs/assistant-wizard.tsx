@@ -9,34 +9,34 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { useLLMStream } from "@/hooks/use-llm-stream";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { FossilEditor } from "@fossil-lang/editor";
-import { useFossilWasmReady } from "@/lib/fossil/use-fossil-wasm";
-import { PageShell } from "@/components/layout/page-shell";
 import {
+  Button,
+  Checkbox,
+  Input,
+  Menu,
+  MenuContent,
+  MenuItem,
+  MenuTrigger,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { selectColumn } from "@/components/ui/data-table";
+  cn,
+} from "@kanzo-tech/ui";
+import {
+  selectColumn,
+} from "@kanzo-tech/ui/table";
+import { CodeEditor } from "@kanzo-tech/ui/editor";
+import { PageShell } from "@/components/layout/page-shell";
 import { EmptyState } from "@/components/shared/empty-state";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Database, Loader2, MoreHorizontal, Plus, Wand2 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import type {
   Connection,
   ColumnInfo,
@@ -44,7 +44,6 @@ import type {
   FileSchema,
   ProviderInfo,
 } from "@/lib/types";
-import { cn } from "@/lib/utils";
 import { formatSize } from "@/lib/formatters";
 import { StepIndicator } from "@/components/shared/step-indicator";
 import { useAssistantWizardStore, type ReqEntry } from "./assistant-wizard-store";
@@ -314,33 +313,22 @@ function StepDescribe({
   domain: string;
   onDomainChange: (v: string) => void;
 }) {
-  // FossilEditor always composes the fossil() language, which tokenizes via
-  // @fossil-lang/wasm on the main thread — gate on a main-thread wasm init.
-  const wasmReady = useFossilWasmReady();
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-2">
       <p className="text-sm text-muted-foreground">
         Describe the domain or purpose of your knowledge graph (optional).
       </p>
-      {/*
-        StepDescribe is free-form prose — no Fossil syntax, no autocomplete,
-        no diagnostics. Plain CodeMirror via <FossilEditor lspTransport={null} />.
-        FossilEditor does not yet expose a `placeholder` prop (see
-        deferred-items.md from 16-04); empty-state copy is conveyed by the
-        sibling <p> above instead.
-      */}
-      {wasmReady ? (
-        <FossilEditor
-          value={domain}
-          onChange={onDomainChange}
-          lspTransport={null}
-          className="flex-1"
-        />
-      ) : (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-        </div>
-      )}
+      {/* Free-form prose — no fossil syntax, no diagnostics, so no language
+          extension and nothing to wait for. The library's bare `CodeEditor` is
+          the whole of it; the wasm gate that used to sit here existed only
+          because `FossilEditor` composed the fossil language unconditionally. */}
+      <CodeEditor
+        chrome={false}
+        className="flex-1 min-h-0 rounded-md border"
+        onChange={onDomainChange}
+        placeholder="e.g. daily weather observations from Spanish stations"
+        value={domain}
+      />
     </div>
   );
 }
@@ -435,30 +423,27 @@ function StepRequirements({
       enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <Menu positioning={{ placement: "bottom-end" }}>
+          <MenuTrigger asChild>
             <Button
+              aria-label="Open requirement actions"
+              onClick={(event) => event.stopPropagation()}
+              size="icon-sm"
               variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={(e) => e.stopPropagation()}
             >
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Open menu</span>
+              <MoreHorizontal />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                removeReq(row.original.id);
-              }}
-              className="text-destructive focus:text-destructive"
+          </MenuTrigger>
+          <MenuContent>
+            <MenuItem
+              onSelect={() => removeReq(row.original.id)}
+              value="remove"
+              variant="destructive"
             >
               Remove
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </MenuItem>
+          </MenuContent>
+        </Menu>
       ),
     },
   ], []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -703,7 +688,7 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
       }),
     onComplete: (data) => {
       onComplete(data.script);
-      toast.success("Script generated — review before submitting");
+      toast.create({ title: "Script generated — review before submitting", type: "success" });
     },
   });
 

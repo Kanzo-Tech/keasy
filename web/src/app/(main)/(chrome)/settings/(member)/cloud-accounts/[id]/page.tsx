@@ -3,7 +3,7 @@
 import { use } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import { toastError } from "@/lib/toast-error";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
@@ -39,7 +39,7 @@ export default function EditCloudAccountPage({
         fields: data.fields,
       }),
     onSuccess: async () => {
-      toast.success("Cloud account updated");
+      toast.create({ title: "Cloud account updated", type: "success" });
       await queryClient.invalidateQueries({ queryKey: queryKeys.cloud.accounts });
       router.push("/settings/cloud-accounts");
     },

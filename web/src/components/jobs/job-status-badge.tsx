@@ -1,4 +1,6 @@
-import { Badge } from "@/components/ui/badge";
+import {
+  Badge,
+} from "@kanzo-tech/ui";
 import type { JobStatus } from "@/lib/types";
 
 const config: Record<JobStatus, { label: string; className: string }> = {

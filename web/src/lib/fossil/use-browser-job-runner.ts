@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
 import { api } from "@/lib/api";
-import { refs as fossilRefs } from "./lineage";
+import { refs as fossilRefs } from "./checker";
 import type { Schemas } from "@/lib/api/client";
 // Type-only — erased at compile time, so it does NOT eager-load the heavy wasm
 // module (the runtime values come from the dynamic `import()` below).
 import type { FossilExecutor } from "@fossil-lang/executor";
 import { makeJobTransport } from "./job-transport";
+import { openJobCorpus, relationsOf } from "./open-job-corpus";
 
 // Served by `copy-fossil-wasm.mjs` (predev/prebuild) — the DataFusion-WASM
 // executor artefact. Heavy (~lazy-loaded only when a job actually runs).
@@ -100,6 +101,21 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         exec = new mod.FossilExecutor();
         // runJob reports the terminal `completed`/`failed` PATCH itself.
         await mod.runJob(exec, program, makeJobTransport(jobId), { fetchImpl: uploadFetch, shex });
+
+        // Tell the host what it is now storing. The run report says what was
+        // written; it does not say what the relations are CALLED, which is a
+        // reader's answer — so the corpus is opened and asked, here, in the tab
+        // that just produced it. The catalog registration hangs off this.
+        //
+        // Its own `catch`: the job IS done and its data IS at the sink. A
+        // failure here loses the catalog entry, not the run, and reporting it as
+        // a failed run would be a lie about durable data.
+        try {
+          const { corpus } = await openJobCorpus(jobId);
+          await api.jobs.publishRelations(jobId, await relationsOf(corpus));
+        } catch (err) {
+          console.error(`publishing the corpus relations failed (${jobId})`, err);
+        }
       } catch (err) {
         // runJob already best-effort PATCHes `failed`; nothing else to do but log.
         console.error(`browser job run failed (${jobId})`, err);

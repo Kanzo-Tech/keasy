@@ -1,30 +1,32 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Combobox } from "@/components/ui/combobox";
-import { Input } from "@/components/ui/input";
 import {
+  Badge,
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  createListCollection,
+  Input,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+  useFilter,
+} from "@kanzo-tech/ui";
 import {
   type Rule,
   type RuleOperator,
@@ -54,15 +56,28 @@ export function EntitySelect({ rule, schema, onChange }: RuleCellProps) {
     onChange({ ...rule, typeName, fieldKey: firstCol, value: undefined, values: undefined });
   }
 
+  const collection = useMemo(
+    () =>
+      createListCollection({
+        items: schema.types.map((t) => ({ label: t.name, value: t.name })),
+      }),
+    [schema],
+  );
+  const value = rule.typeName ?? schema.types[0]?.name ?? "";
+
   return (
-    <Select value={rule.typeName ?? schema.types[0]?.name ?? ""} onValueChange={handleTypeChange}>
+    <Select
+      collection={collection}
+      onValueChange={(details) => handleTypeChange(details.value[0] ?? "")}
+      value={value ? [value] : []}
+    >
       <SelectTrigger className="h-7 text-xs border-0 shadow-none px-1 rounded-sm hover:bg-accent">
         <SelectValue placeholder="Entity" />
       </SelectTrigger>
       <SelectContent>
-        {schema.types.map((t) => (
-          <SelectItem key={t.name} value={t.name}>
-            {t.name}
+        {collection.items.map((t) => (
+          <SelectItem item={t} key={t.value}>
+            {t.label}
           </SelectItem>
         ))}
       </SelectContent>
@@ -79,15 +94,27 @@ export function FieldSelect({ rule, schema, onChange }: RuleCellProps) {
     onChange({ ...rule, fieldKey, operator, value: undefined, values: undefined });
   }
 
+  const collection = useMemo(
+    () =>
+      createListCollection({
+        items: typeFields.map((f) => ({ label: f.name, value: f.name })),
+      }),
+    [typeFields],
+  );
+
   return (
-    <Select value={rule.fieldKey} onValueChange={handleFieldChange}>
+    <Select
+      collection={collection}
+      onValueChange={(details) => handleFieldChange(details.value[0] ?? "")}
+      value={rule.fieldKey ? [rule.fieldKey] : []}
+    >
       <SelectTrigger className="h-7 text-xs border-0 shadow-none px-1 rounded-sm hover:bg-accent">
         <SelectValue placeholder="Select field" />
       </SelectTrigger>
       <SelectContent>
-        {typeFields.map((f) => (
-          <SelectItem key={f.name} value={f.name}>
-            {f.name}
+        {collection.items.map((f) => (
+          <SelectItem item={f} key={f.value}>
+            {f.label}
           </SelectItem>
         ))}
       </SelectContent>
@@ -102,15 +129,29 @@ export function OperatorSelect({ rule, onChange }: RuleCellProps) {
     onChange({ ...rule, operator, value: undefined, values: undefined });
   }
 
+  const collection = useMemo(
+    () =>
+      createListCollection({
+        items: operators.map((op) => ({ label: OPERATOR_META[op].label, value: op })),
+      }),
+    [operators],
+  );
+
   return (
-    <Select value={rule.operator} onValueChange={(v) => handleOperatorChange(v as RuleOperator)}>
+    <Select
+      collection={collection}
+      onValueChange={(details) =>
+        handleOperatorChange((details.value[0] ?? operators[0]) as RuleOperator)
+      }
+      value={[rule.operator]}
+    >
       <SelectTrigger className="h-7 text-xs border-0 shadow-none px-1 rounded-sm hover:bg-accent">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {operators.map((op) => (
-          <SelectItem key={op} value={op}>
-            {OPERATOR_META[op].label}
+        {collection.items.map((op) => (
+          <SelectItem item={op} key={op.value}>
+            {op.label}
           </SelectItem>
         ))}
       </SelectContent>
@@ -137,16 +178,18 @@ export function ValueInput({ rule, schema, onChange }: RuleCellProps) {
     query: facetQuery,
     enabled: !!facetQuery,
   });
-  const options = useMemo(() => {
-    if (!facetResult) return [];
-    const result: { value: string; label: string }[] = [];
-    for (let i = 0; i < facetResult.length; i++) {
-      const row = facetResult[i];
+  // Ark's combobox reads a collection; the query text is held here and the collection is
+  // derived from it, so a facet list that arrives late is never stale.
+  const { contains } = useFilter({ sensitivity: "base" });
+  const [query, setQuery] = useState("");
+  const collection = useMemo(() => {
+    const items: { value: string; label: string }[] = [];
+    for (const row of facetResult ?? []) {
       const v = String(row.value ?? "");
-      if (v) result.push({ value: v, label: v });
+      if (v && contains(v, query)) items.push({ value: v, label: v });
     }
-    return result;
-  }, [facetResult]);
+    return createListCollection({ items });
+  }, [facetResult, query, contains]);
 
   if (!meta.needsValue && !meta.needsValues) return null;
 
@@ -180,17 +223,25 @@ export function ValueInput({ rule, schema, onChange }: RuleCellProps) {
     );
   }
 
-  // Mosaic-backed Combobox for value selection
+  // Mosaic-backed combobox for value selection
+  const selected = String(rule.value ?? "");
   return (
     <Combobox
-      options={options}
-      value={String(rule.value ?? "")}
-      onValueChange={(v) => onChange({ ...rule, value: v })}
-      placeholder="Select value"
-      searchPlaceholder="Search values..."
-      emptyMessage="No values found"
-      className="h-7 text-xs border-0 shadow-none px-1 rounded-sm hover:bg-accent"
-    />
+      collection={collection}
+      onInputValueChange={(details) => setQuery(details.inputValue)}
+      onValueChange={(details) => onChange({ ...rule, value: details.value[0] ?? "" })}
+      value={selected ? [selected] : []}
+    >
+      <ComboboxInput className="h-7 text-xs border-0 shadow-none px-1 rounded-sm hover:bg-accent" placeholder="Select value" />
+      <ComboboxContent>
+        <ComboboxEmpty>No values found</ComboboxEmpty>
+        {collection.items.map((item) => (
+          <ComboboxItem item={item} key={item.value}>
+            {item.label}
+          </ComboboxItem>
+        ))}
+      </ComboboxContent>
+    </Combobox>
   );
 }
 
@@ -229,9 +280,9 @@ export function StatusCell({ result }: StatusCellProps) {
   }
 
   return (
-    <Popover>
+    <Popover positioning={{ placement: "bottom-start" }}>
       <PopoverTrigger asChild>{badge}</PopoverTrigger>
-      <PopoverContent className="w-auto max-w-[500px] p-3" align="start">
+      <PopoverContent className="w-auto max-w-[500px] p-3">
         <p className="text-xs text-muted-foreground mb-2">
           {result.violationCount.toLocaleString()} / {result.totalRows.toLocaleString()} rows
           ({(result.violationCount / result.totalRows * 100).toFixed(2)}%)

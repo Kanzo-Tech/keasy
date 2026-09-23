@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import type { Coordinator } from "@uwdata/mosaic-core";
 import { useCoordinator } from "./use-discovery-store";
 import { PanelHeader } from "@/components/layout/workspace-layout";
@@ -20,19 +20,30 @@ import { queryKeys } from "@/lib/query-keys";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
 import { generateSuggestions } from "@/lib/schema-suggestions";
 import { EmptyState } from "@/components/shared/empty-state";
-import { Button } from "@/components/ui/button";
-import { InputGroup, InputGroupAddon, InputGroupTextarea } from "@/components/ui/input-group";
-import { CodeView } from "@/components/discovery/code-view";
-import { ErrorAlert } from "@/components/ui/error-alert";
-import { Markdown } from "@/components/ui/markdown";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+  Button,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupTextarea,
+  ScrollArea,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@kanzo-tech/ui";
+import { CodeEditor } from "@kanzo-tech/ui/editor";
+import { sql as sqlLanguage } from "@codemirror/lang-sql";
+import { ErrorAlert } from "@/components/shared/error-alert";
+import { Markdown } from "@/components/shared/markdown";
 import { isError } from "@/lib/error-codes";
 import type { ConversationMessage } from "@/lib/types";
+
+const SQL = sqlLanguage();
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -112,7 +123,13 @@ function AssistantExtra({ msg, onShowOnGraph }: { msg: AskMessage; onShowOnGraph
   return (
     <div className="space-y-2 min-w-0">
       <div className="flex items-center gap-1">
-        <ToggleGroup type="single" variant="outline" size="sm" value={view ?? ""} onValueChange={(v) => { if (v) setPickedView(v); }}>
+        <ToggleGroup
+          multiple={false}
+          onValueChange={(details) => { if (details.value[0]) setPickedView(details.value[0]); }}
+          size="sm"
+          value={view ? [view] : []}
+          variant="outline"
+        >
           {hasContent && <ToggleGroupItem value="explanation" className="text-[10px] h-5 px-1.5">Explain</ToggleGroupItem>}
           {hasSql && <ToggleGroupItem value="results" className="text-[10px] h-5 px-1.5">Results</ToggleGroupItem>}
           {hasSql && <ToggleGroupItem value="query" className="text-[10px] h-5 px-1.5">SQL</ToggleGroupItem>}
@@ -130,8 +147,8 @@ function AssistantExtra({ msg, onShowOnGraph }: { msg: AskMessage; onShowOnGraph
       {view === "results" && hasSql && <ResultTable sql={msg.sql!} />}
       {view === "query" && hasSql && (
         <div className="relative">
-          <CodeView code={msg.sql!} lang="sql" />
-          <button className="absolute top-1 right-1 h-5 w-5 inline-flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground" onClick={() => { navigator.clipboard.writeText(msg.sql!); toast.success("Copied"); }}>
+          <CodeEditor value={msg.sql!} readOnly basics chrome={false} wrap extensions={SQL} />
+          <button className="absolute top-1 right-1 h-5 w-5 inline-flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground" onClick={() => { navigator.clipboard.writeText(msg.sql!); toast.create({ title: "Copied", type: "success" }); }}>
             <Copy size={10} />
           </button>
         </div>
@@ -305,7 +322,7 @@ export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema, onShowOnG
           />
           <InputGroupAddon align="block-end">
             <Button
-              size="icon"
+              size="icon-sm"
               className="h-7 w-7 rounded-md"
               disabled={!input.trim() || loading}
               onClick={() => handleSend(input)}

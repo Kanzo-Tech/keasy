@@ -36,7 +36,6 @@ export const queryKeys = {
     schema: ["schema"] as const,
     providers: ["providers"] as const,
     org: ["settings-org"] as const,
-    preferences: ["preferences"] as const,
     catalogStorage: ["catalog-storage"] as const,
   },
 

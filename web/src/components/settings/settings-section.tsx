@@ -1,12 +1,6 @@
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from "@kanzo-tech/ui";
 
 export interface SectionAction {
   label: string;
@@ -94,14 +88,12 @@ function SectionActionButton({ action }: { action: SectionAction }) {
   if (!action.tooltip) return button;
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          {/* span wrapper so tooltip works on disabled buttons */}
-          <span className="inline-flex">{button}</span>
-        </TooltipTrigger>
-        <TooltipContent>{action.tooltip}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {/* span wrapper so the tooltip still works on a disabled button */}
+        <span className="inline-flex">{button}</span>
+      </TooltipTrigger>
+      <TooltipContent>{action.tooltip}</TooltipContent>
+    </Tooltip>
   );
 }

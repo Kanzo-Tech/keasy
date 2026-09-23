@@ -5,46 +5,28 @@ import {
   isBinnable,
   fieldKey,
   buildGraphSchema,
-  foldVertexStats,
   type FieldStatsMap,
 } from "@/lib/graph-schema";
-import type { RunStatus } from "@/lib/types";
+import type { SchemaResult } from "@fossil-lang/corpus";
 
-// ── Test fixtures (GraphAr datatype spellings — what RunStatus carries) ───
+// ── Test fixtures — what the `schema` verb answers ───────────────────────
 
-const manifest: RunStatus = {
-  dest: "",
+const overview: SchemaResult = {
   vertices: [
-    {
-      type: "person",
-      file: "person.parquet",
-      count: 100,
-      columns: [
-        { name: "subject", data_type: "string" },
-        { name: "age", data_type: "int64" },
-        { name: "dept", data_type: "string" },
-      ],
-    },
-    {
-      type: "org",
-      file: "org.parquet",
-      count: 20,
-      columns: [
-        { name: "subject", data_type: "string" },
-        { name: "revenue", data_type: "int64" },
-      ],
-    },
+    { name: "person", iri: "https://example.org/Person", count: 100, fields: ["subject", "age", "dept"] },
+    { name: "org", iri: "https://example.org/Org", count: 20, fields: ["subject", "revenue"] },
   ],
   edges: [
     {
-      edge_type: "works_at",
-      src_type: "person",
-      dst_type: "org",
-      by_source: "e.parquet",
-      by_target: "e_t.parquet",
+      name: "works_at",
+      iri: "https://example.org/works_at",
+      source_type: "person",
+      target_type: "org",
       count: 100,
+      table_name: "person_works_at_org",
     },
   ],
+  fields: [],
 };
 
 // ── Type checks (GraphAr spellings; chart-binning concern, not role) ──────
@@ -71,16 +53,16 @@ describe("type classification", () => {
 // ── GraphSchema ─────────────────────────────────────────────────────────
 
 describe("buildGraphSchema", () => {
-  const schema = buildGraphSchema(manifest);
+  const schema = buildGraphSchema(overview);
 
-  it("creates vertex types from manifest", () => {
+  it("creates vertex types from the schema verb", () => {
     expect(schema.types).toHaveLength(2);
     expect(schema.types[0].name).toBe("person");
     expect(schema.types[0].entityCount).toBe(100);
     expect(schema.types[1].name).toBe("org");
   });
 
-  it("creates edges from manifest", () => {
+  it("takes the edge relation name from the verb, it does not spell one", () => {
     expect(schema.edges).toHaveLength(1);
     expect(schema.edges[0].tableName).toBe("person_works_at_org");
   });
@@ -100,56 +82,59 @@ describe("buildGraphSchema", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it("without verb stats, roles default to dimension (fossil is the source)", () => {
+  it("without stats, a field is a name and nothing is binnable", () => {
     expect(schema.field("person::dept")?.role).toBe("dimension");
-    expect(schema.field("person::age")?.role).toBe("dimension");
+    expect(schema.field("person::age")?.type).toBe("");
     expect(schema.field("person::dept")?.distinct).toBeUndefined();
   });
 
-  it("attaches authoritative role + cardinality from describe_vertex_type", () => {
-    const stats: FieldStatsMap = new Map();
-    foldVertexStats(stats, "person", 100, [
-      { name: "age", datatype: "int64", distinct: 80, role: "measure" },
-      { name: "dept", datatype: "string", distinct: 95, role: "identifier" },
+  it("attaches authoritative datatype, role and cardinality from the verb", () => {
+    const stats: FieldStatsMap = new Map([
+      [
+        "person",
+        [
+          { name: "age", datatype: "int64", distinct: 80, role: "measure" as const, samples: [] },
+          { name: "dept", datatype: "string", distinct: 95, role: "identifier" as const, samples: [] },
+        ],
+      ],
     ]);
-    const enriched = buildGraphSchema(manifest, stats);
+    const enriched = buildGraphSchema(overview, stats);
     expect(enriched.field("person::age")?.role).toBe("measure");
+    expect(enriched.field("person::age")?.type).toBe("int64");
     expect(enriched.field("person::dept")?.role).toBe("identifier");
     expect(enriched.field("person::dept")?.distinct).toBe(95);
   });
 });
 
 describe("buildSource", () => {
-  const schema = buildGraphSchema(manifest);
+  const schema = buildGraphSchema(overview);
 
-  it("single type → direct table", () => {
+  it("single type → direct relation", () => {
     const age = schema.field("person::age")!;
     const dept = schema.field("person::dept")!;
-    const source = schema.buildSource([age, dept]);
-    expect(source.tableName).toBe("person");
+    expect(schema.buildSource([age, dept]).tableName).toBe("person");
   });
 
-  it("cross-type → inline JOIN subquery", () => {
+  it("cross-type → inline JOIN on the writer's addressing columns", () => {
     const age = schema.field("person::age")!;
     const revenue = schema.field("org::revenue")!;
     const source = schema.buildSource([age, revenue]);
     expect(source.tableName).toContain("JOIN");
-    expect(source.tableName).toContain('"person"');
-    expect(source.tableName).toContain('"org"');
+    expect(source.tableName).toContain("s.dense_id = e.src_dense");
+    expect(source.tableName).toContain("t.dense_id = e.dst_dense");
   });
 
   it("no connection → fallback to first type", () => {
-    const noEdgeManifest: RunStatus = {
-      dest: "",
+    const disconnected: SchemaResult = {
       vertices: [
-        { type: "a", file: "", count: 0, columns: [{ name: "x", data_type: "string" }] },
-        { type: "b", file: "", count: 0, columns: [{ name: "y", data_type: "string" }] },
+        { name: "a", iri: "", count: 0, fields: ["x"] },
+        { name: "b", iri: "", count: 0, fields: ["y"] },
       ],
       edges: [],
+      fields: [],
     };
-    const s = buildGraphSchema(noEdgeManifest);
-    const source = s.buildSource([s.field("a::x")!, s.field("b::y")!]);
-    expect(source.tableName).toBe("a");
+    const s = buildGraphSchema(disconnected);
+    expect(s.buildSource([s.field("a::x")!, s.field("b::y")!]).tableName).toBe("a");
   });
 });
 

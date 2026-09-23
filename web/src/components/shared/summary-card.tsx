@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import {
+  Card,
+  Skeleton,
+  cn,
+} from "@kanzo-tech/ui";
 
 interface SummaryCardProps {
   href: string;
@@ -47,9 +49,11 @@ export function SummaryCard({
           </span>
         </div>
         <div className="flex items-end pt-3">
-          <Skeleton loading={value === undefined}>
-            <p className="text-2xl font-semibold tracking-tight">{value ?? "—"}</p>
-          </Skeleton>
+          {value === undefined ? (
+            <Skeleton className="h-8 w-16" />
+          ) : (
+            <p className="text-2xl font-semibold tracking-tight">{value}</p>
+          )}
         </div>
         <p className="text-sm text-muted-foreground pt-1">{description}</p>
       </Card>

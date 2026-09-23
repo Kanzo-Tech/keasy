@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toastError } from "@/lib/toast-error";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
@@ -10,16 +9,11 @@ import { useBrowserJobRunner } from "@/lib/fossil/use-browser-job-runner";
 import { queryKeys } from "@/lib/query-keys";
 import { reverseMapUrl } from "@/lib/formatters";
 import { isTerminalStatus } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import { Button, Skeleton } from "@kanzo-tech/ui";
 import { Compass } from "lucide-react";
 import Link from "next/link";
 
-import {
-  OverviewContent,
-  CatalogView,
-} from "@/components/jobs/detail";
+import { OverviewContent } from "@/components/jobs/detail";
 
 export function JobDetailView({ id }: { id: string }) {
   const {
@@ -42,21 +36,6 @@ export function JobDetailView({ id }: { id: string }) {
 
   const showSkeleton = useDelayedLoading(isLoading);
 
-  // URL-persisted tab/mode state for deep linking
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
-
-  const tab = searchParams.get("tab") ?? "overview";
-
-  const setParam = useCallback((key: string, value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set(key, value);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [searchParams, router, pathname]);
-
-  const setTab = useCallback((v: string) => setParam("tab", v), [setParam]);
-
   const prevStatusRef = useRef(job?.status);
   useEffect(() => {
     if (prevStatusRef.current !== "failed" && job?.status === "failed" && job.error) {
@@ -69,14 +48,14 @@ export function JobDetailView({ id }: { id: string }) {
     return showSkeleton ? (
       <div className="flex-1 min-h-0">
         <div className="mx-4 mt-4">
-          <Skeleton loading className="inline-flex"><span className="px-3 py-1.5 text-sm">Overview</span></Skeleton>
+          <Skeleton className="h-8 w-24" />
         </div>
         <div className="p-4 space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {["ID", "Created", "Run", "Destination"].map((label) => (
               <div key={label} className="space-y-1">
                 <p className="text-xs text-muted-foreground">{label}</p>
-                <Skeleton loading className="block"><p className="text-sm font-medium">placeholder</p></Skeleton>
+                <Skeleton className="h-5 w-28" />
               </div>
             ))}
           </div>
@@ -90,47 +69,30 @@ export function JobDetailView({ id }: { id: string }) {
     return <p className="text-muted-foreground">Job not found.</p>;
   }
 
-  const isCompleted = job.status === "completed";
-  const hasCatalog = isCompleted && (!!job.manifest || !!job.catalog_manifest);
-  const hasManifest = isCompleted && !!job.manifest;
+  const hasManifest = job.status === "completed" && !!job.manifest;
 
-  // The output location is the GraphAr dataset root the run wrote to — the
-  // manifest's `dest` (fossil's single description of the output); pre-run jobs
-  // have none. Per-type files + structure live in the manifest, surfaced by the
-  // discovery view.
-  const dests = job.manifest ? [reverseMapUrl(job.manifest.dest, connections ?? [])] : [];
+  // Where the output went: the connection the member picked as the destination.
+  // It used to read the run report's `dest`, which made the host a reader of
+  // fossil's report to learn a fact it decided itself.
+  const sink = connections?.find((c) => c.id === job.sink_connection_id);
+  const dests = hasManifest && sink ? [reverseMapUrl(sink.url, connections ?? [])] : [];
 
   return (
-    <Tabs value={tab} onValueChange={setTab} className="flex-1 min-h-0">
-      <div className="flex items-center justify-between px-4 pt-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          {hasCatalog && <TabsTrigger value="catalog">Catalog</TabsTrigger>}
-        </TabsList>
-
-        <div className="flex items-center gap-2">
-          {hasManifest && (
-            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" asChild>
-              <Link href={`/jobs/${id}/discover`}>
-                <Compass size={14} />
-                Open Discovery
-              </Link>
-            </Button>
-          )}
-        </div>
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="flex items-center justify-end px-4 pt-4">
+        {hasManifest && (
+          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" asChild>
+            <Link href={`/jobs/${id}/discover`}>
+              <Compass size={14} />
+              Open Discovery
+            </Link>
+          </Button>
+        )}
       </div>
 
-      <TabsContent value="overview" className="gap-4 overflow-auto p-4">
+      <div className="gap-4 overflow-auto p-4">
         <OverviewContent job={job} dests={dests} />
-      </TabsContent>
-
-      <TabsContent value="catalog" className="gap-4 overflow-auto p-4">
-        <CatalogView
-          id={id}
-          catalogManifest={job.catalog_manifest}
-        />
-      </TabsContent>
-
-    </Tabs>
+      </div>
+    </div>
   );
 }

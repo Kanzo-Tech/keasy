@@ -15,16 +15,16 @@ use super::{Catalog, CatalogError};
 pub struct CatalogDataset {
     /// The job id (the `job_` schema suffix), the dataset's stable handle.
     pub job_id: String,
-    /// One entry per registered vertex/edge type.
+    /// One entry per registered relation.
     pub tables: Vec<CatalogTable>,
 }
 
 /// A registered type within a dataset and its SQL shape.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct CatalogTable {
-    /// Type / table name (e.g. `Person`, `knows_by_source`).
+    /// The relation's name, as fossil named it (`Person`, `Person_knows_Person`).
     pub name: String,
-    /// Row count from the Parquet footers (cheap — no full scan).
+    /// Row count, as the corpus reported it when the relation was published.
     pub rows: Option<i64>,
     /// Property columns, in declaration order.
     pub columns: Vec<CatalogColumn>,
@@ -41,9 +41,9 @@ impl Catalog {
     /// Every registered dataset with its types and columns — a PURE metadata
     /// query (`information_schema`, the catalog's own SQLite store), touching no
     /// remote Parquet and needing no credentials. Row counts are left `None`
-    /// here: they are the job output's property (`RunStatus.count`), filled by
-    /// [`fill_row_counts`] at the endpoint from the authoritative manifests,
-    /// rather than re-counted over the (credentialed) remote Parquet.
+    /// here: they are the corpus's own answer, carried on the job's relations and
+    /// filled by [`fill_row_counts`] at the endpoint, rather than re-counted over
+    /// the (credentialed) remote Parquet.
     pub fn datasets(&self) -> Result<Vec<CatalogDataset>, CatalogError> {
         let conn = self.conn.lock().expect("catalog mutex poisoned");
 
@@ -101,12 +101,13 @@ impl Catalog {
     }
 }
 
-/// Fill in `rows` on each table from the jobs' output manifests — the
-/// authoritative count source (`RunStatus.count`, recorded when the job
-/// completed). Matches a dataset to its job by the `sanitize`d id, then a table
-/// to a vertex by `sanitize(vertex_type)` or to an edge direction by
-/// `sanitize(edge_type)_by_{source,target}`. Keeps `datasets()` a pure,
-/// credential-free metadata read while still surfacing counts.
+/// Fill in `rows` on each table from the jobs' published relations — the count
+/// the corpus reader answered when it enumerated the output. Matches a dataset
+/// to its job by the `sanitize`d id, then a table to a relation by the
+/// `sanitize`d name the corpus gave it. **No name is composed here**: a table
+/// row is matched against the name fossil published, one string against one
+/// string. Keeps `datasets()` a pure, credential-free metadata read while still
+/// surfacing counts.
 pub fn fill_row_counts(datasets: &mut [CatalogDataset], jobs: &[crate::jobs::models::Job]) {
     use crate::catalog::sanitize;
 
@@ -114,23 +115,12 @@ pub fn fill_row_counts(datasets: &mut [CatalogDataset], jobs: &[crate::jobs::mod
         let Some(job) = jobs.iter().find(|j| sanitize(&j.id) == dataset.job_id) else {
             continue;
         };
-        let Some(manifest) = &job.manifest else {
-            continue;
-        };
-
         for table in &mut dataset.tables {
-            table.rows = manifest
-                .vertices
+            table.rows = job
+                .relations
                 .iter()
-                .find(|v| sanitize(&v.vertex_type) == table.name)
-                .and_then(|v| v.count)
-                .or_else(|| {
-                    manifest.edges.iter().find_map(|e| {
-                        let name =
-                            sanitize(&format!("{}_{}_{}", e.src_type, e.edge_type, e.dst_type));
-                        (table.name == name).then_some(e.count).flatten()
-                    })
-                });
+                .find(|r| sanitize(&r.name) == table.name)
+                .and_then(|r| r.rows);
         }
     }
 }
@@ -139,8 +129,8 @@ pub fn fill_row_counts(datasets: &mut [CatalogDataset], jobs: &[crate::jobs::mod
 mod tests {
     use super::*;
     use crate::catalog::Catalog;
+    use crate::jobs::models::OutputRelation;
     use duckdb::Connection;
-    use fossil_run_status::{ColumnStatus, RunStatus, VertexStatus};
     use std::collections::HashMap;
 
     #[test]
@@ -155,23 +145,11 @@ mod tests {
             ))
             .unwrap();
 
-        let ds = RunStatus {
-            version: 1,
-            dest: dir.path().display().to_string(),
-            vertices: vec![VertexStatus {
-                vertex_type: "Person".into(),
-                rdf_type: None,
-                file: "Person.parquet".into(),
-                count: Some(2),
-                columns: vec![ColumnStatus {
-                    name: "name".into(),
-                    data_type: "string".into(),
-                    rdf_uri: None,
-                    xsd_datatype: None,
-                }],
-            }],
-            edges: vec![],
-        };
+        let ds = [OutputRelation {
+            name: "Person".into(),
+            files: vec!["Person.parquet".into()],
+            rows: Some(2),
+        }];
 
         let cat = Catalog::open(dir.path()).unwrap();
         assert!(
@@ -179,7 +157,13 @@ mod tests {
             "empty before any register"
         );
 
-        cat.register("j1", &ds, &HashMap::new()).unwrap();
+        cat.register(
+            "j1",
+            &dir.path().display().to_string(),
+            &ds,
+            &HashMap::new(),
+        )
+        .unwrap();
         let got = cat.datasets().unwrap();
 
         assert_eq!(got.len(), 1, "one registered dataset");
@@ -232,19 +216,12 @@ mod tests {
             created_by: String::new(),
             sink_connection_id: None,
             script: None,
-            manifest: Some(RunStatus {
-                version: 1,
-                dest: "s3://b/x".into(),
-                vertices: vec![VertexStatus {
-                    vertex_type: "Person".into(),
-                    rdf_type: None,
-                    file: "Person.parquet".into(),
-                    count: Some(42),
-                    columns: vec![],
-                }],
-                edges: vec![],
-            }),
-            catalog_manifest: None,
+            manifest: Some(serde_json::json!({ "dest": "s3://b/x" })),
+            relations: vec![OutputRelation {
+                name: "Person".into(),
+                files: vec!["vertex/Person/tiles.parquet".into()],
+                rows: Some(42),
+            }],
         };
 
         fill_row_counts(&mut datasets, &[job]);
@@ -255,7 +232,7 @@ mod tests {
         );
         assert_eq!(
             datasets[0].tables[1].rows, None,
-            "no manifest entry → stays None"
+            "no published relation → stays None"
         );
     }
 }

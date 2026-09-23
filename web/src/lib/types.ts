@@ -18,7 +18,6 @@ export type CloudAccountSummary = S["CloudAccountSummary"];
 export type CreateCloudAccountRequest = S["CreateCloudAccountRequest"];
 export type UpdateCloudAccountRequest = S["UpdateCloudAccountRequest"];
 export type OrgSettings = S["OrgSettings"];
-export type Preferences = S["Preferences"];
 export type ConnectionKind = S["ConnectionKind"];
 export type LocationType = S["LocationType"];
 export type Connection = S["Connection"];
@@ -48,10 +47,6 @@ export type OrgIdentity = S["OrgIdentityResponse"];
 
 // The fossil subprocess run status — the job's GraphAr structure (Job.manifest).
 // Column statistics are NOT here; the browser computes them via DuckDB-WASM.
-export type RunStatus = S["RunStatus"];
-export type VertexStatus = S["VertexStatus"];
-export type EdgeStatus = S["EdgeStatus"];
-export type ColumnStatus = S["ColumnStatus"];
 
 // Override rows type — server uses serde_json::Value per cell, schema generates Record<string,never>
 export type TabularData = Omit<S["TabularData"], "rows"> & {

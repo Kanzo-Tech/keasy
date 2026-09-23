@@ -52,21 +52,13 @@ pub async fn ask_discover_stream(
         Err(e) => return e.into_response(),
     };
 
+    // The schema is the CLIENT's to send: the browser holds the live DuckDB-WASM
+    // relations the corpus registered, with the names and types fossil gave
+    // them. The server used to rebuild a `CREATE TABLE` per type out of the run
+    // report — its own spelling of fossil's naming, drifting by construction.
     let schema_context = match &req.schema {
         Some(s) if !s.is_empty() => s.clone(),
-        _ => {
-            let job = match state.db.get_job(id.as_str()).await {
-                Some(j) => j,
-                None => {
-                    return (
-                        StatusCode::NOT_FOUND,
-                        Json(crate::error::error_body("not_found", "Job not found")),
-                    )
-                        .into_response();
-                }
-            };
-            build_fallback_schema(&job)
-        }
+        _ => "-- No schema available: the client sent none.\n".to_string(),
     };
 
     let is_explain = req.explain;
@@ -290,63 +282,6 @@ fn build_explain_prompt() -> String {
      Be specific — reference actual values from the results.\n\
      Do NOT return JSON. Do NOT repeat the SQL. Plain markdown only."
         .to_string()
-}
-
-/// Build a schema description as a fallback when the frontend hasn't (yet)
-/// sent the live DuckDB-WASM schema, from `job.manifest` (the GraphAr types +
-/// edges the executed pipeline wrote).
-fn build_fallback_schema(job: &crate::jobs::models::Job) -> String {
-    use std::fmt::Write;
-
-    let Some(manifest) = &job.manifest else {
-        return "-- No schema available yet. The pipeline produced no manifest.\n".to_string();
-    };
-    if manifest.vertices.is_empty() {
-        return "-- No schema available yet. The pipeline produced no manifest.\n".to_string();
-    }
-
-    let mut out = String::new();
-    for t in &manifest.vertices {
-        let _ = writeln!(
-            out,
-            "CREATE TABLE \"{}\" (\n  \"_id\" UBIGINT,\n  \"subject\" VARCHAR,",
-            t.vertex_type,
-        );
-        for (i, c) in t.columns.iter().enumerate() {
-            let comma = if i + 1 < t.columns.len() { "," } else { "" };
-            let _ = writeln!(
-                out,
-                "  \"{}\" {}{}",
-                c.name,
-                sql_type_for(&c.data_type),
-                comma
-            );
-        }
-        let _ = writeln!(out, "); -- rows: {}\n", t.count.unwrap_or(0));
-    }
-    for e in &manifest.edges {
-        let _ = writeln!(
-            out,
-            "CREATE TABLE \"{src}_{name}_{dst}\" (\n  \"source\" UBIGINT,\n  \"target\" UBIGINT\n); -- {src} --[{name}]--> {dst} ({count} edges)\n",
-            src = e.src_type,
-            name = e.edge_type,
-            dst = e.dst_type,
-            count = e.count.unwrap_or(0),
-        );
-    }
-    out
-}
-
-/// Map a logical column datatype (as recorded in `ColumnStat.datatype`) to
-/// the DuckDB SQL type the LLM should expect when filtering.
-fn sql_type_for(datatype: &str) -> &'static str {
-    match datatype {
-        "int64" => "BIGINT",
-        "double" => "DOUBLE",
-        "boolean" => "BOOLEAN",
-        "date" => "DATE",
-        _ => "VARCHAR",
-    }
 }
 
 /// Build LLM message history from conversation messages.

@@ -1,9 +1,11 @@
 /**
  * Discovery Store — Zustand, no SQLRooms.
  *
- * Initializes DuckDB WASM via Mosaic's wasmConnector,
- * mounts the GraphAr data space as lazy views over remote Parquet,
- * and exposes coordinator + graph instance to all discovery components.
+ * Everything about opening the corpus lives in `openJobCorpus`: fossil
+ * enumerates what is addressable, keasy signs that list and lends it to DuckDB's
+ * file registry, and the corpus is reopened with the engine. This component is
+ * what holds the result for the surface — the coordinator the charts bind to,
+ * and the schema the verbs registered.
  */
 
 "use client";
@@ -12,21 +14,10 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import dynamic from "next/dynamic";
 import { create, type StoreApi, useStore as useZustandStore } from "zustand";
 import type { Coordinator } from "@uwdata/mosaic-core";
-import type { Graph } from "@cosmos.gl/graph";
-import {
-  initFossilGraphWasm,
-  createGraphClient,
-  type GraphClient,
-  type QueryRow,
-} from "@fossil-lang/graph";
+import type { SchemaResult, SqlCorpus } from "@fossil-lang/corpus";
 
-import { initMosaic, type MosaicInstance } from "@/lib/mosaic";
-import { mountDataSpace } from "@/lib/data-space";
-import type { RunStatus } from "@/lib/types";
-
-// fossil-graph-wasm, staged into public/ by scripts/copy-fossil-wasm.mjs
-// (predev/prebuild) — mirrors the LSP worker's wasm-url pattern.
-const GRAPH_WASM_URL = "/fossil/fossil_graph_wasm_bg.wasm";
+import type { MosaicInstance } from "@/lib/mosaic";
+import { openJobCorpus } from "@/lib/fossil/open-job-corpus";
 
 // ── State ─────────────────────────────────────────────────────────────────
 
@@ -36,22 +27,24 @@ export interface DiscoveryState {
   db: MosaicInstance["db"] | null;
   conn: MosaicInstance["conn"] | null;
   coordinator: Coordinator | null;
-  /** fossil-graph verb client — the single source for discrete reads. */
-  graphClient: GraphClient | null;
-  graph: Graph | null;
-  setGraph: (g: Graph | null) => void;
+  /** The corpus — the single source for every discrete read. */
+  corpus: SqlCorpus | null;
+  /** What the schema verb answered, read once at boot. */
+  schema: SchemaResult | null;
+  /** The manifests fossil named, kept so a canvas can address a type without refetching. */
+  manifestFiles: Record<string, string>;
 }
 
 function createDiscoveryStore() {
-  return create<DiscoveryState>((set) => ({
+  return create<DiscoveryState>(() => ({
     status: "idle",
     error: null,
     db: null,
     conn: null,
     coordinator: null,
-    graphClient: null,
-    graph: null,
-    setGraph: (g) => set({ graph: g }),
+    corpus: null,
+    schema: null,
+    manifestFiles: {},
   }));
 }
 
@@ -61,22 +54,11 @@ const StoreCtx = createContext<StoreApi<DiscoveryState> | null>(null);
 
 // ── Provider ──────────────────────────────────────────────────────────────
 
-function DiscoveryRoom({
-  manifest,
-  signedUrls,
-  manifestFiles,
-  children,
-}: {
-  manifest: RunStatus;
-  signedUrls: Record<string, string>;
-  manifestFiles: Record<string, string>;
-  children: ReactNode;
-}) {
+function DiscoveryRoom({ jobId, children }: { jobId: string; children: ReactNode }) {
   const [store] = useState(createDiscoveryStore);
 
   const status = useZustandStore(store, (s) => s.status);
 
-  // Initialize: Mosaic (DuckDB WASM) → mount data space views
   const initRef = useRef(false);
   useEffect(() => {
     if (initRef.current) return;
@@ -84,16 +66,20 @@ function DiscoveryRoom({
 
     store.setState({ status: "initializing" });
 
-    initMosaic()
-      .then(async ({ coordinator, db, conn }) => {
-        await mountDataSpace(conn, manifest, signedUrls);
-        // Boot the verb client over the same coordinator: verb→SQL runs in
-        // WASM, execution delegates to the host's DuckDB-WASM (JSON rows).
-        await initFossilGraphWasm({ wasmUrl: GRAPH_WASM_URL });
-        const query = async (sql: string): Promise<QueryRow[]> =>
-          (await coordinator.query(sql, { type: "json" })) as QueryRow[];
-        const graphClient = createGraphClient({ query, manifestFiles });
-        store.setState({ status: "ready", db, conn, coordinator, graphClient });
+    openJobCorpus(jobId)
+      .then(async ({ mosaic, corpus, manifestFiles }) => {
+        // Also what boots the verb transport, which is what registers the relations
+        // every chart and rule in this surface queries by name.
+        const schema = await corpus.schema();
+        store.setState({
+          status: "ready",
+          db: mosaic.db,
+          conn: mosaic.conn,
+          coordinator: mosaic.coordinator,
+          corpus,
+          schema,
+          manifestFiles,
+        });
       })
       .catch((err) => {
         store.setState({
@@ -101,7 +87,7 @@ function DiscoveryRoom({
           error: err instanceof Error ? err.message : String(err),
         });
       });
-  }, [manifest, signedUrls, manifestFiles, store]);
+  }, [jobId, store]);
 
   if (status === "error") {
     const error = store.getState().error;
@@ -126,26 +112,8 @@ const DiscoveryRoomDynamic = dynamic(() => Promise.resolve(DiscoveryRoom), {
   ssr: false,
 });
 
-export function DiscoveryProvider({
-  manifest,
-  signedUrls,
-  manifestFiles,
-  children,
-}: {
-  manifest: RunStatus;
-  signedUrls: Record<string, string>;
-  manifestFiles: Record<string, string>;
-  children: ReactNode;
-}) {
-  return (
-    <DiscoveryRoomDynamic
-      manifest={manifest}
-      signedUrls={signedUrls}
-      manifestFiles={manifestFiles}
-    >
-      {children}
-    </DiscoveryRoomDynamic>
-  );
+export function DiscoveryProvider({ jobId, children }: { jobId: string; children: ReactNode }) {
+  return <DiscoveryRoomDynamic jobId={jobId}>{children}</DiscoveryRoomDynamic>;
 }
 
 // ── Hook (used by use-discovery-store.ts) ─────────────────────────────────

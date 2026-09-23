@@ -4,12 +4,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, Pencil, Plus, Trash2 } from "lucide-react";
 import * as vg from "@uwdata/vgplot";
 import type { Selection } from "@uwdata/mosaic-core";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import {
+  Button,
+  FieldLabel,
+  createListCollection,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  ScrollArea,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Switch,
+} from "@kanzo-tech/ui";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PanelHeader } from "@/components/layout/workspace-layout";
 import { isBinnable, isTemporalType as isTemporal, type GraphSchema } from "@/lib/graph-schema";
@@ -126,22 +135,66 @@ function ChartEditor({
 
   const numericFields = useMemo(() => fields.filter((f) => isBinnable(f.type)), [fields]);
 
+  // One collection per control: Ark's Select reads the items rather than its children.
+  const xCollection = useMemo(
+    () =>
+      createListCollection({
+        items: fields.map((f) => ({ label: f.name, table: f.tableName, value: f.key })),
+      }),
+    [fields],
+  );
+  const yCollection = useMemo(
+    () =>
+      createListCollection({
+        items: [
+          { label: "count", value: "__count__" },
+          ...numericFields.map((f) => ({ label: f.name, value: f.name })),
+        ],
+      }),
+    [numericFields],
+  );
+  const aggCollection = useMemo(
+    () =>
+      createListCollection({
+        items: (["count", "sum", "avg", "min", "max"] as const).map((a) => ({
+          label: a,
+          value: a,
+        })),
+      }),
+    [],
+  );
+  const colorCollection = useMemo(
+    () =>
+      createListCollection({
+        items: [
+          { label: "None", value: "__none__" },
+          ...fields
+            .filter((f) => !isBinnable(f.type))
+            .map((f) => ({ label: f.name, value: f.name })),
+        ],
+      }),
+    [fields],
+  );
+
   return (
     <div className="space-y-2 p-1">
       {/* X-axis */}
       <div className="space-y-1">
-        <Label className="text-[10px] text-muted-foreground">X-axis</Label>
+        <FieldLabel className="text-[10px] text-muted-foreground">X-axis</FieldLabel>
         <Select
-          value={`${config.tableName}.${config.xField}`}
-          onValueChange={(v) => {
-            const f = fields.find((f) => f.key === v);
+          collection={xCollection}
+          onValueChange={(details) => {
+            const f = fields.find((field) => field.key === details.value[0]);
             if (f) onChange({ ...config, tableName: f.tableName, xField: f.name, xType: f.type });
           }}
+          value={[`${config.tableName}.${config.xField}`]}
         >
-          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-7 w-full text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {fields.map((f) => (
-              <SelectItem key={f.key} value={f.key} className="text-xs">{f.name} <span className="text-muted-foreground">({f.tableName})</span></SelectItem>
+            {xCollection.items.map((f) => (
+              <SelectItem className="text-xs" item={f} key={f.value}>
+                {f.label} <span className="text-muted-foreground">({f.table})</span>
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -149,25 +202,34 @@ function ChartEditor({
 
       {/* Y-axis + Aggregation */}
       <div className="space-y-1">
-        <Label className="text-[10px] text-muted-foreground">Y-axis</Label>
+        <FieldLabel className="text-[10px] text-muted-foreground">Y-axis</FieldLabel>
         <div className="flex gap-0">
           <Select
-            value={config.yField ?? "__count__"}
-            onValueChange={(v) => onChange({ ...config, yField: v === "__count__" ? null : v })}
+            collection={yCollection}
+            onValueChange={(details) => {
+              const picked = details.value[0] ?? "__count__";
+              onChange({ ...config, yField: picked === "__count__" ? null : picked });
+            }}
+            value={[config.yField ?? "__count__"]}
           >
-            <SelectTrigger className="h-7 text-xs rounded-r-none border-r-0 flex-1"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-7 flex-1 rounded-e-none border-e-0 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="__count__" className="text-xs">count</SelectItem>
-              {numericFields.map((f) => (
-                <SelectItem key={f.key} value={f.name} className="text-xs">{f.name}</SelectItem>
+              {yCollection.items.map((f) => (
+                <SelectItem className="text-xs" item={f} key={f.value}>{f.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Select value={config.yAgg} onValueChange={(v) => onChange({ ...config, yAgg: v as Aggregation })}>
-            <SelectTrigger className="h-7 text-xs rounded-l-none w-20"><SelectValue /></SelectTrigger>
+          <Select
+            collection={aggCollection}
+            onValueChange={(details) =>
+              onChange({ ...config, yAgg: (details.value[0] ?? "count") as Aggregation })
+            }
+            value={[config.yAgg]}
+          >
+            <SelectTrigger className="h-7 w-20 rounded-s-none text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {(["count", "sum", "avg", "min", "max"] as const).map((a) => (
-                <SelectItem key={a} value={a} className="text-xs">{a}</SelectItem>
+              {aggCollection.items.map((a) => (
+                <SelectItem className="text-xs" item={a} key={a.value}>{a.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -176,16 +238,19 @@ function ChartEditor({
 
       {/* Color (split-by) */}
       <div className="space-y-1">
-        <Label className="text-[10px] text-muted-foreground">Color (split-by)</Label>
+        <FieldLabel className="text-[10px] text-muted-foreground">Color (split-by)</FieldLabel>
         <Select
-          value={config.colorField ?? "__none__"}
-          onValueChange={(v) => onChange({ ...config, colorField: v === "__none__" ? null : v })}
+          collection={colorCollection}
+          onValueChange={(details) => {
+            const picked = details.value[0] ?? "__none__";
+            onChange({ ...config, colorField: picked === "__none__" ? null : picked });
+          }}
+          value={[config.colorField ?? "__none__"]}
         >
-          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-7 w-full text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="__none__" className="text-xs">None</SelectItem>
-            {fields.filter((f) => !isBinnable(f.type)).map((f) => (
-              <SelectItem key={f.key} value={f.name} className="text-xs">{f.name}</SelectItem>
+            {colorCollection.items.map((f) => (
+              <SelectItem className="text-xs" item={f} key={f.value}>{f.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -193,10 +258,10 @@ function ChartEditor({
 
       {/* Hide nulls */}
       <div className="flex items-center justify-between pt-1">
-        <Label className="text-[10px]">Hide nulls</Label>
+        <FieldLabel className="text-[10px]">Hide nulls</FieldLabel>
         <Switch
           checked={config.hideNulls}
-          onCheckedChange={(v) => onChange({ ...config, hideNulls: v })}
+          onCheckedChange={(details) => onChange({ ...config, hideNulls: details.checked })}
         />
       </div>
     </div>
@@ -291,15 +356,15 @@ export function AnalysisPanel({ schema, selection }: AnalysisPanelProps) {
                   {chart.xField}{chart.yField ? ` × ${chart.yField}` : ""}
                 </span>
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Popover>
+                  <Popover positioning={{ placement: "bottom-end" }}>
                     <PopoverTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-4 w-4"><Pencil size={9} /></Button>
+                      <Button aria-label="Edit chart" className="h-4 w-4" size="icon-sm" variant="ghost"><Pencil size={9} /></Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-60 p-2" align="end">
+                    <PopoverContent className="w-60 p-2">
                       <ChartEditor config={chart} schema={schema} onChange={(updated) => updateChart(chart.id, updated)} />
                     </PopoverContent>
                   </Popover>
-                  <Button variant="ghost" size="icon" className="h-4 w-4 text-muted-foreground hover:text-destructive" onClick={() => removeChart(chart.id)}>
+                  <Button aria-label="Remove chart" className="h-4 w-4 text-muted-foreground hover:text-destructive" onClick={() => removeChart(chart.id)} size="icon-sm" variant="ghost">
                     <Trash2 size={9} />
                   </Button>
                 </div>

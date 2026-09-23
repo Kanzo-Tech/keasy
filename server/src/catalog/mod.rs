@@ -17,7 +17,8 @@ use std::path::Path;
 use std::sync::Mutex;
 
 use duckdb::Connection;
-use fossil_run_status::RunStatus;
+
+use crate::jobs::models::OutputRelation;
 
 /// Errors registering a dataset in the catalog. The host treats these as
 /// non-fatal at `complete_job` time (the reconciler re-registers; §11) — a
@@ -90,10 +91,16 @@ impl Catalog {
     }
 
     /// Register a completed job's output as one atomic snapshot: a per-job schema
-    /// `job_<id>` holding one table per vertex/edge type, each backed BY
-    /// REFERENCE by the Parquet the job already wrote. Idempotent — re-running
-    /// (the reconciler, or a duplicate `complete_job`) drops and rebuilds the
-    /// schema in the same transaction, so the count never doubles.
+    /// `job_<id>` holding one table per relation, each backed BY REFERENCE by the
+    /// Parquet the job already wrote. Idempotent — re-running (the reconciler, or
+    /// a second publish) drops and rebuilds the schema in the same transaction,
+    /// so the count never doubles.
+    ///
+    /// **Every name and every path here comes from the corpus reader**, carried
+    /// on `relations`; this function composes neither. It used to build
+    /// `{src}_{edge}_{dst}` itself and point at one file per type, which was a
+    /// second account of a layout fossil owns — and a wrong one once the writer
+    /// started tiling.
     ///
     /// `creds` is the object_store config keasy signs the output with; for a
     /// remote dataset (S3/Azure) it is translated, by the dataset's URL scheme,
@@ -102,7 +109,8 @@ impl Catalog {
     pub fn register(
         &self,
         job_id: &str,
-        dataset: &RunStatus,
+        dest: &str,
+        relations: &[OutputRelation],
         creds: &HashMap<String, String>,
     ) -> Result<(), CatalogError> {
         let conn = self.conn.lock().expect("catalog mutex poisoned");
@@ -113,8 +121,7 @@ impl Catalog {
         // secret, replaced each call: the `Mutex` serialises registrations so
         // only this dataset's secret is ever live — no per-job accumulation on
         // the long-lived connection.
-        let base = &dataset.dest;
-        match secret::plan(READ_SECRET, base, creds) {
+        match secret::plan(READ_SECRET, dest, creds) {
             secret::SecretPlan::None => {}
             secret::SecretPlan::Sql(sql) => conn.execute_batch(&sql)?,
             secret::SecretPlan::Unsupported => return Err(CatalogError::NoCredentials),
@@ -127,17 +134,12 @@ impl Catalog {
         ));
         sql.push_str(&format!("CREATE SCHEMA lake.\"{schema}\";\n"));
 
-        for v in &dataset.vertices {
-            push_register(&mut sql, &schema, &v.vertex_type, &join(base, &v.file));
-        }
-        for e in &dataset.edges {
-            // One table per edge, keyed by (src, edge, dst) — the predicate alone
-            // collides when the same edge type connects different endpoint pairs
-            // (e.g. `classifiedAs` from two source types). Matches the viewer's
-            // `edgeTableName` convention, backed by the CSR (`by_source`) file the
-            // discovery view actually mounts.
-            let name = format!("{}_{}_{}", e.src_type, e.edge_type, e.dst_type);
-            push_register(&mut sql, &schema, &name, &join(base, &e.by_source));
+        for relation in relations {
+            let urls: Vec<String> = relation.files.iter().map(|f| join(dest, f)).collect();
+            if urls.is_empty() {
+                continue;
+            }
+            push_register(&mut sql, &schema, &relation.name, &urls);
         }
         sql.push_str("COMMIT;\n");
 
@@ -189,19 +191,25 @@ impl Catalog {
     }
 }
 
-/// Append the "create empty table from the Parquet schema, then attach the file
-/// by reference" pair for one dataset member into `sql`. `schema`/`ty` are bare
-/// names: quoted for the DDL identifiers and passed as plain string values to
-/// `ducklake_add_data_files` (whose `schema =>` arg wants the name, not an
-/// identifier). Both use the SAME sanitized `table` so the names match.
-fn push_register(sql: &mut String, schema: &str, ty: &str, url: &str) {
-    let table = sanitize(ty);
+/// Append the "create the empty table from the Parquet schema, then attach every
+/// file by reference" statements for one relation into `sql`. `schema`/`name`
+/// are bare names: quoted for the DDL identifiers and passed as plain string
+/// values to `ducklake_add_data_files` (whose `schema =>` arg wants the name,
+/// not an identifier). Both use the SAME sanitized `table` so the names match.
+///
+/// A relation is many files, not one: a tiled type is `chunk0..chunkN`, and the
+/// single-file version of this silently registered a fraction of the rows.
+fn push_register(sql: &mut String, schema: &str, name: &str, urls: &[String]) {
+    let table = sanitize(name);
+    let first = &urls[0];
     sql.push_str(&format!(
-        "CREATE TABLE lake.\"{schema}\".\"{table}\" AS SELECT * FROM read_parquet('{url}') LIMIT 0;\n"
+        "CREATE TABLE lake.\"{schema}\".\"{table}\" AS SELECT * FROM read_parquet('{first}') LIMIT 0;\n"
     ));
-    sql.push_str(&format!(
-        "CALL ducklake_add_data_files('lake', '{table}', '{url}', schema => '{schema}');\n"
-    ));
+    for url in urls {
+        sql.push_str(&format!(
+            "CALL ducklake_add_data_files('lake', '{table}', '{url}', schema => '{schema}');\n"
+        ));
+    }
 }
 
 /// Join a dataset base URL with a dataset-relative member path.
@@ -214,7 +222,7 @@ fn join(base: &str, rel: &str) -> String {
 }
 
 /// Reduce a name to `[A-Za-z0-9_]` (DuckDB type/predicate names are local names;
-/// this also blocks injection via a hostile RunStatus). The result is used both
+/// this also blocks injection via a hostile relation name). The result is used both
 /// as a quoted DDL identifier and as a `ducklake_add_data_files` string arg, and
 /// (by the reconciler) to map a live job id to its schema suffix.
 pub(crate) fn sanitize(raw: &str) -> String {
@@ -237,8 +245,15 @@ const READ_SECRET: &str = "catalog_read";
 mod tests {
     use super::*;
     use duckdb::Connection;
-    use fossil_run_status::{ColumnStatus, EdgeStatus, VertexStatus};
     use std::collections::HashMap;
+
+    fn relation(name: &str, files: &[&str]) -> OutputRelation {
+        OutputRelation {
+            name: name.into(),
+            files: files.iter().map(|f| (*f).to_string()).collect(),
+            rows: None,
+        }
+    }
 
     /// `Catalog::register` lands a dataset as a queryable per-job schema backed by
     /// reference, and a second register (the reconciler / a duplicate completion)
@@ -260,27 +275,12 @@ mod tests {
             ))
             .unwrap();
 
-        let dataset = RunStatus {
-            version: 1,
-            dest: dir.path().display().to_string(),
-            vertices: vec![VertexStatus {
-                vertex_type: "Person".into(),
-                rdf_type: None,
-                file: "Person.parquet".into(),
-                count: Some(2),
-                columns: vec![ColumnStatus {
-                    name: "name".into(),
-                    data_type: "string".into(),
-                    rdf_uri: None,
-                    xsd_datatype: None,
-                }],
-            }],
-            edges: vec![],
-        };
+        let dest = dir.path().display().to_string();
+        let dataset = [relation("Person", &["Person.parquet"])];
 
         let catalog = Catalog::open(dir.path()).expect("open catalog");
         catalog
-            .register("abc123", &dataset, &HashMap::new())
+            .register("abc123", &dest, &dataset, &HashMap::new())
             .expect("register");
 
         let count = |c: &Catalog| -> i64 {
@@ -305,7 +305,7 @@ mod tests {
         );
 
         catalog
-            .register("abc123", &dataset, &HashMap::new())
+            .register("abc123", &dest, &dataset, &HashMap::new())
             .expect("re-register");
         assert_eq!(
             count(&catalog),
@@ -333,21 +333,10 @@ mod tests {
         // A FAILED registration (here: a dataset whose Parquet doesn't exist)
         // must roll back, NOT leave the connection in an aborted transaction that
         // poisons every later op. After it, the catalog still works.
-        let broken = RunStatus {
-            version: 1,
-            dest: dir.path().display().to_string(),
-            vertices: vec![VertexStatus {
-                vertex_type: "Ghost".into(),
-                rdf_type: None,
-                file: "does-not-exist.parquet".into(),
-                count: None,
-                columns: vec![],
-            }],
-            edges: vec![],
-        };
+        let broken = [relation("Ghost", &["does-not-exist.parquet"])];
         assert!(
             catalog
-                .register("broken", &broken, &HashMap::new())
+                .register("broken", &dest, &broken, &HashMap::new())
                 .is_err(),
             "missing Parquet fails"
         );
@@ -378,55 +367,47 @@ mod tests {
         );
     }
 
-    /// Two edges sharing an `edge_type` but with different endpoints (e.g.
-    /// `classifiedAs` from two source types) must NOT collide — they are distinct
-    /// tables keyed by (src, edge, dst). Found live: naming edge tables by the
-    /// predicate alone errored "Table ... already exists" on real RDF output.
+    /// A relation is MANY files. The single-file version of `register` attached
+    /// one Parquet per type, which was already wrong for a tiled corpus and
+    /// silently registered a fraction of the rows. Every file the corpus reader
+    /// enumerated has to land in the same table.
     #[test]
-    fn edges_sharing_a_predicate_do_not_collide() {
+    fn a_relation_registers_every_one_of_its_files() {
         let dir = tempfile::tempdir().unwrap();
         let probe = Connection::open_in_memory().unwrap();
-        let edge = dir.path().join("edge.parquet");
-        probe
-            .execute_batch(&format!(
-                "COPY (SELECT 0 AS src, 1 AS dst) TO '{}' (FORMAT parquet);",
-                edge.display(),
-            ))
-            .unwrap();
-
-        let edge_status = |src: &str, dst: &str| EdgeStatus {
-            edge_type: "classifiedAs".into(),
-            src_type: src.into(),
-            dst_type: dst.into(),
-            by_source: "edge.parquet".into(),
-            by_target: "edge.parquet".into(),
-            count: Some(1),
-        };
-        let dataset = RunStatus {
-            version: 1,
-            dest: dir.path().display().to_string(),
-            vertices: vec![],
-            edges: vec![
-                edge_status("IfcBeam", "Class"),
-                edge_status("IfcColumn", "Class"),
-            ],
-        };
+        for (tile, id) in [(0, 1), (1, 2), (2, 3)] {
+            probe
+                .execute_batch(&format!(
+                    "COPY (SELECT {id} AS dense_id) TO '{}' (FORMAT parquet);",
+                    dir.path().join(format!("chunk{tile}.parquet")).display(),
+                ))
+                .unwrap();
+        }
 
         let catalog = Catalog::open(dir.path()).unwrap();
         catalog
-            .register("e1", &dataset, &HashMap::new())
-            .expect("two same-predicate edges register");
+            .register(
+                "tiled",
+                &dir.path().display().to_string(),
+                &[relation(
+                    "Person",
+                    &["chunk0.parquet", "chunk1.parquet", "chunk2.parquet"],
+                )],
+                &HashMap::new(),
+            )
+            .expect("register a tiled relation");
 
-        let tables = catalog.datasets().unwrap();
-        let names: Vec<&str> = tables[0].tables.iter().map(|t| t.name.as_str()).collect();
-        assert!(
-            names.contains(&"IfcBeam_classifiedAs_Class"),
-            "first edge table: {names:?}"
-        );
-        assert!(
-            names.contains(&"IfcColumn_classifiedAs_Class"),
-            "second edge table: {names:?}"
-        );
+        let rows: i64 = catalog
+            .conn
+            .lock()
+            .unwrap()
+            .query_row(
+                "SELECT count(*) FROM lake.\"job_tiled\".\"Person\"",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(rows, 3, "every tile of the relation is in the table");
     }
 
     /// De-risk (W1, first step): confirm the pinned `duckdb` 1.10502 crate can

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import { toast } from "@kanzo-tech/ui";
 
 function RedirectToastInner() {
   const searchParams = useSearchParams();
@@ -10,7 +10,7 @@ function RedirectToastInner() {
 
   useEffect(() => {
     if (searchParams.get('redirected') === '1') {
-      toast.info("You don't have access to that page.");
+      toast.create({ title: "You don't have access to that page.", type: "info" });
       const url = new URL(window.location.href);
       url.searchParams.delete('redirected');
       router.replace(url.pathname + (url.search || ''), { scroll: false });

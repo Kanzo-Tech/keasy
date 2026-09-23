@@ -14,9 +14,9 @@ use crate::jobs::models::{Job, JobStatus};
 use crate::middleware::tenant::{IsMember, Require};
 
 /// Data sovereignty: only the job's producer (`created_by`) may read or run its
-/// DATA — sources, output Parquet, the GraphAr manifest. The CATALOG (DCAT
-/// metadata) stays open to every member: the owner discovers the space at the
-/// metadata level, never the bytes (IDS/Solid model).
+/// DATA — its sources and its output. The CATALOG (governance metadata) stays
+/// open to every member: the owner discovers the space at the metadata level,
+/// never the bytes (IDS/Solid model).
 fn forbid_non_producer(job: &Job, user_id: &str) -> Option<Response> {
     (job.created_by != user_id).then(|| {
         (
@@ -60,12 +60,10 @@ struct ResolveResponse {
     files: HashMap<String, String>,
 }
 
-/// Sign the given dataset-relative paths under `base_url` for `method`. Shared
-/// by the discover + catalog readers (`Method::GET`) and the browser output
-/// uploader (`Method::PUT`) — each caller supplies its file list and the creds
-/// of the job's output target (the connection the member chose, or the
-/// substrate fallback), so reads/writes are signed against the right store.
-async fn sign_manifest_urls(
+/// Sign the given dataset-relative paths under `base_url` for `method`, with the
+/// creds of the job's output target (the connection the member chose, or the
+/// substrate fallback), so reads and writes are signed against the right store.
+async fn sign_dataset_paths(
     method: Method,
     base_url: &str,
     creds: &HashMap<String, String>,
@@ -117,44 +115,37 @@ async fn sign_manifest_urls(
     Ok(Json(ResolveResponse { files }).into_response())
 }
 
-// ── Browser output upload URLs (signed PUT) ─────────────────────────────────
+// ── Dataset URLs (signed PUT to write, signed GET to read) ──────────
 
 #[derive(Deserialize, utoipa::ToSchema)]
-pub struct OutputUrlsRequest {
-    /// Dataset-relative output keys the browser executor produced
-    /// (`vertex/Person.parquet`, `edge/<dir>/by_source.parquet`,
-    /// `graph.graph.yml`, …).
+pub struct DatasetUrlsRequest {
+    /// Dataset-relative keys. On the write side they are what the executor
+    /// produced; on the read side they are what the corpus reader enumerated.
+    /// **Either way the caller names them and keasy does not** — the host signs
+    /// the list it is handed.
     paths: Vec<String>,
 }
 
-#[utoipa::path(post, path = "/v1/jobs/{id}/output/urls", tag = "Discovery",
-    params(("id" = String, Path, description = "Job ID")),
-    request_body = OutputUrlsRequest,
-    responses(
-        (status = 200, description = "Signed PUT URLs for the output keys", body = ResolveResponse),
-        (status = 400, description = "No data space substrate configured"),
-        (status = 404, description = "Job not found"),
-    )
-)]
-/// Sign PUT URLs so the browser uploads the GraphAr output it just produced
-/// directly to the member's chosen destination (no data through the server).
-/// The output lives at `{dest_base}/{job_id}/<key>` where `dest_base` is the
-/// connection the member picked (`sink_connection_id`), or the substrate
-/// fallback — the same dest the completion `RunStatus` reports.
-pub async fn resolve_output_urls(
-    ctx: Require<IsMember>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-    Json(req): Json<OutputUrlsRequest>,
+/// Sign `paths` under the job's dataset for `method`. The dataset lives at
+/// `{dest_base}/{job_id}`, where `dest_base` is the connection the member chose
+/// as the destination (`sink_connection_id`) or the workspace substrate
+/// fallback — the one path keasy composes, because where a job's output lives
+/// is the host's decision.
+async fn sign_dataset_urls(
+    method: Method,
+    state: &AppState,
+    user_id: &str,
+    id: &str,
+    paths: &[String],
 ) -> Response {
-    let Some(job) = state.db.get_job(id.as_str()).await else {
+    let Some(job) = state.db.get_job(id).await else {
         return (
             StatusCode::NOT_FOUND,
             Json(error_body("not_found", "Job not found")),
         )
             .into_response();
     };
-    if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
+    if let Some(resp) = forbid_non_producer(&job, user_id) {
         return resp;
     }
     let Some((base, creds)) = state.db.job_output_target(&job).await else {
@@ -167,11 +158,57 @@ pub async fn resolve_output_urls(
         )
             .into_response();
     };
-    let dest = format!("{}/{}", base.trim_end_matches('/'), id);
+    let dest = crate::jobs::dataset_dest(&base, id);
 
-    match sign_manifest_urls(Method::PUT, &dest, &creds, &req.paths).await {
+    match sign_dataset_paths(method, &dest, &creds, paths).await {
         Ok(resp) | Err(resp) => resp,
     }
+}
+
+#[utoipa::path(post, path = "/v1/jobs/{id}/output/urls", tag = "Discovery",
+    params(("id" = String, Path, description = "Job ID")),
+    request_body = DatasetUrlsRequest,
+    responses(
+        (status = 200, description = "Signed PUT URLs for the output keys", body = ResolveResponse),
+        (status = 400, description = "No data space substrate configured"),
+        (status = 404, description = "Job not found"),
+    )
+)]
+/// Sign PUT URLs so the browser uploads the output it just produced directly to
+/// the member's chosen destination (no data through the server).
+pub async fn resolve_output_urls(
+    ctx: Require<IsMember>,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(req): Json<DatasetUrlsRequest>,
+) -> Response {
+    sign_dataset_urls(Method::PUT, &state, &ctx.user_id, &id, &req.paths).await
+}
+
+#[utoipa::path(post, path = "/v1/jobs/{id}/discover/urls", tag = "Discovery",
+    params(("id" = String, Path, description = "Job ID")),
+    request_body = DatasetUrlsRequest,
+    responses(
+        (status = 200, description = "Signed GET URLs for the requested dataset keys", body = ResolveResponse),
+        (status = 400, description = "No data space substrate configured"),
+        (status = 404, description = "Job not found"),
+    )
+)]
+/// Sign GET URLs so the browser reads the dataset directly — the reading twin
+/// of [`resolve_output_urls`], same handler, other verb.
+///
+/// **It takes the list; it does not derive one.** It used to walk the run report
+/// and hand back `manifest.vertices[].file` + `manifest.edges[].by_source`,
+/// which is the host restating a layout it does not own — and restating it
+/// wrongly, since those were names the layout pass deletes. What is addressable
+/// is the corpus reader's answer, so the caller enumerates and keasy signs.
+pub async fn resolve_discover_urls(
+    ctx: Require<IsMember>,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(req): Json<DatasetUrlsRequest>,
+) -> Response {
+    sign_dataset_urls(Method::GET, &state, &ctx.user_id, &id, &req.paths).await
 }
 
 // ── Browser source access (ref-map + signed GET) ───────────────────────────
@@ -309,294 +346,4 @@ pub async fn resolve_source_urls(
         }
     }
     Json(SourceUrlsResponse { urls }).into_response()
-}
-
-// ── Discovery parquet URLs ──────────────────────────────────────────────
-
-#[utoipa::path(get, path = "/v1/jobs/{id}/discover/urls", tag = "Discovery",
-    params(("id" = String, Path, description = "Job ID")),
-    responses(
-        (status = 200, description = "Signed URLs for direct Parquet access", body = ResolveResponse),
-        (status = 404, description = "Job not found or no output"),
-    )
-)]
-pub async fn resolve_discover_urls(
-    ctx: Require<IsMember>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Response {
-    let job = match state.db.get_job(id.as_str()).await {
-        Some(j) => j,
-        None => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(error_body("not_found", "Job not found")),
-            )
-                .into_response();
-        }
-    };
-    if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
-        return resp;
-    }
-    if job.status != JobStatus::Completed {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(error_body("not_completed", "Job is not completed yet")),
-        )
-            .into_response();
-    }
-    let Some(manifest) = &job.manifest else {
-        return (
-            StatusCode::NOT_FOUND,
-            Json(error_body("no_output", "Job has no RDF output")),
-        )
-            .into_response();
-    };
-    // The dataset base URL is the manifest's `dest` (fossil's single description
-    // of the output) — keasy doesn't store a duplicate.
-    let base = &manifest.dest;
-
-    let files: Vec<String> = manifest
-        .vertices
-        .iter()
-        .map(|v| v.file.clone())
-        .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
-        .collect();
-
-    let creds = state
-        .db
-        .job_output_target(&job)
-        .await
-        .map(|(_, c)| c)
-        .unwrap_or_default();
-    match sign_manifest_urls(Method::GET, base, &creds, &files).await {
-        Ok(resp) => resp,
-        Err(resp) => resp,
-    }
-}
-
-// ── Discovery GraphAr manifest ──────────────────────────────────────────
-
-#[derive(Serialize, utoipa::ToSchema)]
-struct ManifestResponse {
-    /// The GraphAr manifest YAMLs, keyed by dataset-relative path
-    /// (`graph.graph.yml`, `vertex/Person.vertex.yml`, …). Fed verbatim into
-    /// `@fossil-lang/graph`'s `createGraphClient({ manifestFiles })`; keasy
-    /// treats them as opaque blobs — fossil owns the GraphAr layout.
-    manifest_files: HashMap<String, String>,
-}
-
-#[utoipa::path(get, path = "/v1/jobs/{id}/discover/manifest", tag = "Discovery",
-    params(("id" = String, Path, description = "Job ID")),
-    responses(
-        (status = 200, description = "GraphAr manifest YAMLs, keyed by dataset-relative path", body = ManifestResponse),
-        (status = 404, description = "Job not found or no output"),
-    )
-)]
-pub async fn resolve_discover_manifest(
-    ctx: Require<IsMember>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Response {
-    let job = match state.db.get_job(id.as_str()).await {
-        Some(j) => j,
-        None => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(error_body("not_found", "Job not found")),
-            )
-                .into_response();
-        }
-    };
-    if let Some(resp) = forbid_non_producer(&job, &ctx.user_id) {
-        return resp;
-    }
-    if job.status != JobStatus::Completed {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(error_body("not_completed", "Job is not completed yet")),
-        )
-            .into_response();
-    }
-    let Some(manifest) = &job.manifest else {
-        return (
-            StatusCode::NOT_FOUND,
-            Json(error_body("no_output", "Job has no RDF output")),
-        )
-            .into_response();
-    };
-    let base = &manifest.dest;
-
-    let creds = state
-        .db
-        .job_output_target(&job)
-        .await
-        .map(|(_, c)| c)
-        .unwrap_or_default();
-
-    match read_manifest_files(base, &creds).await {
-        Ok(manifest_files) => Json(ManifestResponse { manifest_files }).into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(error_body("manifest_error", e)),
-        )
-            .into_response(),
-    }
-}
-
-/// List the GraphAr dataset prefix and return every manifest YAML's contents,
-/// keyed by dataset-relative path. Layout-agnostic: keasy doesn't parse the
-/// GraphAr structure — it serves the `.yml`/`.yaml` blobs and lets the
-/// `fossil-graph` binding resolve them by relative path.
-async fn read_manifest_files(
-    base_url: &str,
-    creds: &HashMap<String, String>,
-) -> Result<HashMap<String, String>, String> {
-    use futures::StreamExt;
-
-    let (store, prefix) = crate::cloud::build_store(base_url, creds).map_err(|e| e.to_string())?;
-    let prefix_opt = if prefix.as_ref().is_empty() {
-        None
-    } else {
-        Some(&prefix)
-    };
-    let strip = if prefix.as_ref().is_empty() {
-        String::new()
-    } else {
-        format!("{prefix}/")
-    };
-
-    let entries = store.list(prefix_opt).collect::<Vec<_>>().await;
-
-    let mut files = HashMap::new();
-    for entry in entries {
-        let meta = entry.map_err(|e| format!("Error listing manifest: {e}"))?;
-        let full = meta.location.to_string();
-        if !(full.ends_with(".yml") || full.ends_with(".yaml")) {
-            continue;
-        }
-        let rel = full.strip_prefix(&strip).unwrap_or(&full).to_string();
-        let result = store.get(&meta.location).await.map_err(|e| e.to_string())?;
-        let bytes = result.bytes().await.map_err(|e| e.to_string())?;
-        let text = String::from_utf8(bytes.to_vec()).map_err(|e| e.to_string())?;
-        files.insert(rel, text);
-    }
-
-    Ok(files)
-}
-
-// ── Catalog parquet URLs ────────────────────────────────────────────────
-
-#[utoipa::path(get, path = "/v1/jobs/{id}/catalog/urls", tag = "Catalog",
-    params(("id" = String, Path, description = "Job ID")),
-    responses(
-        (status = 200, description = "Signed URLs for catalog Parquet access", body = ResolveResponse),
-        (status = 404, description = "Job not found or no catalog"),
-    )
-)]
-pub async fn resolve_catalog_urls(
-    _ctx: Require<IsMember>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Response {
-    let job = match state.db.get_job(id.as_str()).await {
-        Some(j) => j,
-        None => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(error_body("not_found", "Job not found")),
-            )
-                .into_response();
-        }
-    };
-    if job.status != JobStatus::Completed {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(error_body("not_completed", "Job is not completed yet")),
-        )
-            .into_response();
-    }
-    let Some(manifest) = &job.catalog_manifest else {
-        return (
-            StatusCode::NOT_FOUND,
-            Json(error_body("no_catalog", "Job has no catalog output")),
-        )
-            .into_response();
-    };
-    let base = &manifest.dest;
-
-    let files: Vec<String> = manifest
-        .vertices
-        .iter()
-        .map(|v| v.file.clone())
-        .chain(manifest.edges.iter().map(|e| e.by_source.clone()))
-        .collect();
-
-    let creds = state
-        .db
-        .job_output_target(&job)
-        .await
-        .map(|(_, c)| c)
-        .unwrap_or_default();
-    match sign_manifest_urls(Method::GET, base, &creds, &files).await {
-        Ok(resp) => resp,
-        Err(resp) => resp,
-    }
-}
-
-// ── Catalog GraphAr manifest ────────────────────────────────────────────
-
-#[utoipa::path(get, path = "/v1/jobs/{id}/catalog/manifest", tag = "Catalog",
-    params(("id" = String, Path, description = "Job ID")),
-    responses(
-        (status = 200, description = "GraphAr manifest YAMLs for the catalog dataset", body = ManifestResponse),
-        (status = 404, description = "Job not found or no catalog"),
-    )
-)]
-pub async fn resolve_catalog_manifest(
-    _ctx: Require<IsMember>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Response {
-    let job = match state.db.get_job(id.as_str()).await {
-        Some(j) => j,
-        None => {
-            return (
-                StatusCode::NOT_FOUND,
-                Json(error_body("not_found", "Job not found")),
-            )
-                .into_response();
-        }
-    };
-    if job.status != JobStatus::Completed {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(error_body("not_completed", "Job is not completed yet")),
-        )
-            .into_response();
-    }
-    let Some(manifest) = &job.catalog_manifest else {
-        return (
-            StatusCode::NOT_FOUND,
-            Json(error_body("no_catalog", "Job has no catalog output")),
-        )
-            .into_response();
-    };
-    let base = &manifest.dest;
-
-    let creds = state
-        .db
-        .job_output_target(&job)
-        .await
-        .map(|(_, c)| c)
-        .unwrap_or_default();
-
-    match read_manifest_files(base, &creds).await {
-        Ok(manifest_files) => Json(ManifestResponse { manifest_files }).into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(error_body("manifest_error", e)),
-        )
-            .into_response(),
-    }
 }

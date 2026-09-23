@@ -1,12 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { SecretInput } from "@/components/ui/secret-input";
+import {
+  Badge,
+  Button,
+  Input,
+  PasswordInput,
+  PasswordInputGroup,
+  PasswordInputInput,
+  PasswordInputTrigger,
+  RadioGroup,
+  RadioGroupCard,
+  RadioGroupText,
+} from "@kanzo-tech/ui";
 import { FormField } from "@/components/shared/form-layout";
-import { RadioCardGroup, type RadioCardOption } from "@/components/shared/radio-card-group";
 import { PageShell } from "@/components/layout/page-shell";
 import { UnsavedChangesGuard } from "@/components/shared/unsaved-changes-guard";
 import type { AiSettings } from "@/lib/types";
@@ -36,14 +43,13 @@ export function AiProviderForm({ provider, allProviders, disabledProviders, onSu
 
   const displayProvider = allProviders.find((p) => p.id === (selectedId || provider?.provider));
 
-  const providerOptions: RadioCardOption[] = useMemo(
+  const providerOptions = useMemo(
     () =>
       allProviders.map((p) => ({
-        value: p.id,
+        id: p.id,
         label: p.label,
-        icon: p.icon,
-        disabled: disabledProviders?.has(p.id),
-        badge: disabledProviders?.has(p.id) ? "Configured" : undefined,
+        Icon: p.icon,
+        disabled: disabledProviders?.has(p.id) ?? false,
       })),
     [allProviders, disabledProviders],
   );
@@ -73,24 +79,43 @@ export function AiProviderForm({ provider, allProviders, disabledProviders, onSu
             {displayProvider?.label ?? provider?.provider}
           </Badge>
         ) : (
-          <RadioCardGroup
-            name="ai-provider"
+          <RadioGroup
+            className="text-center *:flex-col *:items-center *:justify-center"
+            columns={3}
+            onValueChange={(details) => setSelectedId(details.value ?? "")}
             value={selectedId}
-            onValueChange={setSelectedId}
-            options={providerOptions}
-          />
+          >
+            {providerOptions.map((option) => (
+              <RadioGroupCard disabled={option.disabled} key={option.id} value={option.id}>
+                <option.Icon className="size-6 shrink-0 text-muted-foreground" />
+                <RadioGroupText>{option.label}</RadioGroupText>
+                {option.disabled && (
+                  <Badge size="xs" variant="outline">
+                    Configured
+                  </Badge>
+                )}
+              </RadioGroupCard>
+            ))}
+          </RadioGroup>
         )}
 
         {(selectedId || isEdit) && (
           <>
             <FormField label="API Key" required={!isEdit}>
-              <SecretInput
-                hasStoredValue={isEdit && !!provider?.api_key}
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder={`Enter your ${displayProvider?.label ?? selectedId} API key`}
-                className="h-8 text-sm"
-              />
+              {/* `hasStoredValue` is the library's own credential shape: the field renders
+                  EMPTY and submitting it empty keeps the stored secret. */}
+              <PasswordInput>
+                <PasswordInputGroup>
+                  <PasswordInputInput
+                    hasStoredValue={isEdit && !!provider?.api_key}
+                    onChange={(event) => setApiKey(event.target.value)}
+                    placeholder={`Enter your ${displayProvider?.label ?? selectedId} API key`}
+                    storedPlaceholder="Leave empty to keep current"
+                    value={apiKey}
+                  />
+                  <PasswordInputTrigger />
+                </PasswordInputGroup>
+              </PasswordInput>
             </FormField>
 
             <FormField

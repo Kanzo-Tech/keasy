@@ -45,14 +45,11 @@ secrecy = { version = "0.10", features = ["serde"] }
 tower-sessions = { version = "0.14", features = ["signed"] }
 tower-sessions-rusqlite-store = "0.14.1"
 time = "0.3"
-# The ONLY fossil dependency: the subprocess wire contracts (RunStatus,
-# CatalogInput, ProviderInfo), reused verbatim — one source of truth, the
-# `fossil` CLI serialises these exact structs and keasy deserialises them. keasy
-# links NO fossil compiler/runtime crate: every fossil capability (run, catalog,
-# providers) goes through the `fossil` binary over a subprocess. Pinned to the
-# public rmlext release tag (Renovate bumps it), in lockstep with the
-# `@fossil-lang/*` versions the web resolves from npm.
-fossil-run-status = { git = "https://github.com/Kanzo-Tech/fossil-lang.git", tag = "v0.3.0-alpha.3", features = ["utoipa"] }
+# No fossil crate is linked here, and none may be. fossil owns the language, the
+# compute and the SHAPE of the output; keasy owns the home, the keys and the
+# access. What a run produced travels as opaque JSON (the report IS the
+# manifest) and what it is called travels as a list the corpus reader
+# enumerated — keasy stores and signs both, and types neither.
 base64 = "0.22"
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "jwk"] }
 x509-parser = { version = "0.16", features = ["verify"] }

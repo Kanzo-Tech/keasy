@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { JobEditor } from "@/components/jobs/job-editor";
+import { JobStudio } from "@/components/jobs/job-studio";
 
 export default function NewJobPage() {
   return (
     <Suspense>
-      <JobEditor />
+      <JobStudio />
     </Suspense>
   );
 }

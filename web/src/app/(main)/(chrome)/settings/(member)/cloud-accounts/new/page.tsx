@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import { toastError } from "@/lib/toast-error";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
@@ -20,7 +20,7 @@ export default function NewCloudAccountPage() {
     mutationFn: (data: { name: string; provider_id: string; auth_method?: string; fields: Record<string, string> }) =>
       api.cloud.create(data),
     onSuccess: async () => {
-      toast.success("Cloud account created");
+      toast.create({ title: "Cloud account created", type: "success" });
       await queryClient.invalidateQueries({ queryKey: queryKeys.cloud.accounts });
       router.push("/settings/cloud-accounts");
     },

@@ -1,4 +1,6 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Skeleton,
+} from "@kanzo-tech/ui";
 import { PageShell } from "@/components/layout/page-shell";
 
 export function FormPageSkeleton() {

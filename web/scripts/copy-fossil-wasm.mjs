@@ -1,5 +1,5 @@
-// copy-fossil-wasm.mjs — stage the fossil-wasm artefact into public/ so the
-// LSP Worker can fetch it by a stable static URL.
+// copy-fossil-wasm.mjs — stage the fossil-wasm artefacts into public/ so the
+// app can fetch them by a stable static URL.
 //
 // Per @fossil-lang/wasm's documented Next.js pattern: serve `fossil_wasm_bg.wasm`
 // from `public/` and pass the static URL (`/fossil/fossil_wasm_bg.wasm`) to
@@ -17,12 +17,14 @@ const require = createRequire(import.meta.url);
 const here = dirname(fileURLToPath(import.meta.url));
 
 // Each fossil-wasm artefact the app fetches by a stable static URL:
-//  - @fossil-lang/wasm     → LSP Worker (`/fossil/fossil_wasm_bg.wasm`)
-//  - @fossil-lang/graph    → discovery verb client (`/fossil/fossil_graph_wasm_bg.wasm`)
+//  - @fossil-lang/wasm     → the checker, on the main thread (`/fossil/fossil_wasm_bg.wasm`);
+//                            `lib/fossil/checker.ts` fetches it. There is no Worker any
+//                            more — the artefact is still needed, its consumer moved.
+//  - @fossil-lang/corpus   → the corpus reader (`/fossil/fossil_graph_wasm_bg.wasm`)
 //  - @fossil-lang/executor → browser job runner / DataFusion-WASM (`/fossil/fossil_df_wasm_bg.wasm`)
 const ARTEFACTS = [
   { pkg: "@fossil-lang/wasm/pkg/fossil_wasm_bg.wasm", file: "fossil_wasm_bg.wasm" },
-  { pkg: "@fossil-lang/graph/pkg/fossil_graph_wasm_bg.wasm", file: "fossil_graph_wasm_bg.wasm" },
+  { pkg: "@fossil-lang/corpus/pkg/fossil_graph_wasm_bg.wasm", file: "fossil_graph_wasm_bg.wasm" },
   { pkg: "@fossil-lang/executor/pkg/fossil_df_wasm_bg.wasm", file: "fossil_df_wasm_bg.wasm" },
 ];
 

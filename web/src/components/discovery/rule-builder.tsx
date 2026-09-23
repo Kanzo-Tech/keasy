@@ -80,7 +80,7 @@ export function RuleBuilder({ jobId, schema }: RuleBuilderProps) {
         <span className="text-xs font-medium text-muted-foreground">Rules</span>
         <div className="flex items-center gap-1">
           {results.length > 0 && (
-            <Badge variant={passedCount === results.length ? "secondary" : "destructive"} className="text-[10px]">
+            <Badge variant={passedCount === results.length ? "success" : "destructive"} className="text-[10px]">
               {passedCount}/{results.length}
             </Badge>
           )}
@@ -138,7 +138,7 @@ function RuleRow({ rule, result, schema, conjunction, onUpdate, onRemove }: {
       {result && (
         <span className="shrink-0">
           {result.passed
-            ? <CheckCircle2 size={12} className="text-green-500" />
+            ? <CheckCircle2 size={12} className="text-success" />
             : <XCircle size={12} className="text-destructive" />}
         </span>
       )}

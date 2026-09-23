@@ -1,36 +1,21 @@
-import {
-  Badge,
-} from "@kanzo-tech/ui";
+import { Badge } from "@kanzo-tech/ui";
 import type { JobStatus } from "@/lib/types";
 
-const config: Record<JobStatus, { label: string; className: string }> = {
-  draft: {
-    label: "Draft",
-    className: "bg-muted text-muted-foreground",
-  },
-  pending: {
-    label: "Pending",
-    className: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
-  },
-  running: {
-    label: "Running",
-    className: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
-  },
-  completed: {
-    label: "Completed",
-    className: "bg-green-500/15 text-green-600 dark:text-green-400",
-  },
-  failed: {
-    label: "Failed",
-    className: "bg-red-500/15 text-red-600 dark:text-red-400",
-  },
-  cancelled: {
-    label: "Cancelled",
-    className: "bg-muted text-muted-foreground",
-  },
+/**
+ * A status is one of the design system's status families, not a hand-picked tone. The
+ * variants carry the measured pairing — a step-9 wash under step-11 ink — and they follow
+ * the theme. A literal palette step with a second one hand-picked for dark mode did neither.
+ */
+const config: Record<JobStatus, { label: string; variant: React.ComponentProps<typeof Badge>["variant"] }> = {
+  draft: { label: "Draft", variant: "secondary" },
+  pending: { label: "Pending", variant: "warning" },
+  running: { label: "Running", variant: "info" },
+  completed: { label: "Completed", variant: "success" },
+  failed: { label: "Failed", variant: "destructive" },
+  cancelled: { label: "Cancelled", variant: "secondary" },
 };
 
 export function JobStatusBadge({ status }: { status: JobStatus }) {
-  const { label, className } = config[status];
-  return <Badge className={className}>{label}</Badge>;
+  const { label, variant } = config[status];
+  return <Badge variant={variant}>{label}</Badge>;
 }

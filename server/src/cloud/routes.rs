@@ -1,10 +1,12 @@
+use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 
 use crate::AppState;
-use crate::cloud::models::{CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest};
+use crate::cloud::models::{
+    CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest,
+};
 use crate::error::data_response;
 use crate::middleware::tenant::{IsMember, Require};
 

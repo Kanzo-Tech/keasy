@@ -1,5 +1,5 @@
-use aes_gcm::{Aes256Gcm, KeyInit, Nonce};
 use aes_gcm::aead::Aead;
+use aes_gcm::{Aes256Gcm, KeyInit, Nonce};
 use secrecy::zeroize::Zeroizing;
 use sha2::Sha256;
 
@@ -17,10 +17,10 @@ pub fn encrypt(plaintext: &[u8], secret: &str) -> Result<Vec<u8>, String> {
 
     let key = derive_key(secret, &salt);
     let cipher = Aes256Gcm::new((&*key).into());
-    let nonce = Nonce::from_slice(&nonce_bytes);
+    let nonce = Nonce::from(nonce_bytes);
 
     let ciphertext = cipher
-        .encrypt(nonce, plaintext)
+        .encrypt(&nonce, plaintext)
         .map_err(|e| format!("encryption failed: {e}"))?;
 
     let mut out = Vec::with_capacity(1 + SALT_LEN + NONCE_LEN + ciphertext.len());
@@ -41,15 +41,17 @@ pub fn decrypt(data: &[u8], secret: &str) -> Result<Vec<u8>, String> {
     }
 
     let salt = &data[1..1 + SALT_LEN];
-    let nonce_bytes = &data[1 + SALT_LEN..header];
+    let nonce_bytes: [u8; NONCE_LEN] = data[1 + SALT_LEN..header]
+        .try_into()
+        .map_err(|_| "nonce of the wrong length".to_string())?;
     let ciphertext = &data[header..];
 
     let key = derive_key(secret, salt);
     let cipher = Aes256Gcm::new((&*key).into());
-    let nonce = Nonce::from_slice(nonce_bytes);
+    let nonce = Nonce::from(nonce_bytes);
 
     cipher
-        .decrypt(nonce, ciphertext)
+        .decrypt(&nonce, ciphertext)
         .map_err(|_| "decryption failed (wrong key or corrupted data)".into())
 }
 

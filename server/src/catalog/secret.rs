@@ -50,7 +50,11 @@ fn s3(name: &str, scope: &str, config: &HashMap<String, String>) -> Option<Strin
     let key_id = config.get("AWS_ACCESS_KEY_ID")?;
     let secret = config.get("AWS_SECRET_ACCESS_KEY")?;
 
-    let mut p = vec![("TYPE", "s3".to_string()), ("KEY_ID", q(key_id)), ("SECRET", q(secret))];
+    let mut p = vec![
+        ("TYPE", "s3".to_string()),
+        ("KEY_ID", q(key_id)),
+        ("SECRET", q(secret)),
+    ];
     if let Some(region) = config.get("AWS_DEFAULT_REGION") {
         p.push(("REGION", q(region)));
     }
@@ -59,7 +63,9 @@ fn s3(name: &str, scope: &str, config: &HashMap<String, String>) -> Option<Strin
         // (DuckDB wants host[:port]), force path-style addressing, and match TLS
         // to the endpoint scheme.
         let use_ssl = !endpoint.starts_with("http://");
-        let host = endpoint.trim_start_matches("https://").trim_start_matches("http://");
+        let host = endpoint
+            .trim_start_matches("https://")
+            .trim_start_matches("http://");
         p.push(("ENDPOINT", q(host)));
         p.push(("URL_STYLE", q("path")));
         p.push(("USE_SSL", use_ssl.to_string()));
@@ -103,7 +109,11 @@ fn azure(name: &str, scope: &str, config: &HashMap<String, String>) -> Option<St
 }
 
 fn stmt(name: &str, params: &[(&str, String)]) -> String {
-    let body = params.iter().map(|(k, v)| format!("{k} {v}")).collect::<Vec<_>>().join(", ");
+    let body = params
+        .iter()
+        .map(|(k, v)| format!("{k} {v}"))
+        .collect::<Vec<_>>()
+        .join(", ");
     format!("CREATE OR REPLACE SECRET \"{name}\" ({body});")
 }
 
@@ -117,7 +127,10 @@ mod tests {
     use super::*;
 
     fn map(pairs: &[(&str, &str)]) -> HashMap<String, String> {
-        pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
+        pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
     }
 
     fn sql(base: &str, pairs: &[(&str, &str)]) -> Option<String> {
@@ -129,17 +142,27 @@ mod tests {
 
     #[test]
     fn local_paths_need_no_secret() {
-        assert!(matches!(plan("j", "/tmp/x", &HashMap::new()), SecretPlan::None));
-        assert!(matches!(plan("j", "file:///tmp/x", &HashMap::new()), SecretPlan::None));
+        assert!(matches!(
+            plan("j", "/tmp/x", &HashMap::new()),
+            SecretPlan::None
+        ));
+        assert!(matches!(
+            plan("j", "file:///tmp/x", &HashMap::new()),
+            SecretPlan::None
+        ));
     }
 
     #[test]
     fn s3_has_key_region_scope_no_endpoint() {
-        let s = sql("s3://bucket/abc", &[
-            ("AWS_ACCESS_KEY_ID", "AKIA"),
-            ("AWS_SECRET_ACCESS_KEY", "shh"),
-            ("AWS_DEFAULT_REGION", "eu-west-1"),
-        ]).expect("S3 creds present");
+        let s = sql(
+            "s3://bucket/abc",
+            &[
+                ("AWS_ACCESS_KEY_ID", "AKIA"),
+                ("AWS_SECRET_ACCESS_KEY", "shh"),
+                ("AWS_DEFAULT_REGION", "eu-west-1"),
+            ],
+        )
+        .expect("S3 creds present");
         assert!(s.contains("TYPE s3") && s.contains("KEY_ID 'AKIA'") && s.contains("SECRET 'shh'"));
         assert!(s.contains("REGION 'eu-west-1'") && s.contains("SCOPE 's3://bucket/abc'"));
         assert!(!s.contains("ENDPOINT"), "AWS-native → no path-style");
@@ -147,25 +170,42 @@ mod tests {
 
     #[test]
     fn s3_custom_endpoint_forces_path_style_and_matches_tls() {
-        let https = sql("s3://b", &[
-            ("AWS_ACCESS_KEY_ID", "k"), ("AWS_SECRET_ACCESS_KEY", "s"),
-            ("AWS_ENDPOINT_URL", "https://minio.example.com:9000"),
-        ]).unwrap();
-        assert!(https.contains("ENDPOINT 'minio.example.com:9000'") && https.contains("URL_STYLE 'path'"));
+        let https = sql(
+            "s3://b",
+            &[
+                ("AWS_ACCESS_KEY_ID", "k"),
+                ("AWS_SECRET_ACCESS_KEY", "s"),
+                ("AWS_ENDPOINT_URL", "https://minio.example.com:9000"),
+            ],
+        )
+        .unwrap();
+        assert!(
+            https.contains("ENDPOINT 'minio.example.com:9000'")
+                && https.contains("URL_STYLE 'path'")
+        );
         assert!(https.contains("USE_SSL true"));
-        let http = sql("s3://b", &[
-            ("AWS_ACCESS_KEY_ID", "k"), ("AWS_SECRET_ACCESS_KEY", "s"),
-            ("AWS_ENDPOINT_URL", "http://localhost:9000"),
-        ]).unwrap();
+        let http = sql(
+            "s3://b",
+            &[
+                ("AWS_ACCESS_KEY_ID", "k"),
+                ("AWS_SECRET_ACCESS_KEY", "s"),
+                ("AWS_ENDPOINT_URL", "http://localhost:9000"),
+            ],
+        )
+        .unwrap();
         assert!(http.contains("USE_SSL false"));
     }
 
     #[test]
     fn azure_account_key_builds_connection_string() {
-        let s = sql("az://c/prefix", &[
-            ("AZURE_STORAGE_ACCOUNT_NAME", "acc"),
-            ("AZURE_STORAGE_ACCOUNT_KEY", "a2V5"),
-        ]).expect("azure account-key");
+        let s = sql(
+            "az://c/prefix",
+            &[
+                ("AZURE_STORAGE_ACCOUNT_NAME", "acc"),
+                ("AZURE_STORAGE_ACCOUNT_KEY", "a2V5"),
+            ],
+        )
+        .expect("azure account-key");
         assert!(s.contains("TYPE azure"));
         assert!(s.contains("AccountName=acc") && s.contains("AccountKey=a2V5"));
         assert!(s.contains("SCOPE 'az://c/prefix'"));
@@ -173,36 +213,61 @@ mod tests {
 
     #[test]
     fn azure_sas_strips_leading_question_mark() {
-        let s = sql("abfss://c", &[
-            ("AZURE_STORAGE_ACCOUNT_NAME", "acc"),
-            ("AZURE_STORAGE_SAS_KEY", "?sv=x&sig=y"),
-        ]).unwrap();
-        assert!(s.contains("SharedAccessSignature=sv=x&sig=y"), "leading ? stripped");
+        let s = sql(
+            "abfss://c",
+            &[
+                ("AZURE_STORAGE_ACCOUNT_NAME", "acc"),
+                ("AZURE_STORAGE_SAS_KEY", "?sv=x&sig=y"),
+            ],
+        )
+        .unwrap();
+        assert!(
+            s.contains("SharedAccessSignature=sv=x&sig=y"),
+            "leading ? stripped"
+        );
         assert!(s.contains("BlobEndpoint=https://acc.blob.core.windows.net"));
     }
 
     #[test]
     fn azure_service_principal_maps_triple() {
-        let s = sql("azure://c", &[
-            ("AZURE_STORAGE_ACCOUNT_NAME", "acc"),
-            ("AZURE_STORAGE_TENANT_ID", "t"),
-            ("AZURE_STORAGE_CLIENT_ID", "ci"),
-            ("AZURE_STORAGE_CLIENT_SECRET", "cs"),
-        ]).unwrap();
+        let s = sql(
+            "azure://c",
+            &[
+                ("AZURE_STORAGE_ACCOUNT_NAME", "acc"),
+                ("AZURE_STORAGE_TENANT_ID", "t"),
+                ("AZURE_STORAGE_CLIENT_ID", "ci"),
+                ("AZURE_STORAGE_CLIENT_SECRET", "cs"),
+            ],
+        )
+        .unwrap();
         assert!(s.contains("PROVIDER service_principal"));
-        assert!(s.contains("TENANT_ID 't'") && s.contains("CLIENT_ID 'ci'") && s.contains("CLIENT_SECRET 'cs'"));
+        assert!(
+            s.contains("TENANT_ID 't'")
+                && s.contains("CLIENT_ID 'ci'")
+                && s.contains("CLIENT_SECRET 'cs'")
+        );
         assert!(s.contains("ACCOUNT_NAME 'acc'"));
     }
 
     #[test]
     fn remote_with_no_creds_is_unsupported() {
-        assert!(matches!(plan("j", "s3://b", &HashMap::new()), SecretPlan::Unsupported));
-        assert!(matches!(plan("j", "az://c", &HashMap::new()), SecretPlan::Unsupported));
+        assert!(matches!(
+            plan("j", "s3://b", &HashMap::new()),
+            SecretPlan::Unsupported
+        ));
+        assert!(matches!(
+            plan("j", "az://c", &HashMap::new()),
+            SecretPlan::Unsupported
+        ));
     }
 
     #[test]
     fn value_with_quote_is_escaped() {
-        let s = sql("s3://b", &[("AWS_ACCESS_KEY_ID", "a'b"), ("AWS_SECRET_ACCESS_KEY", "s")]).unwrap();
+        let s = sql(
+            "s3://b",
+            &[("AWS_ACCESS_KEY_ID", "a'b"), ("AWS_SECRET_ACCESS_KEY", "s")],
+        )
+        .unwrap();
         assert!(s.contains("KEY_ID 'a''b'"));
     }
 }

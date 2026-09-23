@@ -78,8 +78,8 @@ static HTTP_CLIENT: std::sync::LazyLock<reqwest::Client> =
 pub fn require_ai_settings(
     settings: Option<AiSettings>,
 ) -> Result<AiSettings, (axum::http::StatusCode, axum::Json<serde_json::Value>)> {
-    use axum::http::StatusCode;
     use axum::Json;
+    use axum::http::StatusCode;
     match settings {
         Some(s) if !s.api_key.expose_secret().is_empty() => Ok(s),
         _ => Err((
@@ -254,7 +254,10 @@ async fn stream_anthropic(
     max_tokens: u32,
     tx: mpsc::Sender<String>,
 ) -> Result<String, AiError> {
-    let model = settings.model.as_deref().unwrap_or("claude-sonnet-4-20250514");
+    let model = settings
+        .model
+        .as_deref()
+        .unwrap_or("claude-sonnet-4-20250514");
 
     let body = serde_json::json!({
         "model": model,
@@ -306,7 +309,10 @@ async fn stream_openai(
 
     let res = client
         .post("https://api.openai.com/v1/chat/completions")
-        .header("Authorization", format!("Bearer {}", settings.api_key.expose_secret()))
+        .header(
+            "Authorization",
+            format!("Bearer {}", settings.api_key.expose_secret()),
+        )
         .header("content-type", "application/json")
         .json(&body)
         .send()
@@ -337,12 +343,14 @@ async fn consume_sse_stream(
             let event_block = &buf[..pos];
             for line in event_block.lines() {
                 if let Some(data) = line.strip_prefix("data: ") {
-                    if data == "[DONE]" { continue; }
-                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(data) {
-                        if let Some(text) = extract_text(&v) {
-                            accumulated.push_str(text);
-                            let _ = tx.send(text.to_string()).await;
-                        }
+                    if data == "[DONE]" {
+                        continue;
+                    }
+                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(data)
+                        && let Some(text) = extract_text(&v)
+                    {
+                        accumulated.push_str(text);
+                        let _ = tx.send(text.to_string()).await;
                     }
                 }
             }
@@ -372,7 +380,11 @@ pub fn setup_sse_channels() -> SseChannels {
         }
     });
 
-    SseChannels { sse_tx, sse_rx, delta_tx }
+    SseChannels {
+        sse_tx,
+        sse_rx,
+        delta_tx,
+    }
 }
 
 pub fn into_sse_response(sse_rx: mpsc::Receiver<Result<Event, Infallible>>) -> Response {
@@ -402,7 +414,9 @@ pub fn stream_llm_to_sse(
             Ok(full_text) => {
                 let payload = parse_result(&full_text);
                 let _ = sse_tx
-                    .send(Ok(Event::default().event("complete").data(payload.to_string())))
+                    .send(Ok(Event::default()
+                        .event("complete")
+                        .data(payload.to_string())))
                     .await;
             }
             Err(e) => {

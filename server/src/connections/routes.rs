@@ -1,9 +1,10 @@
+use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 use serde::Deserialize;
 
+use crate::AppState;
 use crate::cloud::reader;
 use crate::connections::models::{
     ColumnInfo, Connection, CreateConnectionRequest, Direction, FileSchemaResponse, LocationType,
@@ -11,7 +12,6 @@ use crate::connections::models::{
 };
 use crate::error::data_response;
 use crate::middleware::tenant::{IsMember, Require, TenantRole};
-use crate::AppState;
 
 use super::errors::ConnectionError;
 
@@ -84,7 +84,10 @@ pub async fn list_connections(
     State(state): State<AppState>,
     Query(query): Query<ListConnectionsQuery>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    let connections = state.db.list_connections(query.connection_type.as_deref()).await;
+    let connections = state
+        .db
+        .list_connections(query.connection_type.as_deref())
+        .await;
     Ok(data_response(connections))
 }
 
@@ -109,11 +112,15 @@ pub async fn create_connection(
     if req.location_type == LocationType::Cloud
         && let Some(ref account_id) = req.cloud_account_id
     {
-        let creds = state.db.build_storage_config(std::slice::from_ref(account_id)).await;
+        let creds = state
+            .db
+            .build_storage_config(std::slice::from_ref(account_id))
+            .await;
         if let Err(msg) = reader::list_files(&req.url, &creds).await {
-            return Err(ConnectionError::ContainerNotFound(
-                format!("Cannot access container '{}': {msg}", req.url),
-            ));
+            return Err(ConnectionError::ContainerNotFound(format!(
+                "Cannot access container '{}': {msg}",
+                req.url
+            )));
         }
     }
 
@@ -201,7 +208,10 @@ pub async fn delete_connection(
         ));
     }
 
-    state.db.remove_connection(id.as_str()).await
+    state
+        .db
+        .remove_connection(id.as_str())
+        .await
         .map_err(ConnectionError::Internal)?;
     Ok(StatusCode::NO_CONTENT.into_response())
 }
@@ -271,9 +281,9 @@ pub async fn get_file_schema(
 ) -> Result<impl IntoResponse, ConnectionError> {
     let ext = query.path.rsplit('.').next().unwrap_or("").to_lowercase();
     if ext != "csv" {
-        return Err(ConnectionError::SchemaInferenceFailed(
-            format!("Unsupported file type: .{ext}. Only .csv is supported."),
-        ));
+        return Err(ConnectionError::SchemaInferenceFailed(format!(
+            "Unsupported file type: .{ext}. Only .csv is supported."
+        )));
     }
 
     let connection = state
@@ -296,8 +306,7 @@ pub async fn get_file_schema(
             .map_err(|e| ConnectionError::SchemaInferenceFailed(format!("Read failed: {e}")))?
     };
 
-    let columns = infer_csv_schema(&bytes)
-        .map_err(ConnectionError::SchemaInferenceFailed)?;
+    let columns = infer_csv_schema(&bytes).map_err(ConnectionError::SchemaInferenceFailed)?;
 
     Ok(data_response(FileSchemaResponse { columns }))
 }
@@ -382,13 +391,15 @@ fn infer_field_type(value: &str) -> InferredType {
         return InferredType::Float;
     }
     // Simple date check: YYYY-MM-DD
-    if trimmed.len() >= 10 && trimmed.as_bytes()[4] == b'-' && trimmed.as_bytes()[7] == b'-'
+    if trimmed.len() >= 10
+        && trimmed.as_bytes()[4] == b'-'
+        && trimmed.as_bytes()[7] == b'-'
         && trimmed[..4].parse::<u16>().is_ok()
-            && trimmed[5..7].parse::<u8>().is_ok()
-            && trimmed[8..10].parse::<u8>().is_ok()
-        {
-            return InferredType::Date;
-        }
+        && trimmed[5..7].parse::<u8>().is_ok()
+        && trimmed[8..10].parse::<u8>().is_ok()
+    {
+        return InferredType::Date;
+    }
     InferredType::String
 }
 

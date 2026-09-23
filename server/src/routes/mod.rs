@@ -1,16 +1,19 @@
 pub mod health;
 pub mod org;
 
-use axum::{middleware, Router};
 use axum::extract::DefaultBodyLimit;
 use axum::http::HeaderValue;
 use axum::http::header::{self, HeaderName};
+use axum::{Router, middleware};
 use secrecy::ExposeSecret;
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::TraceLayer;
-use tower_sessions::{cookie::{Key, SameSite}, SessionManagerLayer};
+use tower_sessions::{
+    SessionManagerLayer,
+    cookie::{Key, SameSite},
+};
 
 use crate::AppState;
 use crate::middleware::session_auth::session_required;
@@ -39,9 +42,9 @@ pub fn build_router(
         .with_http_only(true)
         .with_same_site(SameSite::Lax)
         .with_secure(session.secure)
-        .with_expiry(tower_sessions::Expiry::OnInactivity(
-            time::Duration::hours(24),
-        ))
+        .with_expiry(tower_sessions::Expiry::OnInactivity(time::Duration::hours(
+            24,
+        )))
         .with_signed(key);
 
     let health_routes = Router::new()
@@ -51,7 +54,10 @@ pub fn build_router(
         .with_state(state.clone());
 
     let public_api_routes = Router::new()
-        .route("/openapi.json", axum::routing::get(crate::openapi::openapi_json))
+        .route(
+            "/openapi.json",
+            axum::routing::get(crate::openapi::openapi_json),
+        )
         .route("/v1/status", axum::routing::get(health::service_status))
         .route(
             "/v1/settings/schema",
@@ -228,8 +234,7 @@ pub fn build_router(
         // Workspace legal identity — read for any member, write for the owner
         .route(
             "/v1/org/identity",
-            axum::routing::get(org::get_org_identity)
-                .put(org::update_org_identity),
+            axum::routing::get(org::get_org_identity).put(org::update_org_identity),
         )
         .layer(middleware::from_fn(
             tenant_context_required, // runs second (inner), after session_required
@@ -277,7 +282,11 @@ pub fn build_router(
         ));
 
     // Rate limiting — relaxed in dev to support DuckDB concurrent range requests
-    let (rps, burst) = if cfg!(debug_assertions) { (100, 500) } else { (20, 100) };
+    let (rps, burst) = if cfg!(debug_assertions) {
+        (100, 500)
+    } else {
+        (20, 100)
+    };
     let governor_conf = tower_governor::governor::GovernorConfigBuilder::default()
         .per_second(rps)
         .burst_size(burst)
@@ -299,7 +308,9 @@ pub fn build_router(
     Router::new()
         .merge(health_routes)
         .merge(rated_routes)
-        .layer(axum::middleware::from_fn(crate::middleware::audit::audit_log))
+        .layer(axum::middleware::from_fn(
+            crate::middleware::audit::audit_log,
+        ))
         .layer(session_layer)
         .layer(cors)
         .layer(security_headers)
@@ -312,13 +323,18 @@ pub fn build_router(
 const PBKDF2_ITERATIONS: u32 = 100_000;
 
 fn derive_session_key(secret: &[u8]) -> [u8; 64] {
-    use sha2::Sha256;
     use pbkdf2::hmac::Hmac;
+    use sha2::Sha256;
 
     let mut key = [0u8; 64];
     // Use a fixed salt — the secret itself provides uniqueness.
     // This is a deterministic KDF, not password hashing, so a fixed salt is acceptable.
-    pbkdf2::pbkdf2::<Hmac<Sha256>>(secret, b"keasy-session-key-derivation", PBKDF2_ITERATIONS, &mut key)
-        .expect("PBKDF2 key derivation must not fail for 64-byte output");
+    pbkdf2::pbkdf2::<Hmac<Sha256>>(
+        secret,
+        b"keasy-session-key-derivation",
+        PBKDF2_ITERATIONS,
+        &mut key,
+    )
+    .expect("PBKDF2 key derivation must not fail for 64-byte output");
     key
 }

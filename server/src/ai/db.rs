@@ -1,8 +1,8 @@
 use rusqlite::params;
 
 use crate::db::Database;
-use crate::jobs::models::now_iso8601;
 use crate::graph::types::TabularData;
+use crate::jobs::models::now_iso8601;
 
 use super::models::{Conversation, ConversationMessage};
 
@@ -111,7 +111,11 @@ impl Database {
         Ok(msg)
     }
 
-    pub async fn update_message_explanation(&self, message_id: &str, explanation: &str) -> Result<(), String> {
+    pub async fn update_message_explanation(
+        &self,
+        message_id: &str,
+        explanation: &str,
+    ) -> Result<(), String> {
         let conn = self.write().await;
         conn.execute(
             "UPDATE messages SET explanation = ?1 WHERE id = ?2",
@@ -167,11 +171,8 @@ impl Database {
 
     pub async fn delete_conversation(&self, id: &str) -> Result<(), String> {
         let conn = self.write().await;
-        conn.execute(
-            "DELETE FROM conversations WHERE id = ?1",
-            [id],
-        )
-        .map_err(|e| format!("Failed to delete conversation: {e}"))?;
+        conn.execute("DELETE FROM conversations WHERE id = ?1", [id])
+            .map_err(|e| format!("Failed to delete conversation: {e}"))?;
         Ok(())
     }
 }

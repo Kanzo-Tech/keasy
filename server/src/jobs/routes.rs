@@ -12,7 +12,7 @@ use crate::jobs::models::{
 };
 use crate::middleware::tenant::{IsMember, Require};
 
-use super::errors::{classify_error, JobApiError, JobRuntimeError};
+use super::errors::{JobApiError, JobRuntimeError, classify_error};
 
 #[utoipa::path(get, path = "/v1/jobs", tag = "Jobs",
     responses(
@@ -58,7 +58,10 @@ pub async fn create_job(
             manifest: None,
             catalog_manifest: None,
         };
-        state.db.insert_job(&job).await
+        state
+            .db
+            .insert_job(&job)
+            .await
             .map_err(JobApiError::Internal)?;
         return Ok((StatusCode::CREATED, data_response(job)).into_response());
     }
@@ -85,7 +88,10 @@ pub async fn create_job(
         catalog_manifest: None,
     };
 
-    state.db.insert_job(&job).await
+    state
+        .db
+        .insert_job(&job)
+        .await
         .map_err(JobApiError::Internal)?;
 
     Ok((StatusCode::ACCEPTED, data_response(job)).into_response())
@@ -124,17 +130,22 @@ pub async fn update_job(
     Path(id): Path<String>,
     Json(payload): Json<UpdateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    match state.db.update_job(id.as_str(), |job| {
-        if job.status != JobStatus::Draft {
-            return;
-        }
-        if let Some(script) = payload.script {
-            job.script = Some(script);
-        }
-        if let Some(name) = payload.name {
-            job.name = Some(name);
-        }
-    }).await.map_err(JobApiError::Internal)? {
+    match state
+        .db
+        .update_job(id.as_str(), |job| {
+            if job.status != JobStatus::Draft {
+                return;
+            }
+            if let Some(script) = payload.script {
+                job.script = Some(script);
+            }
+            if let Some(name) = payload.name {
+                job.name = Some(name);
+            }
+        })
+        .await
+        .map_err(JobApiError::Internal)?
+    {
         Some(job) if job.status == JobStatus::Draft => Ok(data_response(job).into_response()),
         Some(_) => Err(JobApiError::NotDraft),
         None => Err(JobApiError::NotFound),
@@ -160,7 +171,12 @@ pub async fn complete_job(
     Json(payload): Json<CompleteJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
     let now = now_iso8601();
-    let CompleteJobRequest { status, mut manifest, catalog_manifest, error } = payload;
+    let CompleteJobRequest {
+        status,
+        mut manifest,
+        catalog_manifest,
+        error,
+    } = payload;
 
     // The output lives where the signed PUTs wrote it — `{dest_base}/{job_id}`,
     // where `dest_base` is the connection the member chose as the destination
@@ -174,7 +190,8 @@ pub async fn complete_job(
     let mut output_creds: Option<std::collections::HashMap<String, String>> = None;
     if matches!(status, JobStatus::Completed)
         && let Some(job) = state.db.get_job(&id).await
-        && let (Some(m), Some((base, creds))) = (manifest.as_mut(), state.db.job_output_target(&job).await)
+        && let (Some(m), Some((base, creds))) =
+            (manifest.as_mut(), state.db.job_output_target(&job).await)
     {
         m.dest = format!("{}/{}", base.trim_end_matches('/'), id);
         output_creds = Some(creds);
@@ -224,9 +241,13 @@ pub async fn complete_job(
     {
         let job_id = id.clone();
         tokio::spawn(async move {
-            match tokio::task::spawn_blocking(move || catalog.register(&job_id, &dataset, &creds)).await {
+            match tokio::task::spawn_blocking(move || catalog.register(&job_id, &dataset, &creds))
+                .await
+            {
                 Ok(Ok(())) => {}
-                Ok(Err(e)) => tracing::warn!(error = %e, "catalog registration failed (reconciler will retry)"),
+                Ok(Err(e)) => {
+                    tracing::warn!(error = %e, "catalog registration failed (reconciler will retry)")
+                }
                 Err(e) => tracing::warn!(error = %e, "catalog registration task panicked"),
             }
         });
@@ -251,14 +272,20 @@ pub async fn delete_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    let job = state.db.get_job(id.as_str()).await
+    let job = state
+        .db
+        .get_job(id.as_str())
+        .await
         .ok_or(JobApiError::NotFound)?;
 
     if matches!(job.status, JobStatus::Pending | JobStatus::Running) {
         return Err(JobApiError::StillRunning);
     }
 
-    state.db.remove_job(id.as_str()).await
+    state
+        .db
+        .remove_job(id.as_str())
+        .await
         .map_err(JobApiError::Internal)?;
 
     // Drop the job's dataset from the catalog so governance stops listing a ghost
@@ -267,7 +294,9 @@ pub async fn delete_job(
     if let Some(catalog) = state.catalog.clone() {
         let job_id = id.clone();
         tokio::spawn(async move {
-            if let Ok(Err(e)) = tokio::task::spawn_blocking(move || catalog.unregister(&job_id)).await {
+            if let Ok(Err(e)) =
+                tokio::task::spawn_blocking(move || catalog.unregister(&job_id)).await
+            {
                 tracing::warn!(error = %e, "catalog unregister failed (reconciler will retry)");
             }
         });

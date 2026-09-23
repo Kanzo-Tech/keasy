@@ -73,18 +73,28 @@ impl Catalog {
             let dataset = match datasets.last_mut() {
                 Some(d) if d.job_id == job_id => d,
                 _ => {
-                    datasets.push(CatalogDataset { job_id, tables: Vec::new() });
+                    datasets.push(CatalogDataset {
+                        job_id,
+                        tables: Vec::new(),
+                    });
                     datasets.last_mut().expect("just pushed")
                 }
             };
             let tbl = match dataset.tables.last_mut() {
                 Some(t) if t.name == table => t,
                 _ => {
-                    dataset.tables.push(CatalogTable { name: table.clone(), rows: None, columns: Vec::new() });
+                    dataset.tables.push(CatalogTable {
+                        name: table.clone(),
+                        rows: None,
+                        columns: Vec::new(),
+                    });
                     dataset.tables.last_mut().expect("just pushed")
                 }
             };
-            tbl.columns.push(CatalogColumn { name: column, data_type });
+            tbl.columns.push(CatalogColumn {
+                name: column,
+                data_type,
+            });
         }
 
         Ok(datasets)
@@ -104,7 +114,9 @@ pub fn fill_row_counts(datasets: &mut [CatalogDataset], jobs: &[crate::jobs::mod
         let Some(job) = jobs.iter().find(|j| sanitize(&j.id) == dataset.job_id) else {
             continue;
         };
-        let Some(manifest) = &job.manifest else { continue };
+        let Some(manifest) = &job.manifest else {
+            continue;
+        };
 
         for table in &mut dataset.tables {
             table.rows = manifest
@@ -114,7 +126,8 @@ pub fn fill_row_counts(datasets: &mut [CatalogDataset], jobs: &[crate::jobs::mod
                 .and_then(|v| v.count)
                 .or_else(|| {
                     manifest.edges.iter().find_map(|e| {
-                        let name = sanitize(&format!("{}_{}_{}", e.src_type, e.edge_type, e.dst_type));
+                        let name =
+                            sanitize(&format!("{}_{}_{}", e.src_type, e.edge_type, e.dst_type));
                         (table.name == name).then_some(e.count).flatten()
                     })
                 });
@@ -161,7 +174,10 @@ mod tests {
         };
 
         let cat = Catalog::open(dir.path()).unwrap();
-        assert!(cat.datasets().unwrap().is_empty(), "empty before any register");
+        assert!(
+            cat.datasets().unwrap().is_empty(),
+            "empty before any register"
+        );
 
         cat.register("j1", &ds, &HashMap::new()).unwrap();
         let got = cat.datasets().unwrap();
@@ -171,9 +187,15 @@ mod tests {
         assert_eq!(got[0].tables.len(), 1);
         let t = &got[0].tables[0];
         assert_eq!(t.name, "Person");
-        assert_eq!(t.rows, None, "datasets() is pure-metadata — counts filled separately");
+        assert_eq!(
+            t.rows, None,
+            "datasets() is pure-metadata — counts filled separately"
+        );
         let cols: Vec<&str> = t.columns.iter().map(|c| c.name.as_str()).collect();
-        assert!(cols.contains(&"id") && cols.contains(&"name"), "columns surfaced: {cols:?}");
+        assert!(
+            cols.contains(&"id") && cols.contains(&"name"),
+            "columns surfaced: {cols:?}"
+        );
     }
 
     #[test]
@@ -184,8 +206,16 @@ mod tests {
         let mut datasets = vec![CatalogDataset {
             job_id: "a_1".into(),
             tables: vec![
-                CatalogTable { name: "Person".into(), rows: None, columns: vec![] },
-                CatalogTable { name: "Orphan".into(), rows: None, columns: vec![] },
+                CatalogTable {
+                    name: "Person".into(),
+                    rows: None,
+                    columns: vec![],
+                },
+                CatalogTable {
+                    name: "Orphan".into(),
+                    rows: None,
+                    columns: vec![],
+                },
             ],
         }];
 
@@ -218,7 +248,14 @@ mod tests {
         };
 
         fill_row_counts(&mut datasets, &[job]);
-        assert_eq!(datasets[0].tables[0].rows, Some(42), "matched vertex count by sanitized id");
-        assert_eq!(datasets[0].tables[1].rows, None, "no manifest entry → stays None");
+        assert_eq!(
+            datasets[0].tables[0].rows,
+            Some(42),
+            "matched vertex count by sanitized id"
+        );
+        assert_eq!(
+            datasets[0].tables[1].rows, None,
+            "no manifest entry → stays None"
+        );
     }
 }

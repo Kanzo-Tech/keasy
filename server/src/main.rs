@@ -1,6 +1,6 @@
-use keasy_server::{AppState, AuthServices, Database};
 use keasy_server::config::ServerConfig;
-use keasy_server::routes::{build_router, SessionConfig};
+use keasy_server::routes::{SessionConfig, build_router};
+use keasy_server::{AppState, AuthServices, Database};
 use secrecy::ExposeSecret;
 
 use std::net::SocketAddr;
@@ -14,8 +14,7 @@ use tower_sessions::ExpiredDeletion;
 async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "info".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
         )
         .json()
         .init();
@@ -23,7 +22,10 @@ async fn main() {
     let config = ServerConfig::from_env();
 
     if let Err(e) = std::fs::create_dir_all(&config.data_dir) {
-        eprintln!("FATAL: Failed to create data dir {:?}: {e}", config.data_dir);
+        eprintln!(
+            "FATAL: Failed to create data dir {:?}: {e}",
+            config.data_dir
+        );
         std::process::exit(1);
     }
 
@@ -90,7 +92,11 @@ async fn main() {
     );
 
     // Build OIDC relying party client — only when all three config fields are present.
-    let oidc_state = match (&config.oidc_issuer_url, &config.oidc_client_id, &config.oidc_client_secret) {
+    let oidc_state = match (
+        &config.oidc_issuer_url,
+        &config.oidc_client_id,
+        &config.oidc_client_secret,
+    ) {
         (Some(issuer), Some(client_id), Some(secret)) => {
             let redirect_uri = format!(
                 "{}/v1/auth/oidc-callback",
@@ -147,7 +153,11 @@ async fn main() {
         catalog,
     };
     info!(
-        oidc = if state.auth.oidc_state.is_some() { "ready" } else { "not configured" },
+        oidc = if state.auth.oidc_state.is_some() {
+            "ready"
+        } else {
+            "not configured"
+        },
         "External services"
     );
 
@@ -155,7 +165,10 @@ async fn main() {
     // output never made it into the catalog (a miss at completion, a restart) and
     // deregister datasets whose job was deleted.
     if state.catalog.is_some() {
-        keasy_server::catalog::reconcile::spawn(state.clone(), tokio::time::Duration::from_secs(60));
+        keasy_server::catalog::reconcile::spawn(
+            state.clone(),
+            tokio::time::Duration::from_secs(60),
+        );
         info!("Catalog reconciler started (60s)");
     }
 

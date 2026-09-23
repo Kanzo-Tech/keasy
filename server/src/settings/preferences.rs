@@ -19,10 +19,18 @@ pub struct Preferences {
     pub mono_font_size: String,
 }
 
-fn default_accent_color() -> String { "neutral".into() }
-fn default_font_family() -> String { "geist".into() }
-fn default_mono_font_family() -> String { "geist-mono".into() }
-fn default_font_size() -> String { "default".into() }
+fn default_accent_color() -> String {
+    "neutral".into()
+}
+fn default_font_family() -> String {
+    "geist".into()
+}
+fn default_mono_font_family() -> String {
+    "geist-mono".into()
+}
+fn default_font_size() -> String {
+    "default".into()
+}
 
 impl Default for Preferences {
     fn default() -> Self {

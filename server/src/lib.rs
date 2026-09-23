@@ -20,7 +20,6 @@ pub mod openapi;
 pub mod routes;
 pub mod settings;
 
-
 // Re-export types integration tests need
 pub use db::Database;
 
@@ -56,4 +55,3 @@ pub struct AuthServices {
     /// OIDC client_secret for the authorization-code exchange.
     pub oidc_client_secret: Option<SecretString>,
 }
-

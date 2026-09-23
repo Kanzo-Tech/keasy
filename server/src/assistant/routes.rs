@@ -1,13 +1,13 @@
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::Response;
-use axum::Json;
 use std::fmt::Write as FmtWrite;
 
+use crate::AppState;
 use crate::ai::client::{require_ai_settings, stream_llm_to_sse};
 use crate::ai::routes::strip_markdown_fences;
 use crate::middleware::tenant::{IsMember, Require};
-use crate::AppState;
 
 use super::models::*;
 
@@ -16,7 +16,12 @@ type ErrorResponse = (StatusCode, Json<serde_json::Value>);
 fn format_schemas_for_prompt(schemas: &[FileSchema]) -> String {
     let mut out = String::new();
     for schema in schemas {
-        writeln!(out, "File: @{}/{}", schema.connection_name, schema.file_path).unwrap();
+        writeln!(
+            out,
+            "File: @{}/{}",
+            schema.connection_name, schema.file_path
+        )
+        .unwrap();
         writeln!(out, "Columns:").unwrap();
         for col in &schema.columns {
             writeln!(out, "  - {} ({})", col.name, col.data_type).unwrap();

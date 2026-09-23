@@ -4,10 +4,12 @@ use rusqlite::params;
 use secrecy::{ExposeSecret, SecretString};
 use tracing::{info, warn};
 
-use crate::settings::schema::find_provider;
 use crate::db::Database;
+use crate::settings::schema::find_provider;
 
-use super::models::{CloudAccount, CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest};
+use super::models::{
+    CloudAccount, CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest,
+};
 
 impl Database {
     pub async fn create_cloud_account(
@@ -54,12 +56,19 @@ impl Database {
         conn.execute(
             "INSERT INTO cloud_accounts (id, name, provider_id, auth_method, fields)
              VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![id, request.name, request.provider_id, request.auth_method, fields_json],
+            params![
+                id,
+                request.name,
+                request.provider_id,
+                request.auth_method,
+                fields_json
+            ],
         )
         .map_err(|e| format!("failed to insert cloud account: {e}"))?;
         drop(conn);
 
-        self.set_secret_json(&format!("cloud_account:{id}"), &secrets).await;
+        self.set_secret_json(&format!("cloud_account:{id}"), &secrets)
+            .await;
 
         Ok(CloudAccountSummary {
             id,
@@ -139,7 +148,8 @@ impl Database {
         .map_err(|e| format!("failed to update cloud account: {e}"))?;
         drop(conn);
 
-        self.set_secret_json(&format!("cloud_account:{id}"), &secrets_plain).await;
+        self.set_secret_json(&format!("cloud_account:{id}"), &secrets_plain)
+            .await;
 
         Ok(CloudAccountSummary {
             id: id.to_string(),
@@ -152,10 +162,7 @@ impl Database {
 
     pub async fn remove_cloud_account(&self, id: &str) {
         let conn = self.write().await;
-        let _ = conn.execute(
-            "DELETE FROM cloud_accounts WHERE id = ?1",
-            [id],
-        );
+        let _ = conn.execute("DELETE FROM cloud_accounts WHERE id = ?1", [id]);
         drop(conn);
         self.delete_secret(&format!("cloud_account:{id}")).await;
     }
@@ -166,9 +173,9 @@ impl Database {
             .prepare("SELECT id, name, provider_id, auth_method, fields FROM cloud_accounts")
             .expect("prepare list accounts");
         stmt.query_map([], row_to_cloud_account_summary)
-        .expect("query accounts")
-        .filter_map(|r| r.ok())
-        .collect()
+            .expect("query accounts")
+            .filter_map(|r| r.ok())
+            .collect()
     }
 
     pub async fn build_storage_config(&self, account_ids: &[String]) -> HashMap<String, String> {
@@ -178,9 +185,14 @@ impl Database {
                 && let Some(schema) = find_provider(&account.provider_id)
             {
                 for field in schema.active_fields(account.auth_method.as_deref()) {
-                    let Some(env_var) = field.env_var else { continue };
+                    let Some(env_var) = field.env_var else {
+                        continue;
+                    };
                     let val = if field.secret {
-                        account.secrets.get(field.name).map(|s| s.expose_secret().to_string())
+                        account
+                            .secrets
+                            .get(field.name)
+                            .map(|s| s.expose_secret().to_string())
                     } else {
                         account.fields.get(field.name).cloned()
                     };
@@ -192,7 +204,11 @@ impl Database {
         }
         if !env.is_empty() {
             let keys: Vec<&str> = env.keys().map(|k| k.as_str()).collect();
-            info!(count = env.len(), ?keys, "built storage config from cloud accounts");
+            info!(
+                count = env.len(),
+                ?keys,
+                "built storage config from cloud accounts"
+            );
         }
         env
     }

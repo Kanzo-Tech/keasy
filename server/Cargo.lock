@@ -1113,6 +1113,7 @@ dependencies = [
 [[package]]
 name = "fossil-run-status"
 version = "0.1.0"
+source = "git+https://github.com/Kanzo-Tech/fossil-lang.git?tag=v0.3.0-alpha.3#de56d6dfe0b26eba210f12897f412ca159043d65"
 dependencies = [
  "schemars 0.8.22",
  "serde",

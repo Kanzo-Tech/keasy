@@ -1,14 +1,13 @@
 name: server-ci
 
-# Rust CI for the keasy-server crate. keasy-server's only fossil dependency, the
-# `fossil-run-status` git-dep, resolves through the [patch] in server/Cargo.toml to a
-# sibling rmlext checkout — so the server job also clones the private fossil-lang repo
-# next to keasy.
-#
-# Prereq (operator): a `FOSSIL_LANG_TOKEN` secret — a token (PAT / fine-grained) with
-# `contents: read` on Kanzo-Tech/fossil-lang, used to clone it for the patch.
+# Rust CI for the keasy-server crate. Its only fossil dependency,
+# `fossil-run-status`, is a git-dep on a public rmlext release tag — cargo fetches
+# it. No sibling checkout, no token.
 
 on:
+  # Callable so `images` can gate a release on it: a tag used to publish without
+  # running a single test.
+  workflow_call:
   pull_request:
   push:
     branches: [main]
@@ -19,25 +18,10 @@ concurrency:
 
 jobs:
   rust:
-    name: ${{ matrix.crate }} (fmt + clippy + test)
+    name: server (fmt + clippy + test)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        crate: [server]
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: keasy
-
-      # Only keasy-server pulls fossil-run-status; clone fossil-lang as the sibling
-      # the [patch] expects (../../rmlext from keasy/server).
-      - if: matrix.crate == 'server'
-        uses: actions/checkout@v4
-        with:
-          repository: Kanzo-Tech/fossil-lang
-          token: ${{ secrets.FOSSIL_LANG_TOKEN }}
-          path: rmlext
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -45,13 +29,13 @@ jobs:
           components: rustfmt, clippy
 
       - name: fmt
-        working-directory: keasy/${{ matrix.crate }}
+        working-directory: server
         run: cargo fmt --all -- --check
 
       - name: clippy
-        working-directory: keasy/${{ matrix.crate }}
+        working-directory: server
         run: cargo clippy --all-targets -- -D warnings
 
       - name: test
-        working-directory: keasy/${{ matrix.crate }}
+        working-directory: server
         run: cargo test

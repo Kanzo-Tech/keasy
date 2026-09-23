@@ -10,11 +10,9 @@ impl Database {
     pub async fn get_secret(&self, key: &str) -> Option<Vec<u8>> {
         let (_permit, conn) = self.read().await;
         let blob: Vec<u8> = conn
-            .query_row(
-                "SELECT value FROM secrets WHERE key = ?1",
-                [key],
-                |row| row.get(0),
-            )
+            .query_row("SELECT value FROM secrets WHERE key = ?1", [key], |row| {
+                row.get(0)
+            })
             .ok()?;
 
         match &self.secret_key {
@@ -70,11 +68,9 @@ impl Database {
             return true; // no secrets stored yet
         };
         let blob: Option<Vec<u8>> = conn
-            .query_row(
-                "SELECT value FROM secrets WHERE key = ?1",
-                [&key],
-                |row| row.get(0),
-            )
+            .query_row("SELECT value FROM secrets WHERE key = ?1", [&key], |row| {
+                row.get(0)
+            })
             .ok();
         drop(conn);
 

@@ -15,15 +15,15 @@ use axum::extract::{Query, State};
 use axum::response::{IntoResponse, Redirect};
 use openidconnect::core::{
     CoreAuthDisplay, CoreAuthPrompt, CoreAuthenticationFlow, CoreErrorResponseType,
-    CoreGenderClaim, CoreJweContentEncryptionAlgorithm, CoreJsonWebKey, CoreJwsSigningAlgorithm,
+    CoreGenderClaim, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm, CoreJwsSigningAlgorithm,
     CoreProviderMetadata, CoreRevocableToken, CoreRevocationErrorResponse,
     CoreTokenIntrospectionResponse, CoreTokenType,
 };
 use openidconnect::{
-    AuthorizationCode, ClientId, ClientSecret, CsrfToken, EmptyExtraTokenFields,
-    EndpointMaybeSet, EndpointNotSet, EndpointSet, IdTokenFields, IssuerUrl, Nonce,
-    PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, StandardErrorResponse,
-    StandardTokenResponse, TokenResponse, TokenUrl,
+    AuthorizationCode, ClientId, ClientSecret, CsrfToken, EmptyExtraTokenFields, EndpointMaybeSet,
+    EndpointNotSet, EndpointSet, IdTokenFields, IssuerUrl, Nonce, PkceCodeChallenge,
+    PkceCodeVerifier, RedirectUrl, Scope, StandardErrorResponse, StandardTokenResponse,
+    TokenResponse, TokenUrl,
 };
 use time::OffsetDateTime;
 use tower_sessions::{Expiry, Session};
@@ -101,7 +101,8 @@ macro_rules! keasy_client_base {
 /// HasUserInfoUrl = EndpointMaybeSet
 ///
 /// Cannot be used with `exchange_code()` — call `set_token_uri()` to get `KeyasyClient`.
-pub type KeyasyClientDiscovered = keasy_client_base!(EndpointSet, EndpointMaybeSet, EndpointMaybeSet);
+pub type KeyasyClientDiscovered =
+    keasy_client_base!(EndpointSet, EndpointMaybeSet, EndpointMaybeSet);
 
 /// Fully-configured OIDC client ready for the authorization code flow.
 ///
@@ -128,7 +129,8 @@ pub(crate) struct RewritingClient {
 
 impl<'c> oauth2::AsyncHttpClient<'c> for RewritingClient {
     type Error = <reqwest::Client as oauth2::AsyncHttpClient<'c>>::Error;
-    type Future = Pin<Box<dyn Future<Output = Result<oauth2::HttpResponse, Self::Error>> + Send + 'c>>;
+    type Future =
+        Pin<Box<dyn Future<Output = Result<oauth2::HttpResponse, Self::Error>> + Send + 'c>>;
 
     fn call(&'c self, request: oauth2::HttpRequest) -> Self::Future {
         let (mut parts, body) = request.into_parts();
@@ -500,23 +502,22 @@ pub async fn oidc_callback(
 
             // Retry with the same verifier — the JWKS are embedded in the client at build time.
             // This handles the stale-TTL case; key rotation requires a server restart (future work).
-            id_token
-                .claims(&verifier, &nonce)
-                .map_err(|e| {
-                    tracing::error!(error = %e, "ID token verification failed after JWKS refresh");
-                    AuthError::OidcTokenInvalid
-                })?
+            id_token.claims(&verifier, &nonce).map_err(|e| {
+                tracing::error!(error = %e, "ID token verification failed after JWKS refresh");
+                AuthError::OidcTokenInvalid
+            })?
         }
     };
 
     // 8b. Store raw id_token JWT for use in OIDC RP-Initiated Logout (id_token_hint).
     if let Ok(raw) = serde_json::to_value(id_token)
-        && let Some(jwt_str) = raw.as_str() {
-            session
-                .insert("id_token", jwt_str)
-                .await
-                .map_err(|e| AuthError::Internal(format!("session insert id_token: {e}")))?;
-        }
+        && let Some(jwt_str) = raw.as_str()
+    {
+        session
+            .insert("id_token", jwt_str)
+            .await
+            .map_err(|e| AuthError::Internal(format!("session insert id_token: {e}")))?;
+    }
 
     // 9. Extract subject (Keycloak user UUID).
     let subject = claims.subject().to_string();

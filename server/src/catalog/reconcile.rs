@@ -69,7 +69,10 @@ pub async fn reconcile_once(state: &AppState) -> usize {
         if !needs_registration(job, &registered) {
             continue;
         }
-        let dataset = job.manifest.clone().expect("needs_registration checked manifest is_some");
+        let dataset = job
+            .manifest
+            .clone()
+            .expect("needs_registration checked manifest is_some");
         let Some((_, creds)) = state.db.job_output_target(job).await else {
             continue; // no sink configured — can't read the output to register it
         };
@@ -103,6 +106,20 @@ pub async fn reconcile_once(state: &AppState) -> usize {
     registered_now
 }
 
+/// Spawn the periodic reconciler. Mirrors the session-cleanup background task.
+pub fn spawn(state: AppState, every: Duration) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
+        let mut tick = tokio::time::interval(every);
+        loop {
+            tick.tick().await;
+            let n = reconcile_once(&state).await;
+            if n > 0 {
+                info!(count = n, "reconciler pass registered datasets");
+            }
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -129,7 +146,12 @@ mod tests {
     }
 
     fn manifest() -> RunStatus {
-        RunStatus { version: 1, dest: "s3://b/x".into(), vertices: vec![], edges: vec![] }
+        RunStatus {
+            version: 1,
+            dest: "s3://b/x".into(),
+            vertices: vec![],
+            edges: vec![],
+        }
     }
 
     #[test]
@@ -137,27 +159,47 @@ mod tests {
         let none = HashSet::new();
 
         // The one case that needs work: completed, has output, not registered.
-        assert!(needs_registration(&job("a", JobStatus::Completed, Some(manifest())), &none));
+        assert!(needs_registration(
+            &job("a", JobStatus::Completed, Some(manifest())),
+            &none
+        ));
 
         // Not yet terminal / no output / failed → skip.
-        assert!(!needs_registration(&job("b", JobStatus::Running, Some(manifest())), &none));
-        assert!(!needs_registration(&job("c", JobStatus::Completed, None), &none));
-        assert!(!needs_registration(&job("d", JobStatus::Failed, Some(manifest())), &none));
+        assert!(!needs_registration(
+            &job("b", JobStatus::Running, Some(manifest())),
+            &none
+        ));
+        assert!(!needs_registration(
+            &job("c", JobStatus::Completed, None),
+            &none
+        ));
+        assert!(!needs_registration(
+            &job("d", JobStatus::Failed, Some(manifest())),
+            &none
+        ));
 
         // Already in the catalog → skip (idempotent across passes).
         let registered: HashSet<String> = ["a".to_string()].into_iter().collect();
-        assert!(!needs_registration(&job("a", JobStatus::Completed, Some(manifest())), &registered));
+        assert!(!needs_registration(
+            &job("a", JobStatus::Completed, Some(manifest())),
+            &registered
+        ));
     }
 
     #[test]
     fn orphan_schemas_are_registered_minus_live() {
         // job ids sanitize `-` → `_`, so a live "a-1" covers schema "a_1".
-        let registered: HashSet<String> =
-            ["a_1".into(), "b".into(), "gone".into()].into_iter().collect();
+        let registered: HashSet<String> = ["a_1".into(), "b".into(), "gone".into()]
+            .into_iter()
+            .collect();
         let live = vec!["a-1".to_string(), "b".to_string()];
 
         let orphans = orphan_schemas(&registered, &live);
-        assert_eq!(orphans, vec!["gone".to_string()], "only the schema with no live job");
+        assert_eq!(
+            orphans,
+            vec!["gone".to_string()],
+            "only the schema with no live job"
+        );
     }
 
     /// End-to-end glue: `reconcile_once` over a REAL `AppState` (real `Database`
@@ -201,7 +243,9 @@ mod tests {
 
         // Real DB holding only the live (already-registered) completed job.
         let db = Database::open(&dir.path().join("keasy.db"), None).unwrap();
-        db.insert_job(&job("live", JobStatus::Completed, Some(ds()))).await.unwrap();
+        db.insert_job(&job("live", JobStatus::Completed, Some(ds())))
+            .await
+            .unwrap();
 
         let state = AppState {
             db,
@@ -220,22 +264,17 @@ mod tests {
         reconcile_once(&state).await;
 
         let registered = catalog.registered_jobs().unwrap();
-        assert!(Catalog::is_registered(&registered, "live"), "live job's dataset kept");
-        assert!(!Catalog::is_registered(&registered, "ghost"), "ghost dataset deregistered");
-        assert!(parquet.exists(), "deregister never deletes the member's Parquet (BYOS)");
+        assert!(
+            Catalog::is_registered(&registered, "live"),
+            "live job's dataset kept"
+        );
+        assert!(
+            !Catalog::is_registered(&registered, "ghost"),
+            "ghost dataset deregistered"
+        );
+        assert!(
+            parquet.exists(),
+            "deregister never deletes the member's Parquet (BYOS)"
+        );
     }
-}
-
-/// Spawn the periodic reconciler. Mirrors the session-cleanup background task.
-pub fn spawn(state: AppState, every: Duration) -> tokio::task::JoinHandle<()> {
-    tokio::spawn(async move {
-        let mut tick = tokio::time::interval(every);
-        loop {
-            tick.tick().await;
-            let n = reconcile_once(&state).await;
-            if n > 0 {
-                info!(count = n, "reconciler pass registered datasets");
-            }
-        }
-    })
 }

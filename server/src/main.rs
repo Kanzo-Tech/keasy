@@ -67,6 +67,10 @@ async fn main() {
         std::process::exit(1);
     }
 
+    // A source connection the environment declares (the dev bucket) — after the
+    // key check, since creating it writes encrypted credentials.
+    keasy_server::connections::bootstrap::ensure_declared_connection(&db).await;
+
     // The bearer validator. Constructed without touching the network: Keycloak
     // is routinely not up when this is, and the keys are fetched on the first
     // request that needs them.

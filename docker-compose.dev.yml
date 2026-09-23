@@ -23,6 +23,20 @@ services:
       KEASY_WORKSPACE_NAME: ${KEASY_WORKSPACE_NAME:-Keasy}
       KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-keasy.local}
       RUST_LOG: debug
+      # The dev bucket, declared so nobody has to type credentials to see data.
+      # The AWS_* names are the ones the S3 provider schema already declares for
+      # its fields; the server reads them once, at boot, to create the account.
+      KEASY_BOOTSTRAP_CONNECTION_NAME: ${MINIO_CONNECTION_NAME:-MinIO dev bucket}
+      KEASY_BOOTSTRAP_CONNECTION_URL: s3://${MINIO_BUCKET:-keasy-dev}/
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      AWS_DEFAULT_REGION: us-east-1
+      # Reachable under this name from the server AND from the browser — see the
+      # minio service below.
+      AWS_ENDPOINT_URL: http://minio.localhost:9000
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
     healthcheck:
       interval: 10s
       retries: 30

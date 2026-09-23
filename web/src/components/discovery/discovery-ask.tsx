@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import type { Coordinator } from "@uwdata/mosaic-core";
 import { useCoordinator } from "./use-discovery-store";
 import { PanelHeader } from "@/components/layout/workspace-layout";
 import { api, ApiError } from "@/lib/api";
@@ -45,21 +46,26 @@ interface AskMessage extends ConversationMessage {
 
 function ResultTable({ sql: sqlStr }: { sql: string }) {
   const coordinator = useCoordinator();
-  const [data, setData] = useState<Record<string, unknown>[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Tagged with the coordinator and SQL it answers: anything else is still
+  // loading, so no effect has to blank the previous rows.
+  const [result, setResult] = useState<{
+    coordinator: Coordinator;
+    sql: string;
+    rows: Record<string, unknown>[];
+  } | null>(null);
 
   useEffect(() => {
     if (!coordinator || !sqlStr) return;
     let cancelled = false;
-    setLoading(true);
     coordinator.query(sqlStr, { type: "json" })
-      .then((result) => { if (!cancelled) setData((result as Record<string, unknown>[]) ?? []); })
-      .catch(() => { if (!cancelled) setData([]); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+      .then((rows) => { if (!cancelled) setResult({ coordinator, sql: sqlStr, rows: (rows as Record<string, unknown>[]) ?? [] }); })
+      .catch(() => { if (!cancelled) setResult({ coordinator, sql: sqlStr, rows: [] }); });
     return () => { cancelled = true; };
   }, [coordinator, sqlStr]);
 
-  if (loading) return <Skeleton className="h-20 w-full" />;
+  if (result === null || result.coordinator !== coordinator || result.sql !== sqlStr)
+    return <Skeleton className="h-20 w-full" />;
+  const data = result.rows;
   if (data.length === 0) return <p className="text-xs text-muted-foreground py-1">No results</p>;
 
   const columns = Object.keys(data[0]);
@@ -95,13 +101,10 @@ function AssistantExtra({ msg, onShowOnGraph }: { msg: AskMessage; onShowOnGraph
   const hasSql = !!msg.sql;
   const hasContent = hasExplanation || !!msg.content;
 
-  const defaultView = hasContent ? "explanation" : hasSql ? "results" : null;
-  const [view, setView] = useState(defaultView);
-
-  useEffect(() => {
-    if (!view && hasContent) setView("explanation");
-    else if (!view && hasSql) setView("results");
-  }, [view, hasContent, hasSql]);
+  // Null until the user picks a tab; the default follows whatever arrived
+  // (explanation first, results otherwise) as the message streams in.
+  const [pickedView, setPickedView] = useState<string | null>(null);
+  const view = pickedView ?? (hasContent ? "explanation" : hasSql ? "results" : null);
 
   if (hasError) return <ErrorAlert code={msg.code!} />;
   if (!hasContent && !hasSql) return null;
@@ -109,7 +112,7 @@ function AssistantExtra({ msg, onShowOnGraph }: { msg: AskMessage; onShowOnGraph
   return (
     <div className="space-y-2 min-w-0">
       <div className="flex items-center gap-1">
-        <ToggleGroup type="single" variant="outline" size="sm" value={view ?? ""} onValueChange={(v) => { if (v) setView(v); }}>
+        <ToggleGroup type="single" variant="outline" size="sm" value={view ?? ""} onValueChange={(v) => { if (v) setPickedView(v); }}>
           {hasContent && <ToggleGroupItem value="explanation" className="text-[10px] h-5 px-1.5">Explain</ToggleGroupItem>}
           {hasSql && <ToggleGroupItem value="results" className="text-[10px] h-5 px-1.5">Results</ToggleGroupItem>}
           {hasSql && <ToggleGroupItem value="query" className="text-[10px] h-5 px-1.5">SQL</ToggleGroupItem>}

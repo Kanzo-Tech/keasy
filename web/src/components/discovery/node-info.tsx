@@ -19,25 +19,33 @@ export function NodeInfo({ schema, selectedVertex }: Props) {
 
   // Single-vertex lookup via the get_vertex verb (reserved columns already
   // filtered server-side) — no hand-built SQL.
-  const [vertexProps, setVertexProps] = useState<Record<string, unknown> | null>(null);
+  // Tagged with the vertex it was fetched for, so a new selection reads as
+  // "not loaded yet" instead of needing an effect to blank the properties.
+  const [fetched, setFetched] = useState<{
+    vertex: Props["selectedVertex"];
+    props: Record<string, unknown> | null;
+  } | null>(null);
   useEffect(() => {
-    if (!graphClient || !selectedVertex) {
-      setVertexProps(null);
-      return;
-    }
+    if (!graphClient || !selectedVertex) return;
     let cancelled = false;
     graphClient
       .getVertex({ vertex_type: selectedVertex.type, subject: selectedVertex.id })
       .then((r) => {
-        if (!cancelled) setVertexProps((r.vertex as Record<string, unknown> | null) ?? null);
+        if (!cancelled)
+          setFetched({
+            vertex: selectedVertex,
+            props: (r.vertex as Record<string, unknown> | null) ?? null,
+          });
       })
       .catch(() => {
-        if (!cancelled) setVertexProps(null);
+        if (!cancelled) setFetched({ vertex: selectedVertex, props: null });
       });
     return () => {
       cancelled = true;
     };
   }, [graphClient, selectedVertex]);
+  const vertexProps =
+    fetched && fetched.vertex === selectedVertex ? fetched.props : null;
 
   const properties = useMemo(() => {
     if (!vertexProps || !selectedVertex) return [];

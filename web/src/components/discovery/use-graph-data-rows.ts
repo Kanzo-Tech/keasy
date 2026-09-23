@@ -15,6 +15,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { GraphClient } from "@fossil-lang/graph";
 import type { VertexRow, EdgeRow } from "@fossil-lang/viewer";
 import { useGraphClient } from "./use-discovery-store";
 
@@ -25,13 +26,15 @@ export interface GraphDataRows {
 
 export function useGraphDataRows(): GraphDataRows | null {
   const graphClient = useGraphClient();
-  const [rows, setRows] = useState<GraphDataRows | null>(null);
+  // Tagged with the client it was materialised from, so a client swap reads as
+  // "still loading" instead of needing an effect to blank the rows.
+  const [result, setResult] = useState<{
+    client: GraphClient;
+    rows: GraphDataRows;
+  } | null>(null);
 
   useEffect(() => {
-    if (!graphClient) {
-      setRows(null);
-      return;
-    }
+    if (!graphClient) return;
     let cancelled = false;
     graphClient
       .materializeGraph({})
@@ -47,17 +50,17 @@ export function useGraphDataRows(): GraphDataRows | null {
           target: e.target,
           predicate: e.predicate,
         }));
-        setRows({ vertices, edges });
+        setResult({ client: graphClient, rows: { vertices, edges } });
       })
       .catch((err) => {
         if (cancelled) return;
         console.error("materialize_graph failed", err);
-        setRows({ vertices: [], edges: [] });
+        setResult({ client: graphClient, rows: { vertices: [], edges: [] } });
       });
     return () => {
       cancelled = true;
     };
   }, [graphClient]);
 
-  return rows;
+  return result?.client === graphClient ? result.rows : null;
 }

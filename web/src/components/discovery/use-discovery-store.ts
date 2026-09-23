@@ -32,36 +32,40 @@ export function useCoordinatorQuery<T>(options: {
   enabled?: boolean;
 }): QueryResult<T[]> {
   const coordinator = useCoordinator();
-  const [data, setData] = useState<T[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { query, enabled = true } = options;
+  const active = Boolean(coordinator && enabled && query);
+
+  // Tagged with the coordinator and query it answers, so a change of either
+  // reads as "loading" without an effect having to blank the previous result.
+  const [result, setResult] = useState<{
+    coordinator: Coordinator;
+    query: string;
+    data: T[] | null;
+  } | null>(null);
   const versionRef = useRef(0);
 
-  const { query, enabled = true } = options;
-
   useEffect(() => {
-    if (!coordinator || !enabled || !query) {
-      setData(null);
-      return;
-    }
+    if (!coordinator || !enabled || !query) return;
 
     const version = ++versionRef.current;
-    setLoading(true);
 
     coordinator
       .query(query, { type: "json" })
-      .then((result) => {
+      .then((rows) => {
         if (version !== versionRef.current) return;
-        setData((result as T[]) ?? []);
+        setResult({ coordinator, query, data: (rows as T[]) ?? [] });
       })
       .catch(() => {
         if (version !== versionRef.current) return;
-        setData(null);
-      })
-      .finally(() => {
-        if (version !== versionRef.current) return;
-        setLoading(false);
+        setResult({ coordinator, query, data: null });
       });
   }, [coordinator, query, enabled]);
 
-  return { data, loading };
+  const fresh =
+    active &&
+    result !== null &&
+    result.coordinator === coordinator &&
+    result.query === query;
+
+  return { data: fresh ? result.data : null, loading: active && !fresh };
 }

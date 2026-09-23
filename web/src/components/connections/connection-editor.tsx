@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
@@ -54,20 +54,21 @@ export function ConnectionEditor() {
   const [locationType, setLocationType] = useState<LocationType>("cloud");
   const [selectedAccount, setSelectedAccount] = useState("");
   const [url, setUrl] = useState("");
-  const [selectedScheme, setSelectedScheme] = useState("");
+  // Tagged with the account it was picked for, so switching account falls back
+  // to that provider's default scheme without an effect.
+  const [schemeChoice, setSchemeChoice] = useState<{
+    account: string;
+    scheme: string;
+  } | null>(null);
 
   const selectedAccountObj = accounts.find((a) => a.id === selectedAccount);
   const schemes = selectedAccountObj
     ? (PROVIDER_SCHEMES[selectedAccountObj.provider_id] ?? [])
     : [];
-
-  useEffect(() => {
-    const acct = accounts.find((a) => a.id === selectedAccount);
-    const providerSchemes = acct
-      ? (PROVIDER_SCHEMES[acct.provider_id] ?? [])
-      : [];
-    setSelectedScheme(providerSchemes[0] ?? "");
-  }, [selectedAccount, accounts]);
+  const selectedScheme =
+    schemeChoice?.account === selectedAccount
+      ? schemeChoice.scheme
+      : (schemes[0] ?? "");
 
   const urlPlaceholder =
     locationType === "local"
@@ -250,7 +251,9 @@ export function ConnectionEditor() {
               {selectedAccountObj && schemes.length > 1 && (
                 <Select
                   value={selectedScheme}
-                  onValueChange={setSelectedScheme}
+                  onValueChange={(scheme) =>
+                    setSchemeChoice({ account: selectedAccount, scheme })
+                  }
                 >
                   <SelectTrigger
                     size="sm"

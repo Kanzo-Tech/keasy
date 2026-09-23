@@ -168,15 +168,25 @@ pub fn build_store(
             )
             .build()?,
         ),
-        "s3" => CloudStore::S3(
-            apply_creds!(
-                AmazonS3Builder::new().with_bucket_name(&bucket),
-                AmazonS3ConfigKey,
-                &fields,
-                creds
+        "s3" => {
+            // object_store's client refuses plain HTTP unless told otherwise. A
+            // custom endpoint on `http://` is a deliberate choice (MinIO on a
+            // laptop, a self-hosted gateway), so honour it — the same rule the
+            // catalog applies when it derives `USE_SSL` from the endpoint.
+            let allow_http = creds
+                .get("AWS_ENDPOINT_URL")
+                .is_some_and(|endpoint| endpoint.starts_with("http://"));
+            CloudStore::S3(
+                apply_creds!(
+                    AmazonS3Builder::new().with_bucket_name(&bucket),
+                    AmazonS3ConfigKey,
+                    &fields,
+                    creds
+                )
+                .with_allow_http(allow_http)
+                .build()?,
             )
-            .build()?,
-        ),
+        }
         _ => return Err(format!("no builder for provider: {}", provider.id).into()),
     };
 

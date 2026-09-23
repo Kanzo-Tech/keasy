@@ -117,7 +117,9 @@ services:
       - |
         mc alias set dev http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
         mc mb --ignore-existing "dev/$$MINIO_BUCKET"
-        mc cp /seed/people.csv /seed/orders.csv "dev/$$MINIO_BUCKET/"
+        # Everything in the seed directory, so adding a file there is the whole
+        # gesture — the CSVs and the shape document the mapping needs are one set.
+        mc cp --recursive /seed/ "dev/$$MINIO_BUCKET/"
         mc ls --recursive "dev/$$MINIO_BUCKET"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}

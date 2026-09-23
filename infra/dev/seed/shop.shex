@@ -1,0 +1,16 @@
+PREFIX ex:   <https://example.org/>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+ex:Person {
+  ex:name    xsd:string  ;
+  ex:email   xsd:string  ;
+  ex:city    xsd:string  ;
+  ex:country xsd:string  ;
+}
+
+ex:Order {
+  ex:product  xsd:string   ;
+  ex:quantity xsd:integer  ;
+  ex:total    xsd:decimal  ;
+  ex:buyer    @ex:Person   ;
+}

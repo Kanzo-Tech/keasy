@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 
 const MAX_LENGTH = 100;
 
@@ -32,8 +32,16 @@ export function toastError(errorOrMessage: unknown, fallback?: string): void {
 function _toastError(message: string) {
   const short = simplify(message);
   if (short.length <= MAX_LENGTH) {
-    toast.error(short, short !== message ? { description: message } : undefined);
+    toast.create({
+      title: short,
+      description: short !== message ? message : undefined,
+      type: "error",
+    });
   } else {
-    toast.error(short.slice(0, MAX_LENGTH) + "...", { description: message });
+    toast.create({
+      title: short.slice(0, MAX_LENGTH) + "...",
+      description: message,
+      type: "error",
+    });
   }
 }

@@ -1,6 +1,15 @@
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import {
+  Field,
+  FieldDescription,
+  FieldLabel,
+  FieldRequiredIndicator,
+} from "@kanzo-tech/ui";
 
+/**
+ * Keasy's shorthand over the design system's `Field` parts — the same label-over-control
+ * row, written once instead of at each of the twenty call sites. `Field` generates the id
+ * and connects the label to the control, so nothing here does markup of its own.
+ */
 export function FormField({
   label,
   description,
@@ -17,14 +26,14 @@ export function FormField({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn("space-y-1", className)}>
-      <Label>
+    <Field className={className} required={required}>
+      <FieldLabel>
         {label}
-        {required && <span className="text-destructive"> *</span>}
+        {required && <FieldRequiredIndicator />}
         {optional && <span className="text-muted-foreground text-xs"> (optional)</span>}
-      </Label>
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+      </FieldLabel>
+      {description && <FieldDescription>{description}</FieldDescription>}
       {children}
-    </div>
+    </Field>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Button,
+} from "@kanzo-tech/ui";
 import { MetaItem } from "@/components/shared/meta-item";
 import { PageShell } from "@/components/layout/page-shell";
 import type { RunMode } from "@/lib/types";

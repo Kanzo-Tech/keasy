@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import { toastError } from "@/lib/toast-error";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
@@ -24,7 +24,7 @@ export default function NewAiProviderPage() {
     mutationFn: ({ providerId, data }: { providerId: string; data: { api_key: string; model?: string; max_tokens?: number } }) =>
       api.ai.saveProvider(providerId, data),
     onSuccess: async () => {
-      toast.success("AI provider created");
+      toast.create({ title: "AI provider created", type: "success" });
       await queryClient.invalidateQueries({ queryKey: queryKeys.ai.providers });
       router.push("/settings/ai");
     },

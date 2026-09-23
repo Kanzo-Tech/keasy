@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import { Cloud } from "lucide-react";
 import { toastError } from "@/lib/toast-error";
 import { api } from "@/lib/api";
@@ -10,15 +10,16 @@ import { queryKeys } from "@/lib/query-keys";
 import { PageShell } from "@/components/layout/page-shell";
 import { FormField } from "@/components/shared/form-layout";
 import { EmptyState } from "@/components/shared/empty-state";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
+  Button,
+  createListCollection,
+  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@kanzo-tech/ui";
 import { FormPageSkeleton } from "@/components/settings/form-page-skeleton";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 
@@ -51,6 +52,16 @@ export default function CatalogStoragePage() {
     setInitialized(true);
   }
 
+  // Ark's Select reads a collection rather than mapping children, so the options are
+  // built once and the list below renders from the same object the machine holds.
+  const accountCollection = useMemo(
+    () =>
+      createListCollection({
+        items: (accounts ?? []).map((a) => ({ label: a.name, value: a.id })),
+      }),
+    [accounts],
+  );
+
   const saveMutation = useMutation({
     mutationFn: () =>
       api.settings.saveCatalogStorage({
@@ -58,7 +69,7 @@ export default function CatalogStoragePage() {
         base_url: baseUrl.trim(),
       }),
     onSuccess: async () => {
-      toast.success("Catalog storage saved");
+      toast.create({ title: "Catalog storage saved", type: "success" });
       await queryClient.invalidateQueries({ queryKey: queryKeys.settings.catalogStorage });
     },
     onError: (err) => toastError(err, "Failed to save catalog storage"),
@@ -86,14 +97,18 @@ export default function CatalogStoragePage() {
     <PageShell>
       <PageShell.Content>
         <FormField label="Cloud Account" required>
-          <Select value={cloudAccountId} onValueChange={setCloudAccountId}>
-            <SelectTrigger className="h-8 text-sm">
+          <Select
+            collection={accountCollection}
+            onValueChange={(details) => setCloudAccountId(details.value[0] ?? "")}
+            value={cloudAccountId ? [cloudAccountId] : []}
+          >
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a cloud account" />
             </SelectTrigger>
             <SelectContent>
-              {accounts.map((a) => (
-                <SelectItem key={a.id} value={a.id}>
-                  {a.name}
+              {accountCollection.items.map((item) => (
+                <SelectItem item={item} key={item.value}>
+                  {item.label}
                 </SelectItem>
               ))}
             </SelectContent>

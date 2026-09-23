@@ -1,6 +1,9 @@
 "use client";
 
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@kanzo-tech/ui";
 import { Code, Wand2 } from "lucide-react";
 import type { CreationMode } from "@/lib/types";
 
@@ -13,11 +16,12 @@ export function ModePicker({ onSelect }: ModePickerProps) {
     <div className="flex flex-col items-center justify-center flex-1 gap-3">
       <p className="text-sm text-muted-foreground">How do you want to create your job?</p>
       <ToggleGroup
-        type="single"
-        variant="outline"
-        onValueChange={(v) => {
-          if (v) onSelect(v as CreationMode);
+        multiple={false}
+        onValueChange={(details) => {
+          const picked = details.value[0];
+          if (picked) onSelect(picked as CreationMode);
         }}
+        variant="outline"
       >
         <ToggleGroupItem value="studio" className="gap-1.5">
           <Code className="h-4 w-4" />

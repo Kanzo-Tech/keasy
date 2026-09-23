@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { Loader2, Play } from "lucide-react";
 import type { ExecuteSqlResult } from "@fossil-lang/graph";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Button,
+  ScrollArea,
+} from "@kanzo-tech/ui";
 import { PanelHeader } from "@/components/layout/workspace-layout";
 import { useGraphClient } from "./use-discovery-store";
 

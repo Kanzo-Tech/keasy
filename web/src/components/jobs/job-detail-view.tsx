@@ -10,9 +10,14 @@ import { useBrowserJobRunner } from "@/lib/fossil/use-browser-job-runner";
 import { queryKeys } from "@/lib/query-keys";
 import { reverseMapUrl } from "@/lib/formatters";
 import { isTerminalStatus } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import {
+  Button,
+  Skeleton,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@kanzo-tech/ui";
 import { Compass } from "lucide-react";
 import Link from "next/link";
 
@@ -69,14 +74,14 @@ export function JobDetailView({ id }: { id: string }) {
     return showSkeleton ? (
       <div className="flex-1 min-h-0">
         <div className="mx-4 mt-4">
-          <Skeleton loading className="inline-flex"><span className="px-3 py-1.5 text-sm">Overview</span></Skeleton>
+          <Skeleton className="h-8 w-24" />
         </div>
         <div className="p-4 space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {["ID", "Created", "Run", "Destination"].map((label) => (
               <div key={label} className="space-y-1">
                 <p className="text-xs text-muted-foreground">{label}</p>
-                <Skeleton loading className="block"><p className="text-sm font-medium">placeholder</p></Skeleton>
+                <Skeleton className="h-5 w-28" />
               </div>
             ))}
           </div>
@@ -101,7 +106,7 @@ export function JobDetailView({ id }: { id: string }) {
   const dests = job.manifest ? [reverseMapUrl(job.manifest.dest, connections ?? [])] : [];
 
   return (
-    <Tabs value={tab} onValueChange={setTab} className="flex-1 min-h-0">
+    <Tabs className="flex-1 min-h-0" onValueChange={(details) => setTab(details.value)} value={tab}>
       <div className="flex items-center justify-between px-4 pt-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>

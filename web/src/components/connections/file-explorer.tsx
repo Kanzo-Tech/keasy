@@ -2,24 +2,22 @@
 
 import { useMemo } from "react";
 import { MoreHorizontal } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
+  Button,
+  Menu,
+  MenuContent,
+  MenuItem,
+  MenuTrigger,
+  Skeleton,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@kanzo-tech/ui";
 import type { FileEntry, ProviderInfo, ConnectionKind } from "@/lib/types";
 import { formatSize } from "@/lib/formatters";
 
@@ -59,7 +57,7 @@ export function FileExplorer({
 
   function copyRef(path: string) {
     navigator.clipboard.writeText(`@${connectionName}/${path}`);
-    toast.success("Reference copied");
+    toast.create({ title: "Reference copied", type: "success" });
   }
 
   return (
@@ -79,8 +77,8 @@ export function FileExplorer({
             <TableBody>
               {Array.from({ length: 4 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell><Skeleton loading className="block"><span className="font-mono text-xs">example/file.csv</span></Skeleton></TableCell>
-                  <TableCell className="text-right"><Skeleton loading className="block"><span className="text-xs">1.2 KB</span></Skeleton></TableCell>
+                  <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                  <TableCell className="text-end"><Skeleton className="ms-auto h-4 w-12" /></TableCell>
                   <TableCell />
                 </TableRow>
               ))}
@@ -108,23 +106,18 @@ export function FileExplorer({
                   {formatSize(f.size)}
                 </TableCell>
                 <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Open menu</span>
+                  <Menu positioning={{ placement: "bottom-end" }}>
+                    <MenuTrigger asChild>
+                      <Button aria-label="Open file actions" size="icon-sm" variant="ghost">
+                        <MoreHorizontal />
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => copyRef(f.path)}>
+                    </MenuTrigger>
+                    <MenuContent>
+                      <MenuItem onSelect={() => copyRef(f.path)} value="copy-reference">
                         Copy reference
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      </MenuItem>
+                    </MenuContent>
+                  </Menu>
                 </TableCell>
               </TableRow>
             ))}

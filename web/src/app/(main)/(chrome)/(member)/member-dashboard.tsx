@@ -9,8 +9,10 @@ import {
 import { api } from "@/lib/api";
 import { hasRunningJobs } from "@/lib/utils";
 import { queryKeys } from "@/lib/query-keys";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Card,
+  Skeleton,
+} from "@kanzo-tech/ui";
 import { SummaryCard } from "@/components/shared/summary-card";
 
 export function MemberDashboard() {
@@ -113,9 +115,11 @@ export function MemberDashboard() {
 function StatCard({ label, value }: { label: string; value?: number }) {
   return (
     <Card className="p-4 gap-0 rounded-lg shadow-none text-center">
-      <Skeleton loading={value === undefined}>
-        <p className="text-2xl font-semibold">{value ?? 0}</p>
-      </Skeleton>
+      {value === undefined ? (
+        <Skeleton className="mx-auto h-8 w-10" />
+      ) : (
+        <p className="text-2xl font-semibold">{value}</p>
+      )}
       <p className="text-xs text-muted-foreground mt-1">{label}</p>
     </Card>
   );

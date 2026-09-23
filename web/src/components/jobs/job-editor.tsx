@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import { toastError } from "@/lib/toast-error";
 import { queryKeys } from "@/lib/query-keys";
 import { api } from "@/lib/api";
@@ -91,7 +91,10 @@ export function JobEditor() {
       }
     },
     onSuccess: async (result) => {
-      toast.success(result === "updated" ? "Draft updated" : "Draft saved");
+      toast.create({
+        title: result === "updated" ? "Draft updated" : "Draft saved",
+        type: "success",
+      });
       await queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
       router.push("/jobs");
     },

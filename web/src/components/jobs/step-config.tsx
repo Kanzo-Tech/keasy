@@ -1,22 +1,27 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
+import { useMemo } from "react";
 import {
+  Button,
+  Field,
+  FieldLabel,
+  Input,
+  RadioGroup,
+  RadioGroupCard,
+  RadioGroupText,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+  Switch,
+  cn,
+  createListCollection,
+} from "@kanzo-tech/ui";
 import { FormField } from "@/components/shared/form-layout";
 import { PageShell } from "@/components/layout/page-shell";
 import { ComingSoon } from "@/components/shared/coming-soon";
 import { ArrowLeft } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { RunMode, Connection } from "@/lib/types";
 
 interface StepConfigProps {
@@ -50,6 +55,14 @@ export function StepConfig({
   onReview,
   validating,
 }: StepConfigProps) {
+  const sinkCollection = useMemo(
+    () =>
+      createListCollection({
+        items: connections.map((c) => ({ label: `${c.name} — ${c.url}`, value: c.id })),
+      }),
+    [connections],
+  );
+
   return (
     <PageShell>
       <PageShell.Content>
@@ -64,50 +77,35 @@ export function StepConfig({
 
         <FormField label="Run Mode">
           <RadioGroup
+            columns={2}
+            onValueChange={(details) => onModeChange((details.value ?? "integrated") as RunMode)}
             value={mode}
-            onValueChange={(v) => onModeChange(v as RunMode)}
-            className="flex gap-2"
           >
-            <Label
-              htmlFor="mode-integrated"
-              className={cn(
-                "flex-1 flex items-center gap-3 rounded-lg border p-2.5 text-left transition-colors cursor-pointer",
-                mode === "integrated"
-                  ? "border-primary/50 bg-primary/5"
-                  : "border-border hover:border-muted-foreground/30",
-              )}
-            >
-              <RadioGroupItem value="integrated" id="mode-integrated" />
-              <span className="text-sm font-medium">Integrated</span>
-              <span className="text-xs text-muted-foreground ml-auto">
-                Runs immediately
-              </span>
-            </Label>
-            <ComingSoon placement="inline" className="flex-1">
-              <Label
-                htmlFor="mode-scheduled"
-                className="flex items-center gap-3 rounded-lg border border-border p-2.5 text-left"
-              >
-                <RadioGroupItem
-                  value="scheduled"
-                  id="mode-scheduled"
-                  disabled
-                />
-                <span className="text-sm font-medium">Scheduled</span>
-              </Label>
+            <RadioGroupCard value="integrated">
+              <RadioGroupText className="font-medium text-sm">Integrated</RadioGroupText>
+              <span className="ms-auto text-muted-foreground text-xs">Runs immediately</span>
+            </RadioGroupCard>
+            <ComingSoon placement="inline">
+              <RadioGroupCard className="h-full" disabled value="scheduled">
+                <RadioGroupText className="font-medium text-sm">Scheduled</RadioGroupText>
+              </RadioGroupCard>
             </ComingSoon>
           </RadioGroup>
         </FormField>
 
         <FormField label="Output destination">
-          <Select value={sinkConnectionId ?? undefined} onValueChange={onSinkChange}>
+          <Select
+            collection={sinkCollection}
+            onValueChange={(details) => onSinkChange(details.value[0] ?? "")}
+            value={sinkConnectionId ? [sinkConnectionId] : []}
+          >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Where to save the generated graph…" />
             </SelectTrigger>
             <SelectContent>
-              {connections.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name} — {c.url}
+              {sinkCollection.items.map((item) => (
+                <SelectItem item={item} key={item.value}>
+                  {item.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -120,33 +118,31 @@ export function StepConfig({
         </FormField>
 
         {/* DCAT toggle */}
-        <div
+        <Field
           className={cn(
-            "flex items-center justify-between rounded-lg border p-3 transition-colors",
+            "flex-row items-center justify-between rounded-lg border p-3 transition-colors",
             !orgConfigured
               ? "border-border opacity-50"
               : dcatEnabled
                 ? "border-primary/50 bg-primary/5"
                 : "border-border",
           )}
+          disabled={!orgConfigured}
         >
           <div className="space-y-0.5">
-            <Label htmlFor="dcat-toggle" className="text-sm font-medium">
-              DCAT-AP Catalog
-            </Label>
-            <p className="text-xs text-muted-foreground">
+            <FieldLabel className="font-medium text-sm">DCAT-AP Catalog</FieldLabel>
+            <p className="text-muted-foreground text-xs">
               {orgConfigured
                 ? "Generate a DCAT-AP metadata record for the published datasets"
                 : "Requires organization identity to be configured"}
             </p>
           </div>
           <Switch
-            id="dcat-toggle"
             checked={dcatEnabled && orgConfigured}
-            onCheckedChange={(checked) => onDcatToggle(checked)}
             disabled={!orgConfigured}
+            onCheckedChange={(details) => onDcatToggle(details.checked)}
           />
-        </div>
+        </Field>
       </PageShell.Content>
       <PageShell.Footer>
         <Button variant="ghost" size="sm" onClick={onBack}>

@@ -1,7 +1,11 @@
 import { AlertCircle } from "lucide-react";
 import { MetaItem } from "@/components/shared/meta-item";
-import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Button,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@kanzo-tech/ui";
 import { getErrorInfo } from "@/lib/error-codes";
 import { formatDuration } from "@/lib/formatters";
 import type { Job, JobError } from "@/lib/types";

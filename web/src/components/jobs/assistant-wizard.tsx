@@ -9,34 +9,35 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { useLLMStream } from "@/hooks/use-llm-stream";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { FossilEditor } from "@fossil-lang/editor";
-import { useFossilWasmReady } from "@/lib/fossil/use-fossil-wasm";
-import { PageShell } from "@/components/layout/page-shell";
 import {
+  Button,
+  Checkbox,
+  Input,
+  Menu,
+  MenuContent,
+  MenuItem,
+  MenuTrigger,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { selectColumn } from "@/components/ui/data-table";
+  cn,
+} from "@kanzo-tech/ui";
+import {
+  selectColumn,
+} from "@kanzo-tech/ui/table";
+import { FossilEditor } from "@fossil-lang/editor";
+import { useFossilWasmReady } from "@/lib/fossil/use-fossil-wasm";
+import { PageShell } from "@/components/layout/page-shell";
 import { EmptyState } from "@/components/shared/empty-state";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Database, Loader2, MoreHorizontal, Plus, Wand2 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import type {
   Connection,
   ColumnInfo,
@@ -44,7 +45,6 @@ import type {
   FileSchema,
   ProviderInfo,
 } from "@/lib/types";
-import { cn } from "@/lib/utils";
 import { formatSize } from "@/lib/formatters";
 import { StepIndicator } from "@/components/shared/step-indicator";
 import { useAssistantWizardStore, type ReqEntry } from "./assistant-wizard-store";
@@ -435,30 +435,27 @@ function StepRequirements({
       enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <Menu positioning={{ placement: "bottom-end" }}>
+          <MenuTrigger asChild>
             <Button
+              aria-label="Open requirement actions"
+              onClick={(event) => event.stopPropagation()}
+              size="icon-sm"
               variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={(e) => e.stopPropagation()}
             >
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Open menu</span>
+              <MoreHorizontal />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                removeReq(row.original.id);
-              }}
-              className="text-destructive focus:text-destructive"
+          </MenuTrigger>
+          <MenuContent>
+            <MenuItem
+              onSelect={() => removeReq(row.original.id)}
+              value="remove"
+              variant="destructive"
             >
               Remove
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </MenuItem>
+          </MenuContent>
+        </Menu>
       ),
     },
   ], []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -703,7 +700,7 @@ export function AssistantWizard({ onComplete, connections, providers }: Assistan
       }),
     onComplete: (data) => {
       onComplete(data.script);
-      toast.success("Script generated — review before submitting");
+      toast.create({ title: "Script generated — review before submitting", type: "success" });
     },
   });
 

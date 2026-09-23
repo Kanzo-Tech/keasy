@@ -2,10 +2,12 @@
 
 import { createElement } from "react";
 
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Skeleton,
+} from "@kanzo-tech/ui";
 import { api } from "@/lib/api";
 import { providers as fossilProviders } from "@/lib/fossil/lineage";
 import { queryKeys } from "@/lib/query-keys";
@@ -52,7 +54,7 @@ export function ConnectionDetail({ id }: { id: string }) {
     queryKey: queryKeys.connections.files(id),
     queryFn: () => api.connections.files(id),
     enabled: !!(connection && connection.location_type !== "local"),
-    meta: { onError: () => toast.error("Failed to list files") },
+    meta: { onError: () => toast.create({ title: "Failed to list files", type: "error" }) },
   });
 
   if (isLoading) {
@@ -62,7 +64,7 @@ export function ConnectionDetail({ id }: { id: string }) {
           {["Cloud Account", "URL", "Location"].map((label) => (
             <div key={label} className="min-w-0">
               <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
-              <Skeleton loading className="block"><p className="text-sm">placeholder-value</p></Skeleton>
+              <Skeleton className="h-5 w-32" />
             </div>
           ))}
         </div>

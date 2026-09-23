@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import { toastError } from "@/lib/toast-error";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -12,20 +12,27 @@ import { getProviderIcon } from "@/lib/provider-icons";
 import { FormField } from "@/components/shared/form-layout";
 import { PageShell } from "@/components/layout/page-shell";
 import { UnsavedChangesGuard } from "@/components/shared/unsaved-changes-guard";
-import { Button } from "@/components/ui/button";
-import { Combobox } from "@/components/ui/combobox";
-import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
+  Button,
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  Input,
+  RadioGroup,
+  RadioGroupCard,
+  RadioGroupText,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+  cn,
+  createListCollection,
+  useFilter,
+} from "@kanzo-tech/ui";
 import { ComingSoon } from "@/components/shared/coming-soon";
-import { cn } from "@/lib/utils";
 import type { ConnectionKind, LocationType } from "@/lib/types";
 
 /** URL schemes per provider. First entry is the default. */
@@ -33,6 +40,8 @@ const PROVIDER_SCHEMES: Record<string, string[]> = {
   azure: ["az://", "azure://", "abfss://", "abfs://", "adl://"],
   s3: ["s3://"],
 };
+
+const EMPTY_SCHEMES: string[] = [];
 
 const PROVIDER_PLACEHOLDERS: Record<string, string> = {
   azure: "my-container",
@@ -46,7 +55,9 @@ export function ConnectionEditor() {
   const initialType = (searchParams.get("type") as ConnectionKind) || "data";
 
   const { data } = useQuery({ queryKey: queryKeys.cloud.accounts, queryFn: api.cloud.list });
-  const accounts = data ?? [];
+  // Memoised, not `data ?? []` inline: a fresh array each render makes every collection
+  // below rebuild, which the compiler refuses to memoise through.
+  const accounts = useMemo(() => data ?? [], [data]);
 
   const [name, setName] = useState("");
   const [connectionKind, setConnectionKind] =
@@ -62,9 +73,13 @@ export function ConnectionEditor() {
   } | null>(null);
 
   const selectedAccountObj = accounts.find((a) => a.id === selectedAccount);
-  const schemes = selectedAccountObj
-    ? (PROVIDER_SCHEMES[selectedAccountObj.provider_id] ?? [])
-    : [];
+  const schemes = useMemo(
+    () =>
+      selectedAccountObj
+        ? (PROVIDER_SCHEMES[selectedAccountObj.provider_id] ?? EMPTY_SCHEMES)
+        : EMPTY_SCHEMES,
+    [selectedAccountObj],
+  );
   const selectedScheme =
     schemeChoice?.account === selectedAccount
       ? schemeChoice.scheme
@@ -77,6 +92,27 @@ export function ConnectionEditor() {
         ? (PROVIDER_PLACEHOLDERS[selectedAccountObj.provider_id] ??
           "Container URL")
         : "Container URL";
+
+  // Ark's combobox filters a COLLECTION rather than a children array, and `useFilter` is
+  // locale-aware, so "azur" still finds "Azure Producción". The collection is derived from
+  // the query rather than seeded through `useListCollection`: that hook keeps its own
+  // state from `initialItems`, which is `[]` on the first render of an async list.
+  const { contains } = useFilter({ sensitivity: "base" });
+  const [accountQuery, setAccountQuery] = useState("");
+  const accountCollection = useMemo(
+    () =>
+      createListCollection({
+        items: accounts
+          .filter((a) => contains(a.name, accountQuery))
+          .map((a) => ({ label: a.name, provider: a.provider_id, value: a.id })),
+      }),
+    [accounts, accountQuery, contains],
+  );
+
+  const schemeCollection = useMemo(
+    () => createListCollection({ items: schemes.map((s) => ({ label: s, value: s })) }),
+    [schemes],
+  );
 
   const canSave =
     name.trim().length > 0 &&
@@ -99,7 +135,7 @@ export function ConnectionEditor() {
       });
     },
     onSuccess: async () => {
-      toast.success("Connection created");
+      toast.create({ title: "Connection created", type: "success" });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.connections.all() }),
         queryClient.invalidateQueries({ queryKey: ["connections-init"] }),
@@ -130,80 +166,46 @@ export function ConnectionEditor() {
 
       <FormField label="Type" required>
         <RadioGroup
+          className="*:items-start"
+          columns={2}
+          onValueChange={(details) =>
+            setConnectionKind((details.value ?? "data") as ConnectionKind)
+          }
           value={connectionKind}
-          onValueChange={(v) => setConnectionKind(v as ConnectionKind)}
-          className="grid grid-cols-2 gap-2"
         >
-          <Label
-            htmlFor="type-data"
-            className={cn(
-              "flex flex-col items-start gap-1 rounded-md border p-3 transition-colors cursor-pointer",
-              connectionKind === "data"
-                ? "border-primary bg-accent"
-                : "border-border hover:bg-accent/50",
-            )}
-          >
-            <RadioGroupItem value="data" id="type-data" className="sr-only" />
-            <p className="text-sm font-medium leading-none">Data</p>
-            <p className="text-xs text-muted-foreground">
+          <RadioGroupCard className="flex-col gap-1" value="data">
+            <RadioGroupText className="font-medium text-sm leading-none">Data</RadioGroupText>
+            <span className="text-muted-foreground text-xs">
               Read/write data for fossil pipelines
-            </p>
-          </Label>
-          <Label
-            htmlFor="type-vocab"
-            className={cn(
-              "flex flex-col items-start gap-1 rounded-md border p-3 transition-colors cursor-pointer",
-              connectionKind === "vocab"
-                ? "border-primary bg-accent"
-                : "border-border hover:bg-accent/50",
-            )}
-          >
-            <RadioGroupItem value="vocab" id="type-vocab" className="sr-only" />
-            <p className="text-sm font-medium leading-none">Vocabulary</p>
-            <p className="text-xs text-muted-foreground">
+            </span>
+          </RadioGroupCard>
+          <RadioGroupCard className="flex-col gap-1" value="vocab">
+            <RadioGroupText className="font-medium text-sm leading-none">Vocabulary</RadioGroupText>
+            <span className="text-muted-foreground text-xs">
               RDF vocabularies and ontologies
-            </p>
-          </Label>
+            </span>
+          </RadioGroupCard>
         </RadioGroup>
       </FormField>
 
       <FormField label="Location" required>
         <RadioGroup
+          className="*:items-start"
+          columns={2}
+          onValueChange={(details) =>
+            setLocationType((details.value ?? "cloud") as LocationType)
+          }
           value={locationType}
-          onValueChange={(v) => setLocationType(v as LocationType)}
-          className="grid grid-cols-2 gap-2"
         >
-          <Label
-            htmlFor="loc-cloud"
-            className={cn(
-              "flex flex-col items-start gap-1 rounded-md border p-3 transition-colors cursor-pointer",
-              locationType === "cloud"
-                ? "border-primary bg-accent"
-                : "border-border hover:bg-accent/50",
-            )}
-          >
-            <RadioGroupItem value="cloud" id="loc-cloud" className="sr-only" />
-            <p className="text-sm font-medium leading-none">Cloud</p>
-            <p className="text-xs text-muted-foreground">
-              S3 or Azure storage
-            </p>
-          </Label>
+          <RadioGroupCard className="flex-col gap-1" value="cloud">
+            <RadioGroupText className="font-medium text-sm leading-none">Cloud</RadioGroupText>
+            <span className="text-muted-foreground text-xs">S3 or Azure storage</span>
+          </RadioGroupCard>
           <ComingSoon placement="inline">
-            <Label
-              htmlFor="loc-local"
-              className="flex flex-col items-start gap-1 rounded-md border border-border p-3"
-            >
-              <RadioGroupItem
-                value="local"
-                id="loc-local"
-                disabled
-                className="sr-only"
-              />
-              <p className="text-sm font-medium leading-none">Local</p>
-              <p className="text-xs text-muted-foreground">
-                Local filesystem path
-              </p>
-            </Label>
+            <RadioGroupCard className="h-full flex-col gap-1" disabled value="local">
+              <RadioGroupText className="font-medium text-sm leading-none">Local</RadioGroupText>
+              <span className="text-muted-foreground text-xs">Local filesystem path</span>
+            </RadioGroupCard>
           </ComingSoon>
         </RadioGroup>
       </FormField>
@@ -224,21 +226,25 @@ export function ConnectionEditor() {
               </p>
             ) : (
               <Combobox
-                options={accounts.map((a) => {
-                  const Icon = getProviderIcon(a.provider_id);
-                  return {
-                    value: a.id,
-                    label: a.name,
-                    suffix: <Icon className="h-3.5 w-3.5 ml-auto opacity-60" />,
-                  };
-                })}
-                value={selectedAccount}
-                onValueChange={setSelectedAccount}
-                placeholder="Select account..."
-                searchPlaceholder="Search accounts..."
-                emptyMessage="No accounts found."
-                className="h-8 text-sm"
-              />
+                collection={accountCollection}
+                onInputValueChange={(details) => setAccountQuery(details.inputValue)}
+                onValueChange={(details) => setSelectedAccount(details.value[0] ?? "")}
+                value={selectedAccount ? [selectedAccount] : []}
+              >
+                <ComboboxInput placeholder="Select account..." />
+                <ComboboxContent>
+                  <ComboboxEmpty>No accounts found.</ComboboxEmpty>
+                  {accountCollection.items.map((item) => {
+                    const Icon = getProviderIcon(item.provider);
+                    return (
+                      <ComboboxItem item={item} key={item.value}>
+                        {item.label}
+                        <Icon className="ms-auto size-3.5 opacity-60" />
+                      </ComboboxItem>
+                    );
+                  })}
+                </ComboboxContent>
+              </Combobox>
             )}
           </FormField>
           <FormField label="URL" required>
@@ -250,21 +256,25 @@ export function ConnectionEditor() {
               )}
               {selectedAccountObj && schemes.length > 1 && (
                 <Select
-                  value={selectedScheme}
-                  onValueChange={(scheme) =>
-                    setSchemeChoice({ account: selectedAccount, scheme })
+                  collection={schemeCollection}
+                  onValueChange={(details) =>
+                    setSchemeChoice({
+                      account: selectedAccount,
+                      scheme: details.value[0] ?? "",
+                    })
                   }
+                  value={selectedScheme ? [selectedScheme] : []}
                 >
                   <SelectTrigger
+                    className="w-auto shrink-0 rounded-e-none border-e-0 font-mono"
                     size="sm"
-                    className="rounded-r-none border-r-0 font-mono w-auto shrink-0"
                   >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {schemes.map((s) => (
-                      <SelectItem key={s} value={s} className="font-mono">
-                        {s}
+                    {schemeCollection.items.map((item) => (
+                      <SelectItem className="font-mono" item={item} key={item.value}>
+                        {item.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

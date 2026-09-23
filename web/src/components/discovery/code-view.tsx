@@ -7,8 +7,10 @@ import { syntaxHighlighting, StreamLanguage } from "@codemirror/language";
 import { json } from "@codemirror/lang-json";
 import { xml } from "@codemirror/lang-xml";
 import { Copy, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import {
+  Button,
+  cn,
+} from "@kanzo-tech/ui";
 import {
   lightHighlight, darkHighlight,
   lightTheme, darkTheme,
@@ -171,7 +173,7 @@ export function CodeView({
       {showCopy && code && (
         <Button
           variant="ghost"
-          size="icon"
+          size="icon-sm"
           onClick={handleCopy}
           title="Copy to clipboard"
           className="absolute top-2 right-2 z-10 h-7 w-7 bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground"

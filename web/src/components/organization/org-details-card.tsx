@@ -1,24 +1,38 @@
 "use client";
 
-import { useState, useEffect, useImperativeHandle, forwardRef } from "react";
+import { useState, useEffect, useImperativeHandle, useMemo, forwardRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { Input } from "@/components/ui/input";
-import { Combobox } from "@/components/ui/combobox";
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  createListCollection,
+  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+  Skeleton,
+  useFilter,
+} from "@kanzo-tech/ui";
 import { FormField } from "@/components/shared/form-layout";
 import { COUNTRY_OPTIONS, getCountryName } from "@/lib/countries";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import type { OrgIdentity } from "@/lib/types";
+
+const REGISTRATION_TYPES = createListCollection({
+  items: [
+    { label: "VAT ID", value: "vatID" },
+    { label: "LEI Code", value: "leiCode" },
+    { label: "EORI", value: "EORI" },
+  ],
+});
 
 export interface OrgDetailsCardHandle {
   save: () => Promise<void>;
@@ -40,6 +54,17 @@ export const OrgDetailsCard = forwardRef<OrgDetailsCardHandle, OrgDetailsCardPro
     const setEditing = onEditingChange ?? setEditingInternal;
     const [form, setForm] = useState<OrgIdentity | null>(null);
     const [saving, setSaving] = useState(false);
+    // 250 countries: the collection is derived from the query rather than seeded through
+    // `useListCollection`, which would hold its own copy of the list.
+    const { contains } = useFilter({ sensitivity: "base" });
+    const [countryQuery, setCountryQuery] = useState("");
+    const countryCollection = useMemo(
+      () =>
+        createListCollection({
+          items: COUNTRY_OPTIONS.filter((c) => contains(c.label, countryQuery)),
+        }),
+      [countryQuery, contains],
+    );
 
     useEffect(() => {
       if (editing && !form) {
@@ -61,11 +86,11 @@ export const OrgDetailsCard = forwardRef<OrgDetailsCardHandle, OrgDetailsCardPro
       try {
         await api.org.saveIdentity(form);
         await queryClient.invalidateQueries({ queryKey: queryKeys.org.identity });
-        toast.success("Organization details saved");
+        toast.create({ title: "Organization details saved", type: "success" });
         setEditing(false);
         setForm(null);
       } catch {
-        toast.error("Failed to save organization details");
+        toast.create({ title: "Failed to save organization details", type: "error" });
       } finally {
         updateSaving(false);
       }
@@ -79,13 +104,13 @@ export const OrgDetailsCard = forwardRef<OrgDetailsCardHandle, OrgDetailsCardPro
       return showSkeleton ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField label="Legal Name" description="Official registered name">
-            <Skeleton loading className="block w-full"><Input disabled placeholder="" /></Skeleton>
+            <Skeleton className="h-9 w-full" />
           </FormField>
           <FormField label="Country" description="Subdivision is optional">
-            <Skeleton loading className="block w-full"><Input disabled placeholder="" /></Skeleton>
+            <Skeleton className="h-9 w-full" />
           </FormField>
           <FormField label="Registration Number" description="VAT ID, LEI Code, or EORI">
-            <Skeleton loading className="block w-full"><Input disabled placeholder="" /></Skeleton>
+            <Skeleton className="h-9 w-full" />
           </FormField>
         </div>
       ) : null;
@@ -116,22 +141,33 @@ export const OrgDetailsCard = forwardRef<OrgDetailsCardHandle, OrgDetailsCardPro
           {canEdit ? (
             <div className="grid grid-cols-1 xl:grid-cols-[1fr_5rem] gap-1.5 xl:gap-0">
               <Combobox
-                options={COUNTRY_OPTIONS}
-                value={form.country}
-                onValueChange={(v) => {
-                  const updates: Partial<OrgIdentity> = { country: v };
+                collection={countryCollection}
+                disabled={saving}
+                onInputValueChange={(details) => setCountryQuery(details.inputValue)}
+                onValueChange={(details) => {
+                  const picked = details.value[0] ?? "";
+                  const updates: Partial<OrgIdentity> = { country: picked };
                   if (form.country_subdivision_code) {
                     const suffix = subdivisionSuffix(form.country_subdivision_code, form.country);
-                    updates.country_subdivision_code = suffix ? `${v}-${suffix}` : null;
+                    updates.country_subdivision_code = suffix ? `${picked}-${suffix}` : null;
                   }
                   setForm({ ...form, ...updates });
                 }}
-                placeholder="Country..."
-                searchPlaceholder="Search countries..."
-                emptyMessage="No country found."
-                disabled={saving}
-                className="xl:rounded-r-none xl:border-r-0 xl:shadow-none"
-              />
+                value={form.country ? [form.country] : []}
+              >
+                <ComboboxInput
+                  className="xl:rounded-e-none xl:border-e-0 xl:shadow-none"
+                  placeholder="Country..."
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty>No country found.</ComboboxEmpty>
+                  {countryCollection.items.map((item) => (
+                    <ComboboxItem item={item} key={item.value}>
+                      {item.label}
+                    </ComboboxItem>
+                  ))}
+                </ComboboxContent>
+              </Combobox>
               <Input
                 value={subdivisionSuffix(form.country_subdivision_code, form.country)}
                 onChange={(e) => {
@@ -162,17 +198,22 @@ export const OrgDetailsCard = forwardRef<OrgDetailsCardHandle, OrgDetailsCardPro
           {canEdit ? (
             <div className="grid grid-cols-1 xl:grid-cols-[6rem_1fr] gap-1.5 xl:gap-0">
               <Select
-                value={form.registration_number_type ?? ""}
-                onValueChange={(v) => setForm({ ...form, registration_number_type: v || null })}
+                collection={REGISTRATION_TYPES}
                 disabled={saving}
+                onValueChange={(details) =>
+                  setForm({ ...form, registration_number_type: details.value[0] || null })
+                }
+                value={form.registration_number_type ? [form.registration_number_type] : []}
               >
-                <SelectTrigger className="w-full xl:rounded-r-none xl:border-r-0 xl:shadow-none">
+                <SelectTrigger className="w-full xl:rounded-e-none xl:border-e-0 xl:shadow-none">
                   <SelectValue placeholder="Type..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="vatID">VAT ID</SelectItem>
-                  <SelectItem value="leiCode">LEI Code</SelectItem>
-                  <SelectItem value="EORI">EORI</SelectItem>
+                  {REGISTRATION_TYPES.items.map((item) => (
+                    <SelectItem item={item} key={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Input

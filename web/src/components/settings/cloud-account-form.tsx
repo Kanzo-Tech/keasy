@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { SecretInput } from "@/components/ui/secret-input";
-import { Badge } from "@/components/ui/badge";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Badge,
+  Button,
+  Input,
+  PasswordInput,
+  PasswordInputGroup,
+  PasswordInputInput,
+  PasswordInputTrigger,
+  RadioGroup,
+  RadioGroupCard,
+  RadioGroupText,
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@kanzo-tech/ui";
 import { FormField } from "@/components/shared/form-layout";
-import { RadioCardGroup, type RadioCardOption } from "@/components/shared/radio-card-group";
 import { PageShell } from "@/components/layout/page-shell";
 import { UnsavedChangesGuard } from "@/components/shared/unsaved-changes-guard";
 import { getProviderIcon } from "@/lib/provider-icons";
@@ -37,13 +45,8 @@ export function CloudAccountForm({ schema, account, onSubmit, isPending = false 
   const selected = schema.find((s) => s.id === selectedId);
   const hasAuthMethods = (selected?.auth_methods.length ?? 0) > 0;
 
-  const providerOptions: RadioCardOption[] = useMemo(
-    () =>
-      schema.map((p) => ({
-        value: p.id,
-        label: p.label,
-        icon: getProviderIcon(p.icon),
-      })),
+  const providerOptions = useMemo(
+    () => schema.map((p) => ({ id: p.id, label: p.label, Icon: getProviderIcon(p.icon) })),
     [schema],
   );
 
@@ -111,16 +114,23 @@ export function CloudAccountForm({ schema, account, onSubmit, isPending = false 
         {isEdit ? (
           <Badge variant="secondary" className="w-fit">{selected?.label ?? selectedId}</Badge>
         ) : (
-          <RadioCardGroup
-            name="cloud-provider"
-            value={selectedId}
-            onValueChange={(v) => {
+          <RadioGroup
+            className="text-center *:flex-col *:items-center *:justify-center"
+            columns={3}
+            onValueChange={(details) => {
               setFieldsMap({});
-              setSelectedId(v);
+              setSelectedId(details.value ?? "");
               setAuthMethod("");
             }}
-            options={providerOptions}
-          />
+            value={selectedId}
+          >
+            {providerOptions.map((option) => (
+              <RadioGroupCard key={option.id} value={option.id}>
+                <option.Icon className="size-6 shrink-0 text-muted-foreground" />
+                <RadioGroupText>{option.label}</RadioGroupText>
+              </RadioGroupCard>
+            ))}
+          </RadioGroup>
         )}
 
         <FormField label="Name" required>
@@ -137,11 +147,13 @@ export function CloudAccountForm({ schema, account, onSubmit, isPending = false 
             {hasAuthMethods && (
               <FormField label="Auth Method">
                 <ToggleGroup
-                  type="single"
-                  variant="outline"
-                  value={authMethod}
-                  onValueChange={(v) => { if (v) setAuthMethod(v); }}
                   className="w-full"
+                  multiple={false}
+                  onValueChange={(details) => {
+                    if (details.value[0]) setAuthMethod(details.value[0]);
+                  }}
+                  value={authMethod ? [authMethod] : []}
+                  variant="outline"
                 >
                   {selected.auth_methods.map((a) => (
                     <ToggleGroupItem key={a.name} value={a.name} className="flex-1">
@@ -155,12 +167,17 @@ export function CloudAccountForm({ schema, account, onSubmit, isPending = false 
             {allActiveFields.map((f) => (
               <FormField key={f.name} label={f.label} optional={f.optional}>
                 {f.secret ? (
-                  <SecretInput
-                    hasStoredValue={isEdit}
-                    value={fields[f.name] ?? ""}
-                    onChange={(e) => setField(f.name, e.target.value)}
-                    className="h-8 text-sm"
-                  />
+                  <PasswordInput>
+                    <PasswordInputGroup>
+                      <PasswordInputInput
+                        hasStoredValue={isEdit}
+                        onChange={(event) => setField(f.name, event.target.value)}
+                        storedPlaceholder="Leave empty to keep current"
+                        value={fields[f.name] ?? ""}
+                      />
+                      <PasswordInputTrigger />
+                    </PasswordInputGroup>
+                  </PasswordInput>
                 ) : (
                   <Input
                     value={fields[f.name] ?? ""}

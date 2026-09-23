@@ -1,11 +1,15 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
+import {
+  Button,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  FieldLabel,
+  ScrollArea,
+  Slider,
+  Switch,
+} from "@kanzo-tech/ui";
 import { PanelHeader } from "@/components/layout/workspace-layout";
 import { ChevronRight } from "lucide-react";
 import type { GraphConfigInterface } from "@cosmos.gl/graph";
@@ -41,7 +45,7 @@ export function GraphSettings({ graphConfig, onConfigChange }: Props) {
               {SIMULATION_PARAMS.map(({ key, label, min, max, step }) => (
                 <div key={key} className="space-y-0.5">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[10px]">{label}</Label>
+                    <FieldLabel className="text-[10px]">{label}</FieldLabel>
                     <span className="text-[9px] text-muted-foreground tabular-nums font-mono">
                       {(graphConfig[key as keyof GraphConfigInterface] as number)?.toFixed(key === "simulationDecay" || key === "simulationLinkDistance" ? 0 : 2)}
                     </span>
@@ -49,7 +53,7 @@ export function GraphSettings({ graphConfig, onConfigChange }: Props) {
                   <Slider
                     min={min} max={max} step={step}
                     value={[(graphConfig[key as keyof GraphConfigInterface] as number) ?? min]}
-                    onValueChange={([v]) => onConfigChange({ [key]: v })}
+                    onValueChange={(details) => onConfigChange({ [key]: details.value[0] })}
                   />
                 </div>
               ))}
@@ -63,12 +67,12 @@ export function GraphSettings({ graphConfig, onConfigChange }: Props) {
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-2 pl-3 pb-2">
               <div className="flex items-center justify-between">
-                <Label className="text-[10px]">Show links</Label>
-                <Switch checked={graphConfig.renderLinks !== false} onCheckedChange={(v) => onConfigChange({ renderLinks: v })} />
+                <FieldLabel className="text-[10px]">Show links</FieldLabel>
+                <Switch checked={graphConfig.renderLinks !== false} onCheckedChange={(details) => onConfigChange({ renderLinks: details.checked })} />
               </div>
               <div className="flex items-center justify-between">
-                <Label className="text-[10px]">Scale on zoom</Label>
-                <Switch checked={graphConfig.scalePointsOnZoom !== false} onCheckedChange={(v) => onConfigChange({ scalePointsOnZoom: v })} />
+                <FieldLabel className="text-[10px]">Scale on zoom</FieldLabel>
+                <Switch checked={graphConfig.scalePointsOnZoom !== false} onCheckedChange={(details) => onConfigChange({ scalePointsOnZoom: details.checked })} />
               </div>
             </CollapsibleContent>
           </Collapsible>

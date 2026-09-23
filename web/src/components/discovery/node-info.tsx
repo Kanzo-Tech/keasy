@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  ScrollArea,
+} from "@kanzo-tech/ui";
 import { PanelHeader } from "@/components/layout/workspace-layout";
 import { useGraphClient } from "./use-discovery-store";
 import { GROUP_CSS_COLORS } from "@fossil-lang/viewer";

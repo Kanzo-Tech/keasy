@@ -1,8 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
+import {
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@kanzo-tech/ui";
 import { PageShell } from "@/components/layout/page-shell";
 import { FossilEditor } from "@fossil-lang/editor";
 import { useFossilLspTransport } from "@/lib/fossil/use-fossil-lsp-transport";
@@ -147,7 +151,7 @@ export function StepScript({
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="icon-sm"
                   onClick={onSaveDraft}
                   disabled={!script.trim() || savingDraft}
                   aria-label="Save draft"

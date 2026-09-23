@@ -4,7 +4,6 @@ import { fetchSSE } from "./api/sse";
 import type { ProviderSchema } from "./types";
 
 export { ApiError };
-export type { ServiceStatus } from "./types";
 
 export const api = {
   // ── Jobs ──────────────────────────────────────────────────────────────
@@ -230,15 +229,12 @@ export const api = {
   },
 
   // ── Auth ───────────────────────────────────────────────────────────────
+  // Who you are and what you may do come from `useSession` — the BFF's own
+  // session endpoint — so the only thing left here is the switcher's list, which
+  // is a claim on the token rather than a property of the session.
   auth: {
-    me: async () =>
-      unwrap(await client.GET("/v1/auth/me")),
-
     workspaces: async () =>
       unwrap(await client.GET("/v1/auth/workspaces")),
-
-    logout: async () =>
-      unwrap(await client.POST("/v1/auth/logout")),
   },
 
   // ── Workspace legal identity ──────────────────────────────────────────────
@@ -251,11 +247,6 @@ export const api = {
       unwrap(await client.PUT("/v1/org/identity", { body: data })),
   },
 
-  // ── Status ────────────────────────────────────────────────────────────
-  status: {
-    services: async () =>
-      unwrap(await client.GET("/v1/status")),
-  },
 
   // ── Assistant (SSE streaming) ───────────────────────────────────────────
   assistant: {

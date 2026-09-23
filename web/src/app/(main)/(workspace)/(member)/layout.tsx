@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
-import { getEffectiveRole } from "@/lib/auth-check";
+import { getSession } from "@/lib/auth";
+import { workspaceRole } from "@/lib/roles";
 
 export default async function WorkspaceMemberLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const role = await getEffectiveRole();
-  if (!role) redirect("/v1/auth/oidc-start");
+  const role = workspaceRole(await getSession());
+  if (role === null) redirect("/api/auth/signin");
   if (role !== "member") redirect("/");
   return <>{children}</>;
 }

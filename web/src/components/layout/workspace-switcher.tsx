@@ -1,14 +1,16 @@
 "use client";
 
 import * as React from "react";
+import { useSession } from "@kanzo-tech/auth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
+import { workspaceRole } from "@/lib/roles";
 import { ROLE_LABEL } from "@/lib/route-config";
-import type { MeResponse, WorkspacesResponse } from "@/lib/types";
+import type { WorkspacesResponse } from "@/lib/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,11 +42,8 @@ const titleCase = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s
 export function WorkspaceSwitcher() {
   const { isMobile } = useSidebar();
   const queryClient = useQueryClient();
+  const { session } = useSession();
 
-  const { data: me } = useQuery<MeResponse>({
-    queryKey: queryKeys.me,
-    queryFn: api.auth.me,
-  });
   const { data: workspacesData } = useQuery<WorkspacesResponse>({
     queryKey: queryKeys.workspaces,
     queryFn: api.auth.workspaces,
@@ -53,9 +52,9 @@ export function WorkspaceSwitcher() {
   const workspaces = workspacesData?.workspaces ?? [];
   const current = workspacesData?.current ?? "";
 
-  const effectiveRole = me?.effective_role ?? "member";
+  const effectiveRole = workspaceRole(session) ?? "member";
   // This instance's display name comes from its workspace identity; others show the slug.
-  const displayName = me?.org?.name ?? titleCase(current) ?? "Keasy";
+  const displayName = workspacesData?.current_name || titleCase(current) || "Keasy";
 
   const [switching, setSwitching] = React.useState<string | null>(null);
 
@@ -64,7 +63,9 @@ export function WorkspaceSwitcher() {
     setSwitching(titleCase(slug));
     try {
       await queryClient.resetQueries();
-      window.location.assign(`${workspaceUrl(slug, current)}/v1/auth/oidc-start`);
+      // Each workspace is its own instance with its own BFF; signing in there is
+      // what the other instance's `/api/auth/signin` does.
+      window.location.assign(`${workspaceUrl(slug, current)}/api/auth/signin`);
     } catch {
       setSwitching(null);
       toast.error(`Could not switch to ${titleCase(slug)}. Please try again.`);

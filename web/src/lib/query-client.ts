@@ -22,9 +22,9 @@ export const queryClient = new QueryClient({
 function handleAuthError(error: unknown) {
   if (redirected) return;
   const code = (error as { code?: string })?.code;
-  if (code === "auth/session_required" || code === "auth/session_expired") {
+  if (code === "auth/session_required") {
     redirected = true;
-    window.location.href = "/v1/auth/oidc-start";
+    window.location.href = "/api/auth/signin";
   } else if (code === "rbac/no_membership") {
     redirected = true;
     window.location.href = "/";

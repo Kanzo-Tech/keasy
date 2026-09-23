@@ -68,9 +68,6 @@ export type FileEntry = S["FileEntry"];
 export type AskResponse = S["AskResponse"];
 
 
-// Aliases for renamed/new response types
-export type ServiceStatus = S["ServiceStatusResponse"];
-export type LogoutResponse = S["LogoutResponse"];
 
 // ---------------------------------------------------------------------------
 // UI-only union types
@@ -96,5 +93,4 @@ export type { ProviderInfo } from "@fossil-lang/wasm";
 // Auth types — re-exported from schema
 // ---------------------------------------------------------------------------
 
-export type MeResponse = S["MeResponse"];
 export type WorkspacesResponse = S["WorkspacesResponse"];

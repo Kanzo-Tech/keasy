@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
+import { useSession } from "@kanzo-tech/auth"
 import {
   ChevronsUpDown,
   LogOut,
   Settings,
 } from "lucide-react"
 import Link from "next/link"
-import { api } from "@/lib/api"
 
 import {
   AlertDialog,
@@ -39,41 +39,30 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
-function getInitials(firstName: string, lastName: string, email: string): string {
-  if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
-  if (firstName) return firstName[0].toUpperCase();
-  return (email[0] ?? "?").toUpperCase();
+/** First letters of the display name, or of the email when there is no name. */
+function getInitials(name: string | undefined, email: string | undefined): string {
+  const parts = (name ?? "").split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+  if (parts.length === 1) return parts[0][0].toUpperCase()
+  return (email?.[0] ?? "?").toUpperCase()
 }
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    firstName: string
-    lastName: string
-  }
-}) {
+export function NavUser() {
   const { isMobile, setOpenMobile } = useSidebar()
+  const { session, signOut } = useSession()
   const [loggingOut, setLoggingOut] = useState(false)
 
-  const initials = getInitials(user.firstName, user.lastName, user.email)
+  const name = session?.user.name ?? session?.user.email ?? ""
+  const email = session?.user.email ?? ""
+  const initials = getInitials(session?.user.name, session?.user.email)
 
+  // RP-initiated logout: the BFF forgets the session, clears the cookie and ends
+  // it at Keycloak too, `id_token_hint` included. No end-session URL is built
+  // here — the endpoint comes from discovery and the parameter names are the
+  // specification's rather than ours to remember.
   async function handleLogout() {
     setLoggingOut(true)
-    try {
-      const data = await api.auth.logout()
-      if (data?.end_session_url) {
-        // Redirect to Keycloak end-session for full single logout
-        window.location.href = data.end_session_url
-        return
-      }
-    } catch {
-      // Ignore errors — redirect to login regardless
-    }
-    // Fallback: redirect to OIDC start (no Keycloak end-session URL available)
-    window.location.href = "/v1/auth/oidc-start"
+    await signOut({ returnTo: "/" })
   }
 
   return (
@@ -90,9 +79,9 @@ export function NavUser({
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">
-                  {user.name}
+                  {name}
                 </span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate text-xs">{email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -110,9 +99,9 @@ export function NavUser({
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">
-                    {user.name}
+                    {name}
                   </span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate text-xs">{email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

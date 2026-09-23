@@ -18,10 +18,14 @@ resource "keycloak_oidc_identity_provider" "sso" {
   store_token       = false
   sync_mode         = "IMPORT"
 
-  # trust_email lets Keycloak match the IdP login to the pre-declared user by email; the
-  # built-in flow still shows an "account exists" confirmation, which is one extra click and
-  # no SMTP. Bound EXPLICITLY: left unset, the attribute is Optional+Computed, so whatever a
-  # past apply wrote into Keycloak survives — and an orphan flow still bound here makes
-  # Keycloak answer its own DELETE with a 500. Terraform owns the binding or it owns nothing.
-  first_broker_login_flow_alias = "first broker login"
+  # Without this, the DEFAULT first-broker-login flow stops at "An account already
+  # exists with this email" — a dead end here, since the declared account has no
+  # password and there is no SMTP. See idp_flow.tf, including its security note:
+  # auto-link makes the IdP the entire trust boundary.
+  #
+  # Bound EXPLICITLY for a second reason: the attribute is Optional+Computed, so left
+  # unset Terraform never owns it and whatever an old apply wrote into Keycloak
+  # outlives every apply since — which is how a flow this config had already deleted
+  # stayed bound here and made Keycloak answer its own DELETE with a 500.
+  first_broker_login_flow_alias = keycloak_authentication_flow.sso_silent_link.alias
 }

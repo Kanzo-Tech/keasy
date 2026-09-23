@@ -3,12 +3,11 @@
 
 services:
   server:
-    # Context is the parent of keasy/ + rmlext/: rmlext is present only so the
-    # `fossil-run-status` git-dep resolves through its [patch] (workspace inheritance
-    # needs the root manifest). No fossil binary — keasy is a pure host.
+    # Context is `server/`: `fossil-run-status` resolves as a git dep and no fossil
+    # binary ships — keasy is a pure host.
     build:
-      context: ..
-      dockerfile: keasy/server/Dockerfile
+      context: ./server
+      dockerfile: Dockerfile
     environment:
       KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-}
       KEASY_CADDY_CERTS_DIR: /caddy-data

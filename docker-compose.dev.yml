@@ -3,14 +3,14 @@
 
 services:
   server:
-    # Context is the parent of keasy/ + rmlext/ (the fossil-run-status path dep
-    # + the fossil subprocess binary both come from rmlext).
+    # Context is `server/`: nothing outside it is needed — fossil-run-status is a
+    # git dep and no fossil binary ships (keasy is a pure host).
     build:
-      context: ..
-      dockerfile: keasy/server/Dockerfile.dev
+      context: ./server
+      dockerfile: Dockerfile.dev
     volumes:
-      - ./server/src:/src/keasy/server/src
-      - server-target:/src/keasy/server/target
+      - ./server/src:/src/server/src
+      - server-target:/src/server/target
       # Cargo registry persists across container recreation so the runtime
       # compile (deps are no longer pre-built in the image — see Dockerfile.dev)
       # doesn't re-download crates on every `make dev` rebuild.

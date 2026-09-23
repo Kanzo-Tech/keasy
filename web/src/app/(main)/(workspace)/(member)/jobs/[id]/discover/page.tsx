@@ -3,23 +3,17 @@
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Selection } from "@uwdata/mosaic-core";
-import { BarChart3, Info, Loader2, MessageCircle, Settings2, ShieldCheck, Terminal } from "lucide-react";
+import { BarChart3, Info, Loader2, MessageCircle, ShieldCheck, Terminal } from "lucide-react";
 import { queryKeys } from "@/lib/query-keys";
 import { WorkspaceLayout, type PanelDef } from "@/components/layout/workspace-layout";
 import { DiscoveryProvider } from "@/components/discovery/store";
 import { useCorpusSchema } from "@/components/discovery/use-discovery-store";
 import { useGraphSchema } from "@/components/discovery/use-graph-schema";
-import {
-  GraphRootProvider,
-  useGraph,
-  type GraphApi,
-  type LookPatch,
-  type Sim,
-} from "@kanzo-tech/graph";
+import { GraphRootProvider, useGraph, type GraphApi } from "@kanzo-tech/graph";
 import { undrawnEdges, useCorpusSource } from "@/components/discovery/use-corpus-source";
 import { ClassLegend } from "@/components/discovery/class-legend";
 import { NodeInfo } from "@/components/discovery/node-info";
-import { GraphSettings } from "@/components/discovery/graph-settings";
+import { useGraphPrefs } from "@/components/discovery/use-graph-prefs";
 import { DiscoveryAsk } from "@/components/discovery/discovery-ask";
 import { DiscoverySql } from "@/components/discovery/discovery-sql";
 import { RuleBuilder } from "@/components/discovery/rule-builder";
@@ -63,9 +57,11 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
   const vertexType = chosenType ?? kgSchema.types[0]?.name ?? null;
 
   const [selectedVertex, setSelectedVertex] = useState<{ id: string; type: string; label: string } | null>(null);
-  const [look, setLook] = useState<LookPatch>({});
-  const [sim, setSim] = useState<Partial<Sim>>({});
   const [simulate, setSimulate] = useState(true);
+
+  // The look and the forces are a preference now, resolved by the theme provider against
+  // `GRAPH_SECTION`'s own bounds. This page neither stores them nor draws their controls.
+  const { look, sim } = useGraphPrefs();
   const [failure, setFailure] = useState<string | null>(null);
 
   const selection = useMemo(() => Selection.crossfilter(), []);
@@ -130,14 +126,6 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
       icon: BarChart3,
       label: "Analysis",
       content: <AnalysisPanel schema={kgSchema} selection={selection} />,
-    },
-    {
-      id: "settings",
-      icon: Settings2,
-      label: "Settings",
-      content: (
-        <GraphSettings sim={sim} look={look} onSimChange={setSim} onLookChange={setLook} />
-      ),
     },
   ];
 

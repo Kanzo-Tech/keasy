@@ -1,8 +1,9 @@
 "use client";
 
 import { useServerInsertedHTML } from "next/navigation";
-import { themeIndex } from "@kanzo-tech/theme";
+import { themeIndex, type SectionManifest } from "@kanzo-tech/theme";
 import { KanzoThemeProvider, cookieStorageAdapter, themeScript } from "@kanzo-tech/ui";
+import { GRAPH_SECTION } from "@kanzo-tech/graph/section";
 
 /**
  * The design system owns the theme, appearance included — there is no second writer of
@@ -25,6 +26,10 @@ const storage = cookieStorageAdapter();
  *  already answers, so only the name reaches the panel. */
 const themes = themeIndex.map((entry) => ({ value: entry.name, label: entry.name }));
 
+/** What the packages this host installed contribute. Hoisted so the provider's resolution
+ *  memo sees one identity rather than a fresh array on every render. */
+const sections: SectionManifest[] = [GRAPH_SECTION];
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useServerInsertedHTML(() => (
     <script dangerouslySetInnerHTML={{ __html: themeScript() }} key="kanzo-theme-script" />
@@ -33,6 +38,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
     <KanzoThemeProvider
       defaultTheme={{ dark: "kanzo-dark", light: "kanzo" }}
+      sections={sections}
       storage={storage}
       themes={themes}
     >

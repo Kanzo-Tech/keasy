@@ -47,9 +47,15 @@ export function PreferencesTab() {
           </div>
         </SettingsSection>
 
-        {/* Whatever the packages this host installed contribute — nothing today, and it
-            draws nothing rather than needing a guard. */}
-        <PreferencesSections />
+        {/* Whatever the packages this host installed contribute. Today that is
+            `GRAPH_SECTION`: the marks, the edge layer and the six force coefficients, each
+            within the bounds the package measured. */}
+        <SettingsSection
+          title="Graph"
+          description="How the discovery canvas draws, and how hard its simulation pulls."
+        >
+          <PreferencesSections />
+        </SettingsSection>
       </PageShell.Content>
     </PageShell>
   );

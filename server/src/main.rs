@@ -1,14 +1,12 @@
+use keasy_server::auth::jwt::Validator;
 use keasy_server::config::ServerConfig;
-use keasy_server::routes::{SessionConfig, build_router};
-use keasy_server::{AppState, AuthServices, Database};
-use secrecy::ExposeSecret;
+use keasy_server::routes::build_router;
+use keasy_server::{AppState, Database};
 
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use tracing::info;
-
-use tower_sessions::ExpiredDeletion;
 
 #[tokio::main]
 async fn main() {
@@ -52,7 +50,7 @@ async fn main() {
     // Seed the local workspace identity (compliance metadata) once. Membership,
     // roles, and the workspace registry are all Keycloak-native now (the
     // Organization + client roles), so the server keeps no identity state.
-    if config.oidc_client_id.is_some() && db.get_workspace_identity().await.is_none() {
+    if db.get_workspace_identity().await.is_none() {
         db.set_workspace_identity(&keasy_server::settings::org::WorkspaceIdentity {
             name: config.workspace_name.clone(),
             legal_name: config.workspace_name.clone(),
@@ -69,67 +67,16 @@ async fn main() {
         std::process::exit(1);
     }
 
-    // Session store — separate tokio-rusqlite connection (safe in WAL mode).
-    // tower-sessions-rusqlite-store manages its own schema via migrate().
-    // Access tokio_rusqlite through the re-export from tower-sessions-rusqlite-store.
-    let session_conn = tower_sessions_rusqlite_store::tokio_rusqlite::Connection::open(&db_path)
-        .await
-        .unwrap_or_else(|e| {
-            eprintln!("FATAL: Failed to open session store connection: {e}");
-            std::process::exit(1);
-        });
-    let session_store = tower_sessions_rusqlite_store::RusqliteStore::new(session_conn);
-    session_store.migrate().await.unwrap_or_else(|e| {
-        eprintln!("FATAL: Failed to migrate session store: {e}");
-        std::process::exit(1);
-    });
-
-    // Background task: continuously delete expired sessions (every 60 seconds)
-    let deletion_task = tokio::task::spawn(
-        session_store
-            .clone()
-            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
-    );
-
-    // Build OIDC relying party client — only when all three config fields are present.
-    let oidc_state = match (
+    // The bearer validator. Constructed without touching the network: Keycloak
+    // is routinely not up when this is, and the keys are fetched on the first
+    // request that needs them.
+    let auth = Arc::new(Validator::new(
         &config.oidc_issuer_url,
+        &config.oidc_audience,
         &config.oidc_client_id,
-        &config.oidc_client_secret,
-    ) {
-        (Some(issuer), Some(client_id), Some(secret)) => {
-            let redirect_uri = format!(
-                "{}/v1/auth/oidc-callback",
-                config.base_url.trim_end_matches('/')
-            );
-            match keasy_server::auth::oidc::build_oidc_client(
-                issuer,
-                client_id,
-                secret.expose_secret(),
-                &redirect_uri,
-                config.oidc_internal_base_url.as_deref(),
-            )
-            .await
-            {
-                Ok(state) => Some(Arc::new(state)),
-                Err(e) => {
-                    tracing::warn!(
-                        error = %e,
-                        "Failed to initialize OIDC client — OIDC auth will be unavailable"
-                    );
-                    None
-                }
-            }
-        }
-        _ => None,
-    };
+        config.oidc_internal_base_url.as_deref(),
+    ));
 
-    let auth = AuthServices {
-        oidc_state,
-        oidc_issuer_url: config.oidc_issuer_url,
-        oidc_client_id: config.oidc_client_id,
-        oidc_client_secret: config.oidc_client_secret,
-    };
     // Server-side DuckLake catalog (authority over output metadata). Non-fatal
     // if it fails to open — the host keeps serving jobs and the reconciler
     // registers their output once the catalog is back.
@@ -147,18 +94,15 @@ async fn main() {
     let state = AppState {
         db,
         api_key: config.api_key,
-        base_url: config.base_url,
         workspace_slug: config.workspace_slug,
         auth,
         catalog,
     };
     info!(
-        oidc = if state.auth.oidc_state.is_some() {
-            "ready"
-        } else {
-            "not configured"
-        },
-        "External services"
+        issuer = %config.oidc_issuer_url,
+        audience = %config.oidc_audience,
+        client_id = %config.oidc_client_id,
+        "Bearer tokens validated against"
     );
 
     // Catalog durability net: periodically register any completed job whose
@@ -172,13 +116,7 @@ async fn main() {
         info!("Catalog reconciler started (60s)");
     }
 
-    let session_config = SessionConfig {
-        store: session_store,
-        secret: config.session_secret,
-        cookie_name: config.session_cookie_name,
-        secure: config.session_secure,
-    };
-    let app = build_router(state, config.cors_origins, session_config);
+    let app = build_router(state, config.cors_origins);
 
     let listener = match tokio::net::TcpListener::bind(config.bind_addr).await {
         Ok(l) => l,
@@ -200,8 +138,6 @@ async fn main() {
         eprintln!("FATAL: Server error: {e}");
         std::process::exit(1);
     }
-
-    deletion_task.abort();
 }
 
 async fn shutdown_signal() {

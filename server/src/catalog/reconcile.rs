@@ -208,8 +208,9 @@ mod tests {
     /// exercising the wiring the pure unit tests above don't.
     #[tokio::test]
     async fn reconcile_once_deregisters_ghost_keeps_live() {
+        use crate::auth::jwt::Validator;
         use crate::catalog::Catalog;
-        use crate::{AppState, AuthServices, Database};
+        use crate::{AppState, Database};
         use fossil_run_status::VertexStatus;
         use std::collections::HashMap;
         use std::sync::Arc;
@@ -250,14 +251,13 @@ mod tests {
         let state = AppState {
             db,
             api_key: secrecy::SecretString::from("test"),
-            base_url: String::new(),
             workspace_slug: None,
-            auth: AuthServices {
-                oidc_state: None,
-                oidc_issuer_url: None,
-                oidc_client_id: None,
-                oidc_client_secret: None,
-            },
+            auth: Arc::new(Validator::new(
+                "https://id.test/realms/keasy",
+                "keasy-api",
+                "keasy-ws-test",
+                None,
+            )),
             catalog: Some(catalog.clone()),
         };
 

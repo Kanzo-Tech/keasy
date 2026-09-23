@@ -97,6 +97,14 @@ const MIGRATIONS: &[&str] = &[
         created_at TEXT NOT NULL
     );
     ",
+    // ── v2 — this server keeps no sessions ─────────────────────────────────
+    // The relying party moved to the web BFF; this process holds a bearer token
+    // for the length of one request and nothing across two. `user_sessions`
+    // existed to enforce one live session per user against a server-side store
+    // that no longer exists here. v1 is left as shipped, per the rule above.
+    "
+    DROP TABLE IF EXISTS user_sessions;
+    ",
 ];
 
 /// The schema version this binary expects — the count of known migrations. A DB
@@ -150,12 +158,26 @@ mod tests {
         let n: i64 = conn
             .query_row(
                 "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN \
-                 ('connections','jobs','settings','secrets','user_sessions')",
+                 ('connections','jobs','settings','secrets')",
                 [],
                 |r| r.get(0),
             )
             .unwrap();
-        assert_eq!(n, 5);
+        assert_eq!(n, 4);
+    }
+
+    #[test]
+    fn the_session_table_is_gone() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        apply(&conn).unwrap();
+        let n: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'user_sessions'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(n, 0, "the resource server keeps no sessions");
     }
 
     #[test]

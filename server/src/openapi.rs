@@ -12,7 +12,6 @@ use utoipa::OpenApi;
         crate::routes::health::liveness,
         crate::routes::health::readiness,
         crate::routes::health::version,
-        crate::routes::health::service_status,
         // Jobs
         crate::jobs::routes::list_jobs,
         crate::jobs::routes::create_job,
@@ -47,8 +46,6 @@ use utoipa::OpenApi;
         crate::settings::routes::save_ai_provider,
         crate::settings::routes::delete_ai_provider,
         // Auth
-        crate::auth::routes::get_me,
-        crate::auth::routes::logout,
         crate::auth::routes::list_workspaces,
         // Workspace legal identity
         crate::routes::org::get_org_identity,
@@ -107,12 +104,8 @@ use utoipa::OpenApi;
         crate::settings::preferences::Preferences,
         crate::settings::ai::AiSettingsPayload,
         // Auth response types
-        crate::auth::routes::MeResponse,
-        crate::auth::routes::MeOrg,
         crate::auth::routes::WorkspacesResponse,
-        crate::auth::routes::LogoutResponse,
         // Health
-        crate::routes::health::ServiceStatusResponse,
         crate::routes::health::VersionResponse,
         // Workspace legal identity
         crate::routes::org::UpdateOrgIdentityPayload,

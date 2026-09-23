@@ -25,7 +25,6 @@ import { DiscoverySql } from "@/components/discovery/discovery-sql";
 import { RuleBuilder } from "@/components/discovery/rule-builder";
 import { AnalysisPanel } from "@/components/discovery/analysis-panel";
 import { FloatingControls } from "@/components/discovery/floating-controls";
-import { sqlSchemaOf } from "@/lib/graph-schema";
 import { api } from "@/lib/api";
 
 // ── Page ─────────────────────────────────────────────────────────────────
@@ -109,7 +108,7 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
       id: "ask",
       icon: MessageCircle,
       label: "Ask AI",
-      content: <DiscoveryAsk jobId={jobId} schema={sqlSchemaOf(kgSchema)} graphSchema={kgSchema} />,
+      content: <DiscoveryAsk jobId={jobId} graphSchema={kgSchema} />,
     },
     {
       id: "rules",

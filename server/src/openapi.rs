@@ -114,14 +114,13 @@ use utoipa::OpenApi;
         // Workspace legal identity
         crate::routes::org::UpdateOrgIdentityPayload,
         crate::routes::org::OrgIdentityResponse,
-        // Discovery
-        crate::graph::types::TabularData,
         // Catalog (governance)
         crate::catalog::routes::DatasetsResponse,
         crate::catalog::view::CatalogDataset,
         crate::catalog::view::CatalogTable,
         crate::catalog::view::CatalogColumn,
         // AI / Conversations
+        crate::ai::models::TabularData,
         crate::ai::routes::AskRequest,
         crate::ai::routes::AskResponse,
         crate::ai::routes::CreateConversationRequest,

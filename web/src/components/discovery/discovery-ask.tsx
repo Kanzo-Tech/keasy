@@ -63,6 +63,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorAlert } from "@/components/shared/error-alert";
 import { isError } from "@/lib/error-codes";
 import type { GraphSchema } from "@/lib/graph-schema";
+import { describeDataSpace } from "@/lib/data-space";
 
 // ── The turn ─────────────────────────────────────────────────────────────
 
@@ -438,11 +439,10 @@ function Answer({ turn }: { turn: Turn }) {
 
 interface DiscoveryAskProps {
   jobId: string;
-  schema: string;
   graphSchema: GraphSchema;
 }
 
-export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema }: DiscoveryAskProps) {
+export function DiscoveryAsk({ jobId, graphSchema }: DiscoveryAskProps) {
   const coordinator = useCoordinator();
   const engine = useAiStream<AskEvent>();
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -460,6 +460,25 @@ export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema }: Discove
     [aiProviders],
   );
 
+  // The schema the assistant reasons over: DuckDB's own catalog, read back from
+  // the views the corpus mounted. Names, columns and TYPES are the ones a query
+  // will actually meet, and the server holds no copy — an ask without it is a 400.
+  const [duckSchema, setDuckSchema] = useState<string | null>(null);
+  useEffect(() => {
+    if (!coordinator) return;
+    let cancelled = false;
+    describeDataSpace((sql) => coordinator.query(sql, { type: "json" }), graphSchema.edges)
+      .then((ddl) => {
+        if (!cancelled) setDuckSchema(ddl);
+      })
+      .catch((err: unknown) => {
+        console.error("Failed to read the DuckDB schema", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [coordinator, graphSchema]);
+
   const starters = useMemo(() => generateSuggestions(graphSchema), [graphSchema]);
   // Derived from the schema the reader already has, so asking costs nothing and
   // the strip can fill on focus rather than behind a press.
@@ -475,7 +494,7 @@ export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema }: Discove
 
   const submit = (asked: string) => {
     const text = asked.trim();
-    if (text.length === 0) return;
+    if (text.length === 0 || duckSchema === null) return;
     const id = nextTurn.current++;
     live.current = id;
     setQuestion("");
@@ -588,13 +607,16 @@ export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema }: Discove
             <PromptInputTextarea
               className="resize-none"
               onChange={(event) => setQuestion(event.target.value)}
-              placeholder="Ask about your data…"
+              placeholder={duckSchema === null ? "Reading the schema…" : "Ask about your data…"}
               value={question}
             />
             <PromptInputToolbar>
               <SuggestMark label="Suggest a question" />
               <PromptInputSubmit
-                disabled={engine.status !== "loading" && question.trim().length === 0}
+                disabled={
+                  engine.status !== "loading" &&
+                  (question.trim().length === 0 || duckSchema === null)
+                }
                 status={engine.status}
               />
             </PromptInputToolbar>

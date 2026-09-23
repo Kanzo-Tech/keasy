@@ -1,10 +1,9 @@
 use rusqlite::params;
 
 use crate::db::Database;
-use crate::graph::types::TabularData;
 use crate::jobs::models::now_iso8601;
 
-use super::models::{Conversation, ConversationMessage};
+use super::models::{Conversation, ConversationMessage, TabularData};
 
 impl Database {
     pub async fn create_conversation(

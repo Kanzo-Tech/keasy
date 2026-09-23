@@ -13,7 +13,6 @@ pub mod crypto;
 pub mod db;
 pub mod discovery;
 pub mod error;
-pub mod graph;
 pub mod jobs;
 pub mod middleware;
 pub mod openapi;

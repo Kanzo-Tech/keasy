@@ -53,16 +53,25 @@ pub async fn ask_discover_stream(
         Err(e) => return e.into_response(),
     };
 
-    // The schema is the CLIENT's to send: the browser holds the live DuckDB-WASM
-    // relations the corpus registered, with the names and types fossil gave
-    // them. The server used to rebuild a `CREATE TABLE` per type out of the run
-    // report — its own spelling of fossil's naming, drifting by construction.
+    let is_explain = req.explain;
+
+    // The schema is the browser's to send: it is DuckDB's own catalog over the
+    // mounted views. The server keeps no second description of it, so an ask
+    // that arrives without one is refused rather than answered against a guess.
     let schema_context = match &req.schema {
         Some(s) if !s.is_empty() => s.clone(),
-        _ => "-- No schema available: the client sent none.\n".to_string(),
+        _ if is_explain => String::new(),
+        _ => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(crate::error::error_body(
+                    "schema_required",
+                    "No DuckDB schema was sent. The client reads it from its own DuckDB catalog and must send it with the question.",
+                )),
+            )
+                .into_response();
+        }
     };
-
-    let is_explain = req.explain;
 
     let conversation_id = match req.conversation_id {
         Some(cid) => cid,
@@ -225,32 +234,29 @@ pub async fn ask_discover_stream(
 
 /// Build the system prompt for the DuckDB SQL assistant.
 ///
-/// The `schema_context` is expected to contain real DuckDB DDL (CREATE TABLE
-/// statements) and sample rows, sent by the frontend after querying DuckDB-WASM.
+/// `schema_context` is real DuckDB DDL, read by the browser out of its own
+/// DuckDB catalog and sent with the question. Everything the model needs to
+/// know about the shape of the data is in it: the table names, the column
+/// names and the column types. The one thing DDL cannot carry is that a join
+/// exists at all — the views have no foreign keys — so the prompt keeps the
+/// traversal idiom and nothing else about the layout.
 fn build_system_prompt(schema_context: &str) -> String {
     format!(
-        "You are a DuckDB SQL query assistant operating over a GraphAr property graph\n\
-         materialized as Parquet files and loaded into DuckDB as views.\n\n\
-         ## GraphAr layout (REQUIRED — do not invent table names)\n\
-         - Vertex tables: one per RDF type, named by the type's local name\n\
-           (e.g. `\"IfcBeam\"`, `\"IfcColumn\"`, `\"EnvironmentalImpact\"`).\n\
-           Standard columns: `\"_id\"` (UBIGINT), `\"subject\"` (VARCHAR, full IRI),\n\
-           plus one column per RDF predicate using its local name.\n\
-         - Edge tables: named exactly `\"{{SourceType}}_{{predicate}}_{{TargetType}}\"`\n\
-           (e.g. `\"IfcBeam_locatedInStorey_IfcBuildingStorey\"`).\n\
-           Columns: `\"source\"` (UBIGINT, points to SourceType.\"_id\")\n\
-           and `\"target\"` (UBIGINT, points to TargetType.\"_id\").\n\
-         - Traversal idiom:\n\
-           ```\n\
-           SELECT t.*\n\
-           FROM \"SourceType\" s\n\
-           JOIN \"SourceType_pred_TargetType\" e ON s.\"_id\" = e.\"source\"\n\
-           JOIN \"TargetType\" t ON t.\"_id\" = e.\"target\"\n\
-           ```\n\
-         - There is NO single `rdf` or `triples` table. Always use the typed\n\
-           vertex tables shown in the schema below.\n\n\
-         ## Schema (live)\n\n\
+        "You are a DuckDB SQL query assistant operating over a property graph\n\
+         loaded into DuckDB as views. The schema below is the whole of it: use\n\
+         those tables and those columns, and invent no others.\n\n\
+         ## Schema (live, read from DuckDB)\n\n\
          {schema_context}\n\n\
+         ## Joining\n\
+         A table whose columns are `\"source\"` and `\"target\"` is an edge table,\n\
+         and its comment names the two vertex tables it connects. Both columns\n\
+         hold `\"_id\"` values of those tables:\n\
+         ```\n\
+         SELECT t.*\n\
+         FROM \"SourceTable\" s\n\
+         JOIN \"EdgeTable\" e ON s.\"_id\" = e.\"source\"\n\
+         JOIN \"TargetTable\" t ON t.\"_id\" = e.\"target\"\n\
+         ```\n\n\
          ## DuckDB SQL rules\n\
          - Always quote identifiers with double quotes: `\"Table\".\"column\"`.\n\
          - Default to `LIMIT 100`; for top-N use `ORDER BY ... DESC LIMIT N`.\n\

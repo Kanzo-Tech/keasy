@@ -180,41 +180,4 @@ export function buildGraphSchema(overview: SchemaResult, stats?: FieldStatsMap):
 
 // ── SQL description (for the LLM) ───────────────────────────────────────
 
-/** GraphAr datatype spelling → the DuckDB type a filter should expect. */
-function duckTypeOf(datatype: string): string {
-  if (isTemporalType(datatype)) return datatype.toUpperCase();
-  if (datatype === "int64" || datatype === "int32") return "BIGINT";
-  if (datatype === "double" || datatype === "float") return "DOUBLE";
-  if (datatype === "bool" || datatype === "boolean") return "BOOLEAN";
-  return "VARCHAR";
-}
 
-/**
- * The corpus as DDL, for a prompt.
- *
- * The server used to write this from the run report, which made it the host's
- * own spelling of fossil's naming — the edge table composed in Rust, the columns
- * invented. It is written here instead, against the relations the corpus
- * actually registered in this browser's DuckDB: every name comes from the
- * `schema` verb, and the addressing columns are the ones `buildSource` joins on.
- */
-export function sqlSchemaOf(schema: GraphSchema): string {
-  const lines: string[] = [];
-  for (const type of schema.types) {
-    const columns = [
-      '  "dense_id" UBIGINT',
-      '  "subject" VARCHAR',
-      ...type.fields.map((f) => `  "${f.name}" ${duckTypeOf(f.type)}`),
-    ];
-    lines.push(
-      `CREATE TABLE "${type.name}" (\n${columns.join(",\n")}\n); -- rows: ${type.entityCount}\n`,
-    );
-  }
-  for (const edge of schema.edges) {
-    lines.push(
-      `CREATE TABLE "${edge.tableName}" (\n  "src_dense" UBIGINT,\n  "dst_dense" UBIGINT\n);` +
-        ` -- ${edge.sourceType} --[${edge.name}]--> ${edge.targetType} (${edge.count} edges)\n`,
-    );
-  }
-  return lines.join("\n");
-}

@@ -59,6 +59,55 @@ services:
       retries: 10
       start_period: 10s
 
+  # ── Dev object store (MinIO) ────────────────────────────────────────────────
+  # The S3 substrate a developer can actually read and write, dev-only: prod
+  # brings its own bucket and this file is never part of that stack.
+  #
+  # The `minio.localhost` alias is what makes ONE endpoint URL work on both
+  # sides: inside the compose network Docker's DNS answers it, and on the host
+  # `*.localhost` resolves to 127.0.0.1 — where 9000 is published. The server
+  # signs a URL against that host and the browser fetches it unchanged.
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      default:
+        aliases:
+          - minio.localhost
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  # The bucket. Idempotent: `mb --ignore-existing` converges on a re-`up`
+  # instead of failing.
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+    restart: "no"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        mc alias set dev http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb --ignore-existing "dev/$$MINIO_BUCKET"
+        mc ls --recursive "dev/$$MINIO_BUCKET"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-keasy-dev}
+    depends_on:
+      minio:
+        condition: service_healthy
+
   # SMTP sink for dev: captures Keycloak's outbound mail (Organization invitations,
   # password resets). The realm's smtpServer points at `mailpit:1025`. Read captured
   # mail — including the invitation/registration link — at http://localhost:8025.
@@ -81,3 +130,4 @@ services:
 volumes:
   server-target:                   # persist Rust build artifacts across restarts
   cargo-registry:                  # persist downloaded crate sources across container recreation
+  minio-data:                      # dev bucket contents survive a restart

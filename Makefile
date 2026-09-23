@@ -9,20 +9,20 @@ COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 #   • Edited keasy server/web code .......... NOTHING. cargo-watch/HMR picks it
 #                                             up live. (`make logs-server` to watch.)
 #   • Container wedged / env changed ........ `make restart` (no rebuild).
-#   • Changed server deps (Cargo.toml/lock),
-#     the Dockerfile, OR rmlext/fossil ...... `make dev` (rebuilds the image).
+#   • Changed server deps (Cargo.toml/lock)
+#     or the Dockerfile .................... `make dev` (rebuilds the image).
 #
-# `make dev` (--build) is the slow path: it recompiles the `fossil` binary from
-# rmlext. That build is now DEBUG + BuildKit-cached (see server/Dockerfile.dev),
-# so a re-run after a small rmlext change is incremental (seconds), not a full
-# DuckDB rebuild. Only `make clean` wipes those caches.
+# The image is deps-only and carries no fossil source: `fossil-run-status` is a git
+# dep and fossil compute runs in the browser. Crates compile at runtime into the
+# persistent `server-target` + `cargo-registry` volumes, so only the first `up`
+# (or one after `make clean`) pays a cold compile.
 
 .PHONY: help dev demo down prod build logs restart clean ps deploy-platform deploy-realm
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-dev: ## Start/rebuild dev env (only needed for dep/Dockerfile/rmlext changes — code hot-reloads)
+dev: ## Start/rebuild dev env (only needed for dep/Dockerfile changes — code hot-reloads)
 	@cp -n .env.example .env 2>/dev/null || true
 	$(COMPOSE_DEV) up --build -d
 

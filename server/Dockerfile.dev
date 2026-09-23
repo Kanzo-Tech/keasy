@@ -1,9 +1,8 @@
 # syntax=docker/dockerfile:1
-# Dev image for keasy-server (hot reload). Build CONTEXT is the parent dir
-# holding BOTH `keasy/` and the sibling `rmlext/` — see docker-compose.dev.yml
-# (`context: ..`, `dockerfile: keasy/server/Dockerfile.dev`). rmlext is needed
-# ONLY for the `fossil-run-status` path dep — keasy is a pure host: fossil runs
-# in the browser (DuckDB-WASM + `@fossil-lang/*`), no binary built or shipped.
+# Dev image for keasy-server (hot reload). Build CONTEXT is `server/`: keasy is a
+# pure host — fossil runs in the browser (DuckDB-WASM + `@fossil-lang/*`), and the
+# only fossil code compiled here is the `fossil-run-status` wire contract, which
+# comes from the published git tag (see server/Cargo.toml), not a sibling checkout.
 
 FROM rust:1.90-bookworm
 
@@ -21,28 +20,14 @@ RUN mkdir -p /etc/pki/tls/certs \
 
 RUN cargo install cargo-watch
 
-WORKDIR /src
-
-# rmlext source — present ONLY so keasy-server's `fossil-run-status` path dep
-# resolves through the [patch] in server/Cargo.toml. NOT built to a binary:
-# keasy is a pure host; fossil compute runs in the browser.
-COPY rmlext /src/rmlext
-
-# keasy-keycloak crate (a path dep of keasy-server) must be present so the
-# runtime `cargo build` resolves `../keycloak`.
-COPY keasy/keycloak /src/keasy/keycloak
-
-# keasy-server manifests, for the RUNTIME compile (`src/` is bind-mounted at
-# runtime). We deliberately DON'T pre-build deps in the image: that step sat
-# below `COPY rmlext`, so every change to rmlext — the repo under active
-# migration — cascade-invalidated its layer and recompiled all ~400 crates from
-# scratch, the dominant cost of `make dev`. Instead the deps compile ONCE at
-# runtime into the persistent `server-target` + `cargo-registry` volumes (see
-# docker-compose.dev.yml); later rebuilds reuse them and cargo-watch recompiles
-# only the changed keasy crates. First `up` (or after `make clean`) pays a single
-# cold compile — covered by the server healthcheck's `start_period`.
-WORKDIR /src/keasy/server
-COPY keasy/server/Cargo.toml keasy/server/Cargo.lock ./
+# Manifests only, for the RUNTIME compile (`src/` is bind-mounted at runtime). We
+# deliberately DON'T pre-build deps in the image: they compile ONCE at runtime into
+# the persistent `server-target` + `cargo-registry` volumes (see
+# docker-compose.dev.yml); later rebuilds reuse them and cargo-watch recompiles only
+# the changed crates. First `up` (or after `make clean`) pays a single cold compile
+# — covered by the server healthcheck's `start_period`.
+WORKDIR /src/server
+COPY Cargo.toml Cargo.lock ./
 
 EXPOSE 8080
 CMD ["cargo", "watch", "-x", "run"]

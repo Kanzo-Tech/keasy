@@ -28,6 +28,6 @@ enablePasswordDB: true
 staticPasswords:
   # Login: dev@keasy.local / password  (bcrypt hash of "password")
   - email: "dev@keasy.local"
-    hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4i"
+    hash: "$2a$10$ztkLjrGB4d7QA2ImOClHFOWph4LU9JDu5Ti2uCDag7cCbZtxHK1ZC"
     username: "dev"
     userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"

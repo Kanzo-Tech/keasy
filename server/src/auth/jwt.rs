@@ -23,10 +23,17 @@
 
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 
 use jsonwebtoken::jwk::JwkSet;
 use jsonwebtoken::{AlgorithmFamily, DecodingKey, Validation, decode, decode_header};
 use tokio::sync::RwLock;
+
+/// How long to wait for a TCP connection to the realm.
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(3);
+
+/// How long to wait for one whole answer from the realm, body included.
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// The claims this server authorizes on. Everything else in the token is ignored.
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -143,9 +150,33 @@ impl Validator {
             audience: audience.to_string(),
             client_id: client_id.to_string(),
             internal_origin: internal_origin.map(|o| o.trim_end_matches('/').to_string()),
-            http: reqwest::Client::new(),
+            http: Self::http_client(),
             keys: RwLock::new(None),
         }
+    }
+
+    /// The client the realm is asked over, and the reason it is not the default.
+    ///
+    /// `reqwest::Client::new()` has no timeout at all, and the failure that
+    /// matters is not a Keycloak that is *down* — that refuses the connection
+    /// and comes back as a 503 in milliseconds — but a Keycloak that is *hung*:
+    /// accepting connections and never answering. With no deadline, the Axum
+    /// handler waiting on this waits forever, and enough of them take the whole
+    /// server down with a realm that is still nominally up.
+    ///
+    /// Both bounds are deliberate. [`CONNECT_TIMEOUT`] is generous for a TCP
+    /// handshake to a container on the same network and short enough that a
+    /// black-holed address is not mistaken for a slow one. [`REQUEST_TIMEOUT`]
+    /// is the whole round trip including the body, applied per request — so
+    /// `fetch_keys`, which makes two, is bounded at twice that, and that is the
+    /// longest a request can be held by the realm.
+    fn http_client() -> reqwest::Client {
+        reqwest::Client::builder()
+            .connect_timeout(CONNECT_TIMEOUT)
+            .timeout(REQUEST_TIMEOUT)
+            .build()
+            // Only the TLS backend can fail here, and it is compiled in.
+            .expect("the rustls backend builds")
     }
 
     pub fn client_id(&self) -> &str {
@@ -580,6 +611,38 @@ mod tests {
             validator.verify(&signed).await,
             Err(TokenError::KeysUnavailable)
         ));
+    }
+
+    /// The failure a missing timeout actually produces. Nothing is refused and
+    /// nothing is answered: the realm accepts the connection and then says
+    /// nothing at all, which is what a wedged Keycloak looks like from here. A
+    /// client with no deadline parks the Axum handler on this forever.
+    #[tokio::test]
+    async fn a_realm_that_accepts_and_never_answers_is_a_503_too() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let issuer = format!("http://{}/realms/keasy", listener.local_addr().unwrap());
+        let app = Router::new().route(
+            "/realms/keasy/.well-known/openid-configuration",
+            get(std::future::pending::<Json<serde_json::Value>>),
+        );
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+
+        let validator = Validator::new(&issuer, "keasy-api", "keasy", None);
+        let signed = {
+            let realm = realm("k1").await;
+            mint(&realm, good(&realm))
+        };
+
+        // Generously past `REQUEST_TIMEOUT`: what is asserted is that the call
+        // comes back at all, and with the honest answer when it does.
+        let answered = tokio::time::timeout(
+            REQUEST_TIMEOUT + Duration::from_secs(10),
+            validator.verify(&signed),
+        )
+        .await
+        .expect("the validator gives up on a hung realm rather than waiting on it");
+
+        assert!(matches!(answered, Err(TokenError::KeysUnavailable)));
     }
 
     #[test]

@@ -9,20 +9,22 @@ interface Props {
   simulationRunning: boolean;
 }
 
+const VIEW_CONTROLS = [
+  { key: "in", icon: Plus, label: "Zoom in", action: (g: CosmosGraphHandle | null) => g?.zoomIn(300) },
+  { key: "out", icon: Minus, label: "Zoom out", action: (g: CosmosGraphHandle | null) => g?.zoomOut(300) },
+  { key: "fit", icon: Maximize, label: "Fit view (F)", action: (g: CosmosGraphHandle | null) => g?.fitView(500) },
+] as const;
+
 export function FloatingControls({ graphRef, simulationRunning }: Props) {
   return (
     <div className="flex flex-col gap-0.5">
-      {([
-        { key: "in", icon: Plus, label: "Zoom in", action: () => graphRef.current?.zoomIn(300) },
-        { key: "out", icon: Minus, label: "Zoom out", action: () => graphRef.current?.zoomOut(300) },
-        { key: "fit", icon: Maximize, label: "Fit view (F)", action: () => graphRef.current?.fitView(500) },
-      ] as const).map(({ key, icon: Icon, label, action }) => (
+      {VIEW_CONTROLS.map(({ key, icon: Icon, label, action }) => (
         <Tooltip key={key}>
           <TooltipTrigger asChild>
             <button
               className="h-6 w-6 inline-flex items-center justify-center rounded-sm bg-background/80 backdrop-blur-sm border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               aria-label={label}
-              onClick={action}
+              onClick={() => action(graphRef.current)}
             >
               <Icon size={12} />
             </button>

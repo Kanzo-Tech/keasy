@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   type ColumnDef,
@@ -97,14 +97,14 @@ function ConnectionFilesRow({
   }, [files, supportedExts]);
 
   // Auto-select all supported files on first load & report count
-  const autoSelectedRef = useMemo(() => ({ done: false }), [connectionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const autoSelectedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (supported.length > 0 && !autoSelectedRef.done) {
-      autoSelectedRef.done = true;
+    if (supported.length > 0 && autoSelectedRef.current !== connectionId) {
+      autoSelectedRef.current = connectionId;
       onToggleAll(supported.map((f) => f.path));
     }
     onSupportedCount(supported.length);
-  }, [supported, autoSelectedRef, onToggleAll, onSupportedCount]);
+  }, [supported, connectionId, onToggleAll, onSupportedCount]);
 
   if (isLoading) {
     return (

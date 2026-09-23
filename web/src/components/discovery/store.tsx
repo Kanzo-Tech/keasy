@@ -8,7 +8,7 @@
 
 "use client";
 
-import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { create, type StoreApi, useStore as useZustandStore } from "zustand";
 import type { Coordinator } from "@uwdata/mosaic-core";
@@ -72,9 +72,7 @@ function DiscoveryRoom({
   manifestFiles: Record<string, string>;
   children: ReactNode;
 }) {
-  const storeRef = useRef<StoreApi<DiscoveryState>>(undefined);
-  if (!storeRef.current) storeRef.current = createDiscoveryStore();
-  const store = storeRef.current;
+  const [store] = useState(createDiscoveryStore);
 
   const status = useZustandStore(store, (s) => s.status);
 

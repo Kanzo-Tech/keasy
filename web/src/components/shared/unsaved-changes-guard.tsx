@@ -14,7 +14,9 @@ import {
 
 export function UnsavedChangesGuard({ isDirty }: { isDirty: boolean }) {
   const isDirtyRef = useRef(isDirty);
-  isDirtyRef.current = isDirty;
+  useEffect(() => {
+    isDirtyRef.current = isDirty;
+  });
 
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
 

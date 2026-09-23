@@ -12,7 +12,11 @@
 //! | `iss` | exactly the realm's issuer |
 //! | `aud` | contains this API's audience |
 //! | `exp` | not past |
+//! | `nbf` | not future, when the token carries one |
 //! | signature | against the realm's JWKS, keyed by `kid` and cached |
+//!
+//! Both time checks are read with [`CLOCK_LEEWAY`] of slack, which is this
+//! deployment's number rather than a library default.
 //!
 //! Plus one this deployment adds, because a workspace is an instance rather than
 //! an organization: `azp` must be **this** workspace's client. Every tenant has
@@ -23,7 +27,7 @@
 
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use jsonwebtoken::jwk::JwkSet;
 use jsonwebtoken::{AlgorithmFamily, DecodingKey, Validation, decode, decode_header};
@@ -34,6 +38,21 @@ const CONNECT_TIMEOUT: Duration = Duration::from_secs(3);
 
 /// How long to wait for one whole answer from the realm, body included.
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// The shortest interval between two attempts to re-fetch the realm's keys.
+///
+/// Thirty seconds is `jose`'s `createRemoteJWKSet` default for the same
+/// mechanism (`cooldownDuration`: "time in milliseconds after a successful fetch
+/// before a missing key can trigger another fetch"), and the tradeoff is the
+/// same here: long enough that an unknown `kid` is not a lever on Keycloak,
+/// short enough that a realm key rotation is picked up within one of these
+/// rather than on a restart.
+const REFETCH_COOLDOWN: Duration = Duration::from_secs(30);
+
+/// How far this server's clock may disagree with the realm's before `exp` and
+/// `nbf` are read differently. Explicit rather than `jsonwebtoken`'s inherited
+/// sixty-second default.
+const CLOCK_LEEWAY: Duration = Duration::from_secs(30);
 
 /// The claims this server authorizes on. Everything else in the token is ignored.
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -132,6 +151,11 @@ pub struct Validator {
     internal_origin: Option<String>,
     http: reqwest::Client,
     keys: RwLock<Option<JwkSet>>,
+    /// The gate on re-fetching, and when the last attempt was made. One lock
+    /// does both jobs: holding it is what makes a re-fetch single-flight, and
+    /// what it holds is what makes the cooldown a floor. The read path — a `kid`
+    /// already in `keys` — never touches it.
+    refetch: tokio::sync::Mutex<Option<Instant>>,
 }
 
 impl Validator {
@@ -152,6 +176,7 @@ impl Validator {
             internal_origin: internal_origin.map(|o| o.trim_end_matches('/').to_string()),
             http: Self::http_client(),
             keys: RwLock::new(None),
+            refetch: tokio::sync::Mutex::new(None),
         }
     }
 
@@ -236,21 +261,68 @@ impl Validator {
             })
     }
 
-    /// The key for `kid`, re-fetching the set **once** when it is not there.
+    /// The key for `kid` out of the cached set, if it is in there.
+    async fn cached(&self, kid: &str) -> Result<Option<DecodingKey>, TokenError> {
+        let keys = self.keys.read().await;
+        let Some(jwk) = keys.as_ref().and_then(|set| set.find(kid)) else {
+            return Ok(None);
+        };
+        DecodingKey::from_jwk(jwk).map(Some).map_err(|e| {
+            tracing::warn!(error = %e, kid, "JWKS holds a key we cannot decode");
+            TokenError::Invalid
+        })
+    }
+
+    /// The key for `kid`, re-fetching the set when it is not there.
     ///
     /// Reactive rather than on a timer: Keycloak rotates its realm keys, and a
     /// refresh every few minutes is a request that is wrong exactly when it
-    /// matters. One re-fetch per unknown `kid` and then a refusal — a loop here
-    /// would be a self-inflicted denial of service against the realm.
+    /// matters. What was missing under the re-fetch was a floor. A `kid` is
+    /// unauthenticated input — it comes out of a JWT header that nobody has
+    /// verified yet — so an unknown one triggering two requests to the realm,
+    /// with no ceiling, hands anybody with a socket an amplifier against
+    /// Keycloak. Signing nothing and inventing a `kid` per request is enough.
+    ///
+    /// Two things put a floor under it, and they are the same lock. Holding
+    /// `refetch` across the fetch makes it single-flight: a hundred requests
+    /// arriving on a cold cache produce one fetch and then find the key, rather
+    /// than a hundred fetches or ninety-nine spurious refusals. And the `Instant`
+    /// it holds is a cooldown: a second attempt within [`REFETCH_COOLDOWN`] is
+    /// answered from what we already know instead of asked of the realm. The
+    /// cooldown is what an attacker runs into; the single flight is what
+    /// legitimate traffic runs into, and it costs them nothing.
+    ///
+    /// The refusal says which kind of ignorance it is. No key set at all means
+    /// we never reached the realm — that is a 503, not a verdict on the
+    /// credential. A key set without this `kid` is a verdict: 401.
     async fn key_for(&self, kid: &str) -> Result<DecodingKey, TokenError> {
-        if let Some(set) = self.keys.read().await.as_ref()
-            && let Some(jwk) = set.find(kid)
+        if let Some(key) = self.cached(kid).await? {
+            return Ok(key);
+        }
+
+        let mut last_attempt = self.refetch.lock().await;
+
+        // Whoever held the gate before us may have fetched exactly this key.
+        if let Some(key) = self.cached(kid).await? {
+            return Ok(key);
+        }
+
+        if let Some(at) = *last_attempt
+            && at.elapsed() < REFETCH_COOLDOWN
         {
-            return DecodingKey::from_jwk(jwk).map_err(|e| {
-                tracing::warn!(error = %e, kid, "JWKS holds a key we cannot decode");
+            let have_keys = self.keys.read().await.is_some();
+            tracing::warn!(
+                kid,
+                have_keys,
+                "unknown `kid` inside the JWKS re-fetch cooldown; refusing without asking the realm"
+            );
+            return Err(if have_keys {
                 TokenError::Invalid
+            } else {
+                TokenError::KeysUnavailable
             });
         }
+        *last_attempt = Some(Instant::now());
 
         let fetched = self.fetch_keys().await?;
         let key = fetched
@@ -303,6 +375,19 @@ impl Validator {
         validation.set_issuer(&[&self.issuer]);
         validation.set_audience(&[&self.audience]);
         validation.set_required_spec_claims(&["exp", "iss", "aud", "sub"]);
+
+        // A token that says it is not valid yet is not valid yet. `jsonwebtoken`
+        // leaves `nbf` unchecked by default, which means a token minted ahead of
+        // time — Keycloak will not do it, but this is the check that says so
+        // rather than assuming it — was being spent early.
+        validation.validate_nbf = true;
+
+        // And the tolerance both time checks are read with, written down instead
+        // of inherited. The default is sixty seconds; thirty is half the window
+        // an expired token keeps working and still far more drift than two
+        // NTP-synced containers in the same deployment will ever have between
+        // them. It is a number this product chose, which is the point.
+        validation.leeway = CLOCK_LEEWAY.as_secs();
 
         let claims = decode::<Claims>(token, &key, &validation)
             .map_err(|e| {
@@ -410,6 +495,15 @@ mod tests {
         issuer: String,
         key: EncodingKey,
         kid: String,
+        /// Every request this realm has served. What the cooldown is asserted on:
+        /// a floor is only a floor if it shows up as requests not made.
+        hits: Arc<std::sync::atomic::AtomicUsize>,
+    }
+
+    impl Realm {
+        fn requests(&self) -> usize {
+            self.hits.load(std::sync::atomic::Ordering::SeqCst)
+        }
     }
 
     /// Serve a discovery document and a JWKS holding `kid`, and answer with the
@@ -426,14 +520,22 @@ mod tests {
         let jwks = serde_json::to_value(JwkSet { keys: vec![jwk] }).unwrap();
         let discovery = json!({ "issuer": issuer, "jwks_uri": format!("{issuer}/certs") });
 
+        let hits = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let (on_discovery, on_certs) = (hits.clone(), hits.clone());
         let app = Router::new()
             .route(
                 "/realms/keasy/.well-known/openid-configuration",
-                get(move || async move { Json(discovery) }),
+                get(move || {
+                    on_discovery.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                    async move { Json(discovery) }
+                }),
             )
             .route(
                 "/realms/keasy/certs",
-                get(move || async move { Json(jwks) }),
+                get(move || {
+                    on_certs.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                    async move { Json(jwks) }
+                }),
             );
         tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
 
@@ -441,6 +543,7 @@ mod tests {
             issuer,
             key,
             kid: kid.to_string(),
+            hits,
         }
     }
 
@@ -567,6 +670,107 @@ mod tests {
         let alien = mint(&stranger, good(&ours));
         assert!(matches!(
             validating(&ours).verify(&alien).await,
+            Err(TokenError::Invalid)
+        ));
+    }
+
+    /// The amplifier that unknown `kid`s used to be. A `kid` is unauthenticated
+    /// input, and each unknown one cost the realm two requests with nothing
+    /// bounding how many an anonymous caller could ask for.
+    #[tokio::test]
+    async fn an_unknown_kid_is_not_a_lever_on_the_realm() {
+        let stranger = realm("k2").await;
+        let ours = realm("k1").await;
+        let validator = validating(&ours);
+        let alien = mint(&stranger, good(&ours));
+
+        // Cold cache: the realm is asked, once, for discovery and for the keys.
+        assert!(matches!(
+            validator.verify(&alien).await,
+            Err(TokenError::Invalid)
+        ));
+        assert_eq!(ours.requests(), 2);
+
+        // Fifty more of the same, all refused, none of them asked of the realm.
+        for _ in 0..50 {
+            assert!(matches!(
+                validator.verify(&alien).await,
+                Err(TokenError::Invalid)
+            ));
+        }
+        assert_eq!(ours.requests(), 2, "the cooldown held");
+
+        // And the floor costs a real token nothing: its `kid` is in the set the
+        // first refusal fetched, so it verifies without another word to Keycloak.
+        validator
+            .verify(&mint(&ours, good(&ours)))
+            .await
+            .expect("a token this realm signed");
+        assert_eq!(ours.requests(), 2);
+    }
+
+    /// Concurrency, from the other side: a cold cache and a crowd of *valid*
+    /// tokens must produce one fetch and no spurious refusals. The cooldown
+    /// alone would refuse everyone who lost the race, so the same lock is what
+    /// makes the fetch single-flight.
+    #[tokio::test]
+    async fn a_cold_cache_under_load_fetches_once_and_refuses_nobody() {
+        let ours = realm("k1").await;
+        let validator = Arc::new(validating(&ours));
+        let token = Arc::new(mint(&ours, good(&ours)));
+
+        let mut waiting = Vec::new();
+        for _ in 0..25 {
+            let (validator, token) = (validator.clone(), token.clone());
+            waiting.push(tokio::spawn(async move {
+                validator.verify(&token).await.is_ok()
+            }));
+        }
+        for handle in waiting {
+            assert!(handle.await.unwrap(), "every valid token verifies");
+        }
+        assert_eq!(
+            ours.requests(),
+            2,
+            "one discovery, one JWKS, for all of them"
+        );
+    }
+
+    /// `nbf` was not checked at all: `jsonwebtoken` leaves it off by default, so
+    /// a token minted for later was spendable now.
+    #[tokio::test]
+    async fn a_token_that_is_not_valid_yet_is_refused() {
+        let realm = realm("k1").await;
+        let mut claims = good(&realm);
+        claims["nbf"] = json!(jiff::Timestamp::now().as_second() + 3600);
+
+        assert!(matches!(
+            validating(&realm).verify(&mint(&realm, claims)).await,
+            Err(TokenError::Invalid)
+        ));
+    }
+
+    /// The leeway, asserted rather than assumed: a token that went out of date
+    /// a moment ago is still taken, one past the window is not.
+    #[tokio::test]
+    async fn the_clock_leeway_is_the_one_we_chose() {
+        let realm = realm("k1").await;
+        let now = jiff::Timestamp::now().as_second();
+        let leeway = CLOCK_LEEWAY.as_secs() as i64;
+
+        let mut just_inside = good(&realm);
+        just_inside["exp"] = json!(now - (leeway / 2));
+        assert!(
+            validating(&realm)
+                .verify(&mint(&realm, just_inside))
+                .await
+                .is_ok()
+        );
+
+        let mut just_outside = good(&realm);
+        just_outside["exp"] = json!(now - (leeway * 2));
+        assert!(matches!(
+            validating(&realm).verify(&mint(&realm, just_outside)).await,
             Err(TokenError::Invalid)
         ));
     }

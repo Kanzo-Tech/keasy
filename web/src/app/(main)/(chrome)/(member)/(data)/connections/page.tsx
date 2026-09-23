@@ -3,24 +3,27 @@
 import { Suspense, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Database, BookOpen, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
 
 import { PageShell } from "@/components/layout/page-shell";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { api } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
+import { Badge, Button, MenuItem, Tabs, TabsList, TabsTrigger } from "@kanzo-tech/ui";
 import {
-  DataTable,
-  ActionItem,
+  type ColumnDef,
+  DataTableContent,
+  DataTablePagination,
+  DataTableRoot,
+  DataTableSearch,
+  DataTableToolbar,
+  DataTableViewOptions,
   selectColumn,
   sortableHeader,
-  actionsColumn,
-} from "@/components/ui/data-table";
+  useDataTable,
+} from "@kanzo-tech/ui/table";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
+import { actionsColumn } from "@/components/shared/actions-column";
 import { EmptyState } from "@/components/shared/empty-state";
 import type { Connection, CloudAccountSummary, ProviderSchema, ConnectionKind } from "@/lib/types";
 
@@ -62,15 +65,13 @@ function connectionColumns(
       ),
     },
     actionsColumn<Connection>((conn) => (
-      <ActionItem
+      <MenuItem
+        onSelect={() => onDelete(conn.id)}
+        value="delete"
         variant="destructive"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(conn.id);
-        }}
       >
         Delete
-      </ActionItem>
+      </MenuItem>
     )),
   ];
 }
@@ -105,7 +106,7 @@ function ConnectionsContent() {
   const deleteMutation = useMutation({
     mutationFn: api.connections.remove,
     onSuccess: () => {
-      toast.success("Connection deleted");
+      toast.create({ title: "Connection deleted", type: "success" });
       queryClient.invalidateQueries({ queryKey: queryKeys.connections.all(tab) });
     },
   });
@@ -124,10 +125,12 @@ function ConnectionsContent() {
     [handleDelete, accounts, schema],
   );
 
+  const table = useDataTable({ columns, data: connections });
+
   return (
     <PageShell>
     <PageShell.Content className="overflow-hidden">
-    <Tabs value={tab} onValueChange={handleTabChange}>
+    <Tabs value={tab} onValueChange={(details) => handleTabChange(details.value)}>
       <TabsList>
         <TabsTrigger value="data" className="gap-1.5">
           <Database size={14} />
@@ -154,21 +157,25 @@ function ConnectionsContent() {
             }
           />
         ) : (
-          <DataTable
-            columns={columns}
-            data={connections}
-            searchKey="name"
-            searchPlaceholder="Search connections..."
-            onRowClick={(conn) => router.push(`/connections/${conn.id}`)}
-            toolbarActions={
-              <Button asChild size="sm">
-                <Link href={`/connections/new?type=${tab}`}>
-                  <Plus size={14} className="mr-1" />
-                  Create connection
-                </Link>
-              </Button>
-            }
-          />
+          <DataTableRoot table={table}>
+            <DataTableToolbar>
+              <DataTableSearch column="name" placeholder="Search connections..." />
+              <div className="ms-auto flex items-center gap-2">
+                <DataTableViewOptions />
+                <Button asChild size="sm">
+                  <Link href={`/connections/new?type=${tab}`}>
+                    <Plus size={14} />
+                    Create connection
+                  </Link>
+                </Button>
+              </div>
+            </DataTableToolbar>
+            <DataTableContent<Connection>
+              empty="No connections match this filter."
+              onRowClick={(conn) => router.push(`/connections/${conn.id}`)}
+            />
+            <DataTablePagination />
+          </DataTableRoot>
         )}
     </Tabs>
     </PageShell.Content>

@@ -4,26 +4,30 @@ import { useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bot, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@kanzo-tech/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
 
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
+import { Badge, Button, MenuItem } from "@kanzo-tech/ui";
 import {
-  DataTable,
-  ActionItem,
+  type ColumnDef,
+  DataTableContent,
+  DataTablePagination,
+  DataTableRoot,
+  DataTableSearch,
+  DataTableToolbar,
+  DataTableViewOptions,
   selectColumn,
   sortableHeader,
-  actionsColumn,
-} from "@/components/ui/data-table";
+  useDataTable,
+} from "@kanzo-tech/ui/table";
+import { actionsColumn } from "@/components/shared/actions-column";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { PageShell } from "@/components/layout/page-shell";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { SettingsSectionSkeleton } from "@/components/settings/settings-section-skeleton";
 import type { AiSettings } from "@/lib/types";
 
@@ -71,15 +75,13 @@ function aiColumns(
         ) : null,
     },
     actionsColumn<AiSettings>((provider) => (
-      <ActionItem
+      <MenuItem
+        onSelect={() => onDelete(provider.provider)}
+        value="delete"
         variant="destructive"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(provider.provider);
-        }}
       >
         Delete
-      </ActionItem>
+      </MenuItem>
     )),
   ];
 }
@@ -96,10 +98,10 @@ export function AiTab() {
   const deleteMutation = useMutation({
     mutationFn: (providerId: string) => api.ai.removeProvider(providerId),
     onSuccess: () => {
-      toast.success("AI provider deleted");
+      toast.create({ title: "AI provider deleted", type: "success" });
       queryClient.invalidateQueries({ queryKey: queryKeys.ai.providers });
     },
-    onError: () => toast.error("Failed to delete AI provider"),
+    onError: () => toast.create({ title: "Failed to delete AI provider", type: "error" }),
   });
 
   const handleDelete = useCallback(
@@ -109,12 +111,12 @@ export function AiTab() {
 
   const columns = useMemo(() => aiColumns(handleDelete), [handleDelete]);
 
+  const table = useDataTable({ columns, data: providers });
+
   if (isLoading) {
     return showSkeleton ? (
       <SettingsSectionSkeleton
-        title="AI Providers"
         description="Configure AI provider credentials for intelligent features."
-        searchPlaceholder="Search providers..."
       />
     ) : null;
   }
@@ -140,23 +142,27 @@ export function AiTab() {
               }
             />
           ) : (
-            <DataTable
-              columns={columns}
-              data={providers}
-              searchKey="provider"
-              searchPlaceholder="Search providers..."
-              onRowClick={(provider) =>
-                router.push(`/settings/ai/${provider.provider}`)
-              }
-              toolbarActions={
-                <Button size="sm" asChild>
-                  <Link href="/settings/ai/new">
-                    <Plus size={14} />
-                    Add provider
-                  </Link>
-                </Button>
-              }
-            />
+            <DataTableRoot table={table}>
+              <DataTableToolbar>
+                <DataTableSearch column="provider" placeholder="Search providers..." />
+                <div className="ms-auto flex items-center gap-2">
+                  <DataTableViewOptions />
+                  <Button size="sm" asChild>
+                    <Link href="/settings/ai/new">
+                      <Plus size={14} />
+                      Add provider
+                    </Link>
+                  </Button>
+                </div>
+              </DataTableToolbar>
+              <DataTableContent<AiSettings>
+                empty="No providers match this filter."
+                onRowClick={(provider) =>
+                  router.push(`/settings/ai/${provider.provider}`)
+                }
+              />
+              <DataTablePagination />
+            </DataTableRoot>
           )}
         </SettingsSection>
       </PageShell.Content>

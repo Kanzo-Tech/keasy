@@ -52,24 +52,25 @@ pub async fn ask_discover_stream(
         Err(e) => return e.into_response(),
     };
 
+    let is_explain = req.explain;
+
+    // The schema is the browser's to send: it is DuckDB's own catalog over the
+    // mounted views. The server keeps no second description of it, so an ask
+    // that arrives without one is refused rather than answered against a guess.
     let schema_context = match &req.schema {
         Some(s) if !s.is_empty() => s.clone(),
+        _ if is_explain => String::new(),
         _ => {
-            let job = match state.db.get_job(id.as_str()).await {
-                Some(j) => j,
-                None => {
-                    return (
-                        StatusCode::NOT_FOUND,
-                        Json(crate::error::error_body("not_found", "Job not found")),
-                    )
-                        .into_response();
-                }
-            };
-            build_fallback_schema(&job)
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(crate::error::error_body(
+                    "schema_required",
+                    "No DuckDB schema was sent. The client reads it from its own DuckDB catalog and must send it with the question.",
+                )),
+            )
+                .into_response();
         }
     };
-
-    let is_explain = req.explain;
 
     let conversation_id = match req.conversation_id {
         Some(cid) => cid,
@@ -290,63 +291,6 @@ fn build_explain_prompt() -> String {
      Be specific — reference actual values from the results.\n\
      Do NOT return JSON. Do NOT repeat the SQL. Plain markdown only."
         .to_string()
-}
-
-/// Build a schema description as a fallback when the frontend hasn't (yet)
-/// sent the live DuckDB-WASM schema, from `job.manifest` (the GraphAr types +
-/// edges the executed pipeline wrote).
-fn build_fallback_schema(job: &crate::jobs::models::Job) -> String {
-    use std::fmt::Write;
-
-    let Some(manifest) = &job.manifest else {
-        return "-- No schema available yet. The pipeline produced no manifest.\n".to_string();
-    };
-    if manifest.vertices.is_empty() {
-        return "-- No schema available yet. The pipeline produced no manifest.\n".to_string();
-    }
-
-    let mut out = String::new();
-    for t in &manifest.vertices {
-        let _ = writeln!(
-            out,
-            "CREATE TABLE \"{}\" (\n  \"_id\" UBIGINT,\n  \"subject\" VARCHAR,",
-            t.vertex_type,
-        );
-        for (i, c) in t.columns.iter().enumerate() {
-            let comma = if i + 1 < t.columns.len() { "," } else { "" };
-            let _ = writeln!(
-                out,
-                "  \"{}\" {}{}",
-                c.name,
-                sql_type_for(&c.data_type),
-                comma
-            );
-        }
-        let _ = writeln!(out, "); -- rows: {}\n", t.count.unwrap_or(0));
-    }
-    for e in &manifest.edges {
-        let _ = writeln!(
-            out,
-            "CREATE TABLE \"{src}_{name}_{dst}\" (\n  \"source\" UBIGINT,\n  \"target\" UBIGINT\n); -- {src} --[{name}]--> {dst} ({count} edges)\n",
-            src = e.src_type,
-            name = e.edge_type,
-            dst = e.dst_type,
-            count = e.count.unwrap_or(0),
-        );
-    }
-    out
-}
-
-/// Map a logical column datatype (as recorded in `ColumnStat.datatype`) to
-/// the DuckDB SQL type the LLM should expect when filtering.
-fn sql_type_for(datatype: &str) -> &'static str {
-    match datatype {
-        "int64" => "BIGINT",
-        "double" => "DOUBLE",
-        "boolean" => "BOOLEAN",
-        "date" => "DATE",
-        _ => "VARCHAR",
-    }
 }
 
 /// Build LLM message history from conversation messages.

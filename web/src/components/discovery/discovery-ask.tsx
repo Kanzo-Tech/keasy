@@ -19,6 +19,7 @@ import { api, ApiError } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
 import { generateSuggestions } from "@/lib/schema-suggestions";
+import { describeDataSpace } from "@/lib/data-space";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupTextarea } from "@/components/ui/input-group";
@@ -144,12 +145,11 @@ function AssistantExtra({ msg, onShowOnGraph }: { msg: AskMessage; onShowOnGraph
 
 interface DiscoveryAskProps {
   jobId: string;
-  schema: string;
   graphSchema: import("@/lib/graph-schema").GraphSchema;
   onShowOnGraph?: (sql: string) => void;
 }
 
-export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema, onShowOnGraph }: DiscoveryAskProps) {
+export function DiscoveryAsk({ jobId, graphSchema, onShowOnGraph }: DiscoveryAskProps) {
   const coordinator = useCoordinator();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -166,6 +166,19 @@ export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema, onShowOnG
   const aiConfigured = connectedProviders.length > 0;
   const suggestions = useMemo(() => generateSuggestions(graphSchema), [graphSchema]);
 
+  // The schema the assistant reasons over: DuckDB's own catalog, read back from
+  // the views the data space mounted. The server holds no copy and rejects an
+  // ask that arrives without it.
+  const [duckSchema, setDuckSchema] = useState<string | null>(null);
+  useEffect(() => {
+    if (!coordinator) return;
+    let cancelled = false;
+    describeDataSpace((sql) => coordinator.query(sql, { type: "json" }), graphSchema.edges)
+      .then((ddl) => { if (!cancelled) setDuckSchema(ddl); })
+      .catch((err) => { console.error("Failed to read the DuckDB schema", err); });
+    return () => { cancelled = true; };
+  }, [coordinator, graphSchema]);
+
   useEffect(() => {
     if (connectedProviders.length > 0 && !selectedProvider) setSelectedProvider(connectedProviders[0].id);
   }, [connectedProviders, selectedProvider]);
@@ -176,7 +189,7 @@ export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema, onShowOnG
   }, [messages]);
 
   async function handleSend(q: string) {
-    if (!q.trim() || loading) return;
+    if (!q.trim() || loading || !duckSchema) return;
     setLoading(true);
     setInput("");
 
@@ -299,15 +312,15 @@ export function DiscoveryAsk({ jobId, schema: duckSchema, graphSchema, onShowOnG
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(input); } }}
-            placeholder="Ask about your data..."
-            disabled={loading}
+            placeholder={duckSchema ? "Ask about your data..." : "Reading the schema..."}
+            disabled={loading || !duckSchema}
             rows={1}
           />
           <InputGroupAddon align="block-end">
             <Button
               size="icon"
               className="h-7 w-7 rounded-md"
-              disabled={!input.trim() || loading}
+              disabled={!input.trim() || loading || !duckSchema}
               onClick={() => handleSend(input)}
             >
               <ArrowUp size={14} />

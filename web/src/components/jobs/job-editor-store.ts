@@ -1,82 +1,66 @@
 /**
- * Job Editor Zustand store — replaces 8 useState in job-editor.tsx.
- * Manages wizard step, form inputs, validation, and creation mode.
+ * The job studio's draft — one program, its name, and the three settings that
+ * are not in it.
+ *
+ * `step` is a page index now rather than a wizard cursor: `Steps` owns the
+ * navigation and every page is reachable, so the compound `goToConfig` /
+ * `goToReview` / `goBack` transitions that encoded a one-way walk are gone. So is
+ * `validating`: nothing ever set it. The editor's diagnostics come from the
+ * compiler as you type and gate Create directly.
  */
 
 import { create } from "zustand";
-import type { RunMode, CreationMode } from "@/lib/types";
+import type { CreationMode, RunMode } from "@/lib/types";
 
 interface JobEditorState {
-  // Wizard
-  step: number;
+  /** `null` until the member has chosen how to write the program. */
   creationMode: CreationMode | null;
+  /** 0 Editor · 1 Configure · 2 Summary. */
+  step: number;
 
-  // Form inputs
   script: string;
   name: string;
   mode: RunMode;
   dcatEnabled: boolean;
-  // The connection the member picks as the output destination (job config).
+  /** The connection the member picks as the output destination. */
   sinkConnectionId: string | null;
 
-  // Validation — the editor's browser LSP validates inline; the wizard only
-  // tracks the transient spinner while advancing to review.
-  validating: boolean;
-
-  // Actions
-  setStep: (step: number) => void;
   setCreationMode: (mode: CreationMode | null) => void;
+  setStep: (step: number) => void;
   setScript: (script: string) => void;
   setName: (name: string) => void;
   setMode: (mode: RunMode) => void;
   setDcatEnabled: (enabled: boolean) => void;
   setSinkConnectionId: (id: string | null) => void;
-  setValidating: (validating: boolean) => void;
 
-  // Compound actions
-  selectMode: (mode: CreationMode) => void;
-  goToScript: () => void;
-  goToConfig: () => void;
-  goToReview: () => void;
-  goBack: () => void;
   completeAssistant: (generatedScript: string) => void;
   restoreDraft: (script: string, name: string, mode: RunMode) => void;
   reset: () => void;
 }
 
-export const useJobEditorStore = create<JobEditorState>((set) => ({
-  step: 0,
+const EMPTY = {
   creationMode: null,
+  step: 0,
   script: "",
   name: "",
-  mode: "integrated",
+  mode: "integrated" as RunMode,
   dcatEnabled: false,
   sinkConnectionId: null,
-  validating: false,
+};
 
-  setStep: (step) => set({ step }),
+export const useJobEditorStore = create<JobEditorState>((set) => ({
+  ...EMPTY,
+
   setCreationMode: (creationMode) => set({ creationMode }),
+  setStep: (step) => set({ step }),
   setScript: (script) => set({ script }),
   setName: (name) => set({ name }),
   setMode: (mode) => set({ mode }),
   setDcatEnabled: (dcatEnabled) => set({ dcatEnabled }),
   setSinkConnectionId: (sinkConnectionId) => set({ sinkConnectionId }),
-  setValidating: (validating) => set({ validating }),
 
-  selectMode: (mode) => set({ creationMode: mode, step: 1 }),
-  goToScript: () => set({ step: 1 }),
-  goToConfig: () => set({ step: 2 }),
-  goToReview: () => set({ step: 3 }),
-  goBack: () => set((s) => {
-    if (s.step === 1) return { step: 0, creationMode: null };
-    if (s.step === 2) return { step: 1 };
-    if (s.step === 3) return { step: 2 };
-    return {};
-  }),
-  completeAssistant: (generatedScript) => set({ script: generatedScript, creationMode: "studio" }),
-  restoreDraft: (script, name, mode) => set({ script, name, mode, creationMode: "studio", step: 1 }),
-  reset: () => set({
-    step: 0, creationMode: null, script: "", name: "",
-    mode: "integrated", dcatEnabled: false, sinkConnectionId: null, validating: false,
-  }),
+  completeAssistant: (script) => set({ script, creationMode: "studio", step: 0 }),
+  restoreDraft: (script, name, mode) =>
+    set({ script, name, mode, creationMode: "studio", step: 0 }),
+  reset: () => set(EMPTY),
 }));

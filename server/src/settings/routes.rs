@@ -11,7 +11,7 @@ use crate::connections::models::{
     ConnectionKind, CreateConnectionRequest, Direction, LocationType, UpdateConnectionRequest,
 };
 use crate::error::{data_response, error_body};
-use crate::middleware::tenant::{IsMember, IsOwner, Require};
+use crate::middleware::tenant::{IsDataPlane, IsOwner, IsWorkspaceUser, Require};
 use crate::settings::ai::{AiSettings, AiSettingsPayload};
 use crate::settings::org::OrgSettings;
 use crate::settings::preferences::Preferences;
@@ -26,13 +26,18 @@ pub async fn get_schema() -> impl IntoResponse {
     data_response(PROVIDER_REGISTRY)
 }
 
+// The DCAT publisher block behind the workspace catalog. No page reads it today
+// — the Identity page writes `/v1/org/identity` and the catalog is published
+// from that — but it is catalog metadata and its own PUT is already the owner's,
+// so the read is the owner's too rather than the odd half of a pair that
+// straddles both planes.
 #[utoipa::path(get, path = "/v1/settings/organization", tag = "Settings",
     responses(
         (status = 200, description = "Organization settings", body = OrgSettings),
         (status = 204, description = "No settings configured"),
     )
 )]
-pub async fn get_org_settings(_ctx: Require<IsMember>, State(state): State<AppState>) -> Response {
+pub async fn get_org_settings(_ctx: Require<IsOwner>, State(state): State<AppState>) -> Response {
     match state.db.get_org_settings().await {
         Some(settings) => data_response(settings).into_response(),
         None => StatusCode::NO_CONTENT.into_response(),
@@ -62,11 +67,15 @@ pub async fn save_org_settings(
     data_response(payload).into_response()
 }
 
+// Preferences are the chrome both planes look at — accent, fonts, sizes. The
+// Settings → Preferences page sits outside the member-only settings group in the
+// web for exactly that reason, so neither plane owns it.
+
 #[utoipa::path(get, path = "/v1/settings/preferences", tag = "Settings",
     responses((status = 200, description = "UI preferences", body = Preferences))
 )]
 pub async fn get_preferences(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsWorkspaceUser>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     data_response(state.db.get_preferences().await)
@@ -80,7 +89,7 @@ pub async fn get_preferences(
     )
 )]
 pub async fn save_preferences(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsWorkspaceUser>,
     State(state): State<AppState>,
     Json(payload): Json<Preferences>,
 ) -> Response {
@@ -106,11 +115,18 @@ pub async fn save_preferences(
     data_response(payload).into_response()
 }
 
+// ── AI providers (data plane) ─────────────────────────────────────────────
+//
+// An LLM key exists here to serve the assistant and the Discovery chat, which
+// are the member's surfaces over the member's own output. Settings → AI is a
+// member-only page for that reason, and the owner has nothing to point a
+// provider at.
+
 #[utoipa::path(get, path = "/v1/settings/ai/providers", tag = "Settings",
     responses((status = 200, description = "List of AI providers", body = Vec<AiSettingsPayload>))
 )]
 pub async fn list_ai_providers(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     let providers = state.db.list_ai_providers().await;
@@ -127,7 +143,7 @@ pub async fn list_ai_providers(
     )
 )]
 pub async fn save_ai_provider(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(provider_id): Path<String>,
     Json(payload): Json<AiSettingsPayload>,
@@ -170,7 +186,7 @@ pub async fn save_ai_provider(
     )
 )]
 pub async fn delete_ai_provider(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(provider_id): Path<String>,
 ) -> Response {

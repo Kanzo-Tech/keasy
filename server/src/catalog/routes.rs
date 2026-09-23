@@ -9,7 +9,7 @@ use serde::Serialize;
 use super::view::CatalogDataset;
 use crate::AppState;
 use crate::error::error_body;
-use crate::middleware::tenant::{IsMember, Require};
+use crate::middleware::tenant::{IsOwner, Require};
 
 #[derive(Serialize, utoipa::ToSchema)]
 pub struct DatasetsResponse {
@@ -24,11 +24,15 @@ pub struct DatasetsResponse {
     )
 )]
 /// List the workspace catalog: every registered dataset (a completed job's
-/// output) with its types, columns and row counts. Governance metadata — open to
-/// every member (the IDS/Solid model: members discover the space at the metadata
-/// level, the bytes stay producer-scoped).
+/// output) with its types, columns and row counts.
+///
+/// Governance metadata, and therefore the owner's: Data Catalog is a page on the
+/// owner's side of the app (`/datasets`), and it is the index over what the
+/// whole workspace produced rather than over what the caller produced. The
+/// member reaches their own output through the job that made it, which is the
+/// data plane and carries the bytes; this carries none.
 pub async fn list_catalog_datasets(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsOwner>,
     State(state): State<AppState>,
 ) -> Response {
     let Some(catalog) = state.catalog.clone() else {

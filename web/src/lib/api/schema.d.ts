@@ -103,9 +103,12 @@ export interface paths {
         };
         /**
          * List the workspace catalog: every registered dataset (a completed job's
-         *     output) with its types, columns and row counts. Governance metadata — open to
-         *     every member (the IDS/Solid model: members discover the space at the metadata
-         *     level, the bytes stay producer-scoped).
+         *     output) with its types, columns and row counts.
+         * @description Governance metadata, and therefore the owner's: Data Catalog is a page on the
+         *     owner's side of the app (`/datasets`), and it is the index over what the
+         *     whole workspace produced rather than over what the caller produced. The
+         *     member reaches their own output through the job that made it, which is the
+         *     data plane and carries the bytes; this carries none.
          */
         get: operations["list_catalog_datasets"];
         put?: never;

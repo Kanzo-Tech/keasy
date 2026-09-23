@@ -1,7 +1,12 @@
 //! Workspace management endpoints.
-//! Member/invite management and identity writes require `Require<IsOwner>`;
-//! identity read uses `Require<IsMember>` (any workspace user).
-//! These routes live inside `api_routes` (session + tenant context required).
+//!
+//! Identity is the owner's to edit (`Require<IsOwner>`) and both planes' to read
+//! (`Require<IsWorkspaceUser>`): the owner fills it in on the Identity page, and
+//! the member's job studio reads it to know whether this workspace can publish
+//! DCAT at all. A read here is the workspace's own public legal identity, which
+//! is the one piece of the control plane the data plane genuinely depends on.
+//!
+//! These routes live inside `api_routes` (bearer token + tenant context required).
 
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use regex::Regex;
@@ -10,7 +15,7 @@ use std::sync::LazyLock;
 
 use crate::AppState;
 use crate::error::{data_response, error_body};
-use crate::middleware::tenant::{IsMember, IsOwner, RbacError, Require};
+use crate::middleware::tenant::{IsOwner, IsWorkspaceUser, RbacError, Require};
 
 static SUBDIVISION_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[A-Z]{2}-[A-Z0-9]{1,3}$").unwrap());
@@ -45,7 +50,7 @@ pub struct UpdateOrgIdentityPayload {
     )
 )]
 pub async fn get_org_identity(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsWorkspaceUser>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     let identity = state.db.get_workspace_identity().await.unwrap_or_default();

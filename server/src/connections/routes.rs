@@ -11,7 +11,7 @@ use crate::connections::models::{
     UpdateConnectionRequest, UploadFileRequest,
 };
 use crate::error::data_response;
-use crate::middleware::tenant::{IsMember, Require, TenantRole};
+use crate::middleware::tenant::{IsDataPlane, Require, TenantRole};
 
 use super::errors::ConnectionError;
 
@@ -80,7 +80,7 @@ pub struct SchemaQuery {
     responses((status = 200, description = "List of connections", body = Vec<Connection>))
 )]
 pub async fn list_connections(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Query(query): Query<ListConnectionsQuery>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -99,7 +99,7 @@ pub async fn list_connections(
     )
 )]
 pub async fn create_connection(
-    ctx: Require<IsMember>,
+    ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Json(req): Json<CreateConnectionRequest>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -138,7 +138,7 @@ pub async fn create_connection(
     )
 )]
 pub async fn get_connection(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -158,7 +158,7 @@ pub async fn get_connection(
     )
 )]
 pub async fn update_connection(
-    ctx: Require<IsMember>,
+    ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<UpdateConnectionRequest>,
@@ -192,7 +192,7 @@ pub async fn update_connection(
     )
 )]
 pub async fn delete_connection(
-    ctx: Require<IsMember>,
+    ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -225,7 +225,7 @@ pub async fn delete_connection(
     )
 )]
 pub async fn list_connection_files(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -247,7 +247,7 @@ pub async fn list_connection_files(
     )
 )]
 pub async fn upload_file(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<UploadFileRequest>,
@@ -274,7 +274,7 @@ pub async fn upload_file(
     )
 )]
 pub async fn get_file_schema(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Query(query): Query<SchemaQuery>,

@@ -8,15 +8,23 @@ use crate::cloud::models::{
     CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest,
 };
 use crate::error::data_response;
-use crate::middleware::tenant::{IsMember, Require};
+use crate::middleware::tenant::{IsDataPlane, IsWorkspaceUser, Require};
 
 use super::errors::CloudAccountError;
 
+// The one cloud-accounts call that is not the data plane's alone.
+//
+// A cloud account is a member's: they add it, edit it and delete it from
+// Settings → Cloud Accounts, which is a member-only page. But the owner's
+// Catalog Storage page has to *name* one to say where the catalog is published,
+// and it names it by picking from this list — so the owner reads it and does
+// nothing else with it. The summary is a name and an id; the credential lives
+// behind the encrypted secret and is not in this response.
 #[utoipa::path(get, path = "/v1/cloud-accounts", tag = "Cloud Accounts",
     responses((status = 200, description = "List of cloud accounts", body = Vec<CloudAccountSummary>))
 )]
 pub async fn list_accounts(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsWorkspaceUser>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
     Ok(data_response(state.db.list_cloud_accounts().await))
@@ -30,7 +38,7 @@ pub async fn list_accounts(
     )
 )]
 pub async fn create_account(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Json(payload): Json<CreateCloudAccountRequest>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
@@ -48,7 +56,7 @@ pub async fn create_account(
     )
 )]
 pub async fn get_account(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
@@ -67,7 +75,7 @@ pub async fn get_account(
     )
 )]
 pub async fn update_account(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateCloudAccountRequest>,
@@ -83,7 +91,7 @@ pub async fn update_account(
     responses((status = 204, description = "Cloud account deleted"))
 )]
 pub async fn delete_account(
-    _ctx: Require<IsMember>,
+    _ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, CloudAccountError> {

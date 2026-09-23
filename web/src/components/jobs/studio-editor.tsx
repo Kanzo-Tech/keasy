@@ -24,17 +24,6 @@ import type { Connection } from "@/lib/types";
 /** The chrome a floating cluster wears — the same utilities the canvas controls use. */
 const FLOATING = "rounded-lg border bg-card shadow-sm";
 
-/** The empty buffer's cue, in the surface language `0.3.0-alpha.5` actually
- *  speaks: a shape binding, a source binding, and a mapping over it. Prefixes
- *  and CURIEs are gone — the compiler rejects `prefix ex: <…>` outright now and
- *  says so, which is why this string is not the one that sat here. */
-const PLACEHOLDER = `type { Person } := io.shex("@vocab/person.shex")
-
-User := io.csv("@connection/users.csv")
-
-People : Person from User
-    @subject = "https://example.org/user/{User.id}"
-    name     = User.name`;
 
 /**
  * The program, and the connections it can reference.
@@ -163,7 +152,6 @@ export function StudioEditor({
         onView={(v) => {
           view.current = v;
         }}
-        placeholder={PLACEHOLDER}
         value={program}
       />
 

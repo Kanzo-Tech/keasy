@@ -21,11 +21,19 @@ idp = {
   issuer            = "http://localhost:5556/dex"
 }
 
-# One dev workspace; the owner email matches the Dex static user.
+# One dev workspace, two people, because the planes are disjoint: an owner administers
+# members, identity and the catalog and has NO data plane; a member runs jobs, holds the
+# connections and opens Discovery, and administers nothing. A single account cannot stand
+# in for both — `workspaceRole()` returns the first role it finds and each plane's layout
+# redirects the other one away.
+#
+# `dev@keasy.local` is the member on purpose: it is the account the README documents, and
+# the data plane is what one opens keasy to do.
 tenants = {
   dev = {
     display_name  = "Dev Workspace"
-    owners        = ["dev@keasy.local"]
+    owners        = ["owner@keasy.local"]
+    members       = ["dev@keasy.local"]
     client_secret = "keasy-dev-secret" # fixed so the compose server can use it directly
   }
 }

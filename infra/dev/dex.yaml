@@ -26,8 +26,18 @@ staticClients:
 
 enablePasswordDB: true
 staticPasswords:
-  # Login: dev@keasy.local / password  (bcrypt hash of "password")
+  # Two accounts because the product's two planes are DISJOINT: an owner administers
+  # people and metadata and has no data plane, a member does the data work and cannot
+  # administer. One account cannot exercise both — `workspaceRole()` answers with the
+  # first role it finds, and each plane's layout sends the other role away.
+  #
+  # Login: dev@keasy.local / password  (member — jobs, connections, discovery)
   - email: "dev@keasy.local"
     hash: "$2a$10$ztkLjrGB4d7QA2ImOClHFOWph4LU9JDu5Ti2uCDag7cCbZtxHK1ZC"
     username: "dev"
     userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
+  # Login: owner@keasy.local / password  (owner — members, identity, catalog)
+  - email: "owner@keasy.local"
+    hash: "$2a$10$XYthTl0oDVCNUqiuKeP/1.aeJUN8/dhzFwfRh8tFeBk0vruo5nGgm"
+    username: "owner"
+    userID: "6b0c1f2e-9a4d-4c7b-8f31-2d5a7e0b93c4"

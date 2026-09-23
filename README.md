@@ -20,12 +20,20 @@ Open [http://localhost:3000](http://localhost:3000) — you'll be redirected to 
 
 ## Demo Credentials
 
-The Keycloak realm import ships two demo users:
+Two accounts, because the two planes are disjoint: an owner administers members,
+identity and the catalog and has no data plane; a member runs jobs, holds the
+connections and opens Discovery, and administers nothing. Neither can do the
+other's half, so testing both means logging in twice.
 
-| Email | Password | Role |
-|-------|----------|------|
-| `owner@keasy.dev` | `owner` | Owner |
-| `member@keasy.dev` | `member` | Member |
+| Email | Password | Role | What it reaches |
+|-------|----------|------|-----------------|
+| `dev@keasy.local` | `password` | Member | Jobs, connections, Discovery, AI |
+| `owner@keasy.local` | `password` | Owner | Members, identity, catalog |
+
+They are declared twice by design: as Dex accounts (`infra/dev/dex.yaml`, which
+is what you type a password at) and as Keycloak users (`infra/terraform/realm/
+dev.tfvars`, which is what carries the role). Keycloak links the two by email on
+first login — the pre-declared user has no password of its own.
 
 ## Workspace Bootstrap
 

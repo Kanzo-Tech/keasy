@@ -17,7 +17,7 @@
 const MIGRATIONS: &[&str] = &[
     // ── v1 — baseline ──────────────────────────────────────────────────────
     // Workspace membership and roles are Keycloak-native (client roles +
-    // `keasy:role` claim) — there is no local members table. Workspace identity
+    // `resource_access` claim) — there is no local members table. Workspace identity
     // lives in `settings`. A single workspace per instance owns all data, so the
     // resource tables carry no organization scoping (W8 flatten).
     "

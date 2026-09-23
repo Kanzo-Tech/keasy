@@ -40,7 +40,13 @@ terraform -chdir=realm apply \
 Users log in through the IdP configured in `realm/` (`var.idp` — Google example in the
 `.tfvars.example`). Keycloak links the IdP login to the pre-declared `keycloak_user` by
 email (`trust_email`); the owner/member role is already assigned, so the token carries
-`keasy:role` from the first login — the tenant server just reads it (no app-side grant).
+`resource_access.<client_id>.roles` from the first login — no app-side grant.
+
+The relying party is the **web** tier (`@kanzo-tech/auth/next`, mounted at `/api/auth`):
+it holds the tenant client's secret and seals the session cookie. The **server** is a
+resource server — it validates the bearer token the web forwards against the realm's JWKS
+and checks `aud` against the realm-wide bearer-only `keasy-api` client, so it needs no
+secret of its own. `/v1` is not routed from the edge; it reaches the API through the web.
 
 ## Status / gates
 - All three modules pass `terraform validate` against the real provider schemas.

@@ -1,11 +1,11 @@
 /**
  * Discovery Store — Zustand, no SQLRooms.
  *
- * Boots DuckDB WASM through Mosaic's wasmConnector, lends the signed URLs to
- * DuckDB's file registry, and opens the corpus. `open` is the single door:
- * it registers the relations the verbs name (`"Person"`, `"Person_knows_Person"`)
- * over the paths the GraphAr manifests already gave it, so keasy mounts no views
- * of its own and the charts, the crossfilter and the verbs read the same names.
+ * Everything about opening the corpus lives in `openJobCorpus`: fossil
+ * enumerates what is addressable, keasy signs that list and lends it to DuckDB's
+ * file registry, and the corpus is reopened with the engine. This component is
+ * what holds the result for the surface — the coordinator the charts bind to,
+ * and the schema the verbs registered.
  */
 
 "use client";
@@ -14,14 +14,10 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import dynamic from "next/dynamic";
 import { create, type StoreApi, useStore as useZustandStore } from "zustand";
 import type { Coordinator } from "@uwdata/mosaic-core";
-import { open, type QueryRow, type SchemaResult, type SqlCorpus } from "@fossil-lang/corpus";
+import type { SchemaResult, SqlCorpus } from "@fossil-lang/corpus";
 
-import { initMosaic, type MosaicInstance } from "@/lib/mosaic";
-import { registerDataSpace } from "@/lib/data-space";
-
-// fossil-graph-wasm, staged into public/ by scripts/copy-fossil-wasm.mjs
-// (predev/prebuild) — Next resolves no `.wasm` asset for us.
-const GRAPH_WASM_URL = "/fossil/fossil_graph_wasm_bg.wasm";
+import type { MosaicInstance } from "@/lib/mosaic";
+import { openJobCorpus } from "@/lib/fossil/open-job-corpus";
 
 // ── State ─────────────────────────────────────────────────────────────────
 
@@ -35,7 +31,7 @@ export interface DiscoveryState {
   corpus: SqlCorpus | null;
   /** What the schema verb answered, read once at boot. */
   schema: SchemaResult | null;
-  /** The GraphAr manifests, kept so a canvas can address a type without refetching. */
+  /** The manifests fossil named, kept so a canvas can address a type without refetching. */
   manifestFiles: Record<string, string>;
 }
 
@@ -58,15 +54,7 @@ const StoreCtx = createContext<StoreApi<DiscoveryState> | null>(null);
 
 // ── Provider ──────────────────────────────────────────────────────────────
 
-function DiscoveryRoom({
-  signedUrls,
-  manifestFiles,
-  children,
-}: {
-  signedUrls: Record<string, string>;
-  manifestFiles: Record<string, string>;
-  children: ReactNode;
-}) {
+function DiscoveryRoom({ jobId, children }: { jobId: string; children: ReactNode }) {
   const [store] = useState(createDiscoveryStore);
 
   const status = useZustandStore(store, (s) => s.status);
@@ -78,27 +66,16 @@ function DiscoveryRoom({
 
     store.setState({ status: "initializing" });
 
-    initMosaic()
-      .then(async ({ coordinator, db, conn }) => {
-        await registerDataSpace(db, conn, signedUrls);
-        const query = async (sql: string): Promise<QueryRow[]> =>
-          (await coordinator.query(sql, { type: "json" })) as QueryRow[];
-        // The base is empty because the addressing then composes dataset-relative
-        // names, which is exactly what `registerDataSpace` signed.
-        const corpus = await open("", {
-          query,
-          manifestFiles,
-          sql: "allowed",
-          wasmUrl: GRAPH_WASM_URL,
-        });
+    openJobCorpus(jobId)
+      .then(async ({ mosaic, corpus, manifestFiles }) => {
         // Also what boots the verb transport, which is what registers the relations
         // every chart and rule in this surface queries by name.
         const schema = await corpus.schema();
         store.setState({
           status: "ready",
-          db,
-          conn,
-          coordinator,
+          db: mosaic.db,
+          conn: mosaic.conn,
+          coordinator: mosaic.coordinator,
           corpus,
           schema,
           manifestFiles,
@@ -110,7 +87,7 @@ function DiscoveryRoom({
           error: err instanceof Error ? err.message : String(err),
         });
       });
-  }, [signedUrls, manifestFiles, store]);
+  }, [jobId, store]);
 
   if (status === "error") {
     const error = store.getState().error;
@@ -135,20 +112,8 @@ const DiscoveryRoomDynamic = dynamic(() => Promise.resolve(DiscoveryRoom), {
   ssr: false,
 });
 
-export function DiscoveryProvider({
-  signedUrls,
-  manifestFiles,
-  children,
-}: {
-  signedUrls: Record<string, string>;
-  manifestFiles: Record<string, string>;
-  children: ReactNode;
-}) {
-  return (
-    <DiscoveryRoomDynamic signedUrls={signedUrls} manifestFiles={manifestFiles}>
-      {children}
-    </DiscoveryRoomDynamic>
-  );
+export function DiscoveryProvider({ jobId, children }: { jobId: string; children: ReactNode }) {
+  return <DiscoveryRoomDynamic jobId={jobId}>{children}</DiscoveryRoomDynamic>;
 }
 
 // ── Hook (used by use-discovery-store.ts) ─────────────────────────────────

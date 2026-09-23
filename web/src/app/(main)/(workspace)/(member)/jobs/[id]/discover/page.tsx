@@ -25,23 +25,8 @@ import { DiscoverySql } from "@/components/discovery/discovery-sql";
 import { RuleBuilder } from "@/components/discovery/rule-builder";
 import { AnalysisPanel } from "@/components/discovery/analysis-panel";
 import { FloatingControls } from "@/components/discovery/floating-controls";
+import { sqlSchemaOf } from "@/lib/graph-schema";
 import { api } from "@/lib/api";
-
-// ── URL resolution ───────────────────────────────────────────────────────
-
-async function resolveSignedUrls(jobId: string): Promise<Record<string, string>> {
-  const res = await fetch(`/v1/jobs/${jobId}/discover/urls`, { credentials: "same-origin" });
-  if (!res.ok) throw new Error(`Failed to resolve discovery URLs (${res.status})`);
-  const { files } = (await res.json()) as { files: Record<string, string> };
-  return files;
-}
-
-async function resolveManifestFiles(jobId: string): Promise<Record<string, string>> {
-  const res = await fetch(`/v1/jobs/${jobId}/discover/manifest`, { credentials: "same-origin" });
-  if (!res.ok) throw new Error(`Failed to resolve GraphAr manifest (${res.status})`);
-  const { manifest_files } = (await res.json()) as { manifest_files: Record<string, string> };
-  return manifest_files;
-}
 
 // ── Page ─────────────────────────────────────────────────────────────────
 
@@ -53,32 +38,16 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
     queryFn: () => api.jobs.get(id),
   });
 
-  const { data: signedUrls, isLoading: urlsLoading, error } = useQuery({
-    queryKey: [...queryKeys.jobs.detail(id), "discover-urls"],
-    queryFn: () => resolveSignedUrls(id),
-    enabled: !!job?.manifest,
-  });
-
-  const { data: manifestFiles, isLoading: manifestLoading, error: manifestError } = useQuery({
-    queryKey: [...queryKeys.jobs.detail(id), "discover-manifest"],
-    queryFn: () => resolveManifestFiles(id),
-    enabled: !!job?.manifest,
-  });
-
-  if (jobLoading || urlsLoading || manifestLoading || !job?.manifest || !signedUrls || !manifestFiles) {
+  if (jobLoading || !job?.manifest) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        {error || manifestError ? (
-          <p className="text-sm text-destructive">{(error ?? manifestError) instanceof Error ? (error ?? manifestError)!.message : "Failed to load"}</p>
-        ) : (
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        )}
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <DiscoveryProvider signedUrls={signedUrls} manifestFiles={manifestFiles}>
+    <DiscoveryProvider jobId={id}>
       <DiscoveryWorkspace jobId={id} />
     </DiscoveryProvider>
   );
@@ -140,7 +109,7 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
       id: "ask",
       icon: MessageCircle,
       label: "Ask AI",
-      content: <DiscoveryAsk jobId={jobId} schema="" graphSchema={kgSchema} />,
+      content: <DiscoveryAsk jobId={jobId} schema={sqlSchemaOf(kgSchema)} graphSchema={kgSchema} />,
     },
     {
       id: "rules",

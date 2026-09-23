@@ -45,8 +45,8 @@ importers:
         specifier: 0.3.0-alpha.5
         version: 0.3.0-alpha.5
       '@fossil-lang/executor':
-        specifier: 0.3.0-alpha.3
-        version: 0.3.0-alpha.3
+        specifier: 0.3.0-alpha.5
+        version: 0.3.0-alpha.5
       '@fossil-lang/introspect':
         specifier: 0.3.0-alpha.5
         version: 0.3.0-alpha.5
@@ -500,8 +500,8 @@ packages:
   '@fossil-lang/corpus@0.3.0-alpha.5':
     resolution: {integrity: sha512-hGeJI2KYjsm+4O7HZEg/IysW/Hl5atrejSExrKeXBf4U5kqGH4kRtKlgwVqqFKjHz9cmb1rwv5IY3iO1t41/FA==}
 
-  '@fossil-lang/executor@0.3.0-alpha.3':
-    resolution: {integrity: sha512-uPwR2Yh09BV4W84/xIgTmd7F+2axTXSZnJBZbgYe2abNoxMQotWtqhOgl3jfY9aScgNxHGTFA8D6JPhWRpiMaw==}
+  '@fossil-lang/executor@0.3.0-alpha.5':
+    resolution: {integrity: sha512-UB7R7rAVembRL3ceP67SVVbJjWPzt4B3O4Eb0huH3yvoKxo1bZ8zmgdPlMy3gHRih3SjukUBp/Fanopu9K41vA==}
 
   '@fossil-lang/introspect@0.3.0-alpha.5':
     resolution: {integrity: sha512-RiuEnLVosUZZhCCp479A4DLusqY9jwr6NFiwzNWiRXj9B2ls5q+CkFtBtF5xFqaolvB5/dMLwCW3ehNxgvXhYA==}
@@ -4456,7 +4456,9 @@ snapshots:
 
   '@fossil-lang/corpus@0.3.0-alpha.5': {}
 
-  '@fossil-lang/executor@0.3.0-alpha.3': {}
+  '@fossil-lang/executor@0.3.0-alpha.5':
+    dependencies:
+      '@fossil-lang/types': 0.3.0-alpha.5
 
   '@fossil-lang/introspect@0.3.0-alpha.5': {}
 

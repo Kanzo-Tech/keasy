@@ -309,26 +309,10 @@ export interface paths {
         /**
          * Browser-driven completion: the client (`@fossil-lang/executor`) ran the
          *     mapping, signed-PUT the output, and reports the outcome here. `Completed`
-         *     stores the executor's `RunStatus` (the discovery + DCAT views read it); the
-         *     server never touches the data — only the metadata.
+         *     stores the run report VERBATIM — keasy neither reads nor re-types it; the
+         *     server never touches the data, only the metadata.
          */
         patch: operations["complete_job"];
-        trace?: never;
-    };
-    "/v1/jobs/{id}/catalog/manifest": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["resolve_catalog_manifest"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/v1/jobs/{id}/conversations": {
@@ -379,22 +363,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/discover/manifest": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["resolve_discover_manifest"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/jobs/{id}/discover/urls": {
         parameters: {
             query?: never;
@@ -402,9 +370,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["resolve_discover_urls"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Sign GET URLs so the browser reads the dataset directly — the reading twin
+         *     of [`resolve_output_urls`], same handler, other verb.
+         * @description **It takes the list; it does not derive one.** It used to walk the run report
+         *     and hand back `manifest.vertices[].file` + `manifest.edges[].by_source`,
+         *     which is the host restating a layout it does not own — and restating it
+         *     wrongly, since those were names the layout pass deletes. What is addressable
+         *     is the corpus reader's answer, so the caller enumerates and keasy signs.
+         */
+        post: operations["resolve_discover_urls"];
         delete?: never;
         options?: never;
         head?: never;
@@ -421,13 +398,37 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Sign PUT URLs so the browser uploads the GraphAr output it just produced
-         *     directly to the member's chosen destination (no data through the server).
-         *     The output lives at `{dest_base}/{job_id}/<key>` where `dest_base` is the
-         *     connection the member picked (`sink_connection_id`), or the substrate
-         *     fallback — the same dest the completion `RunStatus` reports.
+         * Sign PUT URLs so the browser uploads the output it just produced directly to
+         *     the member's chosen destination (no data through the server).
          */
         post: operations["resolve_output_urls"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{id}/relations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * What the corpus reader found: the relations a finished job's output holds,
+         *     their names and the files that carry them, as `@fossil-lang/corpus`
+         *     enumerated them in the browser.
+         * @description It is a second call and not a field of the completion because naming a
+         *     relation is an answer only a reader holding the manifests can give, and the
+         *     run report is not that reader. keasy stores the answer and registers the
+         *     dataset in the DuckLake catalog by reference — one atomic snapshot,
+         *     idempotent, composing nothing: every name and every path in that SQL came
+         *     from this payload.
+         */
+        put: operations["publish_relations"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -708,24 +709,6 @@ export interface components {
             data_type: string;
             name: string;
         };
-        /** @description A property column of a [`VertexStatus`]. */
-        ColumnStatus: {
-            /** @description `GraphAr` data-type spelling (`string`, `int64`, `double`, …). */
-            data_type: string;
-            /** @description Column / predicate local name. */
-            name: string;
-            /**
-             * @description The full RDF predicate IRI this column maps (e.g.
-             *     `https://example.org/name`); `None` when the output has no RDF predicate.
-             */
-            rdf_uri?: string | null;
-            /**
-             * @description The XSD datatype IRI of the literal value (e.g.
-             *     `http://www.w3.org/2001/XMLSchema#string`); `None` when not an RDF
-             *     literal. Part of the output spec the governance layer (DCAT) consumes.
-             */
-            xsd_datatype?: string | null;
-        };
         CompetencyQuestion: {
             id: string;
             question: string;
@@ -735,14 +718,13 @@ export interface components {
          * @description The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
          *     the mapping in the browser (`@fossil-lang/executor`) and uploading the output
          *     by signed PUT, the client reports the run's outcome. `manifest` is the
-         *     executor's `RunStatus` — the SAME type the old subprocess produced — so the
-         *     discovery + DCAT paths consume it unchanged.
+         *     executor's run report, stored verbatim and never read.
          */
         CompleteJobRequest: {
-            catalog_manifest?: null | components["schemas"]["RunStatus"];
             /** @description Failure message (on `Failed`) — classified into a `JobRuntimeError`. */
             error?: string | null;
-            manifest?: null | components["schemas"]["RunStatus"];
+            /** @description The run report for the uploaded output (on `Completed`) — opaque JSON. */
+            manifest?: unknown;
             /** @description The terminal (or `Running`) status the client is transitioning the job to. */
             status: components["schemas"]["JobStatus"];
         };
@@ -809,6 +791,15 @@ export interface components {
         DataResponse_Value: {
             data: unknown;
         };
+        DatasetUrlsRequest: {
+            /**
+             * @description Dataset-relative keys. On the write side they are what the executor
+             *     produced; on the read side they are what the corpus reader enumerated.
+             *     **Either way the caller names them and keasy does not** — the host signs
+             *     the list it is handed.
+             */
+            paths: string[];
+        };
         DatasetsResponse: {
             /** @description Every registered dataset in the workspace catalog. */
             datasets: components["schemas"]["CatalogDataset"][];
@@ -823,24 +814,6 @@ export interface components {
          * @enum {string}
          */
         Direction: "source" | "sink";
-        /** @description One edge type — its CSR/CSC Parquet pair and endpoints. */
-        EdgeStatus: {
-            /** @description CSR-ordered (`by_source`) Parquet, dataset-relative. */
-            by_source: string;
-            /** @description CSC-ordered (`by_target`) Parquet, dataset-relative. */
-            by_target: string;
-            /**
-             * Format: int64
-             * @description Edge count (Parquet footer metadata); `None` if the count query failed.
-             */
-            count?: number | null;
-            /** @description Destination vertex type. */
-            dst_type: string;
-            /** @description The edge type / predicate local name. */
-            edge_type: string;
-            /** @description Source vertex type. */
-            src_type: string;
-        };
         FieldSchema: {
             default_value?: string | null;
             env_var?: string | null;
@@ -872,7 +845,6 @@ export interface components {
             script: string;
         };
         Job: {
-            catalog_manifest?: null | components["schemas"]["RunStatus"];
             completed_at?: string | null;
             connection_ids?: string[];
             created_at: string;
@@ -884,9 +856,24 @@ export interface components {
             created_by?: string;
             error?: null | components["schemas"]["JobRuntimeError"];
             id: string;
-            manifest?: null | components["schemas"]["RunStatus"];
+            /**
+             * @description What the run reported, verbatim and **opaque**: fossil's own run report,
+             *     which IS the manifest the corpus carries. keasy stores it, hands it back
+             *     and never reads a field of it — the last time a host re-typed this
+             *     struct, it ended up asking for `vertex/<Type>.parquet`, a file the
+             *     layout pass deletes. Its presence is the one thing keasy asks of it:
+             *     "this job produced output".
+             */
+            manifest?: unknown;
             mode: components["schemas"]["RunMode"];
             name?: string | null;
+            /**
+             * @description What the corpus holds and what it is called, as the corpus reader
+             *     enumerated it (`@fossil-lang/corpus`). fossil names every relation and
+             *     every file; keasy joins them to the destination it owns, signs them for
+             *     reading and registers them in the catalog by reference.
+             */
+            relations?: components["schemas"]["OutputRelation"][];
             script?: string | null;
             /**
              * @description Connection the member chose as the output destination (where the GraphAr
@@ -915,17 +902,6 @@ export interface components {
         LogoutResponse: {
             end_session_url?: string | null;
         };
-        ManifestResponse: {
-            /**
-             * @description The GraphAr manifest YAMLs, keyed by dataset-relative path
-             *     (`graph.graph.yml`, `vertex/Person.vertex.yml`, …). Fed verbatim into
-             *     `@fossil-lang/corpus`'s `open(base, { manifestFiles })`; keasy
-             *     treats them as opaque blobs — fossil owns the GraphAr layout.
-             */
-            manifest_files: {
-                [key: string]: string;
-            };
-        };
         MeOrg: {
             name: string;
         };
@@ -951,13 +927,19 @@ export interface components {
             publisher_name: string;
             publisher_uri?: string | null;
         };
-        OutputUrlsRequest: {
-            /**
-             * @description Dataset-relative output keys the browser executor produced
-             *     (`vertex/Person.parquet`, `edge/<dir>/by_source.parquet`,
-             *     `graph.graph.yml`, …).
-             */
-            paths: string[];
+        /**
+         * @description One addressable relation of a job's output, named by fossil.
+         *
+         *     `name` is the relation the corpus registers and queries by (`Person`,
+         *     `Person_knows_Person`) — **keasy does not compose it**; it is what the
+         *     corpus reader answered. `files` are the dataset-relative payload files the
+         *     corpus addressing enumerated, and `rows` the count it reported.
+         */
+        OutputRelation: {
+            files?: string[];
+            name: string;
+            /** Format: int64 */
+            rows?: number | null;
         };
         Preferences: {
             accent_color: string;
@@ -973,6 +955,16 @@ export interface components {
             id: string;
             label: string;
         };
+        /**
+         * @description What the corpus reader enumerated for a finished job (PUT
+         *     `/v1/jobs/{id}/relations`). It arrives after completion because naming a
+         *     relation is the corpus's answer, not the report's: only a reader with the
+         *     manifests in hand can say what the dataset is called and which files carry
+         *     it.
+         */
+        PublishRelationsRequest: {
+            relations: components["schemas"]["OutputRelation"][];
+        };
         RenameConversationRequest: {
             title: string;
         };
@@ -983,20 +975,6 @@ export interface components {
         };
         /** @enum {string} */
         RunMode: "integrated" | "scheduled";
-        /** @description The status object `fossil run --output-json` writes to stdout. */
-        RunStatus: {
-            /** @description Destination URL the `GraphAr` dataset was written under (echoes `--dest`). */
-            dest: string;
-            /** @description One entry per emitted edge type (empty until a shape/Phase-B adds edges). */
-            edges: components["schemas"]["EdgeStatus"][];
-            /**
-             * Format: int32
-             * @description Wire-contract version this payload was produced with (see [`WIRE_VERSION`]).
-             */
-            version?: number;
-            /** @description One entry per emitted vertex type. */
-            vertices: components["schemas"]["VertexStatus"][];
-        };
         ServiceStatusResponse: {
             oidc: boolean;
         };
@@ -1081,30 +1059,6 @@ export interface components {
             built_at?: string | null;
             git_sha?: string | null;
             version: string;
-        };
-        /**
-         * @description One vertex type — its dataset-relative Parquet, row count, and property
-         *     columns.
-         */
-        VertexStatus: {
-            /** @description The vertex's property columns. */
-            columns: components["schemas"]["ColumnStatus"][];
-            /**
-             * Format: int64
-             * @description Row count (Parquet footer metadata); `None` if the count query failed.
-             */
-            count?: number | null;
-            /** @description Dataset-relative Parquet path, e.g. `vertex/Person.parquet`. */
-            file: string;
-            /**
-             * @description The full RDF type IRI the mapping declares for this vertex (the shape IRI,
-             *     e.g. `https://example.org/Person`); `None` when the output has no RDF
-             *     type. This is the output *spec* fossil owns — the governance layer (DCAT)
-             *     reads it from the manifest instead of re-deriving it from the program.
-             */
-            rdf_type?: string | null;
-            /** @description The vertex type / `GraphAr` `type` (e.g. `Person`). */
-            type: string;
         };
         WorkspacesResponse: {
             /** @description This instance's slug — the "current" entry in the switcher. */
@@ -1986,36 +1940,6 @@ export interface operations {
             };
         };
     };
-    resolve_catalog_manifest: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description GraphAr manifest YAMLs for the catalog dataset */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ManifestResponse"];
-                };
-            };
-            /** @description Job not found or no catalog */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     list_conversations: {
         parameters: {
             query?: never;
@@ -2148,36 +2072,6 @@ export interface operations {
             };
         };
     };
-    resolve_discover_manifest: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description GraphAr manifest YAMLs, keyed by dataset-relative path */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ManifestResponse"];
-                };
-            };
-            /** @description Job not found or no output */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     resolve_discover_urls: {
         parameters: {
             query?: never;
@@ -2188,9 +2082,13 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DatasetUrlsRequest"];
+            };
+        };
         responses: {
-            /** @description Signed URLs for direct Parquet access */
+            /** @description Signed GET URLs for the requested dataset keys */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2199,7 +2097,14 @@ export interface operations {
                     "application/json": components["schemas"]["ResolveResponse"];
                 };
             };
-            /** @description Job not found or no output */
+            /** @description No data space substrate configured */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Job not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2220,7 +2125,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["OutputUrlsRequest"];
+                "application/json": components["schemas"]["DatasetUrlsRequest"];
             };
         };
         responses: {
@@ -2239,6 +2144,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    publish_relations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishRelationsRequest"];
+            };
+        };
+        responses: {
+            /** @description Relations stored and the dataset registered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
             };
             /** @description Job not found */
             404: {

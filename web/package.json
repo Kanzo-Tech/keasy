@@ -26,7 +26,7 @@
     "@duckdb/duckdb-wasm": "1.33.1-dev57.0",
     "@fossil-lang/codemirror-fossil": "0.3.0-alpha.5",
     "@fossil-lang/corpus": "0.3.0-alpha.5",
-    "@fossil-lang/executor": "0.3.0-alpha.3",
+    "@fossil-lang/executor": "0.3.0-alpha.5",
     "@fossil-lang/introspect": "0.3.0-alpha.5",
     "@fossil-lang/wasm": "0.3.0-alpha.5",
     "@kanzo-tech/graph": "^0.4.0",

@@ -891,7 +891,7 @@
         "tags": [
           "Jobs"
         ],
-        "summary": "Browser-driven completion: the client (`@fossil-lang/executor`) ran the\nmapping, signed-PUT the output, and reports the outcome here. `Completed`\nstores the executor's `RunStatus` (the discovery + DCAT views read it); the\nserver never touches the data — only the metadata.",
+        "summary": "Browser-driven completion: the client (`@fossil-lang/executor`) ran the\nmapping, signed-PUT the output, and reports the outcome here. `Completed`\nstores the run report VERBATIM — keasy neither reads nor re-types it; the\nserver never touches the data, only the metadata.",
         "operationId": "complete_job",
         "parameters": [
           {
@@ -927,40 +927,6 @@
           },
           "404": {
             "description": "Job not found"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/catalog/manifest": {
-      "get": {
-        "tags": [
-          "Catalog"
-        ],
-        "operationId": "resolve_catalog_manifest",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "GraphAr manifest YAMLs for the catalog dataset",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ManifestResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Job not found or no catalog"
           }
         }
       }
@@ -1137,45 +1103,13 @@
         }
       }
     },
-    "/v1/jobs/{id}/discover/manifest": {
-      "get": {
-        "tags": [
-          "Discovery"
-        ],
-        "operationId": "resolve_discover_manifest",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "GraphAr manifest YAMLs, keyed by dataset-relative path",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ManifestResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Job not found or no output"
-          }
-        }
-      }
-    },
     "/v1/jobs/{id}/discover/urls": {
-      "get": {
+      "post": {
         "tags": [
           "Discovery"
         ],
+        "summary": "Sign GET URLs so the browser reads the dataset directly — the reading twin\nof [`resolve_output_urls`], same handler, other verb.",
+        "description": "**It takes the list; it does not derive one.** It used to walk the run report\nand hand back `manifest.vertices[].file` + `manifest.edges[].by_source`,\nwhich is the host restating a layout it does not own — and restating it\nwrongly, since those were names the layout pass deletes. What is addressable\nis the corpus reader's answer, so the caller enumerates and keasy signs.",
         "operationId": "resolve_discover_urls",
         "parameters": [
           {
@@ -1188,9 +1122,19 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatasetUrlsRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
-            "description": "Signed URLs for direct Parquet access",
+            "description": "Signed GET URLs for the requested dataset keys",
             "content": {
               "application/json": {
                 "schema": {
@@ -1199,8 +1143,11 @@
               }
             }
           },
+          "400": {
+            "description": "No data space substrate configured"
+          },
           "404": {
-            "description": "Job not found or no output"
+            "description": "Job not found"
           }
         }
       }
@@ -1210,7 +1157,7 @@
         "tags": [
           "Discovery"
         ],
-        "summary": "Sign PUT URLs so the browser uploads the GraphAr output it just produced\ndirectly to the member's chosen destination (no data through the server).\nThe output lives at `{dest_base}/{job_id}/<key>` where `dest_base` is the\nconnection the member picked (`sink_connection_id`), or the substrate\nfallback — the same dest the completion `RunStatus` reports.",
+        "summary": "Sign PUT URLs so the browser uploads the output it just produced directly to\nthe member's chosen destination (no data through the server).",
         "operationId": "resolve_output_urls",
         "parameters": [
           {
@@ -1227,7 +1174,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OutputUrlsRequest"
+                "$ref": "#/components/schemas/DatasetUrlsRequest"
               }
             }
           },
@@ -1246,6 +1193,52 @@
           },
           "400": {
             "description": "No data space substrate configured"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/relations": {
+      "put": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "What the corpus reader found: the relations a finished job's output holds,\ntheir names and the files that carry them, as `@fossil-lang/corpus`\nenumerated them in the browser.",
+        "description": "It is a second call and not a field of the completion because naming a\nrelation is an answer only a reader holding the manifests can give, and the\nrun report is not that reader. keasy stores the answer and registers the\ndataset in the DuckLake catalog by reference — one atomic snapshot,\nidempotent, composing nothing: every name and every path in that SQL came\nfrom this payload.",
+        "operationId": "publish_relations",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishRelationsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Relations stored and the dataset registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
           },
           "404": {
             "description": "Job not found"
@@ -1962,38 +1955,6 @@
           }
         }
       },
-      "ColumnStatus": {
-        "type": "object",
-        "description": "A property column of a [`VertexStatus`].",
-        "required": [
-          "name",
-          "data_type"
-        ],
-        "properties": {
-          "data_type": {
-            "type": "string",
-            "description": "`GraphAr` data-type spelling (`string`, `int64`, `double`, …)."
-          },
-          "name": {
-            "type": "string",
-            "description": "Column / predicate local name."
-          },
-          "rdf_uri": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The full RDF predicate IRI this column maps (e.g.\n`https://example.org/name`); `None` when the output has no RDF predicate."
-          },
-          "xsd_datatype": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The XSD datatype IRI of the literal value (e.g.\n`http://www.w3.org/2001/XMLSchema#string`); `None` when not an RDF\nliteral. Part of the output spec the governance layer (DCAT) consumes."
-          }
-        }
-      },
       "CompetencyQuestion": {
         "type": "object",
         "required": [
@@ -2015,22 +1976,11 @@
       },
       "CompleteJobRequest": {
         "type": "object",
-        "description": "The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running\nthe mapping in the browser (`@fossil-lang/executor`) and uploading the output\nby signed PUT, the client reports the run's outcome. `manifest` is the\nexecutor's `RunStatus` — the SAME type the old subprocess produced — so the\ndiscovery + DCAT paths consume it unchanged.",
+        "description": "The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running\nthe mapping in the browser (`@fossil-lang/executor`) and uploading the output\nby signed PUT, the client reports the run's outcome. `manifest` is the\nexecutor's run report, stored verbatim and never read.",
         "required": [
           "status"
         ],
         "properties": {
-          "catalog_manifest": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/RunStatus",
-                "description": "The DCAT-AP catalog `RunStatus`, when the client also built the catalog."
-              }
-            ]
-          },
           "error": {
             "type": [
               "string",
@@ -2039,15 +1989,7 @@
             "description": "Failure message (on `Failed`) — classified into a `JobRuntimeError`."
           },
           "manifest": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/RunStatus",
-                "description": "The GraphAr `RunStatus` for the uploaded output (on `Completed`)."
-              }
-            ]
+            "description": "The run report for the uploaded output (on `Completed`) — opaque JSON."
           },
           "status": {
             "$ref": "#/components/schemas/JobStatus",
@@ -2313,6 +2255,21 @@
           "data": {}
         }
       },
+      "DatasetUrlsRequest": {
+        "type": "object",
+        "required": [
+          "paths"
+        ],
+        "properties": {
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Dataset-relative keys. On the write side they are what the executor\nproduced; on the read side they are what the corpus reader enumerated.\n**Either way the caller names them and keasy does not** — the host signs\nthe list it is handed."
+          }
+        }
+      },
       "DatasetsResponse": {
         "type": "object",
         "required": [
@@ -2335,47 +2292,6 @@
           "source",
           "sink"
         ]
-      },
-      "EdgeStatus": {
-        "type": "object",
-        "description": "One edge type — its CSR/CSC Parquet pair and endpoints.",
-        "required": [
-          "edge_type",
-          "src_type",
-          "dst_type",
-          "by_source",
-          "by_target"
-        ],
-        "properties": {
-          "by_source": {
-            "type": "string",
-            "description": "CSR-ordered (`by_source`) Parquet, dataset-relative."
-          },
-          "by_target": {
-            "type": "string",
-            "description": "CSC-ordered (`by_target`) Parquet, dataset-relative."
-          },
-          "count": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64",
-            "description": "Edge count (Parquet footer metadata); `None` if the count query failed."
-          },
-          "dst_type": {
-            "type": "string",
-            "description": "Destination vertex type."
-          },
-          "edge_type": {
-            "type": "string",
-            "description": "The edge type / predicate local name."
-          },
-          "src_type": {
-            "type": "string",
-            "description": "Source vertex type."
-          }
-        }
       },
       "FieldSchema": {
         "type": "object",
@@ -2515,17 +2431,6 @@
           "mode"
         ],
         "properties": {
-          "catalog_manifest": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/RunStatus",
-                "description": "DCAT-AP catalog graph structure (`fossil catalog` subprocess output):\nper-type Parquet + counts, stored in owner cloud. Its `dest` is the\ncatalog base URL. Drives the catalog graph view (DuckDB-WASM reads the\nParquet directly)."
-              }
-            ]
-          },
           "completed_at": {
             "type": [
               "string",
@@ -2559,15 +2464,7 @@
             "type": "string"
           },
           "manifest": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/RunStatus",
-                "description": "GraphAr structure from the fossil subprocess: per-type Parquet + row\ncount + columns, per-edge CSR/CSC pair. Its `dest` IS the dataset base\nURL — fossil's single description of the output, so keasy keeps no\nduplicate `rdf_base`. Column statistics are NOT here — the browser\ncomputes them from the Parquet (DuckDB-WASM)."
-              }
-            ]
+            "description": "What the run reported, verbatim and **opaque**: fossil's own run report,\nwhich IS the manifest the corpus carries. keasy stores it, hands it back\nand never reads a field of it — the last time a host re-typed this\nstruct, it ended up asking for `vertex/<Type>.parquet`, a file the\nlayout pass deletes. Its presence is the one thing keasy asks of it:\n\"this job produced output\"."
           },
           "mode": {
             "$ref": "#/components/schemas/RunMode"
@@ -2577,6 +2474,13 @@
               "string",
               "null"
             ]
+          },
+          "relations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OutputRelation"
+            },
+            "description": "What the corpus holds and what it is called, as the corpus reader\nenumerated it (`@fossil-lang/corpus`). fossil names every relation and\nevery file; keasy joins them to the destination it owns, signs them for\nreading and registers them in the catalog by reference."
           },
           "script": {
             "type": [
@@ -2651,24 +2555,6 @@
               "string",
               "null"
             ]
-          }
-        }
-      },
-      "ManifestResponse": {
-        "type": "object",
-        "required": [
-          "manifest_files"
-        ],
-        "properties": {
-          "manifest_files": {
-            "type": "object",
-            "description": "The GraphAr manifest YAMLs, keyed by dataset-relative path\n(`graph.graph.yml`, `vertex/Person.vertex.yml`, …). Fed verbatim into\n`@fossil-lang/corpus`'s `open(base, { manifestFiles })`; keasy\ntreats them as opaque blobs — fossil owns the GraphAr layout.",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
           }
         }
       },
@@ -2788,18 +2674,28 @@
           }
         }
       },
-      "OutputUrlsRequest": {
+      "OutputRelation": {
         "type": "object",
+        "description": "One addressable relation of a job's output, named by fossil.\n\n`name` is the relation the corpus registers and queries by (`Person`,\n`Person_knows_Person`) — **keasy does not compose it**; it is what the\ncorpus reader answered. `files` are the dataset-relative payload files the\ncorpus addressing enumerated, and `rows` the count it reported.",
         "required": [
-          "paths"
+          "name"
         ],
         "properties": {
-          "paths": {
+          "files": {
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Dataset-relative output keys the browser executor produced\n(`vertex/Person.parquet`, `edge/<dir>/by_source.parquet`,\n`graph.graph.yml`, …)."
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "rows": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
           }
         }
       },
@@ -2863,6 +2759,21 @@
           }
         }
       },
+      "PublishRelationsRequest": {
+        "type": "object",
+        "description": "What the corpus reader enumerated for a finished job (PUT\n`/v1/jobs/{id}/relations`). It arrives after completion because naming a\nrelation is the corpus's answer, not the report's: only a reader with the\nmanifests in hand can say what the dataset is called and which files carry\nit.",
+        "required": [
+          "relations"
+        ],
+        "properties": {
+          "relations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OutputRelation"
+            }
+          }
+        }
+      },
       "RenameConversationRequest": {
         "type": "object",
         "required": [
@@ -2897,41 +2808,6 @@
           "integrated",
           "scheduled"
         ]
-      },
-      "RunStatus": {
-        "type": "object",
-        "description": "The status object `fossil run --output-json` writes to stdout.",
-        "required": [
-          "dest",
-          "vertices",
-          "edges"
-        ],
-        "properties": {
-          "dest": {
-            "type": "string",
-            "description": "Destination URL the `GraphAr` dataset was written under (echoes `--dest`)."
-          },
-          "edges": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EdgeStatus"
-            },
-            "description": "One entry per emitted edge type (empty until a shape/Phase-B adds edges)."
-          },
-          "version": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Wire-contract version this payload was produced with (see [`WIRE_VERSION`]).",
-            "minimum": 0
-          },
-          "vertices": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/VertexStatus"
-            },
-            "description": "One entry per emitted vertex type."
-          }
-        }
       },
       "ServiceStatusResponse": {
         "type": "object",
@@ -3226,47 +3102,6 @@
           },
           "version": {
             "type": "string"
-          }
-        }
-      },
-      "VertexStatus": {
-        "type": "object",
-        "description": "One vertex type — its dataset-relative Parquet, row count, and property\ncolumns.",
-        "required": [
-          "type",
-          "file",
-          "columns"
-        ],
-        "properties": {
-          "columns": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ColumnStatus"
-            },
-            "description": "The vertex's property columns."
-          },
-          "count": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64",
-            "description": "Row count (Parquet footer metadata); `None` if the count query failed."
-          },
-          "file": {
-            "type": "string",
-            "description": "Dataset-relative Parquet path, e.g. `vertex/Person.parquet`."
-          },
-          "rdf_type": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The full RDF type IRI the mapping declares for this vertex (the shape IRI,\ne.g. `https://example.org/Person`); `None` when the output has no RDF\ntype. This is the output *spec* fossil owns — the governance layer (DCAT)\nreads it from the manifest instead of re-deriving it from the program."
-          },
-          "type": {
-            "type": "string",
-            "description": "The vertex type / `GraphAr` `type` (e.g. `Person`)."
           }
         }
       },

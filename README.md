@@ -122,24 +122,24 @@ keasy/
 
 ## OpenAPI Pipeline
 
-The server is the single source of truth for the API schema. It exposes `GET /openapi.json` at runtime, generated from `#[utoipa]` annotations in Rust. The frontend consumes this to produce typed client code.
+The server is the single source of truth for the API schema, generated from `#[utoipa]` annotations in Rust. The frontend consumes this to produce typed client code.
 
 ```
 server (utoipa annotations)
-  → GET /openapi.json          # served by the running server
-  → openapi.json               # committed at repo root
-  → npm run openapi            # generates web/src/lib/api/schema.d.ts
-  → openapi-fetch client       # fully typed API calls in the frontend
+  → cargo run --bin openapi     # writes it; no server needed
+  → openapi.json                # committed at repo root
+  → npm run openapi             # generates web/src/lib/api/schema.d.ts
+  → openapi-fetch client        # fully typed API calls in the frontend
 ```
 
 To regenerate after changing server endpoints:
 
 ```bash
-# 1. With the server running (make dev):
-curl -s http://localhost:3000/v1/openapi.json | jq . > openapi.json
+# 1. Write the document (the running server also serves it at GET /v1/openapi.json):
+cd server && cargo run --quiet --bin openapi
 
 # 2. Regenerate TypeScript types:
-cd web && npm run openapi
+cd web && pnpm run openapi
 ```
 
 ## Docker Compose Layering

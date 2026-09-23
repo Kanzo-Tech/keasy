@@ -1,8 +1,6 @@
 use rusqlite::types::{FromSql, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use serde::{Deserialize, Serialize};
 
-use fossil_run_status::RunStatus;
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum RunMode {
@@ -99,19 +97,36 @@ pub struct Job {
     pub sink_connection_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,
-    /// GraphAr structure from the fossil subprocess: per-type Parquet + row
-    /// count + columns, per-edge CSR/CSC pair. Its `dest` IS the dataset base
-    /// URL — fossil's single description of the output, so keasy keeps no
-    /// duplicate `rdf_base`. Column statistics are NOT here — the browser
-    /// computes them from the Parquet (DuckDB-WASM).
+    /// What the run reported, verbatim and **opaque**: fossil's own run report,
+    /// which IS the manifest the corpus carries. keasy stores it, hands it back
+    /// and never reads a field of it — the last time a host re-typed this
+    /// struct, it ended up asking for `vertex/<Type>.parquet`, a file the
+    /// layout pass deletes. Its presence is the one thing keasy asks of it:
+    /// "this job produced output".
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub manifest: Option<RunStatus>,
-    /// DCAT-AP catalog graph structure (`fossil catalog` subprocess output):
-    /// per-type Parquet + counts, stored in owner cloud. Its `dest` is the
-    /// catalog base URL. Drives the catalog graph view (DuckDB-WASM reads the
-    /// Parquet directly).
+    #[schema(value_type = Option<Value>)]
+    pub manifest: Option<serde_json::Value>,
+    /// What the corpus holds and what it is called, as the corpus reader
+    /// enumerated it (`@fossil-lang/corpus`). fossil names every relation and
+    /// every file; keasy joins them to the destination it owns, signs them for
+    /// reading and registers them in the catalog by reference.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub relations: Vec<OutputRelation>,
+}
+
+/// One addressable relation of a job's output, named by fossil.
+///
+/// `name` is the relation the corpus registers and queries by (`Person`,
+/// `Person_knows_Person`) — **keasy does not compose it**; it is what the
+/// corpus reader answered. `files` are the dataset-relative payload files the
+/// corpus addressing enumerated, and `rows` the count it reported.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
+pub struct OutputRelation {
+    pub name: String,
+    #[serde(default)]
+    pub files: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub catalog_manifest: Option<RunStatus>,
+    pub rows: Option<i64>,
 }
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -138,21 +153,28 @@ pub struct UpdateJobRequest {
 /// The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
 /// the mapping in the browser (`@fossil-lang/executor`) and uploading the output
 /// by signed PUT, the client reports the run's outcome. `manifest` is the
-/// executor's `RunStatus` — the SAME type the old subprocess produced — so the
-/// discovery + DCAT paths consume it unchanged.
+/// executor's run report, stored verbatim and never read.
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CompleteJobRequest {
     /// The terminal (or `Running`) status the client is transitioning the job to.
     pub status: JobStatus,
-    /// The GraphAr `RunStatus` for the uploaded output (on `Completed`).
+    /// The run report for the uploaded output (on `Completed`) — opaque JSON.
     #[serde(default)]
-    pub manifest: Option<RunStatus>,
-    /// The DCAT-AP catalog `RunStatus`, when the client also built the catalog.
-    #[serde(default)]
-    pub catalog_manifest: Option<RunStatus>,
+    #[schema(value_type = Option<Value>)]
+    pub manifest: Option<serde_json::Value>,
     /// Failure message (on `Failed`) — classified into a `JobRuntimeError`.
     #[serde(default)]
     pub error: Option<String>,
+}
+
+/// What the corpus reader enumerated for a finished job (PUT
+/// `/v1/jobs/{id}/relations`). It arrives after completion because naming a
+/// relation is the corpus's answer, not the report's: only a reader with the
+/// manifests in hand can say what the dataset is called and which files carry
+/// it.
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct PublishRelationsRequest {
+    pub relations: Vec<OutputRelation>,
 }
 
 pub fn now_iso8601() -> String {

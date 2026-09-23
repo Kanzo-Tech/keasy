@@ -8,7 +8,8 @@ use axum::{
 use crate::AppState;
 use crate::error::data_response;
 use crate::jobs::models::{
-    CompleteJobRequest, CreateJobRequest, Job, JobStatus, RunMode, UpdateJobRequest, now_iso8601,
+    CompleteJobRequest, CreateJobRequest, Job, JobStatus, PublishRelationsRequest, RunMode,
+    UpdateJobRequest, now_iso8601,
 };
 use crate::middleware::tenant::{IsMember, Require};
 
@@ -56,7 +57,7 @@ pub async fn create_job(
             sink_connection_id: payload.sink_connection_id.clone(),
             script: Some(payload.script),
             manifest: None,
-            catalog_manifest: None,
+            relations: Vec::new(),
         };
         state
             .db
@@ -85,7 +86,7 @@ pub async fn create_job(
         sink_connection_id: payload.sink_connection_id.clone(),
         script: Some(payload.script),
         manifest: None,
-        catalog_manifest: None,
+        relations: Vec::new(),
     };
 
     state
@@ -162,8 +163,8 @@ pub async fn update_job(
 )]
 /// Browser-driven completion: the client (`@fossil-lang/executor`) ran the
 /// mapping, signed-PUT the output, and reports the outcome here. `Completed`
-/// stores the executor's `RunStatus` (the discovery + DCAT views read it); the
-/// server never touches the data — only the metadata.
+/// stores the run report VERBATIM — keasy neither reads nor re-types it; the
+/// server never touches the data, only the metadata.
 pub async fn complete_job(
     _ctx: Require<IsMember>,
     State(state): State<AppState>,
@@ -173,32 +174,9 @@ pub async fn complete_job(
     let now = now_iso8601();
     let CompleteJobRequest {
         status,
-        mut manifest,
-        catalog_manifest,
+        manifest,
         error,
     } = payload;
-
-    // The output lives where the signed PUTs wrote it — `{dest_base}/{job_id}`,
-    // where `dest_base` is the connection the member chose as the destination
-    // (`sink_connection_id`), or the workspace substrate as fallback. keasy is
-    // authoritative over the dest, so stamp `manifest.dest` server-side (the same
-    // base `resolve_output_urls` signs) rather than trust the browser. Discovery
-    // reads `manifest.dest` as the dataset base for signed GETs.
-    // Creds the output was signed with — reused to register it in the catalog
-    // (the same account that wrote the Parquet reads its footers). Captured here
-    // because `status`/`manifest` move into the writer closure below.
-    let mut output_creds: Option<std::collections::HashMap<String, String>> = None;
-    if matches!(status, JobStatus::Completed)
-        && let Some(job) = state.db.get_job(&id).await
-        && let (Some(m), Some((base, creds))) =
-            (manifest.as_mut(), state.db.job_output_target(&job).await)
-    {
-        m.dest = format!("{}/{}", base.trim_end_matches('/'), id);
-        output_creds = Some(creds);
-    }
-
-    // Snapshot the stamped manifest for catalog registration before it moves.
-    let to_register = manifest.clone();
 
     let updated = state
         .db
@@ -208,7 +186,6 @@ pub async fn complete_job(
                     job.started_at.get_or_insert_with(|| now.clone());
                     job.completed_at = Some(now);
                     job.manifest = manifest;
-                    job.catalog_manifest = catalog_manifest;
                     job.error = None;
                 }
                 JobStatus::Failed => {
@@ -231,18 +208,72 @@ pub async fn complete_job(
         .await
         .map_err(JobApiError::Internal)?;
 
+    match updated {
+        Some(job) => Ok(data_response(job).into_response()),
+        None => Err(JobApiError::NotFound),
+    }
+}
+
+#[utoipa::path(put, path = "/v1/jobs/{id}/relations", tag = "Jobs",
+    params(("id" = String, Path, description = "Job ID")),
+    request_body = PublishRelationsRequest,
+    responses(
+        (status = 200, description = "Relations stored and the dataset registered", body = Job),
+        (status = 404, description = "Job not found"),
+    )
+)]
+/// What the corpus reader found: the relations a finished job's output holds,
+/// their names and the files that carry them, as `@fossil-lang/corpus`
+/// enumerated them in the browser.
+///
+/// It is a second call and not a field of the completion because naming a
+/// relation is an answer only a reader holding the manifests can give, and the
+/// run report is not that reader. keasy stores the answer and registers the
+/// dataset in the DuckLake catalog by reference — one atomic snapshot,
+/// idempotent, composing nothing: every name and every path in that SQL came
+/// from this payload.
+pub async fn publish_relations(
+    ctx: Require<IsMember>,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(payload): Json<PublishRelationsRequest>,
+) -> Result<impl IntoResponse, JobApiError> {
+    let job = state
+        .db
+        .get_job(id.as_str())
+        .await
+        .ok_or(JobApiError::NotFound)?;
+    if job.created_by != ctx.user_id {
+        return Err(JobApiError::NotFound);
+    }
+
+    let relations = payload.relations;
+    let for_catalog = relations.clone();
+    let updated = state
+        .db
+        .update_job(id.as_str(), move |job| job.relations = relations)
+        .await
+        .map_err(JobApiError::Internal)?;
+
     // Register the output in the DuckLake catalog as one atomic snapshot —
     // FIRE-AND-FORGET. The data is already durable at the sink, so a slow or
-    // failing catalog write must never delay (or fail) job completion. The
-    // detached task does the remote footer reads off the request path; whatever
-    // it misses, the reconciler (§11) picks up on its next pass.
-    if let (Some(catalog), Some(dataset), Some(creds)) =
-        (state.catalog.clone(), to_register, output_creds)
+    // failing catalog write must never delay (or fail) this call. The detached
+    // task does the remote footer reads off the request path; whatever it
+    // misses, the reconciler picks up on its next pass, from the relations this
+    // call just stored.
+    if !for_catalog.is_empty()
+        && let (Some(catalog), Some((base, creds))) = (
+            state.catalog.clone(),
+            state.db.job_output_target(&job).await,
+        )
     {
+        let dest = crate::jobs::dataset_dest(&base, &id);
         let job_id = id.clone();
         tokio::spawn(async move {
-            match tokio::task::spawn_blocking(move || catalog.register(&job_id, &dataset, &creds))
-                .await
+            match tokio::task::spawn_blocking(move || {
+                catalog.register(&job_id, &dest, &for_catalog, &creds)
+            })
+            .await
             {
                 Ok(Ok(())) => {}
                 Ok(Err(e)) => {

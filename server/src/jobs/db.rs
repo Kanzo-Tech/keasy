@@ -3,7 +3,7 @@ use rusqlite::params;
 use crate::db::Database;
 
 use super::errors::JobRuntimeError;
-use super::models::{Job, JobStatus, RunMode};
+use super::models::{Job, JobStatus, OutputRelation, RunMode};
 
 impl Database {
     pub async fn insert_job(&self, job: &Job) -> Result<(), String> {
@@ -22,16 +22,12 @@ impl Database {
             .map(serde_json::to_string)
             .transpose()
             .map_err(|e| format!("failed to serialize manifest: {e}"))?;
-        let catalog_manifest_json = job
-            .catalog_manifest
-            .as_ref()
-            .map(serde_json::to_string)
-            .transpose()
-            .map_err(|e| format!("failed to serialize catalog_manifest: {e}"))?;
+        let relations_json = serde_json::to_string(&job.relations)
+            .map_err(|e| format!("failed to serialize relations: {e}"))?;
 
         let conn = self.write().await;
         conn.execute(
-            "INSERT INTO jobs (id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, sink_connection_id, script, manifest, catalog_manifest)
+            "INSERT INTO jobs (id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, sink_connection_id, script, manifest, relations)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
             params![
                 job.id,
@@ -47,7 +43,7 @@ impl Database {
                 job.sink_connection_id,
                 job.script,
                 manifest_json,
-                catalog_manifest_json,
+                relations_json,
             ],
         )
         .map_err(|e| format!("failed to insert job: {e}"))?;
@@ -58,7 +54,7 @@ impl Database {
     pub async fn get_job(&self, id: &str) -> Option<Job> {
         let (_permit, conn) = self.read().await;
         conn.query_row(
-            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, sink_connection_id, script, manifest, catalog_manifest
+            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, sink_connection_id, script, manifest, relations
              FROM jobs WHERE id = ?1",
             [id],
             |row| Ok(row_to_job(row)),
@@ -91,16 +87,12 @@ impl Database {
             .map(serde_json::to_string)
             .transpose()
             .map_err(|e| format!("failed to serialize manifest: {e}"))?;
-        let catalog_manifest_json = job
-            .catalog_manifest
-            .as_ref()
-            .map(serde_json::to_string)
-            .transpose()
-            .map_err(|e| format!("failed to serialize catalog_manifest: {e}"))?;
+        let relations_json = serde_json::to_string(&job.relations)
+            .map_err(|e| format!("failed to serialize relations: {e}"))?;
 
         let conn = self.write().await;
         conn.execute(
-            "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, error = ?5, connection_ids = ?6, script = ?7, manifest = ?8, catalog_manifest = ?9
+            "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, error = ?5, connection_ids = ?6, script = ?7, manifest = ?8, relations = ?9
              WHERE id = ?10",
             params![
                 job.name,
@@ -111,7 +103,7 @@ impl Database {
                 account_ids_json,
                 job.script,
                 manifest_json,
-                catalog_manifest_json,
+                relations_json,
                 id,
             ],
         )
@@ -123,7 +115,7 @@ impl Database {
     pub async fn list_jobs(&self) -> Vec<Job> {
         let (_permit, conn) = self.read().await;
         let mut stmt = match conn.prepare(
-            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, sink_connection_id, script, manifest, catalog_manifest
+            "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, sink_connection_id, script, manifest, relations
              FROM jobs ORDER BY created_at DESC",
         ) {
             Ok(s) => s,
@@ -209,11 +201,11 @@ fn row_to_job(row: &rusqlite::Row) -> Job {
         created_by: row.get("created_by").unwrap_or_default(),
         sink_connection_id: row.get("sink_connection_id").unwrap_or(None),
         script,
-        manifest: manifest_json
-            .and_then(|j| serde_json::from_str::<fossil_run_status::RunStatus>(&j).ok()),
-        catalog_manifest: row
-            .get::<_, Option<String>>("catalog_manifest")
+        manifest: manifest_json.and_then(|j| serde_json::from_str::<serde_json::Value>(&j).ok()),
+        relations: row
+            .get::<_, Option<String>>("relations")
             .unwrap_or(None)
-            .and_then(|j| serde_json::from_str::<fossil_run_status::RunStatus>(&j).ok()),
+            .and_then(|j| serde_json::from_str::<Vec<OutputRelation>>(&j).ok())
+            .unwrap_or_default(),
     }
 }

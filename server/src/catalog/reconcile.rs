@@ -20,12 +20,17 @@ use super::Catalog;
 use crate::AppState;
 use crate::jobs::models::{Job, JobStatus};
 
-/// Whether a job needs (re)registering this pass: a completed job that produced
-/// an output manifest and whose dataset the catalog doesn't already hold. Pure
-/// so the reconciler's decision is testable without an `AppState`.
+/// Whether a job needs (re)registering this pass: a completed job whose corpus
+/// reader has already said what the output is called, and whose dataset the
+/// catalog doesn't hold yet. Pure so the reconciler's decision is testable
+/// without an `AppState`.
+///
+/// The relations are the gate, not the report: naming a relation is the
+/// corpus's answer and keasy has no way to produce one for a job that never
+/// published any — such a job is skipped rather than guessed at.
 fn needs_registration(job: &Job, registered: &HashSet<String>) -> bool {
     matches!(job.status, JobStatus::Completed)
-        && job.manifest.is_some()
+        && !job.relations.is_empty()
         && !Catalog::is_registered(registered, &job.id)
 }
 
@@ -69,17 +74,17 @@ pub async fn reconcile_once(state: &AppState) -> usize {
         if !needs_registration(job, &registered) {
             continue;
         }
-        let dataset = job
-            .manifest
-            .clone()
-            .expect("needs_registration checked manifest is_some");
-        let Some((_, creds)) = state.db.job_output_target(job).await else {
+        let relations = job.relations.clone();
+        let Some((base, creds)) = state.db.job_output_target(job).await else {
             continue; // no sink configured — can't read the output to register it
         };
+        let dest = crate::jobs::dataset_dest(&base, &job.id);
 
         let catalog = catalog.clone();
         let id = job.id.clone();
-        match tokio::task::spawn_blocking(move || catalog.register(&id, &dataset, &creds)).await {
+        match tokio::task::spawn_blocking(move || catalog.register(&id, &dest, &relations, &creds))
+            .await
+        {
             Ok(Ok(())) => {
                 registered_now += 1;
                 info!(job = %job.id, "reconciler registered output");
@@ -123,10 +128,9 @@ pub fn spawn(state: AppState, every: Duration) -> tokio::task::JoinHandle<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::jobs::models::RunMode;
-    use fossil_run_status::RunStatus;
+    use crate::jobs::models::{OutputRelation, RunMode};
 
-    fn job(id: &str, status: JobStatus, manifest: Option<RunStatus>) -> Job {
+    fn job(id: &str, status: JobStatus, relations: Vec<OutputRelation>) -> Job {
         Job {
             id: id.into(),
             status,
@@ -140,48 +144,47 @@ mod tests {
             created_by: String::new(),
             sink_connection_id: None,
             script: None,
-            manifest,
-            catalog_manifest: None,
+            manifest: None,
+            relations,
         }
     }
 
-    fn manifest() -> RunStatus {
-        RunStatus {
-            version: 1,
-            dest: "s3://b/x".into(),
-            vertices: vec![],
-            edges: vec![],
-        }
+    fn relations() -> Vec<OutputRelation> {
+        vec![OutputRelation {
+            name: "Person".into(),
+            files: vec!["Person.parquet".into()],
+            rows: Some(1),
+        }]
     }
 
     #[test]
-    fn registers_only_completed_with_manifest_and_not_yet_registered() {
+    fn registers_only_completed_with_relations_and_not_yet_registered() {
         let none = HashSet::new();
 
         // The one case that needs work: completed, has output, not registered.
         assert!(needs_registration(
-            &job("a", JobStatus::Completed, Some(manifest())),
+            &job("a", JobStatus::Completed, relations()),
             &none
         ));
 
-        // Not yet terminal / no output / failed → skip.
+        // Not yet terminal / nothing published / failed → skip.
         assert!(!needs_registration(
-            &job("b", JobStatus::Running, Some(manifest())),
+            &job("b", JobStatus::Running, relations()),
             &none
         ));
         assert!(!needs_registration(
-            &job("c", JobStatus::Completed, None),
+            &job("c", JobStatus::Completed, vec![]),
             &none
         ));
         assert!(!needs_registration(
-            &job("d", JobStatus::Failed, Some(manifest())),
+            &job("d", JobStatus::Failed, relations()),
             &none
         ));
 
         // Already in the catalog → skip (idempotent across passes).
         let registered: HashSet<String> = ["a".to_string()].into_iter().collect();
         assert!(!needs_registration(
-            &job("a", JobStatus::Completed, Some(manifest())),
+            &job("a", JobStatus::Completed, relations()),
             &registered
         ));
     }
@@ -210,7 +213,6 @@ mod tests {
     async fn reconcile_once_deregisters_ghost_keeps_live() {
         use crate::catalog::Catalog;
         use crate::{AppState, AuthServices, Database};
-        use fossil_run_status::VertexStatus;
         use std::collections::HashMap;
         use std::sync::Arc;
 
@@ -223,27 +225,20 @@ mod tests {
                 parquet.display(),
             ))
             .unwrap();
-        let ds = || RunStatus {
-            version: 1,
-            dest: dir.path().display().to_string(),
-            vertices: vec![VertexStatus {
-                vertex_type: "Person".into(),
-                rdf_type: None,
-                file: "Person.parquet".into(),
-                count: Some(1),
-                columns: vec![],
-            }],
-            edges: vec![],
-        };
+        let dest = dir.path().display().to_string();
 
         // Catalog pre-loaded with two datasets; only one has a live job.
         let catalog = Arc::new(Catalog::open(dir.path()).unwrap());
-        catalog.register("live", &ds(), &HashMap::new()).unwrap();
-        catalog.register("ghost", &ds(), &HashMap::new()).unwrap();
+        catalog
+            .register("live", &dest, &relations(), &HashMap::new())
+            .unwrap();
+        catalog
+            .register("ghost", &dest, &relations(), &HashMap::new())
+            .unwrap();
 
         // Real DB holding only the live (already-registered) completed job.
         let db = Database::open(&dir.path().join("keasy.db"), None).unwrap();
-        db.insert_job(&job("live", JobStatus::Completed, Some(ds())))
+        db.insert_job(&job("live", JobStatus::Completed, relations()))
             .await
             .unwrap();
 

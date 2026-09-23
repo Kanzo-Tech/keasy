@@ -58,8 +58,7 @@ use utoipa::OpenApi;
         crate::discovery::routes::resolve_source_refs,
         crate::discovery::routes::resolve_source_urls,
         crate::discovery::routes::resolve_discover_urls,
-        crate::discovery::routes::resolve_discover_manifest,
-        crate::discovery::routes::resolve_catalog_manifest,
+        crate::jobs::routes::publish_relations,
         crate::catalog::routes::list_catalog_datasets,
         // AI / Conversations
         crate::ai::routes::ask_discover_stream,
@@ -84,10 +83,8 @@ use utoipa::OpenApi;
         crate::jobs::models::CreateJobRequest,
         crate::jobs::models::UpdateJobRequest,
         crate::jobs::models::CompleteJobRequest,
-        fossil_run_status::RunStatus,
-        fossil_run_status::VertexStatus,
-        fossil_run_status::EdgeStatus,
-        fossil_run_status::ColumnStatus,
+        crate::jobs::models::PublishRelationsRequest,
+        crate::jobs::models::OutputRelation,
         crate::jobs::errors::JobRuntimeError,
         // Connections
         crate::connections::models::Connection,

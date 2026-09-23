@@ -3,30 +3,31 @@
  *
  * One vertex class at a time, because that is what the writer lays out: fossil
  * places each type separately and only self-relations feed the placement, so a
- * canvas of several classes is N blobs joined by lines no force ever drew. The
- * class is a choice the reader makes, and {@link crossClassEdges} is what the UI
- * says about the edges that choice leaves off the canvas.
- *
- * `@kanzo-tech/graph` 0.3.0 answers `edges` as ONE view name, which loses the
- * second edge label of a corpus that declares two; nothing here reads it. The
- * fix (a view per relation, plus an `undrawn` list carrying the reason) is
- * unpublished — when it lands, this file is the whole of the upgrade.
+ * canvas of several classes is N blobs joined by lines no force ever drew. Which
+ * relations that leaves off the canvas is not this file's guess any more: 0.4.0
+ * reports them as {@link UndrawnRelation}, with the reason attached, and
+ * {@link undrawnEdges} only has to put a size on each one.
  */
 
 "use client";
 
 import { useEffect, useState } from "react";
-import { openCorpus, type DuckSource } from "@kanzo-tech/graph/duckdb";
+import { openCorpus, type DuckSource, type UndrawnRelation } from "@kanzo-tech/graph/duckdb";
 import type { SchemaResult } from "@fossil-lang/corpus";
 import type { Selection } from "@uwdata/mosaic-core";
 import { useCoordinator, useManifestFiles } from "./use-discovery-store";
 
 const GRAPH_WASM_URL = "/fossil/fossil_graph_wasm_bg.wasm";
 
+export interface CorpusView {
+  source: DuckSource;
+  undrawn: readonly UndrawnRelation[];
+}
+
 export function useCorpusSource(
   vertexType: string | null,
   filterBy?: Selection,
-): DuckSource | null {
+): CorpusView | null {
   const coordinator = useCoordinator();
   const manifestFiles = useManifestFiles();
   // Tagged with what it was opened for, so a class change reads as "still
@@ -34,7 +35,7 @@ export function useCorpusSource(
   const [opened, setOpened] = useState<{
     vertexType: string;
     coordinator: unknown;
-    source: DuckSource;
+    view: CorpusView;
   } | null>(null);
 
   useEffect(() => {
@@ -53,8 +54,8 @@ export function useCorpusSource(
       vertexType,
       wasmUrl: GRAPH_WASM_URL,
     })
-      .then(({ source }) => {
-        if (!cancelled) setOpened({ vertexType, coordinator, source });
+      .then(({ source, undrawn }) => {
+        if (!cancelled) setOpened({ vertexType, coordinator, view: { source, undrawn } });
       })
       .catch((err) => {
         if (!cancelled) console.error("openCorpus failed", err);
@@ -65,24 +66,42 @@ export function useCorpusSource(
   }, [coordinator, manifestFiles, vertexType, filterBy]);
 
   return opened?.vertexType === vertexType && opened.coordinator === coordinator
-    ? opened.source
+    ? opened.view
     : null;
 }
 
+export interface UndrawnSummary {
+  /** Edges whose other endpoint is another class, so this canvas holds no coordinates for it. */
+  otherClasses: number;
+  /** Edges of the drawn class itself for which the corpus published no adjacency. */
+  notDeclared: number;
+}
+
 /**
- * How many edges touch the drawn class and land somewhere else.
+ * How many edges each undrawn relation holds.
  *
- * Counted from the schema because 0.3.0 does not report it; the unpublished
- * `OpenedCorpus.undrawn` carries the same number with the reason attached, and
- * replaces this function outright.
+ * The reader says WHICH relations are off the canvas and WHY; only the schema
+ * knows how big each one is, so the size comes from there and the membership
+ * does not. Counting cross-type relations here — which is what this did before
+ * `undrawn` existed — got `not-declared` wrong in both directions: it counted
+ * relations the canvas does draw, and missed a self-relation with no adjacency.
  */
-export function crossClassEdges(schema: SchemaResult | null, vertexType: string | null): number {
-  if (!schema || !vertexType) return 0;
-  return schema.edges
-    .filter(
-      (e) =>
-        (e.source_type === vertexType || e.target_type === vertexType) &&
-        e.source_type !== e.target_type,
-    )
-    .reduce((sum, e) => sum + e.count, 0);
+export function undrawnEdges(
+  undrawn: readonly UndrawnRelation[] | undefined,
+  schema: SchemaResult | null,
+): UndrawnSummary {
+  const summary: UndrawnSummary = { otherClasses: 0, notDeclared: 0 };
+  if (!undrawn || !schema) return summary;
+  for (const relation of undrawn) {
+    const count =
+      schema.edges.find(
+        (e) =>
+          e.name === relation.edgeType &&
+          e.source_type === relation.srcType &&
+          e.target_type === relation.dstType,
+      )?.count ?? 0;
+    if (relation.reason === "other-space") summary.otherClasses += count;
+    else summary.notDeclared += count;
+  }
+  return summary;
 }

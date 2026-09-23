@@ -16,7 +16,7 @@ import {
   type LookPatch,
   type Sim,
 } from "@kanzo-tech/graph";
-import { crossClassEdges, useCorpusSource } from "@/components/discovery/use-corpus-source";
+import { undrawnEdges, useCorpusSource } from "@/components/discovery/use-corpus-source";
 import { ClassLegend } from "@/components/discovery/class-legend";
 import { NodeInfo } from "@/components/discovery/node-info";
 import { GraphSettings } from "@/components/discovery/graph-settings";
@@ -101,7 +101,7 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
   const [failure, setFailure] = useState<string | null>(null);
 
   const selection = useMemo(() => Selection.crossfilter(), []);
-  const source = useCorpusSource(vertexType, selection);
+  const view = useCorpusSource(vertexType, selection);
 
   // The click handler needs the answer the canvas is currently drawing, which is
   // a value the api only has after this call.
@@ -116,7 +116,7 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
   );
 
   const graph = useGraph({
-    source,
+    source: view?.source ?? null,
     look,
     sim,
     simulate,
@@ -127,7 +127,7 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
     apiRef.current = graph;
   });
 
-  const undrawnEdges = crossClassEdges(overview, vertexType);
+  const undrawn = undrawnEdges(view?.undrawn, overview);
 
   const panels: PanelDef[] = [
     {
@@ -221,7 +221,7 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
             types={kgSchema.types}
             value={vertexType}
             onChange={setChosenType}
-            undrawnEdges={undrawnEdges}
+            undrawn={undrawn}
           />
         </div>
       </GraphRootProvider>

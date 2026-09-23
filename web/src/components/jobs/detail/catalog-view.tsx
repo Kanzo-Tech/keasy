@@ -81,9 +81,9 @@ function CatalogGraphContent() {
   const selection = useMemo(() => Selection.crossfilter(), []);
   // The catalog corpus is one class of dataset descriptions; the first the
   // manifest names is the one there is.
-  const source = useCorpusSource(overview?.vertices[0]?.name ?? null, selection);
+  const view = useCorpusSource(overview?.vertices[0]?.name ?? null, selection);
 
-  if (!source) {
+  if (!view) {
     return (
       <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
         Loading graph…
@@ -91,5 +91,5 @@ function CatalogGraphContent() {
     );
   }
 
-  return <GraphCanvas className="flex-1" source={source} onFailure={console.error} />;
+  return <GraphCanvas className="flex-1" source={view.source} onFailure={console.error} />;
 }

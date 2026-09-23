@@ -3,13 +3,14 @@
 import { cn } from "@kanzo-tech/ui";
 import { scaleOf } from "@kanzo-tech/graph";
 import type { VertexType } from "@/lib/graph-schema";
+import type { UndrawnSummary } from "./use-corpus-source";
 
 interface Props {
   types: VertexType[];
   value: string | null;
   onChange: (type: string) => void;
-  /** Edges that touch the drawn class and land on another one. */
-  undrawnEdges: number;
+  /** What the reader left off the canvas, and why. */
+  undrawn: UndrawnSummary;
 }
 
 /**
@@ -19,9 +20,11 @@ interface Props {
  * — it places each type separately and only self-relations feed the placement —
  * so the legend is not a set of toggles over one picture, it is which picture.
  * The edges the choice leaves out are said rather than drawn: an unplaced line
- * across a gutter is a claim no force ever made.
+ * across a gutter is a claim no force ever made. The two reasons the reader
+ * gives are different news — one is this canvas' shape, the other is a hole in
+ * the corpus — so they are two lines rather than one total.
  */
-export function ClassLegend({ types, value, onChange, undrawnEdges }: Props) {
+export function ClassLegend({ types, value, onChange, undrawn }: Props) {
   const scale = scaleOf({});
   return (
     <div className="rounded-sm border bg-background/80 backdrop-blur-sm p-1 text-xs">
@@ -49,9 +52,14 @@ export function ClassLegend({ types, value, onChange, undrawnEdges }: Props) {
           </li>
         ))}
       </ul>
-      {undrawnEdges > 0 && (
+      {undrawn.otherClasses > 0 && (
         <p className="px-1.5 pt-1 text-[10px] text-muted-foreground">
-          {undrawnEdges.toLocaleString()} edges to other classes, not drawn
+          {undrawn.otherClasses.toLocaleString()} edges to other classes, not drawn
+        </p>
+      )}
+      {undrawn.notDeclared > 0 && (
+        <p className="px-1.5 pt-0.5 text-[10px] text-muted-foreground">
+          {undrawn.notDeclared.toLocaleString()} edges of this class publish no adjacency
         </p>
       )}
     </div>

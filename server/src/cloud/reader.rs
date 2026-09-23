@@ -52,6 +52,12 @@ pub async fn upload(
     Ok(())
 }
 
+pub async fn delete(url: &str, creds: &HashMap<String, String>) -> Result<(), String> {
+    let (store, path) = super::build_store(url, creds).map_err(|e| e.to_string())?;
+    store.delete(&path).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 pub async fn download(url: &str, creds: &HashMap<String, String>) -> Result<Vec<u8>, String> {
     let (store, path) = super::build_store(url, creds).map_err(|e| e.to_string())?;
     let result = store.get(&path).await.map_err(|e| e.to_string())?;

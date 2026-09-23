@@ -28,6 +28,10 @@ services:
       # its fields; the server reads them once, at boot, to create the account.
       KEASY_BOOTSTRAP_CONNECTION_NAME: ${MINIO_CONNECTION_NAME:-MinIO dev bucket}
       KEASY_BOOTSTRAP_CONNECTION_URL: s3://${MINIO_BUCKET:-keasy-dev}/
+      # Where job output lands. The sink belongs to the owner, and the two planes
+      # are disjoint, so declaring it is what spares a member a second login just
+      # to run a job.
+      KEASY_BOOTSTRAP_SINK_URL: s3://${MINIO_BUCKET:-keasy-dev}/output/
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       AWS_DEFAULT_REGION: us-east-1

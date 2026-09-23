@@ -8,7 +8,8 @@ use secrecy::{ExposeSecret, SecretString};
 
 use crate::AppState;
 use crate::connections::models::{
-    ConnectionKind, CreateConnectionRequest, Direction, LocationType, UpdateConnectionRequest,
+    ConnectionKind, CreateConnectionRequest, Direction, LocationType, SINK_NAME,
+    UpdateConnectionRequest,
 };
 use crate::error::{data_response, error_body};
 use crate::middleware::tenant::{IsMember, IsOwner, Require};
@@ -204,8 +205,6 @@ fn to_payload(s: &AiSettings) -> AiSettingsPayload {
 // connection (`direction = sink`) where job output is materialised. This page
 // is the dedicated owner surface for it; the connections list shows only
 // sources. Both read/write the same `connections` row.
-
-const SINK_NAME: &str = "Workspace output";
 
 #[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct CatalogStoragePayload {

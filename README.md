@@ -61,9 +61,14 @@ the prod overlay nor the release images know the name.
 
 The two CSVs are real objects, copied from `infra/dev/seed/` on every `up`, and
 `orders.person_id` points into `people.person_id` — the edge a mapping needs.
-The instance declares a **source connection** over that bucket at boot
+The instance declares two connections over that bucket at boot: the **source**
 (`KEASY_BOOTSTRAP_CONNECTION_URL` + `_NAME`), so a member opens Connections and
-finds the bucket already there, credentials encrypted, with nothing to type.
+finds the bucket already there, credentials encrypted, with nothing to type; and
+the **sink** (`KEASY_BOOTSTRAP_SINK_URL`, `s3://keasy-dev/output/`), where job
+output lands. The sink is the owner's to administer and the planes are disjoint,
+so declaring it is what spares a member a second login just to run a job. Access
+is proved before either row is written — a listing for the source, a write and a
+delete for the sink — and an existing sink is never overwritten.
 
 The name `minio.localhost` is load-bearing: inside the compose network Docker's
 DNS answers it, and on the host `*.localhost` is loopback, where 9000 is

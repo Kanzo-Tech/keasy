@@ -1,29 +1,36 @@
-//! A source connection declared by the environment, ensured at boot.
+//! The connections the environment declares, ensured at boot.
 //!
 //! `KEASY_BOOTSTRAP_CONNECTION_URL` and `_NAME` name a store this instance
 //! should already know about the first time anyone opens it — in dev, the MinIO
-//! bucket the compose overlay seeds. The credentials are read from the env vars
-//! the provider schema already declares for its own fields
-//! (`AWS_ACCESS_KEY_ID`, `AZURE_STORAGE_ACCOUNT_NAME`, …), so declaring a
-//! connection invents no second vocabulary, and they travel the ordinary
-//! `create_cloud_account` path — split into fields and secrets by the schema,
-//! and encrypted.
+//! bucket the compose overlay seeds. `KEASY_BOOTSTRAP_SINK_URL` names where job
+//! output lands: the workspace sink, which belongs to the owner, so declaring it
+//! here is what keeps trying a job in dev from needing a second login.
 //!
-//! Idempotent and non-fatal: a connection (or account) of that name is left
-//! alone, and anything that goes wrong is logged and skipped — the instance
-//! serves without it, and the next boot tries again.
+//! The credentials are read from the env vars the provider schema already
+//! declares for its own fields (`AWS_ACCESS_KEY_ID`, `AZURE_STORAGE_ACCOUNT_NAME`,
+//! …), so declaring a connection invents no second vocabulary, and they travel
+//! the ordinary `create_cloud_account` path — split into fields and secrets by
+//! the schema, and encrypted. Both connections share the one declared account.
+//!
+//! Idempotent and non-fatal: an existing connection, sink or account is left
+//! exactly as it is, and anything that goes wrong is logged and skipped — the
+//! instance serves without it, and the next boot tries again.
 
 use std::collections::HashMap;
 
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::cloud::models::CreateCloudAccountRequest;
 use crate::cloud::reader;
 use crate::db::Database;
 
-use super::models::{ConnectionKind, CreateConnectionRequest, Direction, LocationType};
+use super::models::{ConnectionKind, CreateConnectionRequest, Direction, LocationType, SINK_NAME};
 
-pub async fn ensure_declared_connection(db: &Database) {
+/// What a write check leaves behind and takes away again. Named so that a
+/// reader of the bucket knows what it was, should the delete not land.
+const WRITE_CHECK_OBJECT: &str = "keasy-sink-write-check";
+
+pub async fn ensure_declared_connections(db: &Database) {
     let (Some(name), Some(url)) = (
         env_nonblank("KEASY_BOOTSTRAP_CONNECTION_NAME"),
         env_nonblank("KEASY_BOOTSTRAP_CONNECTION_URL"),
@@ -31,15 +38,61 @@ pub async fn ensure_declared_connection(db: &Database) {
         return;
     };
 
-    if db.get_connection_by_name(&name).await.is_some() {
+    let sink_url = env_nonblank("KEASY_BOOTSTRAP_SINK_URL");
+    let needs_source = db.get_connection_by_name(&name).await.is_none();
+    let needs_sink = match (&sink_url, db.get_sink_connection().await) {
+        (Some(_), Some(existing)) => {
+            // One sink per workspace, and this one is already somebody's answer.
+            info!(name = %existing.name, url = %existing.url, "declared sink: one already exists, left untouched");
+            false
+        }
+        (Some(_), None) => true,
+        (None, _) => false,
+    };
+    if !needs_source && !needs_sink {
         return;
     }
 
-    let provider = match crate::cloud::parse_cloud_url(&url) {
+    let Some(account_id) = ensure_account(db, &name, &url).await else {
+        return;
+    };
+    let creds = db
+        .build_storage_config(std::slice::from_ref(&account_id))
+        .await;
+
+    if needs_source {
+        declare(db, &creds, &account_id, &name, &url, Direction::Source).await;
+    }
+    if let (true, Some(sink_url)) = (needs_sink, sink_url) {
+        declare(
+            db,
+            &creds,
+            &account_id,
+            SINK_NAME,
+            &sink_url,
+            Direction::Sink,
+        )
+        .await;
+    }
+}
+
+/// The declared cloud account: the one already named so, or a new one built
+/// from the provider's own env vars.
+async fn ensure_account(db: &Database, name: &str, url: &str) -> Option<String> {
+    if let Some(existing) = db
+        .list_cloud_accounts()
+        .await
+        .into_iter()
+        .find(|a| a.name == name)
+    {
+        return Some(existing.id);
+    }
+
+    let provider = match crate::cloud::parse_cloud_url(url) {
         Ok((_, _, provider)) => provider,
         Err(e) => {
             error!(%url, error = %e, "declared connection: not a usable cloud URL");
-            return;
+            return None;
         }
     };
 
@@ -53,52 +106,64 @@ pub async fn ensure_declared_connection(db: &Database) {
         }
     }
 
-    let account_id = match db
-        .list_cloud_accounts()
-        .await
-        .into_iter()
-        .find(|a| a.name == name)
-    {
-        Some(existing) => existing.id,
-        None => {
-            let request = CreateCloudAccountRequest {
-                name: name.clone(),
-                provider_id: provider.id.to_string(),
-                auth_method,
-                fields,
-            };
-            match db.create_cloud_account(request).await {
-                Ok(account) => account.id,
-                Err(e) => {
-                    error!(%name, error = %e, "declared connection: cloud account rejected");
-                    return;
-                }
-            }
-        }
+    let request = CreateCloudAccountRequest {
+        name: name.to_string(),
+        provider_id: provider.id.to_string(),
+        auth_method,
+        fields,
     };
+    match db.create_cloud_account(request).await {
+        Ok(account) => Some(account.id),
+        Err(e) => {
+            error!(%name, error = %e, "declared connection: cloud account rejected");
+            None
+        }
+    }
+}
 
-    // The same proof of access the API demands before it accepts a connection
-    // typed in by hand: a store nobody can read is not a connection.
-    let creds = db
-        .build_storage_config(std::slice::from_ref(&account_id))
-        .await;
-    if let Err(e) = reader::list_files(&url, &creds).await {
-        error!(%name, %url, error = %e, "declared connection: store unreachable");
+/// Prove the access the direction needs, then write the row. A source nobody
+/// can read is not a connection; a sink nobody can write to is worse, because
+/// it only says so at the end of a job.
+async fn declare(
+    db: &Database,
+    creds: &HashMap<String, String>,
+    account_id: &str,
+    name: &str,
+    url: &str,
+    direction: Direction,
+) {
+    let reachable = match direction {
+        Direction::Source => reader::list_files(url, creds).await.map(|_| ()),
+        Direction::Sink => write_check(url, creds).await,
+    };
+    if let Err(e) = reachable {
+        error!(%name, %url, error = %e, "declared connection: store unusable for this direction");
         return;
     }
 
     let request = CreateConnectionRequest {
-        name: name.clone(),
+        name: name.to_string(),
         kind: ConnectionKind::Data,
         location_type: LocationType::Cloud,
-        direction: Direction::Source,
-        cloud_account_id: Some(account_id),
-        url: url.clone(),
+        direction,
+        cloud_account_id: Some(account_id.to_string()),
+        url: url.to_string(),
     };
     match db.create_connection(request).await {
-        Ok(_) => info!(%name, %url, "declared connection ready"),
+        Ok(_) => info!(%name, %url, direction = direction.as_str(), "declared connection ready"),
         Err(e) => error!(%name, error = %e, "declared connection: rejected"),
     }
+}
+
+/// Put an object where output will go, then take it away. A listing would only
+/// prove the credentials can read.
+async fn write_check(base_url: &str, creds: &HashMap<String, String>) -> Result<(), String> {
+    let probe = format!("{}/{WRITE_CHECK_OBJECT}", base_url.trim_end_matches('/'));
+    reader::upload(&probe, Vec::new(), creds).await?;
+    if let Err(e) = reader::delete(&probe, creds).await {
+        warn!(url = %probe, error = %e, "declared sink: the write check could not clean up after itself");
+    }
+    Ok(())
 }
 
 fn env_nonblank(name: &str) -> Option<String> {

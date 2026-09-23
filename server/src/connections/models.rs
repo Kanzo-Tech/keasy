@@ -33,6 +33,10 @@ impl FromSql for ConnectionKind {
     }
 }
 
+/// The name the one sink row carries, wherever it is written from — the owner's
+/// catalog-storage page or the environment that declared it at boot.
+pub const SINK_NAME: &str = "Workspace output";
+
 /// Whether a connection is a READ source (programs reference it via `@conn`) or
 /// the workspace's WRITE sink (where the owner's job output is materialised).
 /// Orthogonal to [`ConnectionKind`] (which describes a source's data) and

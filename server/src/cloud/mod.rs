@@ -139,6 +139,13 @@ impl CloudStore {
         }
     }
 
+    pub async fn delete(&self, path: &ObjectPath) -> object_store::Result<()> {
+        match self {
+            Self::Azure(s) => s.delete(path).await,
+            Self::S3(s) => s.delete(path).await,
+        }
+    }
+
     pub fn list(
         &self,
         prefix: Option<&ObjectPath>,

@@ -1,14 +1,10 @@
+# `/v1` is NOT routed here. The web is a Backend For Frontend: the browser calls
+# `/v1` on the web, which attaches the bearer token and forwards it to the server
+# over the internal network. Routing it around the web would be routing around
+# the only process that holds a credential.
 :3000 {
-	handle /v1/* {
-		reverse_proxy server:8080
-	}
-
 	handle /auth/* {
 		reverse_proxy keycloak:8080
-	}
-
-	handle /.well-known/* {
-		reverse_proxy server:8080
 	}
 
 	handle {

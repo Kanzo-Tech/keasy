@@ -23,6 +23,20 @@ locals {
   }
 }
 
+# The API every tenant's server is. One bearer-only client for the whole realm:
+# it never initiates a login, it only names an audience. Each tenant client's
+# audience mapper below puts it in `aud`, and each tenant's Rust server refuses
+# a token that does not carry it. Cross-tenant reuse is closed on the other side
+# — the server also requires `azp` to be its own client.
+resource "keycloak_openid_client" "api" {
+  realm_id    = keycloak_realm.keasy.id
+  client_id   = "keasy-api"
+  name        = "Keasy API"
+  description = "The resource server. Bearer tokens only; it starts no flow."
+  enabled     = true
+  access_type = "BEARER-ONLY"
+}
+
 resource "keycloak_openid_client" "tenant" {
   for_each              = var.tenants
   realm_id              = keycloak_realm.keasy.id
@@ -32,11 +46,31 @@ resource "keycloak_openid_client" "tenant" {
   access_type           = "CONFIDENTIAL"
   client_secret         = each.value.client_secret # null ⇒ Keycloak generates
   standard_flow_enabled = true
+  # The relying party is the web BFF (`@kanzo-tech/auth/next`), mounted at
+  # /api/auth — the Rust server no longer speaks OIDC at all.
   valid_redirect_uris = [
-    "https://${each.key}.${var.base_domain}/v1/auth/oidc-callback",
-    "http://localhost:3000/v1/auth/oidc-callback", # dev (compose)
+    "https://${each.key}.${var.base_domain}/api/auth/callback",
+    "http://localhost:3000/api/auth/callback", # dev (compose)
+  ]
+  # RP-initiated logout comes back to the application's own origin.
+  valid_post_logout_redirect_uris = [
+    "https://${each.key}.${var.base_domain}/*",
+    "http://localhost:3000/*", # dev (compose)
   ]
   web_origins = ["+"]
+}
+
+# The audience the API validates. Without it `aud` is whatever client asked for
+# the token, which works only while the relying party and the resource server
+# are the same process — and they stopped being that.
+resource "keycloak_openid_audience_protocol_mapper" "api_audience" {
+  for_each                 = var.tenants
+  realm_id                 = keycloak_realm.keasy.id
+  client_id                = keycloak_openid_client.tenant[each.key].id
+  name                     = "keasy-api-audience"
+  included_client_audience = keycloak_openid_client.api.client_id
+  add_to_id_token          = true
+  add_to_access_token      = true
 }
 
 resource "keycloak_role" "owner" {
@@ -55,22 +89,35 @@ resource "keycloak_role" "member" {
   description = "Workspace member — data plane"
 }
 
-# keasy:role mapper on each tenant client (scoped to THIS client → no role leakage).
-resource "keycloak_generic_protocol_mapper" "keasy_role" {
+# Client roles on each tenant client, under the name Keycloak already publishes
+# them by: `resource_access.<client_id>.roles`. Scoped to THIS client, so a role
+# held in another workspace leaks into nothing here.
+#
+# It used to be renamed to `keasy:role`, which bought a translation layer on both
+# sides and lost the one `@kanzo-tech/auth` ships for free — its claim reader
+# knows this name and no other, and a colon is not a JWT naming convention.
+#
+# On BOTH tokens, and both are load-bearing: the ID token is what the BFF holds
+# and forwards, and the access token is what anything else validating this realm
+# would be sent. Roles on one only is the failure mode that is quiet in both
+# directions.
+resource "keycloak_generic_protocol_mapper" "client_roles" {
   for_each        = var.tenants
   realm_id        = keycloak_realm.keasy.id
   client_id       = keycloak_openid_client.tenant[each.key].id
-  name            = "keasy-role"
+  name            = "client-roles"
   protocol        = "openid-connect"
   protocol_mapper = "oidc-usermodel-client-role-mapper"
   config = {
     "usermodel.clientRoleMapping.clientId" = "keasy-ws-${each.key}"
-    "claim.name"                           = "keasy:role"
-    "jsonType.label"                       = "String"
-    "multivalued"                          = "true"
-    "id.token.claim"                       = "true"
-    "access.token.claim"                   = "false"
-    "userinfo.token.claim"                 = "false"
+    # `$${client_id}` is Keycloak's own template, escaped for HCL — it is what
+    # nests the roles under the client that holds them.
+    "claim.name"           = "resource_access.$${client_id}.roles"
+    "jsonType.label"       = "String"
+    "multivalued"          = "true"
+    "id.token.claim"       = "true"
+    "access.token.claim"   = "true"
+    "userinfo.token.claim" = "false"
   }
 }
 
@@ -87,6 +134,9 @@ resource "keycloak_user" "u" {
   attributes = {
     workspaces = join("##", local.user_workspaces[each.value])
   }
+  # The User Profile must know `workspaces` before a user can carry it —
+  # Keycloak drops an undeclared attribute without saying so.
+  depends_on = [keycloak_realm_user_profile.keasy]
 }
 
 # Emit the user's `workspaces` attribute as a multivalued token claim, per tenant client.
@@ -103,7 +153,7 @@ resource "keycloak_generic_protocol_mapper" "workspaces" {
     "jsonType.label"       = "String"
     "multivalued"          = "true"
     "id.token.claim"       = "true"
-    "access.token.claim"   = "false"
+    "access.token.claim"   = "true"
     "userinfo.token.claim" = "false"
   }
 }

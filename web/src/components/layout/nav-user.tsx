@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useSession } from "@kanzo-tech/auth"
 import { ChevronsUpDown, LogOut, Settings } from "lucide-react"
 import Link from "next/link"
 import {
@@ -26,47 +27,34 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@kanzo-tech/ui"
-import { api } from "@/lib/api"
 
-function getInitials(firstName: string, lastName: string, email: string): string {
-  if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
-  if (firstName) return firstName[0].toUpperCase();
-  return (email[0] ?? "?").toUpperCase();
+function getInitials(name: string | undefined, email: string | undefined): string {
+  const parts = (name ?? "").split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+  if (parts.length === 1) return parts[0][0].toUpperCase()
+  return (email?.[0] ?? "?").toUpperCase()
 }
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    firstName: string
-    lastName: string
-  }
-}) {
+export function NavUser() {
   const { isMobile, setOpenMobile, state } = useSidebar()
+  const { session, signOut } = useSession()
   const [loggingOut, setLoggingOut] = useState(false)
   // The confirmation is a SIBLING of the menu, not a child: Ark closes the menu on select,
   // which would unmount a dialog nested inside it before it ever painted.
   const [confirmingLogout, setConfirmingLogout] = useState(false)
 
-  const initials = getInitials(user.firstName, user.lastName, user.email)
+  const name = session?.user.name ?? session?.user.email ?? ""
+  const email = session?.user.email ?? ""
+  const initials = getInitials(session?.user.name, session?.user.email)
   const collapsed = state === "collapsed" && !isMobile
 
+  // RP-initiated logout: the BFF forgets the session, clears the cookie and ends
+  // it at Keycloak too, `id_token_hint` included. No end-session URL is built
+  // here — the endpoint comes from discovery and the parameter names are the
+  // specification's rather than ours to remember.
   async function handleLogout() {
     setLoggingOut(true)
-    try {
-      const data = await api.auth.logout()
-      if (data?.end_session_url) {
-        // Redirect to Keycloak end-session for full single logout
-        window.location.href = data.end_session_url
-        return
-      }
-    } catch {
-      // Ignore errors — redirect to login regardless
-    }
-    // Fallback: redirect to OIDC start (no Keycloak end-session URL available)
-    window.location.href = "/v1/auth/oidc-start"
+    await signOut({ returnTo: "/" })
   }
 
   const identity = (
@@ -75,8 +63,8 @@ export function NavUser({
         <AvatarFallback>{initials}</AvatarFallback>
       </SidebarIdentityAvatar>
       <SidebarIdentityText>
-        <SidebarIdentityLabel>{user.name}</SidebarIdentityLabel>
-        <SidebarIdentityDescription>{user.email}</SidebarIdentityDescription>
+        <SidebarIdentityLabel>{name}</SidebarIdentityLabel>
+        <SidebarIdentityDescription>{email}</SidebarIdentityDescription>
       </SidebarIdentityText>
     </>
   )
@@ -89,7 +77,7 @@ export function NavUser({
             {/* `aria-label`, not a tooltip: `asChild` claims the single button node, so a
                 nested tooltip trigger would never bind. */}
             <SidebarMenuButton
-              aria-label={user.name}
+              aria-label={name}
               size="lg"
               className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-full data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >

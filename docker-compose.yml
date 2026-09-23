@@ -98,18 +98,17 @@ services:
       # "Problem with the SSL CA cert". Both images carry ca-certificates here.
       CURL_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
       SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
-      # DEV-ONLY placeholders. Prod injects both as Swarm secrets (*_FILE); never
-      # commit a real secret here. Override locally via .env (gitignored) or
-      # `KEASY_SESSION_SECRET=$(openssl rand -base64 64) docker compose up`.
+      # DEV-ONLY placeholder. Prod injects it as a Swarm secret (*_FILE); never
+      # commit a real secret here. Override locally via .env (gitignored).
       KEASY_SECRET_KEY: ${KEASY_SECRET_KEY:-dev-only-insecure-secret-key-change-me}
-      KEASY_SESSION_SECRET: ${KEASY_SESSION_SECRET:-dev-only-insecure-session-secret-change-me}
-      KEASY_BASE_URL: http://localhost:3000
       # Dev runs as the `dev` tenant (provisioned by the realm module / dev.tfvars).
       KEASY_ORG_ALIAS: dev
       KEASY_WORKSPACE_NAME: Dev Workspace
+      # The server is a RESOURCE SERVER: it validates a bearer token and holds no
+      # client secret, no session and no cookie. The relying party is the web.
       KEASY_OIDC_ISSUER_URL: http://localhost:3000/auth/realms/keasy
       KEASY_OIDC_CLIENT_ID: keasy-ws-dev
-      KEASY_OIDC_CLIENT_SECRET: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
+      KEASY_OIDC_AUDIENCE: keasy-api
       KEASY_OIDC_INTERNAL_BASE_URL: http://keycloak:8080
     volumes:
       - keasy-data:/var/lib/keasy
@@ -127,10 +126,21 @@ services:
 
   web:
     environment:
+      # Where the BFF forwards `/v1` once it has attached the bearer token.
       KEASY_API_URL: http://server:8080
+      # The confidential client: the web is the relying party now.
+      KEASY_OIDC_ISSUER_URL: http://localhost:3000/auth/realms/keasy
+      KEASY_OIDC_CLIENT_ID: keasy-ws-dev
+      KEASY_OIDC_CLIENT_SECRET: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
+      KEASY_OIDC_INTERNAL_BASE_URL: http://keycloak:8080
+      # Seals the session cookie. DEV-ONLY placeholder; prod mounts a Swarm
+      # secret at KEASY_SESSION_SECRET_FILE.
+      KEASY_SESSION_SECRET: ${KEASY_SESSION_SECRET:-dev-only-insecure-session-secret-change-me}
     depends_on:
       server:
         condition: service_healthy
+      keycloak-realm:
+        condition: service_completed_successfully
 
   caddy:
     image: caddy:2-alpine

@@ -5,48 +5,16 @@ use axum::extract::DefaultBodyLimit;
 use axum::http::HeaderValue;
 use axum::http::header::{self, HeaderName};
 use axum::{Router, middleware};
-use secrecy::ExposeSecret;
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::TraceLayer;
-use tower_sessions::{
-    SessionManagerLayer,
-    cookie::{Key, SameSite},
-};
 
 use crate::AppState;
-use crate::middleware::session_auth::session_required;
+use crate::middleware::bearer::bearer_required;
 use crate::middleware::tenant::tenant_context_required;
 
-/// Session configuration — groups the 4 session-related params for `build_router`.
-pub struct SessionConfig {
-    pub store: tower_sessions_rusqlite_store::RusqliteStore,
-    pub secret: secrecy::SecretString,
-    pub cookie_name: String,
-    pub secure: bool,
-}
-
-pub fn build_router(
-    state: AppState,
-    cors_origins: Option<Vec<String>>,
-    session: SessionConfig,
-) -> Router {
-    // Build the session layer with signed cookies
-    // Key::from requires at least 64 bytes — derive from the session secret
-    let key_bytes = derive_session_key(session.secret.expose_secret().as_bytes());
-    let key = Key::from(&key_bytes);
-
-    let session_layer = SessionManagerLayer::new(session.store)
-        .with_name(session.cookie_name)
-        .with_http_only(true)
-        .with_same_site(SameSite::Lax)
-        .with_secure(session.secure)
-        .with_expiry(tower_sessions::Expiry::OnInactivity(time::Duration::hours(
-            24,
-        )))
-        .with_signed(key);
-
+pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Router {
     let health_routes = Router::new()
         .route("/healthz/live", axum::routing::get(health::liveness))
         .route("/healthz/ready", axum::routing::get(health::readiness))
@@ -58,47 +26,26 @@ pub fn build_router(
             "/openapi.json",
             axum::routing::get(crate::openapi::openapi_json),
         )
-        .route("/v1/status", axum::routing::get(health::service_status))
         .route(
             "/v1/settings/schema",
             axum::routing::get(crate::settings::routes::get_schema),
         )
         .with_state(state.clone());
 
-    // Public auth routes (no session middleware)
-    let auth_routes = Router::new()
-        // OIDC authorization code flow — public (session is created inside oidc_callback)
-        .route(
-            "/v1/auth/oidc-start",
-            axum::routing::get(crate::auth::oidc::oidc_start),
-        )
-        .route(
-            "/v1/auth/oidc-callback",
-            axum::routing::get(crate::auth::oidc::oidc_callback),
-        )
-        .with_state(state.clone());
-
-    // Session-authenticated routes (session required, NO tenant context required)
-    let session_auth_routes = Router::new()
-        .route(
-            "/v1/auth/logout",
-            axum::routing::post(crate::auth::routes::logout),
-        )
-        .route(
-            "/v1/auth/me",
-            axum::routing::get(crate::auth::routes::get_me),
-        )
+    // Authenticated but not yet a member: someone who holds a valid token and no
+    // role here still needs to be told which workspaces they *do* belong to.
+    let member_agnostic_routes = Router::new()
         .route(
             "/v1/auth/workspaces",
             axum::routing::get(crate::auth::routes::list_workspaces),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),
-            session_required,
+            bearer_required,
         ))
         .with_state(state.clone());
 
-    // All existing API routes now protected by session_required
+    // All existing API routes, behind a verified token and a workspace role
     let api_routes = Router::new()
         .route(
             "/v1/jobs",
@@ -229,11 +176,11 @@ pub fn build_router(
             axum::routing::get(org::get_org_identity).put(org::update_org_identity),
         )
         .layer(middleware::from_fn(
-            tenant_context_required, // runs second (inner), after session_required
+            tenant_context_required, // runs second (inner), after bearer_required
         ))
         .layer(middleware::from_fn_with_state(
             state.clone(),
-            session_required, // runs first (outer)
+            bearer_required, // runs first (outer)
         ))
         .with_state(state);
 
@@ -288,45 +235,18 @@ pub fn build_router(
     // Rate-limited routes (excludes health checks so LB probes don't eat the budget)
     let rated_routes = Router::new()
         .merge(public_api_routes)
-        .merge(auth_routes)
-        .merge(session_auth_routes)
+        .merge(member_agnostic_routes)
         .merge(api_routes)
         .layer(tower_governor::GovernorLayer::new(governor_conf));
 
-    // IMPORTANT: session_layer MUST be outermost (applied after all merges).
-    // In axum, layers applied last wrap outermost. session_required middleware
-    // (applied inside api_routes) can access Session because session_layer
-    // processes the request first.
     Router::new()
         .merge(health_routes)
         .merge(rated_routes)
         .layer(axum::middleware::from_fn(
             crate::middleware::audit::audit_log,
         ))
-        .layer(session_layer)
         .layer(cors)
         .layer(security_headers)
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024))
         .layer(TraceLayer::new_for_http())
-}
-
-/// Derive a 64-byte key from an arbitrary-length session secret using PBKDF2-SHA256.
-/// Key::from() requires at least 64 bytes; this ensures we always provide exactly 64.
-const PBKDF2_ITERATIONS: u32 = 100_000;
-
-fn derive_session_key(secret: &[u8]) -> [u8; 64] {
-    use pbkdf2::hmac::Hmac;
-    use sha2::Sha256;
-
-    let mut key = [0u8; 64];
-    // Use a fixed salt — the secret itself provides uniqueness.
-    // This is a deterministic KDF, not password hashing, so a fixed salt is acceptable.
-    pbkdf2::pbkdf2::<Hmac<Sha256>>(
-        secret,
-        b"keasy-session-key-derivation",
-        PBKDF2_ITERATIONS,
-        &mut key,
-    )
-    .expect("PBKDF2 key derivation must not fail for 64-byte output");
-    key
 }

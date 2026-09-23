@@ -68,43 +68,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["logout"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/auth/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * GET /v1/auth/me
-         * @description Returns the authenticated user's profile, org, and effective role.
-         *     Protected by session_required but NOT tenant_context_required.
-         */
-        get: operations["get_me"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/auth/workspaces": {
         parameters: {
             query?: never;
@@ -114,9 +77,13 @@ export interface paths {
         };
         /**
          * GET /v1/auth/workspaces
-         * @description The workspaces the authenticated user belongs to, for the sidebar switcher.
-         *     Sourced from the `workspaces` token claim (captured at login) — no runtime
-         *     Keycloak call; membership is declared in Terraform.
+         * @description The one thing the web cannot answer from its own session: the switcher's
+         *     list. `Session` carries who you are and what you may do, and the workspaces
+         *     claim is neither — so it is read here, off the token this server verified,
+         *     rather than copied into a shape the browser would have to be trusted about.
+         *
+         *     Deliberately outside `tenant_context_required`: someone authenticated but
+         *     holding no role here still needs to be told where they *do* belong.
          */
         get: operations["list_workspaces"];
         put?: never;
@@ -590,22 +557,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["service_status"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/version": {
         parameters: {
             query?: never;
@@ -677,7 +628,7 @@ export interface components {
         CatalogDataset: {
             /** @description The job id (the `job_` schema suffix), the dataset's stable handle. */
             job_id: string;
-            /** @description One entry per registered vertex/edge type. */
+            /** @description One entry per registered relation. */
             tables: components["schemas"]["CatalogTable"][];
         };
         CatalogStoragePayload: {
@@ -688,11 +639,11 @@ export interface components {
         CatalogTable: {
             /** @description Property columns, in declaration order. */
             columns: components["schemas"]["CatalogColumn"][];
-            /** @description Type / table name (e.g. `Person`, `knows_by_source`). */
+            /** @description The relation's name, as fossil named it (`Person`, `Person_knows_Person`). */
             name: string;
             /**
              * Format: int64
-             * @description Row count from the Parquet footers (cheap — no full scan).
+             * @description Row count, as the corpus reported it when the relation was published.
              */
             rows?: number | null;
         };
@@ -898,21 +849,6 @@ export interface components {
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
         /** @enum {string} */
         LocationType: "cloud" | "local";
-        /** @description POST /v1/auth/logout */
-        LogoutResponse: {
-            end_session_url?: string | null;
-        };
-        MeOrg: {
-            name: string;
-        };
-        MeResponse: {
-            effective_role: string;
-            email: string;
-            first_name: string;
-            last_name: string;
-            org?: null | components["schemas"]["MeOrg"];
-            user_id: string;
-        };
         OrgIdentityResponse: {
             country: string;
             country_subdivision_code?: string | null;
@@ -975,9 +911,6 @@ export interface components {
         };
         /** @enum {string} */
         RunMode: "integrated" | "scheduled";
-        ServiceStatusResponse: {
-            oidc: boolean;
-        };
         SourceRefsResponse: {
             /**
              * @description Connection ref-map `{ name: baseUrl }` — the browser passes it to the
@@ -1064,8 +997,14 @@ export interface components {
             /** @description This instance's slug — the "current" entry in the switcher. */
             current: string;
             /**
-             * @description Slugs of every workspace the user belongs to, from the `workspaces` token
-             *     claim (captured at login). The web builds each `<slug>.<domain>` link.
+             * @description This instance's display name, from its workspace identity. The other
+             *     entries show their slug: an instance only knows its own name.
+             */
+            current_name: string;
+            /**
+             * @description Slugs of every workspace the user belongs to, read from the `workspaces`
+             *     claim on the token this request carried. The web builds each
+             *     `<slug>.<domain>` link.
              */
             workspaces: string[];
         };
@@ -1165,53 +1104,6 @@ export interface operations {
             };
             /** @description AI provider not configured */
             400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    logout: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Logout successful, returns end_session_url */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LogoutResponse"];
-                };
-            };
-        };
-    };
-    get_me: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Authenticated user profile */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MeResponse"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2568,26 +2460,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProviderSchema"][];
-                };
-            };
-        };
-    };
-    service_status: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description External service status */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ServiceStatusResponse"];
                 };
             };
         };

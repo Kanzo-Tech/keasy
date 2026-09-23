@@ -1,18 +1,18 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { authMiddleware } from "@kanzo-tech/auth/next";
 
-const PUBLIC = ["/v1/auth", "/_next", "/favicon"];
-
-export function middleware(req: NextRequest) {
-  if (PUBLIC.some((p) => req.nextUrl.pathname.startsWith(p))) {
-    return NextResponse.next();
-  }
-  // Cookie name matches KEASY_SESSION_COOKIE_NAME (default "keasy.sid")
-  if (!req.cookies.has("keasy.sid")) {
-    return NextResponse.redirect(new URL("/v1/auth/oidc-start", req.url));
-  }
-  return NextResponse.next();
-}
+/**
+ * Sends an anonymous browser to the sign-in route, and nothing more.
+ *
+ * It checks the cookie's **presence**; it never opens it. A redirect is not an
+ * authorization — the page behind this reads the session itself, and the Rust
+ * resource server behind *that* validates the token it was sent. A forged cookie
+ * gets somebody as far as a page that will find no session and say so.
+ *
+ * `/v1` is exempt because it is the API proxy, not a page: an expired session
+ * there must come back as the 401 the API client knows how to route on, not as a
+ * 302 to a sign-in screen it would try to parse as JSON.
+ */
+export const middleware = authMiddleware({ public: ["/v1", "/healthz"] });
 
 export const config = {
   // Skip Next internals and any static file (paths with an extension, e.g.

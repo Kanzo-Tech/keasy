@@ -11,11 +11,12 @@ use axum::response::{IntoResponse, Response};
 use thiserror::Error;
 
 use crate::error::error_body;
-use crate::middleware::session_auth::AuthenticatedUser;
+use crate::middleware::bearer::AuthenticatedUser;
 
 /// Role assigned to a tenant context. Two hierarchical roles: `Owner` ⊇
-/// `Member`. Sourced from the Keycloak `keasy:role` client-role claim: the
-/// owner is granted at provisioning, members via an invite link.
+/// `Member`. Read from `resource_access.<client_id>.roles` on the verified
+/// bearer token — Keycloak's own claim, scoped to this workspace's client. The
+/// owner is granted at provisioning, members are declared alongside them.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TenantRole {
     /// Workspace owner — granted at provisioning, can invite + administer.
@@ -178,9 +179,9 @@ where
 /// Middleware: resolves TenantContext from the authenticated user's role and
 /// injects it into extensions.
 ///
-/// Must run AFTER session_required (which inserts AuthenticatedUser carrying the
-/// role from the Keycloak `keasy:role` claim). A user with no role is
-/// authenticated but not a workspace member → 403.
+/// Must run AFTER `bearer_required` (which inserts AuthenticatedUser carrying
+/// the role read from `resource_access.<client_id>.roles`). A user with no role
+/// is authenticated but not a workspace member → 403.
 pub async fn tenant_context_required(
     mut request: axum::http::Request<Body>,
     next: Next,

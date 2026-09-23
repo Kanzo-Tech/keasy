@@ -2,7 +2,7 @@ use axum::body::Body;
 use axum::middleware::Next;
 use axum::response::Response;
 
-use super::session_auth::AuthenticatedUser;
+use super::bearer::AuthenticatedUser;
 
 pub async fn audit_log(request: axum::http::Request<Body>, next: Next) -> Response {
     let method = request.method().clone();

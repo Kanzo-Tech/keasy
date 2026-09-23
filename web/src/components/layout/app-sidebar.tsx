@@ -1,13 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useSession } from "@kanzo-tech/auth";
 import { usePathname } from "next/navigation";
 
 import { getSidebarRoutes } from "@/lib/route-config";
-import { api } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
-import type { MeResponse } from "@/lib/types";
+import { workspaceRole } from "@/lib/roles";
 import { NavMain } from "@/components/layout/nav-main";
 import { NavUser } from "@/components/layout/nav-user";
 import { WorkspaceSwitcher } from "@/components/layout/workspace-switcher";
@@ -22,20 +20,9 @@ import {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
-  const { data: me } = useQuery<MeResponse>({ queryKey: queryKeys.me, queryFn: api.auth.me });
+  const { session } = useSession();
 
-  const effectiveRole = me?.effective_role ?? "member";
-  const sidebarRoutes = getSidebarRoutes(effectiveRole);
-
-  const user = me
-    ? {
-        name:
-          [me.first_name, me.last_name].filter(Boolean).join(" ") || me.email,
-        email: me.email,
-        firstName: me.first_name,
-        lastName: me.last_name,
-      }
-    : { name: "", email: "", firstName: "", lastName: "" };
+  const sidebarRoutes = getSidebarRoutes(workspaceRole(session) ?? "member");
 
   const navMainItems = sidebarRoutes.map((route) => ({
     title: route.name,
@@ -56,7 +43,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={navMainItems} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} />
+        <NavUser />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

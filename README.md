@@ -169,7 +169,17 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
 | `KEASY_SECRET_KEY` | Encryption key for stored secrets | `change-me-in-production` |
 | `KC_DB_PASSWORD` | Keycloak PostgreSQL password | `changeme` |
 | `KC_ADMIN_PASSWORD` | Keycloak admin console password | `changeme` |
-| `KEASY_OIDC_CLIENT_SECRET` | OIDC client secret (shared with Keycloak) | `keasy-dev-secret` |
+| `KEASY_OIDC_CLIENT_SECRET` | OIDC client secret, held by the **web** (the relying party) | `keasy-dev-secret` |
+| `KEASY_SESSION_SECRET` | Seals the web's session cookie; rotating it signs everyone out | dev placeholder |
+
+Authentication is a Backend For Frontend. The **web** is the OIDC relying party
+(`@kanzo-tech/auth/next`, mounted at `/api/auth`): it holds the confidential
+client, keeps the tokens, and gives the browser a sealed cookie it cannot read.
+The **server** is a resource server: it validates a bearer token against the
+realm's JWKS (`iss`, `aud`, `exp`, `azp`, signature) and holds no client secret,
+no session and no cookie. `/v1` reaches it only through the web, which attaches
+the token — so the server needs `KEASY_OIDC_ISSUER_URL`, `KEASY_OIDC_CLIENT_ID`
+and `KEASY_OIDC_AUDIENCE`, and nothing secret.
 
 ## Production
 

@@ -29,28 +29,14 @@ use std::sync::Arc;
 pub struct AppState {
     pub db: Database,
     pub api_key: SecretString,
-    pub base_url: String,
     /// This instance's workspace slug (`KEASY_ORG_ALIAS`). The "current" entry in the
     /// workspace switcher. None when not configured.
     pub workspace_slug: Option<String>,
-    pub auth: AuthServices,
+    /// The whole of this server's authentication: a bearer token verified
+    /// against the realm's JWKS. Required — there is no unauthenticated mode.
+    pub auth: auth::jwt::SharedValidator,
     /// Server-side DuckLake catalog — the authority over output metadata. `None`
     /// when it could not be opened at startup (the host still serves jobs; the
     /// reconciler picks up unregistered datasets once it is available).
     pub catalog: Option<Arc<catalog::Catalog>>,
-}
-
-/// Authentication and identity services (Keycloak / OIDC).
-#[derive(Clone)]
-pub struct AuthServices {
-    /// OIDC relying party state (client, JWKS cache, HTTP client).
-    /// None when OIDC is not fully configured or when Keycloak was unreachable at startup.
-    pub oidc_state: Option<Arc<crate::auth::oidc::OidcState>>,
-    /// Keycloak OIDC issuer URL (internal Docker network).
-    /// None when Keycloak is not configured.
-    pub oidc_issuer_url: Option<String>,
-    /// OIDC client_id for this Keasy instance.
-    pub oidc_client_id: Option<String>,
-    /// OIDC client_secret for the authorization-code exchange.
-    pub oidc_client_secret: Option<SecretString>,
 }

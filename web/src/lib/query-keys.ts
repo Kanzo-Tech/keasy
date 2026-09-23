@@ -2,7 +2,6 @@ import type { ConnectionKind } from "@/lib/types";
 
 export const queryKeys = {
   // Auth
-  me: ["auth-me"] as const,
   workspaces: ["workspaces"] as const,
 
   // Jobs
@@ -48,9 +47,6 @@ export const queryKeys = {
   ai: {
     providers: ["ai-providers"] as const,
   },
-
-  // Services
-  services: ["service-status"] as const,
 
   // Conversations
   conversations: {

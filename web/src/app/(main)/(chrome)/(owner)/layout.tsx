@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { getEffectiveRole } from "@/lib/auth-check";
+import { getSession } from "@/lib/auth";
+import { workspaceRole } from "@/lib/roles";
 
 // Owner plane (metadata + people): Members, Identity, Catalog. Disjoint from the
 // member data plane — members are sent to their own home.
@@ -8,8 +9,8 @@ export default async function OwnerLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const role = await getEffectiveRole();
-  if (!role) redirect("/v1/auth/oidc-start");
+  const role = workspaceRole(await getSession());
+  if (role === null) redirect("/api/auth/signin");
   if (role !== "owner") redirect("/");
   return <>{children}</>;
 }

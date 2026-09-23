@@ -2,6 +2,11 @@
 # render_stack + create_secrets. One server + web docker_service per tenant, with the
 # OIDC secret sourced from the tenant's Keycloak client (no hand-off, no minting).
 # Skipped entirely in dev (deploy_stacks=false): the app runs via docker-compose there.
+#
+# The relying party lives in the **web** service: it holds the client secret and the
+# cookie-sealing secret, and it is what the browser reaches. The **server** holds
+# neither — it validates a bearer token against the realm's JWKS and needs only the
+# issuer, its own client id and the audience to check.
 
 locals {
   stack_tenants = var.deploy_stacks ? var.tenants : {}
@@ -57,28 +62,19 @@ resource "docker_service" "server" {
     container_spec {
       image = coalesce(each.value.server_image, var.server_image)
       env = {
-        KEASY_BASE_URL                = "https://${each.key}.${var.base_domain}"
-        KEASY_WORKSPACE_NAME          = each.value.display_name
-        KEASY_ORG_ALIAS               = each.key
-        KEASY_OIDC_ISSUER_URL         = "https://${var.kc_hostname}/auth/realms/keasy"
-        KEASY_OIDC_CLIENT_ID          = "keasy-ws-${each.key}"
-        KEASY_OIDC_INTERNAL_BASE_URL  = "http://keycloak:8080/auth"
-        KEASY_OIDC_CLIENT_SECRET_FILE = "/run/secrets/oidc"
-        KEASY_SESSION_SECRET_FILE     = "/run/secrets/session"
-        KEASY_API_KEY_FILE            = "/run/secrets/api-key"
-        KEASY_SECRET_KEY_FILE         = "/run/secrets/secret-key"
+        KEASY_WORKSPACE_NAME = each.value.display_name
+        KEASY_ORG_ALIAS      = each.key
+        # What a token is validated against: the public issuer it must name, the
+        # audience it must carry, and the client it must have been issued to.
+        KEASY_OIDC_ISSUER_URL = "https://${var.kc_hostname}/auth/realms/keasy"
+        KEASY_OIDC_CLIENT_ID  = "keasy-ws-${each.key}"
+        KEASY_OIDC_AUDIENCE   = keycloak_openid_client.api.client_id
+        # The ORIGIN this process reaches Keycloak at; the issuer's path is its own.
+        KEASY_OIDC_INTERNAL_BASE_URL = "http://keycloak:8080"
+        KEASY_API_KEY_FILE           = "/run/secrets/api-key"
+        KEASY_SECRET_KEY_FILE        = "/run/secrets/secret-key"
       }
 
-      secrets {
-        secret_id   = docker_secret.oidc[each.key].id
-        secret_name = docker_secret.oidc[each.key].name
-        file_name   = "/run/secrets/oidc"
-      }
-      secrets {
-        secret_id   = docker_secret.session[each.key].id
-        secret_name = docker_secret.session[each.key].name
-        file_name   = "/run/secrets/session"
-      }
       secrets {
         secret_id   = docker_secret.api_key[each.key].id
         secret_name = docker_secret.api_key[each.key].name
@@ -138,16 +134,13 @@ resource "docker_service" "server" {
     order = "start-first"
   }
 
+  # No Traefik router, and that is the BFF: the API is reachable only from the
+  # web service over the overlay network. `/v1` arrives at the web, which attaches
+  # the bearer token and forwards it here — a token the browser never held, at an
+  # address the browser cannot reach.
   dynamic "labels" {
     for_each = {
-      "com.keasy.workspace"                                            = "keasy-ws-${each.key}"
-      "traefik.enable"                                                 = "true"
-      "traefik.docker.network"                                         = var.network_name
-      "traefik.http.routers.${each.key}-api.rule"                      = "Host(`${each.key}.${var.base_domain}`) && (PathPrefix(`/v1`) || PathPrefix(`/.well-known`))"
-      "traefik.http.routers.${each.key}-api.entrypoints"               = "websecure"
-      "traefik.http.routers.${each.key}-api.tls.certresolver"          = "le"
-      "traefik.http.routers.${each.key}-api.service"                   = "${each.key}-api"
-      "traefik.http.services.${each.key}-api.loadbalancer.server.port" = "8080"
+      "com.keasy.workspace" = "keasy-ws-${each.key}"
     }
     content {
       label = labels.key
@@ -163,6 +156,29 @@ resource "docker_service" "web" {
   task_spec {
     container_spec {
       image = coalesce(each.value.web_image, var.web_image)
+      env = {
+        # The confidential client: this service is the relying party.
+        KEASY_OIDC_ISSUER_URL         = "https://${var.kc_hostname}/auth/realms/keasy"
+        KEASY_OIDC_CLIENT_ID          = "keasy-ws-${each.key}"
+        KEASY_OIDC_CLIENT_SECRET_FILE = "/run/secrets/oidc"
+        KEASY_OIDC_INTERNAL_BASE_URL  = "http://keycloak:8080"
+        # Seals the session cookie. Rotating it signs everyone out, which is the
+        # only "sign out everywhere" a stateless store has.
+        KEASY_SESSION_SECRET_FILE = "/run/secrets/session"
+        # Where the BFF forwards `/v1` once it has attached the bearer token.
+        KEASY_API_URL = "http://keasy-ws-${each.key}-server:8080"
+      }
+
+      secrets {
+        secret_id   = docker_secret.oidc[each.key].id
+        secret_name = docker_secret.oidc[each.key].name
+        file_name   = "/run/secrets/oidc"
+      }
+      secrets {
+        secret_id   = docker_secret.session[each.key].id
+        secret_name = docker_secret.session[each.key].name
+        file_name   = "/run/secrets/session"
+      }
     }
     resources {
       limits {
@@ -198,7 +214,6 @@ resource "docker_service" "web" {
       "traefik.http.routers.${each.key}-web.rule"                      = "Host(`${each.key}.${var.base_domain}`)"
       "traefik.http.routers.${each.key}-web.entrypoints"               = "websecure"
       "traefik.http.routers.${each.key}-web.tls.certresolver"          = "le"
-      "traefik.http.routers.${each.key}-web.priority"                  = "1"
       "traefik.http.routers.${each.key}-web.service"                   = "${each.key}-web"
       "traefik.http.services.${each.key}-web.loadbalancer.server.port" = "3000"
     }

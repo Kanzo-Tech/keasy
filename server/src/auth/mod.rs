@@ -1,3 +1,2 @@
-pub mod errors;
-pub mod oidc;
+pub mod jwt;
 pub mod routes;

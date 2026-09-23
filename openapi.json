@@ -91,58 +91,13 @@
         }
       }
     },
-    "/v1/auth/logout": {
-      "post": {
-        "tags": [
-          "Auth"
-        ],
-        "operationId": "logout",
-        "responses": {
-          "200": {
-            "description": "Logout successful, returns end_session_url",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LogoutResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/auth/me": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "summary": "GET /v1/auth/me",
-        "description": "Returns the authenticated user's profile, org, and effective role.\nProtected by session_required but NOT tenant_context_required.",
-        "operationId": "get_me",
-        "responses": {
-          "200": {
-            "description": "Authenticated user profile",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MeResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden"
-          }
-        }
-      }
-    },
     "/v1/auth/workspaces": {
       "get": {
         "tags": [
           "Auth"
         ],
         "summary": "GET /v1/auth/workspaces",
-        "description": "The workspaces the authenticated user belongs to, for the sidebar switcher.\nSourced from the `workspaces` token claim (captured at login) — no runtime\nKeycloak call; membership is declared in Terraform.",
+        "description": "The one thing the web cannot answer from its own session: the switcher's\nlist. `Session` carries who you are and what you may do, and the workspaces\nclaim is neither — so it is read here, off the token this server verified,\nrather than copied into a shape the browser would have to be trusted about.\n\nDeliberately outside `tenant_context_required`: someone authenticated but\nholding no role here still needs to be told where they *do* belong.",
         "operationId": "list_workspaces",
         "responses": {
           "200": {
@@ -1651,26 +1606,6 @@
         }
       }
     },
-    "/v1/status": {
-      "get": {
-        "tags": [
-          "Health"
-        ],
-        "operationId": "service_status",
-        "responses": {
-          "200": {
-            "description": "External service status",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceStatusResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/version": {
       "get": {
         "tags": [
@@ -1857,7 +1792,7 @@
             "items": {
               "$ref": "#/components/schemas/CatalogTable"
             },
-            "description": "One entry per registered vertex/edge type."
+            "description": "One entry per registered relation."
           }
         }
       },
@@ -1893,7 +1828,7 @@
           },
           "name": {
             "type": "string",
-            "description": "Type / table name (e.g. `Person`, `knows_by_source`)."
+            "description": "The relation's name, as fossil named it (`Person`, `Person_knows_Person`)."
           },
           "rows": {
             "type": [
@@ -1901,7 +1836,7 @@
               "null"
             ],
             "format": "int64",
-            "description": "Row count from the Parquet footers (cheap — no full scan)."
+            "description": "Row count, as the corpus reported it when the relation was published."
           }
         }
       },
@@ -2546,66 +2481,6 @@
           "local"
         ]
       },
-      "LogoutResponse": {
-        "type": "object",
-        "description": "POST /v1/auth/logout",
-        "properties": {
-          "end_session_url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "MeOrg": {
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          }
-        }
-      },
-      "MeResponse": {
-        "type": "object",
-        "required": [
-          "user_id",
-          "email",
-          "first_name",
-          "last_name",
-          "effective_role"
-        ],
-        "properties": {
-          "effective_role": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "first_name": {
-            "type": "string"
-          },
-          "last_name": {
-            "type": "string"
-          },
-          "org": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/MeOrg"
-              }
-            ]
-          },
-          "user_id": {
-            "type": "string"
-          }
-        }
-      },
       "OrgIdentityResponse": {
         "type": "object",
         "required": [
@@ -2808,17 +2683,6 @@
           "integrated",
           "scheduled"
         ]
-      },
-      "ServiceStatusResponse": {
-        "type": "object",
-        "required": [
-          "oidc"
-        ],
-        "properties": {
-          "oidc": {
-            "type": "boolean"
-          }
-        }
       },
       "SourceRefsResponse": {
         "type": "object",
@@ -3109,19 +2973,24 @@
         "type": "object",
         "required": [
           "workspaces",
-          "current"
+          "current",
+          "current_name"
         ],
         "properties": {
           "current": {
             "type": "string",
             "description": "This instance's slug — the \"current\" entry in the switcher."
           },
+          "current_name": {
+            "type": "string",
+            "description": "This instance's display name, from its workspace identity. The other\nentries show their slug: an instance only knows its own name."
+          },
           "workspaces": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Slugs of every workspace the user belongs to, from the `workspaces` token\nclaim (captured at login). The web builds each `<slug>.<domain>` link."
+            "description": "Slugs of every workspace the user belongs to, read from the `workspaces`\nclaim on the token this request carried. The web builds each\n`<slug>.<domain>` link."
           }
         }
       }

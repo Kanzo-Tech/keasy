@@ -43,7 +43,33 @@ registers the OIDC client in the shared Keycloak and brings up the instance
 stack. Each instance, at boot, idempotently ensures the `owner` membership of
 the `KEASY_OWNER_KEYCLOAK_SUB` it receives via config — the single bootstrap
 datum. In dev, `make dev` pins the demo owner's Keycloak `sub` so the instance
-self-provisions its owner; everything else starts empty.
+self-provisions its owner. The one other thing dev starts with is the MinIO
+bucket below and the connection over it — files, not fixtures.
+
+## Dev Data
+
+`make dev` also brings up MinIO — an S3 the developer can actually write to —
+and it exists nowhere else: `docker-compose.dev.yml` declares it, and neither
+the prod overlay nor the release images know the name.
+
+| What | Where |
+|------|-------|
+| S3 API | `http://minio.localhost:9000` (and `http://localhost:9000`) |
+| Console | [http://localhost:9001](http://localhost:9001) |
+| Credentials | `minioadmin` / `minioadmin` (`MINIO_ROOT_USER`/`_PASSWORD`) |
+| Bucket | `keasy-dev`, holding `people.csv` and `orders.csv` |
+
+The two CSVs are real objects, copied from `infra/dev/seed/` on every `up`, and
+`orders.person_id` points into `people.person_id` — the edge a mapping needs.
+The instance declares a **source connection** over that bucket at boot
+(`KEASY_BOOTSTRAP_CONNECTION_URL` + `_NAME`), so a member opens Connections and
+finds the bucket already there, credentials encrypted, with nothing to type.
+
+The name `minio.localhost` is load-bearing: inside the compose network Docker's
+DNS answers it, and on the host `*.localhost` is loopback, where 9000 is
+published. A presigned URL carries the host it was signed against, so the
+server and the browser had to agree on one name for the browser to be able to
+fetch what the server signs.
 
 ## Architecture
 

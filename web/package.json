@@ -29,6 +29,8 @@
     "@fossil-lang/types": "alpha",
     "@fossil-lang/viewer": "alpha",
     "@fossil-lang/wasm": "alpha",
+    "@kanzo-tech/theme": "^0.2.0",
+    "@kanzo-tech/ui": "^0.2.0",
     "@lezer/highlight": "^1.2.3",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-query-devtools": "^5.91.3",

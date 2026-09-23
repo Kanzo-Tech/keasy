@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { useDiscoveryStoreApi, type DiscoveryState } from "./store";
 import type { Coordinator } from "@uwdata/mosaic-core";
-import type { GraphClient } from "@fossil-lang/graph";
+import type { SchemaResult, SqlCorpus } from "@fossil-lang/corpus";
 
 export function useDiscoveryStore<T>(selector: (s: DiscoveryState) => T): T {
   const store = useDiscoveryStoreApi();
@@ -15,9 +15,18 @@ export function useCoordinator(): Coordinator | null {
   return useDiscoveryStore((s) => s.coordinator);
 }
 
-/** The fossil-graph verb client — the single source for discrete reads. */
-export function useGraphClient(): GraphClient | null {
-  return useDiscoveryStore((s) => s.graphClient);
+/** The corpus — the single source for discrete reads. */
+export function useCorpus(): SqlCorpus | null {
+  return useDiscoveryStore((s) => s.corpus);
+}
+
+/** What the schema verb answered at boot. */
+export function useCorpusSchema(): SchemaResult | null {
+  return useDiscoveryStore((s) => s.schema);
+}
+
+export function useManifestFiles(): Record<string, string> {
+  return useDiscoveryStore((s) => s.manifestFiles);
 }
 
 // ── useCoordinatorQuery ──────────────────────────────────────────────────

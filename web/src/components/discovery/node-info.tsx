@@ -6,8 +6,8 @@ import {
   ScrollArea,
 } from "@kanzo-tech/ui";
 import { PanelHeader } from "@/components/layout/workspace-layout";
-import { useGraphClient } from "./use-discovery-store";
-import { GROUP_CSS_COLORS } from "@fossil-lang/viewer";
+import { scaleOf } from "@kanzo-tech/graph";
+import { useCorpus } from "./use-discovery-store";
 import type { GraphSchema } from "@/lib/graph-schema";
 
 interface Props {
@@ -17,10 +17,9 @@ interface Props {
 
 export function NodeInfo({ schema, selectedVertex }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
-  const graphClient = useGraphClient();
+  const corpus = useCorpus();
 
-  // Single-vertex lookup via the get_vertex verb (reserved columns already
-  // filtered server-side) — no hand-built SQL.
+  // Single-vertex lookup through the corpus door — no hand-built SQL.
   // Tagged with the vertex it was fetched for, so a new selection reads as
   // "not loaded yet" instead of needing an effect to blank the properties.
   const [fetched, setFetched] = useState<{
@@ -28,16 +27,12 @@ export function NodeInfo({ schema, selectedVertex }: Props) {
     props: Record<string, unknown> | null;
   } | null>(null);
   useEffect(() => {
-    if (!graphClient || !selectedVertex) return;
+    if (!corpus || !selectedVertex) return;
     let cancelled = false;
-    graphClient
-      .getVertex({ vertex_type: selectedVertex.type, subject: selectedVertex.id })
-      .then((r) => {
-        if (!cancelled)
-          setFetched({
-            vertex: selectedVertex,
-            props: (r.vertex as Record<string, unknown> | null) ?? null,
-          });
+    corpus
+      .node(selectedVertex.id, { type: selectedVertex.type })
+      .then((v) => {
+        if (!cancelled) setFetched({ vertex: selectedVertex, props: v?.fields ?? null });
       })
       .catch(() => {
         if (!cancelled) setFetched({ vertex: selectedVertex, props: null });
@@ -45,7 +40,7 @@ export function NodeInfo({ schema, selectedVertex }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [graphClient, selectedVertex]);
+  }, [corpus, selectedVertex]);
   const vertexProps =
     fetched && fetched.vertex === selectedVertex ? fetched.props : null;
 
@@ -60,9 +55,9 @@ export function NodeInfo({ schema, selectedVertex }: Props) {
       });
   }, [vertexProps, selectedVertex, schema]);
 
-  // Type color
+  // Type colour — the page's categorical scale, the same one the canvas draws with.
   const typeIndex = selectedVertex ? schema.types.findIndex((t) => t.name === selectedVertex.type) : -1;
-  const typeColor = typeIndex >= 0 ? GROUP_CSS_COLORS[typeIndex % GROUP_CSS_COLORS.length] : undefined;
+  const typeColor = typeIndex >= 0 ? scaleOf({}).color(typeIndex) : undefined;
 
   return (
     <div className="flex flex-col h-full">

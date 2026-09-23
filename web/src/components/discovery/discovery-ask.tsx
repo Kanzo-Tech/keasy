@@ -36,11 +36,14 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@kanzo-tech/ui";
+import { CodeEditor } from "@kanzo-tech/ui/editor";
+import { sql as sqlLanguage } from "@codemirror/lang-sql";
 import { ErrorAlert } from "@/components/shared/error-alert";
 import { Markdown } from "@/components/shared/markdown";
-import { CodeView } from "@/components/discovery/code-view";
 import { isError } from "@/lib/error-codes";
 import type { ConversationMessage } from "@/lib/types";
+
+const SQL = sqlLanguage();
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -144,7 +147,7 @@ function AssistantExtra({ msg, onShowOnGraph }: { msg: AskMessage; onShowOnGraph
       {view === "results" && hasSql && <ResultTable sql={msg.sql!} />}
       {view === "query" && hasSql && (
         <div className="relative">
-          <CodeView code={msg.sql!} lang="sql" />
+          <CodeEditor value={msg.sql!} readOnly basics chrome={false} wrap extensions={SQL} />
           <button className="absolute top-1 right-1 h-5 w-5 inline-flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground" onClick={() => { navigator.clipboard.writeText(msg.sql!); toast.create({ title: "Copied", type: "success" }); }}>
             <Copy size={10} />
           </button>

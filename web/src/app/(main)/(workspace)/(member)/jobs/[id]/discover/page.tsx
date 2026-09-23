@@ -1,16 +1,23 @@
 "use client";
 
-import { use, useCallback, useMemo, useRef, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Selection } from "@uwdata/mosaic-core";
 import { BarChart3, Info, Loader2, MessageCircle, Settings2, ShieldCheck, Terminal } from "lucide-react";
 import { queryKeys } from "@/lib/query-keys";
 import { WorkspaceLayout, type PanelDef } from "@/components/layout/workspace-layout";
 import { DiscoveryProvider } from "@/components/discovery/store";
-import { useCoordinator } from "@/components/discovery/use-discovery-store";
+import { useCorpusSchema } from "@/components/discovery/use-discovery-store";
 import { useGraphSchema } from "@/components/discovery/use-graph-schema";
-import { GraphCanvas, DEFAULT_GRAPH_CONFIG, type CosmosGraphHandle } from "@fossil-lang/viewer";
-import { useGraphDataRows } from "@/components/discovery/use-graph-data-rows";
+import {
+  GraphRootProvider,
+  useGraph,
+  type GraphApi,
+  type LookPatch,
+  type Sim,
+} from "@kanzo-tech/graph";
+import { crossClassEdges, useCorpusSource } from "@/components/discovery/use-corpus-source";
+import { ClassLegend } from "@/components/discovery/class-legend";
 import { NodeInfo } from "@/components/discovery/node-info";
 import { GraphSettings } from "@/components/discovery/graph-settings";
 import { DiscoveryAsk } from "@/components/discovery/discovery-ask";
@@ -18,8 +25,6 @@ import { DiscoverySql } from "@/components/discovery/discovery-sql";
 import { RuleBuilder } from "@/components/discovery/rule-builder";
 import { AnalysisPanel } from "@/components/discovery/analysis-panel";
 import { FloatingControls } from "@/components/discovery/floating-controls";
-import type { GraphConfigInterface } from "@cosmos.gl/graph";
-import type { RunStatus } from "@/lib/types";
 import { api } from "@/lib/api";
 
 // ── URL resolution ───────────────────────────────────────────────────────
@@ -73,36 +78,56 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
   }
 
   return (
-    <DiscoveryProvider manifest={job.manifest} signedUrls={signedUrls} manifestFiles={manifestFiles}>
-      <DiscoveryWorkspace jobId={id} manifest={job.manifest} />
+    <DiscoveryProvider signedUrls={signedUrls} manifestFiles={manifestFiles}>
+      <DiscoveryWorkspace jobId={id} />
     </DiscoveryProvider>
   );
 }
 
 // ── Workspace ────────────────────────────────────────────────────────────
 
-function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: RunStatus }) {
-  const coordinator = useCoordinator();
-  const kgSchema = useGraphSchema(manifest);
-  const graphRef = useRef<CosmosGraphHandle>(null);
+function DiscoveryWorkspace({ jobId }: { jobId: string }) {
+  const overview = useCorpusSchema();
+  const kgSchema = useGraphSchema();
+  const [chosenType, setChosenType] = useState<string | null>(null);
+  // Derived, not synced: the first class the corpus names is the one drawn until
+  // a reader picks another.
+  const vertexType = chosenType ?? kgSchema.types[0]?.name ?? null;
+
   const [selectedVertex, setSelectedVertex] = useState<{ id: string; type: string; label: string } | null>(null);
-  const [graphConfig, setGraphConfig] = useState<GraphConfigInterface>(DEFAULT_GRAPH_CONFIG);
-  const [simulationRunning, setSimulationRunning] = useState(true);
+  const [look, setLook] = useState<LookPatch>({});
+  const [sim, setSim] = useState<Partial<Sim>>({});
+  const [simulate, setSimulate] = useState(true);
+  const [failure, setFailure] = useState<string | null>(null);
+
   const selection = useMemo(() => Selection.crossfilter(), []);
-  const graphRows = useGraphDataRows();
+  const source = useCorpusSource(vertexType, selection);
 
-  const handleConfigChange = useCallback((patch: Partial<GraphConfigInterface>) => {
-    setGraphConfig((prev) => ({ ...prev, ...patch }));
-    graphRef.current?.graph?.setConfig(patch);
-  }, []);
+  // The click handler needs the answer the canvas is currently drawing, which is
+  // a value the api only has after this call.
+  const apiRef = useRef<GraphApi | null>(null);
+  const onPointClick = useCallback(
+    (_vertex: bigint, _graph: unknown, index: number) => {
+      const id = apiRef.current?.slice?.subjects?.[index];
+      if (!id || !vertexType) return;
+      setSelectedVertex({ id, type: vertexType, label: id.split(/[/#]/).pop() || id });
+    },
+    [vertexType],
+  );
 
-  if (!coordinator) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  const graph = useGraph({
+    source,
+    look,
+    sim,
+    simulate,
+    onFailure: setFailure,
+    events: { onPointClick, onBackgroundClick: () => setSelectedVertex(null) },
+  });
+  useEffect(() => {
+    apiRef.current = graph;
+  });
+
+  const undrawnEdges = crossClassEdges(overview, vertexType);
 
   const panels: PanelDef[] = [
     {
@@ -124,7 +149,7 @@ function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: RunS
       content: <RuleBuilder jobId={jobId} schema={kgSchema} />,
     },
     // Raw SQL over the producer's own dataset — runs in the browser
-    // (graphClient.executeSql, DuckDB-WASM). Producer-scoped at the signed-URL
+    // (corpus.executeSql, DuckDB-WASM). Producer-scoped at the signed-URL
     // layer, so it lives in the data-discovery surface, not owner-gated.
     {
       id: "sql",
@@ -142,7 +167,9 @@ function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: RunS
       id: "settings",
       icon: Settings2,
       label: "Settings",
-      content: <GraphSettings graphConfig={graphConfig} onConfigChange={handleConfigChange} />,
+      content: (
+        <GraphSettings sim={sim} look={look} onSimChange={setSim} onLookChange={setLook} />
+      ),
     },
   ];
 
@@ -151,7 +178,13 @@ function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: RunS
       backHref={`/jobs/${jobId}`}
       backLabel="Back to job"
       panels={panels}
-      floatingControls={<FloatingControls graphRef={graphRef} simulationRunning={simulationRunning} />}
+      floatingControls={
+        <FloatingControls
+          api={graph}
+          simulationRunning={simulate}
+          onToggleSimulation={() => setSimulate((v) => !v)}
+        />
+      }
       statusLeft={
         <>
           <span className="tabular-nums">
@@ -159,6 +192,20 @@ function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: RunS
             {" · "}
             {kgSchema.edges.reduce((sum, e) => sum + e.count, 0).toLocaleString()} edges
           </span>
+          {graph.sliced && (
+            <>
+              <span className="text-border">|</span>
+              <span className="tabular-nums">
+                drawing {graph.slice?.marks.toLocaleString() ?? 0} of {graph.total?.toLocaleString() ?? "?"}
+              </span>
+            </>
+          )}
+          {failure && (
+            <>
+              <span className="text-border">|</span>
+              <span className="text-destructive truncate max-w-60">{failure}</span>
+            </>
+          )}
           {selectedVertex && (
             <>
               <span className="text-border">|</span>
@@ -168,20 +215,16 @@ function DiscoveryWorkspace({ jobId, manifest }: { jobId: string; manifest: RunS
         </>
       }
     >
-      {graphRows ? (
-        <GraphCanvas
-          vertices={graphRows.vertices}
-          edges={graphRows.edges}
-          graphConfig={graphConfig}
-          graphRef={graphRef}
-          selection={selection}
-          onSelectVertex={setSelectedVertex}
-        />
-      ) : (
-        <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
-          Loading graph…
+      <GraphRootProvider value={graph} className="flex-1">
+        <div className="absolute left-2 top-2 z-10 max-w-52">
+          <ClassLegend
+            types={kgSchema.types}
+            value={vertexType}
+            onChange={setChosenType}
+            undrawnEdges={undrawnEdges}
+          />
         </div>
-      )}
+      </GraphRootProvider>
     </WorkspaceLayout>
   );
 }

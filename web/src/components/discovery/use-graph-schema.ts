@@ -4,53 +4,51 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   buildGraphSchema,
-  foldVertexStats,
   type FieldStatsMap,
   type GraphSchema,
 } from "@/lib/graph-schema";
-import type { RunStatus } from "@/lib/types";
-import { useGraphClient } from "./use-discovery-store";
+import { useCorpus, useCorpusSchema } from "./use-discovery-store";
 
 /**
- * Build the graph schema from a `RunStatus` and, once the verb client is ready,
- * refine it with authoritative role + cardinality from the `describe_vertex_type`
- * verb (one call per type — fossil is the single source). Returns the
- * name/type-only schema (roles default to "dimension") until the stats land.
+ * The schema the `schema` verb answered at boot, refined with datatype, role and
+ * cardinality — one `schema({ vertex_type })` call per type, which is the shape
+ * that costs one query per type instead of one per column. Returns the
+ * name-only schema until those land.
  */
-export function useGraphSchema(manifest: RunStatus): GraphSchema {
-  const graphClient = useGraphClient();
-  const base = useMemo(() => buildGraphSchema(manifest), [manifest]);
+export function useGraphSchema(): GraphSchema {
+  const corpus = useCorpus();
+  const overview = useCorpusSchema();
+  const base = useMemo(
+    () => buildGraphSchema(overview ?? { vertices: [], edges: [], fields: [] }),
+    [overview],
+  );
   const [stats, setStats] = useState<FieldStatsMap | null>(null);
 
   useEffect(() => {
-    if (!graphClient) return;
+    if (!corpus || !overview) return;
     let cancelled = false;
     Promise.all(
-      base.types.map(async (t) => ({
-        name: t.name,
-        res: await graphClient.describeVertexType({ vertex_type: t.name }),
+      overview.vertices.map(async (v) => ({
+        name: v.name,
+        fields: (await corpus.schema({ vertex_type: v.name })).fields,
       })),
     )
       .then((results) => {
         if (cancelled) return;
-        const map: FieldStatsMap = new Map();
-        for (const { name, res } of results) {
-          foldVertexStats(map, name, res.count, res.fields);
-        }
-        setStats(map);
+        setStats(new Map(results.map((r) => [r.name, r.fields])));
       })
       .catch((err) => {
-        // Surface the failure (the base schema still renders with phase-1
-        // roles); a silent swallow here masked WASM-init breakage before.
-        console.error("describe_vertex_type failed; using base schema", err);
+        // Surface the failure (the name-only schema still renders); a silent
+        // swallow here masked WASM-init breakage before.
+        console.error("schema stats failed; using name-only schema", err);
       });
     return () => {
       cancelled = true;
     };
-  }, [graphClient, base]);
+  }, [corpus, overview]);
 
   return useMemo(
-    () => (stats ? buildGraphSchema(manifest, stats) : base),
-    [manifest, stats, base],
+    () => (overview && stats ? buildGraphSchema(overview, stats) : base),
+    [overview, stats, base],
   );
 }

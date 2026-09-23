@@ -1,38 +1,30 @@
 /**
- * Data Space mounting — GraphAr Parquets as DuckDB lazy views.
+ * Lend the corpus reader keasy's access.
  *
- * Pattern: DuckDB lakehouse — CREATE VIEW over read_parquet(url).
- * The participant never downloads the promotor's data —
- * only the columns/rows needed for each query are transferred via HTTP Range requests.
+ * fossil addresses a corpus by dataset-relative name (`vertex/Person/tiles.parquet`)
+ * and composes every read itself; keasy's blobs sit behind per-file signatures, so
+ * the name fossil composes is correct and unreadable. `@fossil-lang/corpus`'s
+ * `readText` covers the manifests and nothing carries a credential for the payload.
+ *
+ * DuckDB's own file registry is where that gap closes without either side learning
+ * the other's conventions: keasy registers the names it signed, fossil keeps naming
+ * them, and `read_parquet('vertex/Person/tiles.parquet')` resolves to the signed URL.
+ * A file fossil addresses and keasy never signed fails by name in DuckDB, which is
+ * the diagnosis.
  */
 
-import type { RunStatus } from "@/lib/types";
-import { edgeTableName } from "@/lib/graph-schema";
+import { DuckDBDataProtocol } from "@duckdb/duckdb-wasm";
 import type { MosaicInstance } from "@/lib/mosaic";
 
-export async function mountDataSpace(
+export async function registerDataSpace(
+  db: MosaicInstance["db"],
   conn: MosaicInstance["conn"],
-  manifest: RunStatus,
   signedUrls: Record<string, string>,
 ): Promise<void> {
   await conn.query("SET enable_http_metadata_cache = true");
-
-  const stmts: string[] = [];
-
-  for (const v of manifest.vertices) {
-    const url = signedUrls[v.file] ?? v.file;
-    stmts.push(`CREATE OR REPLACE VIEW "${v.type}" AS SELECT * FROM read_parquet('${escapeUrl(url)}')`);
-  }
-  for (const e of manifest.edges ?? []) {
-    const name = edgeTableName(e.src_type, e.edge_type, e.dst_type);
-    const url = signedUrls[e.by_source] ?? e.by_source;
-    stmts.push(`CREATE OR REPLACE VIEW "${name}" AS SELECT * FROM read_parquet('${escapeUrl(url)}')`);
-  }
-
-  // DDL statements are independent — execute in parallel
-  await Promise.all(stmts.map((s) => conn.query(s)));
-}
-
-function escapeUrl(url: string): string {
-  return url.replace(/'/g, "''");
+  await Promise.all(
+    Object.entries(signedUrls).map(([path, url]) =>
+      db.registerFileURL(path, url, DuckDBDataProtocol.HTTP, false),
+    ),
+  );
 }

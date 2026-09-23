@@ -381,7 +381,7 @@ pub async fn resolve_discover_urls(
 struct ManifestResponse {
     /// The GraphAr manifest YAMLs, keyed by dataset-relative path
     /// (`graph.graph.yml`, `vertex/Person.vertex.yml`, …). Fed verbatim into
-    /// `@fossil-lang/graph`'s `createGraphClient({ manifestFiles })`; keasy
+    /// `@fossil-lang/corpus`'s `open(base, { manifestFiles })`; keasy
     /// treats them as opaque blobs — fossil owns the GraphAr layout.
     manifest_files: HashMap<String, String>,
 }

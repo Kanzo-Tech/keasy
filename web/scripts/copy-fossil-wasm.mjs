@@ -20,11 +20,11 @@ const here = dirname(fileURLToPath(import.meta.url));
 //  - @fossil-lang/wasm     → the checker, on the main thread (`/fossil/fossil_wasm_bg.wasm`);
 //                            `lib/fossil/checker.ts` fetches it. There is no Worker any
 //                            more — the artefact is still needed, its consumer moved.
-//  - @fossil-lang/graph    → discovery verb client (`/fossil/fossil_graph_wasm_bg.wasm`)
+//  - @fossil-lang/corpus   → the corpus reader (`/fossil/fossil_graph_wasm_bg.wasm`)
 //  - @fossil-lang/executor → browser job runner / DataFusion-WASM (`/fossil/fossil_df_wasm_bg.wasm`)
 const ARTEFACTS = [
   { pkg: "@fossil-lang/wasm/pkg/fossil_wasm_bg.wasm", file: "fossil_wasm_bg.wasm" },
-  { pkg: "@fossil-lang/graph/pkg/fossil_graph_wasm_bg.wasm", file: "fossil_graph_wasm_bg.wasm" },
+  { pkg: "@fossil-lang/corpus/pkg/fossil_graph_wasm_bg.wasm", file: "fossil_graph_wasm_bg.wasm" },
   { pkg: "@fossil-lang/executor/pkg/fossil_df_wasm_bg.wasm", file: "fossil_df_wasm_bg.wasm" },
 ];
 

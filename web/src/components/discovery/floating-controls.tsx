@@ -6,20 +6,22 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@kanzo-tech/ui";
-import type { CosmosGraphHandle } from "@fossil-lang/viewer";
+import type { GraphApi } from "@kanzo-tech/graph";
+import type { Graph } from "@cosmos.gl/graph";
 
 interface Props {
-  graphRef: React.RefObject<CosmosGraphHandle | null>;
+  api: GraphApi;
   simulationRunning: boolean;
+  onToggleSimulation: () => void;
 }
 
 const VIEW_CONTROLS = [
-  { key: "in", icon: Plus, label: "Zoom in", action: (g: CosmosGraphHandle | null) => g?.zoomIn(300) },
-  { key: "out", icon: Minus, label: "Zoom out", action: (g: CosmosGraphHandle | null) => g?.zoomOut(300) },
-  { key: "fit", icon: Maximize, label: "Fit view (F)", action: (g: CosmosGraphHandle | null) => g?.fitView(500) },
+  { key: "in", icon: Plus, label: "Zoom in", action: (g: Graph) => g.zoom(g.getZoomLevel() * 1.4, 300) },
+  { key: "out", icon: Minus, label: "Zoom out", action: (g: Graph) => g.zoom(g.getZoomLevel() / 1.4, 300) },
+  { key: "fit", icon: Maximize, label: "Fit view (F)", action: (g: Graph) => g.fitView(500) },
 ] as const;
 
-export function FloatingControls({ graphRef, simulationRunning }: Props) {
+export function FloatingControls({ api, simulationRunning, onToggleSimulation }: Props) {
   return (
     <div className="flex flex-col gap-0.5">
       {VIEW_CONTROLS.map(({ key, icon: Icon, label, action }) => (
@@ -28,7 +30,10 @@ export function FloatingControls({ graphRef, simulationRunning }: Props) {
             <button
               className="h-6 w-6 inline-flex items-center justify-center rounded-sm bg-background/80 backdrop-blur-sm border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               aria-label={label}
-              onClick={() => action(graphRef.current)}
+              onClick={() => {
+                const graph = api.getGraph();
+                if (graph) action(graph);
+              }}
             >
               <Icon size={12} />
             </button>
@@ -41,7 +46,7 @@ export function FloatingControls({ graphRef, simulationRunning }: Props) {
           <button
             className="h-6 w-6 inline-flex items-center justify-center rounded-sm bg-background/80 backdrop-blur-sm border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
             aria-label={simulationRunning ? "Pause (Space)" : "Play (Space)"}
-            onClick={() => { if (simulationRunning) graphRef.current?.pause(); else graphRef.current?.start(); }}
+            onClick={onToggleSimulation}
           >
             {simulationRunning ? <Pause size={12} /> : <Play size={12} />}
           </button>

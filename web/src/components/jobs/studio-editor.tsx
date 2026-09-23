@@ -152,7 +152,7 @@ export function StudioEditor({
           rounded border belong to a control sitting in a form, and here the
           region's own borders do that job. `basics` stays on, so the theme,
           history and keymap come from the library and only the language is ours
-          (which is what `lib/codemirror-theme.ts` used to hand-roll). */}
+          (which keasy used to hand-roll). */}
       <CodeEditor
         basics
         chrome={false}

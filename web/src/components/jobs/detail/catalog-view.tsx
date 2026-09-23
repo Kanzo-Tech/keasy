@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Selection } from "@uwdata/mosaic-core";
 import { queryKeys } from "@/lib/query-keys";
 import { Database, Loader2 } from "lucide-react";
-import { GraphCanvas, DEFAULT_GRAPH_CONFIG, type CosmosGraphHandle } from "@fossil-lang/viewer";
-import { useGraphDataRows } from "@/components/discovery/use-graph-data-rows";
+import { GraphCanvas } from "@kanzo-tech/graph";
+import { useCorpusSource } from "@/components/discovery/use-corpus-source";
+import { useCorpusSchema } from "@/components/discovery/use-discovery-store";
 import { DiscoveryProvider } from "@/components/discovery/store";
 import { EmptyState } from "@/components/shared/empty-state";
 import type { RunStatus } from "@/lib/types";
@@ -68,19 +69,21 @@ export function CatalogView({ id, catalogManifest }: CatalogViewProps) {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <DiscoveryProvider manifest={catalogManifest} signedUrls={signedUrls} manifestFiles={manifestFiles}>
-        <CatalogGraphContent manifest={catalogManifest} />
+      <DiscoveryProvider signedUrls={signedUrls} manifestFiles={manifestFiles}>
+        <CatalogGraphContent />
       </DiscoveryProvider>
     </div>
   );
 }
 
-function CatalogGraphContent(_props: { manifest: RunStatus }) {
-  const graphRef = useRef<CosmosGraphHandle>(null);
+function CatalogGraphContent() {
+  const overview = useCorpusSchema();
   const selection = useMemo(() => Selection.crossfilter(), []);
-  const graphRows = useGraphDataRows();
+  // The catalog corpus is one class of dataset descriptions; the first the
+  // manifest names is the one there is.
+  const source = useCorpusSource(overview?.vertices[0]?.name ?? null, selection);
 
-  if (!graphRows) {
+  if (!source) {
     return (
       <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
         Loading graph…
@@ -88,14 +91,5 @@ function CatalogGraphContent(_props: { manifest: RunStatus }) {
     );
   }
 
-  return (
-    <GraphCanvas
-      vertices={graphRows.vertices}
-      edges={graphRows.edges}
-      graphConfig={DEFAULT_GRAPH_CONFIG}
-      graphRef={graphRef}
-      selection={selection}
-      onSelectVertex={() => {}}
-    />
-  );
+  return <GraphCanvas className="flex-1" source={source} onFailure={console.error} />;
 }

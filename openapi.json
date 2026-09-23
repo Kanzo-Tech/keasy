@@ -2662,7 +2662,7 @@
         "properties": {
           "manifest_files": {
             "type": "object",
-            "description": "The GraphAr manifest YAMLs, keyed by dataset-relative path\n(`graph.graph.yml`, `vertex/Person.vertex.yml`, …). Fed verbatim into\n`@fossil-lang/graph`'s `createGraphClient({ manifestFiles })`; keasy\ntreats them as opaque blobs — fossil owns the GraphAr layout.",
+            "description": "The GraphAr manifest YAMLs, keyed by dataset-relative path\n(`graph.graph.yml`, `vertex/Person.vertex.yml`, …). Fed verbatim into\n`@fossil-lang/corpus`'s `open(base, { manifestFiles })`; keasy\ntreats them as opaque blobs — fossil owns the GraphAr layout.",
             "additionalProperties": {
               "type": "string"
             },

@@ -1,10 +1,9 @@
-import type { RunStatus } from "@/lib/types";
-import type { FieldRole, FieldStat } from "@fossil-lang/graph";
+import type { FieldRole, FieldStat, SchemaResult } from "@fossil-lang/corpus";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
-// FieldRole is owned by fossil-graph (the `describe_vertex_type` verb is the
-// single source for role inference — keasy no longer infers roles client-side).
+// FieldRole is owned by fossil (the `schema` verb is the single source for role
+// inference — keasy no longer infers roles client-side).
 export type { FieldRole };
 export type YAgg = "count" | "sum" | "avg" | "min" | "max";
 export type MarkType = "barY" | "lineY" | "dot" | "rectY" | "cell";
@@ -14,12 +13,12 @@ export interface FieldInfo {
   key: string;
   /** Column name in DuckDB: "age" */
   name: string;
-  /** DuckDB type: "VARCHAR", "DOUBLE", etc. */
+  /** GraphAr datatype spelling: "int64", "double", … Empty until the stats land. */
   type: string;
   role: FieldRole;
   /** Vertex type this field belongs to */
   sourceType: string;
-  /** Cardinality from browser-side DuckDB-WASM profiling (absent until computed). */
+  /** Cardinality from the schema verb (absent until computed). */
   distinct?: number;
   count?: number;
 }
@@ -35,12 +34,12 @@ export interface EdgeType {
   name: string;
   targetType: string;
   count: number;
-  /** DuckDB view name: "person_works_at_org" */
+  /** The relation the corpus registered: "person_works_at_org" */
   tableName: string;
 }
 
 export interface SourceQuery {
-  /** DuckDB table/view name to query (pre-created at setup) */
+  /** DuckDB relation to query — registered by the corpus, not by keasy */
   tableName: string;
 }
 
@@ -61,10 +60,9 @@ export interface GraphSchema {
 
 // ── Type checks (GraphAr datatype spellings) ─────────────────────────────
 //
-// `data_type` carries GraphAr spelling (`int64`, `double`, `date`, …), NOT
+// `datatype` carries GraphAr spelling (`int64`, `double`, `date`, …), NOT
 // DuckDB names. These classify it for vgplot chart binning (the reactive
-// Mosaic layer). Role inference is NOT here — it's the `describe_vertex_type`
-// verb's job (fossil is the single source).
+// Mosaic layer). Role inference is NOT here — it's the `schema` verb's job.
 
 const NUMERIC_GRAPHAR_TYPES = new Set([
   "int8", "int16", "int32", "int64",
@@ -93,73 +91,46 @@ export function fieldKey(sourceType: string, name: string): string {
   return `${sourceType}::${name}`;
 }
 
-export function edgeTableName(sourceType: string, name: string, targetType: string): string {
-  return `${sourceType}_${name}_${targetType}`;
-}
+/** Per-vertex-type field stats, from one `schema({ vertex_type })` call each. */
+export type FieldStatsMap = Map<string, FieldStat[]>;
 
-// ── Verb-sourced field stats ─────────────────────────────────────────────
-
-/**
- * Per-field role + cardinality, keyed by `FieldInfo.key`. Built from the
- * `describe_vertex_type` verb — the single source. keasy no longer profiles
- * columns or infers roles client-side ([[feedback_one_idiom_per_concern]]).
- */
-export type FieldStatsMap = Map<
-  string,
-  { role: FieldRole; distinct: number; count: number }
->;
-
-/** Fold one vertex type's `describe_vertex_type` result into the stats map. */
-export function foldVertexStats(
-  stats: FieldStatsMap,
-  typeName: string,
-  count: number,
-  fields: FieldStat[],
-): void {
-  for (const f of fields) {
-    stats.set(fieldKey(typeName, f.name), {
-      role: f.role,
-      distinct: f.distinct,
-      count,
-    });
-  }
-}
-
-// ── Build schema from manifest ──────────────────────────────────────────
+// ── Build schema from the schema verb ───────────────────────────────────
 
 /**
- * Build the graph schema from the subprocess `RunStatus`. Pass `stats` (folded
- * from the `describe_vertex_type` verb) to attach authoritative role +
- * cardinality; without it (phase 1) roles default to "dimension" until the verb
- * result lands.
+ * Build the graph schema from what the `schema` verb answered. Pass `stats`
+ * (one `schema({ vertex_type })` per type) to attach datatype, role and
+ * cardinality; without them a field is a name, its role defaults to
+ * "dimension" and nothing is binnable until the stats land.
  */
-export function buildGraphSchema(manifest: RunStatus, stats?: FieldStatsMap): GraphSchema {
-  const types: VertexType[] = manifest.vertices.map((v) => ({
-    name: v.type,
-    entityCount: v.count ?? 0,
-    fields: v.columns.map((c) => {
-      const key = fieldKey(v.type, c.name);
-      const s = stats?.get(key);
-      return {
-        key,
-        name: c.name,
-        type: c.data_type,
-        // Role comes from the verb; before it lands (phase 1) default to
-        // "dimension" so every field stays visible until refined.
-        role: s?.role ?? "dimension",
-        sourceType: v.type,
-        distinct: s?.distinct,
-        count: s?.count,
-      };
-    }),
-  }));
+export function buildGraphSchema(overview: SchemaResult, stats?: FieldStatsMap): GraphSchema {
+  const types: VertexType[] = overview.vertices.map((v) => {
+    const measured = stats?.get(v.name);
+    const fields: FieldInfo[] = measured
+      ? measured.map((f) => ({
+          key: fieldKey(v.name, f.name),
+          name: f.name,
+          type: f.datatype,
+          role: f.role,
+          sourceType: v.name,
+          distinct: f.distinct,
+          count: v.count,
+        }))
+      : v.fields.map((name) => ({
+          key: fieldKey(v.name, name),
+          name,
+          type: "",
+          role: "dimension" as FieldRole,
+          sourceType: v.name,
+        }));
+    return { name: v.name, entityCount: v.count, fields };
+  });
 
-  const edges: EdgeType[] = (manifest.edges ?? []).map((e) => ({
-    sourceType: e.src_type,
-    name: e.edge_type,
-    targetType: e.dst_type,
-    count: e.count ?? 0,
-    tableName: edgeTableName(e.src_type, e.edge_type, e.dst_type),
+  const edges: EdgeType[] = overview.edges.map((e) => ({
+    sourceType: e.source_type,
+    name: e.name,
+    targetType: e.target_type,
+    count: e.count,
+    tableName: e.table_name,
   }));
 
   const allFields = types.flatMap((t) => t.fields);
@@ -184,7 +155,7 @@ export function buildGraphSchema(manifest: RunStatus, stats?: FieldStatsMap): Gr
     const sourceTypes = [...new Set(fields.map((f) => f.sourceType))];
 
     if (sourceTypes.length <= 1) {
-      return { tableName: sourceTypes[0] ?? manifest.vertices[0]?.type ?? "data" };
+      return { tableName: sourceTypes[0] ?? overview.vertices[0]?.name ?? "data" };
     }
 
     if (sourceTypes.length === 2) {
@@ -192,12 +163,12 @@ export function buildGraphSchema(manifest: RunStatus, stats?: FieldStatsMap): Gr
       const edge = edgeBetween(typeA, typeB);
       if (!edge) return { tableName: typeA };
 
-      // Inline JOIN subquery (no pre-created views needed — DuckDB views are lazy anyway)
-      const edgeTable = edge.tableName;
+      // Inline JOIN subquery over the relations the corpus registered, on the
+      // writer's own addressing columns.
       const tableName =
         `(SELECT s.*, t.* FROM "${edge.sourceType}" s ` +
-        `JOIN "${edgeTable}" e ON s._id = e.source ` +
-        `JOIN "${edge.targetType}" t ON t._id = e.target)`;
+        `JOIN "${edge.tableName}" e ON s.dense_id = e.src_dense ` +
+        `JOIN "${edge.targetType}" t ON t.dense_id = e.dst_dense)`;
       return { tableName };
     }
 

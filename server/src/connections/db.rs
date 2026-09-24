@@ -74,15 +74,15 @@ impl Database {
 
     pub async fn list_connections(&self, type_filter: Option<&str>) -> Vec<Connection> {
         let (_permit, conn) = self.read().await;
-        // Only READ sources are listed for the connector UI / `@conn` references;
-        // the sink is the owner output store, managed via catalog-storage settings.
+        // Sources and sinks alike: the studio picks a job's destination from the
+        // sinks, and every other view reads `direction` to tell them apart.
         let (sql, param): (&str, Option<&str>) = match type_filter {
             Some(t) => (
-                "SELECT id, name, kind, location_type, direction, cloud_account_id, url FROM connections WHERE direction = 'source' AND kind = ?1 ORDER BY name",
+                "SELECT id, name, kind, location_type, direction, cloud_account_id, url FROM connections WHERE kind = ?1 ORDER BY name",
                 Some(t),
             ),
             None => (
-                "SELECT id, name, kind, location_type, direction, cloud_account_id, url FROM connections WHERE direction = 'source' ORDER BY name",
+                "SELECT id, name, kind, location_type, direction, cloud_account_id, url FROM connections ORDER BY name",
                 None,
             ),
         };

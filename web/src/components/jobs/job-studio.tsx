@@ -115,7 +115,12 @@ export function JobStudio() {
 
   useEffect(() => {
     if (!draftJob || draftJob.status !== "draft") return;
-    store.restoreDraft(draftJob.script ?? "", draftJob.name ?? "", draftJob.mode);
+    store.restoreDraft(
+      draftJob.script ?? "",
+      draftJob.name ?? "",
+      draftJob.mode,
+      draftJob.sink_connection_id ?? null,
+    );
     setSaved(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftJob]);

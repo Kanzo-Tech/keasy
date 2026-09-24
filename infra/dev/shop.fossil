@@ -1,0 +1,18 @@
+type { Person, Order } := io.shex("@MinIO dev shapes/shop.shex")
+
+People := io.csv("@MinIO dev bucket/people.csv")
+Orders := io.csv("@MinIO dev bucket/orders.csv")
+
+Buyers : Person from People
+    @subject = "https://example.org/person/{People.person_id}"
+    name     = People.name
+    email    = People.email
+    city     = People.city
+    country  = People.country
+
+Purchases : Order from Orders
+    @subject = "https://example.org/order/{Orders.order_id}"
+    product  = Orders.product
+    quantity = Orders.quantity
+    total    = Orders.total_eur
+    buyer    = Person(Orders.person_id)

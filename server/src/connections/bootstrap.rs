@@ -5,6 +5,12 @@
 //! bucket the compose overlay seeds. `KEASY_BOOTSTRAP_SINK_URL` names where job
 //! output lands: the workspace sink, which belongs to the owner, so declaring it
 //! here is what keeps trying a job in dev from needing a second login.
+//! `KEASY_BOOTSTRAP_VOCAB_URL` and `_NAME` name where the SHAPES live — a
+//! `vocab` connection, which is the kind the editor offers as a vocabulary and
+//! the schema introspector deliberately skips. It is a separate prefix and not
+//! the data bucket because a connection IS a prefix: pointed at the same place,
+//! the two would list each other's files and the Vocabulary tab would offer
+//! CSVs.
 //!
 //! The credentials are read from the env vars the provider schema already
 //! declares for its own fields (`AWS_ACCESS_KEY_ID`, `AZURE_STORAGE_ACCOUNT_NAME`,
@@ -39,7 +45,16 @@ pub async fn ensure_declared_connections(db: &Database) {
     };
 
     let sink_url = env_nonblank("KEASY_BOOTSTRAP_SINK_URL");
+    // Both halves or neither: a vocab connection is a NAME (programs reference
+    // it as `@name/shape.shex`) at a URL, and half of that is not a connection.
+    let vocab = env_nonblank("KEASY_BOOTSTRAP_VOCAB_NAME")
+        .zip(env_nonblank("KEASY_BOOTSTRAP_VOCAB_URL"));
+
     let needs_source = db.get_connection_by_name(&name).await.is_none();
+    let needs_vocab = match &vocab {
+        Some((vocab_name, _)) => db.get_connection_by_name(vocab_name).await.is_none(),
+        None => false,
+    };
     let needs_sink = match (&sink_url, db.get_sink_connection().await) {
         (Some(_), Some(existing)) => {
             // One sink per workspace, and this one is already somebody's answer.
@@ -49,7 +64,7 @@ pub async fn ensure_declared_connections(db: &Database) {
         (Some(_), None) => true,
         (None, _) => false,
     };
-    if !needs_source && !needs_sink {
+    if !needs_source && !needs_vocab && !needs_sink {
         return;
     }
 
@@ -61,7 +76,28 @@ pub async fn ensure_declared_connections(db: &Database) {
         .await;
 
     if needs_source {
-        declare(db, &creds, &account_id, &name, &url, Direction::Source).await;
+        declare(
+            db,
+            &creds,
+            &account_id,
+            &name,
+            &url,
+            ConnectionKind::Data,
+            Direction::Source,
+        )
+        .await;
+    }
+    if let (true, Some((vocab_name, vocab_url))) = (needs_vocab, &vocab) {
+        declare(
+            db,
+            &creds,
+            &account_id,
+            vocab_name,
+            vocab_url,
+            ConnectionKind::Vocab,
+            Direction::Source,
+        )
+        .await;
     }
     if let (true, Some(sink_url)) = (needs_sink, sink_url) {
         declare(
@@ -70,6 +106,7 @@ pub async fn ensure_declared_connections(db: &Database) {
             &account_id,
             SINK_NAME,
             &sink_url,
+            ConnectionKind::Data,
             Direction::Sink,
         )
         .await;
@@ -130,6 +167,7 @@ async fn declare(
     account_id: &str,
     name: &str,
     url: &str,
+    kind: ConnectionKind,
     direction: Direction,
 ) {
     let reachable = match direction {
@@ -143,14 +181,16 @@ async fn declare(
 
     let request = CreateConnectionRequest {
         name: name.to_string(),
-        kind: ConnectionKind::Data,
+        kind,
         location_type: LocationType::Cloud,
         direction,
         cloud_account_id: Some(account_id.to_string()),
         url: url.to_string(),
     };
     match db.create_connection(request).await {
-        Ok(_) => info!(%name, %url, direction = direction.as_str(), "declared connection ready"),
+        Ok(c) => {
+            info!(%name, %url, kind = c.kind.as_str(), direction = direction.as_str(), "declared connection ready")
+        }
         Err(e) => error!(%name, error = %e, "declared connection: rejected"),
     }
 }
@@ -166,7 +206,7 @@ async fn write_check(base_url: &str, creds: &HashMap<String, String>) -> Result<
     Ok(())
 }
 
-fn env_nonblank(name: &str) -> Option<String> {
+pub(crate) fn env_nonblank(name: &str) -> Option<String> {
     std::env::var(name)
         .ok()
         .map(|v| v.trim().to_string())

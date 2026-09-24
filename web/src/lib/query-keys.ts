@@ -55,9 +55,4 @@ export const queryKeys = {
     list: (jobId: string) => ["conversations", jobId] as const,
     messages: (conversationId: string) => ["messages", conversationId] as const,
   },
-
-
-  // Dashboard
-  dashboard: (jobId: string) => ["dashboard", jobId] as const,
-
 } as const;

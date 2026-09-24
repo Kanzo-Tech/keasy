@@ -1,141 +1,73 @@
-//! Workspace management endpoints.
-//!
-//! Identity is the owner's to edit (`Require<IsOwner>`) and both planes' to read
-//! (`Require<IsWorkspaceUser>`): the owner fills it in on the Identity page, and
-//! the member's job studio reads it to know whether this workspace can publish
-//! DCAT at all. A read here is the workspace's own public legal identity, which
-//! is the one piece of the control plane the data plane genuinely depends on.
-//!
-//! These routes live inside `api_routes` (bearer token + tenant context required).
+//! The workspace's legal identity: read by both roles (the member's job studio
+//! reads it to know whether DCAT output can be published), written by the owner.
+//! Membership itself is Keycloak's, declared in Terraform.
 
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use regex::Regex;
-use serde::Deserialize;
 use std::sync::LazyLock;
 
 use crate::AppState;
 use crate::error::{data_response, error_body};
 use crate::middleware::tenant::{IsOwner, IsWorkspaceUser, RbacError, Require};
+use crate::settings::org::OrgIdentity;
 
 static SUBDIVISION_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[A-Z]{2}-[A-Z0-9]{1,3}$").unwrap());
 
-// Membership (who is owner/member) is declared in Terraform and assigned in Keycloak,
-// not managed at runtime — so there are no list/remove/invite endpoints here. This
-// module keeps only the workspace's legal identity (company name, country, VAT).
-
-// ── Workspace legal identity ─────────────────────────────────────────────────
-
-#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
-pub struct OrgIdentityResponse {
-    legal_name: String,
-    country: String,
-    registration_number: Option<String>,
-    country_subdivision_code: Option<String>,
-    registration_number_type: Option<String>,
-}
-
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct UpdateOrgIdentityPayload {
-    pub legal_name: String,
-    pub country: String,
-    pub registration_number: Option<String>,
-    pub country_subdivision_code: Option<String>,
-    pub registration_number_type: Option<String>,
-}
-
 #[utoipa::path(get, path = "/v1/org/identity", tag = "Organization",
     responses(
-        (status = 200, description = "Workspace identity", body = OrgIdentityResponse),
+        (status = 200, description = "Workspace identity", body = OrgIdentity),
     )
 )]
 pub async fn get_org_identity(
     _ctx: Require<IsWorkspaceUser>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let identity = state.db.get_workspace_identity().await.unwrap_or_default();
-    data_response(OrgIdentityResponse {
-        legal_name: identity.legal_name,
-        country: identity.country,
-        registration_number: identity.registration_number,
-        country_subdivision_code: identity.country_subdivision_code,
-        registration_number_type: identity.registration_number_type,
-    })
-    .into_response()
+    let workspace = state.db.get_workspace_identity().await.unwrap_or_default();
+    data_response(workspace.identity).into_response()
 }
 
 #[utoipa::path(put, path = "/v1/org/identity", tag = "Organization",
-    request_body = UpdateOrgIdentityPayload,
+    request_body = OrgIdentity,
     responses(
-        (status = 200, description = "Identity updated", body = OrgIdentityResponse),
+        (status = 200, description = "Identity updated", body = OrgIdentity),
         (status = 400, description = "Validation error"),
     )
 )]
 pub async fn update_org_identity(
     _ctx: Require<IsOwner>,
     State(state): State<AppState>,
-    Json(payload): Json<UpdateOrgIdentityPayload>,
+    Json(mut payload): Json<OrgIdentity>,
 ) -> Result<impl IntoResponse, RbacError> {
-    let legal_name = payload.legal_name.trim().to_string();
-    if legal_name.is_empty() {
-        return Ok((
+    payload.legal_name = payload.legal_name.trim().to_string();
+    let invalid = |message: &str| {
+        Ok((
             StatusCode::BAD_REQUEST,
-            Json(error_body("bad_request", "legal_name must not be empty")),
+            Json(error_body("bad_request", message)),
         )
-            .into_response());
+            .into_response())
+    };
+    if payload.legal_name.is_empty() {
+        return invalid("legal_name must not be empty");
     }
     if payload.country.len() != 2 {
-        return Ok((
-            StatusCode::BAD_REQUEST,
-            Json(error_body("bad_request", "country must be a 2-letter code")),
-        )
-            .into_response());
+        return invalid("country must be a 2-letter code");
     }
-
-    // Validate registration_number_type
     if let Some(ref rnt) = payload.registration_number_type
         && !matches!(rnt.as_str(), "vatID" | "leiCode" | "EORI")
     {
-        return Ok((
-            StatusCode::BAD_REQUEST,
-            Json(error_body(
-                "bad_request",
-                "registration_number_type must be vatID, leiCode, or EORI",
-            )),
-        )
-            .into_response());
+        return invalid("registration_number_type must be vatID, leiCode, or EORI");
     }
-
-    // Validate country_subdivision_code (ISO 3166-2: XX-YYY)
     if let Some(ref csc) = payload.country_subdivision_code
         && !SUBDIVISION_RE.is_match(csc)
     {
-        return Ok((
-            StatusCode::BAD_REQUEST,
-            Json(error_body(
-                "bad_request",
-                "country_subdivision_code must match ISO 3166-2 (e.g. DE-BY)",
-            )),
-        )
-            .into_response());
+        return invalid("country_subdivision_code must match ISO 3166-2 (e.g. DE-BY)");
     }
 
     // Read-modify-write so the display `name` (seeded at bootstrap) is preserved.
-    let mut identity = state.db.get_workspace_identity().await.unwrap_or_default();
-    identity.legal_name = legal_name.clone();
-    identity.country = payload.country.clone();
-    identity.registration_number = payload.registration_number.clone();
-    identity.country_subdivision_code = payload.country_subdivision_code.clone();
-    identity.registration_number_type = payload.registration_number_type.clone();
-    state.db.set_workspace_identity(&identity).await;
+    let mut workspace = state.db.get_workspace_identity().await.unwrap_or_default();
+    workspace.identity = payload.clone();
+    state.db.set_workspace_identity(&workspace).await;
 
-    // Return the updated identity
-    Ok(data_response(OrgIdentityResponse {
-        legal_name,
-        country: payload.country,
-        registration_number: payload.registration_number,
-        country_subdivision_code: payload.country_subdivision_code,
-        registration_number_type: payload.registration_number_type,
-    })
-    .into_response())
+    Ok(data_response(payload).into_response())
 }

@@ -1,17 +1,12 @@
 [package]
 name = "keasy-server"
 version = "0.1.0"
-description = "Fossil HTTP server for API-driven pipeline execution"
-homepage = ""
-repository = ""
-documentation = ""
-license = ""
-categories = ["database"]
-keywords = [""]
+description = "Keasy host: identity, connections, signed URLs and the output catalog"
 default-run = "keasy-server"
 authors = ["Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>"]
 edition = "2024"
 rust-version = "1.90.0"
+publish = false
 
 [dependencies]
 thiserror = "2"
@@ -27,7 +22,7 @@ tower = { version = "0.5", features = ["util"] }
 tower_governor = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
-object_store = { version = "0.12", features = ["aws", "gcp", "azure"] }
+object_store = { version = "0.12", features = ["aws", "azure"] }
 futures = "0.3"
 tokio-stream = { version = "0.1", features = ["sync"] }
 url = "2"
@@ -39,11 +34,9 @@ sha2 = "0.10"
 getrandom = "0.2"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
 # The whole of this server's authentication: a bearer token verified against the
-# realm's JWKS. The relying party lives in the web BFF; nothing here speaks OIDC.
-# `rust_crypto` rather than `aws_lc_rs` — a pure-Rust backend needs no cmake or
-# clang in the build image, and `p256`/`sha2` are already in this tree.
+# realm's JWKS. `rust_crypto` rather than `aws_lc_rs` — a pure-Rust backend
+# needs no cmake or clang in the build image.
 jsonwebtoken = { version = "11", features = ["rust_crypto"] }
-http = "1"
 secrecy = { version = "0.10", features = ["serde"] }
 # No fossil crate is linked here, and none may be. fossil owns the language, the
 # compute and the SHAPE of the output; keasy owns the home, the keys and the
@@ -51,26 +44,14 @@ secrecy = { version = "0.10", features = ["serde"] }
 # manifest) and what it is called travels as a list the corpus reader
 # enumerated — keasy stores and signs both, and types neither.
 base64 = "0.22"
-p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "jwk"] }
-x509-parser = { version = "0.16", features = ["verify"] }
-pem = "3"
-rcgen = "0.13"
-rand_core06 = { package = "rand_core", version = "0.6", features = ["getrandom"] }
 utoipa = { version = "5", features = ["axum_extras"] }
 csv = "1"
-oxrdf = "0.3.3"
-oxrdfio = "0.2.3"
-# Server-side DuckLake catalog (W1): keasy is the trusted host of the metadata
-# catalog. Pinned to the SAME duckdb as rmlext (1.10502) so writer (keasy) and
-# any future reader share a version (I7). `bundled` builds DuckDB from source so
-# the binary is self-contained. The catalog is server-side ONLY — the browser
-# never attaches ducklake (it reads flat Parquet by signed URL), so the
-# version-pin obligation is keasy↔keasy (trivial).
+# The output catalog. `bundled` builds DuckDB from source so the binary is
+# self-contained; the browser never attaches it.
 duckdb = { version = "1.10502", features = ["bundled"] }
 
 [dev-dependencies]
-tower = { version = "0.5", features = ["util"] }
-http-body-util = "0.1"
+rcgen = "0.13"
 tempfile = "3"
 
 [profile.release]

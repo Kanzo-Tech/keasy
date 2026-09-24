@@ -8,7 +8,6 @@ use crate::AppState;
 use crate::cloud::reader;
 use crate::connections::models::{
     ColumnInfo, Connection, CreateConnectionRequest, Direction, FileSchemaResponse, LocationType,
-    UpdateConnectionRequest, UploadFileRequest,
 };
 use crate::error::data_response;
 use crate::middleware::tenant::{IsDataPlane, Require, TenantRole};
@@ -148,43 +147,6 @@ pub async fn get_connection(
     }
 }
 
-#[utoipa::path(put, path = "/v1/connections/{id}", tag = "Connections",
-    params(("id" = String, Path, description = "Connection ID")),
-    request_body = UpdateConnectionRequest,
-    responses(
-        (status = 200, description = "Connection updated", body = Connection),
-        (status = 400, description = "Invalid connection"),
-        (status = 404, description = "Connection not found"),
-    )
-)]
-pub async fn update_connection(
-    ctx: Require<IsDataPlane>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-    Json(req): Json<UpdateConnectionRequest>,
-) -> Result<impl IntoResponse, ConnectionError> {
-    // The sink is owner-only: gate both editing an existing sink and promoting a
-    // source into one.
-    if ctx.role != TenantRole::Owner {
-        let touches_sink = req.direction == Some(Direction::Sink)
-            || state
-                .db
-                .get_connection(id.as_str())
-                .await
-                .is_some_and(|c| c.direction == Direction::Sink);
-        if touches_sink {
-            return Err(ConnectionError::Forbidden(
-                "only the owner can manage the workspace sink".to_string(),
-            ));
-        }
-    }
-
-    match state.db.update_connection(id.as_str(), req).await {
-        Ok(connection) => Ok(data_response(connection).into_response()),
-        Err(msg) => Err(ConnectionError::InvalidConnection(msg)),
-    }
-}
-
 #[utoipa::path(delete, path = "/v1/connections/{id}", tag = "Connections",
     params(("id" = String, Path, description = "Connection ID")),
     responses(
@@ -234,32 +196,6 @@ pub async fn list_connection_files(
         Ok(files) => Ok(data_response(files).into_response()),
         Err(msg) => Err(ConnectionError::ListFilesFailed(msg)),
     }
-}
-
-#[utoipa::path(put, path = "/v1/connections/{id}/files", tag = "Connections",
-    params(("id" = String, Path, description = "Connection ID")),
-    request_body = UploadFileRequest,
-    responses(
-        (status = 204, description = "File uploaded"),
-        (status = 400, description = "Upload not supported"),
-        (status = 404, description = "Connection not found"),
-        (status = 502, description = "Upload failed"),
-    )
-)]
-pub async fn upload_file(
-    _ctx: Require<IsDataPlane>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-    Json(req): Json<UploadFileRequest>,
-) -> Result<impl IntoResponse, ConnectionError> {
-    let (connection, creds) = resolve_cloud_connection(&state, id.as_str()).await?;
-    let url = join_connection_path(&connection.url, &req.path)
-        .map_err(ConnectionError::InvalidConnection)?;
-    reader::upload(&url, req.content.into_bytes(), &creds)
-        .await
-        .map_err(ConnectionError::UploadFailed)?;
-
-    Ok(StatusCode::NO_CONTENT.into_response())
 }
 
 #[utoipa::path(get, path = "/v1/connections/{id}/schema", tag = "Connections",

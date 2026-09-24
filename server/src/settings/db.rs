@@ -3,7 +3,6 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use crate::settings::ai::AiSettings;
 use crate::settings::org::{OrgSettings, WorkspaceIdentity};
-use crate::settings::preferences::Preferences;
 
 use crate::db::Database;
 
@@ -49,14 +48,6 @@ impl Database {
 
     pub async fn set_workspace_identity(&self, identity: &WorkspaceIdentity) {
         self.set_setting("workspace_identity", identity).await;
-    }
-
-    pub async fn get_preferences(&self) -> Preferences {
-        self.get_setting("preferences").await.unwrap_or_default()
-    }
-
-    pub async fn set_preferences(&self, prefs: &Preferences) {
-        self.set_setting("preferences", prefs).await;
     }
 
     pub async fn get_ai_provider(&self, provider_id: &str) -> Option<AiSettings> {
@@ -116,14 +107,5 @@ impl Database {
             return None;
         }
         Some((account_id, sink.url))
-    }
-
-    pub async fn get_dashboard_layout(&self, job_id: &str) -> Option<serde_json::Value> {
-        self.get_setting(&format!("dashboard:{job_id}")).await
-    }
-
-    pub async fn set_dashboard_layout(&self, job_id: &str, value: &serde_json::Value) {
-        self.set_setting(&format!("dashboard:{job_id}"), value)
-            .await;
     }
 }

@@ -388,51 +388,6 @@
           }
         }
       },
-      "put": {
-        "tags": [
-          "Connections"
-        ],
-        "operationId": "update_connection",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Connection ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateConnectionRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Connection updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Connection"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid connection"
-          },
-          "404": {
-            "description": "Connection not found"
-          }
-        }
-      },
       "delete": {
         "tags": [
           "Connections"
@@ -492,47 +447,6 @@
           },
           "404": {
             "description": "Connection not found"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Connections"
-        ],
-        "operationId": "upload_file",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Connection ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UploadFileRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "File uploaded"
-          },
-          "400": {
-            "description": "Upload not supported"
-          },
-          "404": {
-            "description": "Connection not found"
-          },
-          "502": {
-            "description": "Upload failed"
           }
         }
       }
@@ -960,68 +874,6 @@
         }
       }
     },
-    "/v1/jobs/{id}/dashboard-layout": {
-      "get": {
-        "tags": [
-          "Jobs"
-        ],
-        "operationId": "get_dashboard_layout",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Dashboard layout",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "204": {
-            "description": "No layout saved"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Jobs"
-        ],
-        "operationId": "save_dashboard_layout",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {}
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Layout saved"
-          }
-        }
-      }
-    },
     "/v1/jobs/{id}/discover/ask-stream": {
       "post": {
         "tags": [
@@ -1294,7 +1146,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OrgIdentityResponse"
+                  "$ref": "#/components/schemas/OrgIdentity"
                 }
               }
             }
@@ -1310,7 +1162,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateOrgIdentityPayload"
+                "$ref": "#/components/schemas/OrgIdentity"
               }
             }
           },
@@ -1322,7 +1174,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OrgIdentityResponse"
+                  "$ref": "#/components/schemas/OrgIdentity"
                 }
               }
             }
@@ -1523,57 +1375,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OrgSettings"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation error"
-          }
-        }
-      }
-    },
-    "/v1/settings/preferences": {
-      "get": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "get_preferences",
-        "responses": {
-          "200": {
-            "description": "UI preferences",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Preferences"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "save_preferences",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Preferences"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Preferences saved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Preferences"
                 }
               }
             }
@@ -2482,7 +2283,7 @@
           "local"
         ]
       },
-      "OrgIdentityResponse": {
+      "OrgIdentity": {
         "type": "object",
         "required": [
           "legal_name",
@@ -2572,33 +2373,6 @@
               "null"
             ],
             "format": "int64"
-          }
-        }
-      },
-      "Preferences": {
-        "type": "object",
-        "required": [
-          "accent_color",
-          "font_family",
-          "mono_font_family",
-          "font_size",
-          "mono_font_size"
-        ],
-        "properties": {
-          "accent_color": {
-            "type": "string"
-          },
-          "font_family": {
-            "type": "string"
-          },
-          "font_size": {
-            "type": "string"
-          },
-          "mono_font_family": {
-            "type": "string"
-          },
-          "mono_font_size": {
-            "type": "string"
           }
         }
       },
@@ -2828,59 +2602,6 @@
           }
         }
       },
-      "UpdateConnectionRequest": {
-        "type": "object",
-        "properties": {
-          "cloud_account_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "direction": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/Direction"
-              }
-            ]
-          },
-          "kind": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ConnectionKind"
-              }
-            ]
-          },
-          "location_type": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/LocationType"
-              }
-            ]
-          },
-          "name": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
       "UpdateJobRequest": {
         "type": "object",
         "properties": {
@@ -2895,54 +2616,6 @@
               "string",
               "null"
             ]
-          }
-        }
-      },
-      "UpdateOrgIdentityPayload": {
-        "type": "object",
-        "required": [
-          "legal_name",
-          "country"
-        ],
-        "properties": {
-          "country": {
-            "type": "string"
-          },
-          "country_subdivision_code": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "legal_name": {
-            "type": "string"
-          },
-          "registration_number": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "registration_number_type": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "UploadFileRequest": {
-        "type": "object",
-        "required": [
-          "path",
-          "content"
-        ],
-        "properties": {
-          "content": {
-            "type": "string"
-          },
-          "path": {
-            "type": "string"
           }
         }
       },

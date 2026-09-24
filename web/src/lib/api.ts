@@ -56,18 +56,6 @@ export const api = {
     remove: async (id: string) => {
       unwrap(await client.DELETE("/v1/jobs/{id}", { params: { path: { id } } }));
     },
-
-    dashboardLayout: async (id: string) =>
-      unwrap(await client.GET("/v1/jobs/{id}/dashboard-layout", {
-        params: { path: { id } },
-      })) as unknown as Record<string, unknown> | undefined,
-
-    saveDashboardLayout: async (id: string, layout: unknown) => {
-      unwrap(await client.PUT("/v1/jobs/{id}/dashboard-layout", {
-        params: { path: { id } },
-        body: layout,
-      }));
-    },
   },
 
   // (refs + providers moved client-side — `@fossil-lang/wasm` via
@@ -100,13 +88,6 @@ export const api = {
       unwrap(await client.GET("/v1/connections/{id}/schema", {
         params: { path: { id }, query: { path } },
       })),
-
-    upload: async (id: string, path: string, content: string) => {
-      await client.PUT("/v1/connections/{id}/files", {
-        params: { path: { id } },
-        body: { path, content },
-      });
-    },
   },
 
   // ── Cloud Accounts ────────────────────────────────────────────────────
@@ -255,7 +236,7 @@ export const api = {
     identity: async () =>
       unwrap(await client.GET("/v1/org/identity")),
 
-    saveIdentity: async (data: Schemas["UpdateOrgIdentityPayload"]) =>
+    saveIdentity: async (data: Schemas["OrgIdentity"]) =>
       unwrap(await client.PUT("/v1/org/identity", { body: data })),
   },
 

@@ -23,10 +23,6 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
 
     let public_api_routes = Router::new()
         .route(
-            "/openapi.json",
-            axum::routing::get(crate::openapi::openapi_json),
-        )
-        .route(
             "/v1/settings/schema",
             axum::routing::get(crate::settings::routes::get_schema),
         )
@@ -70,11 +66,6 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
                 .put(crate::settings::routes::save_catalog_storage),
         )
         .route(
-            "/v1/settings/preferences",
-            axum::routing::get(crate::settings::routes::get_preferences)
-                .put(crate::settings::routes::save_preferences),
-        )
-        .route(
             "/v1/settings/ai/providers",
             axum::routing::get(crate::settings::routes::list_ai_providers),
         )
@@ -82,11 +73,6 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
             "/v1/settings/ai/providers/{provider_id}",
             axum::routing::put(crate::settings::routes::save_ai_provider)
                 .delete(crate::settings::routes::delete_ai_provider),
-        )
-        .route(
-            "/v1/jobs/{id}/dashboard-layout",
-            axum::routing::get(crate::jobs::routes::get_dashboard_layout)
-                .put(crate::jobs::routes::save_dashboard_layout),
         )
         .route(
             "/v1/jobs/{id}/output/urls",
@@ -149,13 +135,11 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
         .route(
             "/v1/connections/{id}",
             axum::routing::get(crate::connections::routes::get_connection)
-                .put(crate::connections::routes::update_connection)
                 .delete(crate::connections::routes::delete_connection),
         )
         .route(
             "/v1/connections/{id}/files",
-            axum::routing::get(crate::connections::routes::list_connection_files)
-                .put(crate::connections::routes::upload_file),
+            axum::routing::get(crate::connections::routes::list_connection_files),
         )
         .route(
             "/v1/connections/{id}/schema",

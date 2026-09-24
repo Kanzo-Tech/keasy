@@ -62,12 +62,6 @@ pub struct Claims {
     /// The client the token was issued to — this workspace's, or the request is refused.
     #[serde(default)]
     pub azp: Option<String>,
-    #[serde(default)]
-    pub email: Option<String>,
-    #[serde(default)]
-    pub given_name: Option<String>,
-    #[serde(default)]
-    pub family_name: Option<String>,
     /// Slugs of every workspace this user belongs to — feeds the switcher. A
     /// per-user Keycloak attribute mapper emits it.
     #[serde(default)]
@@ -584,7 +578,6 @@ pub(crate) mod tests {
             .expect("a well-formed token from this realm");
 
         assert_eq!(claims.sub, "u-1");
-        assert_eq!(claims.email.as_deref(), Some("dev@keasy.local"));
         assert_eq!(claims.workspaces, ["dev", "acme"]);
         assert_eq!(claims.roles_for("keasy-ws-dev"), ["owner"]);
     }

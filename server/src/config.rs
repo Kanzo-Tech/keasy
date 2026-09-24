@@ -8,7 +8,6 @@ pub struct ServerConfig {
     pub cors_origins: Option<Vec<String>>,
     pub data_dir: PathBuf,
     pub secret_key: Option<SecretString>,
-    pub cache_capacity: usize,
     /// The **public** OIDC issuer, exactly as it appears in a token's `iss`.
     /// Read from KEASY_OIDC_ISSUER_URL. Example: https://auth.example/auth/realms/keasy
     pub oidc_issuer_url: String,
@@ -57,11 +56,6 @@ impl ServerConfig {
 
         let secret_key = resolve_secret("KEASY_SECRET_KEY");
 
-        let cache_capacity = std::env::var("KEASY_CACHE_CAPACITY")
-            .ok()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(1);
-
         // Both are required, and the server refuses to start without them. There
         // is no unauthenticated mode to fall back to: a resource server that
         // cannot name its issuer cannot refuse anything.
@@ -102,7 +96,6 @@ impl ServerConfig {
             cors_origins,
             data_dir,
             secret_key,
-            cache_capacity,
             oidc_issuer_url,
             oidc_client_id,
             oidc_audience,

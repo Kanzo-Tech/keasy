@@ -3,9 +3,9 @@ use std::time::Duration;
 
 use axum::Json;
 use axum::extract::{Path, State};
+use axum::http::Method;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use http::Method;
 use serde::{Deserialize, Serialize};
 
 use crate::AppState;

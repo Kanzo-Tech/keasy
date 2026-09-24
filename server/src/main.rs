@@ -53,9 +53,11 @@ async fn main() {
     if db.get_workspace_identity().await.is_none() {
         db.set_workspace_identity(&keasy_server::settings::org::WorkspaceIdentity {
             name: config.workspace_name.clone(),
-            legal_name: config.workspace_name.clone(),
-            country: "EU".to_string(),
-            ..Default::default()
+            identity: keasy_server::settings::org::OrgIdentity {
+                legal_name: config.workspace_name.clone(),
+                country: "EU".to_string(),
+                ..Default::default()
+            },
         })
         .await;
     }

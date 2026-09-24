@@ -160,13 +160,7 @@ pub struct FileSchemaResponse {
     pub columns: Vec<ColumnInfo>,
 }
 
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct UploadFileRequest {
-    pub path: String,
-    pub content: String,
-}
-
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
+#[derive(Debug)]
 pub struct UpdateConnectionRequest {
     pub name: Option<String>,
     pub kind: Option<ConnectionKind>,

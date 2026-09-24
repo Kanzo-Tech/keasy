@@ -299,39 +299,3 @@ pub async fn delete_job(
 
     Ok(StatusCode::NO_CONTENT.into_response())
 }
-
-#[utoipa::path(get, path = "/v1/jobs/{id}/dashboard-layout", tag = "Jobs",
-    params(("id" = String, Path, description = "Job ID")),
-    responses((status = 200, description = "Dashboard layout", body = serde_json::Value), (status = 204, description = "No layout saved"))
-)]
-pub async fn get_dashboard_layout(
-    _ctx: Require<IsDataPlane>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Result<impl IntoResponse, JobApiError> {
-    if state.db.get_job(id.as_str()).await.is_none() {
-        return Err(JobApiError::NotFound);
-    }
-    match state.db.get_dashboard_layout(&id).await {
-        Some(layout) => Ok(data_response(layout).into_response()),
-        None => Ok(StatusCode::NO_CONTENT.into_response()),
-    }
-}
-
-#[utoipa::path(put, path = "/v1/jobs/{id}/dashboard-layout", tag = "Jobs",
-    params(("id" = String, Path, description = "Job ID")),
-    request_body = serde_json::Value,
-    responses((status = 200, description = "Layout saved"))
-)]
-pub async fn save_dashboard_layout(
-    _ctx: Require<IsDataPlane>,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-    Json(body): Json<serde_json::Value>,
-) -> Result<impl IntoResponse, JobApiError> {
-    if state.db.get_job(id.as_str()).await.is_none() {
-        return Err(JobApiError::NotFound);
-    }
-    state.db.set_dashboard_layout(&id, &body).await;
-    Ok(StatusCode::OK.into_response())
-}

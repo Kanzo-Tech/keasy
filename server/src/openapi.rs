@@ -23,10 +23,8 @@ use utoipa::OpenApi;
         crate::connections::routes::list_connections,
         crate::connections::routes::create_connection,
         crate::connections::routes::get_connection,
-        crate::connections::routes::update_connection,
         crate::connections::routes::delete_connection,
         crate::connections::routes::list_connection_files,
-        crate::connections::routes::upload_file,
         crate::connections::routes::get_file_schema,
         // Cloud Accounts
         crate::cloud::routes::list_accounts,
@@ -38,8 +36,6 @@ use utoipa::OpenApi;
         crate::settings::routes::get_schema,
         crate::settings::routes::get_org_settings,
         crate::settings::routes::save_org_settings,
-        crate::settings::routes::get_preferences,
-        crate::settings::routes::save_preferences,
         crate::settings::routes::get_catalog_storage,
         crate::settings::routes::save_catalog_storage,
         crate::settings::routes::list_ai_providers,
@@ -67,9 +63,6 @@ use utoipa::OpenApi;
         // Assistant
         crate::assistant::routes::suggest_cqs_stream,
         crate::assistant::routes::generate_script_stream,
-        // Dashboard Layout
-        crate::jobs::routes::get_dashboard_layout,
-        crate::jobs::routes::save_dashboard_layout,
     ),
     components(schemas(
         crate::error::DataResponse<serde_json::Value>,
@@ -88,8 +81,6 @@ use utoipa::OpenApi;
         crate::connections::models::ConnectionKind,
         crate::connections::models::LocationType,
         crate::connections::models::CreateConnectionRequest,
-        crate::connections::models::UpdateConnectionRequest,
-        crate::connections::models::UploadFileRequest,
         crate::connections::models::ColumnInfo,
         crate::connections::models::FileSchemaResponse,
         // Cloud Accounts
@@ -98,15 +89,13 @@ use utoipa::OpenApi;
         crate::cloud::models::UpdateCloudAccountRequest,
         // Settings
         crate::settings::org::OrgSettings,
-        crate::settings::preferences::Preferences,
         crate::settings::ai::AiSettingsPayload,
         // Auth response types
         crate::auth::routes::WorkspacesResponse,
         // Health
         crate::routes::health::VersionResponse,
         // Workspace legal identity
-        crate::routes::org::UpdateOrgIdentityPayload,
-        crate::routes::org::OrgIdentityResponse,
+        crate::settings::org::OrgIdentity,
         // Catalog (governance)
         crate::catalog::routes::DatasetsResponse,
         crate::catalog::view::CatalogDataset,
@@ -136,9 +125,3 @@ use utoipa::OpenApi;
     ))
 )]
 pub struct ApiDoc;
-
-pub async fn openapi_json() -> axum::response::Response {
-    use axum::response::IntoResponse;
-    let doc = ApiDoc::openapi();
-    axum::Json(doc).into_response()
-}

@@ -175,7 +175,7 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get_connection"];
-        put: operations["update_connection"];
+        put?: never;
         post?: never;
         delete: operations["delete_connection"];
         options?: never;
@@ -191,7 +191,7 @@ export interface paths {
             cookie?: never;
         };
         get: operations["list_connection_files"];
-        put: operations["upload_file"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -295,22 +295,6 @@ export interface paths {
         get: operations["list_conversations"];
         put?: never;
         post: operations["create_conversation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/dashboard-layout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_dashboard_layout"];
-        put: operations["save_dashboard_layout"];
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -521,22 +505,6 @@ export interface paths {
         };
         get: operations["get_org_settings"];
         put: operations["save_org_settings"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/settings/preferences": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_preferences"];
-        put: operations["save_preferences"];
         post?: never;
         delete?: never;
         options?: never;
@@ -852,7 +820,7 @@ export interface components {
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
         /** @enum {string} */
         LocationType: "cloud" | "local";
-        OrgIdentityResponse: {
+        OrgIdentity: {
             country: string;
             country_subdivision_code?: string | null;
             legal_name: string;
@@ -879,13 +847,6 @@ export interface components {
             name: string;
             /** Format: int64 */
             rows?: number | null;
-        };
-        Preferences: {
-            accent_color: string;
-            font_family: string;
-            font_size: string;
-            mono_font_family: string;
-            mono_font_size: string;
         };
         ProviderSchema: {
             auth_methods: components["schemas"]["AuthMethodSchema"][];
@@ -962,28 +923,9 @@ export interface components {
             } | null;
             name?: string | null;
         };
-        UpdateConnectionRequest: {
-            cloud_account_id?: string | null;
-            direction?: null | components["schemas"]["Direction"];
-            kind?: null | components["schemas"]["ConnectionKind"];
-            location_type?: null | components["schemas"]["LocationType"];
-            name?: string | null;
-            url?: string | null;
-        };
         UpdateJobRequest: {
             name?: string | null;
             script?: string | null;
-        };
-        UpdateOrgIdentityPayload: {
-            country: string;
-            country_subdivision_code?: string | null;
-            legal_name: string;
-            registration_number?: string | null;
-            registration_number_type?: string | null;
-        };
-        UploadFileRequest: {
-            content: string;
-            path: string;
         };
         /**
          * @description The running build's version — announced so operators (and the fleet view) can
@@ -1381,47 +1323,6 @@ export interface operations {
             };
         };
     };
-    update_connection: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Connection ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateConnectionRequest"];
-            };
-        };
-        responses: {
-            /** @description Connection updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Connection"];
-                };
-            };
-            /** @description Invalid connection */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Connection not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     delete_connection: {
         parameters: {
             query?: never;
@@ -1473,52 +1374,6 @@ export interface operations {
             };
             /** @description Connection not found */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    upload_file: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Connection ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UploadFileRequest"];
-            };
-        };
-        responses: {
-            /** @description File uploaded */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Upload not supported */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Connection not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Upload failed */
-            502: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1885,61 +1740,6 @@ export interface operations {
             };
         };
     };
-    get_dashboard_layout: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Dashboard layout */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description No layout saved */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    save_dashboard_layout: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": unknown;
-            };
-        };
-        responses: {
-            /** @description Layout saved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     ask_discover_stream: {
         parameters: {
             query?: never;
@@ -2162,7 +1962,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OrgIdentityResponse"];
+                    "application/json": components["schemas"]["OrgIdentity"];
                 };
             };
         };
@@ -2176,7 +1976,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateOrgIdentityPayload"];
+                "application/json": components["schemas"]["OrgIdentity"];
             };
         };
         responses: {
@@ -2186,7 +1986,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OrgIdentityResponse"];
+                    "application/json": components["schemas"]["OrgIdentity"];
                 };
             };
             /** @description Validation error */
@@ -2385,57 +2185,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrgSettings"];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    get_preferences: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description UI preferences */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Preferences"];
-                };
-            };
-        };
-    };
-    save_preferences: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Preferences"];
-            };
-        };
-        responses: {
-            /** @description Preferences saved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Preferences"];
                 };
             };
             /** @description Validation error */

@@ -12,10 +12,9 @@ use crate::connections::models::{
     UpdateConnectionRequest,
 };
 use crate::error::{data_response, error_body};
-use crate::middleware::tenant::{IsDataPlane, IsOwner, IsWorkspaceUser, Require};
+use crate::middleware::tenant::{IsDataPlane, IsOwner, Require};
 use crate::settings::ai::{AiSettings, AiSettingsPayload};
 use crate::settings::org::OrgSettings;
-use crate::settings::preferences::Preferences;
 use crate::settings::schema::PROVIDER_REGISTRY;
 
 const KNOWN_PROVIDERS: &[&str] = &["anthropic", "openai"];
@@ -65,54 +64,6 @@ pub async fn save_org_settings(
             .into_response();
     }
     state.db.set_org_settings(&payload).await;
-    data_response(payload).into_response()
-}
-
-// Preferences are the chrome both planes look at — accent, fonts, sizes. The
-// Settings → Preferences page sits outside the member-only settings group in the
-// web for exactly that reason, so neither plane owns it.
-
-#[utoipa::path(get, path = "/v1/settings/preferences", tag = "Settings",
-    responses((status = 200, description = "UI preferences", body = Preferences))
-)]
-pub async fn get_preferences(
-    _ctx: Require<IsWorkspaceUser>,
-    State(state): State<AppState>,
-) -> impl IntoResponse {
-    data_response(state.db.get_preferences().await)
-}
-
-#[utoipa::path(put, path = "/v1/settings/preferences", tag = "Settings",
-    request_body = Preferences,
-    responses(
-        (status = 200, description = "Preferences saved", body = Preferences),
-        (status = 400, description = "Validation error"),
-    )
-)]
-pub async fn save_preferences(
-    _ctx: Require<IsWorkspaceUser>,
-    State(state): State<AppState>,
-    Json(payload): Json<Preferences>,
-) -> Response {
-    for (val, name) in [
-        (&payload.accent_color, "accent_color"),
-        (&payload.font_family, "font_family"),
-        (&payload.mono_font_family, "mono_font_family"),
-        (&payload.font_size, "font_size"),
-        (&payload.mono_font_size, "mono_font_size"),
-    ] {
-        if val.trim().is_empty() {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(error_body(
-                    "validation_error",
-                    format!("{name} is required"),
-                )),
-            )
-                .into_response();
-        }
-    }
-    state.db.set_preferences(&payload).await;
     data_response(payload).into_response()
 }
 

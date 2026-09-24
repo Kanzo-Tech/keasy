@@ -1,13 +1,17 @@
 use serde::{Deserialize, Serialize};
 
-/// Workspace identity (legal entity behind this instance). Single-row metadata,
-/// stored in the `settings` table under `workspace_identity` — there is one
-/// workspace per instance, so it needs no table of its own. `name` is the
-/// display name (seeded from config at bootstrap); the rest is the DCAT
-/// publisher identity, editable on the Organization → Details page.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, utoipa::ToSchema)]
+/// The workspace behind this instance, stored under `workspace_identity` in the
+/// `settings` table. `name` is the display name seeded from config at boot; the
+/// legal identity is the DCAT publisher, edited on the Organization page.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct WorkspaceIdentity {
     pub name: String,
+    #[serde(flatten)]
+    pub identity: OrgIdentity,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, utoipa::ToSchema)]
+pub struct OrgIdentity {
     pub legal_name: String,
     pub country: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]

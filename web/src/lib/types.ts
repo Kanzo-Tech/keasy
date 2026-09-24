@@ -22,7 +22,6 @@ export type ConnectionKind = S["ConnectionKind"];
 export type LocationType = S["LocationType"];
 export type Connection = S["Connection"];
 export type CreateConnectionRequest = S["CreateConnectionRequest"];
-export type UpdateConnectionRequest = S["UpdateConnectionRequest"];
 export type ColumnInfo = S["ColumnInfo"];
 export type FileSchemaResponse = S["FileSchemaResponse"];
 export type AiSettings = S["AiSettingsPayload"];
@@ -38,8 +37,7 @@ export type GenerateResponse = S["GenerateResponse"];
 // Alias: server calls it JobRuntimeError, frontend used JobError
 export type JobError = S["JobRuntimeError"];
 
-// Workspace legal identity — re-exported from schema with a frontend alias
-export type OrgIdentity = S["OrgIdentityResponse"];
+export type OrgIdentity = S["OrgIdentity"];
 
 // ---------------------------------------------------------------------------
 // Types now in OpenAPI spec — re-exported from schema

@@ -30,17 +30,6 @@ pub enum TenantRole {
     Member,
 }
 
-impl TenantRole {
-    /// The wire string for this role (`"owner"` / `"member"`), as used in the
-    /// Keycloak claim and the `/me` response.
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            TenantRole::Owner => "owner",
-            TenantRole::Member => "member",
-        }
-    }
-}
-
 /// Authenticated request context. Injected into request extensions by
 /// `tenant_context_required` middleware. Route handlers extract this via
 /// `Require<P>` (`Require<IsOwner>`, `Require<IsDataPlane>`,
@@ -66,9 +55,6 @@ pub enum RbacError {
 
     #[error("rbac/insufficient_role")]
     InsufficientRole,
-
-    #[error("internal")]
-    Internal(String),
 }
 
 impl IntoResponse for RbacError {
@@ -100,15 +86,6 @@ impl IntoResponse for RbacError {
                 )),
             )
                 .into_response(),
-
-            RbacError::Internal(detail) => {
-                tracing::error!(detail = %detail, "RBAC internal error");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(error_body("internal_error", "An internal error occurred")),
-                )
-                    .into_response()
-            }
         }
     }
 }

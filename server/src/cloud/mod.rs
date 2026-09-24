@@ -7,8 +7,8 @@ pub mod routes;
 use std::collections::HashMap;
 use std::time::Duration;
 
+use axum::http::Method;
 use futures::stream::BoxStream;
-use http::Method;
 use object_store::aws::{AmazonS3, AmazonS3Builder, AmazonS3ConfigKey};
 use object_store::azure::{AzureConfigKey, MicrosoftAzure, MicrosoftAzureBuilder};
 use object_store::path::Path as ObjectPath;
@@ -20,10 +20,6 @@ use crate::settings::schema::{all_cloud_schemes, find_provider_by_scheme};
 
 pub fn is_cloud_url(s: &str) -> bool {
     all_cloud_schemes().any(|scheme| s.starts_with(scheme) && s[scheme.len()..].starts_with("://"))
-}
-
-pub fn is_data_path(s: &str) -> bool {
-    is_cloud_url(s) || s.starts_with('/') || s.starts_with("./") || s.starts_with("../")
 }
 
 /// Parse a cloud URL into its components (bucket, object path, provider).
@@ -113,13 +109,6 @@ impl CloudStore {
     }
 
     // ── Delegate ObjectStore operations ──
-
-    pub async fn head(&self, path: &ObjectPath) -> object_store::Result<ObjectMeta> {
-        match self {
-            Self::Azure(s) => s.head(path).await,
-            Self::S3(s) => s.head(path).await,
-        }
-    }
 
     pub async fn get(&self, path: &ObjectPath) -> object_store::Result<GetResult> {
         match self {

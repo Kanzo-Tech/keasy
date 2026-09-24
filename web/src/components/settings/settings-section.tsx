@@ -1,99 +1,45 @@
-import Link from "next/link";
-import { Loader2 } from "lucide-react";
-import { Button, Tooltip, TooltipContent, TooltipTrigger } from "@kanzo-tech/ui";
-
-export interface SectionAction {
-  label: string;
-  icon?: React.ReactNode;
-  variant?: "outline" | "ghost" | "default";
-  onClick?: () => void;
-  href?: string;
-  disabled?: boolean;
-  loading?: boolean;
-  loadingLabel?: string;
-  tooltip?: string;
-}
+import {
+  SectionActions,
+  SectionBody,
+  SectionDescription,
+  SectionHeader,
+  SectionRoot,
+  SectionTitle,
+  SectionTitleGroup,
+} from "@kanzo-tech/ui";
 
 interface SettingsSectionProps {
   title: React.ReactNode;
   description?: string;
   children: React.ReactNode;
-  /** Structured action buttons rendered in the header. */
-  action?: SectionAction | SectionAction[];
-  /** Free-form ReactNode rendered in the action slot (takes precedence over `action`). */
-  actionSlot?: React.ReactNode;
+  /** End-aligned controls on the header row. */
+  actions?: React.ReactNode;
 }
 
+/**
+ * A settings block, assembled from the design system's Section parts.
+ *
+ * What keasy still owns here is the stacking, and only that. `SectionRoot` and `SectionBody`
+ * are sized to fill a shell region — one Section per region — while these pages put two or
+ * three inside a scrolling `PageShell.Content`, so each has to take its content's height
+ * rather than a share of the page's. The override lives here once instead of at every site.
+ */
 export function SettingsSection({
   title,
   description,
   children,
-  action,
-  actionSlot,
+  actions,
 }: SettingsSectionProps) {
-  const slot = actionSlot ?? (action && (
-    <div className="flex items-center gap-2">
-      {(Array.isArray(action) ? action : [action]).map((a) => (
-        <SectionActionButton key={a.label} action={a} />
-      ))}
-    </div>
-  ));
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-4">
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium">{title}</h3>
-          {description && (
-            <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
-          )}
-        </div>
-        {slot && <div className="shrink-0">{slot}</div>}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function SectionActionButton({ action }: { action: SectionAction }) {
-  const content = action.loading ? (
-    <>
-      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      {action.loadingLabel ?? action.label}
-    </>
-  ) : (
-    <>
-      {action.icon}
-      {action.label}
-    </>
-  );
-
-  const variant = action.variant ?? "outline";
-
-  const button = action.href ? (
-    <Button variant={variant} size="sm" disabled={action.disabled} asChild>
-      <Link href={action.href}>{content}</Link>
-    </Button>
-  ) : (
-    <Button
-      variant={variant}
-      size="sm"
-      onClick={action.onClick}
-      disabled={action.disabled || action.loading}
-    >
-      {content}
-    </Button>
-  );
-
-  if (!action.tooltip) return button;
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        {/* span wrapper so the tooltip still works on a disabled button */}
-        <span className="inline-flex">{button}</span>
-      </TooltipTrigger>
-      <TooltipContent>{action.tooltip}</TooltipContent>
-    </Tooltip>
+    <SectionRoot className="flex-none gap-4">
+      <SectionHeader>
+        <SectionTitleGroup>
+          <SectionTitle>{title}</SectionTitle>
+          {description && <SectionDescription>{description}</SectionDescription>}
+        </SectionTitleGroup>
+        {actions && <SectionActions>{actions}</SectionActions>}
+      </SectionHeader>
+      <SectionBody className="flex-none overflow-visible">{children}</SectionBody>
+    </SectionRoot>
   );
 }

@@ -1,16 +1,28 @@
 "use client";
 
-import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Selection } from "@uwdata/mosaic-core";
-import { BarChart3, Info, Loader2, MessageCircle, ShieldCheck, Terminal, X } from "lucide-react";
-import { queryKeys } from "@/lib/query-keys";
-import { DiscoveryProvider } from "@/components/discovery/store";
-import { useCorpusSchema } from "@/components/discovery/use-discovery-store";
-import { useGraphSchema } from "@/components/discovery/use-graph-schema";
+import {
+  BarChart3,
+  Info,
+  Maximize,
+  MessageCircle,
+  Minus,
+  Pause,
+  Play,
+  Plus,
+  ShieldCheck,
+  Terminal,
+  X,
+} from "lucide-react";
 import { GraphRootProvider, useGraph, type GraphApi } from "@kanzo-tech/graph";
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
   Button,
+  ButtonGroup,
+  ButtonGroupSeparator,
   Resizable,
   ResizablePanel,
   ResizableResizeTrigger,
@@ -18,149 +30,139 @@ import {
   ShellBody,
   ShellFooter,
   ShellMain,
+  Spinner,
   ToggleGroup,
   ToggleGroupItem,
 } from "@kanzo-tech/ui";
-import { undrawnEdges, useCorpusSource } from "@/components/discovery/use-corpus-source";
-import { ClassLegend } from "@/components/discovery/class-legend";
-import { NodeInfo } from "@/components/discovery/node-info";
-import { useGraphPrefs } from "@/components/discovery/use-graph-prefs";
 import { DiscoveryAsk } from "@/components/discovery/discovery-ask";
-import { DiscoverySql } from "@/components/discovery/discovery-sql";
-import { RuleBuilder } from "@/components/discovery/rule-builder";
-import { AnalysisPanel } from "@/components/discovery/analysis-panel";
-import { FloatingControls } from "@/components/discovery/floating-controls";
 import { api } from "@/lib/api";
-
-// ── Page ─────────────────────────────────────────────────────────────────
+import { queryKeys } from "@/lib/query-keys";
+import { AnalysisPanel } from "./_parts/analysis-panel";
+import { ClassLegend } from "./_parts/class-legend";
+import { CorpusProvider, corpusQuery, useCorpus, useGraphSchema } from "./_parts/corpus";
+import { undrawnEdges, useCorpusSource } from "./_parts/corpus-source";
+import { useGraphPrefs } from "./_parts/graph-prefs";
+import { NodeInfo, type SelectedVertex } from "./_parts/node-info";
+import { RulesPanel } from "./_parts/rules-panel";
+import { SqlPanel } from "./_parts/sql-panel";
 
 export default function DiscoverPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const job = useQuery({ queryKey: queryKeys.jobs.detail(id), queryFn: () => api.jobs.get(id) });
+  const corpus = useQuery({ ...corpusQuery(id), enabled: Boolean(job.data?.manifest) });
 
-  const { data: job, isLoading: jobLoading } = useQuery({
-    queryKey: queryKeys.jobs.detail(id),
-    queryFn: () => api.jobs.get(id),
-  });
-
-  if (jobLoading || !job?.manifest) {
+  if (corpus.error) {
     return (
-      <ShellMain className="items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      <ShellMain className="p-4">
+        <Alert variant="destructive">
+          <AlertTitle>Failed to open the dataset</AlertTitle>
+          <AlertDescription>{corpus.error.message}</AlertDescription>
+        </Alert>
       </ShellMain>
     );
   }
-
+  if (!corpus.data) {
+    return (
+      <ShellMain className="items-center justify-center">
+        <Spinner className="text-muted-foreground" />
+      </ShellMain>
+    );
+  }
   return (
-    <DiscoveryProvider jobId={id}>
-      <DiscoveryWorkspace jobId={id} />
-    </DiscoveryProvider>
+    <CorpusProvider value={corpus.data}>
+      <Workspace jobId={id} />
+    </CorpusProvider>
   );
 }
 
-// ── Workspace ────────────────────────────────────────────────────────────
+const FLOATING = "rounded-md border bg-card shadow-sm";
 
-function DiscoveryWorkspace({ jobId }: { jobId: string }) {
-  const overview = useCorpusSchema();
-  const kgSchema = useGraphSchema();
+function Workspace({ jobId }: { jobId: string }) {
+  const { schema: overview } = useCorpus();
+  const { schema, error: schemaError } = useGraphSchema();
   const [chosenType, setChosenType] = useState<string | null>(null);
-  // Derived, not synced: the first class the corpus names is the one drawn until
-  // a reader picks another.
-  const vertexType = chosenType ?? kgSchema.types[0]?.name ?? null;
-
-  const [selectedVertex, setSelectedVertex] = useState<{ id: string; type: string; label: string } | null>(null);
+  // Derived, not synced: the first class the corpus names is drawn until a reader picks another.
+  const vertexType = chosenType ?? schema.types[0]?.name ?? null;
+  const [selected, setSelected] = useState<SelectedVertex | null>(null);
   const [simulate, setSimulate] = useState(true);
-
-  // The look and the forces are a preference now, resolved by the theme provider against
-  // `GRAPH_SECTION`'s own bounds. This page neither stores them nor draws their controls.
-  const { look, sim } = useGraphPrefs();
   const [failure, setFailure] = useState<string | null>(null);
+  const { look, sim } = useGraphPrefs();
+  const view = useCorpusSource(vertexType);
 
-  const selection = useMemo(() => Selection.crossfilter(), []);
-  const view = useCorpusSource(vertexType, selection);
-
-  // The click handler needs the answer the canvas is currently drawing, which is
-  // a value the api only has after this call.
+  // The click resolves against the answer the canvas is drawing, which only the api holds.
   const apiRef = useRef<GraphApi | null>(null);
   const onPointClick = useCallback(
-    (_vertex: bigint, _graph: unknown, index: number) => {
-      const id = apiRef.current?.slice?.subjects?.[index];
-      if (!id || !vertexType) return;
-      setSelectedVertex({ id, type: vertexType, label: id.split(/[/#]/).pop() || id });
+    (_vertex: unknown, _graph: unknown, index: number) => {
+      const subject = apiRef.current?.slice?.subjects?.[index];
+      if (!subject || !vertexType) return;
+      setSelected({ id: subject, type: vertexType, label: subject.split(/[/#]/).pop() || subject });
     },
     [vertexType],
   );
-
   const graph = useGraph({
-    source: view?.source ?? null,
+    source: view.data?.source ?? null,
     look,
     sim,
     simulate,
     onFailure: setFailure,
-    events: { onPointClick, onBackgroundClick: () => setSelectedVertex(null) },
+    events: { onPointClick, onBackgroundClick: () => setSelected(null) },
   });
   useEffect(() => {
     apiRef.current = graph;
   });
-
-  const undrawn = undrawnEdges(view?.undrawn, overview);
+  const zoom = (factor: number) => {
+    const g = graph.getGraph();
+    g?.zoom(g.getZoomLevel() * factor, 300);
+  };
 
   const [activePanel, setActivePanel] = useState<string | null>("info");
   const panels = [
-    {
-      id: "info",
-      icon: Info,
-      label: "Info",
-      content: <NodeInfo schema={kgSchema} selectedVertex={selectedVertex} />,
-    },
-    {
-      id: "ask",
-      icon: MessageCircle,
-      label: "Ask AI",
-      content: <DiscoveryAsk jobId={jobId} graphSchema={kgSchema} />,
-    },
-    {
-      id: "rules",
-      icon: ShieldCheck,
-      label: "Rules",
-      content: <RuleBuilder jobId={jobId} schema={kgSchema} />,
-    },
-    // Raw SQL over the producer's own dataset — runs in the browser
-    // (corpus.executeSql, DuckDB-WASM). Producer-scoped at the signed-URL
-    // layer, so it lives in the data-discovery surface, not owner-gated.
-    {
-      id: "sql",
-      icon: Terminal,
-      label: "SQL",
-      content: <DiscoverySql />,
-    },
-    {
-      id: "analysis",
-      icon: BarChart3,
-      label: "Analysis",
-      content: <AnalysisPanel schema={kgSchema} selection={selection} />,
-    },
+    { id: "info", icon: Info, label: "Info", content: <NodeInfo schema={schema} vertex={selected} /> },
+    { id: "ask", icon: MessageCircle, label: "Ask AI", content: <DiscoveryAsk graphSchema={schema} jobId={jobId} /> },
+    { id: "rules", icon: ShieldCheck, label: "Rules", content: <RulesPanel jobId={jobId} schema={schema} /> },
+    { id: "sql", icon: Terminal, label: "SQL", content: <SqlPanel /> },
+    { id: "analysis", icon: BarChart3, label: "Analysis", content: <AnalysisPanel schema={schema} /> },
   ];
-
   const panel = panels.find((p) => p.id === activePanel);
+  const problem = failure ?? view.error?.message ?? schemaError?.message;
+
   const canvas = (
     <ShellMain className="relative size-full overflow-hidden">
-        <GraphRootProvider value={graph} className="flex-1">
-          <div className="absolute left-2 top-2 z-10 max-w-52">
-            <ClassLegend
-              types={kgSchema.types}
-              value={vertexType}
-              onChange={setChosenType}
-              undrawn={undrawn}
-            />
-          </div>
-          <div className="absolute bottom-3 end-3 z-10">
-            <FloatingControls
-              api={graph}
-              simulationRunning={simulate}
-              onToggleSimulation={() => setSimulate((v) => !v)}
-            />
-          </div>
-        </GraphRootProvider>
+      <GraphRootProvider className="flex-1" value={graph}>
+        <div className="absolute start-2 top-2 z-10 max-w-52">
+          <ClassLegend
+            onChange={setChosenType}
+            types={schema.types}
+            undrawn={undrawnEdges(view.data?.undrawn, overview)}
+            value={vertexType}
+          />
+        </div>
+        <div className="absolute end-2 bottom-2 z-10 flex flex-col gap-1.5">
+          <ButtonGroup aria-label="Layout" className={FLOATING} orientation="vertical">
+            <Button
+              aria-label={simulate ? "Pause the layout" : "Resume the layout"}
+              onClick={() => setSimulate((v) => !v)}
+              size="icon-sm"
+              variant="ghost"
+            >
+              {simulate ? <Pause /> : <Play />}
+            </Button>
+          </ButtonGroup>
+          <ButtonGroup aria-label="Zoom and fit" className={FLOATING} orientation="vertical">
+            <Button aria-label="Zoom in" onClick={() => zoom(1.4)} size="icon-sm" variant="ghost">
+              <Plus />
+            </Button>
+            <ButtonGroupSeparator />
+            <Button aria-label="Zoom out" onClick={() => zoom(1 / 1.4)} size="icon-sm" variant="ghost">
+              <Minus />
+            </Button>
+            <ButtonGroupSeparator />
+            <Button aria-label="Fit to view" onClick={() => graph.getGraph()?.fitView(500)} size="icon-sm" variant="ghost">
+              <Maximize />
+            </Button>
+          </ButtonGroup>
+        </div>
+      </GraphRootProvider>
     </ShellMain>
   );
 
@@ -181,13 +183,9 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
             </ResizablePanel>
             <ResizableResizeTrigger id="canvas:dock" withHandle />
             <ResizablePanel className="flex min-h-0 min-w-0 flex-col" id="dock">
-              <ShellAside
-                aria-label={`${panel.label} panel`}
-                className="size-full min-h-0 border-s-0 bg-card"
-                side="end"
-              >
+              <ShellAside aria-label={`${panel.label} panel`} className="size-full min-h-0 border-s-0 bg-card" side="end">
                 <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3">
-                  <span className="text-sm font-medium">{panel.label}</span>
+                  <span className="font-medium text-sm">{panel.label}</span>
                   <Button
                     aria-label="Close panel"
                     className="-me-1 ms-auto"
@@ -198,7 +196,7 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
                     <X />
                   </Button>
                 </div>
-                <div className="min-h-0 flex-1">{panel.content}</div>
+                <div className="flex min-h-0 flex-1 flex-col">{panel.content}</div>
               </ShellAside>
             </ResizablePanel>
           </Resizable>
@@ -207,35 +205,20 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
         )}
       </ShellBody>
 
-      <ShellFooter className="h-8 flex-row items-center justify-between gap-3 px-2 text-xs text-muted-foreground">
+      <ShellFooter className="h-8 flex-row items-center justify-between gap-3 px-2 text-muted-foreground text-xs">
         <div className="flex min-w-0 items-center gap-3 truncate">
-        <>
           <span className="tabular-nums">
-            {kgSchema.types.reduce((sum, t) => sum + t.entityCount, 0).toLocaleString()} nodes
+            {schema.types.reduce((sum, t) => sum + t.entityCount, 0).toLocaleString()} nodes
             {" · "}
-            {kgSchema.edges.reduce((sum, e) => sum + e.count, 0).toLocaleString()} edges
+            {schema.edges.reduce((sum, e) => sum + e.count, 0).toLocaleString()} edges
           </span>
           {graph.sliced && (
-            <>
-              <span className="text-border">|</span>
-              <span className="tabular-nums">
-                drawing {graph.slice?.marks.toLocaleString() ?? 0} of {graph.total?.toLocaleString() ?? "?"}
-              </span>
-            </>
+            <span className="tabular-nums">
+              drawing {graph.slice?.marks.toLocaleString() ?? 0} of {graph.total?.toLocaleString() ?? "?"}
+            </span>
           )}
-          {failure && (
-            <>
-              <span className="text-border">|</span>
-              <span className="text-destructive truncate max-w-60">{failure}</span>
-            </>
-          )}
-          {selectedVertex && (
-            <>
-              <span className="text-border">|</span>
-              <span className="truncate max-w-40">{selectedVertex.label}</span>
-            </>
-          )}
-        </>
+          {problem && <span className="max-w-60 truncate text-destructive">{problem}</span>}
+          {selected && <span className="max-w-40 truncate">{selected.label}</span>}
         </div>
         <ToggleGroup
           aria-label="Panels"

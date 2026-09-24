@@ -1,24 +1,20 @@
+import { Query, asc, count, desc, sql } from "@kanzo-tech/ui/analytics";
 import {
-  Query,
-  column,
-  count,
-  literal,
-  sql,
-  isNull,
-  isNotNull,
-  not,
-  lt,
-  gt,
-  eq,
-  neq,
-  isIn,
-  regexp_matches,
-  length,
   and,
-  asc,
-  desc,
+  column,
+  eq,
+  gt,
+  isIn,
+  isNotNull,
+  isNull,
+  length,
+  literal,
+  lt,
+  neq,
+  not,
+  regexp_matches,
+  type ExprNode,
 } from "@uwdata/mosaic-sql";
-import type { ExprNode } from "@uwdata/mosaic-sql";
 
 // ── Types ────────────────────────────────────────────────────────────────
 

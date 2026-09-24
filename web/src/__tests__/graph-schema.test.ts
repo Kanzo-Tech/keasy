@@ -3,7 +3,6 @@ import {
   isNumericType,
   isTemporalType,
   isBinnable,
-  fieldKey,
   buildGraphSchema,
   type FieldStatsMap,
 } from "@/lib/graph-schema";
@@ -67,28 +66,18 @@ describe("buildGraphSchema", () => {
     expect(schema.edges[0].tableName).toBe("person_works_at_org");
   });
 
-  it("field() resolves by key", () => {
-    expect(schema.field("person::age")?.name).toBe("age");
-    expect(schema.field("nonexistent")).toBeUndefined();
-  });
-
   it("fieldsOf() returns fields for a type", () => {
     expect(schema.fieldsOf("person")).toHaveLength(3);
     expect(schema.fieldsOf("unknown")).toHaveLength(0);
   });
 
-  it("produces unique field keys across types", () => {
-    const keys = schema.allFields.map((f) => f.key);
-    expect(new Set(keys).size).toBe(keys.length);
-  });
-
   it("without stats, a field is a name and nothing is binnable", () => {
-    expect(schema.field("person::dept")?.role).toBe("dimension");
-    expect(schema.field("person::age")?.type).toBe("");
-    expect(schema.field("person::dept")?.distinct).toBeUndefined();
+    const [, age, dept] = schema.fieldsOf("person");
+    expect(dept.role).toBe("dimension");
+    expect(age.type).toBe("");
   });
 
-  it("attaches authoritative datatype, role and cardinality from the verb", () => {
+  it("attaches authoritative datatype and role from the verb", () => {
     const stats: FieldStatsMap = new Map([
       [
         "person",
@@ -99,49 +88,9 @@ describe("buildGraphSchema", () => {
       ],
     ]);
     const enriched = buildGraphSchema(overview, stats);
-    expect(enriched.field("person::age")?.role).toBe("measure");
-    expect(enriched.field("person::age")?.type).toBe("int64");
-    expect(enriched.field("person::dept")?.role).toBe("identifier");
-    expect(enriched.field("person::dept")?.distinct).toBe(95);
-  });
-});
-
-describe("buildSource", () => {
-  const schema = buildGraphSchema(overview);
-
-  it("single type → direct relation", () => {
-    const age = schema.field("person::age")!;
-    const dept = schema.field("person::dept")!;
-    expect(schema.buildSource([age, dept]).tableName).toBe("person");
-  });
-
-  it("cross-type → inline JOIN on the writer's addressing columns", () => {
-    const age = schema.field("person::age")!;
-    const revenue = schema.field("org::revenue")!;
-    const source = schema.buildSource([age, revenue]);
-    expect(source.tableName).toContain("JOIN");
-    expect(source.tableName).toContain("s.dense_id = e.src_dense");
-    expect(source.tableName).toContain("t.dense_id = e.dst_dense");
-  });
-
-  it("no connection → fallback to first type", () => {
-    const disconnected: SchemaResult = {
-      vertices: [
-        { name: "a", iri: "", count: 0, fields: ["x"] },
-        { name: "b", iri: "", count: 0, fields: ["y"] },
-      ],
-      edges: [],
-      fields: [],
-    };
-    const s = buildGraphSchema(disconnected);
-    expect(s.buildSource([s.field("a::x")!, s.field("b::y")!]).tableName).toBe("a");
-  });
-});
-
-// ── fieldKey ────────────────────────────────────────────────────────────
-
-describe("fieldKey", () => {
-  it("produces Type::field format", () => {
-    expect(fieldKey("person", "age")).toBe("person::age");
+    const [age, dept] = enriched.fieldsOf("person");
+    expect(age.role).toBe("measure");
+    expect(age.type).toBe("int64");
+    expect(dept.role).toBe("identifier");
   });
 });

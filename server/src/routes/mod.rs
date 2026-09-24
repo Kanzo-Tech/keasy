@@ -6,14 +6,13 @@ use axum::http::HeaderValue;
 use axum::http::header::{self, HeaderName};
 use axum::{Router, middleware};
 use tower::ServiceBuilder;
-use tower_http::cors::{Any, CorsLayer};
 use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 
 use crate::AppState;
 use crate::auth::bearer::bearer_required;
 
-pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Router {
+pub fn build_router(state: AppState) -> Router {
     let health_routes = Router::new()
         .route("/healthz/live", axum::routing::get(health::liveness))
         .route("/healthz/ready", axum::routing::get(health::readiness))
@@ -142,24 +141,6 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
         ))
         .with_state(state);
 
-    let cors = match cors_origins {
-        Some(origins) => {
-            let origins: Vec<_> = origins.iter().filter_map(|o| o.parse().ok()).collect();
-            CorsLayer::new()
-                .allow_origin(origins)
-                .allow_methods(Any)
-                .allow_headers(Any)
-        }
-        None => {
-            if cfg!(debug_assertions) {
-                tracing::warn!("CORS: allowing all origins (dev mode)");
-                CorsLayer::permissive()
-            } else {
-                panic!("KEASY_CORS_ORIGINS must be set in production");
-            }
-        }
-    };
-
     let security_headers = ServiceBuilder::new()
         .layer(SetResponseHeaderLayer::overriding(
             header::X_CONTENT_TYPE_OPTIONS,
@@ -178,7 +159,7 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
             HeaderValue::from_static("max-age=31536000; includeSubDomains"),
         ));
 
-    // Rate limiting — relaxed in dev to support DuckDB concurrent range requests
+    // Rate limiting, relaxed in dev.
     let (rps, burst) = if cfg!(debug_assertions) {
         (100, 500)
     } else {
@@ -199,7 +180,6 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
     Router::new()
         .merge(health_routes)
         .merge(rated_routes)
-        .layer(cors)
         .layer(security_headers)
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024))
         .layer(

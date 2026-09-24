@@ -48,7 +48,7 @@ impl Harness {
             catalog: Arc::new(catalog),
         };
         Self {
-            app: super::build_router(state, None),
+            app: super::build_router(state),
             db,
             realm,
             _dir: dir,

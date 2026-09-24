@@ -108,7 +108,7 @@ pub async fn run() -> Result<(), String> {
     // Registers what a completion missed and forgets what was deleted.
     catalog::reconcile::spawn(state.clone(), Duration::from_secs(60));
 
-    let app = routes::build_router(state, config.cors_origins);
+    let app = routes::build_router(state);
     let listener = tokio::net::TcpListener::bind(config.bind_addr)
         .await
         .map_err(|e| format!("failed to bind to {}: {e}", config.bind_addr))?;

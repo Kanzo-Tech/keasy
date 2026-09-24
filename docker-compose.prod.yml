@@ -9,8 +9,6 @@ services:
       context: ./server
       dockerfile: Dockerfile
     environment:
-      # A release build panics without it.
-      KEASY_CORS_ORIGINS: http://localhost:3000
       RUST_LOG: info
 
   web:

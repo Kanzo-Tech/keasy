@@ -7,7 +7,6 @@ use crate::crypto::SecretKey;
 
 pub struct ServerConfig {
     pub bind_addr: SocketAddr,
-    pub cors_origins: Option<Vec<String>>,
     pub data_dir: PathBuf,
     /// Seals every stored credential. Required: there is no plaintext mode.
     pub secret_key: SecretKey,
@@ -41,13 +40,6 @@ impl ServerConfig {
             .parse()
             .unwrap_or_else(|e| fatal(&format!("KEASY_BIND_ADDR is not a socket address: {e}")));
 
-        let cors_origins = std::env::var("KEASY_CORS_ORIGINS").ok().map(|v| {
-            v.split(',')
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty())
-                .collect()
-        });
-
         let data_dir =
             PathBuf::from(std::env::var("KEASY_DATA_DIR").unwrap_or_else(|_| "./data".to_string()));
 
@@ -75,7 +67,6 @@ impl ServerConfig {
 
         Self {
             bind_addr,
-            cors_origins,
             data_dir,
             secret_key,
             oidc_issuer_url,

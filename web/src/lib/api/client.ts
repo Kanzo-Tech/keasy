@@ -5,6 +5,7 @@ export class ApiError extends Error {
   constructor(
     public readonly code: string,
     message: string,
+    public readonly status?: number,
   ) {
     super(message);
   }
@@ -21,7 +22,7 @@ const envelopeMiddleware: Middleware = {
         (typeof body?.error === "string"
           ? body?.message
           : body?.error?.message) ?? `Request failed (${response.status})`;
-      throw new ApiError(code, message);
+      throw new ApiError(code, message, response.status);
     }
 
     if (response.status === 204) {

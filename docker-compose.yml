@@ -83,7 +83,7 @@ services:
       KEASY_BIND_ADDR: "0.0.0.0:8080"
       KEASY_DATA_DIR: /var/lib/keasy
       # DEV-ONLY placeholder. Prod injects it as a Swarm secret (*_FILE); never
-      # commit a real secret here. Override locally via .env (gitignored).
+      # commit a real secret here.
       KEASY_SECRET_KEY: ${KEASY_SECRET_KEY:-dev-only-insecure-secret-key-change-me}
       # Dev runs as the `dev` tenant (provisioned by the realm module / dev.tfvars).
       KEASY_ORG_ALIAS: dev

@@ -21,23 +21,17 @@ services:
       - cargo-registry:/usr/local/cargo/registry
       - ./infra/dev/shop.fossil:/etc/keasy/shop.fossil:ro
     environment:
-      # The workspace's Keycloak Organization (membership container). Its alias
-      # matches the org declared in the realm import; the server resolves the
-      # org id from it at boot.
-      KEASY_ORG_ALIAS: ${KEASY_ORG_ALIAS:-keasy}
-      KEASY_WORKSPACE_NAME: ${KEASY_WORKSPACE_NAME:-Keasy}
-      KEASY_BASE_DOMAIN: ${KEASY_BASE_DOMAIN:-keasy.local}
       RUST_LOG: debug
       # The dev bucket, declared so nobody has to type credentials to see data.
       # The AWS_* names are the ones the S3 provider schema already declares for
       # its fields; the server reads them once, at boot, to create the account.
-      KEASY_BOOTSTRAP_CONNECTION_NAME: ${MINIO_CONNECTION_NAME:-MinIO dev bucket}
+      KEASY_BOOTSTRAP_CONNECTION_NAME: MinIO dev bucket
       KEASY_BOOTSTRAP_CONNECTION_URL: s3://${MINIO_BUCKET:-keasy-dev}/
       # The shapes, under their own prefix and declared as `vocab`. A connection
       # is a prefix, so sharing one with the data bucket would put shop.shex in
       # the data listing and the CSVs in the Vocabulary tab; separate prefixes
       # are what let @-completion tell a shape from a table.
-      KEASY_BOOTSTRAP_VOCAB_NAME: ${MINIO_VOCAB_CONNECTION_NAME:-MinIO dev shapes}
+      KEASY_BOOTSTRAP_VOCAB_NAME: MinIO dev shapes
       KEASY_BOOTSTRAP_VOCAB_URL: s3://${MINIO_BUCKET:-keasy-dev}/vocab/
       # Where job output lands. The sink belongs to the owner, and the two planes
       # are disjoint, so declaring it is what spares a member a second login just

@@ -83,7 +83,8 @@ services:
       KEASY_DATA_DIR: /var/lib/keasy
       # DEV-ONLY placeholder. Prod injects it as a Swarm secret (*_FILE); never
       # commit a real secret here.
-      KEASY_SECRET_KEY: ${KEASY_SECRET_KEY:-dev-only-insecure-secret-key-change-me}
+      # 32 bytes in base64 — "dev-only-insecure-secret-key!!!!". DEV-ONLY.
+      KEASY_SECRET_KEY: ${KEASY_SECRET_KEY:-ZGV2LW9ubHktaW5zZWN1cmUtc2VjcmV0LWtleSEhISE=}
       # Dev runs as the `dev` tenant (provisioned by the realm module / dev.tfvars).
       KEASY_ORG_ALIAS: dev
       KEASY_WORKSPACE_NAME: Dev Workspace

@@ -40,10 +40,12 @@ Both are declared in `infra/terraform/realm/dev.tfvars` (`tenants`,
 
 At boot the instance declares, over that bucket, the **MinIO dev bucket** source
 connection, the **MinIO dev shapes** vocabulary connection (`vocab/`), the sink
-(`output/`), and a draft job, **Shop orders**, from `infra/dev/shop.fossil`. A
-member opens the workspace with data, shapes, a destination and a job ready to
-launch. Access is proved before each connection row is written, and an existing
-sink is never overwritten.
+(`output/`). Access is proved before each connection row is written, and an
+existing sink is never overwritten. The draft job **Shop orders**
+(`infra/dev/shop.fossil`) goes to the first member who lists jobs on an instance
+with none — a job belongs to its creator, and at boot there is no one to give it
+to. A member opens the workspace with data, shapes, a destination and a job
+ready to launch.
 
 `minio.localhost` is load-bearing: Docker's DNS answers it inside the compose
 network and `*.localhost` is loopback on the host, so a URL the server presigns
@@ -72,8 +74,15 @@ The **server** is a resource server: it validates the bearer token against the
 realm's JWKS (`iss`, `aud`, `exp`, `azp`, signature) and holds no client secret,
 no session and no cookie. `/v1` reaches it only through the web.
 
-Mappings run in the browser (DuckDB-WASM + `@fossil-lang/*`); the server hosts
-connections, signed URLs, jobs and the catalog.
+Mappings run in the browser (DuckDB-WASM + `@fossil-lang/*`), and so does source
+introspection; the server hosts connections, signed URLs, jobs and the catalog,
+and never reads a data file. Every job names a sink as its destination and is
+visible only to the member who created it.
+
+Stored credentials are sealed with `KEASY_SECRET_KEY`: 32 random bytes in base64
+(`openssl rand -base64 32`). The server refuses to start without one, and refuses
+a database whose schema is not the one it ships — there are no migrations; wipe
+the volume (`make clean`) instead.
 
 ## Deployment
 

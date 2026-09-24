@@ -16,10 +16,10 @@ resource "random_password" "session" {
   length   = 48
   special  = false
 }
-resource "random_password" "secret_key" {
+# The AEAD key for stored credentials: 32 random bytes, handed over in base64.
+resource "random_bytes" "secret_key" {
   for_each = local.stack_tenants
-  length   = 48
-  special  = false
+  length   = 32
 }
 
 resource "docker_secret" "oidc" {
@@ -35,7 +35,7 @@ resource "docker_secret" "session" {
 resource "docker_secret" "secret_key" {
   for_each = local.stack_tenants
   name     = "keasy-ws-${each.key}-secret-key"
-  data     = base64encode(random_password.secret_key[each.key].result)
+  data     = base64encode(random_bytes.secret_key[each.key].base64)
 }
 
 resource "docker_volume" "data" {

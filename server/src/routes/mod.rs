@@ -11,8 +11,7 @@ use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 
 use crate::AppState;
-use crate::middleware::bearer::bearer_required;
-use crate::middleware::tenant::tenant_context_required;
+use crate::auth::bearer::bearer_required;
 
 pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Router {
     let health_routes = Router::new()
@@ -28,21 +27,14 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
         )
         .with_state(state.clone());
 
-    // Authenticated but not yet a member: someone who holds a valid token and no
-    // role here still needs to be told which workspaces they *do* belong to.
-    let member_agnostic_routes = Router::new()
+    // Behind a verified token. Each handler's role extractor says whom it admits;
+    // the workspace list admits a verified caller with no role here, who still
+    // needs to be told where they do belong.
+    let api_routes = Router::new()
         .route(
             "/v1/auth/workspaces",
             axum::routing::get(crate::auth::routes::list_workspaces),
         )
-        .layer(middleware::from_fn_with_state(
-            state.clone(),
-            bearer_required,
-        ))
-        .with_state(state.clone());
-
-    // All existing API routes, behind a verified token and a workspace role
-    let api_routes = Router::new()
         .route(
             "/v1/jobs",
             axum::routing::get(crate::jobs::routes::list_jobs)
@@ -140,17 +132,13 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
             "/v1/assistant/generate-stream",
             axum::routing::post(crate::assistant::routes::generate_script_stream),
         )
-        // Workspace legal identity — read for any member, write for the owner
         .route(
             "/v1/org/identity",
             axum::routing::get(org::get_org_identity).put(org::update_org_identity),
         )
-        .layer(middleware::from_fn(
-            tenant_context_required, // runs second (inner), after bearer_required
-        ))
         .layer(middleware::from_fn_with_state(
             state.clone(),
-            bearer_required, // runs first (outer)
+            bearer_required,
         ))
         .with_state(state);
 
@@ -205,7 +193,6 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
     // Rate-limited routes (excludes health checks so LB probes don't eat the budget)
     let rated_routes = Router::new()
         .merge(public_api_routes)
-        .merge(member_agnostic_routes)
         .merge(api_routes)
         .layer(tower_governor::GovernorLayer::new(governor_conf));
 

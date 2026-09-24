@@ -2,8 +2,8 @@ use axum::extract::State;
 use axum::response::IntoResponse;
 
 use crate::AppState;
+use crate::auth::bearer::AuthenticatedUser;
 use crate::error::data_response;
-use crate::middleware::bearer::AuthenticatedUser;
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct WorkspacesResponse {
@@ -25,7 +25,7 @@ pub struct WorkspacesResponse {
 /// claim is neither — so it is read here, off the token this server verified,
 /// rather than copied into a shape the browser would have to be trusted about.
 ///
-/// Deliberately outside `tenant_context_required`: someone authenticated but
+/// It takes no role extractor: someone authenticated but
 /// holding no role here still needs to be told where they *do* belong.
 #[utoipa::path(get, path = "/v1/auth/workspaces", tag = "Auth",
     responses((status = 200, description = "List of accessible workspaces", body = WorkspacesResponse))

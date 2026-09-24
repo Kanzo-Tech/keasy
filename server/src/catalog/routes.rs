@@ -8,8 +8,8 @@ use serde::Serialize;
 
 use super::view::CatalogDataset;
 use crate::AppState;
+use crate::auth::role::Owner;
 use crate::error::error_body;
-use crate::middleware::tenant::{IsOwner, Require};
 
 #[derive(Serialize, utoipa::ToSchema)]
 pub struct DatasetsResponse {
@@ -29,12 +29,9 @@ pub struct DatasetsResponse {
 /// Governance metadata, and therefore the owner's: Data Catalog is a page on the
 /// owner's side of the app (`/datasets`), and it is the index over what the
 /// whole workspace produced rather than over what the caller produced. The
-/// member reaches their own output through the job that made it, which is the
-/// data plane and carries the bytes; this carries none.
-pub async fn list_catalog_datasets(
-    _ctx: Require<IsOwner>,
-    State(state): State<AppState>,
-) -> Response {
+/// member reaches their own output through the job that made it, which carries
+/// the bytes; this carries none.
+pub async fn list_catalog_datasets(_: Owner, State(state): State<AppState>) -> Response {
     let Some(catalog) = state.catalog.clone() else {
         return (
             StatusCode::SERVICE_UNAVAILABLE,

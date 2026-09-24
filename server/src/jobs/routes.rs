@@ -6,12 +6,12 @@ use axum::{
 };
 
 use crate::AppState;
+use crate::auth::role::Member;
 use crate::error::data_response;
 use crate::jobs::models::{
     CompleteJobRequest, CreateJobRequest, Job, JobStatus, PublishRelationsRequest,
     UpdateJobRequest, now_iso8601,
 };
-use crate::middleware::tenant::{IsDataPlane, Require};
 
 use super::errors::{JobApiError, JobRuntimeError, classify_error};
 
@@ -21,7 +21,7 @@ use super::errors::{JobApiError, JobRuntimeError, classify_error};
     )
 )]
 pub async fn list_jobs(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, JobApiError> {
     let jobs = state.db.list_jobs().await;
@@ -36,7 +36,7 @@ pub async fn list_jobs(
     )
 )]
 pub async fn create_job(
-    ctx: Require<IsDataPlane>,
+    ctx: Member,
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -66,7 +66,7 @@ pub async fn create_job(
     )
 )]
 pub async fn get_job(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
@@ -86,7 +86,7 @@ pub async fn get_job(
     )
 )]
 pub async fn update_job(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateJobRequest>,
@@ -126,7 +126,7 @@ pub async fn update_job(
 /// stores the run report VERBATIM — keasy neither reads nor re-types it; the
 /// server never touches the data, only the metadata.
 pub async fn complete_job(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<CompleteJobRequest>,
@@ -193,7 +193,7 @@ pub async fn complete_job(
 /// idempotent, composing nothing: every name and every path in that SQL came
 /// from this payload.
 pub async fn publish_relations(
-    ctx: Require<IsDataPlane>,
+    ctx: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<PublishRelationsRequest>,
@@ -262,7 +262,7 @@ pub async fn publish_relations(
     )
 )]
 pub async fn delete_job(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {

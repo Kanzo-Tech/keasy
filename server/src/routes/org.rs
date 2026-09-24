@@ -2,13 +2,16 @@
 //! reads it to know whether DCAT output can be published), written by the owner.
 //! Membership itself is Keycloak's, declared in Terraform.
 
-use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 use regex::Regex;
 use std::sync::LazyLock;
 
 use crate::AppState;
+use crate::auth::role::{AnyRole, Owner};
 use crate::error::{data_response, error_body};
-use crate::middleware::tenant::{IsOwner, IsWorkspaceUser, RbacError, Require};
 use crate::settings::org::OrgIdentity;
 
 static SUBDIVISION_RE: LazyLock<Regex> =
@@ -19,10 +22,7 @@ static SUBDIVISION_RE: LazyLock<Regex> =
         (status = 200, description = "Workspace identity", body = OrgIdentity),
     )
 )]
-pub async fn get_org_identity(
-    _ctx: Require<IsWorkspaceUser>,
-    State(state): State<AppState>,
-) -> impl IntoResponse {
+pub async fn get_org_identity(_: AnyRole, State(state): State<AppState>) -> impl IntoResponse {
     let workspace = state.db.get_workspace_identity().await.unwrap_or_default();
     data_response(workspace.identity).into_response()
 }
@@ -35,17 +35,17 @@ pub async fn get_org_identity(
     )
 )]
 pub async fn update_org_identity(
-    _ctx: Require<IsOwner>,
+    _: Owner,
     State(state): State<AppState>,
     Json(mut payload): Json<OrgIdentity>,
-) -> Result<impl IntoResponse, RbacError> {
+) -> Response {
     payload.legal_name = payload.legal_name.trim().to_string();
     let invalid = |message: &str| {
-        Ok((
+        (
             StatusCode::BAD_REQUEST,
             Json(error_body("bad_request", message)),
         )
-            .into_response())
+            .into_response()
     };
     if payload.legal_name.is_empty() {
         return invalid("legal_name must not be empty");
@@ -69,5 +69,5 @@ pub async fn update_org_identity(
     workspace.identity = payload.clone();
     state.db.set_workspace_identity(&workspace).await;
 
-    Ok(data_response(payload).into_response())
+    data_response(payload).into_response()
 }

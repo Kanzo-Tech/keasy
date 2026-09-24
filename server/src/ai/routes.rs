@@ -11,7 +11,7 @@ use super::client::{
     setup_sse_channels,
 };
 use crate::AppState;
-use crate::middleware::tenant::{IsDataPlane, Require};
+use crate::auth::role::Member;
 
 /// How many earlier messages of the conversation reach the model.
 const HISTORY_WINDOW: usize = 10;
@@ -62,7 +62,7 @@ pub struct AskRequest {
     responses((status = 200, description = "SSE stream of LLM deltas", content_type = "text/event-stream"))
 )]
 pub async fn ask_discover_stream(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<AskRequest>,

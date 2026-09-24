@@ -7,11 +7,11 @@ use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 
 use crate::AppState;
+use crate::auth::role::Member;
 use crate::cloud::reader;
 use crate::connections::models::{Connection, CreateConnectionRequest, Direction, LocationType};
 use crate::discovery::routes::{DatasetUrlsRequest, sign_dataset_paths};
 use crate::error::data_response;
-use crate::middleware::tenant::{IsDataPlane, Require, TenantRole};
 
 use super::errors::ConnectionError;
 
@@ -59,7 +59,7 @@ pub struct ListConnectionsQuery {
     responses((status = 200, description = "List of connections", body = Vec<Connection>))
 )]
 pub async fn list_connections(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Query(query): Query<ListConnectionsQuery>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -78,11 +78,12 @@ pub async fn list_connections(
     )
 )]
 pub async fn create_connection(
-    ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Json(req): Json<CreateConnectionRequest>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    if req.direction == Direction::Sink && ctx.role != TenantRole::Owner {
+    // The sink is the owner's, set on the catalog-storage page.
+    if req.direction == Direction::Sink {
         return Err(ConnectionError::Forbidden(
             "only the owner can manage the workspace sink".to_string(),
         ));
@@ -117,7 +118,7 @@ pub async fn create_connection(
     )
 )]
 pub async fn get_connection(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -134,16 +135,15 @@ pub async fn get_connection(
     )
 )]
 pub async fn delete_connection(
-    ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    if ctx.role != TenantRole::Owner
-        && state
-            .db
-            .get_connection(id.as_str())
-            .await
-            .is_some_and(|c| c.direction == Direction::Sink)
+    if state
+        .db
+        .get_connection(id.as_str())
+        .await
+        .is_some_and(|c| c.direction == Direction::Sink)
     {
         return Err(ConnectionError::Forbidden(
             "only the owner can manage the workspace sink".to_string(),
@@ -167,7 +167,7 @@ pub async fn delete_connection(
     )
 )]
 pub async fn list_connection_files(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
@@ -192,7 +192,7 @@ pub async fn list_connection_files(
 /// sources a program binds). The sink holds every job's output and is read
 /// only through the job that wrote it.
 pub async fn sign_connection_urls(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<DatasetUrlsRequest>,

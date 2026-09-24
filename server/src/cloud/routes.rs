@@ -4,15 +4,15 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 
 use crate::AppState;
+use crate::auth::role::{AnyRole, Member};
 use crate::cloud::models::{
     CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest,
 };
 use crate::error::data_response;
-use crate::middleware::tenant::{IsDataPlane, IsWorkspaceUser, Require};
 
 use super::errors::CloudAccountError;
 
-// The one cloud-accounts call that is not the data plane's alone.
+// The one cloud-accounts call that is not the member's alone.
 //
 // A cloud account is a member's: they add it, edit it and delete it from
 // Settings → Cloud Accounts, which is a member-only page. But the owner's
@@ -24,7 +24,7 @@ use super::errors::CloudAccountError;
     responses((status = 200, description = "List of cloud accounts", body = Vec<CloudAccountSummary>))
 )]
 pub async fn list_accounts(
-    _ctx: Require<IsWorkspaceUser>,
+    _: AnyRole,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
     Ok(data_response(state.db.list_cloud_accounts().await))
@@ -38,7 +38,7 @@ pub async fn list_accounts(
     )
 )]
 pub async fn create_account(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Json(payload): Json<CreateCloudAccountRequest>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
@@ -56,7 +56,7 @@ pub async fn create_account(
     )
 )]
 pub async fn get_account(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
@@ -75,7 +75,7 @@ pub async fn get_account(
     )
 )]
 pub async fn update_account(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateCloudAccountRequest>,
@@ -91,7 +91,7 @@ pub async fn update_account(
     responses((status = 204, description = "Cloud account deleted"))
 )]
 pub async fn delete_account(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, CloudAccountError> {

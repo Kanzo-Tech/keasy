@@ -7,12 +7,12 @@ use axum::{
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::AppState;
+use crate::auth::role::{Member, Owner};
 use crate::connections::models::{
     ConnectionKind, CreateConnectionRequest, Direction, LocationType, SINK_NAME,
     UpdateConnectionRequest,
 };
 use crate::error::{data_response, error_body};
-use crate::middleware::tenant::{IsDataPlane, IsOwner, Require};
 use crate::settings::ai::{AiSettings, AiSettingsPayload};
 use crate::settings::org::OrgSettings;
 use crate::settings::schema::PROVIDER_REGISTRY;
@@ -26,18 +26,15 @@ pub async fn get_schema() -> impl IntoResponse {
     data_response(PROVIDER_REGISTRY)
 }
 
-// The DCAT publisher block behind the workspace catalog. No page reads it today
-// — the Identity page writes `/v1/org/identity` and the catalog is published
-// from that — but it is catalog metadata and its own PUT is already the owner's,
-// so the read is the owner's too rather than the odd half of a pair that
-// straddles both planes.
+// The DCAT publisher block behind the workspace catalog: catalog metadata, the
+// owner's to read and write.
 #[utoipa::path(get, path = "/v1/settings/organization", tag = "Settings",
     responses(
         (status = 200, description = "Organization settings", body = OrgSettings),
         (status = 204, description = "No settings configured"),
     )
 )]
-pub async fn get_org_settings(_ctx: Require<IsOwner>, State(state): State<AppState>) -> Response {
+pub async fn get_org_settings(_: Owner, State(state): State<AppState>) -> Response {
     match state.db.get_org_settings().await {
         Some(settings) => data_response(settings).into_response(),
         None => StatusCode::NO_CONTENT.into_response(),
@@ -52,7 +49,7 @@ pub async fn get_org_settings(_ctx: Require<IsOwner>, State(state): State<AppSta
     )
 )]
 pub async fn save_org_settings(
-    _ctx: Require<IsOwner>,
+    _: Owner,
     State(state): State<AppState>,
     Json(payload): Json<OrgSettings>,
 ) -> Response {
@@ -67,20 +64,15 @@ pub async fn save_org_settings(
     data_response(payload).into_response()
 }
 
-// ── AI providers (data plane) ─────────────────────────────────────────────
+// ── AI providers ──────────────────────────────────────────────────────────
 //
-// An LLM key exists here to serve the assistant and the Discovery chat, which
-// are the member's surfaces over the member's own output. Settings → AI is a
-// member-only page for that reason, and the owner has nothing to point a
-// provider at.
+// An LLM key serves the assistant and the Discovery chat, the member's surfaces
+// over the member's own output; the owner has nothing to point a provider at.
 
 #[utoipa::path(get, path = "/v1/settings/ai/providers", tag = "Settings",
     responses((status = 200, description = "List of AI providers", body = Vec<AiSettingsPayload>))
 )]
-pub async fn list_ai_providers(
-    _ctx: Require<IsDataPlane>,
-    State(state): State<AppState>,
-) -> impl IntoResponse {
+pub async fn list_ai_providers(_: Member, State(state): State<AppState>) -> impl IntoResponse {
     let providers = state.db.list_ai_providers().await;
     let payloads: Vec<AiSettingsPayload> = providers.iter().map(to_payload).collect();
     data_response(payloads)
@@ -95,7 +87,7 @@ pub async fn list_ai_providers(
     )
 )]
 pub async fn save_ai_provider(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Path(provider_id): Path<String>,
     Json(payload): Json<AiSettingsPayload>,
@@ -138,7 +130,7 @@ pub async fn save_ai_provider(
     )
 )]
 pub async fn delete_ai_provider(
-    _ctx: Require<IsDataPlane>,
+    _: Member,
     State(state): State<AppState>,
     Path(provider_id): Path<String>,
 ) -> Response {
@@ -185,10 +177,7 @@ pub struct CatalogStoragePayload {
         (status = 204, description = "Not configured"),
     )
 )]
-pub async fn get_catalog_storage(
-    _ctx: Require<IsOwner>,
-    State(state): State<AppState>,
-) -> Response {
+pub async fn get_catalog_storage(_: Owner, State(state): State<AppState>) -> Response {
     match state.db.get_sink_connection().await {
         Some(sink) => match sink.cloud_account_id {
             Some(cloud_account_id) => data_response(CatalogStoragePayload {
@@ -210,7 +199,7 @@ pub async fn get_catalog_storage(
     )
 )]
 pub async fn save_catalog_storage(
-    _ctx: Require<IsOwner>,
+    _: Owner,
     State(state): State<AppState>,
     Json(payload): Json<CatalogStoragePayload>,
 ) -> Response {

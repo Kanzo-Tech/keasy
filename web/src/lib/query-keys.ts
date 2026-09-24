@@ -16,7 +16,6 @@ export const queryKeys = {
     detail: (id: string) => ["connections", id] as const,
     files: (id: string) => ["connections", id, "files"] as const,
     schema: (id: string, path: string) => ["connections", id, "schema", path] as const,
-    init: (tab: ConnectionKind) => ["connections-init", tab] as const,
   },
 
   // Catalog (governance)

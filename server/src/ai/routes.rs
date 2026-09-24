@@ -1,21 +1,20 @@
-use std::fmt::Write as FmtWrite;
-
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::sse::Event;
 use axum::response::{IntoResponse, Response};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use tracing::warn;
 
 use super::client::{
-    AiError, Message, ask_llm_stream, error_event, into_sse_response, require_ai_settings,
+    Message, ask_llm_stream, error_event, failure_code, into_sse_response, require_ai_settings,
     setup_sse_channels,
 };
-use super::models::{AskResultCode, Conversation, ConversationMessage};
 use crate::AppState;
-use crate::error::data_response;
 use crate::middleware::tenant::{IsDataPlane, Require};
+
+/// How many earlier messages of the conversation reach the model.
+const HISTORY_WINDOW: usize = 10;
 
 #[derive(Deserialize)]
 struct LlmResponse {
@@ -26,7 +25,36 @@ struct LlmResponse {
     explanation: String,
 }
 
-// ── Streaming endpoint ───────────────────────────────────────────────────
+#[derive(Debug, Clone, Copy, Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ChatRole {
+    User,
+    Assistant,
+}
+
+/// One earlier message of the conversation. The client keeps the conversation;
+/// the server sees only what each ask carries.
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct ChatMessage {
+    pub role: ChatRole,
+    pub content: String,
+}
+
+#[derive(Deserialize, utoipa::ToSchema)]
+pub struct AskRequest {
+    pub question: String,
+    pub provider: Option<String>,
+    /// DuckDB DDL of the views the browser mounted: the whole of what the model
+    /// knows about the data. Required unless `explain`.
+    pub schema: Option<String>,
+    /// When true, the model reads query results back instead of writing SQL;
+    /// `question` then carries the question, the SQL and the rows.
+    #[serde(default)]
+    pub explain: bool,
+    /// The conversation so far, oldest first.
+    #[serde(default)]
+    pub history: Vec<ChatMessage>,
+}
 
 #[utoipa::path(post, path = "/v1/jobs/{id}/discover/ask-stream", tag = "Discovery",
     params(("id" = String, Path, description = "Job ID")),
@@ -53,15 +81,10 @@ pub async fn ask_discover_stream(
         Err(e) => return e.into_response(),
     };
 
-    let is_explain = req.explain;
-
-    // The schema is the browser's to send: it is DuckDB's own catalog over the
-    // mounted views. The server keeps no second description of it, so an ask
-    // that arrives without one is refused rather than answered against a guess.
-    let schema_context = match &req.schema {
-        Some(s) if !s.is_empty() => s.clone(),
-        _ if is_explain => String::new(),
-        _ => {
+    let (system_prompt, mut messages, max_tokens) = if req.explain {
+        (EXPLAIN_PROMPT.to_string(), Vec::new(), 512)
+    } else {
+        let Some(schema) = req.schema.as_deref().filter(|s| !s.is_empty()) else {
             return (
                 StatusCode::BAD_REQUEST,
                 Json(crate::error::error_body(
@@ -70,177 +93,91 @@ pub async fn ask_discover_stream(
                 )),
             )
                 .into_response();
-        }
-    };
-
-    let conversation_id = match req.conversation_id {
-        Some(cid) => cid,
-        None => match state.db.create_conversation(&id, None).await {
-            Ok(conv) => conv.id,
-            Err(e) => {
-                warn!("Failed to create conversation: {e}");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(crate::error::error_body(
-                        "db_error",
-                        "Failed to create conversation",
-                    )),
-                )
-                    .into_response();
-            }
-        },
-    };
-
-    let history = state.db.get_messages(&conversation_id).await;
-
-    // Don't persist the explain prompt as a user message
-    if !is_explain
-        && let Err(e) = state
-            .db
-            .add_message(&conversation_id, "user", &req.question, None, None, None)
-            .await
-    {
-        warn!("Failed to persist user message: {e}");
-    }
-
-    // Explain is self-contained; don't load conversation history
-    let mut messages = if is_explain {
-        vec![]
-    } else {
-        build_conversation_messages(&history)
+        };
+        (system_prompt(schema), history(req.history), 2048)
     };
     messages.push(Message {
         role: "user".to_string(),
-        content: req.question.clone(),
+        content: req.question,
     });
 
-    let system_prompt = if is_explain {
-        build_explain_prompt()
-    } else {
-        build_system_prompt(&schema_context)
-    };
-
-    // Open SSE channel (shared infrastructure)
     let ch = setup_sse_channels();
     let sse_tx = ch.sse_tx;
-
-    // Send conversation_id immediately
-    let conv_id = conversation_id.clone();
-    let _ = sse_tx
-        .send(Ok(Event::default().event("conversation").data(
-            serde_json::json!({"conversation_id": conv_id}).to_string(),
-        )))
-        .await;
-
-    // Run LLM in background, then parse and send complete event
-    let max_tokens = if is_explain { Some(512) } else { Some(2048) };
-    let db = state.db.clone();
     let delta_tx = ch.delta_tx;
+    let explain = req.explain;
     tokio::spawn(async move {
-        let result = ask_llm_stream(
+        let complete = match ask_llm_stream(
             &ai_settings,
             &system_prompt,
             &messages,
-            max_tokens,
+            Some(max_tokens),
             delta_tx,
         )
-        .await;
-
-        match result {
+        .await
+        {
+            Ok(full_text) if explain => serde_json::json!({
+                "answer": full_text.trim(),
+                "code": "success",
+            }),
             Ok(full_text) => {
-                if is_explain {
-                    let explanation = full_text.trim().to_string();
-                    let msgs = db.get_messages(&conversation_id).await;
-                    if let Some(last_assistant) = msgs.iter().rev().find(|m| m.role == "assistant")
-                        && let Err(e) = db
-                            .update_message_explanation(&last_assistant.id, &explanation)
-                            .await
-                    {
-                        warn!("Failed to update explanation: {e}");
-                    }
-                    let complete = serde_json::json!({
-                        "answer": explanation,
-                        "conversation_id": conversation_id,
-                        "code": AskResultCode::Success.as_str(),
-                    });
-                    let _ = sse_tx
-                        .send(Ok(Event::default()
-                            .event("complete")
-                            .data(complete.to_string())))
-                        .await;
-                } else {
-                    let json_str = strip_markdown_fences(&full_text);
-                    let (sql, explanation, reasoning) =
-                        match serde_json::from_str::<LlmResponse>(json_str) {
-                            Ok(resp) => (Some(resp.sql.clone()), resp.explanation, resp.reasoning),
-                            Err(_) => (None, full_text.clone(), String::new()),
-                        };
-
-                    let answer = if explanation.is_empty() {
-                        "Here is a query for your data.".to_string()
-                    } else {
-                        explanation
+                let (sql, explanation, reasoning) =
+                    match serde_json::from_str::<LlmResponse>(strip_markdown_fences(&full_text)) {
+                        Ok(resp) => (Some(resp.sql), resp.explanation, resp.reasoning),
+                        Err(_) => (None, full_text, String::new()),
                     };
-                    if let Err(e) = db
-                        .add_message(
-                            &conversation_id,
-                            "assistant",
-                            &answer,
-                            sql.as_deref(),
-                            None,
-                            Some(AskResultCode::Success.as_str()),
-                        )
-                        .await
-                    {
-                        warn!("Failed to persist assistant message: {e}");
-                    }
-
-                    let complete = serde_json::json!({
-                        "sql": sql,
-                        "answer": answer,
-                        "conversation_id": conversation_id,
-                        "reasoning": if reasoning.is_empty() { None } else { Some(reasoning) },
-                        "code": AskResultCode::Success.as_str(),
-                    });
-                    let _ = sse_tx
-                        .send(Ok(Event::default()
-                            .event("complete")
-                            .data(complete.to_string())))
-                        .await;
-                }
+                let answer = if explanation.is_empty() {
+                    "Here is a query for your data.".to_string()
+                } else {
+                    explanation
+                };
+                serde_json::json!({
+                    "sql": sql,
+                    "answer": answer,
+                    "reasoning": (!reasoning.is_empty()).then_some(reasoning),
+                    "code": "success",
+                })
             }
             Err(e) => {
-                let (code, msg) = match &e {
-                    AiError::InsufficientCredits(_) => (
-                        AskResultCode::InsufficientCredits.as_str(),
-                        "Insufficient credits.",
-                    ),
-                    AiError::Failed(_) => (AskResultCode::LlmFailed.as_str(), "LLM call failed."),
-                };
                 warn!("LLM stream failed: {e}");
-                if let Err(e) = db
-                    .add_message(&conversation_id, "assistant", msg, None, None, Some(code))
-                    .await
-                {
-                    warn!("Failed to persist error message: {e}");
-                }
-                let _ = sse_tx.send(Ok(error_event(code, msg))).await;
+                let _ = sse_tx
+                    .send(Ok(error_event(failure_code(&e), &e.to_string())))
+                    .await;
+                return;
             }
-        }
+        };
+        let _ = sse_tx
+            .send(Ok(Event::default()
+                .event("complete")
+                .data(complete.to_string())))
+            .await;
     });
 
     into_sse_response(ch.sse_rx)
 }
 
-/// Build the system prompt for the DuckDB SQL assistant.
+/// The last [`HISTORY_WINDOW`] messages, in order.
+fn history(mut messages: Vec<ChatMessage>) -> Vec<Message> {
+    let skip = messages.len().saturating_sub(HISTORY_WINDOW);
+    messages
+        .drain(skip..)
+        .map(|m| Message {
+            role: match m.role {
+                ChatRole::User => "user",
+                ChatRole::Assistant => "assistant",
+            }
+            .to_string(),
+            content: m.content,
+        })
+        .collect()
+}
+
+/// The system prompt for the DuckDB SQL assistant.
 ///
 /// `schema_context` is real DuckDB DDL, read by the browser out of its own
-/// DuckDB catalog and sent with the question. Everything the model needs to
-/// know about the shape of the data is in it: the table names, the column
-/// names and the column types. The one thing DDL cannot carry is that a join
-/// exists at all — the views have no foreign keys — so the prompt keeps the
-/// traversal idiom and nothing else about the layout.
-fn build_system_prompt(schema_context: &str) -> String {
+/// DuckDB catalog and sent with the question. The one thing DDL cannot carry is
+/// that a join exists at all — the views have no foreign keys — so the prompt
+/// keeps the traversal idiom and nothing else about the layout.
+fn system_prompt(schema_context: &str) -> String {
     format!(
         "You are a DuckDB SQL query assistant operating over a property graph\n\
          loaded into DuckDB as views. The schema below is the whole of it: use\n\
@@ -275,222 +212,14 @@ fn build_system_prompt(schema_context: &str) -> String {
     )
 }
 
-/// Build the system prompt for the explain pass (data analyst mode).
-fn build_explain_prompt() -> String {
-    "You are a data analyst. The user will provide:\n\
+const EXPLAIN_PROMPT: &str = "You are a data analyst. The user will provide:\n\
      1. Their original question\n\
      2. The SQL query that was executed\n\
      3. The query results (first rows as JSON)\n\n\
      Write a concise natural-language summary of the findings in markdown.\n\
      Focus on key numbers, patterns, anomalies, and what the data means.\n\
      Be specific — reference actual values from the results.\n\
-     Do NOT return JSON. Do NOT repeat the SQL. Plain markdown only."
-        .to_string()
-}
-
-/// Build LLM message history from conversation messages.
-fn build_conversation_messages(history: &[ConversationMessage]) -> Vec<Message> {
-    let recent = if history.len() > 10 {
-        &history[history.len() - 10..]
-    } else {
-        history
-    };
-
-    recent
-        .iter()
-        .map(|msg| {
-            let content = if msg.role == "assistant" {
-                let mut condensed = String::new();
-                let answer_preview: String = msg.content.chars().take(200).collect();
-                let _ = write!(condensed, "[Answer: {answer_preview}]");
-                if let Some(sql) = &msg.sql {
-                    let sql_preview: String = sql.chars().take(200).collect();
-                    let _ = write!(condensed, " [SQL: {sql_preview}]");
-                }
-                condensed
-            } else {
-                msg.content.clone()
-            };
-            Message {
-                role: msg.role.clone(),
-                content,
-            }
-        })
-        .collect()
-}
-
-#[derive(Deserialize, utoipa::ToSchema)]
-pub struct CreateConversationRequest {
-    pub title: Option<String>,
-}
-
-#[utoipa::path(post, path = "/v1/jobs/{id}/conversations", tag = "Conversations",
-    params(("id" = String, Path, description = "Job ID")),
-    request_body = CreateConversationRequest,
-    responses((status = 201, description = "Conversation created", body = crate::ai::models::Conversation))
-)]
-pub async fn create_conversation(
-    _ctx: Require<IsDataPlane>,
-    State(state): State<AppState>,
-    Path(job_id): Path<String>,
-    Json(req): Json<CreateConversationRequest>,
-) -> Response {
-    if state.db.get_job(job_id.as_str()).await.is_none() {
-        return (
-            StatusCode::NOT_FOUND,
-            Json(crate::error::error_body("not_found", "Job not found")),
-        )
-            .into_response();
-    }
-    match state.db.create_conversation(&job_id, req.title).await {
-        Ok(conv) => (StatusCode::CREATED, data_response(conv)).into_response(),
-        Err(e) => {
-            warn!("Failed to create conversation: {e}");
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(crate::error::error_body(
-                    "db_error",
-                    "Failed to create conversation",
-                )),
-            )
-                .into_response()
-        }
-    }
-}
-
-#[utoipa::path(get, path = "/v1/jobs/{id}/conversations", tag = "Conversations",
-    params(("id" = String, Path, description = "Job ID")),
-    responses((status = 200, description = "List of conversations", body = Vec<crate::ai::models::Conversation>))
-)]
-pub async fn list_conversations(
-    _ctx: Require<IsDataPlane>,
-    State(state): State<AppState>,
-    Path(job_id): Path<String>,
-) -> impl IntoResponse {
-    let convs: Vec<Conversation> = state.db.list_conversations(&job_id).await;
-    data_response(convs)
-}
-
-#[utoipa::path(get, path = "/v1/conversations/{id}/messages", tag = "Conversations",
-    params(("id" = String, Path, description = "Conversation ID")),
-    responses(
-        (status = 200, description = "Conversation messages", body = Vec<crate::ai::models::ConversationMessage>),
-        (status = 404, description = "Not found"),
-    )
-)]
-pub async fn get_conversation_messages(
-    _ctx: Require<IsDataPlane>,
-    State(state): State<AppState>,
-    Path(conversation_id): Path<String>,
-) -> Response {
-    if state.db.get_conversation(&conversation_id).await.is_none() {
-        return (
-            StatusCode::NOT_FOUND,
-            Json(crate::error::error_body(
-                "not_found",
-                "Conversation not found",
-            )),
-        )
-            .into_response();
-    }
-    let messages: Vec<ConversationMessage> = state.db.get_messages(&conversation_id).await;
-    data_response(messages).into_response()
-}
-
-#[derive(Deserialize, utoipa::ToSchema)]
-pub struct RenameConversationRequest {
-    pub title: String,
-}
-
-#[utoipa::path(put, path = "/v1/conversations/{id}", tag = "Conversations",
-    params(("id" = String, Path, description = "Conversation ID")),
-    request_body = RenameConversationRequest,
-    responses((status = 204, description = "Conversation renamed"))
-)]
-pub async fn rename_conversation(
-    _ctx: Require<IsDataPlane>,
-    State(state): State<AppState>,
-    Path(conversation_id): Path<String>,
-    Json(req): Json<RenameConversationRequest>,
-) -> Response {
-    if req.title.trim().is_empty() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(crate::error::error_body(
-                "validation_error",
-                "title is required",
-            )),
-        )
-            .into_response();
-    }
-    if let Err(e) = state
-        .db
-        .rename_conversation(&conversation_id, req.title.trim())
-        .await
-    {
-        warn!("Failed to rename conversation: {e}");
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(crate::error::error_body(
-                "db_error",
-                "Failed to rename conversation",
-            )),
-        )
-            .into_response();
-    }
-    StatusCode::NO_CONTENT.into_response()
-}
-
-#[utoipa::path(delete, path = "/v1/conversations/{id}", tag = "Conversations",
-    params(("id" = String, Path, description = "Conversation ID")),
-    responses((status = 204, description = "Conversation deleted"))
-)]
-pub async fn delete_conversation(
-    _ctx: Require<IsDataPlane>,
-    State(state): State<AppState>,
-    Path(conversation_id): Path<String>,
-) -> Response {
-    if let Err(e) = state.db.delete_conversation(&conversation_id).await {
-        warn!("Failed to delete conversation: {e}");
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(crate::error::error_body(
-                "db_error",
-                "Failed to delete conversation",
-            )),
-        )
-            .into_response();
-    }
-    StatusCode::NO_CONTENT.into_response()
-}
-
-#[derive(Deserialize, utoipa::ToSchema)]
-pub struct AskRequest {
-    pub question: String,
-    pub conversation_id: Option<String>,
-    pub provider: Option<String>,
-    /// DuckDB table schema from the frontend (column names, types, sample values).
-    /// When provided, this is used as context for SQL generation instead of the
-    /// pipeline summary.
-    pub schema: Option<String>,
-    /// When true, the LLM acts as a data analyst explaining query results
-    /// instead of generating SQL. The question should contain the original
-    /// question, SQL, and result rows.
-    #[serde(default)]
-    pub explain: bool,
-}
-
-#[derive(Serialize, utoipa::ToSchema)]
-pub struct AskResponse {
-    pub answer: String,
-    /// DuckDB SQL query generated by the LLM (executed client-side via DuckDB-WASM).
-    pub sql: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub conversation_id: Option<String>,
-    pub code: AskResultCode,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub reasoning: Option<String>,
-}
+     Do NOT return JSON. Do NOT repeat the SQL. Plain markdown only.";
 
 pub fn strip_markdown_fences(raw: &str) -> &str {
     let mid = raw
@@ -498,4 +227,38 @@ pub fn strip_markdown_fences(raw: &str) -> &str {
         .or_else(|| raw.strip_prefix("```"))
         .unwrap_or(raw);
     mid.strip_suffix("```").unwrap_or(mid).trim()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn said(role: ChatRole, n: usize) -> ChatMessage {
+        ChatMessage {
+            role,
+            content: format!("m{n}"),
+        }
+    }
+
+    #[test]
+    fn only_the_latest_window_of_history_reaches_the_model() {
+        let sent: Vec<_> = (0..14)
+            .map(|n| {
+                said(
+                    if n % 2 == 0 {
+                        ChatRole::User
+                    } else {
+                        ChatRole::Assistant
+                    },
+                    n,
+                )
+            })
+            .collect();
+        let kept = history(sent);
+        assert_eq!(kept.len(), HISTORY_WINDOW);
+        assert_eq!(kept[0].content, "m4");
+        assert_eq!(kept[0].role, "user");
+        assert_eq!(kept[HISTORY_WINDOW - 1].content, "m13");
+        assert_eq!(kept[HISTORY_WINDOW - 1].role, "assistant");
+    }
 }

@@ -53,13 +53,8 @@ use utoipa::OpenApi;
         crate::discovery::routes::resolve_discover_urls,
         crate::jobs::routes::publish_relations,
         crate::catalog::routes::list_catalog_datasets,
-        // AI / Conversations
+        // AI
         crate::ai::routes::ask_discover_stream,
-        crate::ai::routes::create_conversation,
-        crate::ai::routes::list_conversations,
-        crate::ai::routes::get_conversation_messages,
-        crate::ai::routes::rename_conversation,
-        crate::ai::routes::delete_conversation,
         // Assistant
         crate::assistant::routes::suggest_cqs_stream,
         crate::assistant::routes::generate_script_stream,
@@ -101,14 +96,10 @@ use utoipa::OpenApi;
         crate::catalog::view::CatalogDataset,
         crate::catalog::view::CatalogTable,
         crate::catalog::view::CatalogColumn,
-        // AI / Conversations
-        crate::ai::models::TabularData,
+        // AI
         crate::ai::routes::AskRequest,
-        crate::ai::routes::AskResponse,
-        crate::ai::routes::CreateConversationRequest,
-        crate::ai::routes::RenameConversationRequest,
-        crate::ai::models::Conversation,
-        crate::ai::models::ConversationMessage,
+        crate::ai::routes::ChatMessage,
+        crate::ai::routes::ChatRole,
         // Assistant
         crate::assistant::models::FileSchema,
         crate::assistant::models::SuggestRequest,

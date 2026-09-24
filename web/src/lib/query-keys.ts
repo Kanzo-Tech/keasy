@@ -49,10 +49,4 @@ export const queryKeys = {
   ai: {
     providers: ["ai-providers"] as const,
   },
-
-  // Conversations
-  conversations: {
-    list: (jobId: string) => ["conversations", jobId] as const,
-    messages: (conversationId: string) => ["messages", conversationId] as const,
-  },
 } as const;

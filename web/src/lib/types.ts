@@ -39,27 +39,8 @@ export type JobError = S["JobRuntimeError"];
 
 export type OrgIdentity = S["OrgIdentity"];
 
-// ---------------------------------------------------------------------------
-// Types now in OpenAPI spec — re-exported from schema
-// ---------------------------------------------------------------------------
-
-// The fossil subprocess run status — the job's GraphAr structure (Job.manifest).
-// Column statistics are NOT here; the browser computes them via DuckDB-WASM.
-
-// Override rows type — server uses serde_json::Value per cell, schema generates Record<string,never>
-export type TabularData = Omit<S["TabularData"], "rows"> & {
-  rows: Record<string, string | number | null>[];
-};
-export type Conversation = S["Conversation"];
-// Override data type — schema generates rows: Record<string,never>[], we use Record<string, string|number|null>[]
-// Add explanation field (populated by the explain stream, not yet in the OpenAPI spec)
-export type ConversationMessage = Omit<S["ConversationMessage"], "data"> & {
-  data?: TabularData | null;
-  explanation?: string | null;
-};
 export type FileEntry = S["FileEntry"];
-export type AskResponse = S["AskResponse"];
-
+export type ChatMessage = S["ChatMessage"];
 
 
 // ---------------------------------------------------------------------------

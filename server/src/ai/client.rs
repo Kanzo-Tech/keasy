@@ -229,6 +229,14 @@ pub fn setup_sse_channels() -> SseChannels {
     }
 }
 
+/// The `code` an `error` frame carries for a failed model call.
+pub fn failure_code(e: &AiError) -> &'static str {
+    match e {
+        AiError::InsufficientCredits(_) => "insufficient_credits",
+        AiError::Failed(_) => "llm_failed",
+    }
+}
+
 /// The one shape of the `error` frame. Both stream endpoints go through here so
 /// the payload cannot drift into two spellings again.
 pub fn error_event(code: &str, message: &str) -> Event {
@@ -270,12 +278,10 @@ pub fn stream_llm_to_sse(
                     .await;
             }
             Err(e) => {
-                let code = match &e {
-                    AiError::InsufficientCredits(_) => "insufficient_credits",
-                    AiError::Failed(_) => "llm_failed",
-                };
                 warn!("LLM stream failed: {e}");
-                let _ = sse_tx.send(Ok(error_event(code, &e.to_string()))).await;
+                let _ = sse_tx
+                    .send(Ok(error_event(failure_code(&e), &e.to_string())))
+                    .await;
             }
         }
     });

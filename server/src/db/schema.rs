@@ -42,27 +42,6 @@ CREATE TABLE jobs (
     relations       TEXT
 );
 
-CREATE TABLE conversations (
-    id              TEXT PRIMARY KEY,
-    job_id          TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
-    created_at      TEXT NOT NULL,
-    title           TEXT
-);
-
-CREATE TABLE messages (
-    id              TEXT PRIMARY KEY,
-    conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-    role            TEXT NOT NULL,
-    content         TEXT NOT NULL,
-    sql             TEXT,
-    data            TEXT,
-    code            TEXT,
-    explanation     TEXT,
-    created_at      TEXT NOT NULL
-);
-CREATE INDEX idx_messages_conversation ON messages(conversation_id);
-CREATE INDEX idx_conversations_job ON conversations(job_id);
-
 CREATE TABLE settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL

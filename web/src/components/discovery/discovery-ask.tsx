@@ -62,6 +62,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorAlert } from "@/components/shared/error-alert";
 import { isError } from "@/lib/error-codes";
 import type { GraphSchema } from "@/lib/graph-schema";
+import type { ChatMessage } from "@/lib/types";
 import { describeDataSpace } from "@/lib/data-space";
 
 // ── The turn ─────────────────────────────────────────────────────────────
@@ -76,15 +77,12 @@ const STEPS = [
   { phase: "explaining", title: "Read the rows back" },
 ] as const satisfies readonly { phase: Phase; title: string }[];
 
-type AskEvent =
-  | { kind: "conversation"; id: string }
+type TurnEvent =
   | { kind: "phase"; phase: Phase }
   | { kind: "plan"; sql: string | null; answer: string; reasoning: string }
   | { kind: "explain"; text: string }
   | { kind: "explained"; text: string }
   | { kind: "failed"; code: string; message: string };
-
-type TurnEvent = Exclude<AskEvent, { kind: "conversation" }>;
 
 interface Turn {
   id: number;
@@ -130,6 +128,21 @@ function stepState(step: Phase, turn: Turn): RunState {
   return mine === at ? "running" : "pending";
 }
 
+/** The conversation as the model reads it back: every finished turn, question then answer. */
+function historyOf(turns: Turn[]): ChatMessage[] {
+  return turns
+    .filter((turn) => turn.phase === "done" && turn.failure === null)
+    .flatMap((turn): ChatMessage[] => [
+      { role: "user", content: turn.question },
+      {
+        role: "assistant",
+        content: turn.sql
+          ? `${turn.explanation || turn.answer}\n\nSQL: ${turn.sql}`
+          : turn.answer,
+      },
+    ]);
+}
+
 function toolState(turn: Turn): RunState {
   if (turn.failure) return "failed";
   return turn.phase === "done" ? "done" : "running";
@@ -153,7 +166,7 @@ interface Plan {
 interface AskOptions {
   jobId: string;
   question: string;
-  conversationId: string | null;
+  history: ChatMessage[];
   provider?: string;
   schema?: string;
   coordinator: Coordinator | null;
@@ -172,16 +185,15 @@ async function sample(coordinator: Coordinator | null, sql: string): Promise<str
  * and the rows go back for a reading. A failure is a value rather than a throw,
  * because a turn that broke still belongs in the transcript.
  */
-async function* askTurn(options: AskOptions): AsyncIterable<AskEvent> {
-  const { jobId, question, provider, schema, coordinator, signal } = options;
+async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
+  const { jobId, question, history, provider, schema, coordinator, signal } = options;
   try {
-    let conversationId = options.conversationId;
     let plan: Plan | null = null;
 
     for await (const frame of api.discovery.askStream(jobId, question, {
-      conversationId: conversationId ?? undefined,
       provider,
       schema,
+      history,
       signal,
     })) {
       const failure = sseFailure(frame);
@@ -189,13 +201,7 @@ async function* askTurn(options: AskOptions): AsyncIterable<AskEvent> {
         yield { kind: "failed", ...failure };
         return;
       }
-      if (frame.event === "conversation") {
-        const { conversation_id } = JSON.parse(frame.data) as { conversation_id: string };
-        if (conversation_id) {
-          conversationId = conversation_id;
-          yield { kind: "conversation", id: conversation_id };
-        }
-      } else if (frame.event === "complete") {
+      if (frame.event === "complete") {
         plan = JSON.parse(frame.data) as Plan;
       }
     }
@@ -216,7 +222,7 @@ async function* askTurn(options: AskOptions): AsyncIterable<AskEvent> {
       reasoning: plan.reasoning ?? "",
     };
 
-    if (!plan.sql || !conversationId) {
+    if (!plan.sql) {
       yield { kind: "phase", phase: "done" };
       return;
     }
@@ -241,7 +247,6 @@ async function* askTurn(options: AskOptions): AsyncIterable<AskEvent> {
     yield { kind: "phase", phase: "explaining" };
     const reading = `Original question: ${question}\n\nSQL executed:\n${plan.sql}\n\nResults (showing first rows):\n${rows}`;
     for await (const frame of api.discovery.askStream(jobId, reading, {
-      conversationId,
       provider,
       explain: true,
       signal,
@@ -443,8 +448,7 @@ interface DiscoveryAskProps {
 
 export function DiscoveryAsk({ jobId, graphSchema }: DiscoveryAskProps) {
   const coordinator = useCoordinator();
-  const engine = useAiStream<AskEvent>();
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const engine = useAiStream<TurnEvent>();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [question, setQuestion] = useState("");
   const nextTurn = useRef(0);
@@ -517,19 +521,13 @@ export function DiscoveryAsk({ jobId, graphSchema }: DiscoveryAskProps) {
         askTurn({
           jobId,
           question: text,
-          conversationId,
+          history: historyOf(turns),
           provider,
           schema: duckSchema,
           coordinator,
           signal,
         }),
-      (event) => {
-        if (event.kind === "conversation") {
-          setConversationId(event.id);
-          return;
-        }
-        patch(id, event);
-      },
+      (event) => patch(id, event),
     );
   };
 

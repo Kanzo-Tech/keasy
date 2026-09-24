@@ -118,52 +118,27 @@ export const api = {
       id: string,
       question: string,
       opts?: {
-        conversationId?: string;
         provider?: string;
         schema?: string;
         explain?: boolean;
+        /// The conversation so far, oldest first. The server keeps none.
+        history?: Schemas["ChatMessage"][];
         signal?: AbortSignal;
       },
     ) =>
       fetchSSE(`/v1/jobs/${id}/discover/ask-stream`, {
         question,
-        conversation_id: opts?.conversationId,
         ...(opts?.provider ? { provider: opts.provider } : {}),
         ...(opts?.schema ? { schema: opts.schema } : {}),
         ...(opts?.explain ? { explain: opts.explain } : {}),
-      }, opts?.signal),
+        ...(opts?.history?.length ? { history: opts.history } : {}),
+      } satisfies Schemas["AskRequest"], opts?.signal),
   },
 
   // ── Catalog (governance) ──────────────────────────────────────────────
   catalog: {
     datasets: async () =>
       (unwrap(await client.GET("/v1/catalog/datasets"))).datasets,
-  },
-
-  // ── Conversations ─────────────────────────────────────────────────────
-  conversations: {
-    list: async (id: string) =>
-      unwrap(await client.GET("/v1/jobs/{id}/conversations", {
-        params: { path: { id } },
-      })),
-
-    messages: async (id: string) =>
-      unwrap(await client.GET("/v1/conversations/{id}/messages", {
-        params: { path: { id } },
-      })),
-
-    rename: async (id: string, title: string) => {
-      unwrap(await client.PUT("/v1/conversations/{id}", {
-        params: { path: { id } },
-        body: { title },
-      }));
-    },
-
-    remove: async (id: string) => {
-      unwrap(await client.DELETE("/v1/conversations/{id}", {
-        params: { path: { id } },
-      }));
-    },
   },
 
   // ── Settings ──────────────────────────────────────────────────────────

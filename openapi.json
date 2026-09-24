@@ -497,99 +497,6 @@
         }
       }
     },
-    "/v1/conversations/{id}": {
-      "put": {
-        "tags": [
-          "Conversations"
-        ],
-        "operationId": "rename_conversation",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Conversation ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RenameConversationRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "Conversation renamed"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Conversations"
-        ],
-        "operationId": "delete_conversation",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Conversation ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Conversation deleted"
-          }
-        }
-      }
-    },
-    "/v1/conversations/{id}/messages": {
-      "get": {
-        "tags": [
-          "Conversations"
-        ],
-        "operationId": "get_conversation_messages",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Conversation ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Conversation messages",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ConversationMessage"
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found"
-          }
-        }
-      }
-    },
     "/v1/jobs": {
       "get": {
         "tags": [
@@ -797,79 +704,6 @@
           },
           "404": {
             "description": "Job not found"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/conversations": {
-      "get": {
-        "tags": [
-          "Conversations"
-        ],
-        "operationId": "list_conversations",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of conversations",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Conversation"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Conversations"
-        ],
-        "operationId": "create_conversation",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateConversationRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Conversation created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Conversation"
-                }
-              }
-            }
           }
         }
       }
@@ -1466,15 +1300,16 @@
           "question"
         ],
         "properties": {
-          "conversation_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "explain": {
             "type": "boolean",
-            "description": "When true, the LLM acts as a data analyst explaining query results\ninstead of generating SQL. The question should contain the original\nquestion, SQL, and result rows."
+            "description": "When true, the model reads query results back instead of writing SQL;\n`question` then carries the question, the SQL and the rows."
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "description": "The conversation so far, oldest first."
           },
           "provider": {
             "type": [
@@ -1490,54 +1325,9 @@
               "string",
               "null"
             ],
-            "description": "DuckDB table schema from the frontend (column names, types, sample values).\nWhen provided, this is used as context for SQL generation instead of the\npipeline summary."
+            "description": "DuckDB DDL of the views the browser mounted: the whole of what the model\nknows about the data. Required unless `explain`."
           }
         }
-      },
-      "AskResponse": {
-        "type": "object",
-        "required": [
-          "answer",
-          "code"
-        ],
-        "properties": {
-          "answer": {
-            "type": "string"
-          },
-          "code": {
-            "$ref": "#/components/schemas/AskResultCode"
-          },
-          "conversation_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "reasoning": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "sql": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "DuckDB SQL query generated by the LLM (executed client-side via DuckDB-WASM)."
-          }
-        }
-      },
-      "AskResultCode": {
-        "type": "string",
-        "description": "Result code for AI ask responses — replaces raw string literals.",
-        "enum": [
-          "success",
-          "parse_failed",
-          "query_failed",
-          "insufficient_credits",
-          "llm_failed"
-        ]
       },
       "AuthMethodSchema": {
         "type": "object",
@@ -1641,6 +1431,29 @@
             "description": "Row count, as the corpus reported it when the relation was published."
           }
         }
+      },
+      "ChatMessage": {
+        "type": "object",
+        "description": "One earlier message of the conversation. The client keeps the conversation;\nthe server sees only what each ask carries.",
+        "required": [
+          "role",
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ChatRole"
+          }
+        }
+      },
+      "ChatRole": {
+        "type": "string",
+        "enum": [
+          "user",
+          "assistant"
+        ]
       },
       "CloudAccountSummary": {
         "type": "object",
@@ -1778,86 +1591,6 @@
           "vocab"
         ]
       },
-      "Conversation": {
-        "type": "object",
-        "required": [
-          "id",
-          "job_id",
-          "created_at"
-        ],
-        "properties": {
-          "created_at": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "job_id": {
-            "type": "string"
-          },
-          "title": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "ConversationMessage": {
-        "type": "object",
-        "required": [
-          "id",
-          "conversation_id",
-          "role",
-          "content",
-          "created_at"
-        ],
-        "properties": {
-          "code": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "content": {
-            "type": "string"
-          },
-          "conversation_id": {
-            "type": "string"
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "data": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/TabularData"
-              }
-            ]
-          },
-          "explanation": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string"
-          },
-          "sql": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
       "CreateCloudAccountRequest": {
         "type": "object",
         "required": [
@@ -1919,17 +1652,6 @@
           },
           "url": {
             "type": "string"
-          }
-        }
-      },
-      "CreateConversationRequest": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": [
-              "string",
-              "null"
-            ]
           }
         }
       },
@@ -2424,17 +2146,6 @@
           }
         }
       },
-      "RenameConversationRequest": {
-        "type": "object",
-        "required": [
-          "title"
-        ],
-        "properties": {
-          "title": {
-            "type": "string"
-          }
-        }
-      },
       "ResolveResponse": {
         "type": "object",
         "required": [
@@ -2538,37 +2249,6 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CompetencyQuestion"
-            }
-          }
-        }
-      },
-      "TabularData": {
-        "type": "object",
-        "required": [
-          "columns",
-          "rows",
-          "column_types"
-        ],
-        "properties": {
-          "column_types": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          },
-          "columns": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "rows": {
-            "type": "array",
-            "items": {
-              "type": "object"
             }
           }
         }

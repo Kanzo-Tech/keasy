@@ -54,23 +54,23 @@ importers:
         specifier: 0.3.0-alpha.6
         version: 0.3.0-alpha.6
       '@kanzo-tech/ai':
-        specifier: ^0.4.0
-        version: 0.4.0(@ark-ui/react@5.39.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@kanzo-tech/ui@0.4.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(streamdown@2.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(tailwind-merge@3.7.0)(tailwindcss@4.2.2)
+        specifier: ^0.5.0
+        version: 0.5.0(@ark-ui/react@5.39.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@kanzo-tech/ui@0.5.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(streamdown@2.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(tailwind-merge@3.7.0)(tailwindcss@4.2.2)
       '@kanzo-tech/auth':
-        specifier: ^0.4.0
-        version: 0.4.0(jose@6.2.12)(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(openid-client@6.8.8)(react@19.2.3)
+        specifier: ^0.5.0
+        version: 0.5.0(jose@6.2.12)(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(openid-client@6.8.8)(react@19.2.3)
       '@kanzo-tech/graph':
-        specifier: ^0.4.0
-        version: 0.4.0(@cosmos.gl/graph@3.4.2)(@fossil-lang/corpus@0.3.0-alpha.6)(@kanzo-tech/mosaic@0.4.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0))(@kanzo-tech/ui@0.4.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(react@19.2.3)
+        specifier: ^0.5.0
+        version: 0.5.0(@cosmos.gl/graph@3.4.2)(@fossil-lang/corpus@0.3.0-alpha.6)(@kanzo-tech/mosaic@0.5.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0))(@kanzo-tech/ui@0.5.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(react@19.2.3)
       '@kanzo-tech/mosaic':
-        specifier: ^0.4.0
-        version: 0.4.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)
+        specifier: ^0.5.0
+        version: 0.5.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)
       '@kanzo-tech/theme':
-        specifier: ^0.4.0
-        version: 0.4.0
+        specifier: ^0.5.0
+        version: 0.5.0
       '@kanzo-tech/ui':
-        specifier: ^0.4.0
-        version: 0.4.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)
+        specifier: ^0.5.0
+        version: 0.5.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
@@ -122,6 +122,9 @@ importers:
       react-icons:
         specifier: ^5.5.0
         version: 5.6.0(react@19.2.3)
+      redis:
+        specifier: ^6.2.1
+        version: 6.2.1(@opentelemetry/api@1.9.0)
       streamdown:
         specifier: ^2.5.0
         version: 2.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -739,11 +742,11 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@kanzo-tech/ai@0.4.0':
-    resolution: {integrity: sha512-8zX9NWog2+I2dUSk5+33TFRvvvlBbazpIFGjOkVNLeS7VTQOgmm+Yb+zPAos+7mpmxQdDbNg6f8rYIid7tdnHQ==}
+  '@kanzo-tech/ai@0.5.0':
+    resolution: {integrity: sha512-pCa3Kp0aFV1A29PXWqCyYZ1e7XQNmTQqHw09vc0FZF4/KFgl6u0DrKccrAycNdLFstu8JPgwLXKgi6rWGuNxrg==}
     peerDependencies:
       '@ark-ui/react': ^5.37.2
-      '@kanzo-tech/ui': 0.4.0
+      '@kanzo-tech/ui': 0.5.0
       lucide-react: '>=1'
       react: '>=19'
       react-dom: '>=19'
@@ -752,8 +755,8 @@ packages:
       streamdown:
         optional: true
 
-  '@kanzo-tech/auth@0.4.0':
-    resolution: {integrity: sha512-RziSAKkH2c0O57cXKHrNGxIKEo+eTZ230haaKErReOFNNuSxWA6Nfp/Ho5CgTeU6Wf08Nj1OdSDW+sXb4fgm+w==}
+  '@kanzo-tech/auth@0.5.0':
+    resolution: {integrity: sha512-eDCCaf5ER7jJAILlqMo0imU8uS8NI/YP6zYMtQkJlcSOS0bk/99EZk9qAb7D4d0Wd0nOK8XTVtVt5M1WMwSjBg==}
     peerDependencies:
       jose: ^6
       next: '>=15'
@@ -770,13 +773,13 @@ packages:
       openid-client:
         optional: true
 
-  '@kanzo-tech/graph@0.4.0':
-    resolution: {integrity: sha512-oNd4l/hYbrFUFRkCTLijt4BuXBN6js35M1hakjWEYzraWyzcI1o2uBRp1+t3r/2UXLVlX3kdD1o4/Vru7f6Qdw==}
+  '@kanzo-tech/graph@0.5.0':
+    resolution: {integrity: sha512-pOiUPIuutLzUBNAXhT52lKnv4edlvn/qESrpqoogS7a5EGpq/WNwvcND81dHxfOAq58e2adkafQ6iy4DIrL6pw==}
     peerDependencies:
       '@cosmos.gl/graph': ^3.4.0
-      '@fossil-lang/corpus': ^0.3.0-alpha.5
-      '@kanzo-tech/mosaic': 0.4.0
-      '@kanzo-tech/ui': 0.4.0
+      '@fossil-lang/corpus': ^0.3.0-alpha.6
+      '@kanzo-tech/mosaic': 0.5.0
+      '@kanzo-tech/ui': 0.5.0
       react: ^19.0.0
     peerDependenciesMeta:
       '@fossil-lang/corpus':
@@ -784,17 +787,17 @@ packages:
       '@kanzo-tech/mosaic':
         optional: true
 
-  '@kanzo-tech/mosaic@0.4.0':
-    resolution: {integrity: sha512-y5CFGg1mRJ4v6GAMk3Cs1HDWWRO+5gG2OtshTnOmzb8op1eSnU+7G++Ie/QAzfspRK5TAgDxHIIsFnczlO9sIQ==}
+  '@kanzo-tech/mosaic@0.5.0':
+    resolution: {integrity: sha512-TxJy347GkbUEdfq7PjtYPcKe6U4zQClqgl+NdRH1mtYOTahwCRIDytud1dW92uTsXa2+XEjFXG3tn0eEKXE/NA==}
     peerDependencies:
       '@uwdata/mosaic-core': ^0.29.2
       '@uwdata/mosaic-sql': ^0.29.0
 
-  '@kanzo-tech/theme@0.4.0':
-    resolution: {integrity: sha512-UaqHEwbEJKbytVlscHStM1R9Hf1LX2F9b/iqFfeXAXPEVhti4pB+irZRI9FRj7LZu+lEPrK1qBoGjRXr8ypgHw==}
+  '@kanzo-tech/theme@0.5.0':
+    resolution: {integrity: sha512-5LHlWGd9bxiJLW/znIfmXXurkLlg5Ao4bNXF+nA0VASgW48MIZJw4Rv1jlf9bs0Eww795eLkqs/1H6w5/oUDcA==}
 
-  '@kanzo-tech/ui@0.4.0':
-    resolution: {integrity: sha512-Vryfmu8Nzxe1tml8FV4auwYcAv288Nu0QqtY8kQtLu5HX00xe7bb8kK7XZ1LV5y3ohDp4diU3L3fm21QKTTFyA==}
+  '@kanzo-tech/ui@0.5.0':
+    resolution: {integrity: sha512-QNBKCb8G0NRGvgLfGbp3vY3Dme6xUo/37tDSq1ZyuJ7Ex81yiOiY0ZKA111ypWkICIV+QgKSthjEJyq4+gH2Kg==}
     peerDependencies:
       '@codemirror/autocomplete': '>=6'
       '@codemirror/commands': '>=6'
@@ -977,6 +980,42 @@ packages:
 
   '@probe.gl/stats@4.1.2':
     resolution: {integrity: sha512-Hqc0UIHd0IZ2+JbovzTz7lYG7CY9D8yCB81zyP92Zl9UDSPcw2cLbTySW14keAQeAo1sjGjUw0+KHxr0Y2h/hA==}
+
+  '@redis/bloom@6.2.1':
+    resolution: {integrity: sha512-huQgNLaCIZfQ9SeLn4q9124uOUd8HbZDYHwwUzNcRgHqCHiHKl2dDxMqJCeWh8cMqZAoWuHR8XnWbDMIf+o7ag==}
+    engines: {node: '>= 20.0.0'}
+    peerDependencies:
+      '@redis/client': ^6.2.1
+
+  '@redis/client@6.2.1':
+    resolution: {integrity: sha512-LzxBY7SIBvvJiyCgcaJZZakE3fJrZZ++i24+EDW9fKpCl68D35uJcKFpZZwCfOoG9WZTbyZlMzMeM0gtOAMU9Q==}
+    engines: {node: '>= 20.0.0'}
+    peerDependencies:
+      '@node-rs/xxhash': ^1.1.0
+      '@opentelemetry/api': '>=1 <2'
+    peerDependenciesMeta:
+      '@node-rs/xxhash':
+        optional: true
+      '@opentelemetry/api':
+        optional: true
+
+  '@redis/json@6.2.1':
+    resolution: {integrity: sha512-AFIUJ8Gj0DaaSBHYuSt8+O0oYWM+50OK1c0OmodB7XERIA8+BbyV3O4v76f9iccWasd1/7qjfZTpuzexUaZtrQ==}
+    engines: {node: '>= 20.0.0'}
+    peerDependencies:
+      '@redis/client': ^6.2.1
+
+  '@redis/search@6.2.1':
+    resolution: {integrity: sha512-2vfOAOyYFE7UUw3sBBlkqqruBtOUS4HRY5MtW4hp83llrwvtrTE4r22CEqXddlV+54zkLxBE4nmsIJ/dpezQrQ==}
+    engines: {node: '>= 20.0.0'}
+    peerDependencies:
+      '@redis/client': ^6.2.1
+
+  '@redis/time-series@6.2.1':
+    resolution: {integrity: sha512-kiYniph04dJOole+L359B6C9E+jYS2uDP7hca6Onj0xF38ZIpyxARO0Iq0W4ZRn1e8Q6vqW00QFZVSMRA/2Ijw==}
+    engines: {node: '>= 20.0.0'}
+    peerDependencies:
+      '@redis/client': ^6.2.1
 
   '@redocly/ajv@8.11.2':
     resolution: {integrity: sha512-io1JpnwtIcvojV7QKDUSIuMN/ikdOUd1ReEnUnMKGfDVridQZ31J0MmIuqwuRjWDZfmvr+Q0MqCcfHM2gTivOg==}
@@ -1984,6 +2023,10 @@ packages:
   clsx@2.1.1:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
+
+  cluster-key-slot@1.1.2:
+    resolution: {integrity: sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==}
+    engines: {node: '>=0.10.0'}
 
   color-convert@2.0.1:
     resolution: {integrity: sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==}
@@ -3464,6 +3507,10 @@ packages:
     resolution: {integrity: sha512-Ku/hhYbVjOQnXDZFv2+RibmLFGwFdeeKHFcOTlrt7xplBnya5OGn/hIRDsqDiSUcfORsDC7MPxwork8jBwsIWA==}
     engines: {node: '>=0.10.0'}
 
+  redis@6.2.1:
+    resolution: {integrity: sha512-Z9VHtgYs48PiQC77X9O2Er8Hj4T+5BtFjT91/vi5Is1D04N72cA946ZslM1ImJw8ZctFBZWAVjM7S5wJNeHMpg==}
+    engines: {node: '>= 20.0.0'}
+
   reflect.getprototypeof@1.0.10:
     resolution: {integrity: sha512-00o4I+DVrefhv+nX0ulyi3biSHCPDe+yLv5o/p6d/UVlirijB8E16FtfwSAi4g3tcqrQ4lRAqQSoFEZJehYEcw==}
     engines: {node: '>= 0.4'}
@@ -4748,10 +4795,10 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@kanzo-tech/ai@0.4.0(@ark-ui/react@5.39.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@kanzo-tech/ui@0.4.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(streamdown@2.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(tailwind-merge@3.7.0)(tailwindcss@4.2.2)':
+  '@kanzo-tech/ai@0.5.0(@ark-ui/react@5.39.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@kanzo-tech/ui@0.5.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(streamdown@2.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(tailwind-merge@3.7.0)(tailwindcss@4.2.2)':
     dependencies:
       '@ark-ui/react': 5.39.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@kanzo-tech/ui': 0.4.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)
+      '@kanzo-tech/ui': 0.5.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)
       lucide-react: 1.47.0(react@19.2.3)
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
@@ -4762,7 +4809,7 @@ snapshots:
       - tailwind-merge
       - tailwindcss
 
-  '@kanzo-tech/auth@0.4.0(jose@6.2.12)(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(openid-client@6.8.8)(react@19.2.3)':
+  '@kanzo-tech/auth@0.5.0(jose@6.2.12)(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(openid-client@6.8.8)(react@19.2.3)':
     dependencies:
       react: 19.2.3
     optionalDependencies:
@@ -4770,28 +4817,28 @@ snapshots:
       next: 16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       openid-client: 6.8.8
 
-  '@kanzo-tech/graph@0.4.0(@cosmos.gl/graph@3.4.2)(@fossil-lang/corpus@0.3.0-alpha.6)(@kanzo-tech/mosaic@0.4.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0))(@kanzo-tech/ui@0.4.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(react@19.2.3)':
+  '@kanzo-tech/graph@0.5.0(@cosmos.gl/graph@3.4.2)(@fossil-lang/corpus@0.3.0-alpha.6)(@kanzo-tech/mosaic@0.5.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0))(@kanzo-tech/ui@0.5.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(react@19.2.3)':
     dependencies:
       '@cosmos.gl/graph': 3.4.2
-      '@kanzo-tech/ui': 0.4.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)
+      '@kanzo-tech/ui': 0.5.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)
       react: 19.2.3
     optionalDependencies:
       '@fossil-lang/corpus': 0.3.0-alpha.6
-      '@kanzo-tech/mosaic': 0.4.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)
+      '@kanzo-tech/mosaic': 0.5.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)
 
-  '@kanzo-tech/mosaic@0.4.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)':
+  '@kanzo-tech/mosaic@0.5.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)':
     dependencies:
       '@uwdata/mosaic-core': 0.29.2
       '@uwdata/mosaic-sql': 0.29.0
 
-  '@kanzo-tech/theme@0.4.0': {}
+  '@kanzo-tech/theme@0.5.0': {}
 
-  '@kanzo-tech/ui@0.4.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)':
+  '@kanzo-tech/ui@0.5.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.6.0)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)':
     dependencies:
       '@ark-ui/react': 5.39.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@internationalized/date': 3.12.4
-      '@kanzo-tech/mosaic': 0.4.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)
-      '@kanzo-tech/theme': 0.4.0
+      '@kanzo-tech/mosaic': 0.5.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)
+      '@kanzo-tech/theme': 0.5.0
       clsx: 2.1.1
       lucide-react: 1.47.0(react@19.2.3)
       react: 19.2.3
@@ -4952,6 +4999,28 @@ snapshots:
       '@probe.gl/env': 4.1.2
 
   '@probe.gl/stats@4.1.2': {}
+
+  '@redis/bloom@6.2.1(@redis/client@6.2.1(@opentelemetry/api@1.9.0))':
+    dependencies:
+      '@redis/client': 6.2.1(@opentelemetry/api@1.9.0)
+
+  '@redis/client@6.2.1(@opentelemetry/api@1.9.0)':
+    dependencies:
+      cluster-key-slot: 1.1.2
+    optionalDependencies:
+      '@opentelemetry/api': 1.9.0
+
+  '@redis/json@6.2.1(@redis/client@6.2.1(@opentelemetry/api@1.9.0))':
+    dependencies:
+      '@redis/client': 6.2.1(@opentelemetry/api@1.9.0)
+
+  '@redis/search@6.2.1(@redis/client@6.2.1(@opentelemetry/api@1.9.0))':
+    dependencies:
+      '@redis/client': 6.2.1(@opentelemetry/api@1.9.0)
+
+  '@redis/time-series@6.2.1(@redis/client@6.2.1(@opentelemetry/api@1.9.0))':
+    dependencies:
+      '@redis/client': 6.2.1(@opentelemetry/api@1.9.0)
 
   '@redocly/ajv@8.11.2':
     dependencies:
@@ -6280,6 +6349,8 @@ snapshots:
     optional: true
 
   clsx@2.1.1: {}
+
+  cluster-key-slot@1.1.2: {}
 
   color-convert@2.0.1:
     dependencies:
@@ -8196,6 +8267,17 @@ snapshots:
   react-is@16.13.1: {}
 
   react@19.2.3: {}
+
+  redis@6.2.1(@opentelemetry/api@1.9.0):
+    dependencies:
+      '@redis/bloom': 6.2.1(@redis/client@6.2.1(@opentelemetry/api@1.9.0))
+      '@redis/client': 6.2.1(@opentelemetry/api@1.9.0)
+      '@redis/json': 6.2.1(@redis/client@6.2.1(@opentelemetry/api@1.9.0))
+      '@redis/search': 6.2.1(@redis/client@6.2.1(@opentelemetry/api@1.9.0))
+      '@redis/time-series': 6.2.1(@redis/client@6.2.1(@opentelemetry/api@1.9.0))
+    transitivePeerDependencies:
+      - '@node-rs/xxhash'
+      - '@opentelemetry/api'
 
   reflect.getprototypeof@1.0.10:
     dependencies:

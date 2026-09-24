@@ -58,6 +58,7 @@ graph TD
     Caddy -->|"/*"| Web["Web (Next.js BFF)"]
     Web -->|"/v1 + bearer token"| Server["Server (Rust/Axum)"]
     Web -->|"OIDC code flow"| Keycloak
+    Web -->|"session records"| Valkey[("Valkey")]
     Server -->|"JWKS"| Keycloak
     Server --> SQLite[("SQLite + DuckLake catalog")]
     Keycloak --> PostgreSQL[("PostgreSQL")]
@@ -65,7 +66,8 @@ graph TD
 
 Authentication is a Backend For Frontend. The **web** is the OIDC relying party
 (`@kanzo-tech/auth/next`, mounted at `/api/auth`): it holds the confidential
-client, keeps the tokens, and gives the browser a sealed cookie it cannot read.
+client, keeps the tokens in Valkey (`KEASY_SESSION_STORE_URL`), and gives the
+browser a sealed cookie carrying only the ticket to them.
 The **server** is a resource server: it validates the bearer token against the
 realm's JWKS (`iss`, `aud`, `exp`, `azp`, signature) and holds no client secret,
 no session and no cookie. `/v1` reaches it only through the web.

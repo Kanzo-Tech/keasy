@@ -11,8 +11,7 @@ COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 #   • Changed server deps (Cargo.toml/lock)
 #     or the Dockerfile .................... `make dev` (rebuilds the image).
 #
-# The image is deps-only and carries no fossil source: `fossil-run-status` is a git
-# dep and fossil compute runs in the browser. Crates compile at runtime into the
+# Crates compile at runtime into the
 # persistent `server-target` + `cargo-registry` volumes, so only the first `up`
 # (or one after `make clean`) pays a cold compile.
 

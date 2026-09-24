@@ -1,9 +1,7 @@
 # infra/terraform — the keasy fleet as code
 
 Terraform owns the whole deployment on Docker Swarm: the platform (ingress + identity)
-and every tenant (Keycloak client/roles/users + the server/web Swarm stack). This
-replaces the old patchwork — `infra/stack/base.yml`, the `bootstrap`/`cp`/`tf` shell
-scripts, and the Rust `control-plane` CLI.
+and every tenant (Keycloak client/roles/users + the server/web Swarm stack).
 
 ```
 platform/   phase 1 — keasy-edge overlay, base secrets, Traefik + Keycloak + Postgres
@@ -41,13 +39,14 @@ Users log in through the IdP configured in `realm/` (`var.idp` — Google exampl
 email (`trust_email`); the owner/member role is already assigned, so the token carries
 `resource_access.<client_id>.roles` from the first login — no app-side grant.
 
+`make dev` applies the same `realm/` module with `dev.tfvars`: no IdP, and every
+declared user gets `dev_user_password` instead.
+
 The relying party is the **web** tier (`@kanzo-tech/auth/next`, mounted at `/api/auth`):
 it holds the tenant client's secret and seals the session cookie. The **server** is a
 resource server — it validates the bearer token the web forwards against the realm's JWKS
 and checks `aud` against the realm-wide bearer-only `keasy-api` client, so it needs no
 secret of its own. `/v1` is not routed from the edge; it reaches the API through the web.
 
-## Status
-- Both modules pass `terraform validate` against the real provider schemas.
-- IdP **auto-link by email** without the "account exists" prompt uses the custom
-  first-broker-login flow in `realm/idp_flow.tf`.
+Linking by email without the "account exists" prompt is the custom first-broker-login
+flow in `realm/idp_flow.tf`.

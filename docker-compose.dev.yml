@@ -3,8 +3,6 @@
 
 services:
   server:
-    # Context is `server/`: nothing outside it is needed — fossil-run-status is a
-    # git dep and no fossil binary ships (keasy is a pure host).
     build:
       context: ./server
       dockerfile: Dockerfile.dev

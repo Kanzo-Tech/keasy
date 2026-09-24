@@ -1,5 +1,4 @@
-# Per-tenant Swarm stack — the declarative replacement for control-plane/src/docker.rs
-# render_stack + create_secrets. One server + web docker_service per tenant, with the
+# Per-tenant Swarm stack. One server + web docker_service per tenant, with the
 # OIDC secret sourced from the tenant's Keycloak client (no hand-off, no minting).
 # Skipped entirely in dev (deploy_stacks=false): the app runs via docker-compose there.
 #

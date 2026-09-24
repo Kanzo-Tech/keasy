@@ -56,7 +56,7 @@ resource "docker_volume" "keycloak_postgres" {
 
 # Keycloak boots EMPTY — the realm module configures it. The bootstrap admin is the
 # realm module's provider identity (KC_BOOTSTRAP_ADMIN_*). KC_DB_PASSWORD is passed as
-# env (no _FILE support); the value lives in state, same as base.yml interpolated it.
+# env (no _FILE support); the value lives in state.
 resource "docker_service" "keycloak" {
   name = "keasy-base-keycloak"
 

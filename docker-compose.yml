@@ -19,9 +19,8 @@ services:
       retries: 5
 
   keycloak:
-    # Boots EMPTY — the realm is provisioned declaratively by the keycloak-realm
-    # (terraform) service below, the SAME config prod applies. Pinned to 26.2 (26.5.x
-    # regressed on org-enabled realms); Organizations GA since 26.0.
+    # Boots EMPTY — the keycloak-realm service below provisions it with the SAME
+    # Terraform prod applies. Same pin as infra/terraform/platform.
     image: ${KEASY_KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.2}
     command: ["start-dev"]
     environment:

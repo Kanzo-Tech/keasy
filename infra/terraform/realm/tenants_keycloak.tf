@@ -1,7 +1,5 @@
-# Per-tenant Keycloak resources — the declarative replacement for the Rust control-plane's
-# create_client / ensure_client_roles / ensure_role_mapper, plus declarative membership
-# (keycloak_user + keycloak_user_roles) which removes Organizations, invites, AND the
-# app-side first-login role grant (the role is in the token from the first login).
+# Per-tenant Keycloak resources: client, roles and declarative membership
+# (keycloak_user + keycloak_user_roles), so the role is in the token from the first login.
 
 locals {
   # One keycloak_user per UNIQUE email across the whole fleet (Keycloak emails are realm-unique).

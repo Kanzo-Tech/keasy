@@ -3,14 +3,24 @@
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Selection } from "@uwdata/mosaic-core";
-import { BarChart3, Info, Loader2, MessageCircle, ShieldCheck, Terminal } from "lucide-react";
+import { BarChart3, Info, Loader2, MessageCircle, ShieldCheck, Terminal, X } from "lucide-react";
 import { queryKeys } from "@/lib/query-keys";
-import { WorkspaceLayout, type PanelDef } from "@/components/layout/workspace-layout";
 import { DiscoveryProvider } from "@/components/discovery/store";
 import { useCorpusSchema } from "@/components/discovery/use-discovery-store";
 import { useGraphSchema } from "@/components/discovery/use-graph-schema";
 import { GraphRootProvider, useGraph, type GraphApi } from "@kanzo-tech/graph";
-import { ShellMain } from "@kanzo-tech/ui";
+import {
+  Button,
+  Resizable,
+  ResizablePanel,
+  ResizableResizeTrigger,
+  ShellAside,
+  ShellBody,
+  ShellFooter,
+  ShellMain,
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@kanzo-tech/ui";
 import { undrawnEdges, useCorpusSource } from "@/components/discovery/use-corpus-source";
 import { ClassLegend } from "@/components/discovery/class-legend";
 import { NodeInfo } from "@/components/discovery/node-info";
@@ -94,7 +104,8 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
 
   const undrawn = undrawnEdges(view?.undrawn, overview);
 
-  const panels: PanelDef[] = [
+  const [activePanel, setActivePanel] = useState<string | null>("info");
+  const panels = [
     {
       id: "info",
       icon: Info,
@@ -130,10 +141,74 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
     },
   ];
 
+  const panel = panels.find((p) => p.id === activePanel);
+  const canvas = (
+    <ShellMain className="relative size-full overflow-hidden">
+        <GraphRootProvider value={graph} className="flex-1">
+          <div className="absolute left-2 top-2 z-10 max-w-52">
+            <ClassLegend
+              types={kgSchema.types}
+              value={vertexType}
+              onChange={setChosenType}
+              undrawn={undrawn}
+            />
+          </div>
+          <div className="absolute bottom-3 end-3 z-10">
+            <FloatingControls
+              api={graph}
+              simulationRunning={simulate}
+              onToggleSimulation={() => setSimulate((v) => !v)}
+            />
+          </div>
+        </GraphRootProvider>
+    </ShellMain>
+  );
+
   return (
-    <WorkspaceLayout
-      panels={panels}
-      statusLeft={
+    <>
+      <ShellBody className="min-w-0">
+        {panel ? (
+          <Resizable
+            className="min-h-0"
+            defaultSize={[72, 28]}
+            panels={[
+              { id: "canvas", minSize: 40 },
+              { id: "dock", minSize: 18 },
+            ]}
+          >
+            <ResizablePanel className="relative min-w-0 overflow-hidden" id="canvas">
+              {canvas}
+            </ResizablePanel>
+            <ResizableResizeTrigger id="canvas:dock" withHandle />
+            <ResizablePanel className="flex min-h-0 min-w-0 flex-col" id="dock">
+              <ShellAside
+                aria-label={`${panel.label} panel`}
+                className="size-full min-h-0 border-s-0 bg-card"
+                side="end"
+              >
+                <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3">
+                  <span className="text-sm font-medium">{panel.label}</span>
+                  <Button
+                    aria-label="Close panel"
+                    className="-me-1 ms-auto"
+                    onClick={() => setActivePanel(null)}
+                    size="icon-sm"
+                    variant="ghost"
+                  >
+                    <X />
+                  </Button>
+                </div>
+                <div className="min-h-0 flex-1">{panel.content}</div>
+              </ShellAside>
+            </ResizablePanel>
+          </Resizable>
+        ) : (
+          canvas
+        )}
+      </ShellBody>
+
+      <ShellFooter className="h-8 flex-row items-center justify-between gap-3 px-2 text-xs text-muted-foreground">
+        <div className="flex min-w-0 items-center gap-3 truncate">
         <>
           <span className="tabular-nums">
             {kgSchema.types.reduce((sum, t) => sum + t.entityCount, 0).toLocaleString()} nodes
@@ -161,25 +236,22 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
             </>
           )}
         </>
-      }
-    >
-      <GraphRootProvider value={graph} className="flex-1">
-        <div className="absolute left-2 top-2 z-10 max-w-52">
-          <ClassLegend
-            types={kgSchema.types}
-            value={vertexType}
-            onChange={setChosenType}
-            undrawn={undrawn}
-          />
         </div>
-        <div className="absolute bottom-3 end-3 z-10">
-          <FloatingControls
-            api={graph}
-            simulationRunning={simulate}
-            onToggleSimulation={() => setSimulate((v) => !v)}
-          />
-        </div>
-      </GraphRootProvider>
-    </WorkspaceLayout>
+        <ToggleGroup
+          aria-label="Panels"
+          multiple={false}
+          onValueChange={(d) => setActivePanel(d.value[0] ?? null)}
+          size="sm"
+          spacing={2}
+          value={activePanel ? [activePanel] : []}
+        >
+          {panels.map((p) => (
+            <ToggleGroupItem aria-label={p.label} key={p.id} value={p.id}>
+              <p.icon />
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      </ShellFooter>
+    </>
   );
 }

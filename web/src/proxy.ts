@@ -12,7 +12,7 @@ import { authMiddleware } from "@kanzo-tech/auth/next";
  * there must come back as the 401 the API client knows how to route on, not as a
  * 302 to a sign-in screen it would try to parse as JSON.
  */
-export const middleware = authMiddleware({ public: ["/v1", "/healthz"] });
+export const proxy = authMiddleware({ public: ["/v1", "/healthz"] });
 
 export const config = {
   // Skip Next internals and any static file (paths with an extension, e.g.

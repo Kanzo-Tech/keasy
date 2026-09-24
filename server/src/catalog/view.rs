@@ -1,10 +1,6 @@
-// server/src/catalog/view.rs — the governance read surface over the catalog.
-//
-// This is the catalog's reader (W1b): unlike the discovery viewer (which needs
-// fossil's GraphAr layout from the manifest YAMLs), governance asks SQL-shaped
-// questions — what datasets exist, what types/columns/rows each holds. Those are
-// exactly what the DuckLake catalog is the authority for, queried through plain
-// information_schema, no GraphAr knowledge in the host.
+//! The governance read over the catalog: which datasets exist and what types,
+//! columns and rows each holds — `information_schema` questions the catalog is
+//! the authority for, with no knowledge of the output's layout in the host.
 
 use serde::Serialize;
 

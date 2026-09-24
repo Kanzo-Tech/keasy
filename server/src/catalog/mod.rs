@@ -1,11 +1,9 @@
-// server/src/catalog/ — DuckLake catalog (W1).
-//
-// keasy is the trusted host of the metadata catalog (ARCHITECTURE §10). The
-// catalog registers the pipeline output BY REFERENCE (ducklake_add_data_files
-// over the flat+SSE Parquet the job wrote) inside a single transaction, so a
-// completed dataset is one atomic snapshot. The catalog is server-side only:
-// the browser never attaches ducklake — it keeps reading flat Parquet by signed
-// URL — so the writer=reader version-pin (I7) is keasy↔keasy.
+//! The DuckLake catalog: the workspace's metadata over its output.
+//!
+//! A completed job's Parquet is registered BY REFERENCE (`ducklake_add_data_files`
+//! over the files the job wrote) inside one transaction, so a dataset is one
+//! atomic snapshot. It is server-side only: the browser never attaches it and
+//! reads the Parquet by signed URL.
 
 pub mod reconcile;
 pub mod routes;
@@ -21,9 +19,8 @@ use duckdb::Connection;
 use crate::jobs::models::OutputRelation;
 use secret::q;
 
-/// Errors registering a dataset in the catalog. The host treats these as
-/// non-fatal at `complete_job` time (the reconciler re-registers; §11) — a
-/// catalog miss must never fail a job whose data is already durably at the sink.
+/// Errors registering a dataset in the catalog. Never fatal to the job: its
+/// data is already at the sink, and the reconciler registers what was missed.
 #[derive(Debug, thiserror::Error)]
 pub enum CatalogError {
     #[error("duckdb: {0}")]
@@ -274,8 +271,7 @@ mod tests {
     /// `Catalog::register` lands a dataset as a queryable per-job schema backed by
     /// reference, and a second register (the reconciler / a duplicate completion)
     /// does NOT double-count — it cleanly replaces. Local Parquet stands in for
-    /// the sink (the remote httpfs+creds path is de-risked separately by the
-    /// `secret` unit tests + the live footer test).
+    /// the sink; the remote credentials are the `secret` tests'.
     #[test]
     fn register_is_queryable_and_idempotent() {
         let dir = tempfile::tempdir().expect("tempdir");
@@ -492,115 +488,5 @@ mod tests {
                 &HashMap::new(),
             )
             .expect("a quoted destination registers");
-    }
-
-    /// De-risk (W1, first step): confirm the pinned `duckdb` 1.10502 crate can
-    /// INSTALL + LOAD the `ducklake` extension and ATTACH a catalog. This is the
-    /// load-mechanics check the integration-test probe couldn't make (duckdb is a
-    /// normal dep, invisible to `tests/`). If this passes, the crate ships a
-    /// ducklake that resolves; if it needs network to INSTALL, this is where we
-    /// learn it.
-    #[test]
-    fn ducklake_extension_loads() {
-        let conn = Connection::open_in_memory().expect("open in-memory duckdb");
-
-        conn.execute_batch("INSTALL ducklake; LOAD ducklake;")
-            .expect("INSTALL + LOAD ducklake");
-
-        let dir = tempfile::tempdir().expect("tempdir");
-        let catalog = dir.path().join("catalog.ducklake");
-        let data = dir.path().join("data");
-
-        conn.execute_batch(&format!(
-            "ATTACH 'ducklake:{}' AS lake (DATA_PATH '{}');",
-            catalog.display(),
-            data.display(),
-        ))
-        .expect("ATTACH ducklake catalog");
-
-        conn.execute_batch(
-            "CREATE TABLE lake.t (id INTEGER, name VARCHAR);
-             INSERT INTO lake.t VALUES (1, 'a'), (2, 'b');",
-        )
-        .expect("write to ducklake-backed table");
-
-        let n: i64 = conn
-            .query_row("SELECT count(*) FROM lake.t", [], |r| r.get(0))
-            .expect("read back from ducklake table");
-        assert_eq!(n, 2, "ducklake round-trip count");
-    }
-
-    /// De-risk: `httpfs` (the remote-read extension the catalog needs to read
-    /// footers over object storage) also loads offline from the bundled crate.
-    /// Pairs with `ducklake_extension_loads` as the version-pin (I7) CI guard.
-    #[test]
-    fn httpfs_loads_offline() {
-        let conn = Connection::open_in_memory().expect("open in-memory duckdb");
-        conn.execute_batch("INSTALL httpfs; LOAD httpfs;")
-            .expect("INSTALL + LOAD httpfs");
-    }
-
-    /// De-risk (the one that matters): read a remote Parquet FOOTER over httpfs
-    /// using credentials translated from the same object_store config map keasy
-    /// signs output with. This is the exact mechanic `complete_job` will run to
-    /// register a job's output by reference — and the part the local-file tests
-    /// do NOT cover (httpfs + credentialed SECRET + remote read).
-    ///
-    /// `#[ignore]` because it needs a live S3 endpoint + creds. Run against the
-    /// `make dev` substrate after a job has produced output:
-    ///
-    /// ```sh
-    /// export AWS_ACCESS_KEY_ID=… AWS_SECRET_ACCESS_KEY=… \
-    ///        AWS_DEFAULT_REGION=… AWS_ENDPOINT_URL=…           # the substrate creds
-    /// export KEASY_DERISK_PARQUET_URL=s3://bucket/prefix/job/vertex/Person.parquet
-    /// cargo test --manifest-path server/Cargo.toml --lib \
-    ///   catalog::tests::reads_remote_parquet_footer -- --ignored --nocapture
-    /// ```
-    #[test]
-    #[ignore = "needs live S3 endpoint + creds (make dev substrate)"]
-    fn reads_remote_parquet_footer() {
-        let url = std::env::var("KEASY_DERISK_PARQUET_URL")
-            .expect("set KEASY_DERISK_PARQUET_URL to a remote Parquet object");
-        // Collect whatever provider env the substrate uses (S3 or Azure), then
-        // translate by the URL scheme — same path `register` takes.
-        let config: HashMap<String, String> = [
-            "AWS_ACCESS_KEY_ID",
-            "AWS_SECRET_ACCESS_KEY",
-            "AWS_DEFAULT_REGION",
-            "AWS_ENDPOINT_URL",
-            "AZURE_STORAGE_ACCOUNT_NAME",
-            "AZURE_STORAGE_ACCOUNT_KEY",
-            "AZURE_STORAGE_SAS_KEY",
-            "AZURE_STORAGE_CLIENT_ID",
-            "AZURE_STORAGE_CLIENT_SECRET",
-            "AZURE_STORAGE_TENANT_ID",
-        ]
-        .into_iter()
-        .filter_map(|k| std::env::var(k).ok().map(|v| (k.to_string(), v)))
-        .collect();
-
-        let secret_sql = match super::secret::plan("derisk", &url, &config) {
-            super::secret::SecretPlan::Sql(s) => s,
-            super::secret::SecretPlan::None => panic!("{url} parsed as local — set a remote URL"),
-            super::secret::SecretPlan::Unsupported => panic!("no usable creds for {url} in env"),
-        };
-
-        let conn = Connection::open_in_memory().expect("open in-memory duckdb");
-        conn.execute_batch(&format!(
-            "INSTALL httpfs; LOAD httpfs; INSTALL azure; LOAD azure; {secret_sql}"
-        ))
-        .expect("load httpfs + azure + create secret");
-
-        // parquet_file_metadata reads ONLY the footer — no full scan — which is
-        // exactly what `ducklake_add_data_files` does to register by reference.
-        let rows: i64 = conn
-            .query_row(
-                "SELECT num_rows FROM parquet_file_metadata(?)",
-                [&url],
-                |r| r.get(0),
-            )
-            .expect("read remote Parquet footer via httpfs + credentialed secret");
-        assert!(rows >= 0, "footer reports a row count: {rows}");
-        eprintln!("✓ remote footer read: {url} → {rows} rows");
     }
 }

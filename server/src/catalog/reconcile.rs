@@ -1,15 +1,14 @@
-// server/src/catalog/reconcile.rs — the catalog durability net (§11).
-//
-// `complete_job` registers a job's output best-effort: a catalog miss never
-// fails a job whose data is already at the sink. This periodic pass is what makes
-// that safe — it re-registers any completed job whose output isn't in the catalog
-// yet (a missed registration, a catalog that was down at completion, a restart
-// mid-write), and deregisters datasets whose job was deleted. The catalog itself
-// is the authority on "is it registered" (the job's schema exists), so there is
-// no flag on `Job` to drift.
-//
-// Catalog metadata only — keasy never deletes the member's storage. The bytes
-// live in the member's chosen sink; that bucket's lifecycle is the member's.
+//! The catalog's durability net.
+//!
+//! Publishing a job's relations registers its output best-effort: a catalog
+//! miss never fails a job whose data is already at the sink. This periodic pass
+//! makes that safe — it registers any completed job whose output the catalog
+//! does not hold (a missed registration, a restart mid-write) and deregisters
+//! datasets whose job was deleted. The catalog is the authority on "is it
+//! registered" (the job's schema exists), so no flag on `Job` can drift.
+//!
+//! Catalog metadata only: the bytes live in the sink, and keasy never deletes
+//! them.
 
 use std::collections::HashSet;
 use std::time::Duration;
@@ -121,7 +120,7 @@ pub async fn reconcile_once(state: &AppState) -> usize {
     registered_now
 }
 
-/// Spawn the periodic reconciler. Mirrors the session-cleanup background task.
+/// Spawn the periodic reconciler.
 pub fn spawn(state: AppState, every: Duration) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let mut tick = tokio::time::interval(every);

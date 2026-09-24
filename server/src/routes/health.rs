@@ -19,10 +19,9 @@ pub async fn readiness() -> impl IntoResponse {
     StatusCode::OK
 }
 
-/// The running build's version — announced so operators (and the fleet view) can
-/// see exactly which image a tenant is on. `git_sha`/`built_at` are stamped at
-/// build time (CI sets `KEASY_GIT_SHA`/`KEASY_BUILT_AT`); `version` is the crate
-/// version. See [[project_keasy_swarm_deploy_architecture]] (W0.6).
+/// The running build's version, so an operator can see which image a tenant is
+/// on. `git_sha`/`built_at` are stamped at build time (CI sets `KEASY_GIT_SHA`/
+/// `KEASY_BUILT_AT`); `version` is the crate version.
 #[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct VersionResponse {
     pub version: &'static str,

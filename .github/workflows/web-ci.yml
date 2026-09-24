@@ -1,12 +1,9 @@
 name: web-ci
 
-# Next.js CI: lint, type-check, unit tests, production build. Also the gate that
-# auto-validates every `@fossil-lang/*` bump Renovate opens. The packages are
-# PUBLIC on npm — no auth token needed.
+# Also the gate for every `@fossil-lang/*` bump Renovate opens.
 
 on:
-  # Callable so `images` can gate a release on it: a tag used to publish without
-  # running a single test.
+  # `images` gates publishing on it.
   workflow_call:
   pull_request:
   push:

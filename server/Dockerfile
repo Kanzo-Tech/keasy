@@ -13,6 +13,9 @@ WORKDIR /src/server
 COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo 'fn main() {}' > src/main.rs && cargo build --release && rm -rf src
 COPY src ./src
+# After the dep cache so a new SHA does not rebuild the dependencies.
+ARG KEASY_GIT_SHA
+ARG KEASY_BUILT_AT
 RUN touch src/main.rs && cargo build --release
 
 # ── runtime ───────────────────────────────────────────────────────────────

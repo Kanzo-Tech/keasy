@@ -1,12 +1,7 @@
 name: server-ci
 
-# Rust CI for the keasy-server crate. Its only fossil dependency,
-# `fossil-run-status`, is a git-dep on a public rmlext release tag — cargo fetches
-# it. No sibling checkout, no token.
-
 on:
-  # Callable so `images` can gate a release on it: a tag used to publish without
-  # running a single test.
+  # `images` gates publishing on it.
   workflow_call:
   pull_request:
   push:

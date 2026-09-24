@@ -226,7 +226,7 @@ export const api = {
 
     saveProvider: async (
       providerId: string,
-      config: { api_key: string; model?: string; max_tokens?: number },
+      config: Omit<Schemas["AiSettingsPayload"], "provider">,
     ) =>
       unwrap(await client.PUT("/v1/settings/ai/providers/{provider_id}", {
         params: { path: { provider_id: providerId } },

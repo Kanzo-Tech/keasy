@@ -1,26 +1,37 @@
-import { Shield } from "lucide-react";
-import { SettingsSection } from "@/components/settings/settings-section";
-import { PageShell } from "@/components/layout/page-shell";
+import { ShieldCheck } from "lucide-react";
+import {
+  Alert,
+  AlertDescription,
+  SectionBody,
+  SectionDescription,
+  SectionHeader,
+  SectionRoot,
+  SectionTitle,
+  SectionTitleGroup,
+} from "@kanzo-tech/ui";
 
 export default function SecuritySettingsPage() {
   return (
-    <PageShell>
-      <PageShell.Content className="gap-8">
-        <SettingsSection
-          title="Password & Authentication"
-          description="Your account is managed by your organization's identity provider."
-        >
-          <div className="rounded-lg border p-6">
-            <div className="flex items-start gap-4">
-              <Shield className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <p className="text-sm text-muted-foreground">
-                To change your password or manage your authentication settings,
-                please contact your administrator.
-              </p>
-            </div>
-          </div>
-        </SettingsSection>
-      </PageShell.Content>
-    </PageShell>
+    <SectionRoot>
+      <SectionHeader scale="page">
+        <SectionTitleGroup>
+          <SectionTitle level={1} scale="page">
+            Password & Authentication
+          </SectionTitle>
+          <SectionDescription>
+            Your account is managed by your organization&apos;s identity provider.
+          </SectionDescription>
+        </SectionTitleGroup>
+      </SectionHeader>
+      <SectionBody scale="page">
+        <Alert>
+          <ShieldCheck />
+          <AlertDescription>
+            To change your password or manage your authentication settings, please contact your
+            administrator.
+          </AlertDescription>
+        </Alert>
+      </SectionBody>
+    </SectionRoot>
   );
 }

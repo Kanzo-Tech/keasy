@@ -2,6 +2,7 @@
 # `keycloak-realm` service with deploy_stacks=false: the app runs as compose services.
 # Prod uses terraform.tfvars (gitignored).
 
+kc_url      = "http://keycloak:8080"
 kc_hostname = "localhost:3000"
 base_domain = "localhost"
 

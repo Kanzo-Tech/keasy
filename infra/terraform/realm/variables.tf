@@ -1,7 +1,9 @@
 # ── Keycloak connection (operator-local tfvars) ──────────────────────────────
+# Where this module reaches the admin API. Defaults to the public host; dev reaches
+# the compose service.
 variable "kc_url" {
   type    = string
-  default = "http://keycloak:8080"
+  default = null
 }
 variable "kc_admin_username" {
   type    = string

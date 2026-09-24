@@ -1,7 +1,6 @@
 # Copy to terraform.tfvars (gitignored) on the manager. This is the tenant REGISTRY —
 # emails are PII, so this file stays operator-local, never committed.
 
-kc_url            = "http://keycloak:8080"
 kc_admin_username = "admin"
 kc_admin_password = "from-platform-output"
 kc_hostname       = "auth.keasy.example.com"

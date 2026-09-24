@@ -91,6 +91,8 @@ resource "docker_service" "keycloak" {
     }
     networks_advanced {
       name = docker_network.edge.name
+      # Tenants reach it as `keycloak`, the name compose gives it in dev.
+      aliases = ["keycloak"]
     }
   }
 

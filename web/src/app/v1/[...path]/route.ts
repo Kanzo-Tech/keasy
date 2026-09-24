@@ -12,12 +12,41 @@ import { apiToken } from "@/lib/auth";
  * `/`, so no call site knows any of this happened.
  *
  * Nothing here decides anything. It does not read roles, does not inspect the
- * body, and refuses only when there is no credential to send at all — the
- * resource server is what refuses a request, and putting a second opinion here
- * would be putting authorization in the place that cannot enforce it.
+ * body, and refuses only when there is no credential to send at all, or when the
+ * browser says the request did not come from this application — the resource
+ * server is what refuses a request, and putting a second opinion here would be
+ * putting authorization in the place that cannot enforce it.
  */
 
 const API = process.env.KEASY_API_URL;
+
+/** Methods that can change something, and so are worth forging. */
+const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+/**
+ * Does the browser say this write came from this application?
+ *
+ * Authenticating by cookie means a cross-site form or `fetch` can spend the
+ * session without ever reading it, and `SameSite=Lax` is not the whole answer
+ * here: "site" is the registrable domain, so `a.keasy.example` and
+ * `b.keasy.example` are same-site. Between two workspaces on the same domain —
+ * which is exactly how this fleet is deployed — Lax stops nothing, and the two
+ * tenants are precisely the pair that must not be able to write for each other.
+ *
+ * `Sec-Fetch-Site` is the browser's own account of where the request started,
+ * and it is one the page cannot set: it is a forbidden header name. Widely
+ * available across browsers since March 2023, which is well inside what an
+ * application compiling WebAssembly already requires — so a write without it is
+ * not a browser this product runs in, and is refused rather than assumed.
+ *
+ * Only writes are checked. A cross-site read is already answered by CORS, and
+ * gating reads here would break nothing today but would make this proxy a thing
+ * with opinions, which it is deliberately not.
+ */
+function sameOriginWrite(request: Request): boolean {
+  if (!UNSAFE_METHODS.has(request.method)) return true;
+  return request.headers.get("sec-fetch-site") === "same-origin";
+}
 
 /** The response envelope the API client already knows how to route on. */
 function refuse(code: string, message: string, status: number): Response {
@@ -52,6 +81,12 @@ async function proxy(
   request: Request,
   context: { params: Promise<{ path: string[] }> },
 ): Promise<Response> {
+  // First, and before anything is read: a request from somewhere else is not a
+  // request, so there is nothing here to configure, look up or forward for it.
+  if (!sameOriginWrite(request)) {
+    return refuse("auth/cross_site_write", "Cross-site writes are refused", 403);
+  }
+
   if (API === undefined || API === "") {
     return refuse("internal_error", "KEASY_API_URL is not configured", 500);
   }

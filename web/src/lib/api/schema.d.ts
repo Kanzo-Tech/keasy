@@ -82,7 +82,7 @@ export interface paths {
          *     claim is neither — so it is read here, off the token this server verified,
          *     rather than copied into a shape the browser would have to be trusted about.
          *
-         *     Deliberately outside `tenant_context_required`: someone authenticated but
+         *     It takes no role extractor: someone authenticated but
          *     holding no role here still needs to be told where they *do* belong.
          */
         get: operations["list_workspaces"];
@@ -107,8 +107,8 @@ export interface paths {
          * @description Governance metadata, and therefore the owner's: Data Catalog is a page on the
          *     owner's side of the app (`/datasets`), and it is the index over what the
          *     whole workspace produced rather than over what the caller produced. The
-         *     member reaches their own output through the job that made it, which is the
-         *     data plane and carries the bytes; this carries none.
+         *     member reaches their own output through the job that made it, which carries
+         *     the bytes; this carries none.
          */
         get: operations["list_catalog_datasets"];
         put?: never;
@@ -251,10 +251,8 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Browser-driven completion: the client (`@fossil-lang/executor`) ran the
-         *     mapping, signed-PUT the output, and reports the outcome here. `Completed`
-         *     stores the run report VERBATIM — keasy neither reads nor re-types it; the
-         *     server never touches the data, only the metadata.
+         * The browser ran the mapping and uploaded the output; this records the
+         *     outcome. `Completed` stores the run report verbatim, unread.
          */
         patch: operations["complete_job"];
         trace?: never;
@@ -285,13 +283,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Sign GET URLs so the browser reads the dataset directly — the reading twin
-         *     of [`resolve_output_urls`], same handler, other verb.
-         * @description **It takes the list; it does not derive one.** It used to walk the run report
-         *     and hand back `manifest.vertices[].file` + `manifest.edges[].by_source`,
-         *     which is the host restating a layout it does not own — and restating it
-         *     wrongly, since those were names the layout pass deletes. What is addressable
-         *     is the corpus reader's answer, so the caller enumerates and keasy signs.
+         * Sign GET URLs so the browser reads the dataset directly — the reading twin of
+         *     [`resolve_output_urls`]. It takes the list the corpus reader enumerated and
+         *     derives none.
          */
         post: operations["resolve_discover_urls"];
         delete?: never;
@@ -310,8 +304,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Sign PUT URLs so the browser uploads the output it just produced directly to
-         *     the member's chosen destination (no data through the server).
+         * Sign PUT URLs so the browser uploads the output it just produced straight to
+         *     the job's sink.
          */
         post: operations["resolve_output_urls"];
         delete?: never;
@@ -355,9 +349,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * The job's connection ref-map (name → base URL). The browser feeds it to the
-         *     executor's `sources()`/`run()` to resolve `@conn` aliases. No credentials —
-         *     only the base URLs (signing is a separate, per-URL call).
+         * The job's connection ref-map (name → base URL). No credentials: signing is
+         *     a separate, per-URL call.
          */
         get: operations["resolve_source_refs"];
         put?: never;
@@ -378,10 +371,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Sign GET URLs so the browser fetches the program's cloud sources directly
-         *     (no data through the server). Each cloud URI is signed with the creds of the
-         *     job connection whose base URL prefixes it; non-cloud (HTTP/public) URIs pass
-         *     through verbatim.
+         * Sign GET URLs so the browser fetches the program's cloud sources directly.
+         *     Each cloud URI is signed with the credentials of the job connection it lies
+         *     under (the deepest one); public HTTP URIs pass through.
          */
         post: operations["resolve_source_urls"];
         delete?: never;
@@ -641,8 +633,8 @@ export interface components {
             mode?: null | components["schemas"]["RunMode"];
             name?: string | null;
             script: string;
-            /** @description The connection the member picked as the output destination (job config). */
-            sink_connection_id?: string | null;
+            /** @description Where the output lands: a sink connection. */
+            sink_connection_id: string;
         };
         /** @description Typed envelope for successful API responses: `{ "data": T }`. */
         DataResponse_Value: {
@@ -650,9 +642,8 @@ export interface components {
         };
         DatasetUrlsRequest: {
             /**
-             * @description Dataset-relative keys. On the write side they are what the executor
-             *     produced; on the read side they are what the corpus reader enumerated.
-             *     **Either way the caller names them and keasy does not** — the host signs
+             * @description Paths relative to the dataset (or connection). The caller names them —
+             *     the executor's output, the corpus reader's enumeration — and keasy signs
              *     the list it is handed.
              */
             paths: string[];
@@ -703,11 +694,10 @@ export interface components {
             connection_ids?: string[];
             created_at: string;
             /**
-             * @description Keycloak `sub` of the member who created the job — the data-product owner.
-             *     Server-derived (never from the client); used for producer-scoped data
-             *     access (only the producer reads/runs the job's data) + DCAT publisher.
+             * @description Keycloak `sub` of the member who created the job, and the only one who
+             *     may see, change, run or read it. Taken from the token, never the body.
              */
-            created_by?: string;
+            created_by: string;
             error?: null | components["schemas"]["JobRuntimeError"];
             id: string;
             /**
@@ -730,12 +720,10 @@ export interface components {
             relations?: components["schemas"]["OutputRelation"][];
             script?: string | null;
             /**
-             * @description Connection the member chose as the output destination (where the GraphAr
-             *     output lands). The producer owns where their data product goes — output is
-             *     signed with this connection's cloud creds, under `{conn.url}/{job_id}`.
-             *     `None` falls back to the workspace substrate (transitional).
+             * @description The sink the output lands in, under `{sink.url}/{job_id}`, signed with
+             *     that connection's credentials.
              */
-            sink_connection_id?: string | null;
+            sink_connection_id: string;
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
         };
@@ -806,26 +794,21 @@ export interface components {
         RunMode: "integrated" | "scheduled";
         SourceRefsResponse: {
             /**
-             * @description Connection ref-map `{ name: baseUrl }` — the browser passes it to the
-             *     executor (`@fossil-lang/executor`) so `@name/path` source aliases resolve
-             *     to `{baseUrl}/path`, identically to the native engine.
+             * @description Connection ref-map `{ name: baseUrl }`, so the executor resolves
+             *     `@name/path` to `{baseUrl}/path`.
              */
             refs: {
                 [key: string]: string;
             };
         };
         SourceUrlsRequest: {
-            /**
-             * @description The RESOLVED source URIs the executor's `sources()` returned (already
-             *     `@conn`-resolved, e.g. `s3://bucket/prefix/users.csv`).
-             */
+            /** @description The resolved source URIs (`s3://bucket/prefix/users.csv`). */
             uris: string[];
         };
         SourceUrlsResponse: {
             /**
-             * @description Each input URI → a fetch URL: a signed GET for cloud sources, or the URI
-             *     verbatim for public/HTTP ones. The browser fetches each and stages the
-             *     bytes for the executor under the SAME URI.
+             * @description Each URI → a fetch URL: signed GET for cloud sources, the URI itself for
+             *     public HTTP ones.
              */
             urls: {
                 [key: string]: string;
@@ -1353,7 +1336,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description List of jobs */
+            /** @description The caller's jobs */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1394,6 +1377,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Job"];
                 };
+            };
+            /** @description The destination is not a sink */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1589,7 +1579,7 @@ export interface operations {
                     "application/json": components["schemas"]["ResolveResponse"];
                 };
             };
-            /** @description No data space substrate configured */
+            /** @description The destination connection is gone, or a path outside the dataset */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1630,7 +1620,7 @@ export interface operations {
                     "application/json": components["schemas"]["ResolveResponse"];
                 };
             };
-            /** @description No data space substrate configured */
+            /** @description The destination connection is gone, or a path outside the dataset */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1670,6 +1660,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Job"];
                 };
+            };
+            /** @description A file path outside the dataset */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Job not found */
             404: {

@@ -7,6 +7,16 @@ use super::models::{Job, JobStatus, OutputRelation, RunMode};
 
 impl Database {
     pub async fn insert_job(&self, job: &Job) -> Result<(), String> {
+        self.insert(job, "").await.map(|_| ())
+    }
+
+    /// Insert `job` only into a workspace with no jobs; whether it was.
+    pub async fn insert_first_job(&self, job: &Job) -> Result<bool, String> {
+        self.insert(job, "WHERE NOT EXISTS (SELECT 1 FROM jobs)")
+            .await
+    }
+
+    async fn insert(&self, job: &Job, condition: &str) -> Result<bool, String> {
         let error_json = job
             .error
             .as_ref()
@@ -26,9 +36,9 @@ impl Database {
             .map_err(|e| format!("failed to serialize relations: {e}"))?;
 
         let conn = self.write().await;
-        conn.execute(
-            "INSERT INTO jobs (id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, sink_connection_id, script, manifest, relations)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+        let inserted = conn.execute(
+            &format!("INSERT INTO jobs (id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, sink_connection_id, script, manifest, relations)
+             SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14 {condition}"),
             params![
                 job.id,
                 job.name,
@@ -48,7 +58,7 @@ impl Database {
         )
         .map_err(|e| format!("failed to insert job: {e}"))?;
 
-        Ok(())
+        Ok(inserted > 0)
     }
 
     pub async fn get_job(&self, id: &str) -> Option<Job> {
@@ -112,19 +122,37 @@ impl Database {
         Ok(Some(job))
     }
 
+    /// Every job in the workspace (the catalog and its reconciler).
     pub async fn list_jobs(&self) -> Vec<Job> {
+        self.select_jobs("", None).await
+    }
+
+    /// The jobs `user_id` created.
+    pub async fn list_jobs_of(&self, user_id: &str) -> Vec<Job> {
+        self.select_jobs("WHERE created_by = ?1", Some(user_id))
+            .await
+    }
+
+    /// Whether the workspace holds any job at all.
+    pub async fn has_jobs(&self) -> bool {
         let (_permit, conn) = self.read().await;
-        let mut stmt = match conn.prepare(
+        conn.query_row("SELECT EXISTS (SELECT 1 FROM jobs)", [], |row| row.get(0))
+            .unwrap_or(true)
+    }
+
+    async fn select_jobs(&self, filter: &str, param: Option<&str>) -> Vec<Job> {
+        let (_permit, conn) = self.read().await;
+        let mut stmt = match conn.prepare(&format!(
             "SELECT id, name, status, mode, created_at, started_at, completed_at, error, connection_ids, created_by, sink_connection_id, script, manifest, relations
-             FROM jobs ORDER BY created_at DESC",
-        ) {
+             FROM jobs {filter} ORDER BY created_at DESC"
+        )) {
             Ok(s) => s,
             Err(e) => {
                 tracing::error!(error = %e, "Failed to prepare list jobs");
                 return vec![];
             }
         };
-        match stmt.query_map([], |row| Ok(row_to_job(row))) {
+        match stmt.query_map(rusqlite::params_from_iter(param), |row| Ok(row_to_job(row))) {
             Ok(rows) => rows.filter_map(|r| r.ok()).collect(),
             Err(e) => {
                 tracing::error!(error = %e, "Failed to query jobs");
@@ -199,7 +227,7 @@ fn row_to_job(row: &rusqlite::Row) -> Job {
         error: error_json.and_then(|j| serde_json::from_str::<JobRuntimeError>(&j).ok()),
         connection_ids: serde_json::from_str::<Vec<String>>(&account_ids_json).unwrap_or_default(),
         created_by: row.get("created_by").unwrap_or_default(),
-        sink_connection_id: row.get("sink_connection_id").unwrap_or(None),
+        sink_connection_id: row.get("sink_connection_id").unwrap_or_default(),
         script,
         manifest: manifest_json.and_then(|j| serde_json::from_str::<serde_json::Value>(&j).ok()),
         relations: row

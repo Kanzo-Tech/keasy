@@ -12,12 +12,16 @@ use tracing_subscriber::fmt::MakeWriter;
 
 use crate::auth::jwt::Validator;
 use crate::auth::jwt::tests::{Realm, good, mint, realm};
+use crate::connections::models::{
+    ConnectionKind, CreateConnectionRequest, Direction, LocationType,
+};
 use crate::{AppState, Database};
 
 /// The real router over a real database and catalog, verifying tokens against a
 /// fake realm.
 struct Harness {
     app: Router,
+    db: Database,
     realm: Realm,
     _dir: tempfile::TempDir,
 }
@@ -33,7 +37,7 @@ impl Harness {
         .unwrap();
         let catalog = crate::catalog::Catalog::open(dir.path()).unwrap();
         let state = AppState {
-            db,
+            db: db.clone(),
             workspace_slug: Some("dev".into()),
             auth: Arc::new(Validator::new(
                 &realm.issuer,
@@ -45,6 +49,7 @@ impl Harness {
         };
         Self {
             app: super::build_router(state, None),
+            db,
             realm,
             _dir: dir,
         }
@@ -52,11 +57,152 @@ impl Harness {
 
     /// A token for `u-1` carrying exactly `roles` on this workspace's client.
     fn token(&self, roles: &[&str]) -> String {
+        self.token_for("u-1", roles)
+    }
+
+    fn token_for(&self, sub: &str, roles: &[&str]) -> String {
         let mut claims = good(&self.realm);
+        claims["sub"] = json!(sub);
         claims["resource_access"] = json!({ "keasy-ws-dev": { "roles": roles } });
         mint(&self.realm, claims)
     }
 
+    /// A JSON request; the status and the unwrapped `data` (or the error body).
+    async fn send(
+        &self,
+        method: Method,
+        path: &str,
+        token: &str,
+        body: serde_json::Value,
+    ) -> (StatusCode, serde_json::Value) {
+        let mut request = Request::builder()
+            .method(method)
+            .uri(path)
+            .header(header::AUTHORIZATION, format!("Bearer {token}"))
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from(body.to_string()))
+            .unwrap();
+        request
+            .extensions_mut()
+            .insert(ConnectInfo(SocketAddr::from(([127, 0, 0, 1], 1))));
+        let response = self.app.clone().oneshot(request).await.unwrap();
+        let status = response.status();
+        let bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap_or_default();
+        let data = json.get("data").cloned().unwrap_or(json);
+        (status, data)
+    }
+
+    async fn connection(&self, name: &str, direction: Direction) -> String {
+        self.db
+            .create_connection(CreateConnectionRequest {
+                name: name.into(),
+                kind: ConnectionKind::Data,
+                location_type: LocationType::Local,
+                direction,
+                cloud_account_id: None,
+                url: format!("/tmp/{name}"),
+            })
+            .await
+            .unwrap()
+            .id
+    }
+}
+
+/// A job needs a destination, and it must be the sink.
+#[tokio::test]
+async fn a_job_goes_to_the_sink_or_is_refused() {
+    let harness = Harness::new().await;
+    let member = harness.token(&["member"]);
+    let source = harness.connection("source", Direction::Source).await;
+    let sink = harness.connection("sink", Direction::Sink).await;
+
+    let create = |sink: Option<&str>| {
+        let mut body = json!({ "script": "x", "draft": true });
+        if let Some(sink) = sink {
+            body["sink_connection_id"] = json!(sink);
+        }
+        harness.send(Method::POST, "/v1/jobs", &member, body)
+    };
+
+    assert_eq!(create(None).await.0, StatusCode::UNPROCESSABLE_ENTITY);
+    let (status, body) = create(Some(&source)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(body["error"], "invalid_destination");
+    assert_eq!(create(Some("gone")).await.0, StatusCode::BAD_REQUEST);
+    let (status, job) = create(Some(&sink)).await;
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(job["sink_connection_id"], json!(sink));
+}
+
+/// A job is its creator's: another member neither lists, reads, edits, runs,
+/// signs nor deletes it — to them it does not exist.
+#[tokio::test]
+async fn a_job_is_its_creators_alone() {
+    let harness = Harness::new().await;
+    let mine = harness.token_for("u-1", &["member"]);
+    let theirs = harness.token_for("u-2", &["member"]);
+    let sink = harness.connection("sink", Direction::Sink).await;
+
+    let (_, job) = harness
+        .send(
+            Method::POST,
+            "/v1/jobs",
+            &mine,
+            json!({ "script": "x", "draft": true, "sink_connection_id": sink }),
+        )
+        .await;
+    let id = job["id"].as_str().unwrap().to_string();
+    let path = format!("/v1/jobs/{id}");
+
+    let (_, listed) = harness
+        .send(Method::GET, "/v1/jobs", &theirs, json!(null))
+        .await;
+    assert_eq!(listed, json!([]));
+    let (_, listed) = harness
+        .send(Method::GET, "/v1/jobs", &mine, json!(null))
+        .await;
+    assert_eq!(listed.as_array().unwrap().len(), 1);
+
+    for (verb, route, body) in [
+        (Method::GET, path.clone(), json!(null)),
+        (Method::PUT, path.clone(), json!({ "name": "stolen" })),
+        (Method::PATCH, path.clone(), json!({ "status": "running" })),
+        (Method::DELETE, path.clone(), json!(null)),
+        (Method::GET, format!("{path}/source-refs"), json!(null)),
+        (
+            Method::POST,
+            format!("{path}/output/urls"),
+            json!({ "paths": ["a.parquet"] }),
+        ),
+        (
+            Method::POST,
+            format!("{path}/discover/urls"),
+            json!({ "paths": ["a.parquet"] }),
+        ),
+        (
+            Method::POST,
+            format!("{path}/sources/urls"),
+            json!({ "uris": [] }),
+        ),
+        (
+            Method::PUT,
+            format!("{path}/relations"),
+            json!({ "relations": [] }),
+        ),
+    ] {
+        let (status, _) = harness.send(verb.clone(), &route, &theirs, body).await;
+        assert_eq!(status, StatusCode::NOT_FOUND, "{verb} {route}");
+    }
+
+    let (status, job) = harness.send(Method::GET, &path, &mine, json!(null)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(job["id"], json!(id));
+}
+
+impl Harness {
     async fn call(&self, method: Method, path: &str, token: Option<&str>) -> StatusCode {
         self.answer(method, path, token).await.0
     }

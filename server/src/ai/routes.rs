@@ -62,12 +62,12 @@ pub struct AskRequest {
     responses((status = 200, description = "SSE stream of LLM deltas", content_type = "text/event-stream"))
 )]
 pub async fn ask_discover_stream(
-    _: Member,
+    member: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<AskRequest>,
 ) -> Response {
-    if let Err(r) = crate::discovery::routes::require_output_ready(&state, &id).await {
+    if let Err(r) = crate::discovery::routes::output_ready(&state, &member, &id).await {
         return r;
     }
 

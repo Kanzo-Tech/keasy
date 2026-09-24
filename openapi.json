@@ -97,7 +97,7 @@
           "Auth"
         ],
         "summary": "GET /v1/auth/workspaces",
-        "description": "The one thing the web cannot answer from its own session: the switcher's\nlist. `Session` carries who you are and what you may do, and the workspaces\nclaim is neither — so it is read here, off the token this server verified,\nrather than copied into a shape the browser would have to be trusted about.\n\nDeliberately outside `tenant_context_required`: someone authenticated but\nholding no role here still needs to be told where they *do* belong.",
+        "description": "The one thing the web cannot answer from its own session: the switcher's\nlist. `Session` carries who you are and what you may do, and the workspaces\nclaim is neither — so it is read here, off the token this server verified,\nrather than copied into a shape the browser would have to be trusted about.\n\nIt takes no role extractor: someone authenticated but\nholding no role here still needs to be told where they *do* belong.",
         "operationId": "list_workspaces",
         "responses": {
           "200": {
@@ -119,7 +119,7 @@
           "Catalog"
         ],
         "summary": "List the workspace catalog: every registered dataset (a completed job's\noutput) with its types, columns and row counts.",
-        "description": "Governance metadata, and therefore the owner's: Data Catalog is a page on the\nowner's side of the app (`/datasets`), and it is the index over what the\nwhole workspace produced rather than over what the caller produced. The\nmember reaches their own output through the job that made it, which is the\ndata plane and carries the bytes; this carries none.",
+        "description": "Governance metadata, and therefore the owner's: Data Catalog is a page on the\nowner's side of the app (`/datasets`), and it is the index over what the\nwhole workspace produced rather than over what the caller produced. The\nmember reaches their own output through the job that made it, which carries\nthe bytes; this carries none.",
         "operationId": "list_catalog_datasets",
         "responses": {
           "200": {
@@ -507,7 +507,7 @@
         "operationId": "list_jobs",
         "responses": {
           "200": {
-            "description": "List of jobs",
+            "description": "The caller's jobs",
             "content": {
               "application/json": {
                 "schema": {
@@ -556,6 +556,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "The destination is not a sink"
           }
         }
       }
@@ -670,7 +673,7 @@
         "tags": [
           "Jobs"
         ],
-        "summary": "Browser-driven completion: the client (`@fossil-lang/executor`) ran the\nmapping, signed-PUT the output, and reports the outcome here. `Completed`\nstores the run report VERBATIM — keasy neither reads nor re-types it; the\nserver never touches the data, only the metadata.",
+        "summary": "The browser ran the mapping and uploaded the output; this records the\noutcome. `Completed` stores the run report verbatim, unread.",
         "operationId": "complete_job",
         "parameters": [
           {
@@ -752,8 +755,7 @@
         "tags": [
           "Discovery"
         ],
-        "summary": "Sign GET URLs so the browser reads the dataset directly — the reading twin\nof [`resolve_output_urls`], same handler, other verb.",
-        "description": "**It takes the list; it does not derive one.** It used to walk the run report\nand hand back `manifest.vertices[].file` + `manifest.edges[].by_source`,\nwhich is the host restating a layout it does not own — and restating it\nwrongly, since those were names the layout pass deletes. What is addressable\nis the corpus reader's answer, so the caller enumerates and keasy signs.",
+        "summary": "Sign GET URLs so the browser reads the dataset directly — the reading twin of\n[`resolve_output_urls`]. It takes the list the corpus reader enumerated and\nderives none.",
         "operationId": "resolve_discover_urls",
         "parameters": [
           {
@@ -788,7 +790,7 @@
             }
           },
           "400": {
-            "description": "No data space substrate configured"
+            "description": "The destination connection is gone, or a path outside the dataset"
           },
           "404": {
             "description": "Job not found"
@@ -801,7 +803,7 @@
         "tags": [
           "Discovery"
         ],
-        "summary": "Sign PUT URLs so the browser uploads the output it just produced directly to\nthe member's chosen destination (no data through the server).",
+        "summary": "Sign PUT URLs so the browser uploads the output it just produced straight to\nthe job's sink.",
         "operationId": "resolve_output_urls",
         "parameters": [
           {
@@ -836,7 +838,7 @@
             }
           },
           "400": {
-            "description": "No data space substrate configured"
+            "description": "The destination connection is gone, or a path outside the dataset"
           },
           "404": {
             "description": "Job not found"
@@ -884,6 +886,9 @@
               }
             }
           },
+          "400": {
+            "description": "A file path outside the dataset"
+          },
           "404": {
             "description": "Job not found"
           }
@@ -895,7 +900,7 @@
         "tags": [
           "Discovery"
         ],
-        "summary": "The job's connection ref-map (name → base URL). The browser feeds it to the\nexecutor's `sources()`/`run()` to resolve `@conn` aliases. No credentials —\nonly the base URLs (signing is a separate, per-URL call).",
+        "summary": "The job's connection ref-map (name → base URL). No credentials: signing is\na separate, per-URL call.",
         "operationId": "resolve_source_refs",
         "parameters": [
           {
@@ -930,7 +935,7 @@
         "tags": [
           "Discovery"
         ],
-        "summary": "Sign GET URLs so the browser fetches the program's cloud sources directly\n(no data through the server). Each cloud URI is signed with the creds of the\njob connection whose base URL prefixes it; non-cloud (HTTP/public) URIs pass\nthrough verbatim.",
+        "summary": "Sign GET URLs so the browser fetches the program's cloud sources directly.\nEach cloud URI is signed with the credentials of the job connection it lies\nunder (the deepest one); public HTTP URIs pass through.",
         "operationId": "resolve_source_urls",
         "parameters": [
           {
@@ -1661,7 +1666,8 @@
       "CreateJobRequest": {
         "type": "object",
         "required": [
-          "script"
+          "script",
+          "sink_connection_id"
         ],
         "properties": {
           "connection_ids": {
@@ -1699,11 +1705,8 @@
             "type": "string"
           },
           "sink_connection_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The connection the member picked as the output destination (job config)."
+            "type": "string",
+            "description": "Where the output lands: a sink connection."
           }
         }
       },
@@ -1728,7 +1731,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Dataset-relative keys. On the write side they are what the executor\nproduced; on the read side they are what the corpus reader enumerated.\n**Either way the caller names them and keasy does not** — the host signs\nthe list it is handed."
+            "description": "Paths relative to the dataset (or connection). The caller names them —\nthe executor's output, the corpus reader's enumeration — and keasy signs\nthe list it is handed."
           }
         }
       },
@@ -1876,7 +1879,9 @@
           "id",
           "status",
           "created_at",
-          "mode"
+          "mode",
+          "created_by",
+          "sink_connection_id"
         ],
         "properties": {
           "completed_at": {
@@ -1896,7 +1901,7 @@
           },
           "created_by": {
             "type": "string",
-            "description": "Keycloak `sub` of the member who created the job — the data-product owner.\nServer-derived (never from the client); used for producer-scoped data\naccess (only the producer reads/runs the job's data) + DCAT publisher."
+            "description": "Keycloak `sub` of the member who created the job, and the only one who\nmay see, change, run or read it. Taken from the token, never the body."
           },
           "error": {
             "oneOf": [
@@ -1937,11 +1942,8 @@
             ]
           },
           "sink_connection_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Connection the member chose as the output destination (where the GraphAr\noutput lands). The producer owns where their data product goes — output is\nsigned with this connection's cloud creds, under `{conn.url}/{job_id}`.\n`None` falls back to the workspace substrate (transitional)."
+            "type": "string",
+            "description": "The sink the output lands in, under `{sink.url}/{job_id}`, signed with\nthat connection's credentials."
           },
           "started_at": {
             "type": [
@@ -2167,7 +2169,7 @@
         "properties": {
           "refs": {
             "type": "object",
-            "description": "Connection ref-map `{ name: baseUrl }` — the browser passes it to the\nexecutor (`@fossil-lang/executor`) so `@name/path` source aliases resolve\nto `{baseUrl}/path`, identically to the native engine.",
+            "description": "Connection ref-map `{ name: baseUrl }`, so the executor resolves\n`@name/path` to `{baseUrl}/path`.",
             "additionalProperties": {
               "type": "string"
             },
@@ -2188,7 +2190,7 @@
             "items": {
               "type": "string"
             },
-            "description": "The RESOLVED source URIs the executor's `sources()` returned (already\n`@conn`-resolved, e.g. `s3://bucket/prefix/users.csv`)."
+            "description": "The resolved source URIs (`s3://bucket/prefix/users.csv`)."
           }
         }
       },
@@ -2200,7 +2202,7 @@
         "properties": {
           "urls": {
             "type": "object",
-            "description": "Each input URI → a fetch URL: a signed GET for cloud sources, or the URI\nverbatim for public/HTTP ones. The browser fetches each and stages the\nbytes for the executor under the SAME URI.",
+            "description": "Each URI → a fetch URL: signed GET for cloud sources, the URI itself for\npublic HTTP ones.",
             "additionalProperties": {
               "type": "string"
             },

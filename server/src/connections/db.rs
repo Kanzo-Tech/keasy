@@ -147,46 +147,18 @@ impl Database {
         Ok(())
     }
 
-    /// Object-store creds for the **data space substrate** (the single workspace
-    /// write sink). All job output lands under the substrate (prefixed by the
-    /// producing member), so signing/reading it back uses the substrate account's
-    /// creds — never the member source connections'. Empty if no cloud sink is
-    /// configured.
-    pub async fn substrate_storage_config(&self) -> HashMap<String, String> {
-        match self
-            .get_sink_connection()
-            .await
-            .and_then(|c| c.cloud_account_id)
-        {
+    /// `(base_url, object-store creds)` of a job's destination sink; `None` once
+    /// that connection is gone.
+    pub async fn job_output_target(&self, job: &Job) -> Option<(String, HashMap<String, String>)> {
+        let conn = self.get_connection(&job.sink_connection_id).await?;
+        let creds = match &conn.cloud_account_id {
             Some(account_id) => {
-                self.build_storage_config(std::slice::from_ref(&account_id))
+                self.build_storage_config(std::slice::from_ref(account_id))
                     .await
             }
             None => HashMap::new(),
-        }
-    }
-
-    /// `(base_url, object-store creds)` for a job's output destination. The
-    /// member owns where their data product lands: the connection they chose at
-    /// job config (`sink_connection_id`) wins; output is signed with that
-    /// connection's cloud creds under `{base_url}/{job_id}`. Falls back to the
-    /// workspace substrate when no destination was picked (transitional).
-    /// `None` when neither is configured.
-    pub async fn job_output_target(&self, job: &Job) -> Option<(String, HashMap<String, String>)> {
-        if let Some(cid) = &job.sink_connection_id
-            && let Some(conn) = self.get_connection(cid).await
-        {
-            let creds = match &conn.cloud_account_id {
-                Some(account_id) => {
-                    self.build_storage_config(std::slice::from_ref(account_id))
-                        .await
-                }
-                None => HashMap::new(),
-            };
-            return Some((conn.url, creds));
-        }
-        let (_, base) = self.substrate_config().await?;
-        Some((base, self.substrate_storage_config().await))
+        };
+        Some((conn.url, creds))
     }
 }
 

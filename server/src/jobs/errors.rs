@@ -94,10 +94,10 @@ pub enum JobApiError {
     NotDraft,
     #[error("invalid format: {0}")]
     InvalidFormat(String),
+    #[error("the destination is not a sink")]
+    InvalidDestination,
     #[error("cannot delete a running job")]
     StillRunning,
-    #[error("serialization failed: {0}")]
-    Serialization(String),
     #[error("internal: {0}")]
     Internal(String),
 }
@@ -125,10 +125,10 @@ impl JobApiError {
                 "still_running",
                 "Cannot delete a job that is still running".to_string(),
             ),
-            JobApiError::Serialization(msg) => (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                "serialization_error",
-                msg.clone(),
+            JobApiError::InvalidDestination => (
+                axum::http::StatusCode::BAD_REQUEST,
+                "invalid_destination",
+                "sink_connection_id must name the workspace sink".to_string(),
             ),
             JobApiError::Internal(msg) => {
                 tracing::error!(detail = %msg, "Internal job error");

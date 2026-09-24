@@ -7,6 +7,7 @@ use axum::{
 
 use crate::AppState;
 use crate::auth::role::Member;
+use crate::connections::models::Direction;
 use crate::error::data_response;
 use crate::jobs::models::{
     CompleteJobRequest, CreateJobRequest, Job, JobStatus, PublishRelationsRequest,
@@ -15,17 +16,32 @@ use crate::jobs::models::{
 
 use super::errors::{JobApiError, JobRuntimeError, classify_error};
 
+/// The job, if it exists and `member` created it. Anyone else's job is not
+/// found: a job is its creator's alone.
+pub(crate) async fn owned_job(
+    state: &AppState,
+    member: &Member,
+    id: &str,
+) -> Result<Job, JobApiError> {
+    state
+        .db
+        .get_job(id)
+        .await
+        .filter(|job| job.created_by == member.user_id)
+        .ok_or(JobApiError::NotFound)
+}
+
 #[utoipa::path(get, path = "/v1/jobs", tag = "Jobs",
     responses(
-        (status = 200, description = "List of jobs", body = Vec<Job>),
+        (status = 200, description = "The caller's jobs", body = Vec<Job>),
     )
 )]
 pub async fn list_jobs(
-    _: Member,
+    member: Member,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    let jobs = state.db.list_jobs().await;
-    Ok(data_response(jobs))
+    super::bootstrap::claim_declared_draft(&state.db, &member.user_id).await;
+    Ok(data_response(state.db.list_jobs_of(&member.user_id).await))
 }
 
 #[utoipa::path(post, path = "/v1/jobs", tag = "Jobs",
@@ -33,22 +49,31 @@ pub async fn list_jobs(
     responses(
         (status = 201, description = "Draft job created", body = Job),
         (status = 202, description = "Job submitted for execution", body = Job),
+        (status = 400, description = "The destination is not a sink"),
     )
 )]
 pub async fn create_job(
-    ctx: Member,
+    member: Member,
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    // Browser-driven execution: a `Pending` job is persisted and the client runs
-    // it on DataFusion-WASM — sources via signed GET, GraphAr output via signed
-    // PUT, outcome via `PATCH /v1/jobs/{id}`. The server never runs the mapping.
+    let is_sink = state
+        .db
+        .get_connection(&payload.sink_connection_id)
+        .await
+        .is_some_and(|c| c.direction == Direction::Sink);
+    if !is_sink {
+        return Err(JobApiError::InvalidDestination);
+    }
+
+    // A `Pending` job is run by the browser: sources by signed GET, output by
+    // signed PUT, outcome by `PATCH /v1/jobs/{id}`.
     let (status, code) = if payload.draft {
         (JobStatus::Draft, StatusCode::CREATED)
     } else {
         (JobStatus::Pending, StatusCode::ACCEPTED)
     };
-    let job = Job::requested(status, payload, ctx.user_id.clone());
+    let job = Job::requested(status, payload, member.user_id);
     state
         .db
         .insert_job(&job)
@@ -66,14 +91,11 @@ pub async fn create_job(
     )
 )]
 pub async fn get_job(
-    _: Member,
+    member: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    match state.db.get_job(id.as_str()).await {
-        Some(job) => Ok(data_response(job).into_response()),
-        None => Err(JobApiError::NotFound),
-    }
+    Ok(data_response(owned_job(&state, &member, &id).await?))
 }
 
 #[utoipa::path(put, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -86,17 +108,17 @@ pub async fn get_job(
     )
 )]
 pub async fn update_job(
-    _: Member,
+    member: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    match state
+    if owned_job(&state, &member, &id).await?.status != JobStatus::Draft {
+        return Err(JobApiError::NotDraft);
+    }
+    state
         .db
-        .update_job(id.as_str(), |job| {
-            if job.status != JobStatus::Draft {
-                return;
-            }
+        .update_job(&id, |job| {
             if let Some(script) = payload.script {
                 job.script = Some(script);
             }
@@ -106,11 +128,8 @@ pub async fn update_job(
         })
         .await
         .map_err(JobApiError::Internal)?
-    {
-        Some(job) if job.status == JobStatus::Draft => Ok(data_response(job).into_response()),
-        Some(_) => Err(JobApiError::NotDraft),
-        None => Err(JobApiError::NotFound),
-    }
+        .map(data_response)
+        .ok_or(JobApiError::NotFound)
 }
 
 #[utoipa::path(patch, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -121,16 +140,15 @@ pub async fn update_job(
         (status = 404, description = "Job not found"),
     )
 )]
-/// Browser-driven completion: the client (`@fossil-lang/executor`) ran the
-/// mapping, signed-PUT the output, and reports the outcome here. `Completed`
-/// stores the run report VERBATIM — keasy neither reads nor re-types it; the
-/// server never touches the data, only the metadata.
+/// The browser ran the mapping and uploaded the output; this records the
+/// outcome. `Completed` stores the run report verbatim, unread.
 pub async fn complete_job(
-    _: Member,
+    member: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<CompleteJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
+    owned_job(&state, &member, &id).await?;
     let now = now_iso8601();
     let CompleteJobRequest {
         status,
@@ -138,9 +156,9 @@ pub async fn complete_job(
         error,
     } = payload;
 
-    let updated = state
+    state
         .db
-        .update_job(id.as_str(), move |job| {
+        .update_job(&id, move |job| {
             match &status {
                 JobStatus::Completed => {
                     job.started_at.get_or_insert_with(|| now.clone());
@@ -157,21 +175,16 @@ pub async fn complete_job(
                     ));
                 }
                 JobStatus::Running => {
-                    if job.started_at.is_none() {
-                        job.started_at = Some(now);
-                    }
+                    job.started_at.get_or_insert(now);
                 }
                 _ => {}
             }
             job.status = status;
         })
         .await
-        .map_err(JobApiError::Internal)?;
-
-    match updated {
-        Some(job) => Ok(data_response(job).into_response()),
-        None => Err(JobApiError::NotFound),
-    }
+        .map_err(JobApiError::Internal)?
+        .map(data_response)
+        .ok_or(JobApiError::NotFound)
 }
 
 #[utoipa::path(put, path = "/v1/jobs/{id}/relations", tag = "Jobs",
@@ -179,6 +192,7 @@ pub async fn complete_job(
     request_body = PublishRelationsRequest,
     responses(
         (status = 200, description = "Relations stored and the dataset registered", body = Job),
+        (status = 400, description = "A file path outside the dataset"),
         (status = 404, description = "Job not found"),
     )
 )]
@@ -193,19 +207,12 @@ pub async fn complete_job(
 /// idempotent, composing nothing: every name and every path in that SQL came
 /// from this payload.
 pub async fn publish_relations(
-    ctx: Member,
+    member: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<PublishRelationsRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    let job = state
-        .db
-        .get_job(id.as_str())
-        .await
-        .ok_or(JobApiError::NotFound)?;
-    if job.created_by != ctx.user_id {
-        return Err(JobApiError::NotFound);
-    }
+    let job = owned_job(&state, &member, &id).await?;
 
     let relations = payload.relations;
     for file in relations.iter().flat_map(|r| &r.files) {
@@ -214,16 +221,13 @@ pub async fn publish_relations(
     let for_catalog = relations.clone();
     let updated = state
         .db
-        .update_job(id.as_str(), move |job| job.relations = relations)
+        .update_job(&id, move |job| job.relations = relations)
         .await
         .map_err(JobApiError::Internal)?;
 
-    // Register the output in the DuckLake catalog as one atomic snapshot —
-    // FIRE-AND-FORGET. The data is already durable at the sink, so a slow or
-    // failing catalog write must never delay (or fail) this call. The detached
-    // task does the remote footer reads off the request path; whatever it
-    // misses, the reconciler picks up on its next pass, from the relations this
-    // call just stored.
+    // Fire-and-forget: the data is already durable at the sink, so a slow or
+    // failing catalog write must not delay or fail this call. Whatever it
+    // misses, the reconciler picks up from the relations just stored.
     if !for_catalog.is_empty()
         && let (Some(catalog), Some((base, creds))) = (
             state.catalog.clone(),
@@ -247,10 +251,7 @@ pub async fn publish_relations(
         });
     }
 
-    match updated {
-        Some(job) => Ok(data_response(job).into_response()),
-        None => Err(JobApiError::NotFound),
-    }
+    updated.map(data_response).ok_or(JobApiError::NotFound)
 }
 
 #[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -262,39 +263,30 @@ pub async fn publish_relations(
     )
 )]
 pub async fn delete_job(
-    _: Member,
+    member: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    let job = state
-        .db
-        .get_job(id.as_str())
-        .await
-        .ok_or(JobApiError::NotFound)?;
-
+    let job = owned_job(&state, &member, &id).await?;
     if matches!(job.status, JobStatus::Pending | JobStatus::Running) {
         return Err(JobApiError::StillRunning);
     }
 
     state
         .db
-        .remove_job(id.as_str())
+        .remove_job(&id)
         .await
         .map_err(JobApiError::Internal)?;
 
-    // Drop the job's dataset from the catalog so governance stops listing a ghost
-    // — BYOS-safe (only catalog metadata, never the member's Parquet). Whatever
-    // this misses, the reconciler's deregister pass cleans up.
+    // Only the catalog's metadata goes; the Parquet at the sink is the member's.
+    // Whatever this misses, the reconciler's deregister pass cleans up.
     if let Some(catalog) = state.catalog.clone() {
-        let job_id = id.clone();
         tokio::spawn(async move {
-            if let Ok(Err(e)) =
-                tokio::task::spawn_blocking(move || catalog.unregister(&job_id)).await
-            {
+            if let Ok(Err(e)) = tokio::task::spawn_blocking(move || catalog.unregister(&id)).await {
                 tracing::warn!(error = %e, "catalog unregister failed (reconciler will retry)");
             }
         });
     }
 
-    Ok(StatusCode::NO_CONTENT.into_response())
+    Ok(StatusCode::NO_CONTENT)
 }

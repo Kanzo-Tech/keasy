@@ -84,17 +84,12 @@ pub struct Job {
     pub mode: RunMode,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub connection_ids: Vec<String>,
-    /// Keycloak `sub` of the member who created the job — the data-product owner.
-    /// Server-derived (never from the client); used for producer-scoped data
-    /// access (only the producer reads/runs the job's data) + DCAT publisher.
-    #[serde(default)]
+    /// Keycloak `sub` of the member who created the job, and the only one who
+    /// may see, change, run or read it. Taken from the token, never the body.
     pub created_by: String,
-    /// Connection the member chose as the output destination (where the GraphAr
-    /// output lands). The producer owns where their data product goes — output is
-    /// signed with this connection's cloud creds, under `{conn.url}/{job_id}`.
-    /// `None` falls back to the workspace substrate (transitional).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub sink_connection_id: Option<String>,
+    /// The sink the output lands in, under `{sink.url}/{job_id}`, signed with
+    /// that connection's credentials.
+    pub sink_connection_id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,
     /// What the run reported, verbatim and **opaque**: fossil's own run report,
@@ -160,9 +155,8 @@ pub struct CreateJobRequest {
     pub dcat_enabled: Option<bool>,
     #[serde(default)]
     pub connection_ids: Vec<String>,
-    /// The connection the member picked as the output destination (job config).
-    #[serde(default)]
-    pub sink_connection_id: Option<String>,
+    /// Where the output lands: a sink connection.
+    pub sink_connection_id: String,
     #[serde(default)]
     pub draft: bool,
 }

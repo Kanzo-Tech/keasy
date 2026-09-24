@@ -119,7 +119,7 @@ export function JobStudio() {
       draftJob.script ?? "",
       draftJob.name ?? "",
       draftJob.mode,
-      draftJob.sink_connection_id ?? null,
+      draftJob.sink_connection_id,
     );
     setSaved(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -156,8 +156,19 @@ export function JobStudio() {
     [connections, usedNames],
   );
 
+  // Every job lands in a sink. With one in the workspace there is nothing to
+  // choose, so it is chosen.
+  const sinks = useMemo(() => connections.filter((c) => c.direction === "sink"), [connections]);
+  useEffect(() => {
+    if (sinks.length === 1 && !useJobEditorStore.getState().sinkConnectionId) {
+      store.setSinkConnectionId(sinks[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sinks]);
+  const destination = store.sinkConnectionId;
+
   const errors = diagnostics.filter((d) => d.severity === 1).length;
-  const blocked = errors > 0 || !store.script.trim();
+  const blocked = errors > 0 || !store.script.trim() || !destination;
 
   // ── Saving ──────────────────────────────────────────────────────────────
 
@@ -168,12 +179,14 @@ export function JobStudio() {
         await api.jobs.update(draftId, { script: store.script, name });
         return draftId;
       }
+      if (!destination) throw new Error("Pick a destination before saving");
       const created = await api.jobs.create({
         script: store.script,
         name,
         mode: store.mode,
         draft: true,
         connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
+        sink_connection_id: destination,
       });
       return created.id;
     },
@@ -186,7 +199,7 @@ export function JobStudio() {
   });
 
   const save = draftMutation.mutate;
-  const savable = !!store.script.trim();
+  const savable = !!store.script.trim() && (!!draftId || !!destination);
 
   // The dependency is the CONTENT, not the callback: on a stable `[save]` this
   // would run once at mount and never again, and the strip would say "draft
@@ -203,6 +216,7 @@ export function JobStudio() {
     mutationFn: async () => {
       // The draft becomes the job: keasy has no promote endpoint, so the draft
       // is dropped and the real job created in its place.
+      if (!destination) throw new Error("Pick a destination before launching");
       if (draftId) await api.jobs.remove(draftId).catch(() => {});
       return api.jobs.create({
         script: store.script,
@@ -210,7 +224,7 @@ export function JobStudio() {
         mode: store.mode,
         dcat_enabled: store.dcatEnabled || undefined,
         connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
-        sink_connection_id: store.sinkConnectionId ?? undefined,
+        sink_connection_id: destination,
       });
     },
     onSuccess: async (job) => {

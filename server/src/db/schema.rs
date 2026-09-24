@@ -35,8 +35,8 @@ CREATE TABLE jobs (
     completed_at    TEXT,
     error           TEXT,
     connection_ids  TEXT NOT NULL DEFAULT '[]',
-    created_by      TEXT NOT NULL DEFAULT '',
-    sink_connection_id TEXT,
+    created_by      TEXT NOT NULL,
+    sink_connection_id TEXT NOT NULL,
     script          TEXT,
     manifest        TEXT,
     relations       TEXT

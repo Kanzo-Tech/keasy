@@ -142,7 +142,7 @@ mod tests {
             mode: RunMode::Integrated,
             connection_ids: vec![],
             created_by: String::new(),
-            sink_connection_id: None,
+            sink_connection_id: "sink".into(),
             script: None,
             manifest: None,
             relations,

@@ -1,8 +1,5 @@
 # syntax=docker/dockerfile:1
-# Dev image for keasy-server (hot reload). Build CONTEXT is `server/`: keasy is a
-# pure host — fossil runs in the browser (DuckDB-WASM + `@fossil-lang/*`), and the
-# only fossil code compiled here is the `fossil-run-status` wire contract, which
-# comes from the published git tag (see server/Cargo.toml), not a sibling checkout.
+# Dev image for keasy-server (hot reload). Build context: `server/`.
 
 FROM rust:1.90-bookworm
 
@@ -10,22 +7,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     clang libclang-dev curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# The catalog's DuckLake `azure` extension reads remote Parquet footers via the
-# Azure SDK, whose default transport looks for the CA bundle at the RHEL path
-# `/etc/pki/tls/certs/ca-bundle.crt` and ignores `azure_transport_option_type`
-# (duckdb/ducklake#272). Debian puts it elsewhere — symlink it so Azure
-# registration doesn't fail with "Problem with the SSL CA cert".
+# Same CA plumbing as the release image — see server/Dockerfile.
 RUN mkdir -p /etc/pki/tls/certs \
     && ln -sf /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
+ENV CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 RUN cargo install cargo-watch
 
-# Manifests only, for the RUNTIME compile (`src/` is bind-mounted at runtime). We
-# deliberately DON'T pre-build deps in the image: they compile ONCE at runtime into
-# the persistent `server-target` + `cargo-registry` volumes (see
-# docker-compose.dev.yml); later rebuilds reuse them and cargo-watch recompiles only
-# the changed crates. First `up` (or after `make clean`) pays a single cold compile
-# — covered by the server healthcheck's `start_period`.
+# Manifests only: `src/` is bind-mounted, and deps compile once at runtime into
+# the persistent `server-target` + `cargo-registry` volumes (docker-compose.dev.yml).
 WORKDIR /src/server
 COPY Cargo.toml Cargo.lock ./
 

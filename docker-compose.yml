@@ -93,12 +93,6 @@ services:
     environment:
       KEASY_BIND_ADDR: "0.0.0.0:8080"
       KEASY_DATA_DIR: /var/lib/keasy
-      # The catalog's DuckDB `azure`/`httpfs` extensions verify TLS via libcurl /
-      # OpenSSL, which don't auto-find the debian CA bundle — point them at it so
-      # reading remote Parquet footers (registration) doesn't fail with
-      # "Problem with the SSL CA cert". Both images carry ca-certificates here.
-      CURL_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
-      SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
       # DEV-ONLY placeholder. Prod injects it as a Swarm secret (*_FILE); never
       # commit a real secret here. Override locally via .env (gitignored).
       KEASY_SECRET_KEY: ${KEASY_SECRET_KEY:-dev-only-insecure-secret-key-change-me}

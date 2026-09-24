@@ -423,7 +423,7 @@ pub fn bearer(headers: &axum::http::HeaderMap) -> Option<&str> {
 pub type SharedValidator = Arc<Validator>;
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use axum::http::{HeaderMap, HeaderValue};
 
@@ -491,8 +491,8 @@ mod tests {
     use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
     use serde_json::json;
 
-    struct Realm {
-        issuer: String,
+    pub(crate) struct Realm {
+        pub(crate) issuer: String,
         key: EncodingKey,
         kid: String,
         /// Every request this realm has served. What the cooldown is asserted on:
@@ -508,7 +508,7 @@ mod tests {
 
     /// Serve a discovery document and a JWKS holding `kid`, and answer with the
     /// issuer they were published at.
-    async fn realm(kid: &str) -> Realm {
+    pub(crate) async fn realm(kid: &str) -> Realm {
         let pair = rcgen::KeyPair::generate().unwrap();
         let key = EncodingKey::from_ec_pem(pair.serialize_pem().as_bytes()).unwrap();
         let mut jwk = Jwk::from_encoding_key(&key, Algorithm::ES256).unwrap();
@@ -547,7 +547,7 @@ mod tests {
         }
     }
 
-    fn mint(realm: &Realm, claims: serde_json::Value) -> String {
+    pub(crate) fn mint(realm: &Realm, claims: serde_json::Value) -> String {
         let mut header = Header::new(Algorithm::ES256);
         header.kid = Some(realm.kid.clone());
         encode(&header, &claims, &realm.key).unwrap()
@@ -558,7 +558,7 @@ mod tests {
     }
 
     /// Everything a good token carries, before a test spoils one field of it.
-    fn good(realm: &Realm) -> serde_json::Value {
+    pub(crate) fn good(realm: &Realm) -> serde_json::Value {
         json!({
             "sub": "u-1",
             "iss": realm.issuer,

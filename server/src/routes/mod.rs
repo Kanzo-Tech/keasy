@@ -8,7 +8,7 @@ use axum::{Router, middleware};
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::set_header::SetResponseHeaderLayer;
-use tower_http::trace::TraceLayer;
+use tower_http::trace::{DefaultOnResponse, TraceLayer};
 
 use crate::AppState;
 use crate::middleware::bearer::bearer_required;
@@ -242,11 +242,24 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
     Router::new()
         .merge(health_routes)
         .merge(rated_routes)
-        .layer(axum::middleware::from_fn(
-            crate::middleware::audit::audit_log,
-        ))
         .layer(cors)
         .layer(security_headers)
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024))
-        .layer(TraceLayer::new_for_http())
+        .layer(
+            // The one request log. `bearer_required` records `user_id` into this
+            // span once the token verifies, so the response line names the caller.
+            TraceLayer::new_for_http()
+                .make_span_with(|request: &axum::http::Request<_>| {
+                    tracing::info_span!(
+                        "request",
+                        method = %request.method(),
+                        path = %request.uri().path(),
+                        user_id = tracing::field::Empty,
+                    )
+                })
+                .on_response(DefaultOnResponse::new().level(tracing::Level::INFO)),
+        )
 }
+
+#[cfg(test)]
+mod tests;

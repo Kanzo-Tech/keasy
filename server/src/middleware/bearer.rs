@@ -33,6 +33,7 @@ pub async fn bearer_required(
 ) -> Result<Response, TokenError> {
     let token = bearer(request.headers()).ok_or(TokenError::Missing)?;
     let claims = state.auth.verify(token).await?;
+    tracing::Span::current().record("user_id", claims.sub.as_str());
 
     let role = role_from(claims.roles_for(state.auth.client_id()));
     if role.is_none() {

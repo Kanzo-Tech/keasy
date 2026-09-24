@@ -1,5 +1,4 @@
 COMPOSE_DEV  = docker compose -f docker-compose.yml -f docker-compose.dev.yml
-COMPOSE_DEMO = docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.demo.yml
 COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 
 # ── Dev loop: when do I rebuild? ───────────────────────────────────────────
@@ -17,7 +16,7 @@ COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 # persistent `server-target` + `cargo-registry` volumes, so only the first `up`
 # (or one after `make clean`) pays a cold compile.
 
-.PHONY: help dev demo down prod build logs restart clean ps deploy-platform deploy-realm
+.PHONY: help dev down prod build logs restart clean ps deploy-platform deploy-realm
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -25,10 +24,6 @@ help: ## Show this help
 dev: ## Start/rebuild dev env (only needed for dep/Dockerfile changes — code hot-reloads)
 	@cp -n .env.example .env 2>/dev/null || true
 	$(COMPOSE_DEV) up --build -d
-
-demo: ## Start demo environment (release build, no hot-reload)
-	@cp -n .env.example .env 2>/dev/null || true
-	$(COMPOSE_DEMO) up --build -d
 
 down: ## Stop all services
 	$(COMPOSE_DEV) down

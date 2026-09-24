@@ -76,21 +76,6 @@ services:
       # is part of that source — `predev` runs `scripts/copy-fossil-wasm.mjs` — so it
       # must be mounted like src/public, else the container exits 1 (→ Caddy 502).
       - ./web/scripts:/app/scripts
-    healthcheck:
-      # `/` is a redirect to `/v1/auth/oidc-start`, a route only Caddy can reach — busybox
-      # wget follows it into Next, gets a 404 and calls the container unhealthy forever.
-      # Ask Node instead, and don't follow: any answer below 500 means Next is serving.
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://localhost:3000/',{redirect:'manual'}).then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))",
-        ]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
 
   # ── Dev object store (MinIO) ────────────────────────────────────────────────
   # The S3 substrate a developer can actually read and write, dev-only: prod

@@ -44,7 +44,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nhost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3",
+          "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nhost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'",
         ]
       interval: 30s
       timeout: 10s
@@ -136,6 +136,20 @@ services:
         condition: service_healthy
       keycloak-realm:
         condition: service_completed_successfully
+    healthcheck:
+      # `/` redirects to a route only Caddy can reach, so don't follow it: any
+      # answer below 500 means Next is serving.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/',{redirect:'manual'}).then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
 
   caddy:
     image: caddy:2-alpine

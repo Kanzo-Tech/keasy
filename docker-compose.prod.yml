@@ -1,39 +1,15 @@
-# Release-image overlay — the shipped Dockerfiles, run locally.
-# Usage: make prod  (docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build)
-#
-# What this is: the only way to build and run `server/Dockerfile`,
-# `web/Dockerfile` and `infra/caddy/Dockerfile` — the images Kubernetes and the
-# Swarm module actually deploy — without deploying anything. `make demo` is the
-# other release-ish path and is not the same thing: it runs `cargo run --release`
-# inside the DEV image, so it exercises the release profile but never the image.
-#
-# What this is NOT, despite the name: a deployment. Real deployment is
-# `infra/k8s` and the Swarm stacks in `infra/terraform/realm`, which bring their
-# own hostnames, secrets and realm. Everything here still inherits the base
-# compose's dev identity — a localhost issuer and `dev.tfvars` — so this runs at
-# http://localhost:3000 like the dev stack does, and pointing it at a domain
-# would not work.
-#
-# It used to not start at all, for two reasons, and both were the name's fault:
-#
-#  - the server `panic!`s in release without `KEASY_CORS_ORIGINS`
-#    (`routes/mod.rs`) and nothing here set it, so every `make prod` crash-looped;
-#  - Caddy was handed `Caddyfile.prod`, which asks Let's Encrypt for a
-#    certificate over Cloudflare DNS-01 for `{$KEASY_BASE_DOMAIN}` — defaulted to
-#    `localhost`, with no token. That challenge cannot succeed, and it is the
-#    deployment's Caddyfile anyway: the deployment is where it is used.
+# Release-image overlay: builds and runs the shipped Dockerfiles locally, with
+# the base compose's dev identity (localhost issuer, dev.tfvars). Not a
+# deployment — that is infra/terraform.
+# Usage: make prod
 
 services:
   server:
-    # Context is `server/`: `fossil-run-status` resolves as a git dep and no fossil
-    # binary ships — keasy is a pure host.
     build:
       context: ./server
       dockerfile: Dockerfile
     environment:
-      # Required in release. The fallback that allows every origin lives behind
-      # `cfg!(debug_assertions)`, so in a release build its absence is a panic
-      # rather than a default. Caddy answers on :3000; that is the only origin.
+      # A release build panics without it.
       KEASY_CORS_ORIGINS: http://localhost:3000
       RUST_LOG: info
 
@@ -41,20 +17,8 @@ services:
     build:
       context: ./web
       dockerfile: Dockerfile
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(()=>process.exit(0)).catch(()=>process.exit(1))"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
 
   caddy:
-    # The real Caddy image (it carries the DNS provider plugin the deployment
-    # needs), serving the base compose's localhost Caddyfile — there is no
-    # certificate to get here, and nothing to get it from.
-    build:
-      context: ./infra/caddy
-      dockerfile: Dockerfile
     depends_on:
       web:
         condition: service_healthy

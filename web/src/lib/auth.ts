@@ -35,7 +35,7 @@ import {
 /**
  * A configuration value, from `NAME` or from the file `NAME_FILE` points at.
  *
- * The `_FILE` form is how a Swarm or Kubernetes secret arrives — mounted, not
+ * The `_FILE` form is how a Swarm secret arrives — mounted, not
  * exported — and it is the same contract the Rust side has always read. A
  * secret that is only ever an environment variable is one that shows up in
  * `docker inspect`.

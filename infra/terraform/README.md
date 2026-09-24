@@ -8,7 +8,6 @@ scripts, and the Rust `control-plane` CLI.
 ```
 platform/   phase 1 — keasy-edge overlay, base secrets, Traefik + Keycloak + Postgres
 realm/      phase 2 — the keasy realm, SSO IdP, and per-tenant clients/roles/users/stacks
-spike/      the docker_service gate (one tenant; runtime-validate before trusting the model)
 ```
 
 ## Two-phase apply (the keycloak provider can't create Keycloak and configure it at once)
@@ -48,10 +47,7 @@ resource server — it validates the bearer token the web forwards against the r
 and checks `aud` against the realm-wide bearer-only `keasy-api` client, so it needs no
 secret of its own. `/v1` is not routed from the edge; it reaches the API through the web.
 
-## Status / gates
-- All three modules pass `terraform validate` against the real provider schemas.
-- **Runtime gates to confirm on a manager** (then the model is proven):
-  1. `spike/` — `docker_service` does secret mounts + Traefik routing + start-first
-     rolling update with rollback (plan risk #1).
-  2. IdP **auto-link by email** without the "account exists" prompt may need a custom
-     first-broker-login flow (see `realm/idp.tf`, plan risk #2).
+## Status
+- Both modules pass `terraform validate` against the real provider schemas.
+- IdP **auto-link by email** without the "account exists" prompt uses the custom
+  first-broker-login flow in `realm/idp_flow.tf`.

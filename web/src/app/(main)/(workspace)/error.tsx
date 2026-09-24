@@ -2,6 +2,7 @@
 
 import {
   Button,
+  ShellMain,
 } from "@kanzo-tech/ui";
 import Link from "next/link";
 
@@ -13,7 +14,7 @@ export default function WorkspaceError({
   reset: () => void;
 }) {
   return (
-    <div className="flex-1 flex items-center justify-center">
+    <ShellMain className="items-center justify-center">
       <div className="text-center space-y-3">
         <p className="text-sm font-medium text-destructive">Something went wrong</p>
         <p className="text-xs text-muted-foreground max-w-sm">{error.message}</p>
@@ -24,6 +25,6 @@ export default function WorkspaceError({
           </Button>
         </div>
       </div>
-    </div>
+    </ShellMain>
   );
 }

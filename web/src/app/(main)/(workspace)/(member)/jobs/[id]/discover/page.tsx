@@ -10,6 +10,7 @@ import { DiscoveryProvider } from "@/components/discovery/store";
 import { useCorpusSchema } from "@/components/discovery/use-discovery-store";
 import { useGraphSchema } from "@/components/discovery/use-graph-schema";
 import { GraphRootProvider, useGraph, type GraphApi } from "@kanzo-tech/graph";
+import { ShellMain } from "@kanzo-tech/ui";
 import { undrawnEdges, useCorpusSource } from "@/components/discovery/use-corpus-source";
 import { ClassLegend } from "@/components/discovery/class-legend";
 import { NodeInfo } from "@/components/discovery/node-info";
@@ -33,9 +34,9 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
 
   if (jobLoading || !job?.manifest) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <ShellMain className="items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
+      </ShellMain>
     );
   }
 
@@ -131,16 +132,7 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
 
   return (
     <WorkspaceLayout
-      backHref={`/jobs/${jobId}`}
-      backLabel="Back to job"
       panels={panels}
-      floatingControls={
-        <FloatingControls
-          api={graph}
-          simulationRunning={simulate}
-          onToggleSimulation={() => setSimulate((v) => !v)}
-        />
-      }
       statusLeft={
         <>
           <span className="tabular-nums">
@@ -178,6 +170,13 @@ function DiscoveryWorkspace({ jobId }: { jobId: string }) {
             value={vertexType}
             onChange={setChosenType}
             undrawn={undrawn}
+          />
+        </div>
+        <div className="absolute bottom-3 end-3 z-10">
+          <FloatingControls
+            api={graph}
+            simulationRunning={simulate}
+            onToggleSimulation={() => setSimulate((v) => !v)}
           />
         </div>
       </GraphRootProvider>

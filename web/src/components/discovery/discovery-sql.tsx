@@ -7,7 +7,6 @@ import {
   Button,
   ScrollArea,
 } from "@kanzo-tech/ui";
-import { PanelHeader } from "@/components/layout/workspace-layout";
 import { useCorpus } from "./use-discovery-store";
 
 /**
@@ -40,8 +39,6 @@ export function DiscoverySql() {
 
   return (
     <div className="flex flex-col h-full">
-      <PanelHeader title="SQL" />
-
       <div className="shrink-0 border-b p-2 space-y-2">
         <textarea
           value={sql}

@@ -53,7 +53,6 @@ import {
 } from "@kanzo-tech/ai";
 import { MessageMarkdown } from "@kanzo-tech/ai/markdown";
 import { useCoordinator } from "./use-discovery-store";
-import { PanelHeader } from "@/components/layout/workspace-layout";
 import { ApiError, api } from "@/lib/api";
 import { sseFailure } from "@/lib/api/sse";
 import { queryKeys } from "@/lib/query-keys";
@@ -543,7 +542,6 @@ export function DiscoveryAsk({ jobId, graphSchema }: DiscoveryAskProps) {
   if (!loadingAiProviders && !provider) {
     return (
       <div className="flex h-full flex-col">
-        <PanelHeader title="Ask" />
         <EmptyState
           icon={AlertCircle}
           title="AI not configured"
@@ -560,8 +558,6 @@ export function DiscoveryAsk({ jobId, graphSchema }: DiscoveryAskProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <PanelHeader title="Ask" />
-
       <Conversation>
         <ConversationContent className="px-2 py-3">
           <Show when={turns.length === 0}>

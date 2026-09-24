@@ -8,7 +8,6 @@ import {
   ScrollArea,
 } from "@kanzo-tech/ui";
 import { EmptyState } from "@/components/shared/empty-state";
-import { PanelHeader } from "@/components/layout/workspace-layout";
 import type { GraphSchema } from "@/lib/graph-schema";
 import type { Query } from "@uwdata/mosaic-sql";
 import { useCoordinator } from "./use-discovery-store";
@@ -59,7 +58,6 @@ export function RuleBuilder({ jobId, schema }: RuleBuilderProps) {
   if (schema.types.length === 0) {
     return (
       <div className="flex flex-col h-full">
-        <PanelHeader title="Rules" />
         <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground">No schema.</div>
       </div>
     );
@@ -68,7 +66,6 @@ export function RuleBuilder({ jobId, schema }: RuleBuilderProps) {
   if (rules.length === 0) {
     return (
       <div className="flex flex-col h-full">
-        <PanelHeader title="Rules" />
         <EmptyState icon={ShieldCheck} title="No rules" description="Add data quality rules to validate your dataset." action={<Button variant="outline" size="sm" onClick={addRule}><Plus size={14} className="mr-1" /> Add rule</Button>} />
       </div>
     );

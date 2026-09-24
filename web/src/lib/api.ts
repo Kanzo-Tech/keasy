@@ -212,7 +212,7 @@ export const api = {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        throw new ApiError(body?.error ?? "unknown", body?.message ?? "Failed to save");
+        throw new ApiError(body?.error ?? "unknown", body?.message ?? "Failed to save", res.status);
       }
       const json = await res.json();
       return json?.data ?? json;

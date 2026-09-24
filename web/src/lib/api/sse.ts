@@ -71,7 +71,7 @@ export async function* fetchSSE(
             (text.error as Record<string, unknown>).code ?? "request_error",
           )
         : "request_error";
-    throw new ApiError(code, msg);
+    throw new ApiError(code, msg, res.status);
   }
 
   if (!res.body) return;

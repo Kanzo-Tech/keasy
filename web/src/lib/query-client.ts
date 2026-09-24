@@ -21,8 +21,8 @@ export const queryClient = new QueryClient({
 
 function handleAuthError(error: unknown) {
   if (redirected) return;
-  const code = (error as { code?: string })?.code;
-  if (code === "auth/session_required") {
+  const { code, status } = (error ?? {}) as { code?: string; status?: number };
+  if (status === 401) {
     redirected = true;
     window.location.href = "/api/auth/signin";
   } else if (code === "rbac/no_membership") {

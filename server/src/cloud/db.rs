@@ -95,7 +95,6 @@ impl Database {
             None => HashMap::new(),
         };
         Ok(Some(CloudAccount {
-            id: summary.id,
             name: summary.name,
             provider_id: summary.provider_id,
             auth_method: summary.auth_method,

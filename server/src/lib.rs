@@ -1,39 +1,128 @@
-// server/src/lib.rs — Public API for integration tests.
-// The binary crate (main.rs) uses `mod` declarations for all modules.
-// This lib.rs re-exports what integration tests need.
-
-pub mod ai;
-pub mod assistant;
-pub mod auth;
-pub mod catalog;
-pub mod cloud;
-pub mod config;
-pub mod connections;
-pub mod crypto;
-pub mod db;
-pub mod discovery;
-pub mod error;
-pub mod jobs;
+mod ai;
+mod assistant;
+mod auth;
+mod catalog;
+mod cloud;
+mod config;
+mod connections;
+mod crypto;
+mod db;
+mod discovery;
+mod error;
+mod jobs;
 pub mod openapi;
-pub mod routes;
-pub mod settings;
+mod routes;
+mod settings;
 
-// Re-export types integration tests need
-pub use db::Database;
-
+use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
+
+use tracing::info;
+
+use db::Database;
 
 #[derive(Clone)]
-pub struct AppState {
-    pub db: Database,
-    /// This instance's workspace slug (`KEASY_ORG_ALIAS`). The "current" entry in the
-    /// workspace switcher. None when not configured.
-    pub workspace_slug: Option<String>,
-    /// The whole of this server's authentication: a bearer token verified
-    /// against the realm's JWKS. Required — there is no unauthenticated mode.
-    pub auth: auth::jwt::SharedValidator,
-    /// Server-side DuckLake catalog — the authority over output metadata. `None`
-    /// when it could not be opened at startup (the host still serves jobs; the
-    /// reconciler picks up unregistered datasets once it is available).
-    pub catalog: Option<Arc<catalog::Catalog>>,
+struct AppState {
+    db: Database,
+    /// This instance's workspace slug (`KEASY_ORG_ALIAS`), the "current" entry
+    /// in the workspace switcher.
+    workspace_slug: Option<String>,
+    /// Verifies the bearer token every protected request carries.
+    auth: auth::jwt::SharedValidator,
+    /// The DuckLake catalog: the authority over output metadata.
+    catalog: Arc<catalog::Catalog>,
+}
+
+/// Configure from the environment, open the stores and serve until Ctrl+C.
+pub async fn run() -> Result<(), String> {
+    let config = config::ServerConfig::from_env();
+
+    std::fs::create_dir_all(&config.data_dir)
+        .map_err(|e| format!("failed to create data dir {:?}: {e}", config.data_dir))?;
+
+    let db_path = config.data_dir.join("keasy.db");
+    let db = Database::open(&db_path, config.secret_key)
+        .map_err(|e| format!("failed to open the database: {e}"))?;
+    info!(path = %db_path.display(), "Database opened");
+
+    if !db
+        .verify_secret_key()
+        .await
+        .map_err(|e| format!("failed to read the stored secrets: {e}"))?
+    {
+        return Err(
+            "KEASY_SECRET_KEY does not open the secrets this database stores. \
+             Set the key it was created with, or delete the data volume to start fresh"
+                .into(),
+        );
+    }
+
+    // The workspace's legal identity, seeded once from its display name.
+    let identity = db
+        .get_workspace_identity()
+        .await
+        .map_err(|e| format!("failed to read the workspace identity: {e}"))?;
+    if identity.is_none() {
+        db.set_workspace_identity(&settings::org::WorkspaceIdentity {
+            name: config.workspace_name.clone(),
+            identity: settings::org::OrgIdentity {
+                legal_name: config.workspace_name.clone(),
+                country: "EU".to_string(),
+                ..Default::default()
+            },
+        })
+        .await
+        .map_err(|e| format!("failed to seed the workspace identity: {e}"))?;
+    }
+
+    // After the key check: declaring a connection writes encrypted credentials.
+    connections::bootstrap::ensure_declared_connections(&db).await;
+
+    let catalog = catalog::Catalog::open(&config.data_dir)
+        .map_err(|e| format!("failed to open the DuckLake catalog: {e}"))?;
+    info!("DuckLake catalog opened");
+
+    // Built without touching the network: Keycloak is routinely not up yet, and
+    // the keys are fetched on the first request that needs them.
+    let auth = Arc::new(auth::jwt::Validator::new(
+        &config.oidc_issuer_url,
+        &config.oidc_audience,
+        &config.oidc_client_id,
+        config.oidc_internal_base_url.as_deref(),
+    ));
+    info!(
+        issuer = %config.oidc_issuer_url,
+        audience = %config.oidc_audience,
+        client_id = %config.oidc_client_id,
+        "Bearer tokens validated against"
+    );
+
+    let state = AppState {
+        db,
+        workspace_slug: config.workspace_slug,
+        auth,
+        catalog: Arc::new(catalog),
+    };
+
+    // Registers what a completion missed and forgets what was deleted.
+    catalog::reconcile::spawn(state.clone(), Duration::from_secs(60));
+
+    let app = routes::build_router(state, config.cors_origins);
+    let listener = tokio::net::TcpListener::bind(config.bind_addr)
+        .await
+        .map_err(|e| format!("failed to bind to {}: {e}", config.bind_addr))?;
+    info!(addr = %config.bind_addr, "Keasy server listening");
+
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(async {
+        if tokio::signal::ctrl_c().await.is_ok() {
+            info!("Shutdown signal received");
+        }
+    })
+    .await
+    .map_err(|e| format!("server error: {e}"))
 }

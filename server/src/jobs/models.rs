@@ -151,6 +151,7 @@ pub struct CreateJobRequest {
     pub script: String,
     pub name: Option<String>,
     pub mode: Option<RunMode>,
+    #[expect(dead_code, reason = "DCAT publication is accepted but not built yet")]
     pub dcat_enabled: Option<bool>,
     #[serde(default)]
     pub connection_ids: Vec<String>,

@@ -119,7 +119,7 @@
           "Catalog"
         ],
         "summary": "List the workspace catalog: every registered dataset (a completed job's\noutput) with its types, columns and row counts.",
-        "description": "Governance metadata, and therefore the owner's: Data Catalog is a page on the\nowner's side of the app (`/datasets`), and it is the index over what the\nwhole workspace produced rather than over what the caller produced. The\nmember reaches their own output through the job that made it, which carries\nthe bytes; this carries none.",
+        "description": "Governance metadata, and therefore the owner's: it is the index over what\nthe whole workspace produced. The member reaches their own output through\nthe job that made it, which carries the bytes; this carries none.",
         "operationId": "list_catalog_datasets",
         "responses": {
           "200": {
@@ -131,9 +131,6 @@
                 }
               }
             }
-          },
-          "503": {
-            "description": "Catalog unavailable"
           }
         }
       }

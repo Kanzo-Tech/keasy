@@ -45,7 +45,7 @@ impl Harness {
                 "keasy-ws-dev",
                 None,
             )),
-            catalog: Some(Arc::new(catalog)),
+            catalog: Arc::new(catalog),
         };
         Self {
             app: super::build_router(state, None),

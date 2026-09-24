@@ -46,9 +46,7 @@ fn orphan_schemas(registered: &HashSet<String>, live_job_ids: &[String]) -> Vec<
 /// One pass: register every completed job whose output the catalog doesn't have.
 /// Idempotent and best-effort. Returns how many datasets it registered.
 pub async fn reconcile_once(state: &AppState) -> usize {
-    let Some(catalog) = state.catalog.clone() else {
-        return 0;
-    };
+    let catalog = state.catalog.clone();
 
     // Snapshot what's already registered (one catalog read), then diff.
     let registered = {
@@ -268,7 +266,7 @@ mod tests {
                 "keasy-ws-test",
                 None,
             )),
-            catalog: Some(catalog.clone()),
+            catalog: catalog.clone(),
         };
 
         reconcile_once(&state).await;

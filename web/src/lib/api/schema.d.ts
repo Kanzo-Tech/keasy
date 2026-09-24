@@ -104,11 +104,9 @@ export interface paths {
         /**
          * List the workspace catalog: every registered dataset (a completed job's
          *     output) with its types, columns and row counts.
-         * @description Governance metadata, and therefore the owner's: Data Catalog is a page on the
-         *     owner's side of the app (`/datasets`), and it is the index over what the
-         *     whole workspace produced rather than over what the caller produced. The
-         *     member reaches their own output through the job that made it, which carries
-         *     the bytes; this carries none.
+         * @description Governance metadata, and therefore the owner's: it is the index over what
+         *     the whole workspace produced. The member reaches their own output through
+         *     the job that made it, which carries the bytes; this carries none.
          */
         get: operations["list_catalog_datasets"];
         put?: never;
@@ -998,13 +996,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DatasetsResponse"];
                 };
-            };
-            /** @description Catalog unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

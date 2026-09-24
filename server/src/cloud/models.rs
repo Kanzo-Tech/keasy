@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub struct CloudAccount {
-    pub id: String,
     pub name: String,
     pub provider_id: String,
     pub auth_method: Option<String>,

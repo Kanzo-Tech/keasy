@@ -222,11 +222,9 @@ pub async fn publish_relations(
     // failing catalog write must not delay or fail this call. Whatever it
     // misses, the reconciler picks up from the relations just stored.
     if !for_catalog.is_empty()
-        && let (Some(catalog), Some((base, creds))) = (
-            state.catalog.clone(),
-            state.db.job_output_target(&job).await?,
-        )
+        && let Some((base, creds)) = state.db.job_output_target(&job).await?
     {
+        let catalog = state.catalog.clone();
         let dest = crate::jobs::dataset_dest(&base, &id);
         let job_id = id.clone();
         tokio::spawn(async move {
@@ -269,13 +267,12 @@ pub async fn delete_job(
 
     // Only the catalog's metadata goes; the Parquet at the sink is the member's.
     // Whatever this misses, the reconciler's deregister pass cleans up.
-    if let Some(catalog) = state.catalog.clone() {
-        tokio::spawn(async move {
-            if let Ok(Err(e)) = tokio::task::spawn_blocking(move || catalog.unregister(&id)).await {
-                tracing::warn!(error = %e, "catalog unregister failed (reconciler will retry)");
-            }
-        });
-    }
+    let catalog = state.catalog.clone();
+    tokio::spawn(async move {
+        if let Ok(Err(e)) = tokio::task::spawn_blocking(move || catalog.unregister(&id)).await {
+            tracing::warn!(error = %e, "catalog unregister failed (reconciler will retry)");
+        }
+    });
 
     Ok(StatusCode::NO_CONTENT)
 }

@@ -27,7 +27,7 @@ interface AssistantWizardState {
   prevStep: () => void;
   setConnRowSelection: (selection: RowSelectionState) => void;
   setDomain: (domain: string) => void;
-  setReqs: (reqs: ReqEntry[]) => void;
+  setReqs: (update: ReqEntry[] | ((reqs: ReqEntry[]) => ReqEntry[])) => void;
 
   // File selection
   toggleFile: (connId: string, path: string) => void;
@@ -58,7 +58,7 @@ export const useAssistantWizardStore = create<AssistantWizardState>((set, get) =
   prevStep: () => set((s) => ({ step: Math.max(0, s.step - 1) })),
   setConnRowSelection: (connRowSelection) => set({ connRowSelection }),
   setDomain: (domain) => set({ domain }),
-  setReqs: (reqs) => set({ reqs }),
+  setReqs: (update) => set((s) => ({ reqs: typeof update === "function" ? update(s.reqs) : update })),
 
   toggleFile: (connId, path) => set((s) => {
     const next = new Map(s.fileSelection);

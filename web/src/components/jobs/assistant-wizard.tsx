@@ -402,32 +402,18 @@ function StepRequirements({
   streamText,
 }: {
   reqs: ReqEntry[];
-  setReqs: (reqs: ReqEntry[]) => void;
+  setReqs: (update: (reqs: ReqEntry[]) => ReqEntry[]) => void;
   isLoading: boolean;
   schemasLoading: boolean;
   hasError: boolean;
   onRetry: () => void;
   streamText: string;
 }) {
-  const addCustom = () => {
-    setReqs([
-      ...reqs,
-      {
-        id: `custom-${Date.now()}`,
-        question: "",
-        rationale: "Custom requirement",
-        enabled: true,
-      },
+  const addCustom = () =>
+    setReqs((prev) => [
+      ...prev,
+      { id: `custom-${Date.now()}`, question: "", rationale: "Custom requirement", enabled: true },
     ]);
-  };
-
-  const updateQuestion = (id: string, question: string) => {
-    setReqs(reqs.map((r) => (r.id === id ? { ...r, question } : r)));
-  };
-
-  const removeReq = (id: string) => {
-    setReqs(reqs.filter((r) => r.id !== id));
-  };
 
   const rowSelection = useMemo(() => {
     const sel: RowSelectionState = {};
@@ -446,7 +432,10 @@ function StepRequirements({
         <div className="flex flex-col gap-0.5" onClick={(e) => e.stopPropagation()}>
           <Input
             value={row.original.question}
-            onChange={(e) => updateQuestion(row.original.id, e.target.value)}
+            onChange={(e) => {
+              const { value } = e.target;
+              setReqs((prev) => prev.map((r) => (r.id === row.original.id ? { ...r, question: value } : r)));
+            }}
             placeholder="Type a requirement..."
             className="border-0 shadow-none focus-visible:ring-0 text-sm h-7 px-0"
           />
@@ -473,7 +462,7 @@ function StepRequirements({
           </MenuTrigger>
           <MenuContent>
             <MenuItem
-              onSelect={() => removeReq(row.original.id)}
+              onSelect={() => setReqs((prev) => prev.filter((r) => r.id !== row.original.id))}
               value="remove"
               variant="destructive"
             >
@@ -483,7 +472,7 @@ function StepRequirements({
         </Menu>
       ),
     },
-  ], []); // eslint-disable-line react-hooks/exhaustive-deps
+  ], [setReqs]);
 
   const table = useReactTable({
     data: reqs,
@@ -492,7 +481,7 @@ function StepRequirements({
     getRowId: (row) => row.id,
     onRowSelectionChange: (updater) => {
       const next = typeof updater === "function" ? updater(rowSelection) : updater;
-      setReqs(reqs.map((r) => ({ ...r, enabled: !!next[r.id] })));
+      setReqs((prev) => prev.map((r) => ({ ...r, enabled: !!next[r.id] })));
     },
     state: { rowSelection },
   });

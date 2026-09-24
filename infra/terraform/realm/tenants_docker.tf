@@ -132,6 +132,42 @@ resource "docker_service" "server" {
   }
 }
 
+# The web's session store: tokens behind the cookie's ticket. Unrouted, on the
+# overlay only. No volume — losing it signs people out, nothing more.
+resource "docker_service" "sessions" {
+  for_each = local.stack_tenants
+  name     = "keasy-ws-${each.key}-sessions"
+
+  task_spec {
+    container_spec {
+      image = var.valkey_image
+    }
+    resources {
+      limits {
+        nano_cpus    = 250000000
+        memory_bytes = 134217728
+      }
+    }
+    restart_policy {
+      condition = "any"
+    }
+    networks_advanced {
+      name = var.network_name
+    }
+  }
+
+  mode {
+    replicated {
+      replicas = 1
+    }
+  }
+
+  labels {
+    label = "com.keasy.workspace"
+    value = "keasy-ws-${each.key}"
+  }
+}
+
 resource "docker_service" "web" {
   for_each = local.stack_tenants
   name     = "keasy-ws-${each.key}-web"
@@ -145,9 +181,9 @@ resource "docker_service" "web" {
         KEASY_OIDC_CLIENT_ID          = "keasy-ws-${each.key}"
         KEASY_OIDC_CLIENT_SECRET_FILE = "/run/secrets/oidc"
         KEASY_OIDC_INTERNAL_BASE_URL  = "http://keycloak:8080"
-        # Seals the session cookie. Rotating it signs everyone out, which is the
-        # only "sign out everywhere" a stateless store has.
+        # Seals the session cookie, which carries only a ticket into Valkey.
         KEASY_SESSION_SECRET_FILE = "/run/secrets/session"
+        KEASY_SESSION_STORE_URL   = "redis://keasy-ws-${each.key}-sessions:6379"
         # Where the BFF forwards `/v1` once it has attached the bearer token.
         KEASY_API_URL = "http://keasy-ws-${each.key}-server:8080"
       }

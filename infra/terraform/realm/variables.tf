@@ -60,6 +60,10 @@ variable "server_image" {
 variable "web_image" {
   type = string
 }
+variable "valkey_image" {
+  type    = string
+  default = "valkey/valkey:8.1-alpine"
+}
 
 # ── The tenant fleet — the declarative registry (operator-local tfvars) ───────
 variable "tenants" {

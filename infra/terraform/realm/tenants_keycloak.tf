@@ -68,7 +68,7 @@ resource "keycloak_openid_audience_protocol_mapper" "api_audience" {
   client_id                = keycloak_openid_client.tenant[each.key].id
   name                     = "keasy-api-audience"
   included_client_audience = keycloak_openid_client.api.client_id
-  add_to_id_token          = true
+  add_to_id_token          = false
   add_to_access_token      = true
 }
 
@@ -96,10 +96,9 @@ resource "keycloak_role" "member" {
 # sides and lost the one `@kanzo-tech/auth` ships for free — its claim reader
 # knows this name and no other, and a colon is not a JWT naming convention.
 #
-# On BOTH tokens, and both are load-bearing: the ID token is what the BFF holds
-# and forwards, and the access token is what anything else validating this realm
-# would be sent. Roles on one only is the failure mode that is quiet in both
-# directions.
+# On BOTH tokens, and both are load-bearing: the BFF reads the session's role
+# from the ID token, and the API authorizes the access token the BFF forwards.
+# Roles on one only is the failure mode that is quiet in both directions.
 resource "keycloak_generic_protocol_mapper" "client_roles" {
   for_each        = var.tenants
   realm_id        = keycloak_realm.keasy.id

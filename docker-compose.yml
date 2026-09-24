@@ -119,8 +119,12 @@ services:
       # Seals the session cookie. DEV-ONLY placeholder; prod mounts a Swarm
       # secret at KEASY_SESSION_SECRET_FILE.
       KEASY_SESSION_SECRET: ${KEASY_SESSION_SECRET:-dev-only-insecure-session-secret-change-me}
+      # The cookie carries a ticket; the tokens behind it live here.
+      KEASY_SESSION_STORE_URL: redis://valkey:6379
     depends_on:
       server:
+        condition: service_healthy
+      valkey:
         condition: service_healthy
       keycloak-realm:
         condition: service_completed_successfully
@@ -138,6 +142,14 @@ services:
       timeout: 3s
       retries: 10
       start_period: 10s
+
+  valkey:
+    image: valkey/valkey:8.1-alpine
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   caddy:
     image: caddy:2-alpine

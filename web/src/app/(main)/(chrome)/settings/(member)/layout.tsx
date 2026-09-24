@@ -1,16 +1,8 @@
-import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { workspaceRole } from "@/lib/roles";
+import { requireRole } from "@/lib/roles";
 
-// Member-only settings (cloud accounts, AI) — the data plane's own infrastructure.
-// Owners have no data plane; they're sent back to their accessible settings.
-export default async function MemberSettingsLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const role = workspaceRole(await getSession());
-  if (role === null) redirect("/api/auth/signin");
-  if (role !== "member") redirect("/settings/preferences");
-  return <>{children}</>;
+// Cloud accounts and AI are the data plane's own infrastructure; an owner has none.
+export default async function MemberSettingsLayout({ children }: { children: React.ReactNode }) {
+  requireRole(await getSession(), "member", "/settings/preferences");
+  return children;
 }

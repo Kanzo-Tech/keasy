@@ -1,4 +1,5 @@
 import { can, type Session } from "@kanzo-tech/auth";
+import { redirect } from "next/navigation";
 
 /**
  * The two roles a workspace grants, and the one place this half of the
@@ -32,4 +33,13 @@ export function workspaceRole(session: Session | null | undefined): WorkspaceRol
   if (owner) return "owner";
   if (member) return "member";
   return null;
+}
+
+/**
+ * A layout's guard for one plane. A session holding no role never gets here —
+ * `(main)/layout.tsx` has already refused it — so what is left is the other
+ * plane, which is sent `elsewhere`.
+ */
+export function requireRole(session: Session | null, role: WorkspaceRole, elsewhere: string) {
+  if (workspaceRole(session) !== role) redirect(elsewhere);
 }

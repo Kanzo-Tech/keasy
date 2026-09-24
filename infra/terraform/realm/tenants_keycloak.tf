@@ -137,6 +137,13 @@ resource "keycloak_user" "u" {
   attributes = {
     workspaces = join("##", local.user_workspaces[each.value])
   }
+  dynamic "initial_password" {
+    for_each = var.dev_user_password == null ? [] : [var.dev_user_password]
+    content {
+      value     = initial_password.value
+      temporary = false
+    }
+  }
   # The User Profile must know `workspaces` before a user can carry it —
   # Keycloak drops an undeclared attribute without saying so.
   depends_on = [keycloak_realm_user_profile.keasy]

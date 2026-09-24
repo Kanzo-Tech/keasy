@@ -21,22 +21,25 @@
 # field on these resources, and reordering them silently changes behaviour.
 
 resource "keycloak_authentication_flow" "sso_silent_link" {
+  count       = local.sso
   realm_id    = keycloak_realm.keasy.id
   alias       = "sso-silent-link"
   description = "First broker login: link to the pre-declared user by email, without prompting."
 }
 
 resource "keycloak_authentication_execution" "create_user_if_unique" {
+  count             = local.sso
   realm_id          = keycloak_realm.keasy.id
-  parent_flow_alias = keycloak_authentication_flow.sso_silent_link.alias
+  parent_flow_alias = keycloak_authentication_flow.sso_silent_link[0].alias
   authenticator     = "idp-create-user-if-unique"
   requirement       = "ALTERNATIVE"
 }
 
 resource "keycloak_authentication_subflow" "handle_existing" {
+  count             = local.sso
   realm_id          = keycloak_realm.keasy.id
   alias             = "handle-existing-account"
-  parent_flow_alias = keycloak_authentication_flow.sso_silent_link.alias
+  parent_flow_alias = keycloak_authentication_flow.sso_silent_link[0].alias
   provider_id       = "basic-flow"
   requirement       = "ALTERNATIVE"
 
@@ -44,8 +47,9 @@ resource "keycloak_authentication_subflow" "handle_existing" {
 }
 
 resource "keycloak_authentication_execution" "auto_link" {
+  count             = local.sso
   realm_id          = keycloak_realm.keasy.id
-  parent_flow_alias = keycloak_authentication_subflow.handle_existing.alias
+  parent_flow_alias = keycloak_authentication_subflow.handle_existing[0].alias
   authenticator     = "idp-auto-link"
   requirement       = "REQUIRED"
 }

@@ -51,17 +51,6 @@ services:
       retries: 10
       start_period: 300s
 
-  # ── Dev SSO IdP (Dex) ───────────────────────────────────────────────────────
-  # Production-grade dev: the SAME SSO federation path as prod, offline. Keycloak
-  # federates to this; login as dev@keasy.local / password.
-  dex:
-    image: ghcr.io/dexidp/dex:v2.41.1
-    command: ["dex", "serve", "/etc/dex/config.yaml"]
-    volumes:
-      - ./infra/dev/dex.yaml:/etc/dex/config.yaml:ro
-    ports:
-      - "5556:5556"
-
   # ── Realm provisioning — the SAME Terraform realm module as prod ─────────────
   # deploy_stacks=false: provisions identity (realm/IdP/clients/users/roles) against the
   # compose Keycloak; the app itself runs as the compose services below (fast loop). The
@@ -80,8 +69,6 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
-      dex:
-        condition: service_started
 
   # ── Application ─────────────────────────────────────────────────────────────
 

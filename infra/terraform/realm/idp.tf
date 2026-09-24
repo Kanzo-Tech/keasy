@@ -1,8 +1,13 @@
 # SSO: users authenticate at their upstream IdP; Keycloak links to the pre-declared
 # keycloak_user by email (trust_email). No passwords, no SMTP. `provider_id` left at the
 # default ("oidc") so any OIDC IdP works; for Google set idp.authorization_url/token_url
-# to Google's endpoints.
+# to Google's endpoints. Dev declares no IdP and logs in with var.dev_user_password.
+locals {
+  sso = var.idp == null ? 0 : 1
+}
+
 resource "keycloak_oidc_identity_provider" "sso" {
+  count             = local.sso
   realm             = keycloak_realm.keasy.id
   alias             = var.idp.alias
   display_name      = var.idp.display_name
@@ -27,5 +32,5 @@ resource "keycloak_oidc_identity_provider" "sso" {
   # unset Terraform never owns it and whatever an old apply wrote into Keycloak
   # outlives every apply since — which is how a flow this config had already deleted
   # stayed bound here and made Keycloak answer its own DELETE with a 500.
-  first_broker_login_flow_alias = keycloak_authentication_flow.sso_silent_link.alias
+  first_broker_login_flow_alias = keycloak_authentication_flow.sso_silent_link[0].alias
 }

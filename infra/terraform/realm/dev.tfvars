@@ -1,6 +1,6 @@
-# Dev registry for `make dev` — committed (no real PII/secrets; the user is a static Dex
-# account). Applied by the docker-compose `keycloak-realm` service with deploy_stacks=false
-# (the app runs via compose, not docker_service). Prod uses terraform.tfvars (gitignored).
+# Dev registry for `make dev` — committed (no real PII or secrets). Applied by the compose
+# `keycloak-realm` service with deploy_stacks=false: the app runs as compose services.
+# Prod uses terraform.tfvars (gitignored).
 
 kc_hostname = "localhost:3000"
 base_domain = "localhost"
@@ -9,17 +9,8 @@ deploy_stacks = false
 server_image  = "unused-in-dev"
 web_image     = "unused-in-dev"
 
-# Federate to the local Dex container (offline SSO).
-idp = {
-  alias             = "dex"
-  display_name      = "Dev (Dex)"
-  client_id         = "keycloak"
-  client_secret     = "keycloak-dex-secret"
-  authorization_url = "http://localhost:5556/dex/auth" # browser-facing
-  token_url         = "http://dex:5556/dex/token"      # Keycloak server-side
-  user_info_url     = "http://dex:5556/dex/userinfo"
-  issuer            = "http://localhost:5556/dex"
-}
+# No IdP: the declared users log in to Keycloak directly.
+dev_user_password = "password"
 
 # One dev workspace, two people, because the planes are disjoint: an owner administers
 # members, identity and the catalog and has NO data plane; a member runs jobs, holds the

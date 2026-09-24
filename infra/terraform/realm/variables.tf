@@ -35,6 +35,14 @@ variable "idp" {
     issuer            = optional(string, "")
     default_scopes    = optional(string, "openid email profile")
   })
+  default = null
+}
+
+# Dev only: every declared user gets this password, so `make dev` logs in without an
+# IdP. Prod leaves it null — users have no Keycloak password, only SSO.
+variable "dev_user_password" {
+  type    = string
+  default = null
 }
 
 # ── Fleet image defaults ─────────────────────────────────────────────────────

@@ -53,3 +53,7 @@ data/
 
 # next.js
 .next/
+
+# Local runtime state and experiments; .cluster/ holds a private key.
+.cluster/
+scratch/

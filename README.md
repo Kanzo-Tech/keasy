@@ -2,239 +2,120 @@
 
 Federated workspace management platform — connect data, build catalogs, share datasets.
 
-Built with Rust, Next.js, Keycloak, and Docker.
+## Quick start
 
-## Prerequisites
-
-- [Docker](https://docs.docker.com/get-docker/) with Compose v2
-- 8 GB RAM recommended (Keycloak + Rust compilation)
-
-## Quick Start
+Needs Docker with Compose v2 and ~8 GB RAM (Keycloak + the first Rust compile).
 
 ```bash
-git clone <repo-url> && cd keasy
-make setup        # creates .env, builds images, starts everything
+make dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — you'll be redirected to Keycloak login.
+Open [http://localhost:3000](http://localhost:3000) and log in at Keycloak. The first
+`up` compiles the server's dependencies once; later ones reuse the cached volumes.
 
-## Demo Credentials
+## Dev accounts
 
-Two accounts, because the two planes are disjoint: an owner administers members,
+Two accounts, because the planes are disjoint: an owner administers members,
 identity and the catalog and has no data plane; a member runs jobs, holds the
-connections and opens Discovery, and administers nothing. Neither can do the
-other's half, so testing both means logging in twice.
+connections and opens Discovery, and administers nothing.
 
 | Email | Password | Role | What it reaches |
 |-------|----------|------|-----------------|
 | `dev@keasy.local` | `password` | Member | Jobs, connections, Discovery, AI |
 | `owner@keasy.local` | `password` | Owner | Members, identity, catalog |
 
-They are declared twice by design: as Dex accounts (`infra/dev/dex.yaml`, which
-is what you type a password at) and as Keycloak users (`infra/terraform/realm/
-dev.tfvars`, which is what carries the role). Keycloak links the two by email on
-first login — the pre-declared user has no password of its own.
+Both are declared in `infra/terraform/realm/dev.tfvars` (`tenants`,
+`dev_user_password`). Dev has no upstream IdP; prod has no passwords, only SSO.
 
-## Workspace Bootstrap
+## Dev data
 
-There are no SQL seeds. A workspace exists if and only if the **control-plane**
-provisioner created it (`POST /workspaces { name, owner_keycloak_sub }`), which
-registers the OIDC client in the shared Keycloak and brings up the instance
-stack. Each instance, at boot, idempotently ensures the `owner` membership of
-the `KEASY_OWNER_KEYCLOAK_SUB` it receives via config — the single bootstrap
-datum. In dev, `make dev` pins the demo owner's Keycloak `sub` so the instance
-self-provisions its owner. The one other thing dev starts with is the MinIO
-bucket below and the connection over it — files, not fixtures.
-
-## Dev Data
-
-`make dev` also brings up MinIO — an S3 the developer can actually write to —
-and it exists nowhere else: `docker-compose.dev.yml` declares it, and neither
-the prod overlay nor the release images know the name.
+`make dev` also brings up MinIO, dev-only:
 
 | What | Where |
 |------|-------|
 | S3 API | `http://minio.localhost:9000` (and `http://localhost:9000`) |
 | Console | [http://localhost:9001](http://localhost:9001) |
-| Credentials | `minioadmin` / `minioadmin` (`MINIO_ROOT_USER`/`_PASSWORD`) |
-| Bucket | `keasy-dev`, holding `people.csv` and `orders.csv` |
+| Credentials | `minioadmin` / `minioadmin` |
+| Bucket | `keasy-dev`, seeded from `infra/dev/seed/` on every `up` |
 
-The two CSVs are real objects, copied from `infra/dev/seed/` on every `up`, and
-`orders.person_id` points into `people.person_id` — the edge a mapping needs.
-The instance declares two connections over that bucket at boot: the **source**
-(`KEASY_BOOTSTRAP_CONNECTION_URL` + `_NAME`), so a member opens Connections and
-finds the bucket already there, credentials encrypted, with nothing to type; and
-the **sink** (`KEASY_BOOTSTRAP_SINK_URL`, `s3://keasy-dev/output/`), where job
-output lands. The sink is the owner's to administer and the planes are disjoint,
-so declaring it is what spares a member a second login just to run a job. Access
-is proved before either row is written — a listing for the source, a write and a
-delete for the sink — and an existing sink is never overwritten.
+At boot the instance declares, over that bucket, the **MinIO dev bucket** source
+connection, the **MinIO dev shapes** vocabulary connection (`vocab/`), the sink
+(`output/`), and a draft job, **Shop orders**, from `infra/dev/shop.fossil`. A
+member opens the workspace with data, shapes, a destination and a job ready to
+launch. Access is proved before each connection row is written, and an existing
+sink is never overwritten.
 
-The name `minio.localhost` is load-bearing: inside the compose network Docker's
-DNS answers it, and on the host `*.localhost` is loopback, where 9000 is
-published. A presigned URL carries the host it was signed against, so the
-server and the browser had to agree on one name for the browser to be able to
-fetch what the server signs.
+`minio.localhost` is load-bearing: Docker's DNS answers it inside the compose
+network and `*.localhost` is loopback on the host, so a URL the server presigns
+is one the browser can fetch.
 
 ## Architecture
 
 ```mermaid
 graph TD
     Browser -->|":3000"| Caddy
-
-    Caddy -->|"/v1/*"| Server["Server :8080<br/>(Rust/Axum)"]
-    Caddy -->|"/auth/*"| Keycloak[":8080<br/>Keycloak (OIDC)"]
-    Caddy -->|"/*"| Web["Web :3000<br/>(Next.js)"]
-
-    Server --> SQLite[(SQLite<br/>app data)]
-    Server -->|"admin API"| Keycloak
-
-    ControlPlane["Control-plane<br/>(provisioner)"] -->|"Docker socket"| Docker[("Docker Engine")]
-    ControlPlane -->|"register OIDC client"| Keycloak
-
-    Keycloak --> PostgreSQL[(PostgreSQL<br/>identity data)]
+    Caddy -->|"/auth/*"| Keycloak["Keycloak (OIDC)"]
+    Caddy -->|"/*"| Web["Web (Next.js BFF)"]
+    Web -->|"/v1 + bearer token"| Server["Server (Rust/Axum)"]
+    Web -->|"OIDC code flow"| Keycloak
+    Server -->|"JWKS"| Keycloak
+    Server --> SQLite[("SQLite + DuckLake catalog")]
+    Keycloak --> PostgreSQL[("PostgreSQL")]
 ```
-
-## Tech Stack
-
-| Component | Technology |
-|-----------|-----------|
-| Frontend | Next.js, React, shadcn/ui, TailwindCSS |
-| Backend | Rust, Axum, SQLite |
-| Identity | Keycloak (OIDC) |
-| Reverse Proxy | Caddy |
-
-## Development
-
-```bash
-make dev              # start dev environment with hot reload
-make logs-server      # tail server logs
-make logs-web         # tail web logs
-make shell-server     # interactive shell in server container
-make shell-web        # interactive shell in web container
-```
-
-- Editing `web/src/` triggers instant HMR in the browser
-- Editing `server/src/` triggers cargo-watch recompilation and server restart
-
-## Make Targets
-
-| Target | Description |
-|--------|-------------|
-| `make help` | Show all available targets |
-| `make setup` | First-time setup: create .env, build, start |
-| `make dev` | Start dev environment (hot reload + demo data) |
-| `make down` | Stop all services |
-| `make prod` | Start with production builds (local test) |
-| `make build` | Build production images without starting |
-| `make logs` | Tail all service logs |
-| `make logs-<svc>` | Tail logs for one service |
-| `make restart` | Restart all services |
-| `make restart-<svc>` | Restart one service |
-| `make clean` | Nuclear reset: remove containers, volumes, images |
-| `make shell-<svc>` | Open shell in container |
-| `make ps` | Show running services |
-
-## Project Structure
-
-```
-keasy/
-├── infra/                          # Infrastructure configs
-│   ├── caddy/Caddyfile             #   reverse proxy routing
-│   ├── keycloak/realm-import/      #   OIDC realm + demo users
-├── keycloak/                       # keasy-keycloak — shared Keycloak admin client
-├── control-plane/                  # workspace provisioner (Docker API + Keycloak)
-├── server/                         # Rust API server
-│   ├── Dockerfile                  #   production (multi-stage, slim)
-│   ├── Dockerfile.dev              #   development (cargo-watch)
-│   └── src/
-├── web/                            # Next.js frontend
-│   ├── Dockerfile                  #   production (standalone)
-│   ├── Dockerfile.dev              #   development (HMR)
-│   └── src/
-├── docker-compose.yml              # Base: all services, shared config
-├── docker-compose.dev.yml          # Dev overlay: hot reload, seed
-├── docker-compose.prod.yml         # Prod overlay: optimized builds
-├── Makefile                        # Task runner
-└── .env.example                    # Environment template
-```
-
-## OpenAPI Pipeline
-
-The server is the single source of truth for the API schema, generated from `#[utoipa]` annotations in Rust. The frontend consumes this to produce typed client code.
-
-```
-server (utoipa annotations)
-  → cargo run --bin openapi     # writes it; no server needed
-  → openapi.json                # committed at repo root
-  → npm run openapi             # generates web/src/lib/api/schema.d.ts
-  → openapi-fetch client        # fully typed API calls in the frontend
-```
-
-To regenerate after changing server endpoints:
-
-```bash
-# 1. Write the document (the running server also serves it at GET /v1/openapi.json):
-cd server && cargo run --quiet --bin openapi
-
-# 2. Regenerate TypeScript types:
-cd web && pnpm run openapi
-```
-
-## Docker Compose Layering
-
-The compose setup uses a base + overlay pattern:
-
-- **`docker-compose.yml`** — defines all services, networks, volumes, and shared environment. Never used alone.
-- **`docker-compose.dev.yml`** — adds hot reload (cargo-watch, Next.js HMR), dev seed data, relaxed healthchecks, and volume mounts for source code.
-- **`docker-compose.prod.yml`** — uses optimized multi-stage builds, no seed data, and strict healthchecks.
-
-```bash
-# Dev (via Makefile)
-make dev
-
-# Production (via Makefile)
-make prod
-
-# Manual
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
-```
-
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `KEASY_SECRET_KEY` | Encryption key for stored secrets | `change-me-in-production` |
-| `KC_DB_PASSWORD` | Keycloak PostgreSQL password | `changeme` |
-| `KC_ADMIN_PASSWORD` | Keycloak admin console password | `changeme` |
-| `KEASY_OIDC_CLIENT_SECRET` | OIDC client secret, held by the **web** (the relying party) | `keasy-dev-secret` |
-| `KEASY_SESSION_SECRET` | Seals the web's session cookie; rotating it signs everyone out | dev placeholder |
 
 Authentication is a Backend For Frontend. The **web** is the OIDC relying party
 (`@kanzo-tech/auth/next`, mounted at `/api/auth`): it holds the confidential
 client, keeps the tokens, and gives the browser a sealed cookie it cannot read.
-The **server** is a resource server: it validates a bearer token against the
+The **server** is a resource server: it validates the bearer token against the
 realm's JWKS (`iss`, `aud`, `exp`, `azp`, signature) and holds no client secret,
-no session and no cookie. `/v1` reaches it only through the web, which attaches
-the token — so the server needs `KEASY_OIDC_ISSUER_URL`, `KEASY_OIDC_CLIENT_ID`
-and `KEASY_OIDC_AUDIENCE`, and nothing secret.
+no session and no cookie. `/v1` reaches it only through the web.
 
-## Production
+Mappings run in the browser (DuckDB-WASM + `@fossil-lang/*`); the server hosts
+connections, signed URLs, jobs and the catalog.
 
-Test production builds locally:
+## Deployment
+
+Docker Swarm, driven by Terraform — see [`infra/terraform/README.md`](infra/terraform/README.md).
+`make deploy-platform` brings up Traefik, Keycloak and Postgres; `make deploy-realm`
+applies the realm and one server + web stack per tenant declared in
+`realm/terraform.tfvars`. Images are published to GHCR by `.github/workflows/images.yml`
+on `v*` tags, after the server and web CI pass.
+
+`make prod` builds and runs the release Dockerfiles locally, with the dev identity.
+It is not a deployment.
+
+## Development
+
+| Target | What it does |
+|--------|--------------|
+| `make dev` | Start dev; rebuild only after dep or Dockerfile changes (code hot-reloads) |
+| `make down` | Stop everything |
+| `make clean` | Remove containers, volumes (Keycloak, dev realm state, data) and images |
+| `make logs` / `make logs-<svc>` | Tail logs |
+| `make restart` / `make restart-<svc>` | Restart without rebuilding |
+| `make shell-<svc>` | Shell in a container |
+| `make prod` / `make build` | Run / build the release images |
+
+Compose is a base file plus an overlay: `docker-compose.dev.yml` (hot reload,
+MinIO, seed) or `docker-compose.prod.yml` (release images). Every setting has its
+default in compose as `${VAR:-default}`; export a variable to override it.
+
+## OpenAPI
+
+The server's `#[utoipa]` annotations are the schema; the web generates its types
+from the committed `openapi.json`.
 
 ```bash
-make prod         # build and run production images
-make build        # build images without starting
+cd server && cargo run --quiet --bin openapi   # writes ../openapi.json
+cd web && pnpm run openapi                     # writes src/lib/api/schema.d.ts
 ```
 
-## Troubleshooting
+## Layout
 
-| Problem | Solution |
-|---------|----------|
-| Keycloak slow to start | Wait for healthcheck (up to 60s on first start) |
-| Server compilation slow | First Rust build caches deps (~2-5 min), subsequent builds are fast |
-| Hot reload not working | Check volume mounts; try `make restart-web` or `make restart-server` |
-| Port 3000 in use | Run `make down` first, or change port in docker-compose.yml |
-| Database issues | Run `make clean && make dev` to wipe and re-create demo data |
+```
+infra/caddy/        the local edge (/auth → Keycloak, everything else → web)
+infra/dev/          MinIO seed and the draft job, dev-only
+infra/terraform/    platform/ and realm/ — the Swarm deployment, and dev's realm
+server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)
+web/                Next.js app and BFF (Dockerfile = release, Dockerfile.dev = HMR)
+```

@@ -8,11 +8,12 @@
 // into a scoped DuckDB `CREATE SECRET`. This is the single translation point —
 // the same creds that sign the output GETs configure the catalog's reads.
 //
-// The translation is driven by the dataset's URL SCHEME (the provider keasy
-// already chose), not by guessing from the map: `s3`/`s3a` → S3 secret,
-// `az`/`azure`/`abfss`/`abfs`/`adl` → Azure secret.
+// The translation is driven by the dataset's URL scheme, read through the
+// provider registry's own scheme table, not by guessing from the map.
 
 use std::collections::HashMap;
+
+use crate::settings::schema::{CloudProvider, find_provider_by_scheme};
 
 /// What the catalog must do about credentials before it can read a dataset.
 pub(crate) enum SecretPlan {
@@ -33,11 +34,11 @@ pub(crate) fn plan(name: &str, base: &str, config: &HashMap<String, String>) -> 
     let Some(scheme) = base.split("://").next().filter(|s| *s != base) else {
         return SecretPlan::None; // no `://` → local path
     };
-    match scheme {
-        "file" => SecretPlan::None,
-        "s3" | "s3a" => opt(s3(name, base, config)),
-        "az" | "azure" | "abfss" | "abfs" | "adl" => opt(azure(name, base, config)),
-        _ => SecretPlan::None, // unknown scheme: let the read attempt speak for itself
+    // A scheme no provider claims (`file`, …) is local to DuckDB: no secret.
+    match find_provider_by_scheme(scheme).map(|p| p.kind) {
+        None => SecretPlan::None,
+        Some(CloudProvider::S3) => opt(s3(name, base, config)),
+        Some(CloudProvider::Azure) => opt(azure(name, base, config)),
     }
 }
 

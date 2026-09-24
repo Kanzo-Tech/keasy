@@ -31,12 +31,23 @@ pub struct AuthMethodSchema {
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct ProviderSchema {
     pub id: &'static str,
+    #[serde(skip)]
+    pub kind: CloudProvider,
     pub label: &'static str,
     pub icon: &'static str,
+    /// The URL schemes that name this provider's storage — the one table every
+    /// scheme is read from.
     #[serde(skip)]
     pub schemes: &'static [&'static str],
     pub common_fields: &'static [FieldSchema],
     pub auth_methods: &'static [AuthMethodSchema],
+}
+
+/// The object stores keasy signs for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CloudProvider {
+    Azure,
+    S3,
 }
 
 impl ProviderSchema {
@@ -62,6 +73,7 @@ impl ProviderSchema {
 pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
     ProviderSchema {
         id: "azure",
+        kind: CloudProvider::Azure,
         label: "Azure Blob Storage",
         icon: "azure",
         schemes: &["az", "azure", "abfss", "abfs", "adl"],
@@ -138,6 +150,7 @@ pub static PROVIDER_REGISTRY: &[ProviderSchema] = &[
     },
     ProviderSchema {
         id: "s3",
+        kind: CloudProvider::S3,
         label: "Amazon S3",
         icon: "s3",
         schemes: &["s3", "s3a"],

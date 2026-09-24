@@ -16,7 +16,7 @@ use object_store::signer::Signer;
 use object_store::{ObjectMeta, ObjectStore, PutPayload, PutResult};
 use url::Url;
 
-use crate::settings::schema::{all_cloud_schemes, find_provider_by_scheme};
+use crate::settings::schema::{CloudProvider, all_cloud_schemes, find_provider_by_scheme};
 
 pub fn is_cloud_url(s: &str) -> bool {
     all_cloud_schemes().any(|scheme| s.starts_with(scheme) && s[scheme.len()..].starts_with("://"))
@@ -166,8 +166,8 @@ pub fn build_store(
     let (bucket, path, provider) = parse_cloud_url(url_str)?;
     let fields = provider.all_fields();
 
-    let store = match provider.id {
-        "azure" => CloudStore::Azure(
+    let store = match provider.kind {
+        CloudProvider::Azure => CloudStore::Azure(
             apply_creds!(
                 MicrosoftAzureBuilder::new().with_container_name(&bucket),
                 AzureConfigKey,
@@ -176,7 +176,7 @@ pub fn build_store(
             )
             .build()?,
         ),
-        "s3" => {
+        CloudProvider::S3 => {
             // object_store's client refuses plain HTTP unless told otherwise. A
             // custom endpoint on `http://` is a deliberate choice (MinIO on a
             // laptop, a self-hosted gateway), so honour it — the same rule the
@@ -195,7 +195,6 @@ pub fn build_store(
                 .build()?,
             )
         }
-        _ => return Err(format!("no builder for provider: {}", provider.id).into()),
     };
 
     Ok((store, path))

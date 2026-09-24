@@ -17,7 +17,7 @@ import {
 } from "@kanzo-tech/ui";
 import { Check, Shapes } from "lucide-react";
 import type { CheckRow, SourceRefInfo } from "@/lib/fossil/checker";
-import type { ConfigValues } from "@/components/jobs/studio-configure";
+import type { ConfigValues } from "./studio-configure";
 import type { Connection } from "@/lib/types";
 
 /** LSP severity: 1 error, 2 warning, 3 information, 4 hint. */

@@ -43,12 +43,12 @@ import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { toastError } from "@/lib/toast-error";
 import * as checker from "@/lib/fossil/checker";
-import { AssistantWizard } from "@/components/jobs/assistant-wizard";
-import { ModePicker } from "@/components/jobs/mode-picker";
-import { StudioConfigure, type ConfigValues } from "@/components/jobs/studio-configure";
-import { StudioEditor } from "@/components/jobs/studio-editor";
-import { StudioSummary } from "@/components/jobs/studio-summary";
-import { UnsavedChangesGuard } from "@/components/shared/unsaved-changes-guard";
+import { AssistantWizard } from "./assistant-wizard";
+import { ModePicker } from "./mode-picker";
+import { StudioConfigure, type ConfigValues } from "./studio-configure";
+import { StudioEditor } from "./studio-editor";
+import { StudioSummary } from "./studio-summary";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { useJobEditorStore } from "./job-editor-store";
 
 const STEPS = ["Editor", "Configure", "Summary"] as const;
@@ -235,6 +235,7 @@ export function JobStudio() {
   });
 
   const submitting = confirmMutation.isPending || confirmMutation.isSuccess;
+  useBeforeUnload(!saved && !submitting);
 
   const config: ConfigValues = {
     mode: store.mode,
@@ -271,8 +272,6 @@ export function JobStudio() {
       onStepChange={(d) => store.setStep(Math.min(d.step, STEPS.length - 1))}
       step={store.step}
     >
-      <UnsavedChangesGuard isDirty={!saved && !submitting} />
-
       {/* A three-column grid, so the steps sit on the band's true centre no
           matter how long the job's name is — a flex row with `ms-auto` only
           pushes them off the left group's width, which moves every time the name

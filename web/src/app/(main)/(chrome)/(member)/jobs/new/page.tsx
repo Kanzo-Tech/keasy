@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { JobStudio } from "@/components/jobs/job-studio";
+import { JobStudio } from "./_parts/job-studio";
 
 export default function NewJobPage() {
   return (

@@ -8,7 +8,7 @@ use axum::{
 use crate::AppState;
 use crate::error::data_response;
 use crate::jobs::models::{
-    CompleteJobRequest, CreateJobRequest, Job, JobStatus, PublishRelationsRequest, RunMode,
+    CompleteJobRequest, CreateJobRequest, Job, JobStatus, PublishRelationsRequest,
     UpdateJobRequest, now_iso8601,
 };
 use crate::middleware::tenant::{IsDataPlane, Require};
@@ -40,62 +40,22 @@ pub async fn create_job(
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    let id = uuid::Uuid::new_v4().to_string();
-
-    if payload.draft {
-        let job = Job {
-            id: id.clone(),
-            status: JobStatus::Draft,
-            name: payload.name.or_else(|| Some(id[..8].to_string())),
-            created_at: now_iso8601(),
-            started_at: None,
-            completed_at: None,
-            error: None,
-            mode: payload.mode.unwrap_or(RunMode::Integrated),
-            connection_ids: payload.connection_ids.clone(),
-            created_by: ctx.user_id.clone(),
-            sink_connection_id: payload.sink_connection_id.clone(),
-            script: Some(payload.script),
-            manifest: None,
-            relations: Vec::new(),
-        };
-        state
-            .db
-            .insert_job(&job)
-            .await
-            .map_err(JobApiError::Internal)?;
-        return Ok((StatusCode::CREATED, data_response(job)).into_response());
-    }
-
-    // Browser-driven execution: persist the program as `Pending` and let the
-    // client run it on DataFusion-WASM — sources via signed GET, GraphAr output
-    // via signed PUT, outcome via `PATCH /v1/jobs/{id}`. The server never runs
-    // the mapping (no subprocess, no data through the host). The runner is still
-    // linked but no longer spawned; its deletion is B6.
-    let job = Job {
-        id: id.clone(),
-        status: JobStatus::Pending,
-        name: payload.name.or_else(|| Some(id[..8].to_string())),
-        created_at: now_iso8601(),
-        started_at: None,
-        completed_at: None,
-        error: None,
-        mode: payload.mode.unwrap_or(RunMode::Integrated),
-        connection_ids: payload.connection_ids.clone(),
-        created_by: ctx.user_id.clone(),
-        sink_connection_id: payload.sink_connection_id.clone(),
-        script: Some(payload.script),
-        manifest: None,
-        relations: Vec::new(),
+    // Browser-driven execution: a `Pending` job is persisted and the client runs
+    // it on DataFusion-WASM — sources via signed GET, GraphAr output via signed
+    // PUT, outcome via `PATCH /v1/jobs/{id}`. The server never runs the mapping.
+    let (status, code) = if payload.draft {
+        (JobStatus::Draft, StatusCode::CREATED)
+    } else {
+        (JobStatus::Pending, StatusCode::ACCEPTED)
     };
-
+    let job = Job::requested(status, payload, ctx.user_id.clone());
     state
         .db
         .insert_job(&job)
         .await
         .map_err(JobApiError::Internal)?;
 
-    Ok((StatusCode::ACCEPTED, data_response(job)).into_response())
+    Ok((code, data_response(job)).into_response())
 }
 
 #[utoipa::path(get, path = "/v1/jobs/{id}", tag = "Jobs",

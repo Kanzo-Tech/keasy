@@ -19,6 +19,7 @@ services:
       # compile (deps are no longer pre-built in the image — see Dockerfile.dev)
       # doesn't re-download crates on every `make dev` rebuild.
       - cargo-registry:/usr/local/cargo/registry
+      - ./infra/dev/shop.fossil:/etc/keasy/shop.fossil:ro
     environment:
       # The workspace's Keycloak Organization (membership container). Its alias
       # matches the org declared in the realm import; the server resolves the
@@ -32,10 +33,20 @@ services:
       # its fields; the server reads them once, at boot, to create the account.
       KEASY_BOOTSTRAP_CONNECTION_NAME: ${MINIO_CONNECTION_NAME:-MinIO dev bucket}
       KEASY_BOOTSTRAP_CONNECTION_URL: s3://${MINIO_BUCKET:-keasy-dev}/
+      # The shapes, under their own prefix and declared as `vocab`. A connection
+      # is a prefix, so sharing one with the data bucket would put shop.shex in
+      # the data listing and the CSVs in the Vocabulary tab; separate prefixes
+      # are what let @-completion tell a shape from a table.
+      KEASY_BOOTSTRAP_VOCAB_NAME: ${MINIO_VOCAB_CONNECTION_NAME:-MinIO dev shapes}
+      KEASY_BOOTSTRAP_VOCAB_URL: s3://${MINIO_BUCKET:-keasy-dev}/vocab/
       # Where job output lands. The sink belongs to the owner, and the two planes
       # are disjoint, so declaring it is what spares a member a second login just
       # to run a job.
       KEASY_BOOTSTRAP_SINK_URL: s3://${MINIO_BUCKET:-keasy-dev}/output/
+      # A job ready to launch, mapping the seed above. Its `@` references name
+      # the two connections declared here, so renaming one means editing it.
+      KEASY_BOOTSTRAP_DRAFT: /etc/keasy/shop.fossil
+      KEASY_BOOTSTRAP_DRAFT_NAME: Shop orders
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       AWS_DEFAULT_REGION: us-east-1

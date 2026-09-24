@@ -114,6 +114,29 @@ pub struct Job {
     pub relations: Vec<OutputRelation>,
 }
 
+impl Job {
+    /// A job as a create request asks for it: `Draft` or `Pending`, not yet run.
+    pub fn requested(status: JobStatus, request: CreateJobRequest, created_by: String) -> Self {
+        let id = uuid::Uuid::new_v4().to_string();
+        Job {
+            status,
+            name: request.name.or_else(|| Some(id[..8].to_string())),
+            created_at: now_iso8601(),
+            started_at: None,
+            completed_at: None,
+            error: None,
+            mode: request.mode.unwrap_or(RunMode::Integrated),
+            connection_ids: request.connection_ids,
+            created_by,
+            sink_connection_id: request.sink_connection_id,
+            script: Some(request.script),
+            manifest: None,
+            relations: Vec::new(),
+            id,
+        }
+    }
+}
+
 /// One addressable relation of a job's output, named by fossil.
 ///
 /// `name` is the relation the corpus registers and queries by (`Person`,

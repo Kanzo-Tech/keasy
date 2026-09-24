@@ -34,7 +34,7 @@ interface JobEditorState {
   setSinkConnectionId: (id: string | null) => void;
 
   completeAssistant: (generatedScript: string) => void;
-  restoreDraft: (script: string, name: string, mode: RunMode) => void;
+  restoreDraft: (script: string, name: string, mode: RunMode, sinkConnectionId: string | null) => void;
   reset: () => void;
 }
 
@@ -60,7 +60,7 @@ export const useJobEditorStore = create<JobEditorState>((set) => ({
   setSinkConnectionId: (sinkConnectionId) => set({ sinkConnectionId }),
 
   completeAssistant: (script) => set({ script, creationMode: "studio", step: 0 }),
-  restoreDraft: (script, name, mode) =>
-    set({ script, name, mode, creationMode: "studio", step: 0 }),
+  restoreDraft: (script, name, mode, sinkConnectionId) =>
+    set({ script, name, mode, sinkConnectionId, creationMode: "studio", step: 0 }),
   reset: () => set(EMPTY),
 }));

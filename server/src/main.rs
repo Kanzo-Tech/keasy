@@ -71,6 +71,8 @@ async fn main() {
     // lands) — after the key check, since creating them writes encrypted
     // credentials.
     keasy_server::connections::bootstrap::ensure_declared_connections(&db).await;
+    // After the connections: the draft's destination is the sink they declare.
+    keasy_server::jobs::bootstrap::ensure_declared_draft(&db).await;
 
     // The bearer validator. Constructed without touching the network: Keycloak
     // is routinely not up when this is, and the keys are fetched on the first

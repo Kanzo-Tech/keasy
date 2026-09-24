@@ -37,6 +37,7 @@ import { providers as fossilProviders } from "@/lib/fossil/checker";
 import { formatSize } from "@/lib/formatters";
 import { getProviderIcon } from "@/lib/provider-icons";
 import { queryKeys } from "@/lib/query-keys";
+import { readableFiles } from "@/lib/utils";
 
 export default function ConnectionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -82,14 +83,8 @@ export default function ConnectionPage({ params }: { params: Promise<{ id: strin
   const account = accounts.find((a) => a.id === connection.cloud_account_id);
   const provider = schema.find((s) => s.id === account?.provider_id);
 
-  // Only the files some provider of this connection's kind can read.
-  const extensions = providers
-    .filter((p) => p.kind === "both" || p.kind === (connection.kind === "data" ? "data" : "schema"))
-    .flatMap((p) => p.extensions);
   const listed = files.data ?? [];
-  const readable = extensions.length
-    ? listed.filter((f) => extensions.includes(f.path.split(".").pop()?.toLowerCase() ?? ""))
-    : listed;
+  const readable = readableFiles(listed, providers, connection.kind === "data" ? "data" : "schema");
 
   const { name } = connection;
   function copyReference(path: string) {

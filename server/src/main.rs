@@ -98,7 +98,6 @@ async fn main() {
 
     let state = AppState {
         db,
-        api_key: config.api_key,
         workspace_slug: config.workspace_slug,
         auth,
         catalog,

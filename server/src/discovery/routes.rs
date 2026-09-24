@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::AppState;
 use crate::error::error_body;
 use crate::jobs::models::{Job, JobStatus};
-use crate::middleware::tenant::{IsMember, Require};
+use crate::middleware::tenant::{IsDataPlane, Require};
 
 /// Data sovereignty: only the job's producer (`created_by`) may read or run its
 /// DATA — its sources and its output. The CATALOG (governance metadata) stays
@@ -177,7 +177,7 @@ async fn sign_dataset_urls(
 /// Sign PUT URLs so the browser uploads the output it just produced directly to
 /// the member's chosen destination (no data through the server).
 pub async fn resolve_output_urls(
-    ctx: Require<IsMember>,
+    ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<DatasetUrlsRequest>,
@@ -203,7 +203,7 @@ pub async fn resolve_output_urls(
 /// wrongly, since those were names the layout pass deletes. What is addressable
 /// is the corpus reader's answer, so the caller enumerates and keasy signs.
 pub async fn resolve_discover_urls(
-    ctx: Require<IsMember>,
+    ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<DatasetUrlsRequest>,
@@ -232,7 +232,7 @@ struct SourceRefsResponse {
 /// executor's `sources()`/`run()` to resolve `@conn` aliases. No credentials —
 /// only the base URLs (signing is a separate, per-URL call).
 pub async fn resolve_source_refs(
-    ctx: Require<IsMember>,
+    ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Response {
@@ -283,7 +283,7 @@ struct SourceUrlsResponse {
 /// job connection whose base URL prefixes it; non-cloud (HTTP/public) URIs pass
 /// through verbatim.
 pub async fn resolve_source_urls(
-    ctx: Require<IsMember>,
+    ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<SourceUrlsRequest>,

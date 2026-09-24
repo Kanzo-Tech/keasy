@@ -22,13 +22,11 @@ pub mod settings;
 // Re-export types integration tests need
 pub use db::Database;
 
-use secrecy::SecretString;
 use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: Database,
-    pub api_key: SecretString,
     /// This instance's workspace slug (`KEASY_ORG_ALIAS`). The "current" entry in the
     /// workspace switcher. None when not configured.
     pub workspace_slug: Option<String>,

@@ -7,7 +7,10 @@ locals {
   # One keycloak_user per UNIQUE email across the whole fleet (Keycloak emails are realm-unique).
   all_emails = toset(flatten([for t in var.tenants : concat(t.owners, t.members)]))
 
-  # One role assignment per (tenant, email, role). Key is "slug|email".
+  # One role assignment per (tenant, email). Key is "slug|email", and the two
+  # halves of this merge can no longer collide on one: `var.tenants` refuses an
+  # email listed in a workspace's `owners` and its `members`, because the planes
+  # are disjoint and a silent winner is not an answer.
   assignments = merge([
     for slug, t in var.tenants : merge(
       { for e in t.owners : "${slug}|${e}" => { slug = slug, email = e, role = "owner" } },
@@ -159,10 +162,23 @@ resource "keycloak_generic_protocol_mapper" "workspaces" {
 }
 
 # owner/member role on the tenant client — the declarative membership.
+#
+# `exhaustive = false` is the whole of this resource's correctness. The
+# provider's default is `true`, meaning "these are ALL the roles this user has,
+# remove the rest" — and the resource is keyed by (slug, email) while its
+# `user_id` is keyed by email alone. One person in two workspaces is therefore
+# two of these pointing at the same Keycloak user, each claiming to be the
+# complete list, each apply erasing the other's grant. It has not bitten yet
+# only because dev declares a single workspace; the fleet it was written for is
+# the case that breaks it.
+#
+# Non-exhaustive is also the honest statement: this resource declares one
+# workspace's role for one person, which is exactly what it knows about.
 resource "keycloak_user_roles" "assign" {
-  for_each = local.assignments
-  realm_id = keycloak_realm.keasy.id
-  user_id  = keycloak_user.u[each.value.email].id
+  for_each   = local.assignments
+  realm_id   = keycloak_realm.keasy.id
+  user_id    = keycloak_user.u[each.value.email].id
+  exhaustive = false
   role_ids = [
     each.value.role == "owner"
     ? keycloak_role.owner[each.value.slug].id

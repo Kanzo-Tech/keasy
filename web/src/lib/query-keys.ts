@@ -10,6 +10,9 @@ export const queryKeys = {
     detail: (id: string) => ["jobs", id] as const,
   },
 
+  // A job's output, opened in the browser. Its own root so invalidating a job never reopens it.
+  corpus: (jobId: string) => ["corpus", jobId] as const,
+
   // Connections
   connections: {
     all: (tab?: ConnectionKind) => (tab ? (["connections", tab] as const) : (["connections"] as const)),

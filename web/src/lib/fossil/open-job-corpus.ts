@@ -18,20 +18,36 @@
  * it wrong.
  */
 
+import { DuckDBDataProtocol } from "@duckdb/duckdb-wasm";
 import {
   open,
   type CorpusAddressing,
   type QueryRow,
   type SqlCorpus,
 } from "@fossil-lang/corpus";
+import { Coordinator, wasmConnector } from "@kanzo-tech/ui/analytics";
 
 import { api } from "@/lib/api";
-import { registerDataSpace } from "@/lib/data-space";
-import { initMosaic, type MosaicInstance } from "@/lib/mosaic";
 
 // fossil-graph-wasm, staged into public/ by scripts/copy-fossil-wasm.mjs
 // (predev/prebuild) — Next resolves no `.wasm` asset for us.
-const GRAPH_WASM_URL = "/fossil/fossil_graph_wasm_bg.wasm";
+export const GRAPH_WASM_URL = "/fossil/fossil_graph_wasm_bg.wasm";
+
+type DuckDB = Awaited<ReturnType<ReturnType<typeof wasmConnector>["getDuckDB"]>>;
+
+/**
+ * One DuckDB-WASM coordinator per document: vgplot resolves marks through a single active one, and
+ * a second would have the canvas and the charts querying different databases.
+ */
+let booted: Promise<{ coordinator: Coordinator; db: DuckDB }> | null = null;
+
+function boot() {
+  booted ??= (async () => {
+    const connector = wasmConnector();
+    return { coordinator: new Coordinator(connector), db: await connector.getDuckDB() };
+  })();
+  return booted;
+}
 
 /**
  * Every file the corpus can address, distinct and in declaration order: each
@@ -68,7 +84,7 @@ export function addressableFiles(addressing: CorpusAddressing): string[] {
 }
 
 export interface JobCorpus {
-  mosaic: MosaicInstance;
+  coordinator: Coordinator;
   corpus: SqlCorpus;
   /** The manifest documents fossil named, kept so a second open costs no reads. */
   manifestFiles: Record<string, string>;
@@ -95,11 +111,18 @@ export async function openJobCorpus(jobId: string): Promise<JobCorpus> {
   const addressing = await open("", { readText, wasmUrl: GRAPH_WASM_URL });
   const signedUrls = await api.jobs.signDatasetUrls(jobId, addressableFiles(addressing));
 
-  const mosaic = await initMosaic();
-  await registerDataSpace(mosaic.db, mosaic.conn, signedUrls);
+  // DuckDB's file registry is where keasy's access meets fossil's names: the name fossil composes
+  // resolves to the URL keasy signed, and a file keasy never signed fails by name.
+  const { coordinator, db } = await boot();
+  await coordinator.exec("SET enable_http_metadata_cache = true");
+  await Promise.all(
+    Object.entries(signedUrls).map(([path, url]) =>
+      db.registerFileURL(path, url, DuckDBDataProtocol.HTTP, false),
+    ),
+  );
 
   const query = async (sql: string): Promise<QueryRow[]> =>
-    (await mosaic.coordinator.query(sql, { type: "json" })) as QueryRow[];
+    (await coordinator.query(sql, { type: "json" })) as QueryRow[];
   const corpus = await open("", {
     query,
     manifestFiles,
@@ -107,7 +130,7 @@ export async function openJobCorpus(jobId: string): Promise<JobCorpus> {
     wasmUrl: GRAPH_WASM_URL,
   });
 
-  return { mosaic, corpus, manifestFiles };
+  return { coordinator, corpus, manifestFiles };
 }
 
 /**

@@ -1,26 +1,12 @@
 import type { FieldRole, FieldStat, SchemaResult } from "@fossil-lang/corpus";
 
-// ── Types ────────────────────────────────────────────────────────────────
-
-// FieldRole is owned by fossil (the `schema` verb is the single source for role
-// inference — keasy no longer infers roles client-side).
-export type { FieldRole };
-export type YAgg = "count" | "sum" | "avg" | "min" | "max";
-export type MarkType = "barY" | "lineY" | "dot" | "rectY" | "cell";
-
 export interface FieldInfo {
-  /** Unique key: "person::age" */
-  key: string;
   /** Column name in DuckDB: "age" */
   name: string;
   /** GraphAr datatype spelling: "int64", "double", … Empty until the stats land. */
   type: string;
+  /** Owned by fossil: the `schema` verb is the single source for role inference. */
   role: FieldRole;
-  /** Vertex type this field belongs to */
-  sourceType: string;
-  /** Cardinality from the schema verb (absent until computed). */
-  distinct?: number;
-  count?: number;
 }
 
 export interface VertexType {
@@ -38,31 +24,13 @@ export interface EdgeType {
   tableName: string;
 }
 
-export interface SourceQuery {
-  /** DuckDB relation to query — registered by the corpus, not by keasy */
-  tableName: string;
-}
-
 export interface GraphSchema {
   types: VertexType[];
   edges: EdgeType[];
-  allFields: FieldInfo[];
-
-  /** Lookup field by key ("person::age") */
-  field(key: string): FieldInfo | undefined;
-
-  /** Fields for a specific vertex type */
   fieldsOf(typeName: string): FieldInfo[];
-
-  /** Build SQL source for a set of fields (auto-joins if cross-type) */
-  buildSource(fields: FieldInfo[]): SourceQuery;
 }
 
-// ── Type checks (GraphAr datatype spellings) ─────────────────────────────
-//
-// `datatype` carries GraphAr spelling (`int64`, `double`, `date`, …), NOT
-// DuckDB names. These classify it for vgplot chart binning (the reactive
-// Mosaic layer). Role inference is NOT here — it's the `schema` verb's job.
+// `datatype` carries GraphAr spelling (`int64`, `double`, `date`, …), not DuckDB names.
 
 const NUMERIC_GRAPHAR_TYPES = new Set([
   "int8", "int16", "int32", "int64",
@@ -85,43 +53,21 @@ export function isBinnable(datatype: string): boolean {
   return isNumericType(datatype) || isTemporalType(datatype);
 }
 
-// ── Field key ───────────────────────────────────────────────────────────
-
-export function fieldKey(sourceType: string, name: string): string {
-  return `${sourceType}::${name}`;
-}
-
 /** Per-vertex-type field stats, from one `schema({ vertex_type })` call each. */
 export type FieldStatsMap = Map<string, FieldStat[]>;
 
-// ── Build schema from the schema verb ───────────────────────────────────
-
 /**
  * Build the graph schema from what the `schema` verb answered. Pass `stats`
- * (one `schema({ vertex_type })` per type) to attach datatype, role and
- * cardinality; without them a field is a name, its role defaults to
- * "dimension" and nothing is binnable until the stats land.
+ * (one `schema({ vertex_type })` per type) to attach datatype and role;
+ * without them a field is a name, its role defaults to "dimension" and nothing
+ * is binnable until the stats land.
  */
 export function buildGraphSchema(overview: SchemaResult, stats?: FieldStatsMap): GraphSchema {
   const types: VertexType[] = overview.vertices.map((v) => {
     const measured = stats?.get(v.name);
     const fields: FieldInfo[] = measured
-      ? measured.map((f) => ({
-          key: fieldKey(v.name, f.name),
-          name: f.name,
-          type: f.datatype,
-          role: f.role,
-          sourceType: v.name,
-          distinct: f.distinct,
-          count: v.count,
-        }))
-      : v.fields.map((name) => ({
-          key: fieldKey(v.name, name),
-          name,
-          type: "",
-          role: "dimension" as FieldRole,
-          sourceType: v.name,
-        }));
+      ? measured.map((f) => ({ name: f.name, type: f.datatype, role: f.role }))
+      : v.fields.map((name) => ({ name, type: "", role: "dimension" }));
     return { name: v.name, entityCount: v.count, fields };
   });
 
@@ -133,51 +79,9 @@ export function buildGraphSchema(overview: SchemaResult, stats?: FieldStatsMap):
     tableName: e.table_name,
   }));
 
-  const allFields = types.flatMap((t) => t.fields);
-  const keyMap = new Map(allFields.map((f) => [f.key, f]));
-
-  function field(key: string): FieldInfo | undefined {
-    return keyMap.get(key);
-  }
-
-  function fieldsOf(typeName: string): FieldInfo[] {
-    return types.find((t) => t.name === typeName)?.fields ?? [];
-  }
-
-  function edgeBetween(typeA: string, typeB: string): EdgeType | undefined {
-    return edges.find((e) =>
-      (e.sourceType === typeA && e.targetType === typeB) ||
-      (e.sourceType === typeB && e.targetType === typeA),
-    );
-  }
-
-  function buildSource(fields: FieldInfo[]): SourceQuery {
-    const sourceTypes = [...new Set(fields.map((f) => f.sourceType))];
-
-    if (sourceTypes.length <= 1) {
-      return { tableName: sourceTypes[0] ?? overview.vertices[0]?.name ?? "data" };
-    }
-
-    if (sourceTypes.length === 2) {
-      const [typeA, typeB] = sourceTypes;
-      const edge = edgeBetween(typeA, typeB);
-      if (!edge) return { tableName: typeA };
-
-      // Inline JOIN subquery over the relations the corpus registered, on the
-      // writer's own addressing columns.
-      const tableName =
-        `(SELECT s.*, t.* FROM "${edge.sourceType}" s ` +
-        `JOIN "${edge.tableName}" e ON s.dense_id = e.src_dense ` +
-        `JOIN "${edge.targetType}" t ON t.dense_id = e.dst_dense)`;
-      return { tableName };
-    }
-
-    return { tableName: sourceTypes[0] };
-  }
-
-  return { types, edges, allFields, field, fieldsOf, buildSource };
+  return {
+    types,
+    edges,
+    fieldsOf: (typeName) => types.find((t) => t.name === typeName)?.fields ?? [],
+  };
 }
-
-// ── SQL description (for the LLM) ───────────────────────────────────────
-
-

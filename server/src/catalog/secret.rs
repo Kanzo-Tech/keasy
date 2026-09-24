@@ -118,7 +118,7 @@ fn stmt(name: &str, params: &[(&str, String)]) -> String {
 }
 
 /// Single-quote a SQL string literal (double interior quotes).
-fn q(s: &str) -> String {
+pub(super) fn q(s: &str) -> String {
     format!("'{}'", s.replace('\'', "''"))
 }
 

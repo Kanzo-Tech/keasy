@@ -47,8 +47,8 @@ pub async fn ensure_declared_connections(db: &Database) {
     let sink_url = env_nonblank("KEASY_BOOTSTRAP_SINK_URL");
     // Both halves or neither: a vocab connection is a NAME (programs reference
     // it as `@name/shape.shex`) at a URL, and half of that is not a connection.
-    let vocab = env_nonblank("KEASY_BOOTSTRAP_VOCAB_NAME")
-        .zip(env_nonblank("KEASY_BOOTSTRAP_VOCAB_URL"));
+    let vocab =
+        env_nonblank("KEASY_BOOTSTRAP_VOCAB_NAME").zip(env_nonblank("KEASY_BOOTSTRAP_VOCAB_URL"));
 
     let needs_source = db.get_connection_by_name(&name).await.is_none();
     let needs_vocab = match &vocab {

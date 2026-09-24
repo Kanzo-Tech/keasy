@@ -19,6 +19,7 @@ use std::sync::Mutex;
 use duckdb::Connection;
 
 use crate::jobs::models::OutputRelation;
+use secret::q;
 
 /// Errors registering a dataset in the catalog. The host treats these as
 /// non-fatal at `complete_job` time (the reconciler re-registers; §11) — a
@@ -31,6 +32,8 @@ pub enum CatalogError {
     Io(#[from] std::io::Error),
     #[error("the job output target carries no credentials the catalog can read it with")]
     NoCredentials,
+    #[error("{0}")]
+    InvalidPath(String),
 }
 
 /// The workspace's DuckLake catalog — the server-side authority over output
@@ -113,6 +116,11 @@ impl Catalog {
         relations: &[OutputRelation],
         creds: &HashMap<String, String>,
     ) -> Result<(), CatalogError> {
+        for relation in relations {
+            for file in &relation.files {
+                validate_member_path(file)?;
+            }
+        }
         let conn = self.conn.lock().expect("catalog mutex poisoned");
 
         // Authorise reads of this dataset's prefix. Local needs nothing; a remote
@@ -201,15 +209,36 @@ impl Catalog {
 /// single-file version of this silently registered a fraction of the rows.
 fn push_register(sql: &mut String, schema: &str, name: &str, urls: &[String]) {
     let table = sanitize(name);
-    let first = &urls[0];
+    let first = q(&urls[0]);
     sql.push_str(&format!(
-        "CREATE TABLE lake.\"{schema}\".\"{table}\" AS SELECT * FROM read_parquet('{first}') LIMIT 0;\n"
+        "CREATE TABLE lake.\"{schema}\".\"{table}\" AS SELECT * FROM read_parquet({first}) LIMIT 0;\n"
     ));
+    let (table_lit, schema_lit) = (q(&table), q(schema));
     for url in urls {
+        let url = q(url);
         sql.push_str(&format!(
-            "CALL ducklake_add_data_files('lake', '{table}', '{url}', schema => '{schema}');\n"
+            "CALL ducklake_add_data_files('lake', {table_lit}, {url}, schema => {schema_lit});\n"
         ));
     }
+}
+
+/// A relation file is a path relative to the dataset: no scheme, no absolute
+/// root, no `..` leaving it, no quote to close a SQL literal with.
+pub(crate) fn validate_member_path(path: &str) -> Result<(), CatalogError> {
+    let invalid = |why: &str| Err(CatalogError::InvalidPath(format!("{path:?} {why}")));
+    if path.is_empty() {
+        return invalid("is empty");
+    }
+    if path.starts_with(['/', '\\']) || path.contains(':') {
+        return invalid("must be relative to the dataset");
+    }
+    if path.split(['/', '\\']).any(|segment| segment == "..") {
+        return invalid("must not leave the dataset");
+    }
+    if path.contains(['\'', '"', '\0']) {
+        return invalid("must not contain quotes");
+    }
+    Ok(())
 }
 
 /// Join a dataset base URL with a dataset-relative member path.
@@ -408,6 +437,92 @@ mod tests {
             )
             .unwrap();
         assert_eq!(rows, 3, "every tile of the relation is in the table");
+    }
+
+    /// The files arrive from the client (`PUT /v1/jobs/{id}/relations`), so a
+    /// path that closes the SQL literal must be refused before any SQL runs.
+    #[test]
+    fn a_hostile_relation_file_is_refused_before_any_sql() {
+        let dir = tempfile::tempdir().unwrap();
+        let probe = Connection::open_in_memory().unwrap();
+        probe
+            .execute_batch(&format!(
+                "COPY (SELECT 1 AS id) TO '{}' (FORMAT parquet);",
+                dir.path().join("Person.parquet").display(),
+            ))
+            .unwrap();
+        let dest = dir.path().display().to_string();
+        let catalog = Catalog::open(dir.path()).unwrap();
+        catalog
+            .register(
+                "keep",
+                &dest,
+                &[relation("Person", &["Person.parquet"])],
+                &HashMap::new(),
+            )
+            .unwrap();
+
+        let hostile = "Person.parquet', schema => 'x'); DROP SCHEMA lake.\"job_keep\" CASCADE; --";
+        assert!(matches!(
+            catalog.register(
+                "evil",
+                &dest,
+                &[relation("Person", &[hostile])],
+                &HashMap::new()
+            ),
+            Err(CatalogError::InvalidPath(_))
+        ));
+        assert!(Catalog::is_registered(
+            &catalog.registered_jobs().unwrap(),
+            "keep"
+        ));
+    }
+
+    #[test]
+    fn relation_files_stay_inside_the_dataset() {
+        for ok in ["Person.parquet", "vertex/Person/chunk0.parquet"] {
+            assert!(validate_member_path(ok).is_ok(), "{ok}");
+        }
+        for bad in [
+            "",
+            "/etc/passwd",
+            "../other-job/Person.parquet",
+            "vertex/../../x.parquet",
+            "s3://elsewhere/x.parquet",
+            "it's.parquet",
+            "a\"b.parquet",
+        ] {
+            assert!(validate_member_path(bad).is_err(), "{bad}");
+        }
+    }
+
+    /// The destination is a connection URL a member typed; it is quoted, not
+    /// trusted.
+    #[test]
+    fn a_destination_with_a_quote_is_quoted_not_executed() {
+        let root = tempfile::tempdir().unwrap();
+        let dest = root.path().join("o'brien");
+        std::fs::create_dir(&dest).unwrap();
+        let probe = Connection::open_in_memory().unwrap();
+        probe
+            .execute_batch(&format!(
+                "COPY (SELECT 1 AS id) TO '{}' (FORMAT parquet);",
+                dest.join("Person.parquet")
+                    .display()
+                    .to_string()
+                    .replace('\'', "''"),
+            ))
+            .unwrap();
+
+        let catalog = Catalog::open(root.path()).unwrap();
+        catalog
+            .register(
+                "q",
+                &dest.display().to_string(),
+                &[relation("Person", &["Person.parquet"])],
+                &HashMap::new(),
+            )
+            .expect("a quoted destination registers");
     }
 
     /// De-risk (W1, first step): confirm the pinned `duckdb` 1.10502 crate can

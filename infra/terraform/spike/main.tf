@@ -31,10 +31,6 @@ resource "random_password" "session" {
   length  = 48
   special = false
 }
-resource "random_password" "api_key" {
-  length  = 48
-  special = false
-}
 resource "random_password" "secret_key" {
   length  = 48
   special = false
@@ -47,10 +43,6 @@ resource "docker_secret" "oidc" {
 resource "docker_secret" "session" {
   name = "${local.workspace_id}-session"
   data = base64encode(random_password.session.result)
-}
-resource "docker_secret" "api_key" {
-  name = "${local.workspace_id}-api-key"
-  data = base64encode(random_password.api_key.result)
 }
 resource "docker_secret" "secret_key" {
   name = "${local.workspace_id}-secret-key"
@@ -76,7 +68,6 @@ resource "docker_service" "server" {
         KEASY_OIDC_INTERNAL_BASE_URL  = var.oidc_internal_base_url
         KEASY_OIDC_CLIENT_SECRET_FILE = "/run/secrets/oidc"
         KEASY_SESSION_SECRET_FILE     = "/run/secrets/session"
-        KEASY_API_KEY_FILE            = "/run/secrets/api-key"
         KEASY_SECRET_KEY_FILE         = "/run/secrets/secret-key"
       }
 
@@ -89,11 +80,6 @@ resource "docker_service" "server" {
         secret_id   = docker_secret.session.id
         secret_name = docker_secret.session.name
         file_name   = "/run/secrets/session"
-      }
-      secrets {
-        secret_id   = docker_secret.api_key.id
-        secret_name = docker_secret.api_key.name
-        file_name   = "/run/secrets/api-key"
       }
       secrets {
         secret_id   = docker_secret.secret_key.id

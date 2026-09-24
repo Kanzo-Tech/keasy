@@ -17,11 +17,6 @@ resource "random_password" "session" {
   length   = 48
   special  = false
 }
-resource "random_password" "api_key" {
-  for_each = local.stack_tenants
-  length   = 48
-  special  = false
-}
 resource "random_password" "secret_key" {
   for_each = local.stack_tenants
   length   = 48
@@ -37,11 +32,6 @@ resource "docker_secret" "session" {
   for_each = local.stack_tenants
   name     = "keasy-ws-${each.key}-session"
   data     = base64encode(random_password.session[each.key].result)
-}
-resource "docker_secret" "api_key" {
-  for_each = local.stack_tenants
-  name     = "keasy-ws-${each.key}-api-key"
-  data     = base64encode(random_password.api_key[each.key].result)
 }
 resource "docker_secret" "secret_key" {
   for_each = local.stack_tenants
@@ -71,15 +61,9 @@ resource "docker_service" "server" {
         KEASY_OIDC_AUDIENCE   = keycloak_openid_client.api.client_id
         # The ORIGIN this process reaches Keycloak at; the issuer's path is its own.
         KEASY_OIDC_INTERNAL_BASE_URL = "http://keycloak:8080"
-        KEASY_API_KEY_FILE           = "/run/secrets/api-key"
         KEASY_SECRET_KEY_FILE        = "/run/secrets/secret-key"
       }
 
-      secrets {
-        secret_id   = docker_secret.api_key[each.key].id
-        secret_name = docker_secret.api_key[each.key].name
-        file_name   = "/run/secrets/api-key"
-      }
       secrets {
         secret_id   = docker_secret.secret_key[each.key].id
         secret_name = docker_secret.secret_key[each.key].name

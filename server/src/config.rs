@@ -1,11 +1,10 @@
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
-use secrecy::{ExposeSecret, SecretString};
+use secrecy::SecretString;
 
 pub struct ServerConfig {
     pub bind_addr: SocketAddr,
-    pub api_key: SecretString,
     pub cors_origins: Option<Vec<String>>,
     pub data_dir: PathBuf,
     pub secret_key: Option<SecretString>,
@@ -42,17 +41,6 @@ impl ServerConfig {
             Ok(addr) => addr,
             Err(e) => {
                 eprintln!("FATAL: KEASY_BIND_ADDR is not a valid socket address: {e}");
-                std::process::exit(1);
-            }
-        };
-
-        // Resolve via the `_FILE`-aware path so the key can arrive as a Swarm/Docker
-        // secret mounted at `KEASY_API_KEY_FILE` (the deployment default) or as a
-        // plain `KEASY_API_KEY` env (dev). `resolve_secret` already drops empties.
-        let api_key = match resolve_secret("KEASY_API_KEY") {
-            Some(key) => key.expose_secret().to_string(),
-            None => {
-                eprintln!("FATAL: KEASY_API_KEY (or KEASY_API_KEY_FILE) is required");
                 std::process::exit(1);
             }
         };
@@ -111,7 +99,6 @@ impl ServerConfig {
 
         Self {
             bind_addr,
-            api_key: SecretString::from(api_key),
             cors_origins,
             data_dir,
             secret_key,

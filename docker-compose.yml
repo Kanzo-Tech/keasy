@@ -89,7 +89,6 @@ services:
     ports:
       - "8080:8080"
     environment:
-      KEASY_API_KEY: dev-key
       KEASY_BIND_ADDR: "0.0.0.0:8080"
       KEASY_DATA_DIR: /var/lib/keasy
       # The catalog's DuckDB `azure`/`httpfs` extensions verify TLS via libcurl /

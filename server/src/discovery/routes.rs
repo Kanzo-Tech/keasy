@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::AppState;
 use crate::auth::role::Member;
 use crate::connections::models::Connection;
-use crate::error::error_body;
+use crate::error::{data_response, error_body};
 use crate::jobs::models::{Job, JobStatus};
 use crate::jobs::routes::owned_job;
 
@@ -92,7 +92,7 @@ pub(crate) async fn sign_dataset_paths(
         .cloned()
         .zip(urls.into_iter().map(|u| u.to_string()))
         .collect();
-    Ok(Json(ResolveResponse { files }).into_response())
+    Ok(data_response(ResolveResponse { files }).into_response())
 }
 
 #[derive(Deserialize, utoipa::ToSchema)]
@@ -197,7 +197,7 @@ pub async fn resolve_source_refs(
         .into_iter()
         .map(|c| (c.name, c.url))
         .collect();
-    Ok(Json(SourceRefsResponse { refs }).into_response())
+    Ok(data_response(SourceRefsResponse { refs }).into_response())
 }
 
 /// The connections the caller's job reads, as far as they still exist.
@@ -294,7 +294,7 @@ pub async fn resolve_source_urls(
             })?;
         urls.insert(uri.clone(), signed.to_string());
     }
-    Ok(Json(SourceUrlsResponse { urls }).into_response())
+    Ok(data_response(SourceUrlsResponse { urls }).into_response())
 }
 
 #[cfg(test)]

@@ -146,8 +146,3 @@ export async function providers(): Promise<ProviderInfo[]> {
   await load();
   return wasmProviders();
 }
-
-/** LSP severity 1 is an error; 2 a warning. A program with no 1s is runnable. */
-export function hasErrors(rows: readonly CheckRow[]): boolean {
-  return rows.some((row) => row.severity === 1);
-}

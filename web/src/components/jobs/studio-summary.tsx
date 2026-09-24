@@ -33,18 +33,9 @@ const SEVERITY_TEXT = [
 const ROLE_LABEL = { data: "read as data", schema: "read as a shape" } as const;
 
 /**
- * What the job will READ, and what stands in the way of creating it.
- *
- * The page this replaces restated the form — name, mode, DCAT — three fields you
- * had just filled in, two of which are in the header. A review step that re-reads
- * its own inputs is a receipt, not a review. What it shows instead is the
- * program's typed lineage (`fossil refs`, run in this tab) and the compiler's own
- * findings, which is the question you actually have before pressing Create.
- *
- * It stops at the sources on purpose. The showcase's third page also draws the
- * classes the program emits, and fossil exposes no query for that yet: a regex
- * over the mapping text would be keasy inventing fossil's semantics, which is
- * the thing this whole change is undoing.
+ * What the job reads — fossil's typed lineage — and the compiler's findings that
+ * stand in the way of creating it. Emitted classes are not drawn: fossil has no
+ * query for them yet.
  */
 export function StudioSummary({
   name,
@@ -160,8 +151,6 @@ export function StudioSummary({
         </Card>
       </Show>
 
-      {/* The terminal action, right under what it will create, gated by the same
-          analysis the status strip reports. */}
       <div className="flex items-center justify-end gap-3">
         <Show when={blocked}>
           <span className="text-muted-foreground text-sm">

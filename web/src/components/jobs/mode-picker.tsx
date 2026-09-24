@@ -11,14 +11,7 @@ import {
 import { Code, Wand2 } from "lucide-react";
 import type { CreationMode } from "@/lib/types";
 
-/**
- * How the program gets written, asked once before the studio opens.
- *
- * Two bare toggle buttons under a line of prose is what this was. Cards carry the
- * one thing the choice actually needs: what each mode does. And "Assistant" is
- * disabled with the reason ON the control rather than leaving `disabled` to mean
- * whatever a reader guesses.
- */
+/** How the program gets written, asked once before the studio opens. */
 export function ModePicker({ onSelect }: { onSelect: (mode: CreationMode) => void }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 p-6">

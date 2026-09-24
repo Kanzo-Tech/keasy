@@ -26,7 +26,11 @@ impl Harness {
     async fn new() -> Self {
         let realm = realm("k1").await;
         let dir = tempfile::tempdir().unwrap();
-        let db = Database::open(&dir.path().join("keasy.db"), None).unwrap();
+        let db = Database::open(
+            &dir.path().join("keasy.db"),
+            crate::crypto::SecretKey::for_tests(),
+        )
+        .unwrap();
         let catalog = crate::catalog::Catalog::open(dir.path()).unwrap();
         let state = AppState {
             db,

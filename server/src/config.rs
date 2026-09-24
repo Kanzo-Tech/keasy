@@ -1,13 +1,16 @@
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
-use secrecy::SecretString;
+use secrecy::{ExposeSecret, SecretString};
+
+use crate::crypto::SecretKey;
 
 pub struct ServerConfig {
     pub bind_addr: SocketAddr,
     pub cors_origins: Option<Vec<String>>,
     pub data_dir: PathBuf,
-    pub secret_key: Option<SecretString>,
+    /// Seals every stored credential. Required: there is no plaintext mode.
+    pub secret_key: SecretKey,
     /// The **public** OIDC issuer, exactly as it appears in a token's `iss`.
     /// Read from KEASY_OIDC_ISSUER_URL. Example: https://auth.example/auth/realms/keasy
     pub oidc_issuer_url: String,
@@ -33,16 +36,10 @@ pub struct ServerConfig {
 
 impl ServerConfig {
     pub fn from_env() -> Self {
-        let bind_addr = match std::env::var("KEASY_BIND_ADDR")
+        let bind_addr = std::env::var("KEASY_BIND_ADDR")
             .unwrap_or_else(|_| "0.0.0.0:8080".to_string())
             .parse()
-        {
-            Ok(addr) => addr,
-            Err(e) => {
-                eprintln!("FATAL: KEASY_BIND_ADDR is not a valid socket address: {e}");
-                std::process::exit(1);
-            }
-        };
+            .unwrap_or_else(|e| fatal(&format!("KEASY_BIND_ADDR is not a socket address: {e}")));
 
         let cors_origins = std::env::var("KEASY_CORS_ORIGINS").ok().map(|v| {
             v.split(',')
@@ -54,42 +51,27 @@ impl ServerConfig {
         let data_dir =
             PathBuf::from(std::env::var("KEASY_DATA_DIR").unwrap_or_else(|_| "./data".to_string()));
 
-        let secret_key = resolve_secret("KEASY_SECRET_KEY");
+        let secret_key = match resolve_secret("KEASY_SECRET_KEY") {
+            Some(encoded) => SecretKey::from_base64(encoded.expose_secret()).unwrap_or_else(|e| {
+                fatal(&format!(
+                    "KEASY_SECRET_KEY must be 32 random bytes in base64 \
+                     (openssl rand -base64 32): it {e}"
+                ))
+            }),
+            None => fatal(
+                "KEASY_SECRET_KEY is required to encrypt stored credentials \
+                 (generate one with: openssl rand -base64 32)",
+            ),
+        };
 
-        // Both are required, and the server refuses to start without them. There
-        // is no unauthenticated mode to fall back to: a resource server that
+        // There is no unauthenticated mode to fall back to: a resource server that
         // cannot name its issuer cannot refuse anything.
-        let oidc_issuer_url = match nonblank("KEASY_OIDC_ISSUER_URL") {
-            Some(v) => v,
-            None => {
-                eprintln!(
-                    "FATAL: KEASY_OIDC_ISSUER_URL is required — it is what tokens are validated against"
-                );
-                std::process::exit(1);
-            }
-        };
-
-        let oidc_client_id = match nonblank("KEASY_OIDC_CLIENT_ID") {
-            Some(v) => v,
-            None => {
-                eprintln!(
-                    "FATAL: KEASY_OIDC_CLIENT_ID is required — it names this workspace's client"
-                );
-                std::process::exit(1);
-            }
-        };
-
-        let oidc_audience =
-            nonblank("KEASY_OIDC_AUDIENCE").unwrap_or_else(|| "keasy-api".to_string());
-
-        let oidc_internal_base_url = nonblank("KEASY_OIDC_INTERNAL_BASE_URL");
-
-        let workspace_name = std::env::var("KEASY_WORKSPACE_NAME")
-            .ok()
-            .filter(|s| !s.trim().is_empty())
-            .unwrap_or_else(|| "Workspace".to_string());
-
-        let workspace_slug = nonblank("KEASY_ORG_ALIAS");
+        let oidc_issuer_url = nonblank("KEASY_OIDC_ISSUER_URL").unwrap_or_else(|| {
+            fatal("KEASY_OIDC_ISSUER_URL is required — it is what tokens are validated against")
+        });
+        let oidc_client_id = nonblank("KEASY_OIDC_CLIENT_ID").unwrap_or_else(|| {
+            fatal("KEASY_OIDC_CLIENT_ID is required — it names this workspace's client")
+        });
 
         Self {
             bind_addr,
@@ -98,12 +80,19 @@ impl ServerConfig {
             secret_key,
             oidc_issuer_url,
             oidc_client_id,
-            oidc_audience,
-            oidc_internal_base_url,
-            workspace_name,
-            workspace_slug,
+            oidc_audience: nonblank("KEASY_OIDC_AUDIENCE")
+                .unwrap_or_else(|| "keasy-api".to_string()),
+            oidc_internal_base_url: nonblank("KEASY_OIDC_INTERNAL_BASE_URL"),
+            workspace_name: nonblank("KEASY_WORKSPACE_NAME")
+                .unwrap_or_else(|| "Workspace".to_string()),
+            workspace_slug: nonblank("KEASY_ORG_ALIAS"),
         }
     }
+}
+
+fn fatal(message: &str) -> ! {
+    eprintln!("FATAL: {message}");
+    std::process::exit(1);
 }
 
 /// An environment variable, or `None` when it is absent or blank.
@@ -114,25 +103,17 @@ fn nonblank(name: &str) -> Option<String> {
         .filter(|s| !s.is_empty())
 }
 
+/// `NAME_FILE` (a mounted secret) if set, else `NAME`.
 fn resolve_secret(name: &str) -> Option<SecretString> {
     let file_var = format!("{name}_FILE");
     if let Ok(path) = std::env::var(&file_var) {
-        match std::fs::read_to_string(&path) {
-            Ok(contents) => {
-                let trimmed = contents.trim().to_string();
-                if !trimmed.is_empty() {
-                    return Some(SecretString::from(trimmed));
-                }
-            }
-            Err(e) => {
-                eprintln!("FATAL: {file_var} points to {path} but could not read it: {e}");
-                std::process::exit(1);
-            }
-        }
+        let contents = std::fs::read_to_string(&path).unwrap_or_else(|e| {
+            fatal(&format!(
+                "{file_var} points to {path} but could not read it: {e}"
+            ))
+        });
+        return Some(SecretString::from(contents.trim().to_string()))
+            .filter(|s| !s.expose_secret().is_empty());
     }
-
-    std::env::var(name)
-        .ok()
-        .filter(|s| !s.trim().is_empty())
-        .map(SecretString::from)
+    nonblank(name).map(SecretString::from)
 }

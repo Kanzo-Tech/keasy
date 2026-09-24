@@ -238,7 +238,11 @@ mod tests {
             .unwrap();
 
         // Real DB holding only the live (already-registered) completed job.
-        let db = Database::open(&dir.path().join("keasy.db"), None).unwrap();
+        let db = Database::open(
+            &dir.path().join("keasy.db"),
+            crate::crypto::SecretKey::for_tests(),
+        )
+        .unwrap();
         db.insert_job(&job("live", JobStatus::Completed, relations()))
             .await
             .unwrap();

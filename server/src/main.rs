@@ -27,15 +27,6 @@ async fn main() {
         std::process::exit(1);
     }
 
-    // Fail closed: without the encryption key, stored tenant connection creds
-    // would be written in plaintext. Required (the deployment injects it as a
-    // Swarm secret via KEASY_SECRET_KEY_FILE). See W4 in the deploy plan.
-    if config.secret_key.is_none() {
-        eprintln!("FATAL: KEASY_SECRET_KEY is required to encrypt stored credentials");
-        eprintln!("       Generate one with: openssl rand -base64 32");
-        std::process::exit(1);
-    }
-
     let db_path = config.data_dir.join("keasy.db");
     let db = match Database::open(&db_path, config.secret_key) {
         Ok(db) => db,

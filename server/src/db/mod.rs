@@ -4,8 +4,8 @@ pub mod secrets;
 use std::path::Path;
 use std::sync::Arc;
 
+use crate::crypto::SecretKey;
 use rusqlite::Connection;
-use secrecy::SecretString;
 use tokio::sync::{Mutex, Semaphore};
 
 const READ_POOL_SIZE: usize = 4;
@@ -48,11 +48,11 @@ impl ReadPool {
 pub struct Database {
     write_conn: Arc<Mutex<Connection>>,
     read_pool: Arc<ReadPool>,
-    secret_key: Option<SecretString>,
+    secret_key: SecretKey,
 }
 
 impl Database {
-    pub fn open(path: &Path, secret_key: Option<SecretString>) -> Result<Self, String> {
+    pub fn open(path: &Path, secret_key: SecretKey) -> Result<Self, String> {
         // Open write connection
         let write_conn = open_conn(path)?;
         write_conn

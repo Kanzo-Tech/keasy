@@ -66,17 +66,14 @@ export function generateBreadcrumbs(path: string): RouteEntry[] {
     let current = "";
     for (let i = 0; i < segments.length; i++) {
       current += `/${segments[i]}`;
-      const route = findRoute(current);
-      if (route) {
-        crumbs.push(route);
-      } else if (i === segments.length - 1) {
-        crumbs.push({
+      crumbs.push(
+        findRoute(current) ?? {
           path: current,
           name: segments[i]
             .replace(/-/g, " ")
             .replace(/\b\w/g, (l) => l.toUpperCase()),
-        });
-      }
+        },
+      );
     }
   }
 

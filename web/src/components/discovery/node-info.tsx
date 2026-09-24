@@ -5,7 +5,6 @@ import { Search } from "lucide-react";
 import {
   ScrollArea,
 } from "@kanzo-tech/ui";
-import { PanelHeader } from "@/components/layout/workspace-layout";
 import { scaleOf } from "@kanzo-tech/graph";
 import { useCorpus } from "./use-discovery-store";
 import type { GraphSchema } from "@/lib/graph-schema";
@@ -61,8 +60,6 @@ export function NodeInfo({ schema, selectedVertex }: Props) {
 
   return (
     <div className="flex flex-col h-full">
-      <PanelHeader title="Info" />
-
       {/* Search */}
       <div className="shrink-0 border-b px-2 py-1.5">
         <div className="flex items-center gap-1.5 text-muted-foreground">

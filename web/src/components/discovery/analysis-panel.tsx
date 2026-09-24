@@ -20,7 +20,6 @@ import {
   Switch,
 } from "@kanzo-tech/ui";
 import { EmptyState } from "@/components/shared/empty-state";
-import { PanelHeader } from "@/components/layout/workspace-layout";
 import { isBinnable, isTemporalType as isTemporal, type GraphSchema } from "@/lib/graph-schema";
 
 // ── Chart config types ───────────────────────────────────────────────────
@@ -328,7 +327,6 @@ export function AnalysisPanel({ schema, selection }: AnalysisPanelProps) {
   if (charts.length === 0) {
     return (
       <div className="flex flex-col h-full">
-        <PanelHeader title="Analysis" />
         <EmptyState
           icon={BarChart3}
           title="No charts"
@@ -345,7 +343,6 @@ export function AnalysisPanel({ schema, selection }: AnalysisPanelProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <PanelHeader title="Analysis" />
       <ScrollArea className="flex-1">
         <div className="p-1.5 space-y-2">
           {charts.map((chart) => (

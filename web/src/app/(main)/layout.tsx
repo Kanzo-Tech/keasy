@@ -1,8 +1,16 @@
 import { forbidden, redirect } from "next/navigation";
-import { SidebarInset, SidebarProvider } from "@kanzo-tech/ui";
+import {
+  Separator,
+  ShellHeader,
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@kanzo-tech/ui";
 import { getSession } from "@/lib/auth";
 import { workspaceRole } from "@/lib/roles";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { DynamicBreadcrumbs } from "@/components/layout/dynamic-breadcrumbs";
+import { RedirectToast } from "@/components/shared/redirect-toast";
 
 /**
  * Nothing under here is the same for two people: every page is behind a session
@@ -21,12 +29,20 @@ export default async function MainLayout({
   if (!session) redirect("/api/auth/signin");
   if (!workspaceRole(session)) forbidden();
 
+  // One frame for every page, the full-screen workspace included: the header, and the
+  // trigger that collapses the rail, are never a page's to leave out.
   return (
-    // The provider IS the viewport frame — it renders the flex row the rail and the
-    // inset sit in, so keasy no longer wraps it in one of its own.
     <SidebarProvider className="h-dvh min-h-0 overflow-hidden">
       <AppSidebar />
-      <SidebarInset className="overflow-hidden">{children}</SidebarInset>
+      <SidebarInset className="overflow-hidden">
+        <ShellHeader className="min-w-0 flex-row items-center gap-2 bg-background p-4">
+          <SidebarTrigger className="-ms-1" />
+          <Separator orientation="vertical" className="h-4" />
+          <DynamicBreadcrumbs />
+        </ShellHeader>
+        <RedirectToast />
+        {children}
+      </SidebarInset>
     </SidebarProvider>
   );
 }

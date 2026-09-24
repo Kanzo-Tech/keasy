@@ -5,6 +5,13 @@ import {
   Badge,
   Clipboard,
   ClipboardTrigger,
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
   Resizable,
   ResizablePanel,
   ResizableResizeTrigger,
@@ -16,25 +23,21 @@ import { CodeEditor } from "@kanzo-tech/ui/editor";
 import { fossil } from "@fossil-lang/codemirror-fossil";
 import { forceLinting } from "@codemirror/lint";
 import type { EditorView } from "@codemirror/view";
+import { BookMarked, Database, PlugZap } from "lucide-react";
 import * as checker from "@/lib/fossil/checker";
 import { useSourceDescriptors } from "@/lib/fossil/use-source-descriptors";
-import { ConnectionsRail } from "@/components/jobs/connections-rail";
 import type { Connection } from "@/lib/types";
 
 /** The chrome a floating cluster wears — the same utilities the canvas controls use. */
 const FLOATING = "rounded-lg border bg-card shadow-sm";
 
+const KIND_ICON = { data: Database, vocab: BookMarked } as const;
+const KIND_LABEL = { data: "data source", vocab: "RDF vocabulary" } as const;
 
 /**
- * The program, and the connections it can reference.
- *
- * Everything the editor knows comes from `@fossil-lang/codemirror-fossil`'s
- * `fossil()`, which takes plain callbacks and calls them on the main thread.
- * There is no Worker, no JSON-RPC and no transport: highlighting, squiggles,
- * hover, completion and go-to-definition are five function calls into the
- * `FossilPlayground` that `lib/fossil/checker.ts` holds. What keasy used to
- * compose — a worker entry, a `WorkerTransport`, a `<FossilEditor/>` that owned
- * its own LSP client — was the same five answers routed through a wire.
+ * The program, and the connections it can reference. The language layer is
+ * `fossil()`'s callbacks into the checker `lib/fossil/checker.ts` holds, on the
+ * main thread.
  */
 export function StudioEditor({
   program,
@@ -69,22 +72,8 @@ export function StudioEditor({
     };
   }, []);
 
-  // The language layer. `CodeEditor` reconfigures its `Compartment` on the
-  // REFERENTIAL identity of `extensions`, so an inline array would rebuild the
-  // editor's language on every render — the dependency list is load-bearing,
-  // not tidiness, and `onDiagnostics` belongs in it as the stable setter it is
-  // rather than as a per-render closure.
-  //
-  // Before the module is instantiated there is no language at all: `tokenize()`
-  // would have nothing to colour with and every other callback would answer
-  // about an unopened workspace. `booted` flips exactly once, and that single
-  // Compartment reconfigure is what paints the buffer the moment the checker is
-  // up — which is what the `wasmReady` gate bought by refusing to render the
-  // editor, except the program stays readable and typeable while wasm loads.
-  //
-  // Nothing here debounces. `fossil()`'s linter waits out its own delay and then
-  // waits for the check to return before scheduling the next one, so the
-  // coalescing an LSP client does with `didChange` is in the library.
+  // `CodeEditor` reconfigures its language on the identity of `extensions`, so
+  // this is memoised; `booted` flips once, painting the buffer when wasm is up.
   const extensions = useMemo(
     () =>
       booted
@@ -97,10 +86,7 @@ export function StudioEditor({
             hover: checker.hoverAt,
             complete: checker.completeAt,
             definition: checker.definitionAt,
-            // One pane, so a definition in a shape document cannot be a jump.
-            // Reporting where it is beats moving the cursor to the same
-            // coordinates in the wrong buffer, which is what a host that
-            // ignored `uri` would do.
+            // One pane: a definition in a shape document is reported, not jumped to.
             onNavigate: (target) =>
               setDefinition(
                 target === null
@@ -112,17 +98,12 @@ export function StudioEditor({
     [booted, onDiagnostics],
   );
 
-  // Schema-aware completion: each `@conn/path` binding is introspected through
-  // keasy's server (which holds the org's credentials) and pushed at the
-  // compiler before the next check. Registering used to travel over the worker
-  // as `fossil/registerInferredDescriptor`; it is a method call now.
+  // Each `@conn/path` binding, introspected through the server, is a Salsa
+  // input: re-check so the columns it declares stop being unknown.
   const descriptors = useSourceDescriptors(program, connections);
   useEffect(() => {
     if (!booted || descriptors.length === 0) return;
     for (const descriptor of descriptors) checker.registerDescriptor(descriptor);
-    // The descriptor is a Salsa input: re-check so the columns it declares stop
-    // being unknown. `forceLinting` is how CodeMirror asks for that without
-    // faking a document change.
     if (view.current) forceLinting(view.current);
   }, [booted, descriptors]);
 
@@ -137,11 +118,6 @@ export function StudioEditor({
 
   const pane = (
     <>
-      {/* `chrome={false}`: an editor PANE, not a form field — the focus ring and
-          rounded border belong to a control sitting in a form, and here the
-          region's own borders do that job. `basics` stays on, so the theme,
-          history and keymap come from the library and only the language is ours
-          (which keasy used to hand-roll). */}
       <CodeEditor
         basics
         chrome={false}
@@ -155,9 +131,6 @@ export function StudioEditor({
         value={program}
       />
 
-      {/* Top-end, which is where an editor's own actions go. Ark's machine owns
-          the copied→check flip, so the only thing this call site decides is what
-          gets copied. */}
       <div className="absolute end-3 top-3 z-10">
         <Clipboard className={cn(FLOATING, "w-auto")} timeout={1200} value={program}>
           <ClipboardTrigger aria-label="Copy the program" />
@@ -197,7 +170,67 @@ export function StudioEditor({
                 {connections.length}
               </Badge>
             </div>
-            <ConnectionsRail connections={connections} onInsert={insert} used={used} />
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-3">
+              <p className="text-muted-foreground text-xs">
+                Click one to write it at the caret, or press @ in the editor.
+              </p>
+              <Show
+                fallback={
+                  <Item className="mx-auto max-w-[420px] flex-col gap-2 py-8 text-center">
+                    <ItemMedia
+                      className="group-has-data-[slot=item-description]/item:self-center text-muted-foreground [&_svg:not([class*='size-'])]:size-8"
+                      variant="icon"
+                    >
+                      <PlugZap />
+                    </ItemMedia>
+                    <ItemTitle className="text-base">No connections yet</ItemTitle>
+                    <ItemDescription>
+                      A job reads through a connection. Wire one under Connections and it becomes
+                      referenceable as @name.
+                    </ItemDescription>
+                  </Item>
+                }
+                when={connections.length > 0}
+              >
+                <ItemGroup className="gap-2">
+                  {connections.map((c) => {
+                    const Icon = KIND_ICON[c.kind];
+                    return (
+                      // The button sits inside the `Item`: `asChild` would put
+                      // `role="listitem"` on it and it would stop being announced as one.
+                      <Item className="p-0" key={c.id} variant="outline">
+                        <button
+                          className="flex w-full flex-wrap items-center gap-(--space) rounded-xl p-(--space) text-start transition-colors hover:border-primary/40"
+                          onClick={() => insert(c)}
+                          type="button"
+                        >
+                          <ItemMedia variant="icon">
+                            <Icon />
+                          </ItemMedia>
+                          <ItemContent>
+                            <ItemTitle className="font-mono">
+                              @{c.name}
+                              <Show when={used.has(c.name)}>
+                                <Badge size="xs" variant="secondary">
+                                  in use
+                                </Badge>
+                              </Show>
+                            </ItemTitle>
+                            <ItemDescription className="line-clamp-1 text-xs">{c.url}</ItemDescription>
+                            <span className="text-faint text-xs">{KIND_LABEL[c.kind]}</span>
+                          </ItemContent>
+                          <ItemActions>
+                            <Badge size="xs" variant="outline">
+                              {c.direction === "sink" ? "sink" : "source"}
+                            </Badge>
+                          </ItemActions>
+                        </button>
+                      </Item>
+                    );
+                  })}
+                </ItemGroup>
+              </Show>
+            </div>
           </ShellAside>
         </ResizablePanel>
       </Resizable>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Briefcase, MoreHorizontal, Plus } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Badge,
   Button,
   Item,
   ItemActions,
@@ -32,14 +33,20 @@ import {
   sortableHeader,
   useDataTable,
 } from "@kanzo-tech/ui/table";
-import { JobStatusBadge } from "@/components/jobs/job-status-badge";
 import { api } from "@/lib/api";
 import { formatDate, formatJobDuration } from "@/lib/formatters";
 import { queryKeys } from "@/lib/query-keys";
 import type { Job, JobStatus } from "@/lib/types";
-import { hasRunningJobs } from "@/lib/utils";
+import { hasRunningJobs, isTerminalStatus } from "@/lib/utils";
 
-const DELETABLE: JobStatus[] = ["draft", "completed", "failed", "cancelled"];
+const STATUS: Record<JobStatus, { label: string; variant: React.ComponentProps<typeof Badge>["variant"] }> = {
+  draft: { label: "Draft", variant: "secondary" },
+  pending: { label: "Pending", variant: "warning" },
+  running: { label: "Running", variant: "info" },
+  completed: { label: "Completed", variant: "success" },
+  failed: { label: "Failed", variant: "destructive" },
+  cancelled: { label: "Cancelled", variant: "secondary" },
+};
 
 export default function JobsPage() {
   const router = useRouter();
@@ -73,7 +80,10 @@ export default function JobsPage() {
       {
         accessorKey: "status",
         header: "Status",
-        cell: ({ getValue }) => <JobStatusBadge status={getValue<JobStatus>()} />,
+        cell: ({ getValue }) => {
+          const { label, variant } = STATUS[getValue<JobStatus>()];
+          return <Badge variant={variant}>{label}</Badge>;
+        },
         filterFn: (row, id, value: string[]) => value.includes(row.getValue(id)),
       },
       {
@@ -103,7 +113,7 @@ export default function JobsPage() {
         enableHiding: false,
         size: 48,
         cell: ({ row }) =>
-          DELETABLE.includes(row.original.status) && (
+          (row.original.status === "draft" || isTerminalStatus(row.original.status)) && (
             <div className="text-end">
               <Menu>
                 <MenuTrigger asChild>

@@ -3,18 +3,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { Boxes, Table2 } from "lucide-react";
 
-import { api } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
-import type { CatalogDataset } from "@/lib/types";
-import { PageShell } from "@/components/layout/page-shell";
-import { SettingsSection } from "@/components/settings/settings-section";
-import { EmptyState } from "@/components/shared/empty-state";
 import {
   Badge,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
+  Item,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+  SectionBody,
+  SectionDescription,
+  SectionHeader,
+  SectionRoot,
+  SectionTitle,
+  SectionTitleGroup,
   Skeleton,
   Table,
   TableBody,
@@ -24,6 +28,9 @@ import {
   TableRow,
 } from "@kanzo-tech/ui";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
+import type { CatalogDataset } from "@/lib/types";
 
 export default function DatasetsPage() {
   const { data: datasets, isLoading } = useQuery({
@@ -33,33 +40,45 @@ export default function DatasetsPage() {
   const showSkeleton = useDelayedLoading(isLoading);
 
   return (
-    <PageShell>
-      <PageShell.Content className="gap-8">
-        <SettingsSection
-          title="Data Catalog"
-          description="Every dataset registered in the workspace catalog — the metadata view of what each completed job produced. The data itself stays at its sink; this is the governance index over it."
-        >
-          {showSkeleton ? (
-            <div className="space-y-4">
+    <SectionRoot>
+      <SectionHeader scale="page">
+        <SectionTitleGroup>
+          <SectionTitle level={1} scale="page">
+            Data Catalog
+          </SectionTitle>
+          <SectionDescription>
+            Every dataset registered in the workspace catalog — the metadata view of what each
+            completed job produced. The data itself stays at its sink; this is the governance
+            index over it.
+          </SectionDescription>
+        </SectionTitleGroup>
+      </SectionHeader>
+      <SectionBody scale="page">
+        {isLoading ? (
+          showSkeleton && (
+            <>
               <Skeleton className="h-40 w-full" />
               <Skeleton className="h-40 w-full" />
-            </div>
-          ) : !datasets?.length ? (
-            <EmptyState
-              icon={Boxes}
-              title="No datasets registered yet"
-              description="When a job completes, its output is registered here automatically."
-            />
-          ) : (
-            <div className="space-y-4">
-              {datasets.map((dataset) => (
-                <DatasetCard key={dataset.job_id} dataset={dataset} />
-              ))}
-            </div>
-          )}
-        </SettingsSection>
-      </PageShell.Content>
-    </PageShell>
+            </>
+          )
+        ) : !datasets?.length ? (
+          <Item className="mx-auto max-w-md flex-col gap-2 py-10 text-center">
+            <ItemMedia
+              className="group-has-data-[slot=item-description]/item:self-center text-muted-foreground [&_svg:not([class*='size-'])]:size-8"
+              variant="icon"
+            >
+              <Boxes />
+            </ItemMedia>
+            <ItemTitle className="text-base">No datasets registered yet</ItemTitle>
+            <ItemDescription>
+              When a job completes, its output is registered here automatically.
+            </ItemDescription>
+          </Item>
+        ) : (
+          datasets.map((dataset) => <DatasetCard dataset={dataset} key={dataset.job_id} />)
+        )}
+      </SectionBody>
+    </SectionRoot>
   );
 }
 

@@ -4,23 +4,24 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import Link from "next/link";
 import { AlertCircle, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import type { Coordinator } from "@uwdata/mosaic-core";
+import type { ExecuteSqlResult, SqlCorpus } from "@fossil-lang/corpus";
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
   Button,
   Clipboard,
   ClipboardTrigger,
+  Item,
+  ItemActions,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
   Show,
   Skeleton,
   ToggleGroup,
   ToggleGroupItem,
 } from "@kanzo-tech/ui";
-import {
-  type ColumnDef,
-  DataTableContent,
-  DataTablePagination,
-  DataTableRoot,
-  useDataTable,
-} from "@kanzo-tech/ui/table";
 import {
   Conversation,
   ConversationContent,
@@ -52,18 +53,17 @@ import {
   useAiStream,
 } from "@kanzo-tech/ai";
 import { MessageMarkdown } from "@kanzo-tech/ai/markdown";
-import { useCoordinator } from "./use-discovery-store";
 import { ApiError, api } from "@/lib/api";
 import { sseFailure } from "@/lib/api/sse";
 import { queryKeys } from "@/lib/query-keys";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
 import { generateSuggestions } from "@/lib/schema-suggestions";
-import { EmptyState } from "@/components/shared/empty-state";
-import { ErrorAlert } from "@/components/shared/error-alert";
-import { isError } from "@/lib/error-codes";
+import { getErrorInfo } from "@/lib/error-codes";
 import type { GraphSchema } from "@/lib/graph-schema";
 import type { AiProvider, ChatMessage } from "@/lib/types";
 import { describeDataSpace } from "@/lib/data-space";
+import { useCorpus } from "./corpus";
+import { ResultTable } from "./result-table";
 
 // ── The turn ─────────────────────────────────────────────────────────────
 
@@ -80,9 +80,10 @@ const STEPS = [
 type TurnEvent =
   | { kind: "phase"; phase: Phase }
   | { kind: "plan"; sql: string | null; answer: string; reasoning: string }
+  | { kind: "rows"; result: ExecuteSqlResult }
   | { kind: "explain"; text: string }
   | { kind: "explained"; text: string }
-  | { kind: "failed"; code: string; message: string };
+  | { kind: "failed"; code: string };
 
 interface Turn {
   id: number;
@@ -91,8 +92,9 @@ interface Turn {
   reasoning: string;
   sql: string | null;
   answer: string;
+  result: ExecuteSqlResult | null;
   explanation: string;
-  failure: { code: string; message: string } | null;
+  failure: string | null;
   /** The phase the run stopped in, which is the step that wears the failure. */
   failedAt: Phase | null;
 }
@@ -103,16 +105,14 @@ function apply(turn: Turn, event: TurnEvent): Turn {
       return { ...turn, phase: event.phase };
     case "plan":
       return { ...turn, sql: event.sql, answer: event.answer, reasoning: event.reasoning };
+    case "rows":
+      return { ...turn, result: event.result };
     case "explain":
       return { ...turn, explanation: turn.explanation + event.text };
     case "explained":
       return { ...turn, explanation: event.text };
     case "failed":
-      return {
-        ...turn,
-        failure: { code: event.code, message: event.message },
-        failedAt: turn.phase,
-      };
+      return { ...turn, failure: event.code, failedAt: turn.phase };
   }
 }
 
@@ -154,13 +154,10 @@ function toolState(turn: Turn): RunState {
 const SAMPLE_ROWS = 30;
 const SAMPLE_CHARS = 4000;
 
-type ResultRow = Record<string, unknown>;
-
 interface Plan {
   sql?: string;
   answer: string;
   reasoning?: string;
-  code: string;
 }
 
 interface AskOptions {
@@ -169,14 +166,12 @@ interface AskOptions {
   history: ChatMessage[];
   provider?: AiProvider;
   schema?: string;
-  coordinator: Coordinator | null;
+  corpus: SqlCorpus;
   signal: AbortSignal;
 }
 
-async function sample(coordinator: Coordinator | null, sql: string): Promise<string> {
-  if (!coordinator) return "";
-  const rows = ((await coordinator.query(sql, { type: "json" })) ?? []) as ResultRow[];
-  const json = JSON.stringify(rows.slice(0, SAMPLE_ROWS));
+function sample(result: ExecuteSqlResult): string {
+  const json = JSON.stringify(result.rows.slice(0, SAMPLE_ROWS));
   return json.length > SAMPLE_CHARS ? `${json.slice(0, SAMPLE_CHARS)}...` : json;
 }
 
@@ -186,7 +181,7 @@ async function sample(coordinator: Coordinator | null, sql: string): Promise<str
  * because a turn that broke still belongs in the transcript.
  */
 async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
-  const { jobId, question, history, provider, schema, coordinator, signal } = options;
+  const { jobId, question, history, provider, schema, corpus, signal } = options;
   try {
     let plan: Plan | null = null;
 
@@ -198,7 +193,7 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     })) {
       const failure = sseFailure(frame);
       if (failure) {
-        yield { kind: "failed", ...failure };
+        yield { kind: "failed", code: failure.code };
         return;
       }
       if (frame.event === "complete") {
@@ -208,10 +203,6 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
 
     if (!plan) {
       yield { kind: "phase", phase: "done" };
-      return;
-    }
-    if (isError(plan.code)) {
-      yield { kind: "failed", code: plan.code, message: plan.answer };
       return;
     }
 
@@ -228,24 +219,17 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     }
 
     yield { kind: "phase", phase: "executing" };
-    let rows: string;
+    let result: ExecuteSqlResult;
     try {
-      rows = await sample(coordinator, plan.sql);
-    } catch (err) {
-      yield {
-        kind: "failed",
-        code: "query_failed",
-        message: err instanceof Error ? err.message : "The query did not run.",
-      };
+      result = await corpus.executeSql({ sql: plan.sql });
+    } catch {
+      yield { kind: "failed", code: "query_failed" };
       return;
     }
-    if (!rows) {
-      yield { kind: "phase", phase: "done" };
-      return;
-    }
+    yield { kind: "rows", result };
 
     yield { kind: "phase", phase: "explaining" };
-    const reading = `Original question: ${question}\n\nSQL executed:\n${plan.sql}\n\nResults (showing first rows):\n${rows}`;
+    const reading = `Original question: ${question}\n\nSQL executed:\n${plan.sql}\n\nResults (showing first rows):\n${sample(result)}`;
     for await (const frame of api.discovery.askStream(jobId, reading, {
       provider,
       explain: true,
@@ -253,7 +237,7 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     })) {
       const failure = sseFailure(frame);
       if (failure) {
-        yield { kind: "failed", ...failure };
+        yield { kind: "failed", code: failure.code };
         return;
       }
       if (frame.event === "delta") yield { kind: "explain", text: frame.data };
@@ -263,74 +247,28 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     yield { kind: "phase", phase: "done" };
   } catch (err) {
     if (signal.aborted) return;
-    yield {
-      kind: "failed",
-      code: err instanceof ApiError ? err.code : "llm_failed",
-      message: err instanceof Error ? err.message : "Ask failed",
-    };
+    yield { kind: "failed", code: err instanceof ApiError ? err.code : "llm_failed" };
   }
 }
 
-// ── The rows ─────────────────────────────────────────────────────────────
+// ── The call, and the one answer read three ways ─────────────────────────
 
-/**
- * The columns are not known until the model has written its query, so they come
- * out of the result's own shape — the case `ToolOutput` taking children is for.
- */
-function ResultTable({ sql }: { sql: string }) {
-  const coordinator = useCoordinator();
-  // Tagged with the coordinator and SQL it answers: anything else is still
-  // loading, so no effect has to blank the previous rows.
-  const [result, setResult] = useState<{
-    coordinator: Coordinator;
-    sql: string;
-    rows: ResultRow[];
-  } | null>(null);
-
-  useEffect(() => {
-    if (!coordinator || !sql) return;
-    let cancelled = false;
-    const land = (rows: ResultRow[]) => {
-      if (!cancelled) setResult({ coordinator, sql, rows });
-    };
-    coordinator
-      .query(sql, { type: "json" })
-      .then((rows) => land((rows as ResultRow[]) ?? []))
-      .catch(() => land([]));
-    return () => {
-      cancelled = true;
-    };
-  }, [coordinator, sql]);
-
-  const fresh = result !== null && result.coordinator === coordinator && result.sql === sql;
-  const rows = useMemo(() => (fresh && result ? result.rows : []), [fresh, result]);
-  const columns = useMemo<ColumnDef<ResultRow>[]>(
-    () =>
-      // Not `accessorKey`: a column named with a dot would read as a deep path.
-      Object.keys(rows[0] ?? {}).map((key) => ({
-        id: key,
-        accessorFn: (row: ResultRow) => row[key],
-        cell: ({ row }) =>
-          row.original[key] == null ? (
-            <span className="text-muted-foreground">null</span>
-          ) : (
-            <span className="font-mono">{String(row.original[key])}</span>
-          ),
-      })),
-    [rows],
-  );
-  const table = useDataTable({ columns, data: rows, pageSize: 8 });
-
-  if (!fresh) return <Skeleton className="h-20 w-full" />;
+function Failure({ code }: { code: string }) {
+  const { message, link } = getErrorInfo(code);
   return (
-    <DataTableRoot className="gap-2" table={table}>
-      <DataTableContent empty="No results" />
-      <DataTablePagination />
-    </DataTableRoot>
+    <Alert variant="destructive">
+      <AlertCircle />
+      <AlertTitle>{message}</AlertTitle>
+      {link && (
+        <AlertDescription>
+          <Button asChild className="w-fit" size="sm" variant="outline">
+            <Link href={link.href}>{link.label}</Link>
+          </Button>
+        </AlertDescription>
+      )}
+    </Alert>
   );
 }
-
-// ── The call, and the one answer read three ways ─────────────────────────
 
 type View = "explanation" | "results" | "query";
 
@@ -357,7 +295,7 @@ function ToolCall({ turn, sql }: { turn: Turn; sql: string }) {
         </ToolInput>
 
         <ToolOutput>
-          {turn.failure && <ErrorAlert code={turn.failure.code} />}
+          {turn.failure && <Failure code={turn.failure} />}
 
           <Show when={turn.failure === null}>
             <div className="flex flex-col gap-2">
@@ -388,7 +326,11 @@ function ToolCall({ turn, sql }: { turn: Turn; sql: string }) {
               </Show>
 
               <Show when={view === "results"}>
-                <ResultTable sql={sql} />
+                {turn.result ? (
+                  <ResultTable pageSize={8} result={turn.result} />
+                ) : (
+                  <Skeleton className="h-20 w-full" />
+                )}
               </Show>
 
               <Show when={view === "query"}>
@@ -431,7 +373,7 @@ function Answer({ turn }: { turn: Turn }) {
       {turn.sql && <ToolCall sql={turn.sql} turn={turn} />}
 
       {/* No query at all, so there is no call to fold the answer into. */}
-      {turn.sql === null && turn.failure && <ErrorAlert code={turn.failure.code} />}
+      {turn.sql === null && turn.failure && <Failure code={turn.failure} />}
       {turn.sql === null && turn.failure === null && turn.answer.length > 0 && (
         <MessageMarkdown streaming={turn.phase !== "done"}>{turn.answer}</MessageMarkdown>
       )}
@@ -441,13 +383,8 @@ function Answer({ turn }: { turn: Turn }) {
 
 // ── The panel ────────────────────────────────────────────────────────────
 
-interface DiscoveryAskProps {
-  jobId: string;
-  graphSchema: GraphSchema;
-}
-
-export function DiscoveryAsk({ jobId, graphSchema }: DiscoveryAskProps) {
-  const coordinator = useCoordinator();
+export function AskPanel({ jobId, graphSchema }: { jobId: string; graphSchema: GraphSchema }) {
+  const { coordinator, corpus } = useCorpus();
   const engine = useAiStream<TurnEvent>();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [question, setQuestion] = useState("");
@@ -468,7 +405,6 @@ export function DiscoveryAsk({ jobId, graphSchema }: DiscoveryAskProps) {
   // will actually meet, and the server holds no copy — an ask without it is a 400.
   const [duckSchema, setDuckSchema] = useState<string | null>(null);
   useEffect(() => {
-    if (!coordinator) return;
     let cancelled = false;
     describeDataSpace((sql) => coordinator.query(sql, { type: "json" }), graphSchema.edges)
       .then((ddl) => {
@@ -510,6 +446,7 @@ export function DiscoveryAsk({ jobId, graphSchema }: DiscoveryAskProps) {
         reasoning: "",
         sql: null,
         answer: "",
+        result: null,
         explanation: "",
         failure: null,
         failedAt: null,
@@ -524,7 +461,7 @@ export function DiscoveryAsk({ jobId, graphSchema }: DiscoveryAskProps) {
           history: historyOf(turns),
           provider,
           schema: duckSchema,
-          coordinator,
+          corpus,
           signal,
         }),
       (event) => patch(id, event),
@@ -534,23 +471,23 @@ export function DiscoveryAsk({ jobId, graphSchema }: DiscoveryAskProps) {
   const stop = () => {
     engine.cancel();
     const id = live.current;
-    if (id !== null) patch(id, { kind: "failed", code: "stopped", message: "Stopped." });
+    if (id !== null) patch(id, { kind: "failed", code: "stopped" });
   };
 
   if (!loadingAiProviders && !provider) {
     return (
-      <div className="flex h-full flex-col">
-        <EmptyState
-          icon={AlertCircle}
-          title="AI not configured"
-          description="An API key is required."
-          action={
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/settings/ai">Configure</Link>
-            </Button>
-          }
-        />
-      </div>
+      <Item className="mx-auto my-auto max-w-md flex-col gap-2 py-10 text-center">
+        <ItemMedia className="text-muted-foreground" variant="icon">
+          <AlertCircle />
+        </ItemMedia>
+        <ItemTitle>AI not configured</ItemTitle>
+        <ItemDescription>An API key is required.</ItemDescription>
+        <ItemActions>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/settings/ai">Configure</Link>
+          </Button>
+        </ItemActions>
+      </Item>
     );
   }
 

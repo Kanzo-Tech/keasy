@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::connections::models::ColumnInfo;
+/// A source column as the browser described it.
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct ColumnInfo {
+    pub name: String,
+    pub data_type: String,
+}
 
 #[derive(Debug, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct FileSchema {

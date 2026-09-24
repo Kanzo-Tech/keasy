@@ -199,16 +199,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/connections/{id}/schema": {
+    "/v1/connections/{id}/urls": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["get_file_schema"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Sign GET URLs for files of a source connection, relative to its URL, so the
+         *     browser can read them before any job exists (the editor describes the
+         *     sources a program binds). The sink holds every job's output and is read
+         *     only through the job that wrote it.
+         */
+        post: operations["sign_connection_urls"];
         delete?: never;
         options?: never;
         head?: never;
@@ -575,6 +581,7 @@ export interface components {
             name: string;
             provider_id: string;
         };
+        /** @description A source column as the browser described it. */
         ColumnInfo: {
             data_type: string;
             name: string;
@@ -682,9 +689,6 @@ export interface components {
             columns: components["schemas"]["ColumnInfo"][];
             connection_name: string;
             file_path: string;
-        };
-        FileSchemaResponse: {
-            columns: components["schemas"]["ColumnInfo"][];
         };
         GenerateRequest: {
             competency_questions: string[];
@@ -1299,12 +1303,9 @@ export interface operations {
             };
         };
     };
-    get_file_schema: {
+    sign_connection_urls: {
         parameters: {
-            query: {
-                /** @description Relative file path within the connection */
-                path: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Connection ID */
@@ -1312,18 +1313,22 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DatasetUrlsRequest"];
+            };
+        };
         responses: {
-            /** @description File schema */
+            /** @description Signed GET URLs, keyed by the requested paths */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FileSchemaResponse"];
+                    "application/json": components["schemas"]["ResolveResponse"];
                 };
             };
-            /** @description Schema inference failed or unsupported file type */
+            /** @description Not a source connection, or a path outside it */
             400: {
                 headers: {
                     [name: string]: unknown;

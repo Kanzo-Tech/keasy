@@ -98,8 +98,8 @@ export function StudioEditor({
     [booted, onDiagnostics],
   );
 
-  // Each `@conn/path` binding, introspected through the server, is a Salsa
-  // input: re-check so the columns it declares stop being unknown.
+  // Schema-aware completion: each `@conn/path` binding is described in the
+  // browser over a signed URL and pushed at the compiler before the next check.
   const descriptors = useSourceDescriptors(program, connections);
   useEffect(() => {
     if (!booted || descriptors.length === 0) return;

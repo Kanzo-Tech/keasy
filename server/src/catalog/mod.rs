@@ -118,7 +118,7 @@ impl Catalog {
     ) -> Result<(), CatalogError> {
         for relation in relations {
             for file in &relation.files {
-                validate_member_path(file)?;
+                crate::cloud::relative_path(file).map_err(CatalogError::InvalidPath)?;
             }
         }
         let conn = self.conn.lock().expect("catalog mutex poisoned");
@@ -220,25 +220,6 @@ fn push_register(sql: &mut String, schema: &str, name: &str, urls: &[String]) {
             "CALL ducklake_add_data_files('lake', {table_lit}, {url}, schema => {schema_lit});\n"
         ));
     }
-}
-
-/// A relation file is a path relative to the dataset: no scheme, no absolute
-/// root, no `..` leaving it, no quote to close a SQL literal with.
-pub(crate) fn validate_member_path(path: &str) -> Result<(), CatalogError> {
-    let invalid = |why: &str| Err(CatalogError::InvalidPath(format!("{path:?} {why}")));
-    if path.is_empty() {
-        return invalid("is empty");
-    }
-    if path.starts_with(['/', '\\']) || path.contains(':') {
-        return invalid("must be relative to the dataset");
-    }
-    if path.split(['/', '\\']).any(|segment| segment == "..") {
-        return invalid("must not leave the dataset");
-    }
-    if path.contains(['\'', '"', '\0']) {
-        return invalid("must not contain quotes");
-    }
-    Ok(())
 }
 
 /// Join a dataset base URL with a dataset-relative member path.
@@ -476,24 +457,6 @@ mod tests {
             &catalog.registered_jobs().unwrap(),
             "keep"
         ));
-    }
-
-    #[test]
-    fn relation_files_stay_inside_the_dataset() {
-        for ok in ["Person.parquet", "vertex/Person/chunk0.parquet"] {
-            assert!(validate_member_path(ok).is_ok(), "{ok}");
-        }
-        for bad in [
-            "",
-            "/etc/passwd",
-            "../other-job/Person.parquet",
-            "vertex/../../x.parquet",
-            "s3://elsewhere/x.parquet",
-            "it's.parquet",
-            "a\"b.parquet",
-        ] {
-            assert!(validate_member_path(bad).is_err(), "{bad}");
-        }
     }
 
     /// The destination is a connection URL a member typed; it is quoted, not

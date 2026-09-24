@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { AlertCircle, ArrowLeft, ArrowRight, Database, MoreHorizontal, Plus, Wand2 } from "lucide-react";
 import { type AiStatus, type RunState, Task, TaskList, TaskStatus, TaskTitle, useAiStream } from "@kanzo-tech/ai";
 import {
@@ -50,6 +50,7 @@ import {
 import { api } from "@/lib/api";
 import { type SseFrame, failOnError } from "@/lib/api/sse";
 import { formatSize } from "@/lib/formatters";
+import { connectionPath, describeSources } from "@/lib/fossil/describe-sources";
 import { queryKeys } from "@/lib/query-keys";
 import type { CompetencyQuestion, Connection, FileSchema, ProviderInfo } from "@/lib/types";
 import { readableFiles } from "@/lib/utils";
@@ -197,17 +198,41 @@ export function AssistantWizard({
     files.filter((f) => selection[f.path]).map((f) => ({ connection, path: f.path })),
   );
 
-  const schemaQueries = useQueries({
-    queries: picked.map(({ connection, path }) => ({
-      queryKey: queryKeys.connections.schema(connection.id, path),
-      queryFn: () => api.connections.schema(connection.id, path),
-      enabled: step > 0,
-    })),
+  // The picked files, written as the source bindings the generated program will
+  // hold and described the way the editor describes a program's sources.
+  const constructorByExt = new Map(
+    providers
+      .filter((p) => p.kind === "data" || p.kind === "both")
+      .flatMap((p) => p.extensions.map((ext) => [ext, p.name] as const)),
+  );
+  const bindings = picked.flatMap(({ connection, path }) => {
+    const constructor = constructorByExt.get(path.split(".").pop()?.toLowerCase() ?? "");
+    return constructor
+      ? [{ connection, path, constructor, uri: `@${connection.name}/${connectionPath(connection, path)}` }]
+      : [];
   });
-  const schemasReady = readable.every((r) => !r.loading) && schemaQueries.every((q) => !q.isPending);
-  const schemas: FileSchema[] = picked.flatMap(({ connection, path }, i) => {
-    const columns = schemaQueries[i]?.data?.columns;
-    return columns ? [{ connection_name: connection.name, file_path: path, columns }] : [];
+  const program = bindings.map((b, i) => `f${i} := io.${b.constructor}("${b.uri}")`).join("\n");
+  const described = useQuery({
+    queryKey: queryKeys.sourceDescriptors(
+      bindings.map((b) => b.uri),
+      connections.map((c) => c.id),
+    ),
+    queryFn: () => describeSources(program, connections),
+    enabled: step > 0 && bindings.length > 0,
+  });
+  const schemasReady =
+    readable.every((r) => !r.loading) && (bindings.length === 0 || !described.isPending);
+  const schemas: FileSchema[] = bindings.flatMap(({ connection, path, uri }) => {
+    const descriptor = described.data?.find((d) => d.uri === uri);
+    return descriptor
+      ? [
+          {
+            connection_name: connection.name,
+            file_path: path,
+            columns: descriptor.columns.map((c) => ({ name: c.name, data_type: c.primitive })),
+          },
+        ]
+      : [];
   });
 
   const reqColumns = useMemo<ColumnDef<CompetencyQuestion>[]>(

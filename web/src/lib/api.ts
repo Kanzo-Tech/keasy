@@ -84,10 +84,13 @@ export const api = {
         params: { path: { id } },
       })),
 
-    schema: async (id: string, path: string) =>
-      unwrap(await client.GET("/v1/connections/{id}/schema", {
-        params: { path: { id }, query: { path } },
-      })),
+    /// Sign GET URLs for files of a source connection, relative to its URL.
+    /// Returns `path → signed URL`.
+    signUrls: async (id: string, paths: string[]): Promise<Record<string, string>> =>
+      (unwrap(await client.POST("/v1/connections/{id}/urls", {
+        params: { path: { id } },
+        body: { paths },
+      }))).files,
   },
 
   // ── Cloud Accounts ────────────────────────────────────────────────────

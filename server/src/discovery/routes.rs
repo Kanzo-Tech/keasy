@@ -56,19 +56,22 @@ pub(crate) async fn require_output_ready(state: &AppState, job_id: &str) -> Resu
 const SIGNED_URL_EXPIRES: Duration = Duration::from_secs(300);
 
 #[derive(Serialize, utoipa::ToSchema)]
-struct ResolveResponse {
+pub struct ResolveResponse {
     files: HashMap<String, String>,
 }
 
-/// Sign the given dataset-relative paths under `base_url` for `method`, with the
-/// creds of the job's output target (the connection the member chose, or the
-/// substrate fallback), so reads and writes are signed against the right store.
-async fn sign_dataset_paths(
+/// Sign `files`, each relative to `base_url`, for `method` with `creds`.
+pub(crate) async fn sign_dataset_paths(
     method: Method,
     base_url: &str,
     creds: &HashMap<String, String>,
     files: &[String],
 ) -> Result<Response, Response> {
+    for f in files {
+        crate::cloud::relative_path(f).map_err(|e| {
+            (StatusCode::BAD_REQUEST, Json(error_body("invalid_path", e))).into_response()
+        })?;
+    }
     let (store, prefix) = crate::cloud::build_store(base_url, creds).map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -123,7 +126,7 @@ pub struct DatasetUrlsRequest {
     /// produced; on the read side they are what the corpus reader enumerated.
     /// **Either way the caller names them and keasy does not** — the host signs
     /// the list it is handed.
-    paths: Vec<String>,
+    pub paths: Vec<String>,
 }
 
 /// Sign `paths` under the job's dataset for `method`. The dataset lives at

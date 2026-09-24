@@ -41,7 +41,7 @@ type DuckDB = Awaited<ReturnType<ReturnType<typeof wasmConnector>["getDuckDB"]>>
  */
 let booted: Promise<{ coordinator: Coordinator; db: DuckDB }> | null = null;
 
-function boot() {
+export function bootDuckDB() {
   booted ??= (async () => {
     const connector = wasmConnector();
     return { coordinator: new Coordinator(connector), db: await connector.getDuckDB() };
@@ -113,7 +113,7 @@ export async function openJobCorpus(jobId: string): Promise<JobCorpus> {
 
   // DuckDB's file registry is where keasy's access meets fossil's names: the name fossil composes
   // resolves to the URL keasy signed, and a file keasy never signed fails by name.
-  const { coordinator, db } = await boot();
+  const { coordinator, db } = await bootDuckDB();
   await coordinator.exec("SET enable_http_metadata_cache = true");
   await Promise.all(
     Object.entries(signedUrls).map(([path, url]) =>

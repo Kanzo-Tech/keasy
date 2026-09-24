@@ -209,8 +209,7 @@ pub async fn publish_relations(
 
     let relations = payload.relations;
     for file in relations.iter().flat_map(|r| &r.files) {
-        crate::catalog::validate_member_path(file)
-            .map_err(|e| JobApiError::InvalidFormat(e.to_string()))?;
+        crate::cloud::relative_path(file).map_err(JobApiError::InvalidFormat)?;
     }
     let for_catalog = relations.clone();
     let updated = state

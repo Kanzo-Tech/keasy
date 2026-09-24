@@ -128,8 +128,8 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
             axum::routing::get(crate::connections::routes::list_connection_files),
         )
         .route(
-            "/v1/connections/{id}/schema",
-            axum::routing::get(crate::connections::routes::get_file_schema),
+            "/v1/connections/{id}/urls",
+            axum::routing::post(crate::connections::routes::sign_connection_urls),
         )
         // Assistant (SSE streaming)
         .route(

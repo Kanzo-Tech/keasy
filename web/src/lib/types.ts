@@ -23,7 +23,6 @@ export type LocationType = S["LocationType"];
 export type Connection = S["Connection"];
 export type CreateConnectionRequest = S["CreateConnectionRequest"];
 export type ColumnInfo = S["ColumnInfo"];
-export type FileSchemaResponse = S["FileSchemaResponse"];
 export type AiSettings = S["AiSettingsPayload"];
 
 // Assistant types

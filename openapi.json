@@ -451,12 +451,13 @@
         }
       }
     },
-    "/v1/connections/{id}/schema": {
-      "get": {
+    "/v1/connections/{id}/urls": {
+      "post": {
         "tags": [
           "Connections"
         ],
-        "operationId": "get_file_schema",
+        "summary": "Sign GET URLs for files of a source connection, relative to its URL, so the\nbrowser can read them before any job exists (the editor describes the\nsources a program binds). The sink holds every job's output and is read\nonly through the job that wrote it.",
+        "operationId": "sign_connection_urls",
         "parameters": [
           {
             "name": "id",
@@ -466,30 +467,31 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "path",
-            "in": "query",
-            "description": "Relative file path within the connection",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatasetUrlsRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
-            "description": "File schema",
+            "description": "Signed GET URLs, keyed by the requested paths",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FileSchemaResponse"
+                  "$ref": "#/components/schemas/ResolveResponse"
                 }
               }
             }
           },
           "400": {
-            "description": "Schema inference failed or unsupported file type"
+            "description": "Not a source connection, or a path outside it"
           },
           "404": {
             "description": "Connection not found"
@@ -1492,6 +1494,7 @@
       },
       "ColumnInfo": {
         "type": "object",
+        "description": "A source column as the browser described it.",
         "required": [
           "name",
           "data_type"
@@ -1828,20 +1831,6 @@
           },
           "file_path": {
             "type": "string"
-          }
-        }
-      },
-      "FileSchemaResponse": {
-        "type": "object",
-        "required": [
-          "columns"
-        ],
-        "properties": {
-          "columns": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ColumnInfo"
-            }
           }
         }
       },

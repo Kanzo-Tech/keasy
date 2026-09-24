@@ -13,13 +13,32 @@ use object_store::aws::{AmazonS3, AmazonS3Builder, AmazonS3ConfigKey};
 use object_store::azure::{AzureConfigKey, MicrosoftAzure, MicrosoftAzureBuilder};
 use object_store::path::Path as ObjectPath;
 use object_store::signer::Signer;
-use object_store::{GetResult, ObjectMeta, ObjectStore, PutPayload, PutResult};
+use object_store::{ObjectMeta, ObjectStore, PutPayload, PutResult};
 use url::Url;
 
 use crate::settings::schema::{all_cloud_schemes, find_provider_by_scheme};
 
 pub fn is_cloud_url(s: &str) -> bool {
     all_cloud_schemes().any(|scheme| s.starts_with(scheme) && s[scheme.len()..].starts_with("://"))
+}
+
+/// A client-supplied path under a base URL: relative, no scheme, no `..`
+/// leaving the base, no quote to close a SQL literal with.
+pub(crate) fn relative_path(path: &str) -> Result<(), String> {
+    let invalid = |why: &str| Err(format!("{path:?} {why}"));
+    if path.is_empty() {
+        return invalid("is empty");
+    }
+    if path.starts_with(['/', '\\']) || path.contains(':') {
+        return invalid("must be relative");
+    }
+    if path.split(['/', '\\']).any(|segment| segment == "..") {
+        return invalid("must not leave its base");
+    }
+    if path.contains(['\'', '"', '\0']) {
+        return invalid("must not contain quotes");
+    }
+    Ok(())
 }
 
 /// Parse a cloud URL into its components (bucket, object path, provider).
@@ -110,13 +129,6 @@ impl CloudStore {
 
     // ── Delegate ObjectStore operations ──
 
-    pub async fn get(&self, path: &ObjectPath) -> object_store::Result<GetResult> {
-        match self {
-            Self::Azure(s) => s.get(path).await,
-            Self::S3(s) => s.get(path).await,
-        }
-    }
-
     pub async fn put(
         &self,
         path: &ObjectPath,
@@ -187,4 +199,27 @@ pub fn build_store(
     };
 
     Ok((store, path))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_client_path_stays_under_its_base() {
+        for ok in ["Person.parquet", "vertex/Person/chunk0.parquet"] {
+            assert!(relative_path(ok).is_ok(), "{ok}");
+        }
+        for bad in [
+            "",
+            "/etc/passwd",
+            "../other-job/Person.parquet",
+            "vertex/../../x.parquet",
+            "s3://elsewhere/x.parquet",
+            "it's.parquet",
+            "a\"b.parquet",
+        ] {
+            assert!(relative_path(bad).is_err(), "{bad}");
+        }
+    }
 }

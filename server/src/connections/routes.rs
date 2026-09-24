@@ -1,22 +1,21 @@
+use std::collections::HashMap;
+
 use axum::Json;
 use axum::extract::{Path, Query, State};
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use axum::http::{Method, StatusCode};
+use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 
 use crate::AppState;
 use crate::cloud::reader;
-use crate::connections::models::{
-    ColumnInfo, Connection, CreateConnectionRequest, Direction, FileSchemaResponse, LocationType,
-};
+use crate::connections::models::{Connection, CreateConnectionRequest, Direction, LocationType};
+use crate::discovery::routes::{DatasetUrlsRequest, sign_dataset_paths};
 use crate::error::data_response;
 use crate::middleware::tenant::{IsDataPlane, Require, TenantRole};
 
 use super::errors::ConnectionError;
 
-use std::collections::HashMap;
-
-/// Resolve a cloud connection and its credentials. Shared by list_files, upload, and schema.
+/// Resolve a cloud connection and its credentials.
 async fn resolve_cloud_connection(
     state: &AppState,
     id: &str,
@@ -49,29 +48,10 @@ async fn resolve_cloud_connection(
     Ok((connection, creds))
 }
 
-fn join_connection_path(base: &str, path: &str) -> Result<String, String> {
-    let base_canonical = std::path::PathBuf::from(base)
-        .canonicalize()
-        .map_err(|e| format!("Invalid base path: {e}"))?;
-    let full_path = base_canonical
-        .join(path)
-        .canonicalize()
-        .map_err(|e| format!("Invalid path: {e}"))?;
-    if !full_path.starts_with(&base_canonical) {
-        return Err("Path traversal not allowed".into());
-    }
-    Ok(full_path.to_string_lossy().to_string())
-}
-
 #[derive(Deserialize)]
 pub struct ListConnectionsQuery {
     #[serde(rename = "type")]
     pub connection_type: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct SchemaQuery {
-    pub path: String,
 }
 
 #[utoipa::path(get, path = "/v1/connections", tag = "Connections",
@@ -198,154 +178,34 @@ pub async fn list_connection_files(
     }
 }
 
-#[utoipa::path(get, path = "/v1/connections/{id}/schema", tag = "Connections",
-    params(
-        ("id" = String, Path, description = "Connection ID"),
-        ("path" = String, Query, description = "Relative file path within the connection"),
-    ),
+#[utoipa::path(post, path = "/v1/connections/{id}/urls", tag = "Connections",
+    params(("id" = String, Path, description = "Connection ID")),
+    request_body = DatasetUrlsRequest,
     responses(
-        (status = 200, description = "File schema", body = FileSchemaResponse),
-        (status = 400, description = "Schema inference failed or unsupported file type"),
+        (status = 200, description = "Signed GET URLs, keyed by the requested paths", body = crate::discovery::routes::ResolveResponse),
+        (status = 400, description = "Not a source connection, or a path outside it"),
         (status = 404, description = "Connection not found"),
     )
 )]
-pub async fn get_file_schema(
+/// Sign GET URLs for files of a source connection, relative to its URL, so the
+/// browser can read them before any job exists (the editor describes the
+/// sources a program binds). The sink holds every job's output and is read
+/// only through the job that wrote it.
+pub async fn sign_connection_urls(
     _ctx: Require<IsDataPlane>,
     State(state): State<AppState>,
     Path(id): Path<String>,
-    Query(query): Query<SchemaQuery>,
-) -> Result<impl IntoResponse, ConnectionError> {
-    let ext = query.path.rsplit('.').next().unwrap_or("").to_lowercase();
-    if ext != "csv" {
-        return Err(ConnectionError::SchemaInferenceFailed(format!(
-            "Unsupported file type: .{ext}. Only .csv is supported."
-        )));
+    Json(req): Json<DatasetUrlsRequest>,
+) -> Result<Response, ConnectionError> {
+    let (connection, creds) = resolve_cloud_connection(&state, id.as_str()).await?;
+    if connection.direction != Direction::Source {
+        return Err(ConnectionError::InvalidConnection(
+            "only a source connection's files can be read directly".to_string(),
+        ));
     }
-
-    let connection = state
-        .db
-        .get_connection(id.as_str())
-        .await
-        .ok_or(ConnectionError::NotFound)?;
-
-    let url = join_connection_path(&connection.url, &query.path)
-        .map_err(ConnectionError::InvalidConnection)?;
-
-    let bytes = if connection.location_type == LocationType::Cloud {
-        let (_, creds) = resolve_cloud_connection(&state, id.as_str()).await?;
-        reader::download(&url, &creds)
-            .await
-            .map_err(|e| ConnectionError::SchemaInferenceFailed(format!("Download failed: {e}")))?
-    } else {
-        tokio::fs::read(&url)
-            .await
-            .map_err(|e| ConnectionError::SchemaInferenceFailed(format!("Read failed: {e}")))?
-    };
-
-    let columns = infer_csv_schema(&bytes).map_err(ConnectionError::SchemaInferenceFailed)?;
-
-    Ok(data_response(FileSchemaResponse { columns }))
-}
-
-fn infer_csv_schema(bytes: &[u8]) -> Result<Vec<ColumnInfo>, String> {
-    let mut rdr = csv::ReaderBuilder::new()
-        .has_headers(true)
-        .from_reader(bytes);
-
-    let headers: Vec<String> = rdr
-        .headers()
-        .map_err(|e| format!("Failed to read CSV headers: {e}"))?
-        .iter()
-        .map(|h| h.to_string())
-        .collect();
-
-    if headers.is_empty() {
-        return Err("CSV has no columns".to_string());
-    }
-
-    // Sample up to 100 rows to infer types
-    let mut type_hints: Vec<InferredType> = vec![InferredType::Unknown; headers.len()];
-    let mut rows_sampled = 0;
-
-    for result in rdr.records() {
-        let record = result.map_err(|e| format!("Failed to read CSV row: {e}"))?;
-        for (i, field) in record.iter().enumerate() {
-            if i < type_hints.len() {
-                type_hints[i] = merge_type(type_hints[i], infer_field_type(field));
-            }
-        }
-        rows_sampled += 1;
-        if rows_sampled >= 100 {
-            break;
-        }
-    }
-
-    Ok(headers
-        .into_iter()
-        .zip(type_hints)
-        .map(|(name, t)| ColumnInfo {
-            name,
-            data_type: t.as_str().to_string(),
-        })
-        .collect())
-}
-
-#[derive(Clone, Copy, PartialEq)]
-enum InferredType {
-    Unknown,
-    Bool,
-    Int,
-    Float,
-    Date,
-    String,
-}
-
-impl InferredType {
-    fn as_str(self) -> &'static str {
-        match self {
-            Self::Unknown | Self::String => "string",
-            Self::Bool => "bool",
-            Self::Int => "int",
-            Self::Float => "float",
-            Self::Date => "date",
-        }
-    }
-}
-
-fn infer_field_type(value: &str) -> InferredType {
-    let trimmed = value.trim();
-    if trimmed.is_empty() {
-        return InferredType::Unknown;
-    }
-    if trimmed.eq_ignore_ascii_case("true") || trimmed.eq_ignore_ascii_case("false") {
-        return InferredType::Bool;
-    }
-    if trimmed.parse::<i64>().is_ok() {
-        return InferredType::Int;
-    }
-    if trimmed.parse::<f64>().is_ok() {
-        return InferredType::Float;
-    }
-    // Simple date check: YYYY-MM-DD
-    if trimmed.len() >= 10
-        && trimmed.as_bytes()[4] == b'-'
-        && trimmed.as_bytes()[7] == b'-'
-        && trimmed[..4].parse::<u16>().is_ok()
-        && trimmed[5..7].parse::<u8>().is_ok()
-        && trimmed[8..10].parse::<u8>().is_ok()
-    {
-        return InferredType::Date;
-    }
-    InferredType::String
-}
-
-fn merge_type(current: InferredType, new: InferredType) -> InferredType {
-    match (current, new) {
-        (InferredType::Unknown, t) | (t, InferredType::Unknown) => t,
-        (a, b) if a == b => a,
-        (InferredType::Int, InferredType::Float) | (InferredType::Float, InferredType::Int) => {
-            InferredType::Float
-        }
-        _ => InferredType::String,
-    }
+    Ok(
+        match sign_dataset_paths(Method::GET, &connection.url, &creds, &req.paths).await {
+            Ok(resp) | Err(resp) => resp,
+        },
+    )
 }

@@ -25,7 +25,7 @@ use utoipa::OpenApi;
         crate::connections::routes::get_connection,
         crate::connections::routes::delete_connection,
         crate::connections::routes::list_connection_files,
-        crate::connections::routes::get_file_schema,
+        crate::connections::routes::sign_connection_urls,
         // Cloud Accounts
         crate::cloud::routes::list_accounts,
         crate::cloud::routes::create_account,
@@ -76,8 +76,7 @@ use utoipa::OpenApi;
         crate::connections::models::ConnectionKind,
         crate::connections::models::LocationType,
         crate::connections::models::CreateConnectionRequest,
-        crate::connections::models::ColumnInfo,
-        crate::connections::models::FileSchemaResponse,
+        crate::assistant::models::ColumnInfo,
         // Cloud Accounts
         crate::cloud::models::CloudAccountSummary,
         crate::cloud::models::CreateCloudAccountRequest,

@@ -142,7 +142,7 @@ export default function AiPage() {
         {isLoading ? (
           showSkeleton && <Skeleton className="h-40 w-full" />
         ) : providers.length === 0 ? (
-          <Item className="mx-auto max-w-md flex-col gap-2 py-10 text-center">
+          <Item className="mx-auto my-auto max-w-md flex-col gap-2 py-10 text-center">
             <ItemMedia
               className="group-has-data-[slot=item-description]/item:self-center text-muted-foreground [&_svg:not([class*='size-'])]:size-8"
               variant="icon"

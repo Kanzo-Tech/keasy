@@ -1,18 +1,11 @@
-"use client";
-
-import { use } from "react";
-import { PageShell } from "@/components/layout/page-shell";
+import { SectionRoot } from "@kanzo-tech/ui";
 import { JobDetailView } from "@/components/jobs/job-detail-view";
 
-export default function JobDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   return (
-    <PageShell>
+    <SectionRoot>
       <JobDetailView id={id} />
-    </PageShell>
+    </SectionRoot>
   );
 }

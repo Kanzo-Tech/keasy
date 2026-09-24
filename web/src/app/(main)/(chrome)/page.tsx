@@ -1,17 +1,16 @@
+import { SectionBody, SectionRoot } from "@kanzo-tech/ui";
 import { getSession } from "@/lib/auth";
 import { workspaceRole } from "@/lib/roles";
-import { PageShell } from "@/components/layout/page-shell";
-import { OwnerDashboard } from "./(owner)/owner-dashboard";
-import { MemberDashboard } from "./(member)/member-dashboard";
+import { MemberDashboard, OwnerDashboard } from "./dashboards";
 
 export default async function HomePage() {
   const role = workspaceRole(await getSession());
 
   return (
-    <PageShell>
-      <PageShell.Content>
+    <SectionRoot>
+      <SectionBody className="gap-8" scale="page">
         {role === "owner" ? <OwnerDashboard /> : <MemberDashboard />}
-      </PageShell.Content>
-    </PageShell>
+      </SectionBody>
+    </SectionRoot>
   );
 }

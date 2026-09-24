@@ -1,823 +1,491 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback, useMemo, useState } from "react";
+import Link from "next/link";
+import { useQueries } from "@tanstack/react-query";
+import { AlertCircle, ArrowLeft, ArrowRight, Database, MoreHorizontal, Plus, Wand2 } from "lucide-react";
+import { type AiStatus, type RunState, Task, TaskList, TaskStatus, TaskTitle, useAiStream } from "@kanzo-tech/ai";
 import {
-  type ColumnDef,
-  type RowSelectionState,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { toast } from "@kanzo-tech/ui";
-import { api } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
-import { useAiStream } from "@kanzo-tech/ai";
-import { type SseFrame, failOnError } from "@/lib/api/sse";
-import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
   Button,
-  Checkbox,
+  Field,
+  FieldDescription,
+  FieldLabel,
   Input,
+  Item,
+  ItemActions,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
   Menu,
   MenuContent,
   MenuItem,
   MenuTrigger,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  cn,
+  SectionBody,
+  SectionFooter,
+  Show,
+  Spinner,
+  Steps,
+  StepsContent,
+  StepsIndicator,
+  StepsItem,
+  StepsList,
+  StepsSeparator,
+  StepsTitle,
+  StepsTrigger,
+  Textarea,
+  toast,
 } from "@kanzo-tech/ui";
 import {
+  type ColumnDef,
+  DataTableContent,
+  DataTablePagination,
+  DataTableRoot,
   selectColumn,
+  useDataTable,
 } from "@kanzo-tech/ui/table";
-import { CodeEditor } from "@kanzo-tech/ui/editor";
-import { PageShell } from "@/components/layout/page-shell";
-import { EmptyState } from "@/components/shared/empty-state";
-import Link from "next/link";
-import { ArrowLeft, ArrowRight, Database, Loader2, MoreHorizontal, Plus, Wand2 } from "lucide-react";
-import type {
-  Connection,
-  ColumnInfo,
-  CompetencyQuestion,
-  FileSchema,
-  ProviderInfo,
-} from "@/lib/types";
+import { api } from "@/lib/api";
+import { type SseFrame, failOnError } from "@/lib/api/sse";
 import { formatSize } from "@/lib/formatters";
-import { StepIndicator } from "@/components/shared/step-indicator";
-import { useAssistantWizardStore, type ReqEntry } from "./assistant-wizard-store";
+import { queryKeys } from "@/lib/query-keys";
+import type { CompetencyQuestion, Connection, FileSchema, ProviderInfo } from "@/lib/types";
+import { readableFiles } from "@/lib/utils";
 
-interface AssistantWizardProps {
-  onComplete: (script: string) => void;
-  connections: Connection[];
-  providers: ProviderInfo[];
-}
+type Selection = Record<string, boolean>;
+type ConnectionFile = { path: string; size: number };
 
 const STEPS = ["Connections", "Describe", "Requirements", "Generate"] as const;
 
-// ── Expanded row: file picker per connection ────────────────────────────
+const RUN_STATE: Record<AiStatus, RunState> = {
+  idle: "pending",
+  loading: "running",
+  ready: "done",
+  error: "failed",
+};
 
-function ConnectionFilesRow({
-  connectionId,
-  providers,
-  selectedFiles,
-  onToggleFile,
-  onToggleAll,
-  onSupportedCount,
-}: {
-  connectionId: string;
-  providers: ProviderInfo[];
-  selectedFiles: Set<string>;
-  onToggleFile: (path: string) => void;
-  onToggleAll: (paths: string[]) => void;
-  onSupportedCount: (count: number) => void;
-}) {
-  const { data: files, isLoading } = useQuery({
-    queryKey: queryKeys.connections.files(connectionId),
-    queryFn: () => api.connections.files(connectionId),
-  });
+const CONNECTION_COLUMNS: ColumnDef<Connection>[] = [
+  selectColumn<Connection>({ rowLabel: (row) => `Select ${row.original.name}` }),
+  {
+    accessorKey: "name",
+    header: "Name",
+    cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+  },
+  {
+    accessorKey: "url",
+    header: "URL",
+    cell: ({ row }) => <span className="font-mono text-muted-foreground text-xs">{row.original.url}</span>,
+  },
+];
 
-  const supportedExts = useMemo(
-    () =>
-      providers
-        .filter((p) => p.kind === "data" || p.kind === "both")
-        .flatMap((p) => p.extensions),
-    [providers],
-  );
+const FILE_COLUMNS: ColumnDef<ConnectionFile>[] = [
+  selectColumn<ConnectionFile>({ rowLabel: (row) => `Select ${row.original.path}` }),
+  {
+    accessorKey: "path",
+    header: "File",
+    cell: ({ row }) => <span className="font-mono text-xs">{row.original.path}</span>,
+  },
+  {
+    accessorKey: "size",
+    header: () => <div className="text-end">Size</div>,
+    cell: ({ row }) => (
+      <div className="text-end text-muted-foreground text-xs">{formatSize(row.original.size)}</div>
+    ),
+  },
+];
 
-  const supported = useMemo(() => {
-    if (!files) return [];
-    return supportedExts.length > 0
-      ? files.filter((f) =>
-          supportedExts.includes(f.path.split(".").pop()?.toLowerCase() ?? ""),
-        )
-      : files;
-  }, [files, supportedExts]);
-
-  // Auto-select all supported files on first load & report count
-  const autoSelectedRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (supported.length > 0 && autoSelectedRef.current !== connectionId) {
-      autoSelectedRef.current = connectionId;
-      onToggleAll(supported.map((f) => f.path));
-    }
-    onSupportedCount(supported.length);
-  }, [supported, connectionId, onToggleAll, onSupportedCount]);
-
-  if (isLoading) {
-    return (
-      <TableRow className="bg-muted/30 hover:bg-muted/30">
-        <TableCell />
-        <TableCell className="py-1.5">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Loading files...
-          </div>
-        </TableCell>
-        <TableCell />
-      </TableRow>
-    );
-  }
-
-  if (supported.length === 0) {
-    return (
-      <TableRow className="bg-muted/30 hover:bg-muted/30">
-        <TableCell />
-        <TableCell className="py-1.5">
-          <p className="text-xs text-muted-foreground">No supported files found.</p>
-        </TableCell>
-        <TableCell />
-      </TableRow>
-    );
-  }
-
-  return (
-    <>
-      {supported.map((f, i) => (
-        <TableRow key={f.path} className="bg-muted/30 hover:bg-muted/40">
-          <TableCell className={cn("pl-6", i === 0 && "pt-2", i === supported.length - 1 && "pb-2")}>
-            <Checkbox
-              checked={selectedFiles.has(f.path)}
-              onCheckedChange={() => onToggleFile(f.path)}
-              aria-label={f.path}
-            />
-          </TableCell>
-          <TableCell className={cn("py-1", i === 0 && "pt-2", i === supported.length - 1 && "pb-2")}>
-            <span className="font-mono text-xs">{f.path}</span>
-          </TableCell>
-          <TableCell className={cn("py-1 text-right", i === 0 && "pt-2", i === supported.length - 1 && "pb-2")}>
-            <span className="text-xs text-muted-foreground">{formatSize(f.size)}</span>
-          </TableCell>
-        </TableRow>
-      ))}
-    </>
-  );
-}
-
-// ── Step 1: Connections ─────────────────────────────────────────────────
-
-function StepConnections({
-  connections,
-  rowSelection,
-  onRowSelectionChange,
-  providers,
-  fileSelection,
-  fileCounts,
-  onToggleFile,
-  onToggleAll,
-  onSupportedCount,
-}: {
-  connections: Connection[];
-  rowSelection: RowSelectionState;
-  onRowSelectionChange: (s: RowSelectionState) => void;
-  providers: ProviderInfo[];
-  fileSelection: Map<string, Set<string>>;
-  fileCounts: Map<string, number>;
-  onToggleFile: (connId: string, path: string) => void;
-  onToggleAll: (connId: string, paths: string[]) => void;
-  onSupportedCount: (connId: string, count: number) => void;
-}) {
-  const columns: ColumnDef<Connection>[] = useMemo(() => [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-          onClick={(e) => e.stopPropagation()}
-        />
-      ),
-      cell: ({ row }) => {
-        const connId = row.id;
-        const selected = fileSelection.get(connId)?.size ?? 0;
-        const total = fileCounts.get(connId) ?? 0;
-        const isSelected = row.getIsSelected();
-        const allFilesSelected = !isSelected || total === 0 || selected >= total;
-
-        return (
-          <Checkbox
-            checked={isSelected && allFilesSelected ? true : isSelected ? "indeterminate" : false}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-            onClick={(e) => e.stopPropagation()}
-          />
-        );
-      },
-      enableSorting: false,
-      enableHiding: false,
-      size: 40,
-    },
-    {
-      accessorKey: "name",
-      header: "Name",
-      cell: ({ getValue }) => <span className="font-medium">{getValue<string>()}</span>,
-    },
-    {
-      accessorKey: "url",
-      header: "URL",
-      cell: ({ getValue }) => (
-        <span className="text-muted-foreground font-mono text-xs">{getValue<string>()}</span>
-      ),
-    },
-  ], [fileSelection, fileCounts]);
-
-  const table = useReactTable({
-    data: connections,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    onRowSelectionChange: (updater) => {
-      const next = typeof updater === "function" ? updater(rowSelection) : updater;
-      onRowSelectionChange(next);
-    },
-    getRowId: (row) => row.id,
-    state: { rowSelection },
-  });
-
-  if (connections.length === 0) {
-    return (
-      <EmptyState
-        icon={Database}
-        title="No data connections"
-        description={
-          <>
-            <Link href="/connections/new?type=data" className="underline underline-offset-4 hover:text-foreground">
-              Create a data connection
-            </Link>{" "}
-            first to use the assistant.
-          </>
-        }
-      />
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      <p className="text-sm text-muted-foreground">
-        Select the data connections to include.
-      </p>
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((hg) => (
-            <TableRow key={hg.id}>
-              {hg.headers.map((h) => (
-                <TableHead key={h.id}>
-                  {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <Fragment key={row.id}>
-              <TableRow
-                className="cursor-pointer"
-                onClick={() => row.toggleSelected()}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-              {row.getIsSelected() && row.original.location_type === "cloud" && (
-                <ConnectionFilesRow
-                  key={`${row.id}-files`}
-                  connectionId={row.id}
-                  providers={providers}
-                  selectedFiles={fileSelection.get(row.id) ?? new Set()}
-                  onToggleFile={(path) => onToggleFile(row.id, path)}
-                  onToggleAll={(paths) => onToggleAll(row.id, paths)}
-                  onSupportedCount={(count) => onSupportedCount(row.id, count)}
-                />
-              )}
-            </Fragment>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
-// ── Step 2: Describe ────────────────────────────────────────────────────
-
-function StepDescribe({
-  domain,
-  onDomainChange,
-}: {
-  domain: string;
-  onDomainChange: (v: string) => void;
-}) {
-  return (
-    <div className="flex flex-col flex-1 min-h-0 gap-2">
-      <p className="text-sm text-muted-foreground">
-        Describe the domain or purpose of your knowledge graph (optional).
-      </p>
-      {/* Free-form prose — no fossil syntax, no diagnostics, so no language
-          extension and nothing to wait for. The library's bare `CodeEditor` is
-          the whole of it; the wasm gate that used to sit here existed only
-          because `FossilEditor` composed the fossil language unconditionally. */}
-      <CodeEditor
-        chrome={false}
-        className="flex-1 min-h-0 rounded-md border"
-        onChange={onDomainChange}
-        placeholder="e.g. daily weather observations from Spanish stations"
-        value={domain}
-      />
-    </div>
-  );
-}
-
-// ── One LLM stream ──────────────────────────────────────────────────────
-
-/**
- * The library's engine owns the loop and the abort; what is left here is the
- * mapping from keasy's SSE frames — deltas accumulate into the preview, the
- * `complete` payload goes to the caller, and an `error` frame fails the run.
- */
+/** keasy's SSE frames through the library's stream: deltas accumulate, `complete` is the result. */
 function useScriptStream() {
-  const { run, cancel, status } = useAiStream<SseFrame>();
+  const stream = useAiStream<SseFrame>();
   const [text, setText] = useState("");
+  const { run } = stream;
 
   const start = useCallback(
-    <T,>(
-      source: (signal: AbortSignal) => AsyncGenerator<SseFrame>,
-      onComplete: (result: T) => void,
-    ) => {
+    <T,>(source: (signal: AbortSignal) => AsyncGenerator<SseFrame>, onComplete: (result: T) => void) => {
       setText("");
-      let accumulated = "";
       void run(
         (signal) => failOnError(source(signal)),
         (frame) => {
-          if (frame.event === "delta") {
-            accumulated += frame.data;
-            setText(accumulated);
-          } else if (frame.event === "complete") {
-            onComplete(JSON.parse(frame.data) as T);
-          }
+          if (frame.event === "delta") setText((prev) => prev + frame.data);
+          else if (frame.event === "complete") onComplete(JSON.parse(frame.data) as T);
         },
       );
     },
     [run],
   );
 
-  return { start, cancel, status, text };
+  return { ...stream, start, text };
 }
 
-// ── Streaming preview (shared between step 2 & 3) ───────────────────────
-
-function StreamingPreview({ label, text }: { label: string; text: string }) {
-  return (
-    <div className="flex-1 flex flex-col gap-3 min-h-0">
-      <div className="flex items-center gap-2">
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">{label}</p>
-      </div>
-      {text && (
-        <pre className="flex-1 min-h-0 overflow-auto text-xs font-mono text-muted-foreground bg-muted/30 rounded-md p-3 whitespace-pre-wrap">
-          {text}
-        </pre>
-      )}
-    </div>
-  );
-}
-
-// ── Step 3: Requirements ────────────────────────────────────────────────
-
-// ReqEntry imported from assistant-wizard-store.ts
-
-function StepRequirements({
-  reqs,
-  setReqs,
-  isLoading,
-  schemasLoading,
-  hasError,
-  onRetry,
-  streamText,
+function ConnectionFiles({
+  connection,
+  files,
+  loading,
+  selection,
+  onSelectionChange,
 }: {
-  reqs: ReqEntry[];
-  setReqs: (update: (reqs: ReqEntry[]) => ReqEntry[]) => void;
-  isLoading: boolean;
-  schemasLoading: boolean;
-  hasError: boolean;
-  onRetry: () => void;
-  streamText: string;
+  connection: Connection;
+  files: ConnectionFile[];
+  loading: boolean;
+  selection: Selection;
+  onSelectionChange: (selection: Selection) => void;
 }) {
-  const addCustom = () =>
-    setReqs((prev) => [
-      ...prev,
-      { id: `custom-${Date.now()}`, question: "", rationale: "Custom requirement", enabled: true },
-    ]);
-
-  const rowSelection = useMemo(() => {
-    const sel: RowSelectionState = {};
-    for (const r of reqs) {
-      if (r.enabled) sel[r.id] = true;
-    }
-    return sel;
-  }, [reqs]);
-
-  const columns: ColumnDef<ReqEntry>[] = useMemo(() => [
-    { ...selectColumn<ReqEntry>(), size: 40 },
-    {
-      id: "requirement",
-      header: "Requirement",
-      cell: ({ row }) => (
-        <div className="flex flex-col gap-0.5" onClick={(e) => e.stopPropagation()}>
-          <Input
-            value={row.original.question}
-            onChange={(e) => {
-              const { value } = e.target;
-              setReqs((prev) => prev.map((r) => (r.id === row.original.id ? { ...r, question: value } : r)));
-            }}
-            placeholder="Type a requirement..."
-            className="border-0 shadow-none focus-visible:ring-0 text-sm h-7 px-0"
-          />
-          <span className="text-xs text-muted-foreground">{row.original.rationale}</span>
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      size: 48,
-      enableSorting: false,
-      enableHiding: false,
-      cell: ({ row }) => (
-        <Menu positioning={{ placement: "bottom-end" }}>
-          <MenuTrigger asChild>
-            <Button
-              aria-label="Open requirement actions"
-              onClick={(event) => event.stopPropagation()}
-              size="icon-sm"
-              variant="ghost"
-            >
-              <MoreHorizontal />
-            </Button>
-          </MenuTrigger>
-          <MenuContent>
-            <MenuItem
-              onSelect={() => setReqs((prev) => prev.filter((r) => r.id !== row.original.id))}
-              value="remove"
-              variant="destructive"
-            >
-              Remove
-            </MenuItem>
-          </MenuContent>
-        </Menu>
-      ),
-    },
-  ], [setReqs]);
-
-  const table = useReactTable({
-    data: reqs,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getRowId: (row) => row.id,
-    onRowSelectionChange: (updater) => {
-      const next = typeof updater === "function" ? updater(rowSelection) : updater;
-      setReqs((prev) => prev.map((r) => ({ ...r, enabled: !!next[r.id] })));
-    },
-    state: { rowSelection },
+  const table = useDataTable({
+    columns: FILE_COLUMNS,
+    data: files,
+    getRowId: (file) => file.path,
+    state: { rowSelection: selection },
+    onRowSelectionChange: (update) =>
+      onSelectionChange(typeof update === "function" ? update(selection) : update),
   });
 
-  if (schemasLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Loading data schemas...</p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return <StreamingPreview label="Generating requirements..." text={streamText} />;
-  }
-
-  if (reqs.length === 0 || hasError) {
-    return (
-      <EmptyState
-        icon={Wand2}
-        title={hasError ? "Generation failed" : "No requirements generated"}
-        description={
-          <>
-            <button onClick={onRetry} className="underline underline-offset-4 hover:text-foreground">
-              Try again
-            </button>{" "}
-            or add requirements manually.
-          </>
-        }
-      />
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-3 h-full">
-      <div className="flex items-center justify-between shrink-0">
-        <p className="text-sm text-muted-foreground">
-          Review and edit the requirements. These define what your knowledge graph should be able to answer.
-        </p>
-        <Button variant="outline" size="sm" onClick={addCustom} className="shrink-0 ml-4">
-          <Plus className="h-3.5 w-3.5 mr-1.5" />
-          Add requirement
-        </Button>
-      </div>
-      <div className="flex-1 min-h-0 overflow-auto">
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((hg) => (
-            <TableRow key={hg.id}>
-              {hg.headers.map((h) => (
-                <TableHead
-                  key={h.id}
-                  style={h.column.getSize() !== 150 ? { width: h.column.getSize() } : undefined}
-                >
-                  {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow
-              key={row.id}
-              className={cn("cursor-pointer", !row.getIsSelected() && "opacity-50")}
-              onClick={() => row.toggleSelected()}
-            >
-              {row.getVisibleCells().map((cell) => (
-                <TableCell
-                  key={cell.id}
-                  style={cell.column.getSize() !== 150 ? { width: cell.column.getSize() } : undefined}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      </div>
-    </div>
+    <section className="flex flex-col gap-2">
+      <h3 className="font-medium text-sm">
+        Files in <span className="font-mono">@{connection.name}</span>
+      </h3>
+      <DataTableRoot table={table}>
+        <DataTableContent<ConnectionFile>
+          empty={loading ? <Spinner className="mx-auto" /> : "No files a provider can read."}
+          onRowClick={(file) => table.getRow(file.path).toggleSelected()}
+        />
+        <DataTablePagination />
+      </DataTableRoot>
+    </section>
   );
 }
 
-// ── Main Wizard ─────────────────────────────────────────────────────────
+export function AssistantWizard({
+  onComplete,
+  connections,
+  providers,
+}: {
+  onComplete: (script: string) => void;
+  connections: Connection[];
+  providers: ProviderInfo[];
+}) {
+  const [step, setStep] = useState(0);
+  // Per connection, once the member has touched it; untouched means every readable file.
+  const [fileSelection, setFileSelection] = useState<Record<string, Selection>>({});
+  const [domain, setDomain] = useState("");
+  const [reqs, setReqs] = useState<CompetencyQuestion[]>([]);
 
-export function AssistantWizard({ onComplete, connections, providers }: AssistantWizardProps) {
-  // Zustand store — replaces 7 useState + sync effects
-  const store = useAssistantWizardStore();
-  const {
-    step, connRowSelection, fileSelection, fileCounts, schemas,
-    domain, reqs, setStep, setConnRowSelection, setDomain, setReqs,
-    toggleFile, selectAllFiles, setSupportedCount, setSchemas,
-    cleanupForDeselectedConnections, deselectEmptyConnections, reset,
-  } = store;
+  const dataConnections = useMemo(() => connections.filter((c) => c.kind === "data"), [connections]);
+  const connectionTable = useDataTable({
+    columns: CONNECTION_COLUMNS,
+    data: dataConnections,
+    getRowId: (c) => c.id,
+  });
+  const selected = connectionTable.getSelectedRowModel().rows.map((row) => row.original);
+  const cloud = selected.filter((c) => c.location_type === "cloud");
 
-  // Reset on unmount
-  useEffect(() => () => reset(), [reset]);
-
-  const dataConnections = useMemo(
-    () => connections.filter((c) => c.kind === "data"),
-    [connections],
+  const listings = useQueries({
+    queries: cloud.map((c) => ({
+      queryKey: queryKeys.connections.files(c.id),
+      queryFn: () => api.connections.files(c.id),
+    })),
+  });
+  const readable = cloud.map((connection, i) => {
+    const files = readableFiles(listings[i]?.data ?? [], providers, "data");
+    const selection =
+      fileSelection[connection.id] ?? Object.fromEntries(files.map((f) => [f.path, true]));
+    return { connection, files, selection, loading: listings[i]?.isPending ?? true };
+  });
+  const picked = readable.flatMap(({ connection, files, selection }) =>
+    files.filter((f) => selection[f.path]).map((f) => ({ connection, path: f.path })),
   );
 
-  const selectedConnectionIds = useMemo(
-    () => new Set(Object.keys(connRowSelection).filter((k) => connRowSelection[k])),
-    [connRowSelection],
+  const schemaQueries = useQueries({
+    queries: picked.map(({ connection, path }) => ({
+      queryKey: queryKeys.connections.schema(connection.id, path),
+      queryFn: () => api.connections.schema(connection.id, path),
+      enabled: step > 0,
+    })),
+  });
+  const schemasReady = readable.every((r) => !r.loading) && schemaQueries.every((q) => !q.isPending);
+  const schemas: FileSchema[] = picked.flatMap(({ connection, path }, i) => {
+    const columns = schemaQueries[i]?.data?.columns;
+    return columns ? [{ connection_name: connection.name, file_path: path, columns }] : [];
+  });
+
+  const reqColumns = useMemo<ColumnDef<CompetencyQuestion>[]>(
+    () => [
+      selectColumn<CompetencyQuestion>(),
+      {
+        id: "requirement",
+        header: "Requirement",
+        cell: ({ row }) => (
+          <div className="flex flex-col gap-0.5">
+            <Input
+              className="h-7 border-0 px-0 text-sm shadow-none focus-visible:ring-0"
+              onChange={(e) => {
+                const { value } = e.target;
+                setReqs((prev) => prev.map((r) => (r.id === row.original.id ? { ...r, question: value } : r)));
+              }}
+              onClick={(e) => e.stopPropagation()}
+              placeholder="Type a requirement..."
+              value={row.original.question}
+            />
+            <span className="text-muted-foreground text-xs">{row.original.rationale}</span>
+          </div>
+        ),
+      },
+      {
+        id: "actions",
+        size: 48,
+        cell: ({ row }) => (
+          <div className="text-end">
+            <Menu positioning={{ placement: "bottom-end" }}>
+              <MenuTrigger asChild>
+                <Button
+                  aria-label="Requirement actions"
+                  onClick={(e) => e.stopPropagation()}
+                  size="icon-sm"
+                  variant="ghost"
+                >
+                  <MoreHorizontal />
+                </Button>
+              </MenuTrigger>
+              <MenuContent>
+                <MenuItem
+                  onSelect={() => setReqs((prev) => prev.filter((r) => r.id !== row.original.id))}
+                  value="remove"
+                  variant="destructive"
+                >
+                  Remove
+                </MenuItem>
+              </MenuContent>
+            </Menu>
+          </div>
+        ),
+      },
+    ],
+    [],
   );
-
-  // Clean up file selection when connection is deselected
-  useEffect(() => {
-    cleanupForDeselectedConnections(selectedConnectionIds);
-  }, [selectedConnectionIds, cleanupForDeselectedConnections]);
-
-  // Deselect connection when all its files are deselected
-  useEffect(() => {
-    deselectEmptyConnections(selectedConnectionIds);
-  }, [fileSelection, fileCounts, selectedConnectionIds, deselectEmptyConnections]);
-
-  const handleSupportedCount = useCallback((connId: string, count: number) => {
-    setSupportedCount(connId, count);
-  }, [setSupportedCount]);
-
-  const handleToggleFile = useCallback((connId: string, path: string) => {
-    toggleFile(connId, path);
-  }, [toggleFile]);
-
-  const handleToggleAll = useCallback((connId: string, paths: string[]) => {
-    selectAllFiles(connId, paths);
-  }, [selectAllFiles]);
-
-  // Determine supported extensions from providers
-  const supportedExts = useMemo(
-    () =>
-      providers
-        .filter((p) => p.kind === "data" || p.kind === "both")
-        .flatMap((p) => p.extensions),
-    [providers],
-  );
-
-  // Fetch schemas for selected files (parallel per connection)
-  useEffect(() => {
-    if (selectedConnectionIds.size === 0) return;
-    let cancelled = false;
-    async function fetchSchemas() {
-      const fetches: { key: string; promise: Promise<{ columns: ColumnInfo[] }> }[] = [];
-      for (const id of selectedConnectionIds) {
-        if (schemas.has(id)) continue;
-        const conn = connections.find((c) => c.id === id);
-        if (!conn || conn.location_type !== "cloud") continue;
-        const selectedPaths = fileSelection.get(id);
-        if (!selectedPaths || selectedPaths.size === 0) continue;
-        for (const path of selectedPaths) {
-          const key = `${id}:${path}`;
-          if (schemas.has(key)) continue;
-          const ext = path.split(".").pop()?.toLowerCase() ?? "";
-          if (supportedExts.length > 0 && !supportedExts.includes(ext)) continue;
-          fetches.push({ key, promise: api.connections.schema(id, path) });
-        }
-      }
-      const results = await Promise.allSettled(fetches.map((f) => f.promise));
-      if (cancelled) return;
-      setSchemas((prev) => {
-        const next = new Map(prev);
-        for (let i = 0; i < fetches.length; i++) {
-          const result = results[i];
-          if (result.status === "fulfilled") {
-            next.set(fetches[i].key, result.value.columns);
-          }
-        }
-        for (const id of selectedConnectionIds) {
-          if (!next.has(id)) next.set(id, []);
-        }
-        return next;
-      });
-    }
-    fetchSchemas();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedConnectionIds, fileSelection]);
-
-  const fileSchemas: FileSchema[] = useMemo(() => {
-    const result: FileSchema[] = [];
-    for (const [key, cols] of schemas) {
-      if (!key.includes(":")) continue;
-      const [connId, ...pathParts] = key.split(":");
-      if (!selectedConnectionIds.has(connId)) continue;
-      const filePath = pathParts.join(":");
-      const selectedPaths = fileSelection.get(connId);
-      if (selectedPaths && !selectedPaths.has(filePath)) continue;
-      const conn = connections.find((c) => c.id === connId);
-      if (!conn) continue;
-      result.push({
-        connection_name: conn.name,
-        file_path: filePath,
-        columns: cols,
-      });
-    }
-    return result;
-  }, [schemas, selectedConnectionIds, fileSelection, connections]);
-
-  // Schemas are "ready" when all selected cloud connections have been visited
-  const schemasReady = useMemo(() => {
-    if (selectedConnectionIds.size === 0) return false;
-    for (const id of selectedConnectionIds) {
-      const conn = connections.find((c) => c.id === id);
-      if (conn?.location_type === "cloud" && !schemas.has(id)) return false;
-    }
-    return true;
-  }, [selectedConnectionIds, connections, schemas]);
-
-  // ── LLM streaming ─────────────────────────────────────────────────────
+  const reqTable = useDataTable({ columns: reqColumns, data: reqs, getRowId: (r) => r.id });
+  const questions = reqTable
+    .getSelectedRowModel()
+    .rows.map((row) => row.original.question.trim())
+    .filter(Boolean);
 
   const suggest = useScriptStream();
   const generate = useScriptStream();
 
-  const askForRequirements = useCallback(
-    () =>
-      suggest.start<{ competency_questions: CompetencyQuestion[] }>(
-        (signal) => api.assistant.suggestStream({ domain, schemas: fileSchemas }, signal),
-        (data) => setReqs(data.competency_questions.map((cq) => ({ ...cq, enabled: true }))),
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [suggest.start, domain, fileSchemas, setReqs],
-  );
+  const askForRequirements = () =>
+    suggest.start<{ competency_questions: CompetencyQuestion[] }>(
+      (signal) => api.assistant.suggestStream({ domain, schemas }, signal),
+      ({ competency_questions }) => {
+        setReqs(competency_questions);
+        reqTable.setRowSelection(Object.fromEntries(competency_questions.map((q) => [q.id, true])));
+      },
+    );
 
-  // Auto-trigger suggest when entering step 2
-  useEffect(() => {
-    const asked = suggest.status === "loading" || suggest.status === "error";
-    if (step === 2 && reqs.length === 0 && !asked && schemasReady) askForRequirements();
-    return suggest.cancel;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, schemasReady]);
+  const generateProgram = () =>
+    generate.start<{ script: string }>(
+      (signal) => api.assistant.generateStream({ domain, competency_questions: questions, schemas }, signal),
+      ({ script }) => {
+        onComplete(script);
+        toast.create({ title: "Script generated — review before submitting", type: "success" });
+      },
+    );
 
-  // Auto-trigger generate when entering step 3
-  useEffect(() => {
-    if (step === 3 && generate.status !== "loading" && generate.status !== "error") {
-      generate.start<{ script: string }>(
-        (signal) =>
-          api.assistant.generateStream(
-            {
-              domain,
-              competency_questions: reqs
-                .filter((r) => r.enabled && r.question.trim())
-                .map((r) => r.question),
-              schemas: fileSchemas,
-            },
-            signal,
-          ),
-        (data) => {
-          onComplete(data.script);
-          toast.create({ title: "Script generated — review before submitting", type: "success" });
-        },
-      );
-    }
-    return generate.cancel;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+  const addRequirement = () => {
+    const id = `custom-${Date.now()}`;
+    setReqs((prev) => [...prev, { id, question: "", rationale: "Custom requirement" }]);
+    reqTable.setRowSelection((prev) => ({ ...prev, [id]: true }));
+  };
 
-  const canNext = (() => {
-    switch (step) {
-      case 0:
-        return selectedConnectionIds.size > 0;
-      case 1:
-        return true;
-      case 2:
-        return reqs.some((r) => r.enabled && r.question.trim());
-      default:
-        return false;
-    }
-  })();
+  const next = () => {
+    if (step === 1 && reqs.length === 0) askForRequirements();
+    if (step === 2) generateProgram();
+    setStep(step + 1);
+  };
+  const back = () => {
+    if (step === 2) suggest.cancel();
+    if (step === 3) generate.cancel();
+    setStep(step - 1);
+  };
+
+  const canNext = [selected.length > 0, schemasReady, questions.length > 0][step] ?? false;
 
   return (
-    <PageShell>
-      <PageShell.Content>
-        <StepIndicator steps={STEPS} current={step} />
+    <Steps className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden" count={STEPS.length} step={step}>
+      <div className="flex h-14 shrink-0 items-center justify-center border-b px-3">
+        <StepsList className="w-full max-w-xl">
+          {STEPS.map((title, index) => (
+            <StepsItem index={index} key={title}>
+              <StepsTrigger disabled>
+                <StepsIndicator>{index + 1}</StepsIndicator>
+                <StepsTitle className="hidden sm:inline">{title}</StepsTitle>
+              </StepsTrigger>
+              <StepsSeparator />
+            </StepsItem>
+          ))}
+        </StepsList>
+      </div>
 
-        <div className="flex-1 min-h-0 flex flex-col mt-4">
-          {step === 0 && (
-            <StepConnections
-              connections={dataConnections}
-              rowSelection={connRowSelection}
-              onRowSelectionChange={setConnRowSelection}
-              providers={providers}
-              fileSelection={fileSelection}
-              fileCounts={fileCounts}
-              onToggleFile={handleToggleFile}
-              onToggleAll={handleToggleAll}
-              onSupportedCount={handleSupportedCount}
-            />
-          )}
-          {step === 1 && <StepDescribe domain={domain} onDomainChange={setDomain} />}
-          {step === 2 && (
-            <StepRequirements
-              reqs={reqs}
-              setReqs={setReqs}
-              isLoading={suggest.status === "loading"}
-              schemasLoading={!schemasReady}
-              hasError={suggest.status === "error"}
-              onRetry={askForRequirements}
-              streamText={suggest.text}
-            />
-          )}
-          {step === 3 && generate.status === "loading" && (
-            <StreamingPreview label="Generating Fossil script..." text={generate.text} />
-          )}
-        </div>
-      </PageShell.Content>
+      <SectionBody scale="page">
+        <StepsContent className="flex flex-col gap-4" index={0}>
+          <Show
+            fallback={
+              <Item className="mx-auto my-auto max-w-md flex-col gap-2 py-10 text-center">
+                <ItemMedia
+                  className="group-has-data-[slot=item-description]/item:self-center text-muted-foreground [&_svg:not([class*='size-'])]:size-8"
+                  variant="icon"
+                >
+                  <Database />
+                </ItemMedia>
+                <ItemTitle className="text-base">No data connections</ItemTitle>
+                <ItemDescription>The assistant drafts a program from the data you connect.</ItemDescription>
+                <ItemActions>
+                  <Button asChild size="sm" variant="outline">
+                    <Link href="/connections/new?type=data">Create a data connection</Link>
+                  </Button>
+                </ItemActions>
+              </Item>
+            }
+            when={dataConnections.length > 0}
+          >
+            <p className="text-muted-foreground text-sm">Select the data connections to include.</p>
+            <DataTableRoot table={connectionTable}>
+              <DataTableContent<Connection>
+                onRowClick={(c) => connectionTable.getRow(c.id).toggleSelected()}
+              />
+              <DataTablePagination />
+            </DataTableRoot>
+            {readable.map(({ connection, files, selection, loading }) => (
+              <ConnectionFiles
+                connection={connection}
+                files={files}
+                key={connection.id}
+                loading={loading}
+                onSelectionChange={(next) => setFileSelection((prev) => ({ ...prev, [connection.id]: next }))}
+                selection={selection}
+              />
+            ))}
+          </Show>
+        </StepsContent>
 
-      <PageShell.Footer>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => store.prevStep()}
-          disabled={step === 0}
-        >
-          <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
+        <StepsContent className="flex flex-col gap-4" index={1}>
+          <Field>
+            <FieldLabel>Domain</FieldLabel>
+            <Textarea
+              onChange={(e) => setDomain(e.target.value)}
+              placeholder="e.g. daily weather observations from Spanish stations"
+              rows={6}
+              value={domain}
+            />
+            <FieldDescription>Optional. What the knowledge graph is about, or what it is for.</FieldDescription>
+          </Field>
+          <Show when={!schemasReady}>
+            <TaskList>
+              <Task state="running">
+                <TaskStatus />
+                <TaskTitle>Reading the schemas of the selected files</TaskTitle>
+              </Task>
+            </TaskList>
+          </Show>
+        </StepsContent>
+
+        <StepsContent className="flex flex-col gap-4" index={2}>
+          <Show
+            fallback={
+              <>
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-muted-foreground text-sm">
+                    What the knowledge graph should be able to answer.
+                  </p>
+                  <Button onClick={addRequirement} size="sm" variant="outline">
+                    <Plus />
+                    Add requirement
+                  </Button>
+                </div>
+                <Show when={suggest.status === "error"}>
+                  <Alert variant="destructive">
+                    <AlertCircle />
+                    <AlertTitle>Suggesting requirements failed</AlertTitle>
+                    <AlertDescription>{suggest.error}</AlertDescription>
+                    <AlertAction>
+                      <Button onClick={askForRequirements} size="sm" variant="outline">
+                        Try again
+                      </Button>
+                    </AlertAction>
+                  </Alert>
+                </Show>
+                <DataTableRoot table={reqTable}>
+                  <DataTableContent<CompetencyQuestion>
+                    empty="No requirements yet."
+                    onRowClick={(r) => reqTable.getRow(r.id).toggleSelected()}
+                  />
+                  <DataTablePagination />
+                </DataTableRoot>
+              </>
+            }
+            when={suggest.status === "loading"}
+          >
+            <TaskList>
+              <Task state="running">
+                <TaskStatus />
+                <TaskTitle>Suggesting requirements</TaskTitle>
+              </Task>
+            </TaskList>
+            <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 font-mono text-muted-foreground text-xs">
+              {suggest.text}
+            </pre>
+          </Show>
+        </StepsContent>
+
+        <StepsContent className="flex flex-col gap-4" index={3}>
+          <TaskList>
+            <Task state={RUN_STATE[generate.status]}>
+              <TaskStatus />
+              <TaskTitle>Generating the Fossil program</TaskTitle>
+            </Task>
+          </TaskList>
+          <Show when={generate.status === "error"}>
+            <Alert variant="destructive">
+              <AlertCircle />
+              <AlertTitle>Generation failed</AlertTitle>
+              <AlertDescription>{generate.error}</AlertDescription>
+              <AlertAction>
+                <Button onClick={generateProgram} size="sm" variant="outline">
+                  Try again
+                </Button>
+              </AlertAction>
+            </Alert>
+          </Show>
+          <Show when={generate.text.length > 0}>
+            <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 font-mono text-muted-foreground text-xs">
+              {generate.text}
+            </pre>
+          </Show>
+        </StepsContent>
+      </SectionBody>
+
+      <SectionFooter>
+        <Button disabled={step === 0} onClick={back} size="sm" variant="ghost">
+          <ArrowLeft />
           Back
         </Button>
-        {step < 3 && (
-          <Button size="sm" onClick={() => store.nextStep()} disabled={!canNext}>
-            {step === 2 ? (
-              <>
-                <Wand2 className="h-3.5 w-3.5 mr-1.5" />
-                Generate
-              </>
-            ) : (
-              <>
-                Next
-                <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
-              </>
-            )}
+        <Show when={step < 3}>
+          <Button disabled={!canNext} onClick={next} size="sm">
+            <Show
+              fallback={
+                <>
+                  Next
+                  <ArrowRight />
+                </>
+              }
+              when={step === 2}
+            >
+              <Wand2 />
+              Generate
+            </Show>
           </Button>
-        )}
-      </PageShell.Footer>
-    </PageShell>
+        </Show>
+      </SectionFooter>
+    </Steps>
   );
 }

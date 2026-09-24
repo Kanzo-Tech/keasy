@@ -1646,7 +1646,6 @@ dependencies = [
  "jsonwebtoken",
  "object_store",
  "rcgen",
- "regex",
  "reqwest",
  "rusqlite",
  "secrecy",

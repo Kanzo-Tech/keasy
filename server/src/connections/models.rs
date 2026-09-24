@@ -25,11 +25,11 @@ impl ToSql for ConnectionKind {
 
 impl FromSql for ConnectionKind {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        let s = value.as_str()?;
-        Ok(match s {
-            "vocab" => Self::Vocab,
-            _ => Self::Data,
-        })
+        match value.as_str()? {
+            "data" => Ok(Self::Data),
+            "vocab" => Ok(Self::Vocab),
+            other => Err(crate::db::unknown_value("connection kind", other)),
+        }
     }
 }
 
@@ -68,11 +68,11 @@ impl ToSql for Direction {
 
 impl FromSql for Direction {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        let s = value.as_str()?;
-        Ok(match s {
-            "sink" => Self::Sink,
-            _ => Self::Source,
-        })
+        match value.as_str()? {
+            "source" => Ok(Self::Source),
+            "sink" => Ok(Self::Sink),
+            other => Err(crate::db::unknown_value("direction", other)),
+        }
     }
 }
 
@@ -100,11 +100,11 @@ impl ToSql for LocationType {
 
 impl FromSql for LocationType {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        let s = value.as_str()?;
-        Ok(match s {
-            "local" => Self::Local,
-            _ => Self::Cloud,
-        })
+        match value.as_str()? {
+            "cloud" => Ok(Self::Cloud),
+            "local" => Ok(Self::Local),
+            other => Err(crate::db::unknown_value("location type", other)),
+        }
     }
 }
 

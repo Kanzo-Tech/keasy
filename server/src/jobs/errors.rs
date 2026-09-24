@@ -98,53 +98,37 @@ pub enum JobApiError {
     InvalidDestination,
     #[error("cannot delete a running job")]
     StillRunning,
-    #[error("internal: {0}")]
-    Internal(String),
-}
-
-impl JobApiError {
-    pub fn to_http(&self) -> (axum::http::StatusCode, &'static str, String) {
-        match self {
-            JobApiError::NotFound => (
-                axum::http::StatusCode::NOT_FOUND,
-                "not_found",
-                "Job not found".to_string(),
-            ),
-            JobApiError::NotDraft => (
-                axum::http::StatusCode::BAD_REQUEST,
-                "not_draft",
-                "Only draft jobs can be updated".to_string(),
-            ),
-            JobApiError::InvalidFormat(msg) => (
-                axum::http::StatusCode::BAD_REQUEST,
-                "invalid_format",
-                msg.clone(),
-            ),
-            JobApiError::StillRunning => (
-                axum::http::StatusCode::CONFLICT,
-                "still_running",
-                "Cannot delete a job that is still running".to_string(),
-            ),
-            JobApiError::InvalidDestination => (
-                axum::http::StatusCode::BAD_REQUEST,
-                "invalid_destination",
-                "sink_connection_id must name the workspace sink".to_string(),
-            ),
-            JobApiError::Internal(msg) => {
-                tracing::error!(detail = %msg, "Internal job error");
-                (
-                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal_error",
-                    "An internal error occurred".to_string(),
-                )
-            }
-        }
-    }
+    #[error(transparent)]
+    Db(#[from] crate::db::DbError),
 }
 
 impl axum::response::IntoResponse for JobApiError {
     fn into_response(self) -> axum::response::Response {
-        let (status, code, message) = self.to_http();
-        (status, axum::Json(crate::error::error_body(code, &message))).into_response()
+        use axum::http::StatusCode;
+        let (status, code, message) = match self {
+            JobApiError::NotFound => (
+                StatusCode::NOT_FOUND,
+                "not_found",
+                "Job not found".to_string(),
+            ),
+            JobApiError::NotDraft => (
+                StatusCode::BAD_REQUEST,
+                "not_draft",
+                "Only draft jobs can be updated".to_string(),
+            ),
+            JobApiError::InvalidFormat(msg) => (StatusCode::BAD_REQUEST, "invalid_format", msg),
+            JobApiError::InvalidDestination => (
+                StatusCode::BAD_REQUEST,
+                "invalid_destination",
+                "sink_connection_id must name the workspace sink".to_string(),
+            ),
+            JobApiError::StillRunning => (
+                StatusCode::CONFLICT,
+                "still_running",
+                "Cannot delete a job that is still running".to_string(),
+            ),
+            JobApiError::Db(e) => return e.into_response(),
+        };
+        (status, axum::Json(crate::error::error_body(code, message))).into_response()
     }
 }

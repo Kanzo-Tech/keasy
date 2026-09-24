@@ -41,19 +41,27 @@ async fn main() {
     // Seed the local workspace identity (compliance metadata) once. Membership,
     // roles, and the workspace registry are all Keycloak-native now (the
     // Organization + client roles), so the server keeps no identity state.
-    if db.get_workspace_identity().await.is_none() {
-        db.set_workspace_identity(&keasy_server::settings::org::WorkspaceIdentity {
-            name: config.workspace_name.clone(),
-            identity: keasy_server::settings::org::OrgIdentity {
-                legal_name: config.workspace_name.clone(),
-                country: "EU".to_string(),
-                ..Default::default()
-            },
-        })
-        .await;
+    let seeded = match db.get_workspace_identity().await {
+        Ok(None) => {
+            db.set_workspace_identity(&keasy_server::settings::org::WorkspaceIdentity {
+                name: config.workspace_name.clone(),
+                identity: keasy_server::settings::org::OrgIdentity {
+                    legal_name: config.workspace_name.clone(),
+                    country: "EU".to_string(),
+                    ..Default::default()
+                },
+            })
+            .await
+        }
+        Ok(Some(_)) => Ok(()),
+        Err(e) => Err(e),
+    };
+    if let Err(e) = seeded {
+        eprintln!("FATAL: Failed to read the workspace identity: {e}");
+        std::process::exit(1);
     }
 
-    if !db.verify_secret_key().await {
+    if !db.verify_secret_key().await.unwrap_or(false) {
         eprintln!("FATAL: KEASY_SECRET_KEY does not match the key used to encrypt stored secrets");
         eprintln!("       Cloud account credentials will not be accessible.");
         eprintln!("       Set the correct KEASY_SECRET_KEY or remove the database to start fresh.");

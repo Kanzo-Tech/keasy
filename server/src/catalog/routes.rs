@@ -47,8 +47,13 @@ pub async fn list_catalog_datasets(_: Owner, State(state): State<AppState>) -> R
         Ok(Ok(mut datasets)) => {
             // Enrich with row counts from the authoritative job manifests (keeps
             // the catalog read pure-metadata + credential-free).
-            super::view::fill_row_counts(&mut datasets, &state.db.list_jobs().await);
-            Json(DatasetsResponse { datasets }).into_response()
+            match state.db.list_jobs().await {
+                Ok(jobs) => {
+                    super::view::fill_row_counts(&mut datasets, &jobs);
+                    Json(DatasetsResponse { datasets }).into_response()
+                }
+                Err(e) => e.into_response(),
+            }
         }
         Ok(Err(e)) => (
             StatusCode::INTERNAL_SERVER_ERROR,

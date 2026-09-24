@@ -1,3 +1,8 @@
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+
+use crate::db::DbError;
+
 #[derive(Debug, thiserror::Error)]
 pub enum ConnectionError {
     #[error("connection not found")]
@@ -10,51 +15,39 @@ pub enum ConnectionError {
     Forbidden(String),
     #[error("failed to list files: {0}")]
     ListFilesFailed(String),
-    #[error("internal: {0}")]
-    Internal(String),
+    #[error(transparent)]
+    Db(DbError),
 }
 
-impl ConnectionError {
-    pub fn to_http(&self) -> (axum::http::StatusCode, &'static str, String) {
-        match self {
-            ConnectionError::NotFound => (
-                axum::http::StatusCode::NOT_FOUND,
-                "not_found",
-                "Connection not found".to_string(),
-            ),
-            ConnectionError::ContainerNotFound(msg) => (
-                axum::http::StatusCode::BAD_REQUEST,
-                "container_not_found",
-                msg.clone(),
-            ),
-            ConnectionError::InvalidConnection(msg) => (
-                axum::http::StatusCode::BAD_REQUEST,
-                "invalid_connection",
-                msg.clone(),
-            ),
-            ConnectionError::Forbidden(msg) => {
-                (axum::http::StatusCode::FORBIDDEN, "forbidden", msg.clone())
-            }
-            ConnectionError::ListFilesFailed(msg) => (
-                axum::http::StatusCode::BAD_GATEWAY,
-                "list_files_failed",
-                msg.clone(),
-            ),
-            ConnectionError::Internal(msg) => {
-                tracing::error!(detail = %msg, "Internal connection error");
-                (
-                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal_error",
-                    "An internal error occurred".to_string(),
-                )
-            }
+impl From<DbError> for ConnectionError {
+    fn from(e: DbError) -> Self {
+        match e {
+            DbError::Invalid(message) => ConnectionError::InvalidConnection(message),
+            e => ConnectionError::Db(e),
         }
     }
 }
 
-impl axum::response::IntoResponse for ConnectionError {
-    fn into_response(self) -> axum::response::Response {
-        let (status, code, message) = self.to_http();
-        (status, axum::Json(crate::error::error_body(code, &message))).into_response()
+impl IntoResponse for ConnectionError {
+    fn into_response(self) -> Response {
+        let (status, code, message) = match self {
+            ConnectionError::NotFound => (
+                StatusCode::NOT_FOUND,
+                "not_found",
+                "Connection not found".to_string(),
+            ),
+            ConnectionError::ContainerNotFound(msg) => {
+                (StatusCode::BAD_REQUEST, "container_not_found", msg)
+            }
+            ConnectionError::InvalidConnection(msg) => {
+                (StatusCode::BAD_REQUEST, "invalid_connection", msg)
+            }
+            ConnectionError::Forbidden(msg) => (StatusCode::FORBIDDEN, "forbidden", msg),
+            ConnectionError::ListFilesFailed(msg) => {
+                (StatusCode::BAD_GATEWAY, "list_files_failed", msg)
+            }
+            ConnectionError::Db(e) => return e.into_response(),
+        };
+        (status, axum::Json(crate::error::error_body(code, message))).into_response()
     }
 }

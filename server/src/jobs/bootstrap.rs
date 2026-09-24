@@ -7,31 +7,31 @@
 //! instance that holds none. Once any job exists the environment has nothing
 //! left to say.
 //!
-//! Non-fatal: anything missing is logged and the list is served without it.
+//! A missing file or sink is logged and the list is served without the draft.
 
 use tracing::{info, warn};
 
 use crate::connections::bootstrap::env_nonblank;
-use crate::db::Database;
+use crate::db::{Database, DbResult};
 
 use super::models::{CreateJobRequest, Job, JobStatus};
 
-pub async fn claim_declared_draft(db: &Database, user_id: &str) {
+pub async fn claim_declared_draft(db: &Database, user_id: &str) -> DbResult<()> {
     let Some(path) = env_nonblank("KEASY_BOOTSTRAP_DRAFT") else {
-        return;
+        return Ok(());
     };
-    if db.has_jobs().await {
-        return;
+    if db.has_jobs().await? {
+        return Ok(());
     }
-    let Some(sink) = db.get_sink_connection().await else {
+    let Some(sink) = db.get_sink_connection().await? else {
         warn!(%path, "declared draft: no sink to write to, skipped");
-        return;
+        return Ok(());
     };
     let script = match std::fs::read_to_string(&path) {
         Ok(s) => s,
         Err(e) => {
             warn!(%path, error = %e, "declared draft: unreadable, skipped");
-            return;
+            return Ok(());
         }
     };
 
@@ -45,9 +45,8 @@ pub async fn claim_declared_draft(db: &Database, user_id: &str) {
         draft: true,
     };
     let job = Job::requested(JobStatus::Draft, request, user_id.to_string());
-    match db.insert_first_job(&job).await {
-        Ok(true) => info!(id = %job.id, %path, "declared draft ready"),
-        Ok(false) => {}
-        Err(e) => warn!(%path, error = %e, "declared draft: rejected"),
+    if db.insert_first_job(&job).await? {
+        info!(id = %job.id, %path, "declared draft ready");
     }
+    Ok(())
 }

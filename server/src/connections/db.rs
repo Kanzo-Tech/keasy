@@ -1,23 +1,36 @@
 use std::collections::HashMap;
 
-use rusqlite::params;
+use rusqlite::{ErrorCode, OptionalExtension, params};
 
-use crate::db::Database;
+use crate::db::{Database, DbError, DbResult};
 use crate::jobs::models::Job;
 
 use super::models::{Connection, CreateConnectionRequest, LocationType, UpdateConnectionRequest};
 
+const COLUMNS: &str = "id, name, kind, location_type, direction, cloud_account_id, url";
+
+/// A write the schema refused — a second connection of that name, a second
+/// sink — is the caller's to fix, not a failure of the store.
+fn refused(e: rusqlite::Error) -> DbError {
+    match e.sqlite_error_code() {
+        Some(ErrorCode::ConstraintViolation) => DbError::Invalid(
+            "a connection with that name already exists, or the workspace already has a sink"
+                .into(),
+        ),
+        _ => e.into(),
+    }
+}
+
 impl Database {
-    pub async fn create_connection(
-        &self,
-        req: CreateConnectionRequest,
-    ) -> Result<Connection, String> {
-        req.validate()?;
+    pub async fn create_connection(&self, req: CreateConnectionRequest) -> DbResult<Connection> {
+        req.validate().map_err(DbError::Invalid)?;
 
         if let Some(ref account_id) = req.cloud_account_id
-            && self.get_cloud_account_summary(account_id).await.is_none()
+            && self.get_cloud_account_summary(account_id).await?.is_none()
         {
-            return Err(format!("cloud account not found: {account_id}"));
+            return Err(DbError::Invalid(format!(
+                "cloud account not found: {account_id}"
+            )));
         }
 
         let connection = Connection {
@@ -30,135 +43,150 @@ impl Database {
             url: req.url,
         };
 
-        let conn = self.write().await;
-        conn.execute(
-            "INSERT INTO connections (id, name, kind, location_type, direction, cloud_account_id, url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![connection.id, connection.name, connection.kind, connection.location_type, connection.direction, connection.cloud_account_id, connection.url],
-        )
-        .map_err(|e| format!("failed to create connection: {e}"))?;
+        self.write()
+            .await
+            .execute(
+                &format!("INSERT INTO connections ({COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"),
+                params![
+                    connection.id,
+                    connection.name,
+                    connection.kind,
+                    connection.location_type,
+                    connection.direction,
+                    connection.cloud_account_id,
+                    connection.url
+                ],
+            )
+            .map_err(refused)?;
 
         Ok(connection)
     }
 
-    pub async fn get_connection(&self, id: &str) -> Option<Connection> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, name, kind, location_type, direction, cloud_account_id, url FROM connections WHERE id = ?1",
-            [id],
-            row_to_connection,
-        )
-        .ok()
+    async fn connection_where(
+        &self,
+        filter: &str,
+        param: Option<&str>,
+    ) -> DbResult<Option<Connection>> {
+        Ok(self
+            .read()
+            .await
+            .query_row(
+                &format!("SELECT {COLUMNS} FROM connections WHERE {filter}"),
+                rusqlite::params_from_iter(param),
+                row_to_connection,
+            )
+            .optional()?)
     }
 
-    pub async fn get_connection_by_name(&self, name: &str) -> Option<Connection> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, name, kind, location_type, direction, cloud_account_id, url FROM connections WHERE name = ?1",
-            [name],
-            row_to_connection,
-        )
-        .ok()
+    pub async fn get_connection(&self, id: &str) -> DbResult<Option<Connection>> {
+        self.connection_where("id = ?1", Some(id)).await
     }
 
-    /// The workspace's write sink (the owner output store), if configured. There
-    /// is at most one (enforced by the `connections_one_sink` unique index).
-    pub async fn get_sink_connection(&self) -> Option<Connection> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, name, kind, location_type, direction, cloud_account_id, url FROM connections WHERE direction = 'sink'",
-            [],
-            row_to_connection,
-        )
-        .ok()
+    pub async fn get_connection_by_name(&self, name: &str) -> DbResult<Option<Connection>> {
+        self.connection_where("name = ?1", Some(name)).await
     }
 
-    pub async fn list_connections(&self, type_filter: Option<&str>) -> Vec<Connection> {
-        let (_permit, conn) = self.read().await;
-        // Sources and sinks alike: the studio picks a job's destination from the
-        // sinks, and every other view reads `direction` to tell them apart.
-        let (sql, param): (&str, Option<&str>) = match type_filter {
-            Some(t) => (
-                "SELECT id, name, kind, location_type, direction, cloud_account_id, url FROM connections WHERE kind = ?1 ORDER BY name",
-                Some(t),
-            ),
-            None => (
-                "SELECT id, name, kind, location_type, direction, cloud_account_id, url FROM connections ORDER BY name",
-                None,
-            ),
+    /// The workspace's write sink, if configured. There is at most one (the
+    /// `connections_one_sink` index).
+    pub async fn get_sink_connection(&self) -> DbResult<Option<Connection>> {
+        self.connection_where("direction = 'sink'", None).await
+    }
+
+    /// Sources and sinks alike, optionally of one `kind`.
+    pub async fn list_connections(&self, kind: Option<&str>) -> DbResult<Vec<Connection>> {
+        let filter = if kind.is_some() {
+            "WHERE kind = ?1"
+        } else {
+            ""
         };
-
-        let mut stmt = conn.prepare(sql).expect("prepare list connections");
-        let rows = match param {
-            Some(p) => stmt.query_map([p], row_to_connection),
-            None => stmt.query_map([], row_to_connection),
-        };
-        rows.expect("query connections")
-            .filter_map(|r| r.ok())
-            .collect()
+        let conn = self.read().await;
+        let mut stmt = conn.prepare(&format!(
+            "SELECT {COLUMNS} FROM connections {filter} ORDER BY name"
+        ))?;
+        let connections = stmt
+            .query_map(rusqlite::params_from_iter(kind), row_to_connection)?
+            .collect::<rusqlite::Result<_>>()?;
+        Ok(connections)
     }
 
     pub async fn update_connection(
         &self,
         id: &str,
         req: UpdateConnectionRequest,
-    ) -> Result<Connection, String> {
+    ) -> DbResult<Connection> {
         let existing = self
             .get_connection(id)
-            .await
-            .ok_or_else(|| format!("connection not found: {id}"))?;
+            .await?
+            .ok_or_else(|| DbError::Invalid(format!("connection not found: {id}")))?;
 
-        let name = req.name.unwrap_or(existing.name);
-        let kind = req.kind.unwrap_or(existing.kind);
-        let location_type = req.location_type.unwrap_or(existing.location_type);
-        let direction = req.direction.unwrap_or(existing.direction);
-        let cloud_account_id = if req.cloud_account_id.is_some() {
-            req.cloud_account_id
-        } else {
-            existing.cloud_account_id
+        let updated = Connection {
+            id: id.to_string(),
+            name: req.name.unwrap_or(existing.name),
+            kind: req.kind.unwrap_or(existing.kind),
+            location_type: req.location_type.unwrap_or(existing.location_type),
+            direction: req.direction.unwrap_or(existing.direction),
+            cloud_account_id: req.cloud_account_id.or(existing.cloud_account_id),
+            url: req.url.unwrap_or(existing.url),
         };
-        let url = req.url.unwrap_or(existing.url);
-
-        if location_type == LocationType::Cloud && cloud_account_id.is_none() {
-            return Err("cloud_account_id is required for cloud connections".into());
+        if updated.location_type == LocationType::Cloud && updated.cloud_account_id.is_none() {
+            return Err(DbError::Invalid(
+                "cloud_account_id is required for cloud connections".into(),
+            ));
         }
 
-        let conn = self.write().await;
-        conn.execute(
-            "UPDATE connections SET name = ?1, kind = ?2, location_type = ?3, direction = ?4, cloud_account_id = ?5, url = ?6 WHERE id = ?7",
-            params![name, kind, location_type, direction, cloud_account_id, url, id],
-        )
-        .map_err(|e| format!("failed to update connection: {e}"))?;
-
-        Ok(Connection {
-            id: id.to_string(),
-            name,
-            kind,
-            location_type,
-            direction,
-            cloud_account_id,
-            url,
-        })
+        self.write()
+            .await
+            .execute(
+                "UPDATE connections SET name = ?1, kind = ?2, location_type = ?3, direction = ?4,
+                                        cloud_account_id = ?5, url = ?6
+                 WHERE id = ?7",
+                params![
+                    updated.name,
+                    updated.kind,
+                    updated.location_type,
+                    updated.direction,
+                    updated.cloud_account_id,
+                    updated.url,
+                    id
+                ],
+            )
+            .map_err(refused)?;
+        Ok(updated)
     }
 
-    pub async fn remove_connection(&self, id: &str) -> Result<(), String> {
-        let conn = self.write().await;
-        conn.execute("DELETE FROM connections WHERE id = ?1", [id])
-            .map_err(|e| format!("failed to delete connection: {e}"))?;
+    pub async fn remove_connection(&self, id: &str) -> DbResult<()> {
+        self.write()
+            .await
+            .execute("DELETE FROM connections WHERE id = ?1", [id])?;
         Ok(())
     }
 
     /// `(base_url, object-store creds)` of a job's destination sink; `None` once
     /// that connection is gone.
-    pub async fn job_output_target(&self, job: &Job) -> Option<(String, HashMap<String, String>)> {
-        let conn = self.get_connection(&job.sink_connection_id).await?;
-        let creds = match &conn.cloud_account_id {
+    pub async fn job_output_target(
+        &self,
+        job: &Job,
+    ) -> DbResult<Option<(String, HashMap<String, String>)>> {
+        let Some(conn) = self.get_connection(&job.sink_connection_id).await? else {
+            return Ok(None);
+        };
+        let creds = self.connection_credentials(&conn).await?;
+        Ok(Some((conn.url, creds)))
+    }
+
+    /// The object-store configuration a connection's cloud account signs with;
+    /// empty for a connection without one.
+    pub async fn connection_credentials(
+        &self,
+        conn: &Connection,
+    ) -> DbResult<HashMap<String, String>> {
+        match &conn.cloud_account_id {
             Some(account_id) => {
                 self.build_storage_config(std::slice::from_ref(account_id))
                     .await
             }
-            None => HashMap::new(),
-        };
-        Some((conn.url, creds))
+            None => Ok(HashMap::new()),
+        }
     }
 }
 

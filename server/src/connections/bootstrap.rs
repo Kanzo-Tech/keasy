@@ -28,7 +28,7 @@ use tracing::{error, info, warn};
 
 use crate::cloud::models::CreateCloudAccountRequest;
 use crate::cloud::reader;
-use crate::db::Database;
+use crate::db::{Database, DbResult};
 
 use super::models::{ConnectionKind, CreateConnectionRequest, Direction, LocationType, SINK_NAME};
 
@@ -37,11 +37,17 @@ use super::models::{ConnectionKind, CreateConnectionRequest, Direction, Location
 const WRITE_CHECK_OBJECT: &str = "keasy-sink-write-check";
 
 pub async fn ensure_declared_connections(db: &Database) {
+    if let Err(e) = declare_all(db).await {
+        error!(error = %e, "declared connections: skipped");
+    }
+}
+
+async fn declare_all(db: &Database) -> DbResult<()> {
     let (Some(name), Some(url)) = (
         env_nonblank("KEASY_BOOTSTRAP_CONNECTION_NAME"),
         env_nonblank("KEASY_BOOTSTRAP_CONNECTION_URL"),
     ) else {
-        return;
+        return Ok(());
     };
 
     let sink_url = env_nonblank("KEASY_BOOTSTRAP_SINK_URL");
@@ -50,12 +56,12 @@ pub async fn ensure_declared_connections(db: &Database) {
     let vocab =
         env_nonblank("KEASY_BOOTSTRAP_VOCAB_NAME").zip(env_nonblank("KEASY_BOOTSTRAP_VOCAB_URL"));
 
-    let needs_source = db.get_connection_by_name(&name).await.is_none();
+    let needs_source = db.get_connection_by_name(&name).await?.is_none();
     let needs_vocab = match &vocab {
-        Some((vocab_name, _)) => db.get_connection_by_name(vocab_name).await.is_none(),
+        Some((vocab_name, _)) => db.get_connection_by_name(vocab_name).await?.is_none(),
         None => false,
     };
-    let needs_sink = match (&sink_url, db.get_sink_connection().await) {
+    let needs_sink = match (&sink_url, db.get_sink_connection().await?) {
         (Some(_), Some(existing)) => {
             // One sink per workspace, and this one is already somebody's answer.
             info!(name = %existing.name, url = %existing.url, "declared sink: one already exists, left untouched");
@@ -65,15 +71,15 @@ pub async fn ensure_declared_connections(db: &Database) {
         (None, _) => false,
     };
     if !needs_source && !needs_vocab && !needs_sink {
-        return;
+        return Ok(());
     }
 
-    let Some(account_id) = ensure_account(db, &name, &url).await else {
-        return;
+    let Some(account_id) = ensure_account(db, &name, &url).await? else {
+        return Ok(());
     };
     let creds = db
         .build_storage_config(std::slice::from_ref(&account_id))
-        .await;
+        .await?;
 
     if needs_source {
         declare(
@@ -111,25 +117,26 @@ pub async fn ensure_declared_connections(db: &Database) {
         )
         .await;
     }
+    Ok(())
 }
 
 /// The declared cloud account: the one already named so, or a new one built
 /// from the provider's own env vars.
-async fn ensure_account(db: &Database, name: &str, url: &str) -> Option<String> {
+async fn ensure_account(db: &Database, name: &str, url: &str) -> DbResult<Option<String>> {
     if let Some(existing) = db
         .list_cloud_accounts()
-        .await
+        .await?
         .into_iter()
         .find(|a| a.name == name)
     {
-        return Some(existing.id);
+        return Ok(Some(existing.id));
     }
 
     let provider = match crate::cloud::parse_cloud_url(url) {
         Ok((_, _, provider)) => provider,
         Err(e) => {
             error!(%url, error = %e, "declared connection: not a usable cloud URL");
-            return None;
+            return Ok(None);
         }
     };
 
@@ -149,13 +156,7 @@ async fn ensure_account(db: &Database, name: &str, url: &str) -> Option<String> 
         auth_method,
         fields,
     };
-    match db.create_cloud_account(request).await {
-        Ok(account) => Some(account.id),
-        Err(e) => {
-            error!(%name, error = %e, "declared connection: cloud account rejected");
-            None
-        }
-    }
+    Ok(Some(db.create_cloud_account(request).await?.id))
 }
 
 /// Prove the access the direction needs, then write the row. A source nobody

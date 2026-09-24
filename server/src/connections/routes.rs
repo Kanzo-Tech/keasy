@@ -15,7 +15,7 @@ use crate::error::data_response;
 
 use super::errors::ConnectionError;
 
-/// Resolve a cloud connection and its credentials.
+/// A cloud connection and the credentials it signs with.
 async fn resolve_cloud_connection(
     state: &AppState,
     id: &str,
@@ -23,28 +23,14 @@ async fn resolve_cloud_connection(
     let connection = state
         .db
         .get_connection(id)
-        .await
+        .await?
         .ok_or(ConnectionError::NotFound)?;
-
-    if connection.location_type == LocationType::Local {
+    if connection.location_type == LocationType::Local || connection.cloud_account_id.is_none() {
         return Err(ConnectionError::InvalidConnection(
-            "Operation not supported for local connections".to_string(),
+            "Operation not supported for a connection without a cloud account".to_string(),
         ));
     }
-
-    let account_id = connection
-        .cloud_account_id
-        .as_deref()
-        .ok_or_else(|| {
-            ConnectionError::InvalidConnection("Connection has no cloud account".to_string())
-        })?
-        .to_string();
-
-    let creds = state
-        .db
-        .build_storage_config(std::slice::from_ref(&account_id))
-        .await;
-
+    let creds = state.db.connection_credentials(&connection).await?;
     Ok((connection, creds))
 }
 
@@ -63,11 +49,12 @@ pub async fn list_connections(
     State(state): State<AppState>,
     Query(query): Query<ListConnectionsQuery>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    let connections = state
-        .db
-        .list_connections(query.connection_type.as_deref())
-        .await;
-    Ok(data_response(connections))
+    Ok(data_response(
+        state
+            .db
+            .list_connections(query.connection_type.as_deref())
+            .await?,
+    ))
 }
 
 #[utoipa::path(post, path = "/v1/connections", tag = "Connections",
@@ -95,7 +82,7 @@ pub async fn create_connection(
         let creds = state
             .db
             .build_storage_config(std::slice::from_ref(account_id))
-            .await;
+            .await?;
         if let Err(msg) = reader::list_files(&req.url, &creds).await {
             return Err(ConnectionError::ContainerNotFound(format!(
                 "Cannot access container '{}': {msg}",
@@ -104,10 +91,8 @@ pub async fn create_connection(
         }
     }
 
-    match state.db.create_connection(req).await {
-        Ok(connection) => Ok((StatusCode::CREATED, data_response(connection)).into_response()),
-        Err(msg) => Err(ConnectionError::InvalidConnection(msg)),
-    }
+    let connection = state.db.create_connection(req).await?;
+    Ok((StatusCode::CREATED, data_response(connection)))
 }
 
 #[utoipa::path(get, path = "/v1/connections/{id}", tag = "Connections",
@@ -122,10 +107,12 @@ pub async fn get_connection(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    match state.db.get_connection(id.as_str()).await {
-        Some(connection) => Ok(data_response(connection).into_response()),
-        None => Err(ConnectionError::NotFound),
-    }
+    state
+        .db
+        .get_connection(&id)
+        .await?
+        .map(data_response)
+        .ok_or(ConnectionError::NotFound)
 }
 
 #[utoipa::path(delete, path = "/v1/connections/{id}", tag = "Connections",
@@ -141,21 +128,16 @@ pub async fn delete_connection(
 ) -> Result<impl IntoResponse, ConnectionError> {
     if state
         .db
-        .get_connection(id.as_str())
-        .await
+        .get_connection(&id)
+        .await?
         .is_some_and(|c| c.direction == Direction::Sink)
     {
         return Err(ConnectionError::Forbidden(
             "only the owner can manage the workspace sink".to_string(),
         ));
     }
-
-    state
-        .db
-        .remove_connection(id.as_str())
-        .await
-        .map_err(ConnectionError::Internal)?;
-    Ok(StatusCode::NO_CONTENT.into_response())
+    state.db.remove_connection(&id).await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[utoipa::path(get, path = "/v1/connections/{id}/files", tag = "Connections",
@@ -171,11 +153,11 @@ pub async fn list_connection_files(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    let (connection, creds) = resolve_cloud_connection(&state, id.as_str()).await?;
-    match reader::list_files(&connection.url, &creds).await {
-        Ok(files) => Ok(data_response(files).into_response()),
-        Err(msg) => Err(ConnectionError::ListFilesFailed(msg)),
-    }
+    let (connection, creds) = resolve_cloud_connection(&state, &id).await?;
+    reader::list_files(&connection.url, &creds)
+        .await
+        .map(data_response)
+        .map_err(ConnectionError::ListFilesFailed)
 }
 
 #[utoipa::path(post, path = "/v1/connections/{id}/urls", tag = "Connections",
@@ -196,16 +178,15 @@ pub async fn sign_connection_urls(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<DatasetUrlsRequest>,
-) -> Result<Response, ConnectionError> {
-    let (connection, creds) = resolve_cloud_connection(&state, id.as_str()).await?;
+) -> Result<Response, Response> {
+    let (connection, creds) = resolve_cloud_connection(&state, &id)
+        .await
+        .map_err(IntoResponse::into_response)?;
     if connection.direction != Direction::Source {
         return Err(ConnectionError::InvalidConnection(
             "only a source connection's files can be read directly".to_string(),
-        ));
+        )
+        .into_response());
     }
-    Ok(
-        match sign_dataset_paths(Method::GET, &connection.url, &creds, &req.paths).await {
-            Ok(resp) | Err(resp) => resp,
-        },
-    )
+    sign_dataset_paths(Method::GET, &connection.url, &creds, &req.paths).await
 }

@@ -3,6 +3,7 @@ use axum::response::IntoResponse;
 
 use crate::AppState;
 use crate::auth::bearer::AuthenticatedUser;
+use crate::db::DbError;
 use crate::error::data_response;
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
@@ -33,17 +34,17 @@ pub struct WorkspacesResponse {
 pub async fn list_workspaces(
     State(state): State<AppState>,
     axum::Extension(user): axum::Extension<AuthenticatedUser>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, DbError> {
     let current_name = state
         .db
         .get_workspace_identity()
-        .await
+        .await?
         .map(|i| i.name)
         .unwrap_or_default();
 
-    data_response(WorkspacesResponse {
-        workspaces: user.claims.workspaces.clone(),
+    Ok(data_response(WorkspacesResponse {
+        workspaces: user.claims.workspaces,
         current: state.workspace_slug.clone().unwrap_or_default(),
         current_name,
-    })
+    }))
 }

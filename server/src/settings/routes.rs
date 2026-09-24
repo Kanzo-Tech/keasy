@@ -12,12 +12,21 @@ use crate::connections::models::{
     ConnectionKind, CreateConnectionRequest, Direction, LocationType, SINK_NAME,
     UpdateConnectionRequest,
 };
-use crate::error::{data_response, error_body};
+use crate::db::DbError;
+use crate::error::data_response;
 use crate::settings::ai::{AiSettings, AiSettingsPayload};
 use crate::settings::org::OrgSettings;
 use crate::settings::schema::PROVIDER_REGISTRY;
 
 const KNOWN_PROVIDERS: &[&str] = &["anthropic", "openai"];
+
+fn unknown_provider(provider_id: &str) -> Result<(), DbError> {
+    if KNOWN_PROVIDERS.contains(&provider_id) {
+        Ok(())
+    } else {
+        Err(DbError::Invalid(format!("unknown provider: {provider_id}")))
+    }
+}
 
 #[utoipa::path(get, path = "/v1/settings/schema", tag = "Settings",
     responses((status = 200, description = "Provider registry schema", body = Vec<crate::settings::schema::ProviderSchema>))
@@ -34,11 +43,14 @@ pub async fn get_schema() -> impl IntoResponse {
         (status = 204, description = "No settings configured"),
     )
 )]
-pub async fn get_org_settings(_: Owner, State(state): State<AppState>) -> Response {
-    match state.db.get_org_settings().await {
+pub async fn get_org_settings(
+    _: Owner,
+    State(state): State<AppState>,
+) -> Result<Response, DbError> {
+    Ok(match state.db.get_org_settings().await? {
         Some(settings) => data_response(settings).into_response(),
         None => StatusCode::NO_CONTENT.into_response(),
-    }
+    })
 }
 
 #[utoipa::path(put, path = "/v1/settings/organization", tag = "Settings",
@@ -52,16 +64,12 @@ pub async fn save_org_settings(
     _: Owner,
     State(state): State<AppState>,
     Json(payload): Json<OrgSettings>,
-) -> Response {
+) -> Result<impl IntoResponse, DbError> {
     if payload.publisher_name.trim().is_empty() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(error_body("validation_error", "publisher_name is required")),
-        )
-            .into_response();
+        return Err(DbError::Invalid("publisher_name is required".into()));
     }
-    state.db.set_org_settings(&payload).await;
-    data_response(payload).into_response()
+    state.db.set_org_settings(&payload).await?;
+    Ok(data_response(payload))
 }
 
 // ── AI providers ──────────────────────────────────────────────────────────
@@ -72,10 +80,14 @@ pub async fn save_org_settings(
 #[utoipa::path(get, path = "/v1/settings/ai/providers", tag = "Settings",
     responses((status = 200, description = "List of AI providers", body = Vec<AiSettingsPayload>))
 )]
-pub async fn list_ai_providers(_: Member, State(state): State<AppState>) -> impl IntoResponse {
-    let providers = state.db.list_ai_providers().await;
-    let payloads: Vec<AiSettingsPayload> = providers.iter().map(to_payload).collect();
-    data_response(payloads)
+pub async fn list_ai_providers(
+    _: Member,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, DbError> {
+    let providers = state.db.list_ai_providers().await?;
+    Ok(data_response(
+        providers.iter().map(to_payload).collect::<Vec<_>>(),
+    ))
 }
 
 #[utoipa::path(put, path = "/v1/settings/ai/providers/{provider_id}", tag = "Settings",
@@ -91,35 +103,29 @@ pub async fn save_ai_provider(
     State(state): State<AppState>,
     Path(provider_id): Path<String>,
     Json(payload): Json<AiSettingsPayload>,
-) -> Response {
-    if !KNOWN_PROVIDERS.contains(&provider_id.as_str()) {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(error_body("validation_error", "Unknown provider")),
-        )
-            .into_response();
-    }
+) -> Result<impl IntoResponse, DbError> {
+    unknown_provider(&provider_id)?;
 
+    // An empty key leaves the stored one in place.
     let api_key = if payload.api_key.is_empty() {
         state
             .db
             .get_ai_provider(&provider_id)
-            .await
-            .map(|c| c.api_key.expose_secret().to_string())
+            .await?
+            .map(|c| c.api_key)
             .unwrap_or_default()
     } else {
-        payload.api_key
+        SecretString::from(payload.api_key)
     };
 
     let settings = AiSettings {
         provider: provider_id.clone(),
-        api_key: SecretString::from(api_key),
+        api_key,
         model: payload.model.filter(|m| !m.trim().is_empty()),
         max_tokens: payload.max_tokens,
     };
-    state.db.set_ai_provider(&provider_id, &settings).await;
-
-    data_response(to_payload(&settings)).into_response()
+    state.db.set_ai_provider(&provider_id, &settings).await?;
+    Ok(data_response(to_payload(&settings)))
 }
 
 #[utoipa::path(delete, path = "/v1/settings/ai/providers/{provider_id}", tag = "Settings",
@@ -133,16 +139,10 @@ pub async fn delete_ai_provider(
     _: Member,
     State(state): State<AppState>,
     Path(provider_id): Path<String>,
-) -> Response {
-    if !KNOWN_PROVIDERS.contains(&provider_id.as_str()) {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(error_body("validation_error", "Unknown provider")),
-        )
-            .into_response();
-    }
-    state.db.delete_ai_provider(&provider_id).await;
-    StatusCode::NO_CONTENT.into_response()
+) -> Result<impl IntoResponse, DbError> {
+    unknown_provider(&provider_id)?;
+    state.db.delete_ai_provider(&provider_id).await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 fn to_payload(s: &AiSettings) -> AiSettingsPayload {
@@ -177,8 +177,11 @@ pub struct CatalogStoragePayload {
         (status = 204, description = "Not configured"),
     )
 )]
-pub async fn get_catalog_storage(_: Owner, State(state): State<AppState>) -> Response {
-    match state.db.get_sink_connection().await {
+pub async fn get_catalog_storage(
+    _: Owner,
+    State(state): State<AppState>,
+) -> Result<Response, DbError> {
+    Ok(match state.db.get_sink_connection().await? {
         Some(sink) => match sink.cloud_account_id {
             Some(cloud_account_id) => data_response(CatalogStoragePayload {
                 cloud_account_id,
@@ -188,7 +191,7 @@ pub async fn get_catalog_storage(_: Owner, State(state): State<AppState>) -> Res
             None => StatusCode::NO_CONTENT.into_response(),
         },
         None => StatusCode::NO_CONTENT.into_response(),
-    }
+    })
 }
 
 #[utoipa::path(put, path = "/v1/settings/catalog-storage", tag = "Settings",
@@ -202,68 +205,51 @@ pub async fn save_catalog_storage(
     _: Owner,
     State(state): State<AppState>,
     Json(payload): Json<CatalogStoragePayload>,
-) -> Response {
+) -> Result<impl IntoResponse, DbError> {
     if payload.cloud_account_id.trim().is_empty() || payload.base_url.trim().is_empty() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(error_body(
-                "validation_error",
-                "cloud_account_id and base_url are required",
-            )),
-        )
-            .into_response();
+        return Err(DbError::Invalid(
+            "cloud_account_id and base_url are required".into(),
+        ));
     }
-
-    // Verify the cloud account exists
     if state
         .db
-        .get_cloud_account_summary(payload.cloud_account_id.as_str())
-        .await
+        .get_cloud_account_summary(&payload.cloud_account_id)
+        .await?
         .is_none()
     {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(error_body("validation_error", "Cloud account not found")),
-        )
-            .into_response();
+        return Err(DbError::Invalid("Cloud account not found".into()));
     }
 
-    let result = match state.db.get_sink_connection().await {
-        Some(sink) => state
-            .db
-            .update_connection(
-                &sink.id,
-                UpdateConnectionRequest {
-                    name: None,
-                    kind: None,
-                    location_type: Some(LocationType::Cloud),
-                    direction: None,
+    match state.db.get_sink_connection().await? {
+        Some(sink) => {
+            state
+                .db
+                .update_connection(
+                    &sink.id,
+                    UpdateConnectionRequest {
+                        name: None,
+                        kind: None,
+                        location_type: Some(LocationType::Cloud),
+                        direction: None,
+                        cloud_account_id: Some(payload.cloud_account_id.clone()),
+                        url: Some(payload.base_url.clone()),
+                    },
+                )
+                .await?;
+        }
+        None => {
+            state
+                .db
+                .create_connection(CreateConnectionRequest {
+                    name: SINK_NAME.to_string(),
+                    kind: ConnectionKind::Data,
+                    location_type: LocationType::Cloud,
+                    direction: Direction::Sink,
                     cloud_account_id: Some(payload.cloud_account_id.clone()),
-                    url: Some(payload.base_url.clone()),
-                },
-            )
-            .await
-            .map(|_| ()),
-        None => state
-            .db
-            .create_connection(CreateConnectionRequest {
-                name: SINK_NAME.to_string(),
-                kind: ConnectionKind::Data,
-                location_type: LocationType::Cloud,
-                direction: Direction::Sink,
-                cloud_account_id: Some(payload.cloud_account_id.clone()),
-                url: payload.base_url.clone(),
-            })
-            .await
-            .map(|_| ()),
-    };
-
-    match result {
-        Ok(_) => data_response(payload).into_response(),
-        Err(msg) => (
-            StatusCode::BAD_REQUEST,
-            Json(error_body("validation_error", msg)),
-        )
-            .into_response(),
+                    url: payload.base_url.clone(),
+                })
+                .await?;
+        }
     }
+    Ok(data_response(payload))
 }

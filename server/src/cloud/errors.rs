@@ -1,31 +1,28 @@
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+
+use crate::db::DbError;
+
 #[derive(Debug, thiserror::Error)]
 pub enum CloudAccountError {
     #[error("cloud account not found")]
     NotFound,
-    #[error("validation failed: {0}")]
-    ValidationFailed(String),
+    #[error(transparent)]
+    Db(#[from] DbError),
 }
 
-impl CloudAccountError {
-    pub fn to_http(&self) -> (axum::http::StatusCode, &'static str, String) {
+impl IntoResponse for CloudAccountError {
+    fn into_response(self) -> Response {
         match self {
             CloudAccountError::NotFound => (
-                axum::http::StatusCode::NOT_FOUND,
-                "not_found",
-                "Cloud account not found".to_string(),
-            ),
-            CloudAccountError::ValidationFailed(msg) => (
-                axum::http::StatusCode::BAD_REQUEST,
-                "validation_failed",
-                msg.clone(),
-            ),
+                StatusCode::NOT_FOUND,
+                axum::Json(crate::error::error_body(
+                    "not_found",
+                    "Cloud account not found",
+                )),
+            )
+                .into_response(),
+            CloudAccountError::Db(e) => e.into_response(),
         }
-    }
-}
-
-impl axum::response::IntoResponse for CloudAccountError {
-    fn into_response(self) -> axum::response::Response {
-        let (status, code, message) = self.to_http();
-        (status, axum::Json(crate::error::error_body(code, &message))).into_response()
     }
 }

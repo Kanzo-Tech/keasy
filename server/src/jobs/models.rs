@@ -20,11 +20,11 @@ impl ToSql for RunMode {
 
 impl FromSql for RunMode {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        let s = value.as_str()?;
-        Ok(match s {
-            "scheduled" => Self::Scheduled,
-            _ => Self::Integrated,
-        })
+        match value.as_str()? {
+            "integrated" => Ok(Self::Integrated),
+            "scheduled" => Ok(Self::Scheduled),
+            other => Err(crate::db::unknown_value("run mode", other)),
+        }
     }
 }
 
@@ -55,16 +55,15 @@ impl ToSql for JobStatus {
 
 impl FromSql for JobStatus {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        let s = value.as_str()?;
-        Ok(match s {
-            "draft" => Self::Draft,
-            "pending" => Self::Pending,
-            "running" => Self::Running,
-            "completed" => Self::Completed,
-            "failed" => Self::Failed,
-            "cancelled" => Self::Cancelled,
-            _ => Self::Pending,
-        })
+        match value.as_str()? {
+            "draft" => Ok(Self::Draft),
+            "pending" => Ok(Self::Pending),
+            "running" => Ok(Self::Running),
+            "completed" => Ok(Self::Completed),
+            "failed" => Ok(Self::Failed),
+            "cancelled" => Ok(Self::Cancelled),
+            other => Err(crate::db::unknown_value("job status", other)),
+        }
     }
 }
 

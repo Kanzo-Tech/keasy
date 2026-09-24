@@ -34,6 +34,8 @@ pub enum CatalogError {
     NoCredentials,
     #[error("{0}")]
     InvalidPath(String),
+    #[error("a catalog operation panicked while holding the connection")]
+    Poisoned,
 }
 
 /// The workspace's DuckLake catalog — the server-side authority over output
@@ -46,6 +48,10 @@ pub struct Catalog {
 }
 
 impl Catalog {
+    fn conn(&self) -> Result<std::sync::MutexGuard<'_, Connection>, CatalogError> {
+        self.conn.lock().map_err(|_| CatalogError::Poisoned)
+    }
+
     /// Open (creating if absent) the catalog rooted at `data_dir`. The catalog
     /// metadata uses the **SQLite** ducklake backend (`catalog.sqlite`) so it
     /// replicates with Litestream exactly like `keasy.db`; `DATA_PATH` points at
@@ -84,9 +90,9 @@ impl Catalog {
         // all — the referenced Parquet lives in the member's sink, whose lifecycle
         // is the member's. The catalog only ever touches its own metadata.
         conn.execute_batch(&format!(
-            "ATTACH 'ducklake:sqlite:{}' AS lake (DATA_PATH '{}');",
-            catalog_db.display(),
-            data_path.display(),
+            "ATTACH {} AS lake (DATA_PATH {});",
+            q(&format!("ducklake:sqlite:{}", catalog_db.display())),
+            q(&data_path.display().to_string()),
         ))?;
         Ok(Self {
             conn: Mutex::new(conn),
@@ -121,7 +127,7 @@ impl Catalog {
                 crate::cloud::relative_path(file).map_err(CatalogError::InvalidPath)?;
             }
         }
-        let conn = self.conn.lock().expect("catalog mutex poisoned");
+        let conn = self.conn()?;
 
         // Authorise reads of this dataset's prefix. Local needs nothing; a remote
         // dataset whose creds we can't translate is a registration miss, not a
@@ -168,7 +174,7 @@ impl Catalog {
     /// referenced Parquet at the sink is never touched. Idempotent (no-op if the
     /// schema is absent). Used when a job is deleted and by the deregister pass.
     pub fn unregister(&self, job_id: &str) -> Result<(), CatalogError> {
-        let conn = self.conn.lock().expect("catalog mutex poisoned");
+        let conn = self.conn()?;
         let schema = format!("job_{}", sanitize(job_id));
         conn.execute_batch(&format!("DROP SCHEMA IF EXISTS lake.\"{schema}\" CASCADE;"))?;
         Ok(())
@@ -180,7 +186,7 @@ impl Catalog {
     /// this. Ids are returned in their `sanitize`d form (as they appear in schema
     /// names); compare with `Catalog::is_registered`.
     pub fn registered_jobs(&self) -> Result<std::collections::HashSet<String>, CatalogError> {
-        let conn = self.conn.lock().expect("catalog mutex poisoned");
+        let conn = self.conn()?;
         let mut stmt = conn.prepare(
             "SELECT schema_name FROM duckdb_schemas()
              WHERE database_name = 'lake' AND schema_name LIKE 'job\\_%' ESCAPE '\\'",

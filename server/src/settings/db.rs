@@ -1,97 +1,120 @@
-use secrecy::SecretString;
-use serde::{Serialize, de::DeserializeOwned};
+use rusqlite::OptionalExtension;
+use secrecy::{ExposeSecret, SecretString};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
+use crate::db::{Database, DbError, DbResult};
 use crate::settings::ai::AiSettings;
 use crate::settings::org::{OrgSettings, WorkspaceIdentity};
 
-use crate::db::Database;
-
 const KNOWN_AI_PROVIDERS: &[&str] = &["anthropic", "openai"];
 
+/// What an AI provider stores in `settings`; the key lives in `secrets`.
+#[derive(Serialize, Deserialize)]
+struct AiProviderRecord {
+    provider: String,
+    model: Option<String>,
+    max_tokens: Option<u32>,
+}
+
 impl Database {
-    pub async fn get_setting<T: DeserializeOwned>(&self, key: &str) -> Option<T> {
-        let (_permit, conn) = self.read().await;
-        let json = conn
+    async fn get_setting<T: DeserializeOwned>(&self, key: &str) -> DbResult<Option<T>> {
+        let json: Option<String> = self
+            .read()
+            .await
             .query_row("SELECT value FROM settings WHERE key = ?1", [key], |row| {
-                row.get::<_, String>(0)
+                row.get(0)
             })
-            .ok()?;
-        serde_json::from_str(&json).ok()
+            .optional()?;
+        Ok(json.map(|j| serde_json::from_str(&j)).transpose()?)
     }
 
-    pub async fn set_setting<T: Serialize>(&self, key: &str, value: &T) {
-        let json = serde_json::to_string(value).expect("serialize setting");
-        let conn = self.write().await;
-        let _ = conn.execute(
+    async fn set_setting<T: Serialize>(&self, key: &str, value: &T) -> DbResult<()> {
+        self.write().await.execute(
             "INSERT INTO settings (key, value) VALUES (?1, ?2)
              ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-            [key, &json],
-        );
+            [key, &serde_json::to_string(value)?],
+        )?;
+        Ok(())
     }
 
-    pub async fn delete_setting(&self, key: &str) {
-        let conn = self.write().await;
-        let _ = conn.execute("DELETE FROM settings WHERE key = ?1", [key]);
+    async fn delete_setting(&self, key: &str) -> DbResult<()> {
+        self.write()
+            .await
+            .execute("DELETE FROM settings WHERE key = ?1", [key])?;
+        Ok(())
     }
 
-    pub async fn get_org_settings(&self) -> Option<OrgSettings> {
+    pub async fn get_org_settings(&self) -> DbResult<Option<OrgSettings>> {
         self.get_setting("org_settings").await
     }
 
-    pub async fn set_org_settings(&self, settings: &OrgSettings) {
-        self.set_setting("org_settings", settings).await;
+    pub async fn set_org_settings(&self, settings: &OrgSettings) -> DbResult<()> {
+        self.set_setting("org_settings", settings).await
     }
 
-    pub async fn get_workspace_identity(&self) -> Option<WorkspaceIdentity> {
+    pub async fn get_workspace_identity(&self) -> DbResult<Option<WorkspaceIdentity>> {
         self.get_setting("workspace_identity").await
     }
 
-    pub async fn set_workspace_identity(&self, identity: &WorkspaceIdentity) {
-        self.set_setting("workspace_identity", identity).await;
+    pub async fn set_workspace_identity(&self, identity: &WorkspaceIdentity) -> DbResult<()> {
+        self.set_setting("workspace_identity", identity).await
     }
 
-    pub async fn get_ai_provider(&self, provider_id: &str) -> Option<AiSettings> {
+    pub async fn get_ai_provider(&self, provider_id: &str) -> DbResult<Option<AiSettings>> {
         let key = format!("ai_provider:{provider_id}");
-        let public: serde_json::Value = self.get_setting(&key).await?;
-        let api_key_bytes = self.get_secret(&key).await?;
-        let api_key = SecretString::from(String::from_utf8(api_key_bytes).ok()?);
-        Some(AiSettings {
-            provider: public["provider"].as_str()?.to_string(),
+        let Some(record) = self.get_setting::<AiProviderRecord>(&key).await? else {
+            return Ok(None);
+        };
+        let api_key = match self.get_secret(&key).await? {
+            Some(bytes) => SecretString::from(
+                String::from_utf8(bytes).map_err(|e| DbError::Secret(e.to_string()))?,
+            ),
+            None => SecretString::default(),
+        };
+        Ok(Some(AiSettings {
+            provider: record.provider,
             api_key,
-            model: public["model"].as_str().map(String::from),
-            max_tokens: public["max_tokens"].as_u64().map(|v| v as u32),
-        })
+            model: record.model,
+            max_tokens: record.max_tokens,
+        }))
     }
 
-    pub async fn set_ai_provider(&self, provider_id: &str, s: &AiSettings) {
-        use secrecy::ExposeSecret;
+    pub async fn set_ai_provider(&self, provider_id: &str, s: &AiSettings) -> DbResult<()> {
         let key = format!("ai_provider:{provider_id}");
         self.set_setting(
             &key,
-            &serde_json::json!({
-                "provider": s.provider,
-                "model": s.model,
-                "max_tokens": s.max_tokens,
-            }),
+            &AiProviderRecord {
+                provider: s.provider.clone(),
+                model: s.model.clone(),
+                max_tokens: s.max_tokens,
+            },
         )
-        .await;
+        .await?;
         self.set_secret(&key, s.api_key.expose_secret().as_bytes())
-            .await;
+            .await
     }
 
-    pub async fn delete_ai_provider(&self, provider_id: &str) {
+    pub async fn delete_ai_provider(&self, provider_id: &str) -> DbResult<()> {
         let key = format!("ai_provider:{provider_id}");
-        self.delete_setting(&key).await;
-        self.delete_secret(&key).await;
+        self.delete_setting(&key).await?;
+        self.delete_secret(&key).await
     }
 
-    pub async fn list_ai_providers(&self) -> Vec<AiSettings> {
+    /// `id`'s settings, or with no `id` the first provider configured.
+    pub async fn ai_provider(&self, id: Option<&str>) -> DbResult<Option<AiSettings>> {
+        match id {
+            Some(id) => self.get_ai_provider(id).await,
+            None => Ok(self.list_ai_providers().await?.into_iter().next()),
+        }
+    }
+
+    pub async fn list_ai_providers(&self) -> DbResult<Vec<AiSettings>> {
         let mut result = Vec::new();
         for id in KNOWN_AI_PROVIDERS {
-            if let Some(s) = self.get_ai_provider(id).await {
+            if let Some(s) = self.get_ai_provider(id).await? {
                 result.push(s);
             }
         }
-        result
+        Ok(result)
     }
 }

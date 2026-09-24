@@ -6,25 +6,39 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use regex::Regex;
-use std::sync::LazyLock;
 
 use crate::AppState;
 use crate::auth::role::{AnyRole, Owner};
+use crate::db::DbError;
 use crate::error::{data_response, error_body};
 use crate::settings::org::OrgIdentity;
 
-static SUBDIVISION_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^[A-Z]{2}-[A-Z0-9]{1,3}$").unwrap());
+/// An ISO 3166-2 subdivision code: `XX-Y`, `XX-YY` or `XX-YYY`.
+fn is_subdivision(code: &str) -> bool {
+    match code.split_once('-') {
+        Some((country, region)) => {
+            country.len() == 2
+                && country.bytes().all(|b| b.is_ascii_uppercase())
+                && (1..=3).contains(&region.len())
+                && region
+                    .bytes()
+                    .all(|b| b.is_ascii_uppercase() || b.is_ascii_digit())
+        }
+        None => false,
+    }
+}
 
 #[utoipa::path(get, path = "/v1/org/identity", tag = "Organization",
     responses(
         (status = 200, description = "Workspace identity", body = OrgIdentity),
     )
 )]
-pub async fn get_org_identity(_: AnyRole, State(state): State<AppState>) -> impl IntoResponse {
-    let workspace = state.db.get_workspace_identity().await.unwrap_or_default();
-    data_response(workspace.identity).into_response()
+pub async fn get_org_identity(
+    _: AnyRole,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, DbError> {
+    let workspace = state.db.get_workspace_identity().await?.unwrap_or_default();
+    Ok(data_response(workspace.identity))
 }
 
 #[utoipa::path(put, path = "/v1/org/identity", tag = "Organization",
@@ -38,14 +52,14 @@ pub async fn update_org_identity(
     _: Owner,
     State(state): State<AppState>,
     Json(mut payload): Json<OrgIdentity>,
-) -> Response {
+) -> Result<Response, Response> {
     payload.legal_name = payload.legal_name.trim().to_string();
     let invalid = |message: &str| {
-        (
+        Err((
             StatusCode::BAD_REQUEST,
             Json(error_body("bad_request", message)),
         )
-            .into_response()
+            .into_response())
     };
     if payload.legal_name.is_empty() {
         return invalid("legal_name must not be empty");
@@ -59,15 +73,41 @@ pub async fn update_org_identity(
         return invalid("registration_number_type must be vatID, leiCode, or EORI");
     }
     if let Some(ref csc) = payload.country_subdivision_code
-        && !SUBDIVISION_RE.is_match(csc)
+        && !is_subdivision(csc)
     {
         return invalid("country_subdivision_code must match ISO 3166-2 (e.g. DE-BY)");
     }
 
     // Read-modify-write so the display `name` (seeded at bootstrap) is preserved.
-    let mut workspace = state.db.get_workspace_identity().await.unwrap_or_default();
+    let mut workspace = state
+        .db
+        .get_workspace_identity()
+        .await
+        .map_err(IntoResponse::into_response)?
+        .unwrap_or_default();
     workspace.identity = payload.clone();
-    state.db.set_workspace_identity(&workspace).await;
+    state
+        .db
+        .set_workspace_identity(&workspace)
+        .await
+        .map_err(IntoResponse::into_response)?;
 
-    data_response(payload).into_response()
+    Ok(data_response(payload).into_response())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_subdivision;
+
+    #[test]
+    fn subdivision_codes_are_iso_3166_2() {
+        for ok in ["DE-BY", "ES-M", "FR-75C", "GB-ENG"] {
+            assert!(is_subdivision(ok), "{ok}");
+        }
+        for bad in [
+            "", "DE", "de-BY", "DE-", "DE-BAYR", "D-BY", "DE-by", "DEU-BY",
+        ] {
+            assert!(!is_subdivision(bad), "{bad}");
+        }
+    }
 }

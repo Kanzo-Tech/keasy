@@ -66,33 +66,23 @@ pub async fn ask_discover_stream(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<AskRequest>,
-) -> Response {
-    if let Err(r) = crate::discovery::routes::output_ready(&state, &member, &id).await {
-        return r;
-    }
-
-    let raw = if let Some(pid) = &req.provider {
-        state.db.get_ai_provider(pid).await
-    } else {
-        state.db.list_ai_providers().await.into_iter().next()
-    };
-    let ai_settings = match require_ai_settings(raw) {
-        Ok(s) => s,
-        Err(e) => return e.into_response(),
-    };
+) -> Result<Response, Response> {
+    crate::discovery::routes::output_ready(&state, &member, &id).await?;
+    let ai_settings = require_ai_settings(state.db.ai_provider(req.provider.as_deref()).await)
+        .map_err(IntoResponse::into_response)?;
 
     let (system_prompt, mut messages, max_tokens) = if req.explain {
         (EXPLAIN_PROMPT.to_string(), Vec::new(), 512)
     } else {
         let Some(schema) = req.schema.as_deref().filter(|s| !s.is_empty()) else {
-            return (
+            return Err((
                 StatusCode::BAD_REQUEST,
                 Json(crate::error::error_body(
                     "schema_required",
                     "No DuckDB schema was sent. The client reads it from its own DuckDB catalog and must send it with the question.",
                 )),
             )
-                .into_response();
+                .into_response());
         };
         (system_prompt(schema), history(req.history), 2048)
     };
@@ -152,7 +142,7 @@ pub async fn ask_discover_stream(
             .await;
     });
 
-    into_sse_response(ch.sse_rx)
+    Ok(into_sse_response(ch.sse_rx))
 }
 
 /// The last [`HISTORY_WINDOW`] messages, in order.

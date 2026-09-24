@@ -1,74 +1,78 @@
 use std::collections::HashMap;
 
-use rusqlite::params;
+use rusqlite::{OptionalExtension, params};
 use secrecy::{ExposeSecret, SecretString};
-use tracing::{info, warn};
 
-use crate::db::Database;
+use crate::db::{Database, DbError, DbResult, json_column};
 use crate::settings::schema::find_provider;
 
 use super::models::{
     CloudAccount, CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest,
 };
 
+const COLUMNS: &str = "id, name, provider_id, auth_method, fields";
+
+fn secret_key(id: &str) -> String {
+    format!("cloud_account:{id}")
+}
+
 impl Database {
     pub async fn create_cloud_account(
         &self,
         request: CreateCloudAccountRequest,
-    ) -> Result<CloudAccountSummary, String> {
-        let schema = find_provider(&request.provider_id)
-            .ok_or_else(|| format!("unknown provider: {}", request.provider_id))?;
+    ) -> DbResult<CloudAccountSummary> {
+        let schema = find_provider(&request.provider_id).ok_or_else(|| {
+            DbError::Invalid(format!("unknown provider: {}", request.provider_id))
+        })?;
 
         if !schema.auth_methods.is_empty() {
-            let method = request
-                .auth_method
-                .as_deref()
-                .ok_or("auth_method is required for this provider")?;
+            let method = request.auth_method.as_deref().ok_or_else(|| {
+                DbError::Invalid("auth_method is required for this provider".into())
+            })?;
             if !schema.auth_methods.iter().any(|a| a.name == method) {
-                return Err(format!("unknown auth_method: {method}"));
+                return Err(DbError::Invalid(format!("unknown auth_method: {method}")));
             }
         }
 
         let active = schema.active_fields(request.auth_method.as_deref());
-        let mut all_values = request.fields;
-
+        let mut values = request.fields;
         for field in &active {
-            if !field.optional
-                && all_values.get(field.name).is_none_or(|v| v.is_empty())
-                && field.default_value.is_none()
-            {
-                return Err(format!("missing required field: {}", field.name));
-            }
             if let Some(default) = field.default_value {
-                all_values
+                values
                     .entry(field.name.to_string())
                     .or_insert_with(|| default.to_string());
             }
+            if !field.optional && values.get(field.name).is_none_or(|v| v.is_empty()) {
+                return Err(DbError::Invalid(format!(
+                    "missing required field: {}",
+                    field.name
+                )));
+            }
         }
 
-        let (fields, secrets) = split_fields_secrets(&active, all_values);
+        let mut fields = HashMap::new();
+        let mut secrets = HashMap::new();
+        for (key, value) in values {
+            if active.iter().any(|f| f.name == key && f.secret) {
+                secrets.insert(key, value);
+            } else {
+                fields.insert(key, value);
+            }
+        }
 
         let id = uuid::Uuid::new_v4().to_string();
-        let fields_json = serde_json::to_string(&fields)
-            .map_err(|e| format!("failed to serialize fields: {e}"))?;
-
-        let conn = self.write().await;
-        conn.execute(
-            "INSERT INTO cloud_accounts (id, name, provider_id, auth_method, fields)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
+        self.write().await.execute(
+            &format!("INSERT INTO cloud_accounts ({COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5)"),
             params![
                 id,
                 request.name,
                 request.provider_id,
                 request.auth_method,
-                fields_json
+                serde_json::to_string(&fields)?
             ],
-        )
-        .map_err(|e| format!("failed to insert cloud account: {e}"))?;
-        drop(conn);
-
-        self.set_secret_json(&format!("cloud_account:{id}"), &secrets)
-            .await;
+        )?;
+        self.set_secret(&secret_key(&id), &serde_json::to_vec(&secrets)?)
+            .await?;
 
         Ok(CloudAccountSummary {
             id,
@@ -79,38 +83,51 @@ impl Database {
         })
     }
 
-    pub async fn get_cloud_account(&self, id: &str) -> Option<CloudAccount> {
-        let summary = self.get_cloud_account_summary(id).await?;
-        let secrets = self.decrypt_secrets_for_account(id).await;
-        Some(CloudAccount {
+    pub async fn get_cloud_account(&self, id: &str) -> DbResult<Option<CloudAccount>> {
+        let Some(summary) = self.get_cloud_account_summary(id).await? else {
+            return Ok(None);
+        };
+        let secrets = match self.get_secret(&secret_key(id)).await? {
+            Some(blob) => serde_json::from_slice::<HashMap<String, String>>(&blob)?
+                .into_iter()
+                .map(|(k, v)| (k, SecretString::from(v)))
+                .collect(),
+            None => HashMap::new(),
+        };
+        Ok(Some(CloudAccount {
             id: summary.id,
             name: summary.name,
             provider_id: summary.provider_id,
             auth_method: summary.auth_method,
             fields: summary.fields,
             secrets,
-        })
+        }))
     }
 
-    pub async fn get_cloud_account_summary(&self, id: &str) -> Option<CloudAccountSummary> {
-        let (_permit, conn) = self.read().await;
-        conn.query_row(
-            "SELECT id, name, provider_id, auth_method, fields FROM cloud_accounts WHERE id = ?1",
-            [id],
-            row_to_cloud_account_summary,
-        )
-        .ok()
+    pub async fn get_cloud_account_summary(
+        &self,
+        id: &str,
+    ) -> DbResult<Option<CloudAccountSummary>> {
+        Ok(self
+            .read()
+            .await
+            .query_row(
+                &format!("SELECT {COLUMNS} FROM cloud_accounts WHERE id = ?1"),
+                [id],
+                row_to_summary,
+            )
+            .optional()?)
     }
 
     pub async fn update_cloud_account(
         &self,
         id: &str,
         request: UpdateCloudAccountRequest,
-    ) -> Result<CloudAccountSummary, String> {
+    ) -> DbResult<CloudAccountSummary> {
         let account = self
             .get_cloud_account(id)
-            .await
-            .ok_or_else(|| format!("cloud account not found: {id}"))?;
+            .await?
+            .ok_or_else(|| DbError::Invalid(format!("cloud account not found: {id}")))?;
 
         let name = request.name.unwrap_or(account.name);
         let auth_method = request.auth_method.or(account.auth_method);
@@ -121,9 +138,9 @@ impl Database {
             let active = find_provider(&account.provider_id)
                 .map(|s| s.active_fields(auth_method.as_deref()))
                 .unwrap_or_default();
-
             for (key, value) in new_values {
                 if active.iter().any(|f| f.name == key && f.secret) {
+                    // An empty secret leaves the stored one in place.
                     if !value.is_empty() {
                         secrets.insert(key, SecretString::from(value));
                     }
@@ -133,23 +150,16 @@ impl Database {
             }
         }
 
-        let fields_json = serde_json::to_string(&fields)
-            .map_err(|e| format!("failed to serialize fields: {e}"))?;
-        let secrets_plain: HashMap<&str, &str> = secrets
+        self.write().await.execute(
+            "UPDATE cloud_accounts SET name = ?1, auth_method = ?2, fields = ?3 WHERE id = ?4",
+            params![name, auth_method, serde_json::to_string(&fields)?, id],
+        )?;
+        let plain: HashMap<&str, &str> = secrets
             .iter()
             .map(|(k, v)| (k.as_str(), v.expose_secret()))
             .collect();
-
-        let conn = self.write().await;
-        conn.execute(
-            "UPDATE cloud_accounts SET name = ?1, auth_method = ?2, fields = ?3 WHERE id = ?4",
-            params![name, auth_method, fields_json, id],
-        )
-        .map_err(|e| format!("failed to update cloud account: {e}"))?;
-        drop(conn);
-
-        self.set_secret_json(&format!("cloud_account:{id}"), &secrets_plain)
-            .await;
+        self.set_secret(&secret_key(id), &serde_json::to_vec(&plain)?)
+            .await?;
 
         Ok(CloudAccountSummary {
             id: id.to_string(),
@@ -160,103 +170,63 @@ impl Database {
         })
     }
 
-    pub async fn remove_cloud_account(&self, id: &str) {
-        let conn = self.write().await;
-        let _ = conn.execute("DELETE FROM cloud_accounts WHERE id = ?1", [id]);
-        drop(conn);
-        self.delete_secret(&format!("cloud_account:{id}")).await;
+    pub async fn remove_cloud_account(&self, id: &str) -> DbResult<()> {
+        self.write()
+            .await
+            .execute("DELETE FROM cloud_accounts WHERE id = ?1", [id])?;
+        self.delete_secret(&secret_key(id)).await
     }
 
-    pub async fn list_cloud_accounts(&self) -> Vec<CloudAccountSummary> {
-        let (_permit, conn) = self.read().await;
-        let mut stmt = conn
-            .prepare("SELECT id, name, provider_id, auth_method, fields FROM cloud_accounts")
-            .expect("prepare list accounts");
-        stmt.query_map([], row_to_cloud_account_summary)
-            .expect("query accounts")
-            .filter_map(|r| r.ok())
-            .collect()
+    pub async fn list_cloud_accounts(&self) -> DbResult<Vec<CloudAccountSummary>> {
+        let conn = self.read().await;
+        let mut stmt = conn.prepare(&format!("SELECT {COLUMNS} FROM cloud_accounts"))?;
+        let accounts = stmt
+            .query_map([], row_to_summary)?
+            .collect::<rusqlite::Result<_>>()?;
+        Ok(accounts)
     }
 
-    pub async fn build_storage_config(&self, account_ids: &[String]) -> HashMap<String, String> {
+    /// The object-store configuration (provider env-var names → values) the
+    /// given accounts sign with.
+    pub async fn build_storage_config(
+        &self,
+        account_ids: &[String],
+    ) -> DbResult<HashMap<String, String>> {
         let mut env = HashMap::new();
         for id in account_ids {
-            if let Some(account) = self.get_cloud_account(id).await
-                && let Some(schema) = find_provider(&account.provider_id)
-            {
-                for field in schema.active_fields(account.auth_method.as_deref()) {
-                    let Some(env_var) = field.env_var else {
-                        continue;
-                    };
-                    let val = if field.secret {
-                        account
-                            .secrets
-                            .get(field.name)
-                            .map(|s| s.expose_secret().to_string())
-                    } else {
-                        account.fields.get(field.name).cloned()
-                    };
-                    if let Some(v) = val {
-                        env.insert(env_var.to_string(), v);
-                    }
+            let Some(account) = self.get_cloud_account(id).await? else {
+                continue;
+            };
+            let Some(schema) = find_provider(&account.provider_id) else {
+                continue;
+            };
+            for field in schema.active_fields(account.auth_method.as_deref()) {
+                let Some(env_var) = field.env_var else {
+                    continue;
+                };
+                let value = if field.secret {
+                    account
+                        .secrets
+                        .get(field.name)
+                        .map(|s| s.expose_secret().to_string())
+                } else {
+                    account.fields.get(field.name).cloned()
+                };
+                if let Some(v) = value {
+                    env.insert(env_var.to_string(), v);
                 }
             }
         }
-        if !env.is_empty() {
-            let keys: Vec<&str> = env.keys().map(|k| k.as_str()).collect();
-            info!(
-                count = env.len(),
-                ?keys,
-                "built storage config from cloud accounts"
-            );
-        }
-        env
-    }
-
-    async fn decrypt_secrets_for_account(&self, id: &str) -> HashMap<String, SecretString> {
-        let Some(blob) = self.get_secret(&format!("cloud_account:{id}")).await else {
-            return HashMap::new();
-        };
-        match serde_json::from_slice::<HashMap<String, String>>(&blob) {
-            Ok(map) => map
-                .into_iter()
-                .map(|(k, v)| (k, SecretString::from(v)))
-                .collect(),
-            Err(e) => {
-                warn!(account_id = id, error = %e, "failed to parse decrypted secrets");
-                HashMap::new()
-            }
-        }
-    }
-
-    async fn set_secret_json(&self, key: &str, value: &impl serde::Serialize) {
-        let json = serde_json::to_vec(value).expect("failed to serialize secret JSON");
-        self.set_secret(key, &json).await;
+        Ok(env)
     }
 }
 
-fn split_fields_secrets(
-    active: &[&crate::settings::schema::FieldSchema],
-    mut all_values: HashMap<String, String>,
-) -> (HashMap<String, String>, HashMap<String, String>) {
-    let mut fields = HashMap::new();
-    let mut secrets = HashMap::new();
-    for (key, value) in all_values.drain() {
-        if active.iter().any(|f| f.name == key && f.secret) {
-            secrets.insert(key, value);
-        } else {
-            fields.insert(key, value);
-        }
-    }
-    (fields, secrets)
-}
-
-fn row_to_cloud_account_summary(row: &rusqlite::Row<'_>) -> rusqlite::Result<CloudAccountSummary> {
+fn row_to_summary(row: &rusqlite::Row<'_>) -> rusqlite::Result<CloudAccountSummary> {
     Ok(CloudAccountSummary {
         id: row.get("id")?,
         name: row.get("name")?,
         provider_id: row.get("provider_id")?,
         auth_method: row.get("auth_method")?,
-        fields: serde_json::from_str(&row.get::<_, String>("fields")?).unwrap_or_default(),
+        fields: json_column(row, "fields")?,
     })
 }

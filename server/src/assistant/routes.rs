@@ -1,34 +1,29 @@
 use axum::Json;
 use axum::extract::State;
-use axum::http::StatusCode;
 use axum::response::Response;
-use std::fmt::Write as FmtWrite;
 
 use crate::AppState;
-use crate::ai::client::{require_ai_settings, stream_llm_to_sse};
+use crate::ai::client::{AiUnavailable, require_ai_settings, stream_llm_to_sse};
 use crate::ai::routes::strip_markdown_fences;
 use crate::auth::role::Member;
 
 use super::models::*;
 
-type ErrorResponse = (StatusCode, Json<serde_json::Value>);
-
 fn format_schemas_for_prompt(schemas: &[FileSchema]) -> String {
-    let mut out = String::new();
-    for schema in schemas {
-        writeln!(
-            out,
-            "File: @{}/{}",
-            schema.connection_name, schema.file_path
-        )
-        .unwrap();
-        writeln!(out, "Columns:").unwrap();
-        for col in &schema.columns {
-            writeln!(out, "  - {} ({})", col.name, col.data_type).unwrap();
-        }
-        writeln!(out).unwrap();
-    }
-    out
+    schemas
+        .iter()
+        .map(|schema| {
+            let columns: String = schema
+                .columns
+                .iter()
+                .map(|col| format!("  - {} ({})\n", col.name, col.data_type))
+                .collect();
+            format!(
+                "File: @{}/{}\nColumns:\n{columns}\n",
+                schema.connection_name, schema.file_path
+            )
+        })
+        .collect()
 }
 
 const CQ_SYSTEM_PROMPT: &str = r#"You are an expert in knowledge graph ontology design and competency questions.
@@ -180,8 +175,8 @@ pub async fn suggest_cqs_stream(
     _: Member,
     State(state): State<AppState>,
     Json(req): Json<SuggestRequest>,
-) -> Result<Response, ErrorResponse> {
-    let ai_settings = require_ai_settings(state.db.list_ai_providers().await.into_iter().next())?;
+) -> Result<Response, AiUnavailable> {
+    let ai_settings = require_ai_settings(state.db.ai_provider(None).await)?;
 
     let mut user_msg = format!("Domain: {}\n\n", req.domain);
     user_msg.push_str(&format_schemas_for_prompt(&req.schemas));
@@ -215,14 +210,12 @@ pub async fn generate_script_stream(
     _: Member,
     State(state): State<AppState>,
     Json(req): Json<GenerateRequest>,
-) -> Result<Response, ErrorResponse> {
-    let ai_settings = require_ai_settings(state.db.list_ai_providers().await.into_iter().next())?;
+) -> Result<Response, AiUnavailable> {
+    let ai_settings = require_ai_settings(state.db.ai_provider(None).await)?;
 
-    let mut user_msg = format!("Domain: {}\n\n", req.domain);
-
-    user_msg.push_str("Competency Questions:\n");
+    let mut user_msg = format!("Domain: {}\n\nCompetency Questions:\n", req.domain);
     for (i, cq) in req.competency_questions.iter().enumerate() {
-        writeln!(user_msg, "{}. {}", i + 1, cq).unwrap();
+        user_msg.push_str(&format!("{}. {cq}\n", i + 1));
     }
     user_msg.push('\n');
 

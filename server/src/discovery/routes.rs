@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::AppState;
 use crate::auth::role::Member;
+use crate::connections::models::Connection;
 use crate::error::error_body;
 use crate::jobs::models::{Job, JobStatus};
 use crate::jobs::routes::owned_job;
@@ -114,13 +115,18 @@ async fn sign_dataset_urls(
     let job = owned_job(state, member, id)
         .await
         .map_err(IntoResponse::into_response)?;
-    let (base, creds) = state.db.job_output_target(&job).await.ok_or_else(|| {
-        fail(
-            StatusCode::BAD_REQUEST,
-            "no_destination",
-            "The job's destination connection no longer exists",
-        )
-    })?;
+    let (base, creds) = state
+        .db
+        .job_output_target(&job)
+        .await
+        .map_err(IntoResponse::into_response)?
+        .ok_or_else(|| {
+            fail(
+                StatusCode::BAD_REQUEST,
+                "no_destination",
+                "The job's destination connection no longer exists",
+            )
+        })?;
     sign_dataset_paths(method, &crate::jobs::dataset_dest(&base, id), &creds, paths).await
 }
 
@@ -186,16 +192,35 @@ pub async fn resolve_source_refs(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
-    let job = owned_job(&state, &member, &id)
+    let refs = job_connections(&state, &member, &id)
+        .await?
+        .into_iter()
+        .map(|c| (c.name, c.url))
+        .collect();
+    Ok(Json(SourceRefsResponse { refs }).into_response())
+}
+
+/// The connections the caller's job reads, as far as they still exist.
+async fn job_connections(
+    state: &AppState,
+    member: &Member,
+    id: &str,
+) -> Result<Vec<Connection>, Response> {
+    let job = owned_job(state, member, id)
         .await
         .map_err(IntoResponse::into_response)?;
-    let mut refs = HashMap::new();
+    let mut connections = Vec::with_capacity(job.connection_ids.len());
     for cid in &job.connection_ids {
-        if let Some(c) = state.db.get_connection(cid).await {
-            refs.insert(c.name, c.url);
+        if let Some(c) = state
+            .db
+            .get_connection(cid)
+            .await
+            .map_err(IntoResponse::into_response)?
+        {
+            connections.push(c);
         }
     }
-    Ok(Json(SourceRefsResponse { refs }).into_response())
+    Ok(connections)
 }
 
 #[derive(Deserialize, utoipa::ToSchema)]
@@ -235,15 +260,7 @@ pub async fn resolve_source_urls(
     Path(id): Path<String>,
     Json(req): Json<SourceUrlsRequest>,
 ) -> Result<Response, Response> {
-    let job = owned_job(&state, &member, &id)
-        .await
-        .map_err(IntoResponse::into_response)?;
-    let mut conns: Vec<(String, Option<String>)> = Vec::new();
-    for cid in &job.connection_ids {
-        if let Some(c) = state.db.get_connection(cid).await {
-            conns.push((c.url, c.cloud_account_id));
-        }
-    }
+    let conns = job_connections(&state, &member, &id).await?;
 
     let mut urls = HashMap::with_capacity(req.uris.len());
     for uri in &req.uris {
@@ -251,13 +268,16 @@ pub async fn resolve_source_urls(
             urls.insert(uri.clone(), uri.clone());
             continue;
         }
-        let account = conns
+        let creds = match conns
             .iter()
-            .filter(|(base, _)| under(uri, base))
-            .max_by_key(|(base, _)| base.len())
-            .and_then(|(_, acct)| acct.clone());
-        let creds = match account {
-            Some(acct) => state.db.build_storage_config(&[acct]).await,
+            .filter(|c| under(uri, &c.url))
+            .max_by_key(|c| c.url.len())
+        {
+            Some(conn) => state
+                .db
+                .connection_credentials(conn)
+                .await
+                .map_err(IntoResponse::into_response)?,
             None => HashMap::new(),
         };
         let (store, path) = crate::cloud::build_store(uri, &creds)

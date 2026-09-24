@@ -27,7 +27,7 @@ pub async fn list_accounts(
     _: AnyRole,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
-    Ok(data_response(state.db.list_cloud_accounts().await))
+    Ok(data_response(state.db.list_cloud_accounts().await?))
 }
 
 #[utoipa::path(post, path = "/v1/cloud-accounts", tag = "Cloud Accounts",
@@ -42,10 +42,8 @@ pub async fn create_account(
     State(state): State<AppState>,
     Json(payload): Json<CreateCloudAccountRequest>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
-    match state.db.create_cloud_account(payload).await {
-        Ok(summary) => Ok((StatusCode::CREATED, data_response(summary)).into_response()),
-        Err(msg) => Err(CloudAccountError::ValidationFailed(msg)),
-    }
+    let summary = state.db.create_cloud_account(payload).await?;
+    Ok((StatusCode::CREATED, data_response(summary)))
 }
 
 #[utoipa::path(get, path = "/v1/cloud-accounts/{id}", tag = "Cloud Accounts",
@@ -60,10 +58,12 @@ pub async fn get_account(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
-    match state.db.get_cloud_account_summary(id.as_str()).await {
-        Some(summary) => Ok(data_response(summary).into_response()),
-        None => Err(CloudAccountError::NotFound),
-    }
+    state
+        .db
+        .get_cloud_account_summary(&id)
+        .await?
+        .map(data_response)
+        .ok_or(CloudAccountError::NotFound)
 }
 
 #[utoipa::path(put, path = "/v1/cloud-accounts/{id}", tag = "Cloud Accounts",
@@ -80,10 +80,9 @@ pub async fn update_account(
     Path(id): Path<String>,
     Json(payload): Json<UpdateCloudAccountRequest>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
-    match state.db.update_cloud_account(id.as_str(), payload).await {
-        Ok(summary) => Ok(data_response(summary).into_response()),
-        Err(msg) => Err(CloudAccountError::ValidationFailed(msg)),
-    }
+    Ok(data_response(
+        state.db.update_cloud_account(&id, payload).await?,
+    ))
 }
 
 #[utoipa::path(delete, path = "/v1/cloud-accounts/{id}", tag = "Cloud Accounts",
@@ -95,6 +94,6 @@ pub async fn delete_account(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
-    state.db.remove_cloud_account(id.as_str()).await;
-    Ok(StatusCode::NO_CONTENT.into_response())
+    state.db.remove_cloud_account(&id).await?;
+    Ok(StatusCode::NO_CONTENT)
 }

@@ -10,6 +10,7 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::warn;
 
+use crate::db::{DbError, DbResult};
 use crate::settings::ai::AiSettings;
 
 pub enum AiError {
@@ -34,21 +35,35 @@ pub struct Message {
 static HTTP_CLIENT: std::sync::LazyLock<reqwest::Client> =
     std::sync::LazyLock::new(reqwest::Client::new);
 
-/// Validate that an AI provider is configured with a non-empty API key.
+/// Why an ask has no provider to run on.
+pub enum AiUnavailable {
+    NotConfigured,
+    Db(DbError),
+}
+
+impl IntoResponse for AiUnavailable {
+    fn into_response(self) -> Response {
+        match self {
+            AiUnavailable::NotConfigured => (
+                axum::http::StatusCode::BAD_REQUEST,
+                axum::Json(crate::error::error_body(
+                    "ai_not_configured",
+                    "AI settings are not configured. Go to Settings > AI to add an API key.",
+                )),
+            )
+                .into_response(),
+            AiUnavailable::Db(e) => e.into_response(),
+        }
+    }
+}
+
+/// The provider an ask runs on: configured, and holding a key.
 pub fn require_ai_settings(
-    settings: Option<AiSettings>,
-) -> Result<AiSettings, (axum::http::StatusCode, axum::Json<serde_json::Value>)> {
-    use axum::Json;
-    use axum::http::StatusCode;
-    match settings {
+    settings: DbResult<Option<AiSettings>>,
+) -> Result<AiSettings, AiUnavailable> {
+    match settings.map_err(AiUnavailable::Db)? {
         Some(s) if !s.api_key.expose_secret().is_empty() => Ok(s),
-        _ => Err((
-            StatusCode::BAD_REQUEST,
-            Json(crate::error::error_body(
-                "ai_not_configured",
-                "AI settings are not configured. Go to Settings > AI to add an API key.",
-            )),
-        )),
+        _ => Err(AiUnavailable::NotConfigured),
     }
 }
 

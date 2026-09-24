@@ -79,7 +79,7 @@ macro_rules! apply_creds {
         for field in $fields {
             if let (Some(ev), Some(ck)) = (field.env_var, field.store_config_key) {
                 if let Some(v) = $creds.get(ev) {
-                    b = b.with_config(ck.parse::<$key_type>().unwrap(), v);
+                    b = b.with_config(ck.parse::<$key_type>()?, v);
                 }
             }
         }

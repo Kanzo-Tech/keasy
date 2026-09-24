@@ -26,7 +26,7 @@ pub(crate) async fn owned_job(
     state
         .db
         .get_job(id)
-        .await
+        .await?
         .filter(|job| job.created_by == member.user_id)
         .ok_or(JobApiError::NotFound)
 }
@@ -40,8 +40,8 @@ pub async fn list_jobs(
     member: Member,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    super::bootstrap::claim_declared_draft(&state.db, &member.user_id).await;
-    Ok(data_response(state.db.list_jobs_of(&member.user_id).await))
+    super::bootstrap::claim_declared_draft(&state.db, &member.user_id).await?;
+    Ok(data_response(state.db.list_jobs_of(&member.user_id).await?))
 }
 
 #[utoipa::path(post, path = "/v1/jobs", tag = "Jobs",
@@ -60,7 +60,7 @@ pub async fn create_job(
     let is_sink = state
         .db
         .get_connection(&payload.sink_connection_id)
-        .await
+        .await?
         .is_some_and(|c| c.direction == Direction::Sink);
     if !is_sink {
         return Err(JobApiError::InvalidDestination);
@@ -74,11 +74,7 @@ pub async fn create_job(
         (JobStatus::Pending, StatusCode::ACCEPTED)
     };
     let job = Job::requested(status, payload, member.user_id);
-    state
-        .db
-        .insert_job(&job)
-        .await
-        .map_err(JobApiError::Internal)?;
+    state.db.insert_job(&job).await?;
 
     Ok((code, data_response(job)).into_response())
 }
@@ -126,8 +122,7 @@ pub async fn update_job(
                 job.name = Some(name);
             }
         })
-        .await
-        .map_err(JobApiError::Internal)?
+        .await?
         .map(data_response)
         .ok_or(JobApiError::NotFound)
 }
@@ -181,8 +176,7 @@ pub async fn complete_job(
             }
             job.status = status;
         })
-        .await
-        .map_err(JobApiError::Internal)?
+        .await?
         .map(data_response)
         .ok_or(JobApiError::NotFound)
 }
@@ -222,8 +216,7 @@ pub async fn publish_relations(
     let updated = state
         .db
         .update_job(&id, move |job| job.relations = relations)
-        .await
-        .map_err(JobApiError::Internal)?;
+        .await?;
 
     // Fire-and-forget: the data is already durable at the sink, so a slow or
     // failing catalog write must not delay or fail this call. Whatever it
@@ -231,7 +224,7 @@ pub async fn publish_relations(
     if !for_catalog.is_empty()
         && let (Some(catalog), Some((base, creds))) = (
             state.catalog.clone(),
-            state.db.job_output_target(&job).await,
+            state.db.job_output_target(&job).await?,
         )
     {
         let dest = crate::jobs::dataset_dest(&base, &id);
@@ -272,11 +265,7 @@ pub async fn delete_job(
         return Err(JobApiError::StillRunning);
     }
 
-    state
-        .db
-        .remove_job(&id)
-        .await
-        .map_err(JobApiError::Internal)?;
+    state.db.remove_job(&id).await?;
 
     // Only the catalog's metadata goes; the Parquet at the sink is the member's.
     // Whatever this misses, the reconciler's deregister pass cleans up.

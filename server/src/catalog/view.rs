@@ -45,7 +45,7 @@ impl Catalog {
     /// filled by [`fill_row_counts`] at the endpoint, rather than re-counted over
     /// the (credentialed) remote Parquet.
     pub fn datasets(&self) -> Result<Vec<CatalogDataset>, CatalogError> {
-        let conn = self.conn.lock().expect("catalog mutex poisoned");
+        let conn = self.conn()?;
 
         // (schema, table, column, type) for every catalog table, ordered so we
         // can group by schema→table in one pass.
@@ -64,37 +64,34 @@ impl Catalog {
             ))
         })?;
 
-        // Fold the flat (schema, table, column) rows into datasets→tables.
+        // The rows arrive ordered by schema then table, so a new dataset or table
+        // starts exactly where the name changes.
         let mut datasets: Vec<CatalogDataset> = Vec::new();
         for row in rows {
             let (schema, table, column, data_type) = row?;
             let job_id = schema.strip_prefix("job_").unwrap_or(&schema).to_string();
-
-            let dataset = match datasets.last_mut() {
-                Some(d) if d.job_id == job_id => d,
-                _ => {
-                    datasets.push(CatalogDataset {
-                        job_id,
-                        tables: Vec::new(),
-                    });
-                    datasets.last_mut().expect("just pushed")
-                }
+            if datasets.last().is_none_or(|d| d.job_id != job_id) {
+                datasets.push(CatalogDataset {
+                    job_id,
+                    tables: Vec::new(),
+                });
+            }
+            let Some(dataset) = datasets.last_mut() else {
+                continue;
             };
-            let tbl = match dataset.tables.last_mut() {
-                Some(t) if t.name == table => t,
-                _ => {
-                    dataset.tables.push(CatalogTable {
-                        name: table.clone(),
-                        rows: None,
-                        columns: Vec::new(),
-                    });
-                    dataset.tables.last_mut().expect("just pushed")
-                }
-            };
-            tbl.columns.push(CatalogColumn {
-                name: column,
-                data_type,
-            });
+            if dataset.tables.last().is_none_or(|t| t.name != table) {
+                dataset.tables.push(CatalogTable {
+                    name: table,
+                    rows: None,
+                    columns: Vec::new(),
+                });
+            }
+            if let Some(tbl) = dataset.tables.last_mut() {
+                tbl.columns.push(CatalogColumn {
+                    name: column,
+                    data_type,
+                });
+            }
         }
 
         Ok(datasets)

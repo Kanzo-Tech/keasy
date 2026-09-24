@@ -66,7 +66,13 @@ pub async fn reconcile_once(state: &AppState) -> usize {
         }
     };
 
-    let jobs = state.db.list_jobs().await;
+    let jobs = match state.db.list_jobs().await {
+        Ok(jobs) => jobs,
+        Err(e) => {
+            warn!(error = %e, "reconciler: failed to list jobs");
+            return 0;
+        }
+    };
 
     // Register pass: completed jobs the catalog doesn't have yet.
     let mut registered_now = 0;
@@ -75,8 +81,14 @@ pub async fn reconcile_once(state: &AppState) -> usize {
             continue;
         }
         let relations = job.relations.clone();
-        let Some((base, creds)) = state.db.job_output_target(job).await else {
-            continue; // no sink configured — can't read the output to register it
+        let (base, creds) = match state.db.job_output_target(job).await {
+            Ok(Some(target)) => target,
+            // The sink is gone: there is nothing left to read the output from.
+            Ok(None) => continue,
+            Err(e) => {
+                warn!(job = %job.id, error = %e, "reconciler: failed to read the job's sink");
+                continue;
+            }
         };
         let dest = crate::jobs::dataset_dest(&base, &job.id);
 

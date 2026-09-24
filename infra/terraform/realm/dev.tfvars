@@ -5,6 +5,7 @@
 kc_url      = "http://keycloak:8080"
 kc_hostname = "localhost:3000"
 base_domain = "localhost"
+dev_origins = ["http://localhost:3000"]
 
 deploy_stacks = false
 server_image  = "unused-in-dev"

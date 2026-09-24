@@ -52,13 +52,11 @@ resource "keycloak_openid_client" "tenant" {
   # The relying party is the web BFF (`@kanzo-tech/auth/next`), mounted at
   # /api/auth — the Rust server no longer speaks OIDC at all.
   valid_redirect_uris = [
-    "https://${each.key}.${var.base_domain}/api/auth/callback",
-    "http://localhost:3000/api/auth/callback", # dev (compose)
+    for o in concat(["https://${each.key}.${var.base_domain}"], var.dev_origins) : "${o}/api/auth/callback"
   ]
   # RP-initiated logout comes back to the application's own origin.
   valid_post_logout_redirect_uris = [
-    "https://${each.key}.${var.base_domain}/*",
-    "http://localhost:3000/*", # dev (compose)
+    for o in concat(["https://${each.key}.${var.base_domain}"], var.dev_origins) : "${o}/*"
   ]
   web_origins = ["+"]
 }

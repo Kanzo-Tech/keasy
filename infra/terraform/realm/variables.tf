@@ -23,6 +23,12 @@ variable "base_domain" {
   type = string # tenants served at <slug>.<base_domain>
 }
 
+# Dev only: extra origins every tenant client accepts redirects to (the compose stack).
+variable "dev_origins" {
+  type    = list(string)
+  default = []
+}
+
 # ── SSO identity provider (zero SMTP — users log in with their IdP) ───────────
 variable "idp" {
   description = "Upstream OIDC IdP. Users authenticate here; Keycloak links to the pre-declared user by email."

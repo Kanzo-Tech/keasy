@@ -1,20 +1,6 @@
 @import "tailwindcss";
-/* The token bridge, so keasy's OWN utilities (`bg-background`, `text-muted-foreground`)
-   resolve against the design system's tokens. */
-@import "@kanzo-tech/theme/tokens.css";
-/* The design system's compiled appearance: the theme catalogue, the axis attributes
-   KanzoThemeProvider writes to <html>, and every utility its components use. */
-@import "@kanzo-tech/ui/styles.css";
-/* The AI surfaces' own supplement — only what `@kanzo-tech/ai` adds on top of `ui`. */
-@import "@kanzo-tech/ai/styles.css";
-/* `MessageMarkdown` renders streamdown's element tree, whose classes live in a `.js` that the
-   default scan skips. Without this the markdown has structure and no spacing at all: headings
-   the size of body text, lists with no indent. */
-@source "../../node_modules/streamdown/dist/*.js";
-
-/* The library's dark contract, restated for keasy's own `dark:` call sites — a
-   `@custom-variant` is a source directive and does not survive into a compiled sheet. */
-@custom-variant dark (&:is(.dark, .dark *:not(.light, .light *)));
+@import "@kanzo-tech/ui/tailwind.css";
+@import "@kanzo-tech/ai/tailwind.css";
 
 @layer base {
   /* Keasy reads as an IDE: code is a size below the surrounding prose. */

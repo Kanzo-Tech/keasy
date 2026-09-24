@@ -1,20 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Play } from "lucide-react";
 import { Alert, AlertDescription, Button, Kbd, ScrollArea, Spinner, Textarea } from "@kanzo-tech/ui";
-import {
-  type ColumnDef,
-  DataTableContent,
-  DataTablePagination,
-  DataTableRoot,
-  useDataTable,
-} from "@kanzo-tech/ui/table";
-import type { ExecuteSqlResult } from "@fossil-lang/corpus";
 import { useCorpus } from "./corpus";
-
-type Row = Record<string, unknown>;
+import { ResultTable } from "./result-table";
 
 /**
  * Raw SQL over the producer's own dataset, run in the browser by `corpus.executeSql`
@@ -54,35 +45,9 @@ export function SqlPanel() {
               <AlertDescription className="break-all font-mono text-xs">{run.error.message}</AlertDescription>
             </Alert>
           )}
-          {run.data?.truncated && <p className="text-muted-foreground text-xs">Result truncated.</p>}
-          {run.data && <ResultTable result={run.data} />}
+          {run.data && <ResultTable pageSize={20} result={run.data} />}
         </div>
       </ScrollArea>
     </div>
-  );
-}
-
-function ResultTable({ result }: { result: ExecuteSqlResult }) {
-  const defs = useMemo<ColumnDef<Row>[]>(
-    () =>
-      // Not `accessorKey`: a column named with a dot would read as a deep path.
-      result.columns.map(({ name: key }) => ({
-        id: key,
-        accessorFn: (row: Row) => row[key],
-        cell: ({ row }) =>
-          row.original[key] == null ? (
-            <span className="text-muted-foreground">null</span>
-          ) : (
-            <span className="font-mono">{String(row.original[key])}</span>
-          ),
-      })),
-    [result],
-  );
-  const table = useDataTable({ columns: defs, data: result.rows as Row[], pageSize: 20 });
-  return (
-    <DataTableRoot className="gap-2" table={table}>
-      <DataTableContent empty="No rows" />
-      <DataTablePagination />
-    </DataTableRoot>
   );
 }

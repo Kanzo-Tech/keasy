@@ -8,7 +8,7 @@ use tracing::warn;
 
 use super::client::{
     Message, ask_llm_stream, error_event, failure_code, into_sse_response, require_ai_settings,
-    setup_sse_channels,
+    setup_sse_channels, while_read,
 };
 use crate::AppState;
 use crate::auth::role::Member;
@@ -97,19 +97,18 @@ pub async fn ask_discover_stream(
     let delta_tx = ch.delta_tx;
     let explain = req.explain;
     tokio::spawn(async move {
-        let complete = match ask_llm_stream(
+        let call = ask_llm_stream(
             &ai_settings,
             &system_prompt,
             &messages,
             Some(max_tokens),
             delta_tx,
-        )
-        .await
-        {
-            Ok(full_text) if explain => serde_json::json!({
-                "answer": full_text.trim(),
-                "code": "success",
-            }),
+        );
+        let Some(result) = while_read(&sse_tx, call).await else {
+            return;
+        };
+        let complete = match result {
+            Ok(full_text) if explain => serde_json::json!({ "answer": full_text.trim() }),
             Ok(full_text) => {
                 let (sql, explanation, reasoning) =
                     match serde_json::from_str::<LlmResponse>(strip_markdown_fences(&full_text)) {
@@ -125,7 +124,6 @@ pub async fn ask_discover_stream(
                     "sql": sql,
                     "answer": answer,
                     "reasoning": (!reasoning.is_empty()).then_some(reasoning),
-                    "code": "success",
                 })
             }
             Err(e) => {

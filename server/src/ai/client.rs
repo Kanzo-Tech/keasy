@@ -265,6 +265,18 @@ pub fn error_event(code: &str, message: &str) -> Event {
         .data(serde_json::json!({"code": code, "message": message}).to_string())
 }
 
+/// Runs `call` only while someone reads the stream. A reader who leaves drops
+/// the call, and with it the upstream request to the model.
+pub async fn while_read<T>(
+    sse_tx: &mpsc::Sender<Result<Event, Infallible>>,
+    call: impl Future<Output = T>,
+) -> Option<T> {
+    tokio::select! {
+        () = sse_tx.closed() => None,
+        out = call => Some(out),
+    }
+}
+
 pub fn into_sse_response(sse_rx: mpsc::Receiver<Result<Event, Infallible>>) -> Response {
     Sse::new(ReceiverStream::new(sse_rx))
         .keep_alive(KeepAlive::default())
@@ -288,7 +300,11 @@ pub fn stream_llm_to_sse(
             content: user_message,
         }];
 
-        match ask_llm_stream(&ai_settings, &system_prompt, &msgs, max_tokens, delta_tx).await {
+        let call = ask_llm_stream(&ai_settings, &system_prompt, &msgs, max_tokens, delta_tx);
+        let Some(result) = while_read(&sse_tx, call).await else {
+            return;
+        };
+        match result {
             Ok(full_text) => {
                 let payload = parse_result(&full_text);
                 let _ = sse_tx
@@ -307,4 +323,26 @@ pub fn stream_llm_to_sse(
     });
 
     into_sse_response(ch.sse_rx)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn a_reader_who_leaves_drops_the_call() {
+        let (sse_tx, sse_rx) = mpsc::channel(1);
+        drop(sse_rx);
+        assert!(
+            while_read(&sse_tx, std::future::pending::<()>())
+                .await
+                .is_none()
+        );
+    }
+
+    #[tokio::test]
+    async fn a_reader_who_stays_gets_the_answer() {
+        let (sse_tx, _sse_rx) = mpsc::channel(1);
+        assert_eq!(while_read(&sse_tx, async { 7 }).await, Some(7));
+    }
 }

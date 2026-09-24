@@ -34,10 +34,10 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@kanzo-tech/ui";
-import { DiscoveryAsk } from "@/components/discovery/discovery-ask";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { AnalysisPanel } from "./_parts/analysis-panel";
+import { AskPanel } from "./_parts/ask-panel";
 import { ClassLegend } from "./_parts/class-legend";
 import { CorpusProvider, corpusQuery, useCorpus, useGraphSchema } from "./_parts/corpus";
 import { undrawnEdges, useCorpusSource } from "./_parts/corpus-source";
@@ -118,7 +118,7 @@ function Workspace({ jobId }: { jobId: string }) {
   const [activePanel, setActivePanel] = useState<string | null>("info");
   const panels = [
     { id: "info", icon: Info, label: "Info", content: <NodeInfo schema={schema} vertex={selected} /> },
-    { id: "ask", icon: MessageCircle, label: "Ask AI", content: <DiscoveryAsk graphSchema={schema} jobId={jobId} /> },
+    { id: "ask", icon: MessageCircle, label: "Ask AI", content: <AskPanel graphSchema={schema} jobId={jobId} /> },
     { id: "rules", icon: ShieldCheck, label: "Rules", content: <RulesPanel jobId={jobId} schema={schema} /> },
     { id: "sql", icon: Terminal, label: "SQL", content: <SqlPanel /> },
     { id: "analysis", icon: BarChart3, label: "Analysis", content: <AnalysisPanel schema={schema} /> },

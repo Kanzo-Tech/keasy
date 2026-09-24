@@ -57,7 +57,3 @@ const registry: Record<string, ErrorInfo> = {
 export function getErrorInfo(code: string): ErrorInfo {
   return registry[code] ?? FALLBACK;
 }
-
-export function isError(code: string | undefined): boolean {
-  return !!code && code !== "success";
-}

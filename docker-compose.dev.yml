@@ -8,6 +8,10 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile.dev
+    # Straight at the API, for curl and for the OpenAPI dump. The app itself
+    # never uses this — it goes through the web's `/v1` proxy like in prod.
+    ports:
+      - "8080:8080"
     volumes:
       - ./server/src:/src/server/src
       - server-target:/src/server/target

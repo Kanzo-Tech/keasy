@@ -86,8 +86,10 @@ services:
   # ── Application ─────────────────────────────────────────────────────────────
 
   server:
-    ports:
-      - "8080:8080"
+    # The API is NOT published here. The browser reaches it through the web's
+    # `/v1` proxy, which is the only process holding a credential; a published
+    # 8080 is a way around that, so the dev overlay opens it (for curl) and the
+    # prod overlay does not.
     environment:
       KEASY_BIND_ADDR: "0.0.0.0:8080"
       KEASY_DATA_DIR: /var/lib/keasy

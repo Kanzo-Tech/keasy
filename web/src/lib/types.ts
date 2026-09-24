@@ -58,9 +58,7 @@ export type FieldSchema = S["FieldSchema"];
 export type AuthMethodSchema = S["AuthMethodSchema"];
 export type ProviderSchema = S["ProviderSchema"];
 
-// Data-source providers fossil supports. Sourced from `@fossil-lang/wasm` (the
-// rmlext package — client-compute `providers()`), NOT openapi: keasy no longer
-// serves /v1/providers. Same `fossil_run_status::ProviderInfo` shape.
+// The source providers fossil supports, from `@fossil-lang/wasm`'s `providers()`.
 export type { ProviderInfo } from "@fossil-lang/wasm";
 
 // ---------------------------------------------------------------------------

@@ -853,10 +853,9 @@ export interface components {
             script?: string | null;
         };
         /**
-         * @description The running build's version — announced so operators (and the fleet view) can
-         *     see exactly which image a tenant is on. `git_sha`/`built_at` are stamped at
-         *     build time (CI sets `KEASY_GIT_SHA`/`KEASY_BUILT_AT`); `version` is the crate
-         *     version. See [[project_keasy_swarm_deploy_architecture]] (W0.6).
+         * @description The running build's version, so an operator can see which image a tenant is
+         *     on. `git_sha`/`built_at` are stamped at build time (CI sets `KEASY_GIT_SHA`/
+         *     `KEASY_BUILT_AT`); `version` is the crate version.
          */
         VersionResponse: {
             built_at?: string | null;

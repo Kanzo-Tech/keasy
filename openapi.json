@@ -2328,7 +2328,7 @@
       },
       "VersionResponse": {
         "type": "object",
-        "description": "The running build's version — announced so operators (and the fleet view) can\nsee exactly which image a tenant is on. `git_sha`/`built_at` are stamped at\nbuild time (CI sets `KEASY_GIT_SHA`/`KEASY_BUILT_AT`); `version` is the crate\nversion. See [[project_keasy_swarm_deploy_architecture]] (W0.6).",
+        "description": "The running build's version, so an operator can see which image a tenant is\non. `git_sha`/`built_at` are stamped at build time (CI sets `KEASY_GIT_SHA`/\n`KEASY_BUILT_AT`); `version` is the crate version.",
         "required": [
           "version"
         ],

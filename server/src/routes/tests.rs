@@ -394,29 +394,43 @@ impl<'a> MakeWriter<'a> for Captured {
     }
 }
 
+/// The process-wide subscriber, installed once. A thread-local one races the
+/// other tests: a callsite first reached on another thread caches "disabled".
+fn captured_logs() -> Captured {
+    static LOGS: std::sync::OnceLock<Captured> = std::sync::OnceLock::new();
+    LOGS.get_or_init(|| {
+        let logs = Captured::default();
+        tracing::subscriber::set_global_default(
+            tracing_subscriber::fmt()
+                .json()
+                .with_max_level(tracing::Level::INFO)
+                .with_writer(logs.clone())
+                .finish(),
+        )
+        .expect("the only global subscriber in the test binary");
+        logs
+    })
+    .clone()
+}
+
 /// The request log used to run outside the bearer layer and so always wrote
 /// `user_id = "-"`. The line that closes a request names who made it.
 #[tokio::test]
 async fn the_request_log_names_the_authenticated_caller() {
-    let logs = Captured::default();
-    let subscriber = tracing_subscriber::fmt()
-        .json()
-        .with_max_level(tracing::Level::INFO)
-        .with_writer(logs.clone())
-        .finish();
-    let _guard = tracing::subscriber::set_default(subscriber);
-
+    let logs = captured_logs();
     let harness = Harness::new().await;
-    let token = harness.token(&["member"]);
+    let token = harness.token_for("u-logged", &["member"]);
     assert_eq!(
         harness.call(Method::GET, "/v1/jobs", Some(&token)).await,
         StatusCode::OK
     );
 
     let out = String::from_utf8(logs.0.lock().unwrap().clone()).unwrap();
-    let line = out
-        .lines()
-        .find(|l| l.contains("finished processing request") && l.contains("/v1/jobs"))
-        .unwrap_or_else(|| panic!("no response line in:\n{out}"));
-    assert!(line.contains(r#""user_id":"u-1""#), "{line}");
+    assert!(
+        out.lines()
+            .any(|l| l.contains("finished processing request")
+                && l.contains("/v1/jobs")
+                && l.contains(r#""user_id":"u-logged""#)),
+        "no response line naming the caller in:\n{out}"
+    );
 }

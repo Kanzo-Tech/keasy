@@ -62,7 +62,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorAlert } from "@/components/shared/error-alert";
 import { isError } from "@/lib/error-codes";
 import type { GraphSchema } from "@/lib/graph-schema";
-import type { ChatMessage } from "@/lib/types";
+import type { AiProvider, ChatMessage } from "@/lib/types";
 import { describeDataSpace } from "@/lib/data-space";
 
 // ── The turn ─────────────────────────────────────────────────────────────
@@ -167,7 +167,7 @@ interface AskOptions {
   jobId: string;
   question: string;
   history: ChatMessage[];
-  provider?: string;
+  provider?: AiProvider;
   schema?: string;
   coordinator: Coordinator | null;
   signal: AbortSignal;

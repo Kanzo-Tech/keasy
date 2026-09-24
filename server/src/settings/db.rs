@@ -3,17 +3,18 @@ use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::db::{Database, DbError, DbResult};
-use crate::settings::ai::AiSettings;
+use crate::settings::ai::{AiProvider, AiSettings};
 use crate::settings::org::{OrgSettings, WorkspaceIdentity};
-
-const KNOWN_AI_PROVIDERS: &[&str] = &["anthropic", "openai"];
 
 /// What an AI provider stores in `settings`; the key lives in `secrets`.
 #[derive(Serialize, Deserialize)]
 struct AiProviderRecord {
-    provider: String,
     model: Option<String>,
     max_tokens: Option<u32>,
+}
+
+fn ai_key(provider: AiProvider) -> String {
+    format!("ai_provider:{}", provider.as_str())
 }
 
 impl Database {
@@ -60,8 +61,8 @@ impl Database {
         self.set_setting("workspace_identity", identity).await
     }
 
-    pub async fn get_ai_provider(&self, provider_id: &str) -> DbResult<Option<AiSettings>> {
-        let key = format!("ai_provider:{provider_id}");
+    pub async fn get_ai_provider(&self, provider: AiProvider) -> DbResult<Option<AiSettings>> {
+        let key = ai_key(provider);
         let Some(record) = self.get_setting::<AiProviderRecord>(&key).await? else {
             return Ok(None);
         };
@@ -72,19 +73,18 @@ impl Database {
             None => SecretString::default(),
         };
         Ok(Some(AiSettings {
-            provider: record.provider,
+            provider,
             api_key,
             model: record.model,
             max_tokens: record.max_tokens,
         }))
     }
 
-    pub async fn set_ai_provider(&self, provider_id: &str, s: &AiSettings) -> DbResult<()> {
-        let key = format!("ai_provider:{provider_id}");
+    pub async fn set_ai_provider(&self, s: &AiSettings) -> DbResult<()> {
+        let key = ai_key(s.provider);
         self.set_setting(
             &key,
             &AiProviderRecord {
-                provider: s.provider.clone(),
                 model: s.model.clone(),
                 max_tokens: s.max_tokens,
             },
@@ -94,24 +94,24 @@ impl Database {
             .await
     }
 
-    pub async fn delete_ai_provider(&self, provider_id: &str) -> DbResult<()> {
-        let key = format!("ai_provider:{provider_id}");
+    pub async fn delete_ai_provider(&self, provider: AiProvider) -> DbResult<()> {
+        let key = ai_key(provider);
         self.delete_setting(&key).await?;
         self.delete_secret(&key).await
     }
 
-    /// `id`'s settings, or with no `id` the first provider configured.
-    pub async fn ai_provider(&self, id: Option<&str>) -> DbResult<Option<AiSettings>> {
-        match id {
-            Some(id) => self.get_ai_provider(id).await,
+    /// `provider`'s settings, or without one the first provider configured.
+    pub async fn ai_provider(&self, provider: Option<AiProvider>) -> DbResult<Option<AiSettings>> {
+        match provider {
+            Some(provider) => self.get_ai_provider(provider).await,
             None => Ok(self.list_ai_providers().await?.into_iter().next()),
         }
     }
 
     pub async fn list_ai_providers(&self) -> DbResult<Vec<AiSettings>> {
         let mut result = Vec::new();
-        for id in KNOWN_AI_PROVIDERS {
-            if let Some(s) = self.get_ai_provider(id).await? {
+        for provider in AiProvider::ALL {
+            if let Some(s) = self.get_ai_provider(provider).await? {
                 result.push(s);
             }
         }

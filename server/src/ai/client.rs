@@ -11,7 +11,7 @@ use tokio_stream::wrappers::ReceiverStream;
 use tracing::warn;
 
 use crate::db::{DbError, DbResult};
-use crate::settings::ai::AiSettings;
+use crate::settings::ai::{AiProvider, AiSettings};
 
 pub enum AiError {
     InsufficientCredits(String),
@@ -67,7 +67,8 @@ pub fn require_ai_settings(
     }
 }
 
-async fn classify_api_error(res: reqwest::Response, provider: &str) -> AiError {
+async fn classify_api_error(res: reqwest::Response, provider: AiProvider) -> AiError {
+    let provider = provider.as_str();
     let status = res.status();
     let body: serde_json::Value = res.json().await.unwrap_or_default();
     let message = body["error"]["message"]
@@ -97,9 +98,13 @@ pub async fn ask_llm_stream(
     let client = &*HTTP_CLIENT;
     let max_tokens = max_tokens_override.unwrap_or(settings.max_tokens.unwrap_or(2048));
 
-    match settings.provider.as_str() {
-        "openai" => stream_openai(client, settings, system, messages, max_tokens, tx).await,
-        _ => stream_anthropic(client, settings, system, messages, max_tokens, tx).await,
+    match settings.provider {
+        AiProvider::Anthropic => {
+            stream_anthropic(client, settings, system, messages, max_tokens, tx).await
+        }
+        AiProvider::Openai => {
+            stream_openai(client, settings, system, messages, max_tokens, tx).await
+        }
     }
 }
 
@@ -135,7 +140,7 @@ async fn stream_anthropic(
         .map_err(|e| AiError::Failed(format!("Anthropic stream request failed: {e}")))?;
 
     if !res.status().is_success() {
-        return Err(classify_api_error(res, "anthropic").await);
+        return Err(classify_api_error(res, AiProvider::Anthropic).await);
     }
 
     consume_sse_stream(res, &tx, |v| v["delta"]["text"].as_str()).await
@@ -177,7 +182,7 @@ async fn stream_openai(
         .map_err(|e| AiError::Failed(format!("OpenAI stream request failed: {e}")))?;
 
     if !res.status().is_success() {
-        return Err(classify_api_error(res, "openai").await);
+        return Err(classify_api_error(res, AiProvider::Openai).await);
     }
 
     consume_sse_stream(res, &tx, |v| v["choices"][0]["delta"]["content"].as_str()).await

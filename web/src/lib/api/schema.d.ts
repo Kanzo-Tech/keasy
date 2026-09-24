@@ -412,7 +412,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/settings/ai/providers/{provider_id}": {
+    "/v1/settings/ai/providers/{provider}": {
         parameters: {
             query?: never;
             header?: never;
@@ -496,12 +496,22 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description An LLM provider keasy can call.
+         * @enum {string}
+         */
+        AiProvider: "anthropic" | "openai";
+        /**
+         * @description A configured provider as the settings page shows it: the key is only ever
+         *     said to be there.
+         */
         AiSettingsPayload: {
+            /** @description `"••••"` when a key is stored, empty otherwise. */
             api_key: string;
             /** Format: int32 */
             max_tokens?: number | null;
             model?: string | null;
-            provider: string;
+            provider: components["schemas"]["AiProvider"];
         };
         AskRequest: {
             /**
@@ -511,7 +521,7 @@ export interface components {
             explain?: boolean;
             /** @description The conversation so far, oldest first. */
             history?: components["schemas"]["ChatMessage"][];
-            provider?: string | null;
+            provider?: null | components["schemas"]["AiProvider"];
             question: string;
             /**
              * @description DuckDB DDL of the views the browser mounted: the whole of what the model
@@ -607,6 +617,10 @@ export interface components {
         };
         /** @enum {string} */
         ConnectionKind: "data" | "vocab";
+        /**
+         * @description Every field value arrives as a secret: which of them are credentials is the
+         *     provider schema's to say, and until it has, none is logged or printed.
+         */
         CreateCloudAccountRequest: {
             auth_method?: string | null;
             fields: {
@@ -790,6 +804,13 @@ export interface components {
         };
         /** @enum {string} */
         RunMode: "integrated" | "scheduled";
+        SaveAiProviderRequest: {
+            /** @description Empty keeps the stored key. */
+            api_key?: string;
+            /** Format: int32 */
+            max_tokens?: number | null;
+            model?: string | null;
+        };
         SourceRefsResponse: {
             /**
              * @description Connection ref-map `{ name: baseUrl }`, so the executor resolves
@@ -821,6 +842,7 @@ export interface components {
         };
         UpdateCloudAccountRequest: {
             auth_method?: string | null;
+            /** @description An empty secret keeps the stored one. */
             fields?: {
                 [key: string]: string;
             } | null;
@@ -1808,14 +1830,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Provider ID (e.g. anthropic, openai) */
-                provider_id: string;
+                /** @description The provider */
+                provider: components["schemas"]["AiProvider"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AiSettingsPayload"];
+                "application/json": components["schemas"]["SaveAiProviderRequest"];
             };
         };
         responses: {
@@ -1842,8 +1864,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Provider ID */
-                provider_id: string;
+                /** @description The provider */
+                provider: components["schemas"]["AiProvider"];
             };
             cookie?: never;
         };

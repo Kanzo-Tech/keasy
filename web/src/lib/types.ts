@@ -24,6 +24,7 @@ export type Connection = S["Connection"];
 export type CreateConnectionRequest = S["CreateConnectionRequest"];
 export type ColumnInfo = S["ColumnInfo"];
 export type AiSettings = S["AiSettingsPayload"];
+export type AiProvider = S["AiProvider"];
 
 // Assistant types
 export type FileSchema = S["FileSchema"];

@@ -62,7 +62,7 @@ pub fn build_router(state: AppState, cors_origins: Option<Vec<String>>) -> Route
             axum::routing::get(crate::settings::routes::list_ai_providers),
         )
         .route(
-            "/v1/settings/ai/providers/{provider_id}",
+            "/v1/settings/ai/providers/{provider}",
             axum::routing::put(crate::settings::routes::save_ai_provider)
                 .delete(crate::settings::routes::delete_ai_provider),
         )

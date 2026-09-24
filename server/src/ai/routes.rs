@@ -12,6 +12,7 @@ use super::client::{
 };
 use crate::AppState;
 use crate::auth::role::Member;
+use crate::settings::ai::AiProvider;
 
 /// How many earlier messages of the conversation reach the model.
 const HISTORY_WINDOW: usize = 10;
@@ -43,7 +44,7 @@ pub struct ChatMessage {
 #[derive(Deserialize, utoipa::ToSchema)]
 pub struct AskRequest {
     pub question: String,
-    pub provider: Option<String>,
+    pub provider: Option<AiProvider>,
     /// DuckDB DDL of the views the browser mounted: the whole of what the model
     /// knows about the data. Required unless `explain`.
     pub schema: Option<String>,
@@ -68,7 +69,7 @@ pub async fn ask_discover_stream(
     Json(req): Json<AskRequest>,
 ) -> Result<Response, Response> {
     crate::discovery::routes::output_ready(&state, &member, &id).await?;
-    let ai_settings = require_ai_settings(state.db.ai_provider(req.provider.as_deref()).await)
+    let ai_settings = require_ai_settings(state.db.ai_provider(req.provider).await)
         .map_err(IntoResponse::into_response)?;
 
     let (system_prompt, mut messages, max_tokens) = if req.explain {

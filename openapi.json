@@ -1046,7 +1046,7 @@
         }
       }
     },
-    "/v1/settings/ai/providers/{provider_id}": {
+    "/v1/settings/ai/providers/{provider}": {
       "put": {
         "tags": [
           "Settings"
@@ -1054,12 +1054,12 @@
         "operationId": "save_ai_provider",
         "parameters": [
           {
-            "name": "provider_id",
+            "name": "provider",
             "in": "path",
-            "description": "Provider ID (e.g. anthropic, openai)",
+            "description": "The provider",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/AiProvider"
             }
           }
         ],
@@ -1067,7 +1067,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AiSettingsPayload"
+                "$ref": "#/components/schemas/SaveAiProviderRequest"
               }
             }
           },
@@ -1096,12 +1096,12 @@
         "operationId": "delete_ai_provider",
         "parameters": [
           {
-            "name": "provider_id",
+            "name": "provider",
             "in": "path",
-            "description": "Provider ID",
+            "description": "The provider",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/AiProvider"
             }
           }
         ],
@@ -1269,15 +1269,25 @@
   },
   "components": {
     "schemas": {
+      "AiProvider": {
+        "type": "string",
+        "description": "An LLM provider keasy can call.",
+        "enum": [
+          "anthropic",
+          "openai"
+        ]
+      },
       "AiSettingsPayload": {
         "type": "object",
+        "description": "A configured provider as the settings page shows it: the key is only ever\nsaid to be there.",
         "required": [
           "provider",
           "api_key"
         ],
         "properties": {
           "api_key": {
-            "type": "string"
+            "type": "string",
+            "description": "`\"••••\"` when a key is stored, empty otherwise."
           },
           "max_tokens": {
             "type": [
@@ -1294,7 +1304,7 @@
             ]
           },
           "provider": {
-            "type": "string"
+            "$ref": "#/components/schemas/AiProvider"
           }
         }
       },
@@ -1316,9 +1326,13 @@
             "description": "The conversation so far, oldest first."
           },
           "provider": {
-            "type": [
-              "string",
-              "null"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AiProvider"
+              }
             ]
           },
           "question": {
@@ -1598,6 +1612,7 @@
       },
       "CreateCloudAccountRequest": {
         "type": "object",
+        "description": "Every field value arrives as a secret: which of them are credentials is the\nprovider schema's to say, and until it has, none is logged or printed.",
         "required": [
           "name",
           "provider_id",
@@ -2158,6 +2173,29 @@
           "scheduled"
         ]
       },
+      "SaveAiProviderRequest": {
+        "type": "object",
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "description": "Empty keeps the stored key."
+          },
+          "max_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "SourceRefsResponse": {
         "type": "object",
         "required": [
@@ -2255,6 +2293,7 @@
               "object",
               "null"
             ],
+            "description": "An empty secret keeps the stored one.",
             "additionalProperties": {
               "type": "string"
             },

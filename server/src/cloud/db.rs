@@ -40,9 +40,13 @@ impl Database {
             if let Some(default) = field.default_value {
                 values
                     .entry(field.name.to_string())
-                    .or_insert_with(|| default.to_string());
+                    .or_insert_with(|| SecretString::from(default));
             }
-            if !field.optional && values.get(field.name).is_none_or(|v| v.is_empty()) {
+            if !field.optional
+                && values
+                    .get(field.name)
+                    .is_none_or(|v| v.expose_secret().is_empty())
+            {
                 return Err(DbError::Invalid(format!(
                     "missing required field: {}",
                     field.name
@@ -56,7 +60,7 @@ impl Database {
             if active.iter().any(|f| f.name == key && f.secret) {
                 secrets.insert(key, value);
             } else {
-                fields.insert(key, value);
+                fields.insert(key, value.expose_secret().to_string());
             }
         }
 
@@ -71,8 +75,7 @@ impl Database {
                 serde_json::to_string(&fields)?
             ],
         )?;
-        self.set_secret(&secret_key(&id), &serde_json::to_vec(&secrets)?)
-            .await?;
+        self.store_secrets(&id, &secrets).await?;
 
         Ok(CloudAccountSummary {
             id,
@@ -140,11 +143,11 @@ impl Database {
             for (key, value) in new_values {
                 if active.iter().any(|f| f.name == key && f.secret) {
                     // An empty secret leaves the stored one in place.
-                    if !value.is_empty() {
-                        secrets.insert(key, SecretString::from(value));
+                    if !value.expose_secret().is_empty() {
+                        secrets.insert(key, value);
                     }
                 } else {
-                    fields.insert(key, value);
+                    fields.insert(key, value.expose_secret().to_string());
                 }
             }
         }
@@ -153,12 +156,7 @@ impl Database {
             "UPDATE cloud_accounts SET name = ?1, auth_method = ?2, fields = ?3 WHERE id = ?4",
             params![name, auth_method, serde_json::to_string(&fields)?, id],
         )?;
-        let plain: HashMap<&str, &str> = secrets
-            .iter()
-            .map(|(k, v)| (k.as_str(), v.expose_secret()))
-            .collect();
-        self.set_secret(&secret_key(id), &serde_json::to_vec(&plain)?)
-            .await?;
+        self.store_secrets(id, &secrets).await?;
 
         Ok(CloudAccountSummary {
             id: id.to_string(),
@@ -167,6 +165,21 @@ impl Database {
             auth_method,
             fields,
         })
+    }
+
+    /// Seal an account's secrets. They leave `SecretString` only here, on the
+    /// way into the cipher.
+    async fn store_secrets(
+        &self,
+        id: &str,
+        secrets: &HashMap<String, SecretString>,
+    ) -> DbResult<()> {
+        let plain: HashMap<&str, &str> = secrets
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.expose_secret()))
+            .collect();
+        self.set_secret(&secret_key(id), &serde_json::to_vec(&plain)?)
+            .await
     }
 
     pub async fn remove_cloud_account(&self, id: &str) -> DbResult<()> {
@@ -228,4 +241,63 @@ fn row_to_summary(row: &rusqlite::Row<'_>) -> rusqlite::Result<CloudAccountSumma
         auth_method: row.get("auth_method")?,
         fields: json_column(row, "fields")?,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn secret(v: &str) -> SecretString {
+        SecretString::from(v)
+    }
+
+    /// Credentials are sealed with the key and never land in the plain
+    /// `fields`; an update with an empty secret keeps the one stored.
+    #[tokio::test]
+    async fn credentials_are_sealed_and_kept() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = Database::open(
+            &dir.path().join("keasy.db"),
+            crate::crypto::SecretKey::for_tests(),
+        )
+        .unwrap();
+        let account = db
+            .create_cloud_account(CreateCloudAccountRequest {
+                name: "bucket".into(),
+                provider_id: "s3".into(),
+                auth_method: None,
+                fields: HashMap::from([
+                    ("access_key_id".to_string(), secret("AKIA")),
+                    ("secret_access_key".to_string(), secret("shh")),
+                ]),
+            })
+            .await
+            .unwrap();
+        assert_eq!(
+            account.fields.get("region").map(String::as_str),
+            Some("us-east-1")
+        );
+        assert!(!account.fields.contains_key("secret_access_key"));
+
+        db.update_cloud_account(
+            &account.id,
+            UpdateCloudAccountRequest {
+                name: None,
+                auth_method: None,
+                fields: Some(HashMap::from([(
+                    "secret_access_key".to_string(),
+                    secret(""),
+                )])),
+            },
+        )
+        .await
+        .unwrap();
+
+        let env = db
+            .build_storage_config(std::slice::from_ref(&account.id))
+            .await
+            .unwrap();
+        assert_eq!(env["AWS_SECRET_ACCESS_KEY"], "shh");
+        assert_eq!(env["AWS_ACCESS_KEY_ID"], "AKIA");
+    }
 }

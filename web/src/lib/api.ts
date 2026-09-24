@@ -1,6 +1,7 @@
 import client, { ApiError, unwrap } from "./api/client";
 import type { Schemas } from "./api/client";
 import { fetchSSE } from "./api/sse";
+import { aiProvider } from "./ai-providers";
 import type { ProviderSchema } from "./types";
 
 export { ApiError };
@@ -121,7 +122,7 @@ export const api = {
       id: string,
       question: string,
       opts?: {
-        provider?: string;
+        provider?: Schemas["AiProvider"];
         schema?: string;
         explain?: boolean;
         /// The conversation so far, oldest first. The server keeps none.
@@ -183,18 +184,15 @@ export const api = {
     providers: async () =>
       unwrap(await client.GET("/v1/settings/ai/providers")),
 
-    saveProvider: async (
-      providerId: string,
-      config: Omit<Schemas["AiSettingsPayload"], "provider">,
-    ) =>
-      unwrap(await client.PUT("/v1/settings/ai/providers/{provider_id}", {
-        params: { path: { provider_id: providerId } },
-        body: { ...config, provider: providerId },
+    saveProvider: async (providerId: string, config: Schemas["SaveAiProviderRequest"]) =>
+      unwrap(await client.PUT("/v1/settings/ai/providers/{provider}", {
+        params: { path: { provider: aiProvider(providerId) } },
+        body: config,
       })),
 
     removeProvider: async (providerId: string) => {
-      unwrap(await client.DELETE("/v1/settings/ai/providers/{provider_id}", {
-        params: { path: { provider_id: providerId } },
+      unwrap(await client.DELETE("/v1/settings/ai/providers/{provider}", {
+        params: { path: { provider: aiProvider(providerId) } },
       }));
     },
   },

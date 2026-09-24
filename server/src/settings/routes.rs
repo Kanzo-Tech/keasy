@@ -4,7 +4,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use secrecy::{ExposeSecret, SecretString};
+use secrecy::ExposeSecret;
 
 use crate::AppState;
 use crate::auth::role::{Member, Owner};
@@ -14,19 +14,9 @@ use crate::connections::models::{
 };
 use crate::db::DbError;
 use crate::error::data_response;
-use crate::settings::ai::{AiSettings, AiSettingsPayload};
+use crate::settings::ai::{AiProvider, AiSettings, AiSettingsPayload, SaveAiProviderRequest};
 use crate::settings::org::OrgSettings;
 use crate::settings::schema::PROVIDER_REGISTRY;
-
-const KNOWN_PROVIDERS: &[&str] = &["anthropic", "openai"];
-
-fn unknown_provider(provider_id: &str) -> Result<(), DbError> {
-    if KNOWN_PROVIDERS.contains(&provider_id) {
-        Ok(())
-    } else {
-        Err(DbError::Invalid(format!("unknown provider: {provider_id}")))
-    }
-}
 
 #[utoipa::path(get, path = "/v1/settings/schema", tag = "Settings",
     responses((status = 200, description = "Provider registry schema", body = Vec<crate::settings::schema::ProviderSchema>))
@@ -90,9 +80,9 @@ pub async fn list_ai_providers(
     ))
 }
 
-#[utoipa::path(put, path = "/v1/settings/ai/providers/{provider_id}", tag = "Settings",
-    params(("provider_id" = String, Path, description = "Provider ID (e.g. anthropic, openai)")),
-    request_body = AiSettingsPayload,
+#[utoipa::path(put, path = "/v1/settings/ai/providers/{provider}", tag = "Settings",
+    params(("provider" = AiProvider, Path, description = "The provider")),
+    request_body = SaveAiProviderRequest,
     responses(
         (status = 200, description = "Provider saved", body = AiSettingsPayload),
         (status = 400, description = "Unknown provider"),
@@ -101,35 +91,32 @@ pub async fn list_ai_providers(
 pub async fn save_ai_provider(
     _: Member,
     State(state): State<AppState>,
-    Path(provider_id): Path<String>,
-    Json(payload): Json<AiSettingsPayload>,
+    Path(provider): Path<AiProvider>,
+    Json(payload): Json<SaveAiProviderRequest>,
 ) -> Result<impl IntoResponse, DbError> {
-    unknown_provider(&provider_id)?;
-
-    // An empty key leaves the stored one in place.
-    let api_key = if payload.api_key.is_empty() {
+    let api_key = if payload.api_key.expose_secret().is_empty() {
         state
             .db
-            .get_ai_provider(&provider_id)
+            .get_ai_provider(provider)
             .await?
             .map(|c| c.api_key)
             .unwrap_or_default()
     } else {
-        SecretString::from(payload.api_key)
+        payload.api_key
     };
 
     let settings = AiSettings {
-        provider: provider_id.clone(),
+        provider,
         api_key,
         model: payload.model.filter(|m| !m.trim().is_empty()),
         max_tokens: payload.max_tokens,
     };
-    state.db.set_ai_provider(&provider_id, &settings).await?;
+    state.db.set_ai_provider(&settings).await?;
     Ok(data_response(to_payload(&settings)))
 }
 
-#[utoipa::path(delete, path = "/v1/settings/ai/providers/{provider_id}", tag = "Settings",
-    params(("provider_id" = String, Path, description = "Provider ID")),
+#[utoipa::path(delete, path = "/v1/settings/ai/providers/{provider}", tag = "Settings",
+    params(("provider" = AiProvider, Path, description = "The provider")),
     responses(
         (status = 204, description = "Provider deleted"),
         (status = 400, description = "Unknown provider"),
@@ -138,16 +125,15 @@ pub async fn save_ai_provider(
 pub async fn delete_ai_provider(
     _: Member,
     State(state): State<AppState>,
-    Path(provider_id): Path<String>,
+    Path(provider): Path<AiProvider>,
 ) -> Result<impl IntoResponse, DbError> {
-    unknown_provider(&provider_id)?;
-    state.db.delete_ai_provider(&provider_id).await?;
+    state.db.delete_ai_provider(provider).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
 fn to_payload(s: &AiSettings) -> AiSettingsPayload {
     AiSettingsPayload {
-        provider: s.provider.clone(),
+        provider: s.provider,
         api_key: if s.api_key.expose_secret().is_empty() {
             String::new()
         } else {

@@ -24,6 +24,7 @@
 
 use std::collections::HashMap;
 
+use secrecy::SecretString;
 use tracing::{error, info, warn};
 
 use crate::cloud::models::CreateCloudAccountRequest;
@@ -146,7 +147,7 @@ async fn ensure_account(db: &Database, name: &str, url: &str) -> DbResult<Option
         if let Some(env_var) = field.env_var
             && let Some(value) = env_nonblank(env_var)
         {
-            fields.insert(field.name.to_string(), value);
+            fields.insert(field.name.to_string(), SecretString::from(value));
         }
     }
 

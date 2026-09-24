@@ -84,6 +84,8 @@ use utoipa::OpenApi;
         // Settings
         crate::settings::org::OrgSettings,
         crate::settings::ai::AiSettingsPayload,
+        crate::settings::ai::SaveAiProviderRequest,
+        crate::settings::ai::AiProvider,
         // Auth response types
         crate::auth::routes::WorkspacesResponse,
         // Health

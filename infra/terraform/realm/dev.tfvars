@@ -8,9 +8,8 @@ kc_admin_password = "admin"
 base_domain       = "localhost"
 dev_origins       = ["http://localhost:3000"]
 
-deploy_stacks = false
-server_image  = "unused-in-dev"
-web_image     = "unused-in-dev"
+deploy_stacks   = false
+release_version = "unused-in-dev"
 
 # No IdP: the declared users log in to Keycloak directly.
 dev_user_password = "password"

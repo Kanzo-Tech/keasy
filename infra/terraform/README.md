@@ -30,8 +30,12 @@ terraform -chdir=realm apply \
 - **`realm/terraform.tfvars`** is the tenant **registry** — operator-local, gitignored
   (emails are PII). Adding a tenant = an entry under `tenants` + `terraform -chdir=realm apply`.
   No CLI, no shell.
-- **State** holds every secret → it lives on the manager, gitignored. Back it up; a future
-  multi-manager setup moves it to an encrypted S3 backend.
+- **State** holds every secret → it lives on the manager, gitignored. Back it up: each
+  tenant's credential-sealing key (`random_bytes.secret_key`) exists nowhere else, so
+  losing the state leaves that tenant's `keasy.db` unreadable. A future multi-manager
+  setup moves it to an encrypted S3 backend.
+- **`release_version`** is the one version of record: every tenant runs
+  `ghcr.io/kanzo-tech/keasy-{server,web}:<release_version>`.
 
 ## SSO
 Users log in through the IdP configured in `realm/` (`var.idp` — Google example in the

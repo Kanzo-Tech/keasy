@@ -9,6 +9,8 @@
 
 locals {
   stack_tenants = var.deploy_stacks ? var.tenants : {}
+  server_image  = "ghcr.io/kanzo-tech/keasy-server:${var.release_version}"
+  web_image     = "ghcr.io/kanzo-tech/keasy-web:${var.release_version}"
 }
 
 resource "random_password" "session" {
@@ -49,8 +51,9 @@ resource "docker_service" "server" {
 
   task_spec {
     container_spec {
-      image = coalesce(each.value.server_image, var.server_image)
+      image = local.server_image
       env = {
+        KEASY_DATA_DIR       = "/var/lib/keasy"
         KEASY_WORKSPACE_NAME = each.value.display_name
         KEASY_ORG_ALIAS      = each.key
         # What a token is validated against: the public issuer it must name, the
@@ -174,7 +177,7 @@ resource "docker_service" "web" {
 
   task_spec {
     container_spec {
-      image = coalesce(each.value.web_image, var.web_image)
+      image = local.web_image
       env = {
         # The confidential client: this service is the relying party.
         KEASY_OIDC_ISSUER_URL         = "https://${var.kc_hostname}/realms/keasy"

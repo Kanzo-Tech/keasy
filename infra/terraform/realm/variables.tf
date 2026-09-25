@@ -54,10 +54,9 @@ variable "dev_user_password" {
 }
 
 # ── Fleet image defaults ─────────────────────────────────────────────────────
-variable "server_image" {
-  type = string
-}
-variable "web_image" {
+# The release tag without its `v`: images.yml publishes keasy-server and keasy-web
+# under it, and every tenant runs that pair.
+variable "release_version" {
   type = string
 }
 variable "valkey_image" {
@@ -72,8 +71,6 @@ variable "tenants" {
     display_name = string
     owners       = list(string)
     members      = optional(list(string), [])
-    server_image = optional(string)
-    web_image    = optional(string)
     # Fixed OIDC client secret — leave null in prod (Keycloak generates it); dev sets a
     # known value so the compose server can use it without a state handoff.
     client_secret = optional(string)

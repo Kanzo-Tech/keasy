@@ -16,7 +16,6 @@
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.0",
     "@codemirror/commands": "^6.11.1",
-    "@codemirror/lang-sql": "^6.9.1",
     "@codemirror/language": "^6.12.1",
     "@codemirror/lint": "^6.9.5",
     "@codemirror/search": "^6.7.2",

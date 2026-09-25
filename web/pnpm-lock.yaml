@@ -14,9 +14,6 @@ importers:
       '@codemirror/commands':
         specifier: ^6.11.1
         version: 6.11.1
-      '@codemirror/lang-sql':
-        specifier: ^6.9.1
-        version: 6.10.0
       '@codemirror/language':
         specifier: ^6.12.1
         version: 6.12.3
@@ -261,9 +258,6 @@ packages:
 
   '@codemirror/commands@6.11.1':
     resolution: {integrity: sha512-O/4hG3SC1YwcmQ0d2UVNDs+AsaNWd1iHVxbTeEBuqH+6bExAiPK3iS/BvpY6rZGURALv4ZD3sIgcCmRvw3ehBg==}
-
-  '@codemirror/lang-sql@6.10.0':
-    resolution: {integrity: sha512-6ayPkEd/yRw0XKBx5uAiToSgGECo/GY2NoJIHXIIQh1EVwLuKoU8BP/qK0qH5NLXAbtJRLuT73hx7P9X34iO4w==}
 
   '@codemirror/language@6.12.3':
     resolution: {integrity: sha512-QwCZW6Tt1siP37Jet9Tb02Zs81TQt6qQrZR2H+eGMcFsL1zMrk2/b9CLC7/9ieP1fjIUMgviLWMmgiHoJrj+ZA==}
@@ -4394,15 +4388,6 @@ snapshots:
       '@codemirror/state': 6.7.6
       '@codemirror/view': 6.40.0
       '@lezer/common': 1.5.1
-
-  '@codemirror/lang-sql@6.10.0':
-    dependencies:
-      '@codemirror/autocomplete': 6.20.1
-      '@codemirror/language': 6.12.3
-      '@codemirror/state': 6.7.6
-      '@lezer/common': 1.5.1
-      '@lezer/highlight': 1.2.3
-      '@lezer/lr': 1.4.8
 
   '@codemirror/language@6.12.3':
     dependencies:

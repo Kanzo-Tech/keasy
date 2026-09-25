@@ -7,8 +7,8 @@ import { KanzoThemeProvider, cookieStorageAdapter, themeScript } from "@kanzo-te
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useServerInsertedHTML } from "next/navigation";
-import { queryClient } from "@/lib/query-client";
-import { auth } from "@/lib/session";
+import { queryClient } from "@/lib/api/query-client";
+import { auth } from "@/lib/api/session";
 
 /**
  * Cookie-backed rather than localStorage: `themeScript()` reads the same source before hydration,

@@ -15,7 +15,7 @@ import { skipToken, useQuery } from "@tanstack/react-query";
 import { openCorpus, type UndrawnRelation } from "@kanzo-tech/graph/duckdb";
 import { useCrossfilter, useMosaic } from "@kanzo-tech/ui/analytics";
 import type { SchemaResult } from "@fossil-lang/corpus";
-import { corpusKey } from "@/lib/fossil/open-job-corpus";
+import { corpusKey } from "@/lib/fossil/corpus";
 import { ONCE, useCorpus } from "./corpus";
 
 export function useCorpusSource(vertexType: string | null) {

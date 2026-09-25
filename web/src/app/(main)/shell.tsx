@@ -52,8 +52,8 @@ import {
 } from "@kanzo-tech/ui";
 
 import { $api } from "@/lib/api/client";
-import { ROLE_LABEL, workspaceRole } from "@/lib/roles";
-import { generateBreadcrumbs, getSidebarRoutes } from "@/lib/route-config";
+import { ROLE_LABEL, workspaceRole } from "@/lib/auth/roles";
+import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";
 
 const titleCase = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 

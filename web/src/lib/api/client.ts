@@ -1,8 +1,8 @@
 import { createApiClient, type paths } from "@keasy/api";
 import createQueryHooks from "openapi-react-query";
 
-import { queryClient } from "@/lib/query-client";
-import { auth } from "@/lib/session";
+import { queryClient } from "./query-client";
+import { auth } from "./session";
 
 export { ApiError } from "@keasy/api";
 export type { ErrorCode, Inputs, Schemas, paths } from "@keasy/api";

@@ -1,7 +1,6 @@
-import { getSession } from "@/lib/auth";
-import { requireRole } from "@/lib/roles";
+import { requireRole } from "@/lib/auth/server";
 
 export default async function WorkspaceMemberLayout({ children }: { children: React.ReactNode }) {
-  requireRole(await getSession(), "member", "/");
+  await requireRole("member", "/");
   return children;
 }

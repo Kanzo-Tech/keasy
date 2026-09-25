@@ -1,9 +1,9 @@
-"use client";
+import "client-only";
 
 import { ApiError } from "@keasy/api";
 import { QueryClient } from "@tanstack/react-query";
 
-import { auth } from "@/lib/session";
+import { auth } from "./session";
 
 let redirected = false;
 

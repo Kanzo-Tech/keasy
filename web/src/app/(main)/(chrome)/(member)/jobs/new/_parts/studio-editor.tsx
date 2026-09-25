@@ -24,8 +24,9 @@ import { fossil } from "@fossil-lang/codemirror-fossil";
 import { forceLinting } from "@codemirror/lint";
 import type { EditorView } from "@codemirror/view";
 import { BookMarked, Database, PlugZap } from "lucide-react";
+import type { FossilProgram } from "@fossil-lang/wasm";
 import * as checker from "@/lib/fossil/checker";
-import { useSourceDescriptors } from "@/lib/fossil/use-source-descriptors";
+import { useSourceDescriptors } from "./use-source-descriptors";
 import type { StorageConnection } from "@/lib/connections";
 
 /** The chrome a floating cluster wears — the same utilities the canvas controls use. */
@@ -34,11 +35,7 @@ const FLOATING = "rounded-lg border bg-card shadow-sm";
 const KIND_ICON = { data: Database, vocab: BookMarked } as const;
 const KIND_LABEL = { data: "data source", vocab: "RDF vocabulary" } as const;
 
-/**
- * The program, and the connections it can reference. The language layer is
- * `fossil()`'s callbacks into the checker `lib/fossil/checker.ts` holds, on the
- * main thread.
- */
+/** The program, and the connections it can reference; the language layer is `fossil()` over the job's program. */
 export function StudioEditor({
   program,
   onProgramChange,
@@ -56,15 +53,15 @@ export function StudioEditor({
   onDiagnostics: (rows: readonly checker.CheckRow[]) => void;
 }) {
   const view = useRef<EditorView | null>(null);
-  const [booted, setBooted] = useState(false);
+  const [opened, setOpened] = useState<FossilProgram | null>(null);
   const [definition, setDefinition] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
     void checker
-      .load()
-      .then(() => {
-        if (alive) setBooted(true);
+      .jobProgram()
+      .then((p) => {
+        if (alive) setOpened(p);
       })
       .catch((cause) => console.error("fossil checker failed to load", cause));
     return () => {
@@ -72,20 +69,13 @@ export function StudioEditor({
     };
   }, []);
 
-  // `CodeEditor` reconfigures its language on the identity of `extensions`, so
-  // this is memoised; `booted` flips once, painting the buffer when wasm is up.
+  // `CodeEditor` reconfigures its language on the identity of `extensions`.
   const extensions = useMemo(
     () =>
-      booted
+      opened
         ? fossil({
-            tokenize: checker.tokenize,
-            tokenKinds: checker.tokenKinds,
-            uri: checker.PROGRAM_URI,
-            check: checker.checkText,
+            ...opened,
             onDiagnostics,
-            hover: checker.hoverAt,
-            complete: checker.completeAt,
-            definition: checker.definitionAt,
             // One pane: a definition in a shape document is reported, not jumped to.
             onNavigate: (target) =>
               setDefinition(
@@ -95,17 +85,17 @@ export function StudioEditor({
               ),
           })
         : [],
-    [booted, onDiagnostics],
+    [opened, onDiagnostics],
   );
 
   // Schema-aware completion: each `@conn/path` binding is described in the
   // browser over a signed URL and pushed at the compiler before the next check.
   const descriptors = useSourceDescriptors(program);
   useEffect(() => {
-    if (!booted || descriptors.length === 0) return;
-    for (const descriptor of descriptors) checker.registerDescriptor(descriptor);
+    if (!opened || descriptors.length === 0) return;
+    for (const descriptor of descriptors) opened.registerDescriptor(descriptor);
     if (view.current) forceLinting(view.current);
-  }, [booted, descriptors]);
+  }, [opened, descriptors]);
 
   const insert = (connection: StorageConnection) => {
     const v = view.current;

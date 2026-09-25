@@ -1,6 +1,8 @@
-import type { ErrorCode } from "@keasy/api";
+import { toast } from "@kanzo-tech/ui";
 
-export interface ErrorInfo {
+import { ApiError, type ErrorCode } from "@/lib/api/client";
+
+interface ErrorInfo {
   message: string;
   link?: { label: string; href: string };
 }
@@ -38,4 +40,14 @@ const registry: Partial<Record<ErrorCode | ClientCode, ErrorInfo>> = {
 /** UI copy for a code; a job's runtime error carries codes of its own, hence the open string. */
 export function getErrorInfo(code: ErrorCode | ClientCode | (string & {})): ErrorInfo {
   return registry[code as ErrorCode | ClientCode] ?? FALLBACK;
+}
+
+/** Toast a failed action: `title` names the action, the description is the code's copy or the server's words. */
+export function toastError(error: unknown, title: string): void {
+  const coded = error instanceof ApiError ? registry[error.code as ErrorCode] : undefined;
+  toast.create({
+    title,
+    description: coded?.message ?? (error instanceof Error ? error.message : undefined),
+    type: "error",
+  });
 }

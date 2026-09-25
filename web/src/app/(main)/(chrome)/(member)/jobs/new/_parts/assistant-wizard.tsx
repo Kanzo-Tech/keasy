@@ -11,6 +11,7 @@ import {
   AlertDescription,
   AlertTitle,
   Button,
+  FormatByte,
   Field,
   FieldDescription,
   FieldLabel,
@@ -51,16 +52,14 @@ import { $api } from "@/lib/api/client";
 import { type CompletionRequest, streamText } from "@/lib/ai/stream";
 import {
   type CompetencyQuestion,
-  type FileSchema,
   generateRequest,
   parseScript,
   parseSuggestions,
   suggestRequest,
-} from "@/lib/ai/prompts";
-import { formatSize } from "@/lib/formatters";
+} from "./assistant-prompts";
 import * as checker from "@/lib/fossil/checker";
-import { connectionPath, describeSources, sourceDescriptorsKey } from "@/lib/fossil/describe-sources";
-import { readableFiles } from "@/lib/utils";
+import { connectionPath, describeSources, sourceDescriptorsKey } from "./describe-sources";
+import { providerFor } from "@/lib/fossil/providers";
 import type { StorageConnection } from "@/lib/connections";
 
 type Connection = StorageConnection;
@@ -101,7 +100,7 @@ const FILE_COLUMNS: ColumnDef<ConnectionFile>[] = [
     accessorKey: "size",
     header: () => <div className="text-end">Size</div>,
     cell: ({ row }) => (
-      <div className="text-end text-muted-foreground text-xs">{formatSize(row.original.size)}</div>
+      <div className="text-end text-muted-foreground text-xs"><FormatByte unitSystem="binary" value={row.original.size} /></div>
     ),
   },
 ];
@@ -200,7 +199,7 @@ export function AssistantWizard({
     ),
   });
   const readable = cloud.map((connection, i) => {
-    const files = readableFiles(listings[i]?.data ?? [], providers, "data");
+    const files = (listings[i]?.data ?? []).filter((f) => providerFor(f.path, "data", providers));
     const selection =
       fileSelection[connection.name] ?? Object.fromEntries(files.map((f) => [f.path, true]));
     return { connection, files, selection, loading: listings[i]?.isPending ?? true };
@@ -211,37 +210,21 @@ export function AssistantWizard({
 
   // The picked files, written as the source bindings the generated program will
   // hold and described the way the editor describes a program's sources.
-  const constructorByExt = new Map(
-    providers
-      .filter((p) => p.kind === "data" || p.kind === "both")
-      .flatMap((p) => p.extensions.map((ext) => [ext, p.name] as const)),
-  );
   const bindings = picked.flatMap(({ connection, path }) => {
-    const constructor = constructorByExt.get(path.split(".").pop()?.toLowerCase() ?? "");
-    return constructor
-      ? [{ connection, path, constructor, uri: `@${connection.name}/${connectionPath(connection, path)}` }]
+    const provider = providerFor(path, "data", providers);
+    return provider
+      ? [{ constructor: provider.name, uri: `@${connection.name}/${connectionPath(connection, path)}` }]
       : [];
   });
   const program = bindings.map((b, i) => `f${i} := io.${b.constructor}("${b.uri}")`).join("\n");
   const described = useQuery({
     queryKey: sourceDescriptorsKey(bindings.map((b) => b.uri)),
-    queryFn: async () => describeSources(await checker.sources(program)),
+    queryFn: async () => describeSources(await (await checker.jobProgram()).sources(program)),
     enabled: step > 0 && bindings.length > 0,
   });
   const schemasReady =
     readable.every((r) => !r.loading) && (bindings.length === 0 || !described.isPending);
-  const schemas: FileSchema[] = bindings.flatMap(({ connection, path, uri }) => {
-    const descriptor = described.data?.find((d) => d.uri === uri);
-    return descriptor
-      ? [
-          {
-            connection_name: connection.name,
-            file_path: path,
-            columns: descriptor.columns.map((c) => ({ name: c.name, data_type: c.primitive })),
-          },
-        ]
-      : [];
-  });
+  const schemas = described.data ?? [];
 
   const reqColumns = useMemo<ColumnDef<CompetencyQuestion>[]>(
     () => [

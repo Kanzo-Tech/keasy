@@ -8,7 +8,7 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
-import type { WorkspaceRole } from "@/lib/roles";
+import type { WorkspaceRole } from "@/lib/auth/roles";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -19,7 +19,7 @@ type RouteDef = {
   sidebar?: readonly WorkspaceRole[];
 };
 
-export type RouteEntry = RouteDef & { path: string };
+type RouteEntry = RouteDef & { path: string };
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@ const ROUTES: Record<string, RouteDef> = {
 
 // ── Derived ──────────────────────────────────────────────────────────────────
 
-export function findRoute(path: string): RouteEntry | undefined {
+function findRoute(path: string): RouteEntry | undefined {
   const def = ROUTES[path];
   return def ? { ...def, path } : undefined;
 }

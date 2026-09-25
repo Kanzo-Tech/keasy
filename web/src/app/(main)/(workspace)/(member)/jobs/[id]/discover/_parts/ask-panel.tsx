@@ -54,11 +54,11 @@ import {
 import { MessageMarkdown } from "@kanzo-tech/ai/markdown";
 import { $api, ApiError } from "@/lib/api/client";
 import { type ChatMessage, completeText, streamText } from "@/lib/ai/stream";
-import { explainRequest, parsePlan, queryRequest } from "@/lib/ai/prompts";
-import { generateSuggestions } from "@/lib/schema-suggestions";
-import { getErrorInfo } from "@/lib/error-codes";
-import type { GraphSchema } from "@/lib/graph-schema";
-import { describeDataSpace } from "@/lib/data-space";
+import { explainRequest, parsePlan, queryRequest } from "./query-prompts";
+import { generateSuggestions } from "./schema-suggestions";
+import { getErrorInfo } from "@/lib/errors";
+import type { SchemaResult } from "@fossil-lang/corpus";
+import { describeDataSpace } from "./data-space";
 import { useCorpus } from "./corpus";
 import { ResultTable } from "./result-table";
 
@@ -336,7 +336,7 @@ function Answer({ turn }: { turn: Turn }) {
 
 // ── The panel ────────────────────────────────────────────────────────────
 
-export function AskPanel({ graphSchema }: { graphSchema: GraphSchema }) {
+export function AskPanel({ graphSchema }: { graphSchema: SchemaResult }) {
   const { coordinator, corpus } = useCorpus();
   const engine = useAiStream<TurnEvent>();
   const [turns, setTurns] = useState<Turn[]>([]);

@@ -1,8 +1,10 @@
+import "client-only";
+
 import type { SourceHost } from "@fossil-lang/types";
 
 import { http } from "@/lib/api/client";
 import { storageOf } from "@/lib/connections";
-import { queryClient } from "@/lib/query-client";
+import { queryClient } from "@/lib/api/query-client";
 
 /**
  * keasy as fossil's `SourceHost` — the editor's and a job run's alike. Fossil

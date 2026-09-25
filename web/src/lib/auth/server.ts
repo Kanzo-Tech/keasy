@@ -11,7 +11,10 @@ import {
 } from "@kanzo-tech/auth/next";
 import type { Session } from "@kanzo-tech/auth";
 import { ticketStore, type RelyingPartyConfig, type TicketAdapter } from "@kanzo-tech/auth/server";
+import { redirect } from "next/navigation";
 import { createClient } from "redis";
+
+import { workspaceRole, type WorkspaceRole } from "./roles";
 
 /**
  * The relying party, in one place.
@@ -122,6 +125,15 @@ export function authHandlers(): AuthRouteHandlers {
 /** The session a server component reads, memoised per request by the package. */
 export function getSession(): Promise<Session | null> {
   return bff().read();
+}
+
+/**
+ * A layout's guard for one plane. A session holding no role never gets here —
+ * `(main)/layout.tsx` has already refused it — so what is left is the other
+ * plane, which is sent `elsewhere`.
+ */
+export async function requireRole(role: WorkspaceRole, elsewhere: string): Promise<void> {
+  if (workspaceRole(await getSession()) !== role) redirect(elsewhere);
 }
 
 /** `/api/v1`: the browser's API call, forwarded to the resource server with the access token. */

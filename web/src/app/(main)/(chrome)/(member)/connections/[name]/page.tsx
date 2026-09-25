@@ -10,6 +10,7 @@ import {
   AlertTitle,
   Button,
   DataList,
+  FormatByte,
   DataListItem,
   DataListItemLabel,
   DataListItemValue,
@@ -32,23 +33,18 @@ import {
   toast,
 } from "@kanzo-tech/ui";
 import { ValidationBadge } from "@/components/validation-badge";
-import { useDelayedLoading } from "@/hooks/use-delayed-loading";
+import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api, invalidate } from "@/lib/api/client";
 import { modelOf, storageOf } from "@/lib/connections";
-import { providers as fossilProviders } from "@/lib/fossil/checker";
-import { formatSize } from "@/lib/formatters";
-import { queryKeys } from "@/lib/query-keys";
-import { toastError } from "@/lib/toast-error";
-import { readableFiles } from "@/lib/utils";
+import { providersQuery } from "@/lib/fossil/checker";
+import { providerFor } from "@/lib/fossil/providers";
+import { toastError } from "@/lib/errors";
 
 export default function ConnectionPage({ params }: { params: Promise<{ name: string }> }) {
   const path = { params: { path: { name: decodeURIComponent(use(params).name) } } };
 
   const { data: connection, isLoading: connLoading } = $api.useQuery("get", "/v1/connections/{name}", path);
-  const { data: providers = [], isLoading: providersLoading } = useQuery({
-    queryKey: queryKeys.settings.providers,
-    queryFn: () => fossilProviders(),
-  });
+  const { data: providers = [], isLoading: providersLoading } = useQuery(providersQuery);
   const storage = connection && storageOf(connection);
   const files = $api.useQuery("get", "/v1/connections/{name}/files", path, { enabled: !!storage });
   const validate = $api.useMutation("post", "/v1/connections/{name}/validate", {
@@ -73,7 +69,7 @@ export default function ConnectionPage({ params }: { params: Promise<{ name: str
 
   const model = modelOf(connection);
   const listed = files.data ?? [];
-  const readable = readableFiles(listed, providers, storage?.kind === "data" ? "data" : "schema");
+  const readable = listed.filter((f) => providerFor(f.path, storage?.kind === "data" ? "data" : "schema", providers));
 
   const { name } = connection;
   function copyReference(path: string) {
@@ -143,7 +139,7 @@ export default function ConnectionPage({ params }: { params: Promise<{ name: str
                     <TableRow key={f.path}>
                       <TableCell className="font-mono text-xs">{f.path}</TableCell>
                       <TableCell className="text-end text-muted-foreground text-xs">
-                        {formatSize(f.size)}
+                        <FormatByte unitSystem="binary" value={f.size} />
                       </TableCell>
                       <TableCell>
                         <Menu positioning={{ placement: "bottom-end" }}>

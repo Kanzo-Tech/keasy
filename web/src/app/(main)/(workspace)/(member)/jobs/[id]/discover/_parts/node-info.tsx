@@ -16,8 +16,8 @@ import {
   Swatch,
 } from "@kanzo-tech/ui";
 import { scaleOf } from "@kanzo-tech/graph";
-import type { GraphSchema } from "@/lib/graph-schema";
-import { corpusKey } from "@/lib/fossil/open-job-corpus";
+import type { SchemaResult } from "@fossil-lang/corpus";
+import { corpusKey } from "@/lib/fossil/corpus";
 import { ONCE, useCorpus } from "./corpus";
 
 export interface SelectedVertex {
@@ -26,7 +26,7 @@ export interface SelectedVertex {
   label: string;
 }
 
-export function NodeInfo({ schema, vertex }: { schema: GraphSchema; vertex: SelectedVertex | null }) {
+export function NodeInfo({ schema, vertex }: { schema: SchemaResult; vertex: SelectedVertex | null }) {
   const { jobId, corpus } = useCorpus();
   const { data: fields, isPending } = useQuery({
     queryKey: [...corpusKey(jobId), "node", vertex?.type, vertex?.id],
@@ -49,7 +49,7 @@ export function NodeInfo({ schema, vertex }: { schema: GraphSchema; vertex: Sele
   }
 
   const properties = Object.entries(fields ?? {}).filter(([, value]) => value != null && value !== "");
-  const typeIndex = schema.types.findIndex((t) => t.name === vertex.type);
+  const typeIndex = schema.vertices.findIndex((t) => t.name === vertex.type);
 
   return (
     <ScrollArea className="h-full">

@@ -1,4 +1,4 @@
-import { apiHandlers } from "@/lib/auth";
+import { apiHandlers } from "@/lib/auth/server";
 
 export const GET = (request: Request) => apiHandlers().GET(request);
 export const POST = (request: Request) => apiHandlers().POST(request);

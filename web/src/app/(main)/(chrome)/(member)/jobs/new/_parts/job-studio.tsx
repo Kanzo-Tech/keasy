@@ -41,14 +41,14 @@ import {
 import { ChevronDown, Pencil, PlugZap, Save, X } from "lucide-react";
 import { $api, http, invalidate } from "@/lib/api/client";
 import { storageConnections } from "@/lib/connections";
-import { toastError } from "@/lib/toast-error";
+import { toastError } from "@/lib/errors";
 import * as checker from "@/lib/fossil/checker";
 import { AssistantWizard } from "./assistant-wizard";
 import { ModePicker } from "./mode-picker";
 import { StudioConfigure, type ConfigValues } from "./studio-configure";
 import { StudioEditor } from "./studio-editor";
 import { StudioSummary } from "./studio-summary";
-import { useBeforeUnload } from "@/hooks/use-before-unload";
+import { useBeforeUnload } from "@/lib/ui/use-before-unload";
 import { useJobEditorStore } from "./job-editor-store";
 
 const STEPS = ["Editor", "Configure", "Summary"] as const;

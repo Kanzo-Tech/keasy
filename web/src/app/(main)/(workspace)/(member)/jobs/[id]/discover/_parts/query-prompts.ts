@@ -1,90 +1,9 @@
-import { FOSSIL_PROMPT } from "./fossil-prompt";
-import { type ChatMessage, type CompletionRequest, stripFences } from "./stream";
-
-// ── The assistant: requirements, then a program ─────────────────────────
-
-/** A source file as the browser introspected it. */
-export interface FileSchema {
-  connection_name: string;
-  file_path: string;
-  columns: { name: string; data_type: string }[];
-}
-
-export interface CompetencyQuestion {
-  id: string;
-  question: string;
-  rationale: string;
-}
-
-const SUGGEST_PROMPT = `You are an expert in knowledge graph ontology design and competency questions.
-
-Given a domain description and file schemas (column names and types from CSV files), suggest 5-10 competency questions (CQs) that a knowledge graph built from this data should be able to answer.
-
-Competency questions define the scope of the ontology. They should:
-- Be answerable from the provided data columns
-- Cover different aspects of the domain
-- Range from simple lookups to cross-entity relationships
-- Use natural language (not technical jargon)
-
-Return ONLY valid JSON (no markdown fences) with this structure:
-{
-  "competency_questions": [
-    {
-      "id": "cq1",
-      "question": "What is the full name and email of each person?",
-      "rationale": "Maps basic person attributes from the people.csv columns"
-    }
-  ]
-}`;
-
-function describeFiles(schemas: FileSchema[]): string {
-  return schemas
-    .map((s) => {
-      const columns = s.columns.map((c) => `  - ${c.name} (${c.data_type})\n`).join("");
-      return `File: @${s.connection_name}/${s.file_path}\nColumns:\n${columns}\n`;
-    })
-    .join("");
-}
-
-function asked(system: string, content: string, max_tokens?: number): CompletionRequest {
-  return { system, messages: [{ role: "user", content }], max_tokens };
-}
-
-export function suggestRequest(domain: string, schemas: FileSchema[]): CompletionRequest {
-  return asked(SUGGEST_PROMPT, `Domain: ${domain}\n\n${describeFiles(schemas)}`);
-}
-
-/** The questions the model suggested; none when its answer does not parse. */
-export function parseSuggestions(text: string): CompetencyQuestion[] {
-  try {
-    const parsed = JSON.parse(stripFences(text)) as { competency_questions?: CompetencyQuestion[] };
-    return parsed.competency_questions ?? [];
-  } catch {
-    return [];
-  }
-}
-
-export function generateRequest(
-  domain: string,
-  questions: string[],
-  schemas: FileSchema[],
-): CompletionRequest {
-  const listed = questions.map((q, i) => `${i + 1}. ${q}\n`).join("");
-  return asked(
-    FOSSIL_PROMPT,
-    `Domain: ${domain}\n\nCompetency Questions:\n${listed}\nData Schemas:\n${describeFiles(schemas)}`,
-  );
-}
-
-/** The program the model wrote, out of any fence it put it in. */
-export const parseScript = stripFences;
-
-// ── Discovery: a question, a query, a reading ───────────────────────────
+import { type ChatMessage, type CompletionRequest, stripFences } from "@/lib/ai/stream";
 
 /** How many earlier messages of the conversation reach the model. */
 const HISTORY_WINDOW = 10;
 
-export interface Plan {
+interface Plan {
   sql: string | null;
   answer: string;
   reasoning: string;

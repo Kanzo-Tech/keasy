@@ -26,10 +26,10 @@ import {
   toast,
 } from "@kanzo-tech/ui";
 import { ValidationBadge } from "@/components/validation-badge";
-import { useDelayedLoading } from "@/hooks/use-delayed-loading";
+import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api, invalidate } from "@/lib/api/client";
 import { type Connection, type Credential, storageOf } from "@/lib/connections";
-import { toastError } from "@/lib/toast-error";
+import { toastError } from "@/lib/errors";
 
 /** The workspace sink: the one storage connection where job output lands, the owner's alone. */
 export default function CatalogStoragePage() {

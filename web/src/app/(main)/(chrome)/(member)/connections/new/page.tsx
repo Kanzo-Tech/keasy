@@ -21,12 +21,13 @@ import {
   SelectValue,
   toast,
 } from "@kanzo-tech/ui";
-import { initialValues, schemaOf, SpecForm, toBody } from "@/components/spec-form";
-import { useBeforeUnload } from "@/hooks/use-before-unload";
+import { initialValues, SpecForm, toBody } from "@/components/spec-form";
+import { schemaOf } from "@/lib/api/spec";
+import { useBeforeUnload } from "@/lib/ui/use-before-unload";
 import { $api, type Inputs, invalidate } from "@/lib/api/client";
 import { specOf } from "@/lib/connections";
-import { getProviderIcon } from "@/lib/provider-icons";
-import { toastError } from "@/lib/toast-error";
+import { getProviderIcon } from "@/lib/ui/provider-icons";
+import { toastError } from "@/lib/errors";
 
 type Tab = "data" | "vocab" | "model";
 

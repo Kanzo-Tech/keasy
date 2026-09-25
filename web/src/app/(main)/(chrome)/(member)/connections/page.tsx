@@ -38,7 +38,7 @@ import {
 import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
 import { type Connection, modelOf, storageOf } from "@/lib/connections";
-import { toastError } from "@/lib/toast-error";
+import { toastError } from "@/lib/errors";
 
 /** A tab: a storage connection's kind, or the model connections. */
 type Tab = "data" | "vocab" | "model";

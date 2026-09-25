@@ -7,7 +7,7 @@
  *
  *   1. `open(url, { readText })` — no engine. fossil reads its own index and the
  *      per-type documents it names, and hands back a {@link CorpusAddressing}:
- *      every relation, every projection, every file.
+ *      every relation, every projection, every file (`addressing.files()`).
  *   2. keasy signs exactly that list, lends it to DuckDB's file registry, and
  *      reopens the same corpus with the engine.
  *
@@ -18,16 +18,13 @@
  * it wrong.
  */
 
+import "client-only";
+
 import { DuckDBDataProtocol } from "@duckdb/duckdb-wasm";
-import {
-  open,
-  type CorpusAddressing,
-  type QueryRow,
-  type SqlCorpus,
-} from "@fossil-lang/corpus";
+import { open, type QueryRow, type SqlCorpus } from "@fossil-lang/corpus";
 import { Coordinator, wasmConnector } from "@kanzo-tech/ui/analytics";
 
-import { http, type Schemas } from "@/lib/api/client";
+import { http } from "@/lib/api/client";
 
 /** The root of every cached read of a job's opened output; its own, so invalidating a job never reopens it. */
 export const corpusKey = (jobId: string) => ["corpus", jobId] as const;
@@ -57,41 +54,7 @@ export function bootDuckDB() {
   return booted;
 }
 
-/**
- * Every file the corpus can address, distinct and in declaration order: each
- * vertex type's projections (the payload at scale 1 and every written level),
- * its identity index where one exists, and each relation's projections (both
- * orientations of the adjacency, and the levels that carry the endpoints'
- * coordinates).
- *
- * A type whose manifest declares no count cannot be enumerated — `files()` is
- * "how many are there", which is a different question from "address this tile" —
- * so it is skipped rather than guessed at.
- */
-export function addressableFiles(addressing: CorpusAddressing): string[] {
-  const out = new Set<string>();
-
-  for (const type of addressing.types) {
-    if (type.count === null) continue;
-    for (const projection of type.projections) {
-      for (const file of type.projectionFiles(projection.scale)) out.add(file);
-    }
-    for (const file of type.index?.files() ?? []) out.add(file);
-  }
-
-  for (const edge of addressing.edges) {
-    for (const projection of edge.projections) {
-      if (projection.direction === null || projection.tiles === null) continue;
-      for (const file of edge.projectionFiles(projection.scale, projection.direction)) {
-        out.add(file);
-      }
-    }
-  }
-
-  return [...out];
-}
-
-export interface JobCorpus {
+interface JobCorpus {
   coordinator: Coordinator;
   corpus: SqlCorpus;
   /** The manifest documents fossil named, kept so a second open costs no reads. */
@@ -117,7 +80,7 @@ export async function openJobCorpus(jobId: string): Promise<JobCorpus> {
   };
 
   const addressing = await open("", { readText });
-  const signedUrls = await signDatasetUrls(jobId, addressableFiles(addressing));
+  const signedUrls = await signDatasetUrls(jobId, [...addressing.files()]);
 
   // DuckDB's file registry is where keasy's access meets fossil's names: the name fossil composes
   // resolves to the URL keasy signed, and a file keasy never signed fails by name.
@@ -138,41 +101,4 @@ export async function openJobCorpus(jobId: string): Promise<JobCorpus> {
   });
 
   return { coordinator, corpus, manifestFiles };
-}
-
-/**
- * What the corpus holds, as the host has to store it: the name fossil gave each
- * relation, the payload files that carry it, the count it reported and the
- * columns a row carries.
- *
- * **The name is asked for, never composed.** `table_name` is the corpus's own
- * DuckDB spelling for a relation — pre-computed there precisely so a binding
- * does not reimplement the edge-naming convention. Answering this needs an
- * engine (a relation's name is a reader's answer, not the report's), which is
- * why it happens here, in the browser that just ran the job.
- */
-export async function relationsOf(corpus: SqlCorpus): Promise<Schemas["OutputRelation"][]> {
-  const schema = await corpus.schema();
-  const addressing = corpus.addressing;
-
-  const vertices = schema.vertices.flatMap((v) => {
-    const address = addressing.types.find((t) => t.type === v.name);
-    if (!address || address.count === null) return [];
-    const columns = (corpus.types.vertices.find((t) => t.type === v.name)?.fields ?? []).map(
-      (f) => ({ name: f.name, data_type: f.type }),
-    );
-    return [{ name: v.name, rows: v.count, files: [...address.projectionFiles(1)], columns }];
-  });
-
-  const edges = schema.edges.flatMap((e) => {
-    const address = addressing.edges.find(
-      (a) => a.edgeType === e.name && a.srcType === e.source_type && a.dstType === e.target_type,
-    );
-    // The source-aligned adjacency is the relation's rows; an orientation the
-    // corpus does not publish has no URL to register.
-    if (!address || address.adjacency("src") === null) return [];
-    return [{ name: e.table_name, rows: e.count, files: [...address.projectionFiles(1, "src")] }];
-  });
-
-  return [...vertices, ...edges];
 }

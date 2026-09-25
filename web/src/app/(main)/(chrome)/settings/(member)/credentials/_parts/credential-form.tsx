@@ -16,12 +16,13 @@ import {
   Skeleton,
   toast,
 } from "@kanzo-tech/ui";
-import { initialValues, schemaOf, SpecForm, toBody } from "@/components/spec-form";
-import { useBeforeUnload } from "@/hooks/use-before-unload";
-import { useDelayedLoading } from "@/hooks/use-delayed-loading";
+import { initialValues, SpecForm, toBody } from "@/components/spec-form";
+import { schemaOf } from "@/lib/api/spec";
+import { useBeforeUnload } from "@/lib/ui/use-before-unload";
+import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api, type Inputs, invalidate } from "@/lib/api/client";
 import { type Credential, type Purpose, specOf } from "@/lib/connections";
-import { toastError } from "@/lib/toast-error";
+import { toastError } from "@/lib/errors";
 
 type Spec = Inputs["CredentialSpecInput"];
 

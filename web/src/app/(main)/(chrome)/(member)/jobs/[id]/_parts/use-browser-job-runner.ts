@@ -1,7 +1,27 @@
 import { useEffect, useRef } from "react";
+import type { Job } from "@fossil-lang/executor";
 import { http, type Schemas } from "@/lib/api/client";
-import { makeJob } from "./job-transport";
-import { openJobCorpus, relationsOf } from "./open-job-corpus";
+import { openJobCorpus } from "@/lib/fossil/corpus";
+import { sourceHost } from "@/lib/fossil/source-host";
+
+/**
+ * A job as `runJob` takes it: reads go through keasy's one {@link sourceHost};
+ * the run report crosses untouched, since `CompleteJobRequest.manifest` is
+ * opaque JSON on the server.
+ */
+function makeJob(id: string): Job {
+  const path = { path: { id } };
+  return {
+    host: sourceHost,
+    output: {
+      signOutputUrls: async (paths) =>
+        (await http.POST("/v1/jobs/{id}/output/urls", { params: path, body: { paths } })).data!.files,
+      complete: async ({ status, manifest, error }) => {
+        await http.PATCH("/v1/jobs/{id}", { params: path, body: { status, manifest, error } });
+      },
+    },
+  };
+}
 
 // Jobs whose browser run has been kicked off this session. Guards the detail
 // view from re-triggering on re-render / poll-refetch. The run is idempotent by
@@ -54,10 +74,13 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         // a failed run would be a lie about durable data.
         try {
           const { corpus } = await openJobCorpus(jobId);
-          await http.PUT("/v1/jobs/{id}/relations", {
-            params: { path: { id: jobId } },
-            body: { relations: await relationsOf(corpus) },
-          });
+          const relations = (await corpus.relations()).map((r) => ({
+            name: r.name,
+            rows: r.rows,
+            files: [...r.files],
+            columns: r.kind === "vertex" ? r.columns.map((c) => ({ name: c.name, data_type: c.type })) : undefined,
+          }));
+          await http.PUT("/v1/jobs/{id}/relations", { params: { path: { id: jobId } }, body: { relations } });
         } catch (err) {
           console.error(`publishing the corpus relations failed (${jobId})`, err);
         }

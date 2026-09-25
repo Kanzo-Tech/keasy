@@ -1,11 +1,10 @@
 "use client";
 
-import { createContext, use, useMemo, type ReactNode } from "react";
+import { createContext, use, type ReactNode } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import type { SchemaResult, SqlCorpus } from "@fossil-lang/corpus";
 import { MosaicProvider, type Coordinator } from "@kanzo-tech/ui/analytics";
-import { corpusKey, openJobCorpus } from "@/lib/fossil/open-job-corpus";
-import { buildGraphSchema, type GraphSchema } from "@/lib/graph-schema";
+import { corpusKey, openJobCorpus } from "@/lib/fossil/corpus";
 
 /**
  * Everything read off a corpus is read once and dropped with the page: the signed URLs behind it
@@ -54,24 +53,17 @@ export function useCorpus(): Corpus {
   return corpus;
 }
 
-/**
- * The boot schema refined with datatype and role — one `schema({ vertex_type })` call per type,
- * one query per type instead of one per column. The name-only schema stands until those land.
- */
-export function useGraphSchema(): { schema: GraphSchema; error: Error | null } {
+/** The boot schema with every type's field statistics (`stats`) once they land; empty until then. */
+export function useGraphSchema(): { schema: SchemaResult; error: Error | null } {
   const { jobId, corpus, schema } = useCorpus();
   const stats = useQuery({
     queryKey: [...corpusKey(jobId), "stats"],
-    queryFn: async () =>
-      new Map(
-        await Promise.all(
-          schema.vertices.map(
-            async (v) => [v.name, (await corpus.schema({ vertex_type: v.name })).fields] as const,
-          ),
-        ),
-      ),
+    queryFn: () => corpus.schema({ stats: true }),
     ...ONCE,
   });
-  const refined = useMemo(() => buildGraphSchema(schema, stats.data), [schema, stats.data]);
-  return { schema: refined, error: stats.error };
+  return { schema: stats.data ?? schema, error: stats.error };
 }
+
+/** One vertex type's field statistics. */
+export const fieldsOf = (schema: SchemaResult, type: string) =>
+  schema.vertices.find((v) => v.name === type)?.stats ?? [];

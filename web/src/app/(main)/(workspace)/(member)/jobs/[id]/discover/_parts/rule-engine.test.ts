@@ -6,7 +6,7 @@ import {
   distinctValuesQuery,
   isRuleComplete,
   type Rule,
-} from "@/lib/rule-engine";
+} from "./rule-engine";
 
 describe("rule-engine", () => {
   describe("isRuleComplete", () => {

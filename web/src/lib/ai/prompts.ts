@@ -1,14 +1,9 @@
+import type { InferredDescriptor } from "@fossil-lang/introspect";
+
 import { FOSSIL_PROMPT } from "./fossil-prompt";
 import { type ChatMessage, type CompletionRequest, stripFences } from "./stream";
 
 // ── The assistant: requirements, then a program ─────────────────────────
-
-/** A source file as the browser introspected it. */
-export interface FileSchema {
-  connection_name: string;
-  file_path: string;
-  columns: { name: string; data_type: string }[];
-}
 
 export interface CompetencyQuestion {
   id: string;
@@ -37,11 +32,11 @@ Return ONLY valid JSON (no markdown fences) with this structure:
   ]
 }`;
 
-function describeFiles(schemas: FileSchema[]): string {
-  return schemas
+function describeFiles(sources: readonly InferredDescriptor[]): string {
+  return sources
     .map((s) => {
-      const columns = s.columns.map((c) => `  - ${c.name} (${c.data_type})\n`).join("");
-      return `File: @${s.connection_name}/${s.file_path}\nColumns:\n${columns}\n`;
+      const columns = s.columns.map((c) => `  - ${c.name} (${c.primitive})\n`).join("");
+      return `File: ${s.uri}\nColumns:\n${columns}\n`;
     })
     .join("");
 }
@@ -50,7 +45,7 @@ function asked(system: string, content: string, max_tokens?: number): Completion
   return { system, messages: [{ role: "user", content }], max_tokens };
 }
 
-export function suggestRequest(domain: string, schemas: FileSchema[]): CompletionRequest {
+export function suggestRequest(domain: string, schemas: readonly InferredDescriptor[]): CompletionRequest {
   return asked(SUGGEST_PROMPT, `Domain: ${domain}\n\n${describeFiles(schemas)}`);
 }
 
@@ -67,7 +62,7 @@ export function parseSuggestions(text: string): CompetencyQuestion[] {
 export function generateRequest(
   domain: string,
   questions: string[],
-  schemas: FileSchema[],
+  schemas: readonly InferredDescriptor[],
 ): CompletionRequest {
   const listed = questions.map((q, i) => `${i + 1}. ${q}\n`).join("");
   return asked(
@@ -84,7 +79,7 @@ export const parseScript = stripFences;
 /** How many earlier messages of the conversation reach the model. */
 const HISTORY_WINDOW = 10;
 
-export interface Plan {
+interface Plan {
   sql: string | null;
   answer: string;
   reasoning: string;

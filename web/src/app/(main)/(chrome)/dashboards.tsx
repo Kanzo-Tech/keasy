@@ -12,7 +12,7 @@ import {
 } from "@kanzo-tech/ui";
 import { $api, type Schemas } from "@/lib/api/client";
 import { storageOf } from "@/lib/connections";
-import { hasRunningJobs } from "@/lib/utils";
+import { hasRunningJobs } from "@/lib/jobs";
 
 interface Tile {
   href: string;

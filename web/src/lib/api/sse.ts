@@ -4,13 +4,13 @@ import type { MaybeOptionalInit } from "openapi-fetch";
 
 import { http } from "./client";
 
-export interface SseFrame {
+interface SseFrame {
   event: string;
   data: string;
 }
 
 /** The `error` frame's payload: the same `ErrorBody` a refused request carries. */
-export function sseFailure(frame: SseFrame): ErrorBody | null {
+function sseFailure(frame: SseFrame): ErrorBody | null {
   return frame.event === "error" ? (JSON.parse(frame.data) as ErrorBody) : null;
 }
 

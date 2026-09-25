@@ -1,7 +1,27 @@
 import { useEffect, useRef } from "react";
+import type { Job } from "@fossil-lang/executor";
 import { http, type Schemas } from "@/lib/api/client";
-import { makeJob } from "./job-transport";
 import { openJobCorpus, relationsOf } from "./open-job-corpus";
+import { sourceHost } from "./source-host";
+
+/**
+ * A job as `runJob` takes it: reads go through keasy's one {@link sourceHost};
+ * the run report crosses untouched, since `CompleteJobRequest.manifest` is
+ * opaque JSON on the server.
+ */
+function makeJob(id: string): Job {
+  const path = { path: { id } };
+  return {
+    host: sourceHost,
+    output: {
+      signOutputUrls: async (paths) =>
+        (await http.POST("/v1/jobs/{id}/output/urls", { params: path, body: { paths } })).data!.files,
+      complete: async ({ status, manifest, error }) => {
+        await http.PATCH("/v1/jobs/{id}", { params: path, body: { status, manifest, error } });
+      },
+    },
+  };
+}
 
 // Jobs whose browser run has been kicked off this session. Guards the detail
 // view from re-triggering on re-render / poll-refetch. The run is idempotent by

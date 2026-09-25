@@ -34,7 +34,7 @@ import {
 } from "@kanzo-tech/ui/table";
 import { $api, invalidate, type Schemas } from "@/lib/api/client";
 import { formatDate, formatJobDuration } from "@/lib/formatters";
-import { hasRunningJobs, isTerminalStatus } from "@/lib/utils";
+import { hasRunningJobs, isTerminalStatus } from "@/lib/jobs";
 
 type Job = Schemas["Job"];
 type JobStatus = Schemas["JobStatus"];

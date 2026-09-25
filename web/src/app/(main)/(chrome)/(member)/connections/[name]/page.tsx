@@ -37,8 +37,8 @@ import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { $api, invalidate } from "@/lib/api/client";
 import { modelOf, storageOf } from "@/lib/connections";
 import { providersQuery } from "@/lib/fossil/checker";
+import { providerFor } from "@/lib/fossil/providers";
 import { toastError } from "@/lib/errors";
-import { readableFiles } from "@/lib/utils";
 
 export default function ConnectionPage({ params }: { params: Promise<{ name: string }> }) {
   const path = { params: { path: { name: decodeURIComponent(use(params).name) } } };
@@ -69,7 +69,7 @@ export default function ConnectionPage({ params }: { params: Promise<{ name: str
 
   const model = modelOf(connection);
   const listed = files.data ?? [];
-  const readable = readableFiles(listed, providers, storage?.kind === "data" ? "data" : "schema");
+  const readable = listed.filter((f) => providerFor(f.path, storage?.kind === "data" ? "data" : "schema", providers));
 
   const { name } = connection;
   function copyReference(path: string) {

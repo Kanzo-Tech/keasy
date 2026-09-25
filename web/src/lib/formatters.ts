@@ -1,6 +1,6 @@
 import type { Schemas } from "@/lib/api/client";
 
-export function formatDuration(startIso: string, endIso: string): string {
+function formatDuration(startIso: string, endIso: string): string {
   const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
   if (ms < 0) return "";
   if (ms < 1000) return "<1s";

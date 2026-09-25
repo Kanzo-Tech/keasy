@@ -51,7 +51,7 @@ export interface RuleResult {
 
 // ── Operator metadata ────────────────────────────────────────────────────
 
-export interface OperatorMeta {
+interface OperatorMeta {
   label: string;
   needsValue: boolean;
   needsValues: boolean;

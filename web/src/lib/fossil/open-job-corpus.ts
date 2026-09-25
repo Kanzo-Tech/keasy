@@ -68,7 +68,7 @@ export function bootDuckDB() {
  * "how many are there", which is a different question from "address this tile" —
  * so it is skipped rather than guessed at.
  */
-export function addressableFiles(addressing: CorpusAddressing): string[] {
+function addressableFiles(addressing: CorpusAddressing): string[] {
   const out = new Set<string>();
 
   for (const type of addressing.types) {
@@ -91,7 +91,7 @@ export function addressableFiles(addressing: CorpusAddressing): string[] {
   return [...out];
 }
 
-export interface JobCorpus {
+interface JobCorpus {
   coordinator: Coordinator;
   corpus: SqlCorpus;
   /** The manifest documents fossil named, kept so a second open costs no reads. */

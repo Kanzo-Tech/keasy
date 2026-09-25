@@ -109,11 +109,6 @@ export async function sources(program: string): Promise<ProgramSource[]> {
   return playground && handle !== null ? playground.sources(handle) : [];
 }
 
-/** Check without editing — used after a descriptor lands. */
-export function check(): CheckRow[] {
-  return playground?.check() ?? [];
-}
-
 /** The type under the cursor, and the type the target shape demands of it. */
 export function hoverAt(text: string, line: number, character: number): HoverRow | null {
   if (!playground || handle === null) return null;

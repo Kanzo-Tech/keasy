@@ -23,8 +23,8 @@ import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { $api } from "@/lib/api/client";
 import { storageConnections } from "@/lib/connections";
 import { useBrowserJobRunner } from "@/lib/fossil/use-browser-job-runner";
-import { formatDuration } from "@/lib/formatters";
-import { isTerminalStatus } from "@/lib/utils";
+import { formatDate, formatJobDuration } from "@/lib/formatters";
+import { isTerminalStatus } from "@/lib/jobs";
 
 export default function JobPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -81,14 +81,14 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
           </DataListItem>
           <DataListItem>
             <DataListItemLabel>Created</DataListItemLabel>
-            <DataListItemValue>{new Date(job.created_at).toLocaleString()}</DataListItemValue>
+            <DataListItemValue>{formatDate(job.created_at)}</DataListItemValue>
           </DataListItem>
           {job.started_at && (
             <DataListItem>
               <DataListItemLabel>Run</DataListItemLabel>
               <DataListItemValue>
                 {new Date(job.started_at).toLocaleTimeString()} (
-                {job.completed_at ? formatDuration(job.started_at, job.completed_at) : "running"})
+                {job.completed_at ? formatJobDuration(job) : "running"})
               </DataListItemValue>
             </DataListItem>
           )}

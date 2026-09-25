@@ -47,7 +47,7 @@ ps: ## Show running services
 # The server's routes publish the spec; `api/` (@keasy/api) holds it and the
 # types generated from it. CI fails when a committed copy is stale.
 api: ## Regenerate api/openapi.json and api/src/schema.d.ts from the server's routes
-	cargo run --quiet --manifest-path server/Cargo.toml --bin openapi > api/openapi.json
+	UPDATE_EXPECT=1 cargo test --quiet --manifest-path server/Cargo.toml --test api openapi
 	pnpm --filter @keasy/api generate
 
 # ── Prod / Swarm deploy — Terraform owns everything (see infra/terraform/README.md) ──

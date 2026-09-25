@@ -119,13 +119,14 @@ The Rust toolchain is pinned once, in `server/rust-toolchain.toml`.
 
 ## API contract
 
-The wire types live in `server/crates/keasy-api`; each server module's
-`routes::router()` is both its routes and their spec. `api/` (`@keasy/api`) holds
+The wire types live next to what they describe in `server/src`; each route
+module's `router()` is both its routes and their spec. `api/` (`@keasy/api`) holds
 the committed `openapi.json`, the types generated from it and the client the web
-uses. CI fails when they are stale.
+uses. `server/tests/api/openapi.rs` is a golden test of `openapi.json`, so
+`cargo test` (and CI) fails when it is stale.
 
 ```bash
-make api   # api/openapi.json + api/src/schema.d.ts
+make api   # UPDATE_EXPECT=1 cargo test --test api openapi, then pnpm generate
 ```
 
 ## Layout
@@ -135,5 +136,11 @@ api/                @keasy/api: the committed spec, its generated types and the 
 infra/dev/          MinIO seed and an example program, dev-only
 infra/terraform/    platform/ and realm/ — the Swarm deployment, and dev's realm
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)
+  src/main.rs       subcommands: none serves, `rekey` reseals the credentials
+  src/startup.rs    Application, AppState, the router and the spec it publishes
+  src/routes/       one file per resource: handlers with their bodies
+  src/domain/       the records and parse-don't-validate types
+  src/{credentials,connections,jobs}/  persistence and shared behaviour
+  tests/api/        black-box HTTP tests through spawn_app, and the spec golden
 web/                Next.js app and BFF (Dockerfile = release, Dockerfile.dev = HMR)
 ```

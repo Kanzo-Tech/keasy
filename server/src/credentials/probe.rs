@@ -4,13 +4,11 @@
 use futures::StreamExt;
 use object_store::PutPayload;
 
-use keasy_api::connections::{
-    ConnectionTarget, ConnectionView, Direction, ModelTarget, StorageTarget,
+use crate::domain::{
+    Check, ConnectionTarget, ConnectionView, CredentialSpecInput, Direction, ModelCredentialInput,
+    ModelTarget, Operation, Outcome, StorageCredentialInput, StorageTarget, StorageUrl,
+    ValidationReport,
 };
-use keasy_api::credentials::{CredentialSpecInput, ModelCredentialInput, StorageCredentialInput};
-use keasy_api::validation::{Check, Operation, Outcome, ValidationReport};
-
-use crate::domain::StorageUrl;
 use crate::storage_client;
 
 fn check(operation: Operation, outcome: Result<Option<String>, String>) -> Check {
@@ -30,7 +28,7 @@ fn check(operation: Operation, outcome: Result<Option<String>, String>) -> Check
 
 fn report(results: Vec<Check>) -> ValidationReport {
     ValidationReport {
-        at: crate::jobs::now_iso8601(),
+        at: crate::domain::now_iso8601(),
         results,
     }
 }
@@ -116,7 +114,7 @@ pub async fn connection(spec: &CredentialSpecInput, target: &ConnectionTarget) -
     report(match (spec, target) {
         (CredentialSpecInput::Storage(s), ConnectionTarget::Storage(t)) => storage(s, t).await,
         (CredentialSpecInput::Model(m), ConnectionTarget::Model(t)) => {
-            vec![offers(m, t, &crate::ai::client::models(m).await)]
+            vec![offers(m, t, &crate::llm_client::models(m).await)]
         }
         _ => vec![check(
             Operation::List,
@@ -144,7 +142,7 @@ pub async fn credential(
     };
     match spec {
         CredentialSpecInput::Model(m) => {
-            let listed = crate::ai::client::models(m).await;
+            let listed = crate::llm_client::models(m).await;
             checks.push(check(
                 Operation::Models,
                 listed

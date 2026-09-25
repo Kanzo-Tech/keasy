@@ -2,11 +2,8 @@
 
 use rusqlite::{Connection, OptionalExtension, params};
 
-use keasy_api::connections::ConnectionView;
-use keasy_api::credentials::Purpose;
-use keasy_api::validation::ValidationReport;
-
-use crate::db::{DbError, DbResult, constraint, json_column, json_column_opt};
+use crate::database::{DbError, DbResult, constraint, json_column, json_column_opt};
+use crate::domain::{ConnectionView, Purpose, ValidationReport};
 
 const COLUMNS: &str =
     "name, credential, target, created_by, created_at, updated_by, updated_at, validation";
@@ -60,7 +57,7 @@ pub fn insert(conn: &Connection, connection: &ConnectionView, by: &str) -> DbRes
             connection.credential,
             serde_json::to_string(&connection.target)?,
             by,
-            crate::jobs::now_iso8601(),
+            crate::domain::now_iso8601(),
             connection
                 .validation
                 .as_ref()
@@ -118,7 +115,7 @@ pub fn update(conn: &Connection, name: &str, updated: &ConnectionView, by: &str)
             updated.credential,
             serde_json::to_string(&updated.target)?,
             by,
-            crate::jobs::now_iso8601(),
+            crate::domain::now_iso8601(),
             updated
                 .validation
                 .as_ref()
@@ -171,10 +168,10 @@ pub(crate) mod tests {
     use super::*;
     use crate::credentials::persistence as credentials;
     use crate::credentials::sealing::SecretKey;
+    use crate::domain::ConnectionTarget;
     use crate::domain::ResourceName;
-    use keasy_api::connections::ConnectionTarget;
-    use keasy_api::connections::{ModelTarget, StorageTarget};
-    use keasy_api::credentials::{CredentialSpecInput, ModelCredentialInput};
+    use crate::domain::{CredentialSpecInput, ModelCredentialInput};
+    use crate::domain::{ModelTarget, StorageTarget};
     use secrecy::SecretString;
 
     fn report() -> ValidationReport {
@@ -187,13 +184,12 @@ pub(crate) mod tests {
     /// A storage credential and a sink connection `name` on it, stored as they
     /// are: a fixture nobody probes.
     pub(crate) fn seed_sink(conn: &Connection, name: &str) {
-        let spec =
-            CredentialSpecInput::Storage(keasy_api::credentials::StorageCredentialInput::S3 {
-                access_key_id: "AK".into(),
-                secret_access_key: SecretString::from("SK"),
-                region: "us-east-1".into(),
-                endpoint: None,
-            });
+        let spec = CredentialSpecInput::Storage(crate::domain::StorageCredentialInput::S3 {
+            access_key_id: "AK".into(),
+            secret_access_key: SecretString::from("SK"),
+            region: "us-east-1".into(),
+            endpoint: None,
+        });
         let credential = format!("{name}-key");
         credentials::insert(
             conn,
@@ -207,7 +203,7 @@ pub(crate) mod tests {
         let target = ConnectionTarget::Storage(StorageTarget {
             url: "s3://b/output/".into(),
             kind: Default::default(),
-            direction: keasy_api::connections::Direction::Sink,
+            direction: crate::domain::Direction::Sink,
         });
         insert(conn, &connection(name, &credential, target), "u-1").unwrap();
     }
@@ -231,7 +227,7 @@ pub(crate) mod tests {
     fn a_connection_cannot_reference_a_credential_of_the_other_purpose() {
         let conn = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
-        crate::db::apply_schema(&conn).unwrap();
+        crate::database::apply_schema(&conn).unwrap();
         let key = CredentialSpecInput::Model(ModelCredentialInput::Anthropic {
             api_key: SecretString::from("sk-ant"),
         });

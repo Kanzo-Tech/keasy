@@ -7,7 +7,6 @@ WORKDIR /src/server
 COPY rust-toolchain.toml ./
 RUN rustup toolchain install
 COPY Cargo.toml Cargo.lock ./
-COPY crates ./crates
 RUN mkdir src && echo 'fn main() {}' > src/main.rs && cargo build --release && rm -rf src
 COPY src ./src
 # After the dep cache so a new SHA does not rebuild the dependencies.

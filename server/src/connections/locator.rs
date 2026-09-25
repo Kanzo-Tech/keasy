@@ -1,10 +1,7 @@
 //! Which connection signs a locator: the deepest storage source it lies
 //! under, at a path boundary, never the sink.
 
-use keasy_api::connections::{ConnectionView, Direction};
-
-use crate::domain::StorageUrl;
-use crate::storage_client::relative_path;
+use crate::domain::{ConnectionView, Direction, RelativePath, StorageUrl};
 
 pub fn is_public_http(locator: &str) -> bool {
     locator.starts_with("https://") || locator.starts_with("http://")
@@ -15,7 +12,7 @@ fn object_under<'a>(locator: &'a str, base: &str) -> Option<&'a str> {
     let rest = locator
         .strip_prefix(base.trim_end_matches('/'))?
         .strip_prefix('/')?;
-    relative_path(rest).ok().map(|()| rest)
+    RelativePath::parse(rest).ok().map(|_| rest)
 }
 
 /// The deepest storage connection `locator` lies under.
@@ -42,7 +39,7 @@ pub fn signer<'a>(locator: &str, connections: &'a [ConnectionView]) -> Option<&'
 #[cfg(test)]
 mod tests {
     use super::*;
-    use keasy_api::connections::{ConnectionKind, ConnectionTarget, ModelTarget, StorageTarget};
+    use crate::domain::{ConnectionKind, ConnectionTarget, ModelTarget, StorageTarget};
 
     fn view(name: &str, target: ConnectionTarget) -> ConnectionView {
         ConnectionView {

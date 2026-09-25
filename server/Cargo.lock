@@ -1194,17 +1194,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "keasy-api"
-version = "0.1.0"
-dependencies = [
- "secrecy",
- "serde",
- "serde_json",
- "strum",
- "utoipa",
-]
-
-[[package]]
 name = "keasy-server"
 version = "0.1.0"
 dependencies = [
@@ -1215,7 +1204,6 @@ dependencies = [
  "getrandom 0.2.17",
  "jiff",
  "jsonwebtoken",
- "keasy-api",
  "object_store",
  "rcgen",
  "reqwest",

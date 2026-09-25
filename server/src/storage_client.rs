@@ -14,10 +14,7 @@ use object_store::{ClientOptions, ObjectMeta, ObjectStore, PutPayload, RetryConf
 use secrecy::ExposeSecret;
 use url::Url;
 
-use keasy_api::connections::FileEntry;
-use keasy_api::credentials::StorageCredentialInput;
-
-use crate::domain::{StorageScheme, StorageUrl};
+use crate::domain::{StorageCredentialInput, StorageScheme, StorageUrl};
 
 pub const SIGNED_URL_EXPIRES: Duration = Duration::from_secs(300);
 
@@ -29,25 +26,6 @@ fn reaches(credential: &StorageCredentialInput) -> StorageScheme {
         | StorageCredentialInput::AzureSas { .. }
         | StorageCredentialInput::AzureServicePrincipal { .. } => StorageScheme::Azure,
     }
-}
-
-/// A client-supplied path under a base URL: relative, no scheme, no `..`
-/// leaving the base, no quote to close a SQL literal with.
-pub(crate) fn relative_path(path: &str) -> Result<(), String> {
-    let invalid = |why: &str| Err(format!("{path:?} {why}"));
-    if path.is_empty() {
-        return invalid("is empty");
-    }
-    if path.starts_with(['/', '\\']) || path.contains(':') {
-        return invalid("must be relative");
-    }
-    if path.split(['/', '\\']).any(|segment| segment == "..") {
-        return invalid("must not leave its base");
-    }
-    if path.contains(['\'', '"', '\0']) {
-        return invalid("must not contain quotes");
-    }
-    Ok(())
 }
 
 /// A probe or a listing is a question a person is waiting on: a store that
@@ -197,17 +175,12 @@ impl CloudStore {
 pub async fn list_files(
     credential: &StorageCredentialInput,
     url: &StorageUrl,
-) -> Result<Vec<FileEntry>, String> {
+) -> Result<Vec<ObjectMeta>, String> {
     let store = store(credential, url)?;
     let mut entries = Vec::new();
     let mut listing = store.list(url.path());
     while let Some(meta) = listing.next().await {
-        let meta = meta.map_err(|e| format!("listing failed: {e}"))?;
-        entries.push(FileEntry {
-            path: meta.location.to_string(),
-            size: meta.size,
-            last_modified: Some(meta.last_modified.to_string()),
-        });
+        entries.push(meta.map_err(|e| format!("listing failed: {e}"))?);
     }
     Ok(entries)
 }
@@ -223,24 +196,6 @@ mod tests {
             secret_access_key: SecretString::from("SK"),
             region: "us-east-1".into(),
             endpoint: None,
-        }
-    }
-
-    #[test]
-    fn a_client_path_stays_under_its_base() {
-        for ok in ["Person.parquet", "vertex/Person/chunk0.parquet"] {
-            assert!(relative_path(ok).is_ok(), "{ok}");
-        }
-        for bad in [
-            "",
-            "/etc/passwd",
-            "../other-job/Person.parquet",
-            "vertex/../../x.parquet",
-            "s3://elsewhere/x.parquet",
-            "it's.parquet",
-            "a\"b.parquet",
-        ] {
-            assert!(relative_path(bad).is_err(), "{bad}");
         }
     }
 

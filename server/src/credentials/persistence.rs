@@ -3,38 +3,11 @@
 
 use rusqlite::{Connection, OptionalExtension, params};
 
-use keasy_api::credentials::{CredentialSpecInput, CredentialView, Purpose};
-use keasy_api::validation::ValidationReport;
-
 use super::sealing::{self, SecretKey};
-use crate::db::{DbError, DbResult, constraint, json_column_opt};
-use crate::domain::ResourceName;
-
-/// A stored credential, unsealed.
-pub struct Credential {
-    pub name: String,
-    pub spec: CredentialSpecInput,
-    pub created_by: String,
-    pub created_at: String,
-    pub updated_by: String,
-    pub updated_at: String,
-    pub validation: Option<ValidationReport>,
-}
-
-impl Credential {
-    pub fn view(&self, used_by: Vec<String>) -> CredentialView {
-        CredentialView {
-            name: self.name.clone(),
-            spec: self.spec.view(),
-            used_by,
-            created_by: self.created_by.clone(),
-            created_at: self.created_at.clone(),
-            updated_by: self.updated_by.clone(),
-            updated_at: self.updated_at.clone(),
-            validation: self.validation.clone(),
-        }
-    }
-}
+use crate::database::{DbError, DbResult, constraint, json_column_opt};
+use crate::domain::{
+    Credential, CredentialSpecInput, CredentialView, Purpose, ResourceName, ValidationReport,
+};
 
 const COLUMNS: &str = "name, spec, created_by, created_at, updated_by, updated_at, validation";
 
@@ -106,7 +79,7 @@ pub fn insert(
             name.as_ref(),
             sealed,
             by,
-            crate::jobs::now_iso8601(),
+            crate::domain::now_iso8601(),
             serde_json::to_string(validation)?
         ],
     )
@@ -178,7 +151,7 @@ pub fn update(
             new_name.as_ref(),
             sealed,
             by,
-            crate::jobs::now_iso8601(),
+            crate::domain::now_iso8601(),
             validation.map(serde_json::to_string).transpose()?,
             name
         ],
@@ -251,14 +224,14 @@ pub fn rekey(conn: &mut Connection, old: &SecretKey, new: &SecretKey) -> DbResul
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::StorageCredentialInput;
     use base64::Engine;
-    use keasy_api::credentials::StorageCredentialInput;
     use secrecy::{ExposeSecret, SecretString};
 
     fn conn() -> Connection {
         let conn = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
-        crate::db::apply_schema(&conn).unwrap();
+        crate::database::apply_schema(&conn).unwrap();
         conn
     }
 

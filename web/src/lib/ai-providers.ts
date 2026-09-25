@@ -1,6 +1,8 @@
-import { SiOpenai, SiAnthropic } from "react-icons/si";
+import { SiAnthropic, SiOpenai } from "react-icons/si";
 import type { ComponentType } from "react";
-import type { AiProvider } from "@/lib/types";
+import type { Schemas } from "@keasy/api";
+
+type AiProvider = Schemas["AiProvider"];
 
 export interface AiProviderOption {
   id: AiProvider;
@@ -8,14 +10,16 @@ export interface AiProviderOption {
   icon: ComponentType<{ className?: string }>;
 }
 
-export const AI_PROVIDERS: AiProviderOption[] = [
-  { id: "anthropic", label: "Anthropic", icon: SiAnthropic },
-  { id: "openai", label: "OpenAI", icon: SiOpenai },
-];
+/**
+ * How each provider is drawn, and nothing else: the model each runs by default
+ * comes from `GET /v1/ai/providers`. A `Record`, so a provider added to the spec
+ * does not compile until it has a face.
+ */
+const presentation: Record<AiProvider, Omit<AiProviderOption, "id">> = {
+  anthropic: { label: "Anthropic", icon: SiAnthropic },
+  openai: { label: "OpenAI", icon: SiOpenai },
+};
 
-/** The provider a route or form names, or an error for one keasy does not know. */
-export function aiProvider(id: string): AiProvider {
-  const known = AI_PROVIDERS.find((p) => p.id === id);
-  if (!known) throw new Error(`Unknown AI provider: ${id}`);
-  return known.id;
-}
+export const AI_PROVIDERS: AiProviderOption[] = Object.entries(presentation).map(
+  ([id, face]) => ({ id: id as AiProvider, ...face }),
+);

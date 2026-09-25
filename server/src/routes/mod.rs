@@ -15,7 +15,6 @@ use tower_governor::key_extractor::KeyExtractor;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
-use utoipa_axum::routes;
 
 use crate::AppState;
 use crate::auth::bearer::{AuthenticatedUser, bearer_required};

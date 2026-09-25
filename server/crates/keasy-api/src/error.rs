@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use utoipa::openapi::{OpenApi, RefOr, ResponseBuilder, content::ContentBuilder};
+use utoipa::openapi::{OpenApi, Ref, RefOr, ResponseBuilder, content::ContentBuilder};
 
 /// Every error the server answers with. Closed: a code the server does not
 /// declare here cannot be sent, and the web keys its copy by this enum.
@@ -50,23 +50,45 @@ pub struct ErrorBody {
 /// Every route behind the bearer scheme can be refused before its handler runs:
 /// 401 without a verified token, 403 without the role it admits, 429 over the
 /// caller's rate, 503 when the realm's keys cannot be fetched — and any of them
-/// can fail with a 500. Documented once, here, for each of them.
+/// can fail with a 500. Each is one shared response, referenced by every such
+/// route that does not document its own.
 pub fn document_refusals(openapi: &mut OpenApi) {
-    let refused = |description: &str| {
-        RefOr::T(
-            ResponseBuilder::new()
-                .description(description)
-                .content(
-                    "application/json",
-                    ContentBuilder::new()
-                        .schema(Some(RefOr::Ref(utoipa::openapi::Ref::from_schema_name(
-                            "ErrorBody",
-                        ))))
-                        .build(),
-                )
-                .build(),
-        )
-    };
+    const REFUSALS: [(&str, &str, &str); 5] = [
+        ("401", "Unauthorized", "No verified bearer token"),
+        (
+            "403",
+            "Forbidden",
+            "The caller holds no role this route admits",
+        ),
+        (
+            "429",
+            "RateLimited",
+            "The caller exceeded their request rate",
+        ),
+        ("500", "InternalError", "The server failed"),
+        (
+            "503",
+            "KeysUnavailable",
+            "The identity provider's keys are unreachable",
+        ),
+    ];
+    let components = openapi.components.get_or_insert_with(Default::default);
+    for (_, name, description) in REFUSALS {
+        components.responses.insert(
+            name.to_string(),
+            RefOr::T(
+                ResponseBuilder::new()
+                    .description(description)
+                    .content(
+                        "application/json",
+                        ContentBuilder::new()
+                            .schema(Some(Ref::from_schema_name("ErrorBody")))
+                            .build(),
+                    )
+                    .build(),
+            ),
+        );
+    }
     for item in openapi.paths.paths.values_mut() {
         for op in [
             &mut item.get,
@@ -77,21 +99,13 @@ pub fn document_refusals(openapi: &mut OpenApi) {
         ]
         .into_iter()
         .flatten()
+        .filter(|op| op.security.is_none())
         {
-            if op.security.is_some() {
-                continue;
-            }
-            let responses = &mut op.responses.responses;
-            for (status, description) in [
-                ("401", "No verified bearer token"),
-                ("403", "The caller holds no role this route admits"),
-                ("429", "The caller exceeded their request rate"),
-                ("500", "The server failed"),
-                ("503", "The identity provider's keys are unreachable"),
-            ] {
-                responses
+            for (status, name, _) in REFUSALS {
+                op.responses
+                    .responses
                     .entry(status.to_string())
-                    .or_insert_with(|| refused(description));
+                    .or_insert_with(|| RefOr::Ref(Ref::from_response_name(name)));
             }
         }
     }

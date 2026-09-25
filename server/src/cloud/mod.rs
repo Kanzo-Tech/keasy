@@ -16,7 +16,7 @@ use object_store::signer::Signer;
 use object_store::{ObjectMeta, ObjectStore, PutPayload, PutResult};
 use url::Url;
 
-use crate::settings::schema::{CloudProvider, all_cloud_schemes, find_provider_by_scheme};
+use keasy_api::settings::schema::{CloudProvider, all_cloud_schemes, find_provider_by_scheme};
 
 pub fn is_cloud_url(s: &str) -> bool {
     all_cloud_schemes().any(|scheme| s.starts_with(scheme) && s[scheme.len()..].starts_with("://"))
@@ -48,7 +48,7 @@ pub(crate) fn parse_cloud_url(
     (
         String,
         ObjectPath,
-        &'static crate::settings::schema::ProviderSchema,
+        &'static keasy_api::settings::schema::ProviderSchema,
     ),
     Box<dyn std::error::Error + Send + Sync>,
 > {

@@ -16,7 +16,7 @@ use std::sync::Mutex;
 
 use duckdb::Connection;
 
-use crate::jobs::models::OutputRelation;
+use keasy_api::jobs::OutputRelation;
 use secret::q;
 
 /// Errors registering a dataset in the catalog. Never fatal to the job: its

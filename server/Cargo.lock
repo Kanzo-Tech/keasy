@@ -1633,6 +1633,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "keasy-api"
+version = "0.1.0"
+dependencies = [
+ "secrecy",
+ "serde",
+ "serde_json",
+ "strum",
+ "utoipa",
+]
+
+[[package]]
 name = "keasy-server"
 version = "0.1.0"
 dependencies = [
@@ -1644,6 +1655,7 @@ dependencies = [
  "getrandom 0.2.17",
  "jiff",
  "jsonwebtoken",
+ "keasy-api",
  "object_store",
  "rcgen",
  "reqwest",
@@ -1651,6 +1663,7 @@ dependencies = [
  "secrecy",
  "serde",
  "serde_json",
+ "strum",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
@@ -1662,6 +1675,7 @@ dependencies = [
  "tracing-subscriber",
  "url",
  "utoipa",
+ "utoipa-axum",
  "uuid",
 ]
 
@@ -2067,6 +2081,12 @@ dependencies = [
  "smallvec",
  "windows-link",
 ]
+
+[[package]]
+name = "paste"
+version = "1.0.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pem"
@@ -3566,6 +3586,19 @@ dependencies = [
  "serde",
  "serde_json",
  "utoipa-gen",
+]
+
+[[package]]
+name = "utoipa-axum"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c25bae5bccc842449ec0c5ddc5cbb6a3a1eaeac4503895dc105a1138f8234a0"
+dependencies = [
+ "axum",
+ "paste",
+ "tower-layer",
+ "tower-service",
+ "utoipa",
 ]
 
 [[package]]

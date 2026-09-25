@@ -74,6 +74,8 @@ function contentSecurityPolicy(): string {
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // The workspace contract package ships TypeScript source.
+  transpilePackages: ["@keasy/api"],
   experimental: {
     authInterrupts: true,
   },

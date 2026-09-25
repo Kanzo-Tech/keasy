@@ -1,19 +1,14 @@
 import { EventSourceParserStream } from "eventsource-parser/stream";
-import { ApiError } from "./client";
+import { ApiError, apiError, type ErrorBody } from "@keasy/api";
 
 export interface SseFrame {
   event: string;
   data: string;
 }
 
-/** The `error` frame's payload — one shape, written by `server/src/ai/client.rs::error_event`. */
-export interface SseFailure {
-  code: string;
-  message: string;
-}
-
-export function sseFailure(frame: SseFrame): SseFailure | null {
-  return frame.event === "error" ? (JSON.parse(frame.data) as SseFailure) : null;
+/** The `error` frame's payload: the same `ErrorBody` a refused request carries. */
+export function sseFailure(frame: SseFrame): ErrorBody | null {
+  return frame.event === "error" ? (JSON.parse(frame.data) as ErrorBody) : null;
 }
 
 /**
@@ -25,7 +20,7 @@ export async function* failOnError(
 ): AsyncGenerator<SseFrame> {
   for await (const frame of frames) {
     const failure = sseFailure(frame);
-    if (failure) throw new ApiError(failure.code, failure.message);
+    if (failure) throw new ApiError(failure.error, failure.message);
     yield frame;
   }
 }
@@ -49,31 +44,7 @@ export async function* fetchSSE(
     signal,
   });
 
-  if (!res.ok) {
-    const raw = await res.text().catch(() => "");
-    let text: Record<string, unknown> | null = null;
-    try {
-      text = JSON.parse(raw);
-    } catch {
-      /* not JSON */
-    }
-    const msg =
-      text?.error &&
-      typeof text.error === "object" &&
-      (text.error as Record<string, unknown>).message
-        ? String((text.error as Record<string, unknown>).message)
-        : text?.message
-          ? String(text.message)
-          : raw || `Request failed (${res.status})`;
-    const code =
-      text?.error && typeof text.error === "object"
-        ? String(
-            (text.error as Record<string, unknown>).code ?? "request_error",
-          )
-        : "request_error";
-    throw new ApiError(code, msg, res.status);
-  }
-
+  if (!res.ok) throw await apiError(res);
   if (!res.body) return;
 
   const reader = res.body

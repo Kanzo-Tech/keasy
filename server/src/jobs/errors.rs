@@ -1,30 +1,17 @@
-use serde::{Deserialize, Serialize};
+use keasy_api::ErrorCode;
+use keasy_api::jobs::JobRuntimeError;
 
-/// Runtime job error — stored in the database as JSON on a failed job.
-/// This is NOT an API error type; it is a serializable record of what went wrong during execution.
-#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct JobRuntimeError {
-    pub code: String,
-    pub message: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub detail: Option<String>,
-}
+use crate::error::fail;
 
-impl JobRuntimeError {
-    pub fn new(code: &str, message: impl Into<String>) -> Self {
-        Self {
-            code: code.into(),
-            message: message.into(),
-            detail: None,
-        }
-    }
-
-    pub fn with_detail(code: &str, message: impl Into<String>, detail: impl Into<String>) -> Self {
-        Self {
-            code: code.into(),
-            message: message.into(),
-            detail: Some(detail.into()),
-        }
+pub(crate) fn runtime_error(
+    code: &str,
+    message: impl Into<String>,
+    detail: Option<&str>,
+) -> JobRuntimeError {
+    JobRuntimeError {
+        code: code.into(),
+        message: message.into(),
+        detail: detail.map(str::to_owned),
     }
 }
 
@@ -35,10 +22,10 @@ pub fn classify_error(raw: &str) -> JobRuntimeError {
         || lower.contains("missing credentials")
         || lower.contains("no credentials")
     {
-        return JobRuntimeError::with_detail(
+        return runtime_error(
             "CLOUD_CREDENTIALS_MISSING",
             "Cloud storage credentials are missing. Configure them in Settings → Cloud Accounts.",
-            raw,
+            Some(raw),
         );
     }
 
@@ -47,26 +34,26 @@ pub fn classify_error(raw: &str) -> JobRuntimeError {
         || lower.contains("authorization")
         || lower.contains("not authorized")
     {
-        return JobRuntimeError::with_detail(
+        return runtime_error(
             "CLOUD_ACCESS_DENIED",
             "Access denied to cloud storage. Check your account permissions.",
-            raw,
+            Some(raw),
         );
     }
 
     if lower.contains("region") && (lower.contains("must") || lower.contains("required")) {
-        return JobRuntimeError::with_detail(
+        return runtime_error(
             "CLOUD_REGION_MISSING",
             "Cloud storage region is not configured.",
-            raw,
+            Some(raw),
         );
     }
 
     if lower.contains("not found") && (lower.contains("bucket") || lower.contains("container")) {
-        return JobRuntimeError::with_detail(
+        return runtime_error(
             "CLOUD_NOT_FOUND",
             "The specified bucket or container was not found.",
-            raw,
+            Some(raw),
         );
     }
 
@@ -75,14 +62,14 @@ pub fn classify_error(raw: &str) -> JobRuntimeError {
         || lower.contains("timeout")
         || lower.contains("connect error")
     {
-        return JobRuntimeError::with_detail(
+        return runtime_error(
             "CLOUD_CONNECTION_FAILED",
             "Failed to connect to cloud storage.",
-            raw,
+            Some(raw),
         );
     }
 
-    JobRuntimeError::new("EXECUTION_ERROR", raw)
+    runtime_error("EXECUTION_ERROR", raw, None)
 }
 
 /// API-level error for job route handlers.
@@ -105,30 +92,29 @@ pub enum JobApiError {
 impl axum::response::IntoResponse for JobApiError {
     fn into_response(self) -> axum::response::Response {
         use axum::http::StatusCode;
-        let (status, code, message) = match self {
-            JobApiError::NotFound => (
-                StatusCode::NOT_FOUND,
-                "not_found",
-                "Job not found".to_string(),
-            ),
-            JobApiError::NotDraft => (
+        match self {
+            JobApiError::NotFound => {
+                fail(StatusCode::NOT_FOUND, ErrorCode::NotFound, "Job not found")
+            }
+            JobApiError::NotDraft => fail(
                 StatusCode::BAD_REQUEST,
-                "not_draft",
-                "Only draft jobs can be updated".to_string(),
+                ErrorCode::NotDraft,
+                "Only draft jobs can be updated",
             ),
-            JobApiError::InvalidFormat(msg) => (StatusCode::BAD_REQUEST, "invalid_format", msg),
-            JobApiError::InvalidDestination => (
+            JobApiError::InvalidFormat(msg) => {
+                fail(StatusCode::BAD_REQUEST, ErrorCode::InvalidFormat, msg)
+            }
+            JobApiError::InvalidDestination => fail(
                 StatusCode::BAD_REQUEST,
-                "invalid_destination",
-                "sink_connection_id must name the workspace sink".to_string(),
+                ErrorCode::InvalidDestination,
+                "sink_connection_id must name the workspace sink",
             ),
-            JobApiError::StillRunning => (
+            JobApiError::StillRunning => fail(
                 StatusCode::CONFLICT,
-                "still_running",
-                "Cannot delete a job that is still running".to_string(),
+                ErrorCode::StillRunning,
+                "Cannot delete a job that is still running",
             ),
-            JobApiError::Db(e) => return e.into_response(),
-        };
-        (status, axum::Json(crate::error::error_body(code, message))).into_response()
+            JobApiError::Db(e) => e.into_response(),
+        }
     }
 }

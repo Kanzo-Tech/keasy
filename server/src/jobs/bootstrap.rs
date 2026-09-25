@@ -14,7 +14,7 @@ use tracing::{info, warn};
 use crate::connections::bootstrap::env_nonblank;
 use crate::db::{Database, DbResult};
 
-use super::models::{CreateJobRequest, Job, JobStatus};
+use keasy_api::jobs::{CreateJobRequest, JobStatus};
 
 pub async fn claim_declared_draft(db: &Database, user_id: &str) -> DbResult<()> {
     let Some(path) = env_nonblank("KEASY_BOOTSTRAP_DRAFT") else {
@@ -43,7 +43,7 @@ pub async fn claim_declared_draft(db: &Database, user_id: &str) -> DbResult<()> 
         sink_connection_id: sink.id,
         draft: true,
     };
-    let job = Job::requested(JobStatus::Draft, request, user_id.to_string());
+    let job = super::requested(JobStatus::Draft, request, user_id.to_string());
     if db.insert_first_job(&job).await? {
         info!(id = %job.id, %path, "declared draft ready");
     }

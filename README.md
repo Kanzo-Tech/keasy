@@ -113,19 +113,21 @@ declared in `realm/terraform.tfvars`. Images are published to GHCR by
 `infra/terraform/realm` module as prod, with `dev.tfvars`.
 The Rust toolchain is pinned once, in `server/rust-toolchain.toml`.
 
-## OpenAPI
+## API contract
 
-The server's `#[utoipa]` annotations are the schema; the web generates its types
-from the committed `openapi.json`.
+The wire types live in `server/crates/keasy-api`; each server module's
+`routes::router()` is both its routes and their spec. `api/` (`@keasy/api`) holds
+the committed `openapi.json`, the types generated from it and the client the web
+uses. CI fails when they are stale.
 
 ```bash
-cd server && cargo run --quiet --bin openapi   # writes ../openapi.json
-cd web && pnpm run openapi                     # writes src/lib/api/schema.d.ts
+make api   # api/openapi.json + api/src/schema.d.ts
 ```
 
 ## Layout
 
 ```
+api/                @keasy/api: the committed spec, its generated types and the client
 infra/dev/          MinIO seed and the draft job, dev-only
 infra/terraform/    platform/ and realm/ — the Swarm deployment, and dev's realm
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)

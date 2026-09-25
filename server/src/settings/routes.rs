@@ -5,24 +5,26 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use secrecy::ExposeSecret;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
 use crate::AppState;
 use crate::auth::role::{Member, Owner};
-use crate::connections::models::{
-    ConnectionKind, CreateConnectionRequest, Direction, LocationType, SINK_NAME,
-    UpdateConnectionRequest,
-};
+use crate::connections::models::{SINK_NAME, UpdateConnectionRequest};
 use crate::db::DbError;
-use crate::error::data_response;
-use crate::settings::ai::{AiProvider, AiSettings, AiSettingsPayload, SaveAiProviderRequest};
-use crate::settings::org::OrgSettings;
-use crate::settings::schema::PROVIDER_REGISTRY;
+use crate::settings::ai::AiSettings;
+use keasy_api::ErrorBody;
+use keasy_api::connections::{ConnectionKind, CreateConnectionRequest, Direction, LocationType};
+use keasy_api::settings::CatalogStoragePayload;
+use keasy_api::settings::ai::{AiProvider, AiSettingsPayload, SaveAiProviderRequest};
+use keasy_api::settings::org::OrgSettings;
+use keasy_api::settings::schema::{PROVIDER_REGISTRY, ProviderSchema};
 
-#[utoipa::path(get, path = "/v1/settings/schema", tag = "Settings",
-    responses((status = 200, description = "Provider registry schema", body = Vec<crate::settings::schema::ProviderSchema>))
+#[utoipa::path(get, path = "/v1/settings/schema", tag = "Settings", security(()),
+    responses((status = 200, description = "Provider registry schema", body = Vec<ProviderSchema>))
 )]
 pub async fn get_schema() -> impl IntoResponse {
-    data_response(PROVIDER_REGISTRY)
+    Json(PROVIDER_REGISTRY)
 }
 
 // The DCAT publisher block behind the workspace catalog: catalog metadata, the
@@ -38,7 +40,7 @@ pub async fn get_org_settings(
     State(state): State<AppState>,
 ) -> Result<Response, DbError> {
     Ok(match state.db.get_org_settings().await? {
-        Some(settings) => data_response(settings).into_response(),
+        Some(settings) => Json(settings).into_response(),
         None => StatusCode::NO_CONTENT.into_response(),
     })
 }
@@ -47,7 +49,7 @@ pub async fn get_org_settings(
     request_body = OrgSettings,
     responses(
         (status = 200, description = "Settings saved", body = OrgSettings),
-        (status = 400, description = "Validation error"),
+        (status = 400, description = "Validation error", body = ErrorBody),
     )
 )]
 pub async fn save_org_settings(
@@ -59,7 +61,7 @@ pub async fn save_org_settings(
         return Err(DbError::Invalid("publisher_name is required".into()));
     }
     state.db.set_org_settings(&payload).await?;
-    Ok(data_response(payload))
+    Ok(Json(payload))
 }
 
 // ── AI providers ──────────────────────────────────────────────────────────
@@ -75,9 +77,7 @@ pub async fn list_ai_providers(
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, DbError> {
     let providers = state.db.list_ai_providers().await?;
-    Ok(data_response(
-        providers.iter().map(to_payload).collect::<Vec<_>>(),
-    ))
+    Ok(Json(providers.iter().map(to_payload).collect::<Vec<_>>()))
 }
 
 #[utoipa::path(put, path = "/v1/settings/ai/providers/{provider}", tag = "Settings",
@@ -85,7 +85,7 @@ pub async fn list_ai_providers(
     request_body = SaveAiProviderRequest,
     responses(
         (status = 200, description = "Provider saved", body = AiSettingsPayload),
-        (status = 400, description = "Unknown provider"),
+        (status = 400, description = "Unknown provider", body = ErrorBody),
     )
 )]
 pub async fn save_ai_provider(
@@ -112,14 +112,14 @@ pub async fn save_ai_provider(
         max_tokens: payload.max_tokens,
     };
     state.db.set_ai_provider(&settings).await?;
-    Ok(data_response(to_payload(&settings)))
+    Ok(Json(to_payload(&settings)))
 }
 
 #[utoipa::path(delete, path = "/v1/settings/ai/providers/{provider}", tag = "Settings",
     params(("provider" = AiProvider, Path, description = "The provider")),
     responses(
         (status = 204, description = "Provider deleted"),
-        (status = 400, description = "Unknown provider"),
+        (status = 400, description = "Unknown provider", body = ErrorBody),
     )
 )]
 pub async fn delete_ai_provider(
@@ -151,12 +151,6 @@ fn to_payload(s: &AiSettings) -> AiSettingsPayload {
 // is the dedicated owner surface for it; the connections list shows only
 // sources. Both read/write the same `connections` row.
 
-#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
-pub struct CatalogStoragePayload {
-    pub cloud_account_id: String,
-    pub base_url: String,
-}
-
 #[utoipa::path(get, path = "/v1/settings/catalog-storage", tag = "Settings",
     responses(
         (status = 200, description = "Catalog storage config", body = CatalogStoragePayload),
@@ -169,7 +163,7 @@ pub async fn get_catalog_storage(
 ) -> Result<Response, DbError> {
     Ok(match state.db.get_sink_connection().await? {
         Some(sink) => match sink.cloud_account_id {
-            Some(cloud_account_id) => data_response(CatalogStoragePayload {
+            Some(cloud_account_id) => Json(CatalogStoragePayload {
                 cloud_account_id,
                 base_url: sink.url,
             })
@@ -184,7 +178,7 @@ pub async fn get_catalog_storage(
     request_body = CatalogStoragePayload,
     responses(
         (status = 200, description = "Catalog storage saved", body = CatalogStoragePayload),
-        (status = 400, description = "Validation error"),
+        (status = 400, description = "Validation error", body = ErrorBody),
     )
 )]
 pub async fn save_catalog_storage(
@@ -237,5 +231,19 @@ pub async fn save_catalog_storage(
                 .await?;
         }
     }
-    Ok(data_response(payload))
+    Ok(Json(payload))
+}
+
+/// Public: the provider registry a sign-in page may render before any token.
+pub fn public_router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new().routes(routes!(get_schema))
+}
+
+/// The routes this module serves.
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(get_org_settings, save_org_settings))
+        .routes(routes!(get_catalog_storage, save_catalog_storage))
+        .routes(routes!(list_ai_providers))
+        .routes(routes!(save_ai_provider, delete_ai_provider))
 }

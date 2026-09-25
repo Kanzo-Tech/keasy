@@ -13,7 +13,7 @@
 
 use std::collections::HashMap;
 
-use crate::settings::schema::{CloudProvider, find_provider_by_scheme};
+use keasy_api::settings::schema::{CloudProvider, find_provider_by_scheme};
 
 /// What the catalog must do about credentials before it can read a dataset.
 pub(crate) enum SecretPlan {

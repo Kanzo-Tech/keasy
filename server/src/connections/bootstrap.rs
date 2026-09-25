@@ -27,11 +27,13 @@ use std::collections::HashMap;
 use secrecy::SecretString;
 use tracing::{error, info, warn};
 
-use crate::cloud::models::CreateCloudAccountRequest;
 use crate::cloud::reader;
 use crate::db::{Database, DbResult};
+use keasy_api::cloud::CreateCloudAccountRequest;
 
-use super::models::{ConnectionKind, CreateConnectionRequest, Direction, LocationType, SINK_NAME};
+use keasy_api::connections::{ConnectionKind, CreateConnectionRequest, Direction, LocationType};
+
+use super::models::SINK_NAME;
 
 /// What a write check leaves behind and takes away again. Named so that a
 /// reader of the bucket knows what it was, should the delete not land.
@@ -191,7 +193,7 @@ async fn declare(
     };
     match db.create_connection(request).await {
         Ok(c) => {
-            info!(%name, %url, kind = c.kind.as_str(), direction = direction.as_str(), "declared connection ready")
+            info!(%name, %url, kind = c.kind.as_ref(), direction = direction.as_ref(), "declared connection ready")
         }
         Err(e) => error!(%name, error = %e, "declared connection: rejected"),
     }

@@ -53,5 +53,6 @@ export const queryKeys = {
   // AI
   ai: {
     providers: ["ai-providers"] as const,
+    catalog: ["ai-catalog"] as const,
   },
 } as const;

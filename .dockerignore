@@ -1,0 +1,9 @@
+# Root context: only the web image builds from here (the server's is `server/`).
+**/node_modules/
+**/.next/
+**/.env*
+.git/
+.claude/
+server/
+infra/
+**/*.md

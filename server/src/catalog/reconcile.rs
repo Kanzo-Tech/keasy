@@ -17,7 +17,7 @@ use tracing::{info, warn};
 
 use super::Catalog;
 use crate::AppState;
-use crate::jobs::models::{Job, JobStatus};
+use keasy_api::jobs::{Job, JobStatus};
 
 /// Whether a job needs (re)registering this pass: a completed job whose corpus
 /// reader has already said what the output is called, and whose dataset the
@@ -137,7 +137,7 @@ pub fn spawn(state: AppState, every: Duration) -> tokio::task::JoinHandle<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::jobs::models::{OutputRelation, RunMode};
+    use keasy_api::jobs::{OutputRelation, RunMode};
 
     fn job(id: &str, status: JobStatus, relations: Vec<OutputRelation>) -> Job {
         Job {

@@ -4,14 +4,19 @@ use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::{Method, StatusCode};
 use axum::response::IntoResponse;
-use serde::{Deserialize, Serialize};
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
 use crate::AppState;
 use crate::auth::role::Member;
 use crate::cloud::reader;
-use crate::connections::models::{Connection, CreateConnectionRequest, Direction, LocationType};
 use crate::discovery::routes::SIGNED_URL_EXPIRES;
-use crate::error::data_response;
+use keasy_api::ErrorBody;
+use keasy_api::cloud::FileEntry;
+use keasy_api::connections::{
+    Connection, ConnectionRefsResponse, CreateConnectionRequest, Direction, ListConnectionsQuery,
+    LocationType, SignLocatorsRequest, SignLocatorsResponse,
+};
 
 use super::errors::ConnectionError;
 
@@ -34,14 +39,8 @@ async fn resolve_cloud_connection(
     Ok((connection, creds))
 }
 
-#[derive(Deserialize)]
-pub struct ListConnectionsQuery {
-    #[serde(rename = "type")]
-    pub connection_type: Option<String>,
-}
-
 #[utoipa::path(get, path = "/v1/connections", tag = "Connections",
-    params(("type" = Option<String>, Query, description = "Filter by connection type")),
+    params(ListConnectionsQuery),
     responses((status = 200, description = "List of connections", body = Vec<Connection>))
 )]
 pub async fn list_connections(
@@ -49,10 +48,10 @@ pub async fn list_connections(
     State(state): State<AppState>,
     Query(query): Query<ListConnectionsQuery>,
 ) -> Result<impl IntoResponse, ConnectionError> {
-    Ok(data_response(
+    Ok(Json(
         state
             .db
-            .list_connections(query.connection_type.as_deref())
+            .list_connections(query.kind.as_ref().map(AsRef::as_ref))
             .await?,
     ))
 }
@@ -61,7 +60,7 @@ pub async fn list_connections(
     request_body = CreateConnectionRequest,
     responses(
         (status = 201, description = "Connection created", body = Connection),
-        (status = 400, description = "Invalid connection or container not found"),
+        (status = 400, description = "Invalid connection or container not found", body = ErrorBody),
     )
 )]
 pub async fn create_connection(
@@ -92,14 +91,14 @@ pub async fn create_connection(
     }
 
     let connection = state.db.create_connection(req).await?;
-    Ok((StatusCode::CREATED, data_response(connection)))
+    Ok((StatusCode::CREATED, Json(connection)))
 }
 
 #[utoipa::path(get, path = "/v1/connections/{id}", tag = "Connections",
     params(("id" = String, Path, description = "Connection ID")),
     responses(
         (status = 200, description = "Connection details", body = Connection),
-        (status = 404, description = "Connection not found"),
+        (status = 404, description = "Connection not found", body = ErrorBody),
     )
 )]
 pub async fn get_connection(
@@ -111,7 +110,7 @@ pub async fn get_connection(
         .db
         .get_connection(&id)
         .await?
-        .map(data_response)
+        .map(Json)
         .ok_or(ConnectionError::NotFound)
 }
 
@@ -143,9 +142,9 @@ pub async fn delete_connection(
 #[utoipa::path(get, path = "/v1/connections/{id}/files", tag = "Connections",
     params(("id" = String, Path, description = "Connection ID")),
     responses(
-        (status = 200, description = "List of files in the connection", body = Vec<crate::cloud::reader::FileEntry>),
-        (status = 400, description = "File listing not supported"),
-        (status = 404, description = "Connection not found"),
+        (status = 200, description = "List of files in the connection", body = Vec<FileEntry>),
+        (status = 400, description = "File listing not supported", body = ErrorBody),
+        (status = 404, description = "Connection not found", body = ErrorBody),
     )
 )]
 pub async fn list_connection_files(
@@ -156,14 +155,8 @@ pub async fn list_connection_files(
     let (connection, creds) = resolve_cloud_connection(&state, &id).await?;
     reader::list_files(&connection.url, &creds)
         .await
-        .map(data_response)
+        .map(Json)
         .map_err(ConnectionError::ListFilesFailed)
-}
-
-#[derive(Serialize, utoipa::ToSchema)]
-pub struct ConnectionRefsResponse {
-    /// Source connection name → base URL, the map `@name/…` expands against.
-    refs: HashMap<String, String>,
 }
 
 #[utoipa::path(get, path = "/v1/connections/refs", tag = "Connections",
@@ -183,19 +176,7 @@ pub async fn connection_refs(
         .filter(|c| c.direction == Direction::Source)
         .map(|c| (c.name, c.url))
         .collect();
-    Ok(data_response(ConnectionRefsResponse { refs }))
-}
-
-#[derive(Deserialize, utoipa::ToSchema)]
-pub struct SignLocatorsRequest {
-    /// Locators fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`).
-    locators: Vec<String>,
-}
-
-#[derive(Serialize, utoipa::ToSchema)]
-pub struct SignLocatorsResponse {
-    /// Locator → fetchable URL. A locator keasy will not sign is absent.
-    urls: HashMap<String, String>,
+    Ok(Json(ConnectionRefsResponse { refs }))
 }
 
 #[utoipa::path(post, path = "/v1/connections/urls", tag = "Connections",
@@ -235,7 +216,7 @@ pub async fn sign_locators(
             .map_err(|e| ConnectionError::SignFailed(e.to_string()))?;
         urls.insert(locator.clone(), signed.to_string());
     }
-    Ok(data_response(SignLocatorsResponse { urls }))
+    Ok(Json(SignLocatorsResponse { urls }))
 }
 
 fn is_public_http(locator: &str) -> bool {
@@ -269,10 +250,20 @@ fn signer<'a>(locator: &str, connections: &'a [Connection]) -> Option<&'a Connec
     })
 }
 
+/// The routes this module serves.
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(list_connections, create_connection))
+        .routes(routes!(get_connection, delete_connection))
+        .routes(routes!(list_connection_files))
+        .routes(routes!(connection_refs))
+        .routes(routes!(sign_locators))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::connections::models::ConnectionKind;
+    use keasy_api::connections::ConnectionKind;
 
     fn conn(name: &str, url: &str, direction: Direction) -> Connection {
         Connection {
@@ -301,7 +292,10 @@ mod tests {
 
     #[test]
     fn the_deepest_connection_signs() {
-        assert_eq!(signed_by("s3://b/vocab/shop.shex").as_deref(), Some("shapes"));
+        assert_eq!(
+            signed_by("s3://b/vocab/shop.shex").as_deref(),
+            Some("shapes")
+        );
         assert_eq!(signed_by("s3://b/people.csv").as_deref(), Some("bucket"));
         assert_eq!(signed_by("s3://b/data/x.csv").as_deref(), Some("data"));
     }
@@ -313,7 +307,10 @@ mod tests {
         assert!(signer("s3://b/data-private/x.csv", &only_data).is_none());
         assert!(signer("s3://b/data", &only_data).is_none());
         assert!(signer("s3://b/data/", &only_data).is_none());
-        assert_eq!(signed_by("s3://b/data-private/x.csv").as_deref(), Some("bucket"));
+        assert_eq!(
+            signed_by("s3://b/data-private/x.csv").as_deref(),
+            Some("bucket")
+        );
     }
 
     #[test]

@@ -2,10 +2,12 @@ use std::collections::HashMap;
 
 use rusqlite::{ErrorCode, OptionalExtension, params};
 
-use crate::db::{Database, DbError, DbResult};
-use crate::jobs::models::Job;
+use crate::db::{Database, DbError, DbResult, enum_column};
+use keasy_api::jobs::Job;
 
-use super::models::{Connection, CreateConnectionRequest, LocationType, UpdateConnectionRequest};
+use keasy_api::connections::{Connection, CreateConnectionRequest, LocationType};
+
+use super::models::UpdateConnectionRequest;
 
 const COLUMNS: &str = "id, name, kind, location_type, direction, cloud_account_id, url";
 
@@ -50,9 +52,9 @@ impl Database {
                 params![
                     connection.id,
                     connection.name,
-                    connection.kind,
-                    connection.location_type,
-                    connection.direction,
+                    connection.kind.as_ref(),
+                    connection.location_type.as_ref(),
+                    connection.direction.as_ref(),
                     connection.cloud_account_id,
                     connection.url
                 ],
@@ -142,9 +144,9 @@ impl Database {
                  WHERE id = ?7",
                 params![
                     updated.name,
-                    updated.kind,
-                    updated.location_type,
-                    updated.direction,
+                    updated.kind.as_ref(),
+                    updated.location_type.as_ref(),
+                    updated.direction.as_ref(),
                     updated.cloud_account_id,
                     updated.url,
                     id
@@ -194,9 +196,9 @@ fn row_to_connection(row: &rusqlite::Row<'_>) -> rusqlite::Result<Connection> {
     Ok(Connection {
         id: row.get("id")?,
         name: row.get("name")?,
-        kind: row.get("kind")?,
-        location_type: row.get("location_type")?,
-        direction: row.get("direction")?,
+        kind: enum_column(row, "kind")?,
+        location_type: enum_column(row, "location_type")?,
+        direction: enum_column(row, "direction")?,
         cloud_account_id: row.get("cloud_account_id")?,
         url: row.get("url")?,
     })

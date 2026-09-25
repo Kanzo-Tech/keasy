@@ -1,7 +1,10 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use keasy_api::ErrorCode;
+
 use crate::db::DbError;
+use crate::error::fail;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ConnectionError {
@@ -32,27 +35,28 @@ impl From<DbError> for ConnectionError {
 
 impl IntoResponse for ConnectionError {
     fn into_response(self) -> Response {
-        let (status, code, message) = match self {
-            ConnectionError::NotFound => (
+        match self {
+            ConnectionError::NotFound => fail(
                 StatusCode::NOT_FOUND,
-                "not_found",
-                "Connection not found".to_string(),
+                ErrorCode::NotFound,
+                "Connection not found",
             ),
             ConnectionError::ContainerNotFound(msg) => {
-                (StatusCode::BAD_REQUEST, "container_not_found", msg)
+                fail(StatusCode::BAD_REQUEST, ErrorCode::ContainerNotFound, msg)
             }
             ConnectionError::InvalidConnection(msg) => {
-                (StatusCode::BAD_REQUEST, "invalid_connection", msg)
+                fail(StatusCode::BAD_REQUEST, ErrorCode::InvalidConnection, msg)
             }
-            ConnectionError::Forbidden(msg) => (StatusCode::FORBIDDEN, "forbidden", msg),
+            ConnectionError::Forbidden(msg) => {
+                fail(StatusCode::FORBIDDEN, ErrorCode::Forbidden, msg)
+            }
             ConnectionError::ListFilesFailed(msg) => {
-                (StatusCode::BAD_GATEWAY, "list_files_failed", msg)
+                fail(StatusCode::BAD_GATEWAY, ErrorCode::ListFilesFailed, msg)
             }
             ConnectionError::SignFailed(msg) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, "sign_error", msg)
+                fail(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::SignError, msg)
             }
-            ConnectionError::Db(e) => return e.into_response(),
-        };
-        (status, axum::Json(crate::error::error_body(code, message))).into_response()
+            ConnectionError::Db(e) => e.into_response(),
+        }
     }
 }

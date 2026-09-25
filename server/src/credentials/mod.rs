@@ -6,7 +6,7 @@ pub mod probe;
 pub mod routes;
 pub mod sealing;
 
-use keasy_api::credentials::{CreateCredentialRequest, CredentialView};
+use crate::api::credentials::{CreateCredentialRequest, CredentialView};
 
 use crate::db::Database;
 use crate::domain::ResourceName;

@@ -1,4 +1,5 @@
 mod ai;
+mod api;
 mod auth;
 mod bootstrap;
 mod config;

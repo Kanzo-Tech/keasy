@@ -8,11 +8,11 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use crate::AppState;
-use crate::auth::role::Member;
-use keasy_api::ErrorBody;
-use keasy_api::jobs::{
+use crate::api::ErrorBody;
+use crate::api::jobs::{
     CompleteJobRequest, CreateJobRequest, Job, JobStatus, PublishRelationsRequest, UpdateJobRequest,
 };
+use crate::auth::role::Member;
 
 use super::errors::JobApiError;
 use super::{now_iso8601, requested};

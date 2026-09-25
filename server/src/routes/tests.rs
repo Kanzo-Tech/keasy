@@ -8,12 +8,12 @@ use serde_json::json;
 use tower::ServiceExt;
 use tracing_subscriber::fmt::MakeWriter;
 
+use crate::api::connections::{ConnectionTarget, ConnectionView, Direction, StorageTarget};
+use crate::api::credentials::{CredentialSpecInput, StorageCredentialInput};
+use crate::api::validation::ValidationReport;
 use crate::auth::jwt::Validator;
 use crate::auth::jwt::tests::{Realm, good, mint, realm};
 use crate::{AppState, Database};
-use keasy_api::connections::{ConnectionTarget, ConnectionView, Direction, StorageTarget};
-use keasy_api::credentials::{CredentialSpecInput, StorageCredentialInput};
-use keasy_api::validation::ValidationReport;
 use secrecy::SecretString;
 
 use crate::domain::ResourceName;
@@ -472,7 +472,7 @@ async fn a_connection_names_a_credential_of_its_own_purpose() {
     let harness = Harness::new().await;
     let member = harness.token(&["member"]);
     let model =
-        CredentialSpecInput::Model(keasy_api::credentials::ModelCredentialInput::Anthropic {
+        CredentialSpecInput::Model(crate::api::credentials::ModelCredentialInput::Anthropic {
             api_key: SecretString::from("sk"),
         });
     crate::credentials::persistence::insert(

@@ -4,8 +4,8 @@ pub mod locator;
 pub mod persistence;
 pub mod routes;
 
-use keasy_api::connections::{ConnectionTarget, ConnectionView, CreateConnectionRequest};
-use keasy_api::credentials::{CredentialSpecInput, ModelCredentialInput, StorageCredentialInput};
+use crate::api::connections::{ConnectionTarget, ConnectionView, CreateConnectionRequest};
+use crate::api::credentials::{CredentialSpecInput, ModelCredentialInput, StorageCredentialInput};
 
 use crate::credentials::persistence::Credential;
 use crate::db::Database;
@@ -116,7 +116,7 @@ pub async fn storage(
 pub async fn model(
     db: &Database,
     connection: &ConnectionView,
-) -> Result<(keasy_api::connections::ModelTarget, ModelCredentialInput), Refusal> {
+) -> Result<(crate::api::connections::ModelTarget, ModelCredentialInput), Refusal> {
     let ConnectionTarget::Model(target) = &connection.target else {
         return Err(Refusal::invalid(format!(
             "{:?} is not a model connection",

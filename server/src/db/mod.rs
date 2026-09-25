@@ -7,9 +7,9 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use crate::api::ErrorCode;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use keasy_api::ErrorCode;
 use rusqlite::Connection;
 use serde::de::DeserializeOwned;
 use tokio::sync::{Mutex, MutexGuard};

@@ -8,8 +8,8 @@ use axum::response::{IntoResponse, Response};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use keasy_api::jobs::{DatasetUrlsRequest, ResolveResponse};
-use keasy_api::{ErrorBody, ErrorCode};
+use crate::api::jobs::{DatasetUrlsRequest, ResolveResponse};
+use crate::api::{ErrorBody, ErrorCode};
 
 use crate::AppState;
 use crate::auth::role::Member;

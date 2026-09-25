@@ -119,8 +119,8 @@ The Rust toolchain is pinned once, in `server/rust-toolchain.toml`.
 
 ## API contract
 
-The wire types live in `server/crates/keasy-api`; each server module's
-`routes::router()` is both its routes and their spec. `api/` (`@keasy/api`) holds
+The wire types live next to what they describe in `server/src`; each route
+module's `router()` is both its routes and their spec. `api/` (`@keasy/api`) holds
 the committed `openapi.json`, the types generated from it and the client the web
 uses. CI fails when they are stale.
 

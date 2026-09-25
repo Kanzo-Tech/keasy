@@ -1,7 +1,7 @@
+use crate::api::health::VersionResponse;
 use axum::Json;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use keasy_api::health::VersionResponse;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 

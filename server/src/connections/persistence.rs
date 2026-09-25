@@ -2,9 +2,9 @@
 
 use rusqlite::{Connection, OptionalExtension, params};
 
-use keasy_api::connections::ConnectionView;
-use keasy_api::credentials::Purpose;
-use keasy_api::validation::ValidationReport;
+use crate::api::connections::ConnectionView;
+use crate::api::credentials::Purpose;
+use crate::api::validation::ValidationReport;
 
 use crate::db::{DbError, DbResult, constraint, json_column, json_column_opt};
 
@@ -169,12 +169,12 @@ pub fn delete(conn: &Connection, name: &str) -> DbResult<()> {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+    use crate::api::connections::ConnectionTarget;
+    use crate::api::connections::{ModelTarget, StorageTarget};
+    use crate::api::credentials::{CredentialSpecInput, ModelCredentialInput};
     use crate::credentials::persistence as credentials;
     use crate::credentials::sealing::SecretKey;
     use crate::domain::ResourceName;
-    use keasy_api::connections::ConnectionTarget;
-    use keasy_api::connections::{ModelTarget, StorageTarget};
-    use keasy_api::credentials::{CredentialSpecInput, ModelCredentialInput};
     use secrecy::SecretString;
 
     fn report() -> ValidationReport {
@@ -188,7 +188,7 @@ pub(crate) mod tests {
     /// are: a fixture nobody probes.
     pub(crate) fn seed_sink(conn: &Connection, name: &str) {
         let spec =
-            CredentialSpecInput::Storage(keasy_api::credentials::StorageCredentialInput::S3 {
+            CredentialSpecInput::Storage(crate::api::credentials::StorageCredentialInput::S3 {
                 access_key_id: "AK".into(),
                 secret_access_key: SecretString::from("SK"),
                 region: "us-east-1".into(),
@@ -207,7 +207,7 @@ pub(crate) mod tests {
         let target = ConnectionTarget::Storage(StorageTarget {
             url: "s3://b/output/".into(),
             kind: Default::default(),
-            direction: keasy_api::connections::Direction::Sink,
+            direction: crate::api::connections::Direction::Sink,
         });
         insert(conn, &connection(name, &credential, target), "u-1").unwrap();
     }

@@ -25,15 +25,15 @@ jobs:
 
       - name: fmt
         working-directory: server
-        run: cargo fmt --all -- --check
+        run: cargo fmt --check
 
       - name: clippy
         working-directory: server
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --all-targets -- -D warnings
 
       - name: test
         working-directory: server
-        run: cargo test --workspace
+        run: cargo test
 
       # The contract the routes publish must be the one committed in `api/`.
       - uses: pnpm/action-setup@v4

@@ -4,7 +4,7 @@ pub mod errors;
 pub mod output;
 pub mod routes;
 
-use keasy_api::jobs::{CreateJobRequest, Job, JobStatus};
+use crate::api::jobs::{CreateJobRequest, Job, JobStatus};
 
 /// Where a job's output lives: the destination the member chose, plus the job's
 /// own id. **This is the one place keasy composes an output path**, and it is

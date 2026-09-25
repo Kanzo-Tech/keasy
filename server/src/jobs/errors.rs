@@ -1,4 +1,4 @@
-use keasy_api::ErrorCode;
+use crate::api::ErrorCode;
 
 use crate::error::fail;
 

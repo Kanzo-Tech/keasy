@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::credentials::Purpose;
-use crate::validation::ValidationReport;
+use crate::api::credentials::Purpose;
+use crate::api::validation::ValidationReport;
 
 #[derive(
     Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq, ToSchema, strum::AsRefStr,

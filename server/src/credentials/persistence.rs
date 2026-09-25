@@ -3,8 +3,8 @@
 
 use rusqlite::{Connection, OptionalExtension, params};
 
-use keasy_api::credentials::{CredentialSpecInput, CredentialView, Purpose};
-use keasy_api::validation::ValidationReport;
+use crate::api::credentials::{CredentialSpecInput, CredentialView, Purpose};
+use crate::api::validation::ValidationReport;
 
 use super::sealing::{self, SecretKey};
 use crate::db::{DbError, DbResult, constraint, json_column_opt};
@@ -251,8 +251,8 @@ pub fn rekey(conn: &mut Connection, old: &SecretKey, new: &SecretKey) -> DbResul
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::api::credentials::StorageCredentialInput;
     use base64::Engine;
-    use keasy_api::credentials::StorageCredentialInput;
     use secrecy::{ExposeSecret, SecretString};
 
     fn conn() -> Connection {

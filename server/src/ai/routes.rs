@@ -10,10 +10,10 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::client::stream;
-use keasy_api::ai::CompletionRequest;
-use keasy_api::connections::ConnectionView;
-use keasy_api::credentials::Purpose;
-use keasy_api::{ErrorBody, ErrorCode};
+use crate::api::ai::CompletionRequest;
+use crate::api::connections::ConnectionView;
+use crate::api::credentials::Purpose;
+use crate::api::{ErrorBody, ErrorCode};
 
 use crate::AppState;
 use crate::auth::role::Member;

@@ -9,7 +9,7 @@ use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::validation::ValidationReport;
+use crate::api::validation::ValidationReport;
 
 /// What a credential, and every connection that uses it, is for.
 #[derive(

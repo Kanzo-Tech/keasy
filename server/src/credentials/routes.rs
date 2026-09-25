@@ -5,12 +5,12 @@ use axum::response::IntoResponse;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use keasy_api::ErrorBody;
-use keasy_api::credentials::{
+use crate::api::ErrorBody;
+use crate::api::credentials::{
     CreateCredentialRequest, CredentialView, PurposeQuery, UpdateCredentialRequest,
     ValidateCredentialRequest,
 };
-use keasy_api::validation::ValidationReport;
+use crate::api::validation::ValidationReport;
 
 use super::{named, persistence, probe};
 use crate::AppState;

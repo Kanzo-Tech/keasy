@@ -7,10 +7,10 @@ use futures::StreamExt;
 use secrecy::ExposeSecret;
 use tokio::sync::mpsc;
 
-use keasy_api::ai::ChatMessage;
-use keasy_api::connections::ModelTarget;
-use keasy_api::credentials::ModelCredentialInput;
-use keasy_api::{ErrorBody, ErrorCode};
+use crate::api::ai::ChatMessage;
+use crate::api::connections::ModelTarget;
+use crate::api::credentials::ModelCredentialInput;
+use crate::api::{ErrorBody, ErrorCode};
 
 pub type SseSender = mpsc::Sender<Result<Event, Infallible>>;
 

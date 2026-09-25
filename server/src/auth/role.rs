@@ -10,7 +10,7 @@ use axum::http::StatusCode;
 use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
 
-use keasy_api::ErrorCode;
+use crate::api::ErrorCode;
 
 use super::bearer::AuthenticatedUser;
 use crate::error::fail;

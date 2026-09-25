@@ -81,7 +81,6 @@ services:
       - "8080:8080"
     volumes:
       - ./server/src:/src/server/src
-      - ./server/crates:/src/server/crates
       - keasy-data:/var/lib/keasy
       - ./infra/dev/bootstrap.json:/etc/keasy/bootstrap.json:ro
       - server-target:/src/server/target

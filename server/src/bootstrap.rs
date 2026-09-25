@@ -10,8 +10,8 @@
 use serde::Deserialize;
 use tracing::{error, info};
 
-use keasy_api::connections::CreateConnectionRequest;
-use keasy_api::credentials::CreateCredentialRequest;
+use crate::api::connections::CreateConnectionRequest;
+use crate::api::credentials::CreateCredentialRequest;
 
 use crate::db::Database;
 

@@ -1,6 +1,6 @@
+use crate::api::jobs::{Dataset, JobStatus};
 use axum::Json;
 use axum::extract::State;
-use keasy_api::jobs::{Dataset, JobStatus};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 

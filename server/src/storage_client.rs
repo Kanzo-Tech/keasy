@@ -14,8 +14,8 @@ use object_store::{ClientOptions, ObjectMeta, ObjectStore, PutPayload, RetryConf
 use secrecy::ExposeSecret;
 use url::Url;
 
-use keasy_api::connections::FileEntry;
-use keasy_api::credentials::StorageCredentialInput;
+use crate::api::connections::FileEntry;
+use crate::api::credentials::StorageCredentialInput;
 
 use crate::domain::{StorageScheme, StorageUrl};
 

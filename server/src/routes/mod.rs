@@ -2,11 +2,11 @@ pub mod health;
 
 use std::sync::Arc;
 
+use crate::api::{ApiDoc, ErrorCode};
 use axum::extract::DefaultBodyLimit;
 use axum::http::{Request, StatusCode};
 use axum::response::Response;
 use axum::{Router, middleware};
-use keasy_api::{ApiDoc, ErrorCode};
 use tower_governor::GovernorError;
 use tower_governor::GovernorLayer;
 use tower_governor::governor::GovernorConfigBuilder;
@@ -40,7 +40,7 @@ fn routes() -> (OpenApiRouter<AppState>, OpenApiRouter<AppState>) {
 pub fn openapi() -> utoipa::openapi::OpenApi {
     let (public, protected) = routes();
     let mut api = public.merge(protected).into_openapi();
-    keasy_api::error::document_refusals(&mut api);
+    crate::api::error::document_refusals(&mut api);
     api
 }
 

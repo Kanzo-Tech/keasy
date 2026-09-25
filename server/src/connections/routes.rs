@@ -8,13 +8,13 @@ use axum::response::IntoResponse;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use keasy_api::connections::{
+use crate::api::connections::{
     ConnectionView, CreateConnectionRequest, FileEntry, SignLocatorsRequest, SignLocatorsResponse,
     UpdateConnectionRequest,
 };
-use keasy_api::credentials::{CredentialSpecInput, PurposeQuery, StorageCredentialInput};
-use keasy_api::validation::ValidationReport;
-use keasy_api::{ErrorBody, ErrorCode};
+use crate::api::credentials::{CredentialSpecInput, PurposeQuery, StorageCredentialInput};
+use crate::api::validation::ValidationReport;
+use crate::api::{ErrorBody, ErrorCode};
 
 use super::locator::{is_public_http, signer};
 use super::{named, persistence};

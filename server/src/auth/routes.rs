@@ -2,7 +2,7 @@ use axum::Json;
 use axum::extract::State;
 use axum::response::IntoResponse;
 
-use keasy_api::auth::WorkspacesResponse;
+use crate::api::auth::WorkspacesResponse;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 

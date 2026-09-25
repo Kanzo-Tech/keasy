@@ -4,11 +4,11 @@
 use futures::StreamExt;
 use object_store::PutPayload;
 
-use keasy_api::connections::{
+use crate::api::connections::{
     ConnectionTarget, ConnectionView, Direction, ModelTarget, StorageTarget,
 };
-use keasy_api::credentials::{CredentialSpecInput, ModelCredentialInput, StorageCredentialInput};
-use keasy_api::validation::{Check, Operation, Outcome, ValidationReport};
+use crate::api::credentials::{CredentialSpecInput, ModelCredentialInput, StorageCredentialInput};
+use crate::api::validation::{Check, Operation, Outcome, ValidationReport};
 
 use crate::domain::StorageUrl;
 use crate::storage_client;

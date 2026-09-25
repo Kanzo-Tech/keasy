@@ -1,7 +1,7 @@
 //! Which connection signs a locator: the deepest storage source it lies
 //! under, at a path boundary, never the sink.
 
-use keasy_api::connections::{ConnectionView, Direction};
+use crate::api::connections::{ConnectionView, Direction};
 
 use crate::domain::StorageUrl;
 use crate::storage_client::relative_path;
@@ -42,7 +42,7 @@ pub fn signer<'a>(locator: &str, connections: &'a [ConnectionView]) -> Option<&'
 #[cfg(test)]
 mod tests {
     use super::*;
-    use keasy_api::connections::{ConnectionKind, ConnectionTarget, ModelTarget, StorageTarget};
+    use crate::api::connections::{ConnectionKind, ConnectionTarget, ModelTarget, StorageTarget};
 
     fn view(name: &str, target: ConnectionTarget) -> ConnectionView {
         ConnectionView {

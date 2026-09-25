@@ -27,7 +27,7 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
         description = "Keasy host: identity, connections, signed URLs and the job record",
     ),
     components(schemas(ErrorBody, ErrorCode, credentials::Purpose)),
-    modifiers(&Bearer),
+    modifiers(&Bearer, &Unattributed),
     security(("bearer" = [])),
 )]
 pub struct ApiDoc;
@@ -50,5 +50,15 @@ impl Modify for Bearer {
                         .build(),
                 ),
             );
+    }
+}
+
+/// utoipa fills `info.contact` from the package's `authors`: who wrote the
+/// server is not whom a client of the API should write to.
+struct Unattributed;
+
+impl Modify for Unattributed {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        openapi.info.contact = None;
     }
 }

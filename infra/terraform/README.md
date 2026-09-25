@@ -18,7 +18,7 @@ terraform -chdir=platform init
 terraform -chdir=platform apply -var kc_hostname=auth.keasy.example.com -var acme_email=ops@kanzo.tech
 
 # Wait for Keycloak health (it has no realm yet, but the admin API must answer):
-until curl -fsS https://auth.keasy.example.com/auth/health/ready >/dev/null; do sleep 3; done
+until curl -fsS https://auth.keasy.example.com/health/ready >/dev/null; do sleep 3; done
 
 # Phase 2 — realm + tenants. Feed it phase 1's admin password.
 cp realm/terraform.tfvars.example realm/terraform.tfvars   # then edit: IdP creds + tenants

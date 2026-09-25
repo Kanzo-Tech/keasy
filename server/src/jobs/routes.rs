@@ -42,7 +42,6 @@ pub async fn list_jobs(
     member: Member,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    super::bootstrap::claim_declared_draft(&state.db, &member.user_id).await?;
     Ok(Json(state.db.list_jobs_of(&member.user_id).await?))
 }
 

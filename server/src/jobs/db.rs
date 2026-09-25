@@ -9,20 +9,10 @@ const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, e
 
 impl Database {
     pub async fn insert_job(&self, job: &Job) -> DbResult<()> {
-        self.insert(job, "").await.map(|_| ())
-    }
-
-    /// Insert `job` only into a workspace with no jobs; whether it was.
-    pub async fn insert_first_job(&self, job: &Job) -> DbResult<bool> {
-        self.insert(job, "WHERE NOT EXISTS (SELECT 1 FROM jobs)")
-            .await
-    }
-
-    async fn insert(&self, job: &Job, condition: &str) -> DbResult<bool> {
-        let inserted = self.write().await.execute(
+        self.write().await.execute(
             &format!(
                 "INSERT INTO jobs ({COLUMNS})
-                 SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12 {condition}"
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)"
             ),
             params![
                 job.id,
@@ -42,7 +32,7 @@ impl Database {
                 serde_json::to_string(&job.relations)?,
             ],
         )?;
-        Ok(inserted > 0)
+        Ok(())
     }
 
     pub async fn get_job(&self, id: &str) -> DbResult<Option<Job>> {
@@ -92,14 +82,6 @@ impl Database {
     pub async fn list_jobs_of(&self, user_id: &str) -> DbResult<Vec<Job>> {
         self.select_jobs("WHERE created_by = ?1", Some(user_id))
             .await
-    }
-
-    /// Whether the workspace holds any job at all.
-    pub async fn has_jobs(&self) -> DbResult<bool> {
-        Ok(self
-            .read()
-            .await
-            .query_row("SELECT EXISTS (SELECT 1 FROM jobs)", [], |row| row.get(0))?)
     }
 
     async fn select_jobs(&self, filter: &str, param: Option<&str>) -> DbResult<Vec<Job>> {
@@ -198,11 +180,4 @@ mod tests {
         assert!(db.get_job(&stored.id).await.is_err());
     }
 
-    #[tokio::test]
-    async fn only_the_first_job_of_a_workspace_is_inserted_as_first() {
-        let (db, _dir) = db();
-        assert!(db.insert_first_job(&job("u-1")).await.unwrap());
-        assert!(!db.insert_first_job(&job("u-2")).await.unwrap());
-        assert_eq!(db.list_jobs().await.unwrap().len(), 1);
-    }
 }

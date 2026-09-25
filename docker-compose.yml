@@ -85,7 +85,6 @@ services:
       - keasy-data:/var/lib/keasy
       - server-target:/src/server/target
       - cargo-registry:/usr/local/cargo/registry
-      - ./infra/dev/shop.fossil:/etc/keasy/shop.fossil:ro
     environment:
       RUST_LOG: debug
       KEASY_DATA_DIR: /var/lib/keasy
@@ -101,9 +100,6 @@ services:
       KEASY_BOOTSTRAP_VOCAB_NAME: MinIO dev shapes
       KEASY_BOOTSTRAP_VOCAB_URL: s3://keasy-dev/vocab/
       KEASY_BOOTSTRAP_SINK_URL: s3://keasy-dev/output/
-      # Its `@` references name the two connections above.
-      KEASY_BOOTSTRAP_DRAFT: /etc/keasy/shop.fossil
-      KEASY_BOOTSTRAP_DRAFT_NAME: Shop orders
       AWS_ACCESS_KEY_ID: minioadmin
       AWS_SECRET_ACCESS_KEY: minioadmin
       AWS_DEFAULT_REGION: us-east-1

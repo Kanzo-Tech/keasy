@@ -34,6 +34,10 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
+      # The server's golden test holds api/openapi.json to the routes; this holds the
+      # types generated from it to the spec.
+      - name: Contract types match the spec
+        run: pnpm --filter @keasy/api generate && git diff --exit-code -- ../api/src/schema.d.ts
       - run: pnpm lint
       - run: pnpm exec tsc --noEmit
       - run: pnpm test

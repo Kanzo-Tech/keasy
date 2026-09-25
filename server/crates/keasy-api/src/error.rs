@@ -32,7 +32,6 @@ pub enum ErrorCode {
     ListFilesFailed,
     StoreError,
     SignError,
-    CatalogError,
     AiNotConfigured,
     SchemaRequired,
     InsufficientCredits,

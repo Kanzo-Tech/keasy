@@ -6,7 +6,6 @@
 pub mod ai;
 pub mod assistant;
 pub mod auth;
-pub mod catalog;
 pub mod cloud;
 pub mod connections;
 pub mod discovery;

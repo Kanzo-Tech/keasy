@@ -40,7 +40,7 @@ export const api = {
       (unwrap(await client.POST("/v1/jobs/{id}/discover/urls", { params: { path: { id } }, body: { paths } }))).files,
 
     /// Tell the host what the corpus holds: the relations fossil named and the
-    /// files that carry them. Registers the dataset in the workspace catalog.
+    /// files that carry them.
     publishRelations: async (id: string, relations: Schemas["OutputRelation"][]) =>
       unwrap(await client.PUT("/v1/jobs/{id}/relations", { params: { path: { id } }, body: { relations } })),
 
@@ -129,10 +129,9 @@ export const api = {
       } satisfies Schemas["AskRequest"], opts?.signal),
   },
 
-  // ── Catalog (governance) ──────────────────────────────────────────────
-  catalog: {
-    datasets: async () =>
-      (unwrap(await client.GET("/v1/catalog/datasets"))).datasets,
+  // ── Datasets (owner) ──────────────────────────────────────────────────
+  datasets: {
+    list: async () => unwrap(await client.GET("/v1/datasets")),
   },
 
   // ── Settings ──────────────────────────────────────────────────────────

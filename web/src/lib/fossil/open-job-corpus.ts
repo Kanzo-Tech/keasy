@@ -28,6 +28,7 @@ import {
 import { Coordinator, wasmConnector } from "@kanzo-tech/ui/analytics";
 
 import { api } from "@/lib/api";
+import type { OutputRelation } from "@/lib/types";
 
 // fossil-graph-wasm, staged into public/ by scripts/copy-fossil-wasm.mjs
 // (predev/prebuild) — Next resolves no `.wasm` asset for us.
@@ -135,23 +136,26 @@ export async function openJobCorpus(jobId: string): Promise<JobCorpus> {
 
 /**
  * What the corpus holds, as the host has to store it: the name fossil gave each
- * relation, the payload files that carry it, and the count it reported.
+ * relation, the payload files that carry it, the count it reported and the
+ * columns a row carries.
  *
  * **The name is asked for, never composed.** `table_name` is the corpus's own
  * DuckDB spelling for a relation — pre-computed there precisely so a binding
- * does not reimplement the edge-naming convention — and keasy's catalog used to
- * reimplement it anyway, in Rust, off a run report. Answering this needs an
+ * does not reimplement the edge-naming convention. Answering this needs an
  * engine (a relation's name is a reader's answer, not the report's), which is
  * why it happens here, in the browser that just ran the job.
  */
-export async function relationsOf(corpus: SqlCorpus) {
+export async function relationsOf(corpus: SqlCorpus): Promise<OutputRelation[]> {
   const schema = await corpus.schema();
   const addressing = corpus.addressing;
 
   const vertices = schema.vertices.flatMap((v) => {
     const address = addressing.types.find((t) => t.type === v.name);
     if (!address || address.count === null) return [];
-    return [{ name: v.name, rows: v.count, files: [...address.projectionFiles(1)] }];
+    const columns = (corpus.types.vertices.find((t) => t.type === v.name)?.fields ?? []).map(
+      (f) => ({ name: f.name, data_type: f.type }),
+    );
+    return [{ name: v.name, rows: v.count, files: [...address.projectionFiles(1)], columns }];
   });
 
   const edges = schema.edges.flatMap((e) => {

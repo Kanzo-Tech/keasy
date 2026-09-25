@@ -73,8 +73,8 @@ pub struct Job {
     pub manifest: Option<serde_json::Value>,
     /// What the corpus holds and what it is called, as the corpus reader
     /// enumerated it (`@fossil-lang/corpus`). fossil names every relation and
-    /// every file; keasy joins them to the destination it owns, signs them for
-    /// reading and registers them in the catalog by reference.
+    /// every file; keasy joins them to the destination it owns and signs them
+    /// for reading.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub relations: Vec<OutputRelation>,
 }
@@ -93,7 +93,8 @@ pub struct JobRuntimeError {
 /// `name` is the relation the corpus registers and queries by (`Person`,
 /// `Person_knows_Person`) — **keasy does not compose it**; it is what the
 /// corpus reader answered. `files` are the dataset-relative payload files the
-/// corpus addressing enumerated, and `rows` the count it reported.
+/// corpus addressing enumerated, `rows` the count it reported and `columns`
+/// what a row carries.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
 pub struct OutputRelation {
     pub name: String,
@@ -101,6 +102,26 @@ pub struct OutputRelation {
     pub files: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rows: Option<i64>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub columns: Vec<RelationColumn>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
+pub struct RelationColumn {
+    pub name: String,
+    /// The engine's spelling of the Parquet type (`VARCHAR`, `BIGINT`, …).
+    pub data_type: String,
+}
+
+/// A completed job's output, as the owner's datasets view lists it.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct Dataset {
+    pub job_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub completed_at: Option<String>,
+    pub relations: Vec<OutputRelation>,
 }
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]

@@ -7,12 +7,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Same CA plumbing as the release image — see server/Dockerfile.
-RUN mkdir -p /etc/pki/tls/certs \
-    && ln -sf /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
-ENV CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
-    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-
 WORKDIR /src/server
 COPY rust-toolchain.toml ./
 RUN rustup toolchain install && cargo install cargo-watch

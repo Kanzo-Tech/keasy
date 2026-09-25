@@ -5,6 +5,7 @@ FROM rust:1.90-bookworm AS builder
 # Dep cache: build the manifests with a dummy main, then swap in the real source.
 WORKDIR /src/server
 COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
 RUN mkdir src && echo 'fn main() {}' > src/main.rs && cargo build --release && rm -rf src
 COPY src ./src
 # After the dep cache so a new SHA does not rebuild the dependencies.

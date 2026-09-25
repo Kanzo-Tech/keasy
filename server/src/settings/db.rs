@@ -3,8 +3,12 @@ use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::db::{Database, DbError, DbResult};
-use crate::settings::ai::{AiProvider, AiSettings};
-use crate::settings::org::{OrgSettings, WorkspaceIdentity};
+use keasy_api::settings::ai::AiProvider;
+use keasy_api::settings::org::OrgSettings;
+use strum::VariantArray;
+
+use crate::settings::ai::AiSettings;
+use crate::settings::org::WorkspaceIdentity;
 
 /// What an AI provider stores in `settings`; the key lives in `secrets`.
 #[derive(Serialize, Deserialize)]
@@ -14,7 +18,7 @@ struct AiProviderRecord {
 }
 
 fn ai_key(provider: AiProvider) -> String {
-    format!("ai_provider:{}", provider.as_str())
+    format!("ai_provider:{}", provider.as_ref())
 }
 
 impl Database {
@@ -110,7 +114,7 @@ impl Database {
 
     pub async fn list_ai_providers(&self) -> DbResult<Vec<AiSettings>> {
         let mut result = Vec::new();
-        for provider in AiProvider::ALL {
+        for &provider in AiProvider::VARIANTS {
             if let Some(s) = self.get_ai_provider(provider).await? {
                 result.push(s);
             }

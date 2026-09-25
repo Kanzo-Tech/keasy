@@ -2,18 +2,19 @@ mod schema;
 pub mod secrets;
 
 use std::path::Path;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use keasy_api::ErrorCode;
 use rusqlite::Connection;
 use serde::de::DeserializeOwned;
 use tokio::sync::{Mutex, MutexGuard};
 
 use crate::crypto::SecretKey;
-use crate::error::error_body;
+use crate::error::fail;
 
 const READ_POOL_SIZE: usize = 4;
 
@@ -37,18 +38,18 @@ pub type DbResult<T> = Result<T, DbError>;
 impl IntoResponse for DbError {
     fn into_response(self) -> Response {
         match self {
-            DbError::Invalid(message) => (
+            DbError::Invalid(message) => fail(
                 StatusCode::BAD_REQUEST,
-                Json(error_body("validation_failed", message)),
-            )
-                .into_response(),
+                ErrorCode::ValidationFailed,
+                message,
+            ),
             e => {
                 tracing::error!(error = %e, "database failure");
-                (
+                fail(
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(error_body("internal_error", "An internal error occurred")),
+                    ErrorCode::InternalError,
+                    "An internal error occurred",
                 )
-                    .into_response()
             }
         }
     }
@@ -81,9 +82,19 @@ pub(crate) fn json_column_opt<T: DeserializeOwned>(
     }
 }
 
-/// An enum stored as text, decoded strictly.
-pub(crate) fn unknown_value(kind: &str, value: &str) -> rusqlite::types::FromSqlError {
-    rusqlite::types::FromSqlError::Other(format!("unknown {kind} {value:?}").into())
+/// An enum stored as its wire spelling, decoded strictly.
+pub(crate) fn enum_column<T: FromStr>(
+    row: &rusqlite::Row<'_>,
+    column: &str,
+) -> rusqlite::Result<T> {
+    let text: String = row.get(column)?;
+    text.parse().map_err(|_| {
+        rusqlite::Error::FromSqlConversionFailure(
+            row.as_ref().column_index(column).unwrap_or(0),
+            rusqlite::types::Type::Text,
+            format!("unknown {column} {text:?}").into(),
+        )
+    })
 }
 
 #[derive(Clone)]

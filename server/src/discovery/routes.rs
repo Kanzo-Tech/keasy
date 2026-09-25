@@ -5,17 +5,17 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::{Method, StatusCode};
 use axum::response::{IntoResponse, Response};
-use serde::{Deserialize, Serialize};
+
+use keasy_api::discovery::{DatasetUrlsRequest, ResolveResponse};
+use keasy_api::jobs::{Job, JobStatus};
+use keasy_api::{ErrorBody, ErrorCode};
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
 use crate::AppState;
 use crate::auth::role::Member;
-use crate::error::{data_response, error_body};
-use crate::jobs::models::{Job, JobStatus};
+use crate::error::fail;
 use crate::jobs::routes::owned_job;
-
-fn fail(status: StatusCode, code: &str, message: impl Into<String>) -> Response {
-    (status, Json(error_body(code, message))).into_response()
-}
 
 /// The caller's job, once it has finished and its output can be read.
 pub(crate) async fn output_ready(
@@ -29,7 +29,7 @@ pub(crate) async fn output_ready(
     if job.status != JobStatus::Completed {
         return Err(fail(
             StatusCode::BAD_REQUEST,
-            "not_completed",
+            ErrorCode::NotCompleted,
             "Job is not completed yet",
         ));
     }
@@ -37,11 +37,6 @@ pub(crate) async fn output_ready(
 }
 
 pub(crate) const SIGNED_URL_EXPIRES: Duration = Duration::from_secs(300);
-
-#[derive(Serialize, utoipa::ToSchema)]
-pub struct ResolveResponse {
-    files: HashMap<String, String>,
-}
 
 /// Sign `files`, each relative to `base_url`, for `method` with `creds`.
 pub(crate) async fn sign_dataset_paths(
@@ -52,12 +47,12 @@ pub(crate) async fn sign_dataset_paths(
 ) -> Result<Response, Response> {
     for f in files {
         crate::cloud::relative_path(f)
-            .map_err(|e| fail(StatusCode::BAD_REQUEST, "invalid_path", e))?;
+            .map_err(|e| fail(StatusCode::BAD_REQUEST, ErrorCode::InvalidPath, e))?;
     }
     let (store, prefix) = crate::cloud::build_store(base_url, creds).map_err(|e| {
         fail(
             StatusCode::INTERNAL_SERVER_ERROR,
-            "store_error",
+            ErrorCode::StoreError,
             e.to_string(),
         )
     })?;
@@ -70,8 +65,13 @@ pub(crate) async fn sign_dataset_paths(
             } else {
                 format!("{prefix}/{f}")
             };
-            object_store::path::Path::parse(&full)
-                .map_err(|e| fail(StatusCode::BAD_REQUEST, "invalid_path", e.to_string()))
+            object_store::path::Path::parse(&full).map_err(|e| {
+                fail(
+                    StatusCode::BAD_REQUEST,
+                    ErrorCode::InvalidPath,
+                    e.to_string(),
+                )
+            })
         })
         .collect::<Result<Vec<_>, _>>()?;
 
@@ -81,7 +81,7 @@ pub(crate) async fn sign_dataset_paths(
         .map_err(|e| {
             fail(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "sign_error",
+                ErrorCode::SignError,
                 e.to_string(),
             )
         })?;
@@ -91,15 +91,7 @@ pub(crate) async fn sign_dataset_paths(
         .cloned()
         .zip(urls.into_iter().map(|u| u.to_string()))
         .collect();
-    Ok(data_response(ResolveResponse { files }).into_response())
-}
-
-#[derive(Deserialize, utoipa::ToSchema)]
-pub struct DatasetUrlsRequest {
-    /// Paths relative to the dataset (or connection). The caller names them —
-    /// the executor's output, the corpus reader's enumeration — and keasy signs
-    /// the list it is handed.
-    pub paths: Vec<String>,
+    Ok(Json(ResolveResponse { files }).into_response())
 }
 
 /// Sign `paths` under the job's dataset, `{sink.url}/{job_id}` — the one path
@@ -122,7 +114,7 @@ async fn sign_dataset_urls(
         .ok_or_else(|| {
             fail(
                 StatusCode::BAD_REQUEST,
-                "no_destination",
+                ErrorCode::NoDestination,
                 "The job's destination connection no longer exists",
             )
         })?;
@@ -134,8 +126,8 @@ async fn sign_dataset_urls(
     request_body = DatasetUrlsRequest,
     responses(
         (status = 200, description = "Signed PUT URLs for the output keys", body = ResolveResponse),
-        (status = 400, description = "The destination connection is gone, or a path outside the dataset"),
-        (status = 404, description = "Job not found"),
+        (status = 400, description = "The destination connection is gone, or a path outside the dataset", body = ErrorBody),
+        (status = 404, description = "Job not found", body = ErrorBody),
     )
 )]
 /// Sign PUT URLs so the browser uploads the output it just produced straight to
@@ -154,8 +146,8 @@ pub async fn resolve_output_urls(
     request_body = DatasetUrlsRequest,
     responses(
         (status = 200, description = "Signed GET URLs for the requested dataset keys", body = ResolveResponse),
-        (status = 400, description = "The destination connection is gone, or a path outside the dataset"),
-        (status = 404, description = "Job not found"),
+        (status = 400, description = "The destination connection is gone, or a path outside the dataset", body = ErrorBody),
+        (status = 404, description = "Job not found", body = ErrorBody),
     )
 )]
 /// Sign GET URLs so the browser reads the dataset directly — the reading twin of
@@ -168,4 +160,11 @@ pub async fn resolve_discover_urls(
     Json(req): Json<DatasetUrlsRequest>,
 ) -> Result<Response, Response> {
     sign_dataset_urls(Method::GET, &state, &member, &id, &req.paths).await
+}
+
+/// The routes this module serves.
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(resolve_output_urls))
+        .routes(routes!(resolve_discover_urls))
 }

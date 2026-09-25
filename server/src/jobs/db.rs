@@ -1,8 +1,8 @@
 use rusqlite::{OptionalExtension, params};
 
-use crate::db::{Database, DbResult, json_column_opt};
+use crate::db::{Database, DbResult, enum_column, json_column_opt};
 
-use super::models::{Job, JobStatus};
+use keasy_api::jobs::{Job, JobStatus};
 
 const COLUMNS: &str = "id, name, status, mode, created_at, started_at, completed_at, error, \
                        created_by, sink_connection_id, script, manifest, relations";
@@ -27,8 +27,8 @@ impl Database {
             params![
                 job.id,
                 job.name,
-                job.status,
-                job.mode,
+                job.status.as_ref(),
+                job.mode.as_ref(),
                 job.created_at,
                 job.started_at,
                 job.completed_at,
@@ -71,7 +71,7 @@ impl Database {
              WHERE id = ?9",
             params![
                 job.name,
-                job.status,
+                job.status.as_ref(),
                 job.started_at,
                 job.completed_at,
                 job.error.as_ref().map(serde_json::to_string).transpose()?,
@@ -123,7 +123,7 @@ impl Database {
 }
 
 fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
-    let status: JobStatus = row.get("status")?;
+    let status: JobStatus = enum_column(row, "status")?;
     // The browser reads the program to run a `Pending` job (and to re-run a
     // `Running` one); a finished job exposes only its manifest.
     let script = match status {
@@ -134,7 +134,7 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
         id: row.get("id")?,
         name: row.get("name")?,
         status,
-        mode: row.get("mode")?,
+        mode: enum_column(row, "mode")?,
         created_at: row.get("created_at")?,
         started_at: row.get("started_at")?,
         completed_at: row.get("completed_at")?,
@@ -150,7 +150,7 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::jobs::models::{CreateJobRequest, Job};
+    use keasy_api::jobs::CreateJobRequest;
 
     fn db() -> (Database, tempfile::TempDir) {
         let dir = tempfile::tempdir().unwrap();
@@ -163,7 +163,7 @@ mod tests {
     }
 
     fn job(owner: &str) -> Job {
-        Job::requested(
+        crate::jobs::requested(
             JobStatus::Draft,
             CreateJobRequest {
                 script: "x".into(),

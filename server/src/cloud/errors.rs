@@ -1,7 +1,10 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use keasy_api::ErrorCode;
+
 use crate::db::DbError;
+use crate::error::fail;
 
 #[derive(Debug, thiserror::Error)]
 pub enum CloudAccountError {
@@ -14,14 +17,11 @@ pub enum CloudAccountError {
 impl IntoResponse for CloudAccountError {
     fn into_response(self) -> Response {
         match self {
-            CloudAccountError::NotFound => (
+            CloudAccountError::NotFound => fail(
                 StatusCode::NOT_FOUND,
-                axum::Json(crate::error::error_body(
-                    "not_found",
-                    "Cloud account not found",
-                )),
-            )
-                .into_response(),
+                ErrorCode::NotFound,
+                "Cloud account not found",
+            ),
             CloudAccountError::Db(e) => e.into_response(),
         }
     }

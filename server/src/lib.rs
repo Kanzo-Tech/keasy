@@ -10,17 +10,16 @@ mod db;
 mod discovery;
 mod error;
 mod jobs;
-pub mod openapi;
 mod routes;
 mod settings;
 
-use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
 use tracing::info;
 
 use db::Database;
+pub use routes::openapi;
 
 #[derive(Clone)]
 struct AppState {
@@ -66,7 +65,7 @@ pub async fn run() -> Result<(), String> {
     if identity.is_none() {
         db.set_workspace_identity(&settings::org::WorkspaceIdentity {
             name: config.workspace_name.clone(),
-            identity: settings::org::OrgIdentity {
+            identity: keasy_api::settings::org::OrgIdentity {
                 legal_name: config.workspace_name.clone(),
                 country: "EU".to_string(),
                 ..Default::default()
@@ -114,15 +113,12 @@ pub async fn run() -> Result<(), String> {
         .map_err(|e| format!("failed to bind to {}: {e}", config.bind_addr))?;
     info!(addr = %config.bind_addr, "Keasy server listening");
 
-    axum::serve(
-        listener,
-        app.into_make_service_with_connect_info::<SocketAddr>(),
-    )
-    .with_graceful_shutdown(async {
-        if tokio::signal::ctrl_c().await.is_ok() {
-            info!("Shutdown signal received");
-        }
-    })
-    .await
-    .map_err(|e| format!("server error: {e}"))
+    axum::serve(listener, app)
+        .with_graceful_shutdown(async {
+            if tokio::signal::ctrl_c().await.is_ok() {
+                info!("Shutdown signal received");
+            }
+        })
+        .await
+        .map_err(|e| format!("server error: {e}"))
 }

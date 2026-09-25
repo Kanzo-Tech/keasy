@@ -1,10 +1,8 @@
 use std::io;
-use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 
 use axum::Router;
 use axum::body::Body;
-use axum::extract::ConnectInfo;
 use axum::http::{Method, Request, StatusCode, header};
 use serde_json::json;
 use tower::ServiceExt;
@@ -12,10 +10,8 @@ use tracing_subscriber::fmt::MakeWriter;
 
 use crate::auth::jwt::Validator;
 use crate::auth::jwt::tests::{Realm, good, mint, realm};
-use crate::connections::models::{
-    ConnectionKind, CreateConnectionRequest, Direction, LocationType,
-};
 use crate::{AppState, Database};
+use keasy_api::connections::{ConnectionKind, CreateConnectionRequest, Direction, LocationType};
 
 /// The real router over a real database and catalog, verifying tokens against a
 /// fake realm.
@@ -67,7 +63,7 @@ impl Harness {
         mint(&self.realm, claims)
     }
 
-    /// A JSON request; the status and the unwrapped `data` (or the error body).
+    /// A JSON request; the status and the body.
     async fn send(
         &self,
         method: Method,
@@ -75,24 +71,19 @@ impl Harness {
         token: &str,
         body: serde_json::Value,
     ) -> (StatusCode, serde_json::Value) {
-        let mut request = Request::builder()
+        let request = Request::builder()
             .method(method)
             .uri(path)
             .header(header::AUTHORIZATION, format!("Bearer {token}"))
             .header(header::CONTENT_TYPE, "application/json")
             .body(Body::from(body.to_string()))
             .unwrap();
-        request
-            .extensions_mut()
-            .insert(ConnectInfo(SocketAddr::from(([127, 0, 0, 1], 1))));
         let response = self.app.clone().oneshot(request).await.unwrap();
         let status = response.status();
         let bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
             .await
             .unwrap();
-        let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap_or_default();
-        let data = json.get("data").cloned().unwrap_or(json);
-        (status, data)
+        (status, serde_json::from_slice(&bytes).unwrap_or_default())
     }
 
     async fn connection(&self, name: &str, direction: Direction) -> String {
@@ -212,10 +203,7 @@ impl Harness {
         if let Some(token) = token {
             request = request.header(header::AUTHORIZATION, format!("Bearer {token}"));
         }
-        let mut request = request.body(Body::empty()).unwrap();
-        request
-            .extensions_mut()
-            .insert(ConnectInfo(SocketAddr::from(([127, 0, 0, 1], 1))));
+        let request = request.body(Body::empty()).unwrap();
         let response = self.app.clone().oneshot(request).await.unwrap();
         let status = response.status();
         let body = axum::body::to_bytes(response.into_body(), usize::MAX)
@@ -249,6 +237,7 @@ const ROUTES: &[(&str, &str, Admits)] = &[
     ("POST", "/v1/jobs/x/output/urls", Admits::Member),
     ("POST", "/v1/jobs/x/discover/urls", Admits::Member),
     ("POST", "/v1/jobs/x/discover/ask-stream", Admits::Member),
+    ("GET", "/v1/ai/providers", Admits::Member),
     ("GET", "/v1/settings/ai/providers", Admits::Member),
     ("PUT", "/v1/settings/ai/providers/x", Admits::Member),
     ("DELETE", "/v1/settings/ai/providers/x", Admits::Member),
@@ -336,6 +325,7 @@ async fn every_role_gated_route_is_in_the_table() {
         "/v1/jobs/x/output/urls",
         "/v1/jobs/x/discover/urls",
         "/v1/jobs/x/discover/ask-stream",
+        "/v1/ai/providers",
         "/v1/settings/ai/providers",
         "/v1/settings/ai/providers/x",
         "/v1/cloud-accounts",

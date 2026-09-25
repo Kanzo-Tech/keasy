@@ -4,11 +4,11 @@ use rusqlite::{OptionalExtension, params};
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::db::{Database, DbError, DbResult, json_column};
-use crate::settings::schema::find_provider;
+use keasy_api::settings::schema::find_provider;
 
-use super::models::{
-    CloudAccount, CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest,
-};
+use keasy_api::cloud::{CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest};
+
+use super::models::CloudAccount;
 
 const COLUMNS: &str = "id, name, provider_id, auth_method, fields";
 

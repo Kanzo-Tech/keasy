@@ -2,26 +2,22 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use serde::Serialize;
+use keasy_api::ErrorCode;
+use keasy_api::catalog::DatasetsResponse;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
-use super::view::CatalogDataset;
 use crate::AppState;
 use crate::auth::role::Owner;
-use crate::error::{data_response, error_body};
-
-#[derive(Serialize, utoipa::ToSchema)]
-pub struct DatasetsResponse {
-    /// Every registered dataset in the workspace catalog.
-    datasets: Vec<CatalogDataset>,
-}
+use crate::error::fail;
 
 fn catalog_failure(detail: impl std::fmt::Display) -> Response {
     tracing::error!(error = %detail, "catalog read failed");
-    (
+    fail(
         StatusCode::INTERNAL_SERVER_ERROR,
-        Json(error_body("catalog_error", "The catalog could not be read")),
+        ErrorCode::CatalogError,
+        "The catalog could not be read",
     )
-        .into_response()
 }
 
 #[utoipa::path(get, path = "/v1/catalog/datasets", tag = "Catalog",
@@ -51,5 +47,10 @@ pub async fn list_catalog_datasets(
         .await
         .map_err(IntoResponse::into_response)?;
     super::view::fill_row_counts(&mut datasets, &jobs);
-    Ok(data_response(DatasetsResponse { datasets }).into_response())
+    Ok(Json(DatasetsResponse { datasets }).into_response())
+}
+
+/// The routes this module serves.
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new().routes(routes!(list_catalog_datasets))
 }

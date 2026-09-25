@@ -1,35 +1,36 @@
-use rusqlite::types::{FromSql, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    utoipa::ToSchema,
+    strum::AsRefStr,
+    strum::EnumString,
+)]
 #[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 pub enum RunMode {
     Integrated,
     Scheduled,
 }
 
-impl ToSql for RunMode {
-    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
-        let s = match self {
-            Self::Integrated => "integrated",
-            Self::Scheduled => "scheduled",
-        };
-        Ok(s.into())
-    }
-}
-
-impl FromSql for RunMode {
-    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        match value.as_str()? {
-            "integrated" => Ok(Self::Integrated),
-            "scheduled" => Ok(Self::Scheduled),
-            other => Err(crate::db::unknown_value("run mode", other)),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    utoipa::ToSchema,
+    strum::AsRefStr,
+    strum::EnumString,
+)]
 #[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 pub enum JobStatus {
     Draft,
     Pending,
@@ -37,34 +38,6 @@ pub enum JobStatus {
     Completed,
     Failed,
     Cancelled,
-}
-
-impl ToSql for JobStatus {
-    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
-        let s = match self {
-            Self::Draft => "draft",
-            Self::Pending => "pending",
-            Self::Running => "running",
-            Self::Completed => "completed",
-            Self::Failed => "failed",
-            Self::Cancelled => "cancelled",
-        };
-        Ok(s.into())
-    }
-}
-
-impl FromSql for JobStatus {
-    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        match value.as_str()? {
-            "draft" => Ok(Self::Draft),
-            "pending" => Ok(Self::Pending),
-            "running" => Ok(Self::Running),
-            "completed" => Ok(Self::Completed),
-            "failed" => Ok(Self::Failed),
-            "cancelled" => Ok(Self::Cancelled),
-            other => Err(crate::db::unknown_value("job status", other)),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
@@ -79,7 +52,7 @@ pub struct Job {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub completed_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<super::errors::JobRuntimeError>,
+    pub error: Option<JobRuntimeError>,
     pub mode: RunMode,
     /// Keycloak `sub` of the member who created the job, and the only one who
     /// may see, change, run or read it. Taken from the token, never the body.
@@ -106,26 +79,13 @@ pub struct Job {
     pub relations: Vec<OutputRelation>,
 }
 
-impl Job {
-    /// A job as a create request asks for it: `Draft` or `Pending`, not yet run.
-    pub fn requested(status: JobStatus, request: CreateJobRequest, created_by: String) -> Self {
-        let id = uuid::Uuid::new_v4().to_string();
-        Job {
-            status,
-            name: request.name.or_else(|| Some(id[..8].to_string())),
-            created_at: now_iso8601(),
-            started_at: None,
-            completed_at: None,
-            error: None,
-            mode: request.mode.unwrap_or(RunMode::Integrated),
-            created_by,
-            sink_connection_id: request.sink_connection_id,
-            script: Some(request.script),
-            manifest: None,
-            relations: Vec::new(),
-            id,
-        }
-    }
+/// What went wrong in a run, recorded on the failed job.
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct JobRuntimeError {
+    pub code: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub detail: Option<String>,
 }
 
 /// One addressable relation of a job's output, named by fossil.
@@ -148,7 +108,7 @@ pub struct CreateJobRequest {
     pub script: String,
     pub name: Option<String>,
     pub mode: Option<RunMode>,
-    #[expect(dead_code, reason = "DCAT publication is accepted but not built yet")]
+    /// Accepted, not acted on: DCAT publication is not built.
     pub dcat_enabled: Option<bool>,
     /// Where the output lands: a sink connection.
     pub sink_connection_id: String,
@@ -187,10 +147,4 @@ pub struct CompleteJobRequest {
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct PublishRelationsRequest {
     pub relations: Vec<OutputRelation>,
-}
-
-pub fn now_iso8601() -> String {
-    jiff::Timestamp::now()
-        .strftime("%Y-%m-%dT%H:%M:%SZ")
-        .to_string()
 }

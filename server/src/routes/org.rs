@@ -7,11 +7,15 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use keasy_api::{ErrorBody, ErrorCode};
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
+
 use crate::AppState;
 use crate::auth::role::{AnyRole, Owner};
 use crate::db::DbError;
-use crate::error::{data_response, error_body};
-use crate::settings::org::OrgIdentity;
+use crate::error::fail;
+use keasy_api::settings::org::OrgIdentity;
 
 /// An ISO 3166-2 subdivision code: `XX-Y`, `XX-YY` or `XX-YYY`.
 fn is_subdivision(code: &str) -> bool {
@@ -38,14 +42,14 @@ pub async fn get_org_identity(
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, DbError> {
     let workspace = state.db.get_workspace_identity().await?.unwrap_or_default();
-    Ok(data_response(workspace.identity))
+    Ok(Json(workspace.identity))
 }
 
 #[utoipa::path(put, path = "/v1/org/identity", tag = "Organization",
     request_body = OrgIdentity,
     responses(
         (status = 200, description = "Identity updated", body = OrgIdentity),
-        (status = 400, description = "Validation error"),
+        (status = 400, description = "Validation error", body = ErrorBody),
     )
 )]
 pub async fn update_org_identity(
@@ -55,11 +59,11 @@ pub async fn update_org_identity(
 ) -> Result<Response, Response> {
     payload.legal_name = payload.legal_name.trim().to_string();
     let invalid = |message: &str| {
-        Err((
+        Err(fail(
             StatusCode::BAD_REQUEST,
-            Json(error_body("bad_request", message)),
-        )
-            .into_response())
+            ErrorCode::BadRequest,
+            message,
+        ))
     };
     if payload.legal_name.is_empty() {
         return invalid("legal_name must not be empty");
@@ -92,7 +96,12 @@ pub async fn update_org_identity(
         .await
         .map_err(IntoResponse::into_response)?;
 
-    Ok(data_response(payload).into_response())
+    Ok(Json(payload).into_response())
+}
+
+/// The routes this module serves.
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new().routes(routes!(get_org_identity, update_org_identity))
 }
 
 #[cfg(test)]

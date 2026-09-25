@@ -1,28 +1,16 @@
 use axum::Json;
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use serde::Serialize;
-use serde_json::{Value, json};
+use keasy_api::{ErrorBody, ErrorCode};
 
-/// Build a flat error body: `{ "error": "snake_case_code", "message": "..." }`.
-/// This is the locked response format for all error responses.
-pub fn error_body(code: &str, message: impl Into<String>) -> Value {
-    json!({ "error": code, "message": message.into() })
-}
-
-/// Typed envelope for successful API responses: `{ "data": T }`.
-#[derive(Serialize, utoipa::ToSchema)]
-pub struct DataResponse<T: Serialize> {
-    pub data: T,
-}
-
-impl<T: Serialize> IntoResponse for DataResponse<T> {
-    fn into_response(self) -> Response {
-        Json(self).into_response()
-    }
-}
-
-/// Wrap a successful payload in the standard response envelope: `{ "data": value }`.
-/// All successful responses except 204 No Content use this helper.
-pub fn data_response<T: Serialize>(value: T) -> DataResponse<T> {
-    DataResponse { data: value }
+/// The one way the server refuses: a status and an [`ErrorBody`].
+pub fn fail(status: StatusCode, error: ErrorCode, message: impl Into<String>) -> Response {
+    (
+        status,
+        Json(ErrorBody {
+            error,
+            message: message.into(),
+        }),
+    )
+        .into_response()
 }

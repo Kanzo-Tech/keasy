@@ -15,7 +15,7 @@ ENV CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
 
 RUN cargo install cargo-watch
 
-# Manifests only: `src/` is bind-mounted, and deps compile once at runtime into
+# Manifests only: `src/` and `crates/` are bind-mounted, and deps compile once at runtime into
 # the persistent `server-target` + `cargo-registry` volumes (docker-compose.dev.yml).
 WORKDIR /src/server
 COPY Cargo.toml Cargo.lock ./

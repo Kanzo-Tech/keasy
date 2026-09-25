@@ -1,14 +1,7 @@
 use std::collections::HashMap;
 
 use futures::StreamExt;
-use serde::Serialize;
-
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-pub struct FileEntry {
-    pub path: String,
-    pub size: u64,
-    pub last_modified: Option<String>,
-}
+use keasy_api::cloud::FileEntry;
 
 pub async fn list_files(
     container_url: &str,

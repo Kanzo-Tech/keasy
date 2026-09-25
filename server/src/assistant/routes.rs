@@ -1,13 +1,16 @@
 use axum::Json;
 use axum::extract::State;
 use axum::response::Response;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
 use crate::AppState;
 use crate::ai::client::{AiUnavailable, require_ai_settings, stream_llm_to_sse};
 use crate::ai::routes::strip_markdown_fences;
 use crate::auth::role::Member;
+use keasy_api::ErrorBody;
 
-use super::models::*;
+use keasy_api::assistant::*;
 
 fn format_schemas_for_prompt(schemas: &[FileSchema]) -> String {
     schemas
@@ -168,7 +171,7 @@ Orders : Order from Purchase.join(User, on = Purchase.user_id == User.id)
     request_body = SuggestRequest,
     responses(
         (status = 200, description = "SSE stream: delta events + complete with SuggestResponse"),
-        (status = 400, description = "AI provider not configured"),
+        (status = 400, description = "AI provider not configured", body = ErrorBody),
     )
 )]
 pub async fn suggest_cqs_stream(
@@ -203,7 +206,7 @@ pub async fn suggest_cqs_stream(
     request_body = GenerateRequest,
     responses(
         (status = 200, description = "SSE stream: delta events + complete with GenerateResponse"),
-        (status = 400, description = "AI provider not configured"),
+        (status = 400, description = "AI provider not configured", body = ErrorBody),
     )
 )]
 pub async fn generate_script_stream(
@@ -244,4 +247,11 @@ pub async fn generate_script_stream(
             }
         },
     ))
+}
+
+/// The routes this module serves.
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(suggest_cqs_stream))
+        .routes(routes!(generate_script_stream))
 }

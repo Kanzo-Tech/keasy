@@ -1,9 +1,8 @@
-use keasy_server::openapi::ApiDoc;
-use utoipa::OpenApi;
+//! Prints the API contract. `make api` writes it to `api/openapi.json`.
 
 fn main() {
-    let doc = ApiDoc::openapi();
-    let json = serde_json::to_string_pretty(&doc).unwrap();
-    std::fs::write("../openapi.json", &json).unwrap();
-    eprintln!("openapi.json written ({} bytes)", json.len());
+    let spec = keasy_server::openapi()
+        .to_pretty_json()
+        .expect("the contract serializes");
+    println!("{spec}");
 }

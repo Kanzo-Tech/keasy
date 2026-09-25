@@ -4,17 +4,19 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
 use crate::AppState;
 use crate::auth::role::Member;
-use crate::connections::models::Direction;
-use crate::error::data_response;
-use crate::jobs::models::{
-    CompleteJobRequest, CreateJobRequest, Job, JobStatus, PublishRelationsRequest,
-    UpdateJobRequest, now_iso8601,
+use keasy_api::ErrorBody;
+use keasy_api::connections::Direction;
+use keasy_api::jobs::{
+    CompleteJobRequest, CreateJobRequest, Job, JobStatus, PublishRelationsRequest, UpdateJobRequest,
 };
 
-use super::errors::{JobApiError, JobRuntimeError, classify_error};
+use super::errors::{JobApiError, classify_error, runtime_error};
+use super::{now_iso8601, requested};
 
 /// The job, if it exists and `member` created it. Anyone else's job is not
 /// found: a job is its creator's alone.
@@ -41,7 +43,7 @@ pub async fn list_jobs(
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, JobApiError> {
     super::bootstrap::claim_declared_draft(&state.db, &member.user_id).await?;
-    Ok(data_response(state.db.list_jobs_of(&member.user_id).await?))
+    Ok(Json(state.db.list_jobs_of(&member.user_id).await?))
 }
 
 #[utoipa::path(post, path = "/v1/jobs", tag = "Jobs",
@@ -49,7 +51,7 @@ pub async fn list_jobs(
     responses(
         (status = 201, description = "Draft job created", body = Job),
         (status = 202, description = "Job submitted for execution", body = Job),
-        (status = 400, description = "The destination is not a sink"),
+        (status = 400, description = "The destination is not a sink", body = ErrorBody),
     )
 )]
 pub async fn create_job(
@@ -73,17 +75,17 @@ pub async fn create_job(
     } else {
         (JobStatus::Pending, StatusCode::ACCEPTED)
     };
-    let job = Job::requested(status, payload, member.user_id);
+    let job = requested(status, payload, member.user_id);
     state.db.insert_job(&job).await?;
 
-    Ok((code, data_response(job)).into_response())
+    Ok((code, Json(job)).into_response())
 }
 
 #[utoipa::path(get, path = "/v1/jobs/{id}", tag = "Jobs",
     params(("id" = String, Path, description = "Job ID")),
     responses(
         (status = 200, description = "Job details", body = Job),
-        (status = 404, description = "Job not found"),
+        (status = 404, description = "Job not found", body = ErrorBody),
     )
 )]
 pub async fn get_job(
@@ -91,7 +93,7 @@ pub async fn get_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    Ok(data_response(owned_job(&state, &member, &id).await?))
+    Ok(Json(owned_job(&state, &member, &id).await?))
 }
 
 #[utoipa::path(put, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -99,8 +101,8 @@ pub async fn get_job(
     request_body = UpdateJobRequest,
     responses(
         (status = 200, description = "Job updated", body = Job),
-        (status = 400, description = "Job is not a draft"),
-        (status = 404, description = "Job not found"),
+        (status = 400, description = "Job is not a draft", body = ErrorBody),
+        (status = 404, description = "Job not found", body = ErrorBody),
     )
 )]
 pub async fn update_job(
@@ -123,7 +125,7 @@ pub async fn update_job(
             }
         })
         .await?
-        .map(data_response)
+        .map(Json)
         .ok_or(JobApiError::NotFound)
 }
 
@@ -132,7 +134,7 @@ pub async fn update_job(
     request_body = CompleteJobRequest,
     responses(
         (status = 200, description = "Job status updated from the browser run", body = Job),
-        (status = 404, description = "Job not found"),
+        (status = 404, description = "Job not found", body = ErrorBody),
     )
 )]
 /// The browser ran the mapping and uploaded the output; this records the
@@ -165,7 +167,7 @@ pub async fn complete_job(
                     job.started_at.get_or_insert_with(|| now.clone());
                     job.completed_at = Some(now);
                     job.error = Some(error.as_deref().map_or_else(
-                        || JobRuntimeError::new("EXECUTION_ERROR", "execution failed"),
+                        || runtime_error("EXECUTION_ERROR", "execution failed", None),
                         classify_error,
                     ));
                 }
@@ -177,7 +179,7 @@ pub async fn complete_job(
             job.status = status;
         })
         .await?
-        .map(data_response)
+        .map(Json)
         .ok_or(JobApiError::NotFound)
 }
 
@@ -186,8 +188,8 @@ pub async fn complete_job(
     request_body = PublishRelationsRequest,
     responses(
         (status = 200, description = "Relations stored and the dataset registered", body = Job),
-        (status = 400, description = "A file path outside the dataset"),
-        (status = 404, description = "Job not found"),
+        (status = 400, description = "A file path outside the dataset", body = ErrorBody),
+        (status = 404, description = "Job not found", body = ErrorBody),
     )
 )]
 /// What the corpus reader found: the relations a finished job's output holds,
@@ -242,15 +244,15 @@ pub async fn publish_relations(
         });
     }
 
-    updated.map(data_response).ok_or(JobApiError::NotFound)
+    updated.map(Json).ok_or(JobApiError::NotFound)
 }
 
 #[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs",
     params(("id" = String, Path, description = "Job ID")),
     responses(
         (status = 204, description = "Job deleted"),
-        (status = 404, description = "Job not found"),
-        (status = 409, description = "Job is still running"),
+        (status = 404, description = "Job not found", body = ErrorBody),
+        (status = 409, description = "Job is still running", body = ErrorBody),
     )
 )]
 pub async fn delete_job(
@@ -275,4 +277,12 @@ pub async fn delete_job(
     });
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// The routes this module serves.
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(list_jobs, create_job))
+        .routes(routes!(get_job, update_job, complete_job, delete_job))
+        .routes(routes!(publish_relations))
 }

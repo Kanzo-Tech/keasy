@@ -2,13 +2,13 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
 use crate::AppState;
 use crate::auth::role::{AnyRole, Member};
-use crate::cloud::models::{
-    CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest,
-};
-use crate::error::data_response;
+use keasy_api::ErrorBody;
+use keasy_api::cloud::{CloudAccountSummary, CreateCloudAccountRequest, UpdateCloudAccountRequest};
 
 use super::errors::CloudAccountError;
 
@@ -27,14 +27,14 @@ pub async fn list_accounts(
     _: AnyRole,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
-    Ok(data_response(state.db.list_cloud_accounts().await?))
+    Ok(Json(state.db.list_cloud_accounts().await?))
 }
 
 #[utoipa::path(post, path = "/v1/cloud-accounts", tag = "Cloud Accounts",
     request_body = CreateCloudAccountRequest,
     responses(
         (status = 201, description = "Cloud account created", body = CloudAccountSummary),
-        (status = 400, description = "Validation failed"),
+        (status = 400, description = "Validation failed", body = ErrorBody),
     )
 )]
 pub async fn create_account(
@@ -43,14 +43,14 @@ pub async fn create_account(
     Json(payload): Json<CreateCloudAccountRequest>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
     let summary = state.db.create_cloud_account(payload).await?;
-    Ok((StatusCode::CREATED, data_response(summary)))
+    Ok((StatusCode::CREATED, Json(summary)))
 }
 
 #[utoipa::path(get, path = "/v1/cloud-accounts/{id}", tag = "Cloud Accounts",
     params(("id" = String, Path, description = "Cloud account ID")),
     responses(
         (status = 200, description = "Cloud account details", body = CloudAccountSummary),
-        (status = 404, description = "Cloud account not found"),
+        (status = 404, description = "Cloud account not found", body = ErrorBody),
     )
 )]
 pub async fn get_account(
@@ -62,7 +62,7 @@ pub async fn get_account(
         .db
         .get_cloud_account_summary(&id)
         .await?
-        .map(data_response)
+        .map(Json)
         .ok_or(CloudAccountError::NotFound)
 }
 
@@ -71,7 +71,7 @@ pub async fn get_account(
     request_body = UpdateCloudAccountRequest,
     responses(
         (status = 200, description = "Cloud account updated", body = CloudAccountSummary),
-        (status = 400, description = "Validation failed"),
+        (status = 400, description = "Validation failed", body = ErrorBody),
     )
 )]
 pub async fn update_account(
@@ -80,9 +80,7 @@ pub async fn update_account(
     Path(id): Path<String>,
     Json(payload): Json<UpdateCloudAccountRequest>,
 ) -> Result<impl IntoResponse, CloudAccountError> {
-    Ok(data_response(
-        state.db.update_cloud_account(&id, payload).await?,
-    ))
+    Ok(Json(state.db.update_cloud_account(&id, payload).await?))
 }
 
 #[utoipa::path(delete, path = "/v1/cloud-accounts/{id}", tag = "Cloud Accounts",
@@ -96,4 +94,11 @@ pub async fn delete_account(
 ) -> Result<impl IntoResponse, CloudAccountError> {
     state.db.remove_cloud_account(&id).await?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// The routes this module serves.
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(list_accounts, create_account))
+        .routes(routes!(get_account, update_account, delete_account))
 }

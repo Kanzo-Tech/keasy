@@ -2,36 +2,9 @@
 //! columns and rows each holds — `information_schema` questions the catalog is
 //! the authority for, with no knowledge of the output's layout in the host.
 
-use serde::Serialize;
+use keasy_api::catalog::{CatalogColumn, CatalogDataset, CatalogTable};
 
 use super::{Catalog, CatalogError};
-
-/// One registered dataset (a completed job's output) as the catalog sees it.
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-pub struct CatalogDataset {
-    /// The job id (the `job_` schema suffix), the dataset's stable handle.
-    pub job_id: String,
-    /// One entry per registered relation.
-    pub tables: Vec<CatalogTable>,
-}
-
-/// A registered type within a dataset and its SQL shape.
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-pub struct CatalogTable {
-    /// The relation's name, as fossil named it (`Person`, `Person_knows_Person`).
-    pub name: String,
-    /// Row count, as the corpus reported it when the relation was published.
-    pub rows: Option<i64>,
-    /// Property columns, in declaration order.
-    pub columns: Vec<CatalogColumn>,
-}
-
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-pub struct CatalogColumn {
-    pub name: String,
-    /// DuckDB type spelling (`VARCHAR`, `BIGINT`, …).
-    pub data_type: String,
-}
 
 impl Catalog {
     /// Every registered dataset with its types and columns — a PURE metadata
@@ -101,7 +74,7 @@ impl Catalog {
 /// row is matched against the name fossil published, one string against one
 /// string. Keeps `datasets()` a pure, credential-free metadata read while still
 /// surfacing counts.
-pub fn fill_row_counts(datasets: &mut [CatalogDataset], jobs: &[crate::jobs::models::Job]) {
+pub fn fill_row_counts(datasets: &mut [CatalogDataset], jobs: &[keasy_api::jobs::Job]) {
     use crate::catalog::sanitize;
 
     for dataset in datasets {
@@ -122,8 +95,8 @@ pub fn fill_row_counts(datasets: &mut [CatalogDataset], jobs: &[crate::jobs::mod
 mod tests {
     use super::*;
     use crate::catalog::Catalog;
-    use crate::jobs::models::OutputRelation;
     use duckdb::Connection;
+    use keasy_api::jobs::OutputRelation;
     use std::collections::HashMap;
 
     #[test]
@@ -177,7 +150,7 @@ mod tests {
 
     #[test]
     fn fill_row_counts_matches_jobs_to_datasets_by_sanitized_id() {
-        use crate::jobs::models::{Job, JobStatus, RunMode};
+        use keasy_api::jobs::{Job, JobStatus, RunMode};
 
         // A dataset as datasets() returns it: sanitized id, sanitized table name.
         let mut datasets = vec![CatalogDataset {

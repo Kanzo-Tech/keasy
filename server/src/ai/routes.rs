@@ -5,14 +5,20 @@ use axum::response::sse::Event;
 use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 use tracing::warn;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
 use super::client::{
     Message, ask_llm_stream, error_event, failure_code, into_sse_response, require_ai_settings,
     setup_sse_channels, while_read,
 };
+use keasy_api::ErrorCode;
+use keasy_api::ai::{AiProviderInfo, AskRequest, ChatMessage, ChatRole};
+use keasy_api::settings::ai::AiProvider;
+use strum::VariantArray;
+
 use crate::AppState;
 use crate::auth::role::Member;
-use crate::settings::ai::AiProvider;
 
 /// How many earlier messages of the conversation reach the model.
 const HISTORY_WINDOW: usize = 10;
@@ -26,35 +32,21 @@ struct LlmResponse {
     explanation: String,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, utoipa::ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum ChatRole {
-    User,
-    Assistant,
-}
-
-/// One earlier message of the conversation. The client keeps the conversation;
-/// the server sees only what each ask carries.
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct ChatMessage {
-    pub role: ChatRole,
-    pub content: String,
-}
-
-#[derive(Deserialize, utoipa::ToSchema)]
-pub struct AskRequest {
-    pub question: String,
-    pub provider: Option<AiProvider>,
-    /// DuckDB DDL of the views the browser mounted: the whole of what the model
-    /// knows about the data. Required unless `explain`.
-    pub schema: Option<String>,
-    /// When true, the model reads query results back instead of writing SQL;
-    /// `question` then carries the question, the SQL and the rows.
-    #[serde(default)]
-    pub explain: bool,
-    /// The conversation so far, oldest first.
-    #[serde(default)]
-    pub history: Vec<ChatMessage>,
+#[utoipa::path(get, path = "/v1/ai/providers", tag = "AI",
+    responses((status = 200, description = "Every provider keasy can call, with its default model", body = Vec<AiProviderInfo>))
+)]
+/// The providers an ask can run on, and the model each runs when its settings
+/// name none. Whether one is configured is `/v1/settings/ai/providers`.
+pub async fn list_providers(_: Member) -> Json<Vec<AiProviderInfo>> {
+    Json(
+        AiProvider::VARIANTS
+            .iter()
+            .map(|&provider| AiProviderInfo {
+                provider,
+                default_model: provider.default_model(),
+            })
+            .collect(),
+    )
 }
 
 #[utoipa::path(post, path = "/v1/jobs/{id}/discover/ask-stream", tag = "Discovery",
@@ -76,14 +68,11 @@ pub async fn ask_discover_stream(
         (EXPLAIN_PROMPT.to_string(), Vec::new(), 512)
     } else {
         let Some(schema) = req.schema.as_deref().filter(|s| !s.is_empty()) else {
-            return Err((
+            return Err(crate::error::fail(
                 StatusCode::BAD_REQUEST,
-                Json(crate::error::error_body(
-                    "schema_required",
-                    "No DuckDB schema was sent. The client reads it from its own DuckDB catalog and must send it with the question.",
-                )),
-            )
-                .into_response());
+                ErrorCode::SchemaRequired,
+                "No DuckDB schema was sent. The client reads it from its own DuckDB catalog and must send it with the question.",
+            ));
         };
         (system_prompt(schema), history(req.history), 2048)
     };
@@ -216,6 +205,13 @@ pub fn strip_markdown_fences(raw: &str) -> &str {
         .or_else(|| raw.strip_prefix("```"))
         .unwrap_or(raw);
     mid.strip_suffix("```").unwrap_or(mid).trim()
+}
+
+/// The routes this module serves.
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(list_providers))
+        .routes(routes!(ask_discover_stream))
 }
 
 #[cfg(test)]

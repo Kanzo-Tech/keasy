@@ -1,23 +1,14 @@
+use axum::Json;
 use axum::extract::State;
 use axum::response::IntoResponse;
+
+use keasy_api::auth::WorkspacesResponse;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
 use crate::AppState;
 use crate::auth::bearer::AuthenticatedUser;
 use crate::db::DbError;
-use crate::error::data_response;
-
-#[derive(serde::Serialize, utoipa::ToSchema)]
-pub struct WorkspacesResponse {
-    /// Slugs of every workspace the user belongs to, read from the `workspaces`
-    /// claim on the token this request carried. The web builds each
-    /// `<slug>.<domain>` link.
-    pub workspaces: Vec<String>,
-    /// This instance's slug — the "current" entry in the switcher.
-    pub current: String,
-    /// This instance's display name, from its workspace identity. The other
-    /// entries show their slug: an instance only knows its own name.
-    pub current_name: String,
-}
 
 /// GET /v1/auth/workspaces
 ///
@@ -42,9 +33,14 @@ pub async fn list_workspaces(
         .map(|i| i.name)
         .unwrap_or_default();
 
-    Ok(data_response(WorkspacesResponse {
+    Ok(Json(WorkspacesResponse {
         workspaces: user.claims.workspaces,
         current: state.workspace_slug.clone().unwrap_or_default(),
         current_name,
     }))
+}
+
+/// The routes this module serves.
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new().routes(routes!(list_workspaces))
 }

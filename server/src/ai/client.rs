@@ -11,7 +11,10 @@ use tokio_stream::wrappers::ReceiverStream;
 use tracing::warn;
 
 use crate::db::{DbError, DbResult};
-use crate::settings::ai::{AiProvider, AiSettings};
+use keasy_api::settings::ai::AiProvider;
+use keasy_api::{ErrorBody, ErrorCode};
+
+use crate::settings::ai::AiSettings;
 
 pub enum AiError {
     InsufficientCredits(String),
@@ -44,14 +47,11 @@ pub enum AiUnavailable {
 impl IntoResponse for AiUnavailable {
     fn into_response(self) -> Response {
         match self {
-            AiUnavailable::NotConfigured => (
+            AiUnavailable::NotConfigured => crate::error::fail(
                 axum::http::StatusCode::BAD_REQUEST,
-                axum::Json(crate::error::error_body(
-                    "ai_not_configured",
-                    "AI settings are not configured. Go to Settings > AI to add an API key.",
-                )),
-            )
-                .into_response(),
+                ErrorCode::AiNotConfigured,
+                "AI settings are not configured. Go to Settings > AI to add an API key.",
+            ),
             AiUnavailable::Db(e) => e.into_response(),
         }
     }
@@ -68,7 +68,7 @@ pub fn require_ai_settings(
 }
 
 async fn classify_api_error(res: reqwest::Response, provider: AiProvider) -> AiError {
-    let provider = provider.as_str();
+    let provider = provider.as_ref();
     let status = res.status();
     let body: serde_json::Value = res.json().await.unwrap_or_default();
     let message = body["error"]["message"]
@@ -119,7 +119,7 @@ async fn stream_anthropic(
     let model = settings
         .model
         .as_deref()
-        .unwrap_or("claude-sonnet-4-20250514");
+        .unwrap_or(AiProvider::Anthropic.default_model());
 
     let body = serde_json::json!({
         "model": model,
@@ -154,7 +154,10 @@ async fn stream_openai(
     max_tokens: u32,
     tx: mpsc::Sender<String>,
 ) -> Result<String, AiError> {
-    let model = settings.model.as_deref().unwrap_or("gpt-4o");
+    let model = settings
+        .model
+        .as_deref()
+        .unwrap_or(AiProvider::Openai.default_model());
 
     let mut all_messages = vec![Message {
         role: "system".to_string(),
@@ -250,19 +253,22 @@ pub fn setup_sse_channels() -> SseChannels {
 }
 
 /// The `code` an `error` frame carries for a failed model call.
-pub fn failure_code(e: &AiError) -> &'static str {
+pub fn failure_code(e: &AiError) -> ErrorCode {
     match e {
-        AiError::InsufficientCredits(_) => "insufficient_credits",
-        AiError::Failed(_) => "llm_failed",
+        AiError::InsufficientCredits(_) => ErrorCode::InsufficientCredits,
+        AiError::Failed(_) => ErrorCode::LlmFailed,
     }
 }
 
-/// The one shape of the `error` frame. Both stream endpoints go through here so
-/// the payload cannot drift into two spellings again.
-pub fn error_event(code: &str, message: &str) -> Event {
+/// The `error` frame: an [`ErrorBody`], the same shape a refused request gets.
+pub fn error_event(error: ErrorCode, message: &str) -> Event {
+    let body = ErrorBody {
+        error,
+        message: message.to_string(),
+    };
     Event::default()
         .event("error")
-        .data(serde_json::json!({"code": code, "message": message}).to_string())
+        .data(serde_json::to_string(&body).expect("an ErrorBody serializes"))
 }
 
 /// Runs `call` only while someone reads the stream. A reader who leaves drops

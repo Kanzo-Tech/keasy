@@ -5,14 +5,15 @@
 //! runs jobs and reads their output and administers nothing. A handler states
 //! which it admits by taking [`Owner`], [`Member`] or [`AnyRole`].
 
-use axum::Json;
 use axum::extract::FromRequestParts;
 use axum::http::StatusCode;
 use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
 
+use keasy_api::ErrorCode;
+
 use super::bearer::AuthenticatedUser;
-use crate::error::error_body;
+use crate::error::fail;
 
 /// A workspace role, from `resource_access.<client_id>.roles` on the token.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -22,27 +23,32 @@ pub enum Role {
 }
 
 /// Why a handler refused its caller. Opaque on purpose.
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug)]
 pub enum RbacError {
-    #[error("auth/session_required")]
     AuthRequired,
-    #[error("rbac/no_membership")]
     NoMembership,
-    #[error("rbac/insufficient_role")]
     InsufficientRole,
 }
 
 impl IntoResponse for RbacError {
     fn into_response(self) -> Response {
-        let (status, message) = match self {
-            RbacError::AuthRequired => (StatusCode::UNAUTHORIZED, "Authentication required"),
-            RbacError::NoMembership => (
+        match self {
+            RbacError::AuthRequired => fail(
+                StatusCode::UNAUTHORIZED,
+                ErrorCode::SessionRequired,
+                "Authentication required",
+            ),
+            RbacError::NoMembership => fail(
                 StatusCode::FORBIDDEN,
+                ErrorCode::NoMembership,
                 "No membership in this workspace found",
             ),
-            RbacError::InsufficientRole => (StatusCode::FORBIDDEN, "Insufficient permissions"),
-        };
-        (status, Json(error_body(&self.to_string(), message))).into_response()
+            RbacError::InsufficientRole => fail(
+                StatusCode::FORBIDDEN,
+                ErrorCode::InsufficientRole,
+                "Insufficient permissions",
+            ),
+        }
     }
 }
 

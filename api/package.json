@@ -8,7 +8,7 @@
     ".": "./src/client.ts"
   },
   "scripts": {
-    "generate": "openapi-typescript openapi.json -o src/schema.d.ts",
+    "generate": "openapi-typescript openapi.json -o src/schema.d.ts --read-write-markers --default-non-nullable=false",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

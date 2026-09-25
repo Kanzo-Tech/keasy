@@ -1,4 +1,4 @@
-import type { Job } from "@/lib/types";
+import type { Schemas } from "@/lib/api/client";
 
 export function formatDuration(startIso: string, endIso: string): string {
   const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
@@ -11,7 +11,7 @@ export function formatDuration(startIso: string, endIso: string): string {
   return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
 }
 
-export function formatJobDuration(job: Job): string {
+export function formatJobDuration(job: Schemas["Job"]): string {
   if (!job.started_at) return "";
   const end = job.completed_at ?? new Date().toISOString();
   return formatDuration(job.started_at, end);

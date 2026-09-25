@@ -1,4 +1,9 @@
-import type { Job, JobStatus, ProviderInfo } from "@/lib/types";
+import type { ProviderInfo } from "@fossil-lang/wasm";
+
+import type { Schemas } from "@/lib/api/client";
+
+type Job = Schemas["Job"];
+type JobStatus = Schemas["JobStatus"];
 
 export function isTerminalStatus(status: JobStatus): boolean {
   return status === "completed" || status === "failed" || status === "cancelled";

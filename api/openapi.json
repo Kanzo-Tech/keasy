@@ -41,51 +41,12 @@
         ]
       }
     },
-    "/v1/ai/providers": {
-      "get": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "The providers a call can run on, and the model each runs when its settings\nname none. Whether one is configured is `/v1/settings/ai/providers`.",
-        "operationId": "list_providers",
-        "responses": {
-          "200": {
-            "description": "Every provider keasy can call, with its default model",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AiProviderInfo"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
     "/v1/ai/stream": {
       "post": {
         "tags": [
           "AI"
         ],
-        "summary": "The one model call: the browser sends the prompt, the server adds the key\nand relays the answer as it streams.",
+        "summary": "The one model call: the browser sends the prompt, the server adds the key\nof the model connection and relays the answer as it streams.",
         "operationId": "complete_stream",
         "requestBody": {
           "content": {
@@ -105,7 +66,7 @@
             }
           },
           "400": {
-            "description": "No AI provider configured",
+            "description": "No model connection, or several and none named",
             "content": {
               "application/json": {
                 "schema": {
@@ -119,6 +80,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -169,254 +140,6 @@
         }
       }
     },
-    "/v1/cloud-accounts": {
-      "get": {
-        "tags": [
-          "Cloud Accounts"
-        ],
-        "operationId": "list_accounts",
-        "responses": {
-          "200": {
-            "description": "List of cloud accounts",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CloudAccountSummary"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Cloud Accounts"
-        ],
-        "operationId": "create_account",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateCloudAccountRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Cloud account created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CloudAccountSummary"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
-    "/v1/cloud-accounts/{id}": {
-      "get": {
-        "tags": [
-          "Cloud Accounts"
-        ],
-        "operationId": "get_account",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Cloud account ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Cloud account details",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CloudAccountSummary"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Cloud account not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Cloud Accounts"
-        ],
-        "operationId": "update_account",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Cloud account ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateCloudAccountRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Cloud account updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CloudAccountSummary"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Cloud Accounts"
-        ],
-        "operationId": "delete_account",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Cloud account ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Cloud account deleted"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
     "/v1/connections": {
       "get": {
         "tags": [
@@ -425,24 +148,24 @@
         "operationId": "list_connections",
         "parameters": [
           {
-            "name": "type",
+            "name": "purpose",
             "in": "query",
-            "description": "Only connections of this kind.",
+            "description": "Only those of this purpose.",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/ConnectionKind"
+              "$ref": "#/components/schemas/Purpose"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "List of connections",
+            "description": "The connections",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Connection"
+                    "$ref": "#/components/schemas/ConnectionView"
                   }
                 }
               }
@@ -482,17 +205,17 @@
         },
         "responses": {
           "201": {
-            "description": "Connection created",
+            "description": "Validated and stored",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Connection"
+                  "$ref": "#/components/schemas/ConnectionView"
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid connection or container not found",
+            "description": "No such credential, one of the other purpose, or a URL it does not reach",
             "content": {
               "application/json": {
                 "schema": {
@@ -505,43 +228,34 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
-    "/v1/connections/refs": {
-      "get": {
-        "tags": [
-          "Connections"
-        ],
-        "summary": "The connections a program may read, by the name it writes after `@`. No\ncredentials: signing is [`sign_locators`].",
-        "operationId": "connection_refs",
-        "responses": {
-          "200": {
-            "description": "Every source connection's base URL, by name",
+            "description": "A sink by a member, or a source or model by the owner",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ConnectionRefsResponse"
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
+          "409": {
+            "description": "A connection of that name, or a second sink",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
+          "422": {
+            "description": "The connection did not validate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -560,7 +274,7 @@
         "tags": [
           "Connections"
         ],
-        "summary": "Sign GET URLs for locators, each with the credentials of the connection it\nlies under. Serves the editor and a job's run alike: a member reads what\nevery source connection holds, and the sink only through the job that\nwrote it. Public HTTP locators come back as they are.",
+        "summary": "Sign GET URLs for locators, each with the credential of the source it lies\nunder. A member reads what every source holds, and the sink only through\nthe job that wrote it. Public HTTP locators come back as they are.",
         "operationId": "sign_locators",
         "requestBody": {
           "content": {
@@ -601,7 +315,7 @@
         }
       }
     },
-    "/v1/connections/{id}": {
+    "/v1/connections/{name}": {
       "get": {
         "tags": [
           "Connections"
@@ -609,9 +323,9 @@
         "operationId": "get_connection",
         "parameters": [
           {
-            "name": "id",
+            "name": "name",
             "in": "path",
-            "description": "Connection ID",
+            "description": "Connection name",
             "required": true,
             "schema": {
               "type": "string"
@@ -620,11 +334,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Connection details",
+            "description": "The connection",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Connection"
+                  "$ref": "#/components/schemas/ConnectionView"
                 }
               }
             }
@@ -636,7 +350,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Connection not found",
+            "description": "No such connection",
             "content": {
               "application/json": {
                 "schema": {
@@ -663,9 +377,9 @@
         "operationId": "delete_connection",
         "parameters": [
           {
-            "name": "id",
+            "name": "name",
             "in": "path",
-            "description": "Connection ID",
+            "description": "Connection name",
             "required": true,
             "schema": {
               "type": "string"
@@ -674,7 +388,300 @@
         ],
         "responses": {
           "204": {
-            "description": "Connection deleted"
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Not the caller's to delete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Jobs wrote their output to it; `dependents` names them",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "update_connection",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Connection name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Validated again and stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionView"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Not the caller's to change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The connection did not validate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/connections/{name}/files": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "list_connection_files",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Connection name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every object under the connection's prefix",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FileEntry"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a storage connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "502": {
+            "description": "The store refused the listing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/connections/{name}/validate": {
+      "post": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "LIST a source, WRITE and DELETE under the sink, list a model's provider.",
+        "operationId": "validate_connection",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Connection name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The probe's report, stored with the connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReport"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/credentials": {
+      "get": {
+        "tags": [
+          "Credentials"
+        ],
+        "operationId": "list_credentials",
+        "parameters": [
+          {
+            "name": "purpose",
+            "in": "query",
+            "description": "Only those of this purpose.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Purpose"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The credentials, with the connections using each; never a secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CredentialView"
+                  }
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -692,41 +699,35 @@
             "$ref": "#/components/responses/KeysUnavailable"
           }
         }
-      }
-    },
-    "/v1/connections/{id}/files": {
-      "get": {
+      },
+      "post": {
         "tags": [
-          "Connections"
+          "Credentials"
         ],
-        "operationId": "list_connection_files",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Connection ID",
-            "required": true,
-            "schema": {
-              "type": "string"
+        "operationId": "create_credential",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCredentialRequest"
+              }
             }
-          }
-        ],
+          },
+          "required": true
+        },
         "responses": {
-          "200": {
-            "description": "List of files in the connection",
+          "201": {
+            "description": "Validated and stored",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FileEntry"
-                  }
+                  "$ref": "#/components/schemas/CredentialView"
                 }
               }
             }
           },
           "400": {
-            "description": "File listing not supported",
+            "description": "An invalid name",
             "content": {
               "application/json": {
                 "schema": {
@@ -741,8 +742,287 @@
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
+          "409": {
+            "description": "A credential of that name exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The credential did not validate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/credentials/{name}": {
+      "get": {
+        "tags": [
+          "Credentials"
+        ],
+        "operationId": "get_credential",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Credential name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The credential; never a secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialView"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Connection not found",
+            "description": "No such credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Credentials"
+        ],
+        "operationId": "delete_credential",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Credential name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Neither its creator nor the owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connections still use it; `dependents` names them",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Credentials"
+        ],
+        "summary": "Rotation replaces the whole spec, and is committed only if every connection\nusing the credential still validates with the new one.",
+        "operationId": "update_credential",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Credential name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCredentialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Renamed and/or rotated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialView"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Neither its creator nor the owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A connection using it would not validate with the new spec; `dependents` names them",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/credentials/{name}/validate": {
+      "post": {
+        "tags": [
+          "Credentials"
+        ],
+        "summary": "Probe the credential through every connection that uses it, and at `url`.",
+        "operationId": "validate_credential",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Credential name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateCredentialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The probe's report, stored with the credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReport"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such credential",
             "content": {
               "application/json": {
                 "schema": {
@@ -1387,274 +1667,6 @@
         }
       }
     },
-    "/v1/settings/ai/providers": {
-      "get": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "list_ai_providers",
-        "responses": {
-          "200": {
-            "description": "List of AI providers",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AiSettingsPayload"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
-    "/v1/settings/ai/providers/{provider}": {
-      "put": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "save_ai_provider",
-        "parameters": [
-          {
-            "name": "provider",
-            "in": "path",
-            "description": "The provider",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/AiProvider"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SaveAiProviderRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Provider saved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AiSettingsPayload"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Unknown provider",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "delete_ai_provider",
-        "parameters": [
-          {
-            "name": "provider",
-            "in": "path",
-            "description": "The provider",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/AiProvider"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Provider deleted"
-          },
-          "400": {
-            "description": "Unknown provider",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
-    "/v1/settings/catalog-storage": {
-      "get": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "get_catalog_storage",
-        "responses": {
-          "200": {
-            "description": "Catalog storage config",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CatalogStoragePayload"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "Not configured"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "save_catalog_storage",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CatalogStoragePayload"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Catalog storage saved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CatalogStoragePayload"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
-    "/v1/settings/schema": {
-      "get": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "get_schema",
-        "responses": {
-          "200": {
-            "description": "Provider registry schema",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ProviderSchema"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {}
-        ]
-      }
-    },
     "/version": {
       "get": {
         "tags": [
@@ -1681,99 +1693,6 @@
   },
   "components": {
     "schemas": {
-      "AiProvider": {
-        "type": "string",
-        "description": "An LLM provider keasy can call.",
-        "enum": [
-          "anthropic",
-          "openai"
-        ]
-      },
-      "AiProviderInfo": {
-        "type": "object",
-        "description": "A provider keasy can call, and the model it runs when none is configured.",
-        "required": [
-          "provider",
-          "default_model"
-        ],
-        "properties": {
-          "default_model": {
-            "type": "string"
-          },
-          "provider": {
-            "$ref": "#/components/schemas/AiProvider"
-          }
-        }
-      },
-      "AiSettingsPayload": {
-        "type": "object",
-        "description": "A configured provider as the settings page shows it: the key is only ever\nsaid to be there.",
-        "required": [
-          "provider",
-          "api_key"
-        ],
-        "properties": {
-          "api_key": {
-            "type": "string",
-            "description": "`\"••••\"` when a key is stored, empty otherwise."
-          },
-          "max_tokens": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "minimum": 0
-          },
-          "model": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "provider": {
-            "$ref": "#/components/schemas/AiProvider"
-          }
-        }
-      },
-      "AuthMethodSchema": {
-        "type": "object",
-        "required": [
-          "name",
-          "label",
-          "fields"
-        ],
-        "properties": {
-          "fields": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FieldSchema"
-            }
-          },
-          "label": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        }
-      },
-      "CatalogStoragePayload": {
-        "type": "object",
-        "description": "The workspace write sink, as the owner's Catalog Storage page edits it.",
-        "required": [
-          "cloud_account_id",
-          "base_url"
-        ],
-        "properties": {
-          "base_url": {
-            "type": "string"
-          },
-          "cloud_account_id": {
-            "type": "string"
-          }
-        }
-      },
       "ChatMessage": {
         "type": "object",
         "required": [
@@ -1796,38 +1715,24 @@
           "assistant"
         ]
       },
-      "CloudAccountSummary": {
+      "Check": {
         "type": "object",
         "required": [
-          "id",
-          "name",
-          "provider_id",
-          "fields"
+          "operation",
+          "result"
         ],
         "properties": {
-          "auth_method": {
+          "message": {
             "type": [
               "string",
               "null"
             ]
           },
-          "fields": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
+          "operation": {
+            "$ref": "#/components/schemas/Operation"
           },
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "provider_id": {
-            "type": "string"
+          "result": {
+            "$ref": "#/components/schemas/Outcome"
           }
         }
       },
@@ -1862,13 +1767,20 @@
           "messages"
         ],
         "properties": {
+          "connection": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The model connection to call. May be left out while the workspace has\nexactly one."
+          },
           "max_tokens": {
             "type": [
               "integer",
               "null"
             ],
             "format": "int32",
-            "description": "Overrides the provider's configured `max_tokens`.",
+            "description": "Fewer tokens than the connection allows.",
             "minimum": 0
           },
           "messages": {
@@ -1878,55 +1790,7 @@
             },
             "description": "The conversation, oldest first, ending with the user's turn."
           },
-          "provider": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/AiProvider",
-                "description": "The configured provider to call; the first configured one when absent."
-              }
-            ]
-          },
           "system": {
-            "type": "string"
-          }
-        }
-      },
-      "Connection": {
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "kind",
-          "location_type",
-          "url"
-        ],
-        "properties": {
-          "cloud_account_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "direction": {
-            "$ref": "#/components/schemas/Direction",
-            "description": "Read source vs the workspace write sink. Defaults to `source`."
-          },
-          "id": {
-            "type": "string"
-          },
-          "kind": {
-            "$ref": "#/components/schemas/ConnectionKind"
-          },
-          "location_type": {
-            "$ref": "#/components/schemas/LocationType"
-          },
-          "name": {
-            "type": "string"
-          },
-          "url": {
             "type": "string"
           }
         }
@@ -1938,53 +1802,74 @@
           "vocab"
         ]
       },
-      "ConnectionRefsResponse": {
-        "type": "object",
-        "required": [
-          "refs"
-        ],
-        "properties": {
-          "refs": {
+      "ConnectionTarget": {
+        "oneOf": [
+          {
             "type": "object",
-            "description": "Source connection name → base URL, the map `@name/…` expands against.",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
+            "required": [
+              "storage"
+            ],
+            "properties": {
+              "storage": {
+                "$ref": "#/components/schemas/StorageTarget"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "model"
+            ],
+            "properties": {
+              "model": {
+                "$ref": "#/components/schemas/ModelTarget"
+              }
             }
           }
-        }
+        ]
       },
-      "CreateCloudAccountRequest": {
+      "ConnectionView": {
         "type": "object",
-        "description": "Every field value arrives as a secret: which of them are credentials is the\nprovider schema's to say, and until it has, none is logged or printed.",
         "required": [
           "name",
-          "provider_id",
-          "fields"
+          "credential",
+          "target",
+          "created_by",
+          "created_at",
+          "updated_by",
+          "updated_at"
         ],
         "properties": {
-          "auth_method": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "created_at": {
+            "type": "string"
           },
-          "fields": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
+          "created_by": {
+            "type": "string"
+          },
+          "credential": {
+            "type": "string"
           },
           "name": {
             "type": "string"
           },
-          "provider_id": {
+          "target": {
+            "$ref": "#/components/schemas/ConnectionTarget"
+          },
+          "updated_at": {
             "type": "string"
+          },
+          "updated_by": {
+            "type": "string"
+          },
+          "validation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ValidationReport"
+              }
+            ]
           }
         }
       },
@@ -1992,32 +1877,43 @@
         "type": "object",
         "required": [
           "name",
-          "kind",
-          "location_type",
-          "url"
+          "credential",
+          "target"
         ],
         "properties": {
-          "cloud_account_id": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "credential": {
+            "type": "string",
+            "description": "The credential it signs or calls with; of the same purpose."
           },
-          "direction": {
-            "$ref": "#/components/schemas/Direction",
-            "description": "`source` (default) or `sink` (the owner output store; one per workspace)."
+          "name": {
+            "type": "string",
+            "description": "What programs write after `@`, and the connection's key."
           },
-          "kind": {
-            "$ref": "#/components/schemas/ConnectionKind"
-          },
-          "location_type": {
-            "$ref": "#/components/schemas/LocationType"
-          },
+          "target": {
+            "$ref": "#/components/schemas/ConnectionTarget"
+          }
+        }
+      },
+      "CreateCredentialRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "spec"
+        ],
+        "properties": {
           "name": {
             "type": "string"
           },
-          "url": {
-            "type": "string"
+          "probe_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "A storage URL to LIST before the credential is stored. A storage\ncredential has no location of its own, so without one it is only\nchecked to build a client."
+          },
+          "spec": {
+            "$ref": "#/components/schemas/CredentialSpecInput"
           }
         }
       },
@@ -2025,7 +1921,7 @@
         "type": "object",
         "required": [
           "script",
-          "sink_connection_id"
+          "sink_connection"
         ],
         "properties": {
           "draft": {
@@ -2040,9 +1936,112 @@
           "script": {
             "type": "string"
           },
-          "sink_connection_id": {
+          "sink_connection": {
             "type": "string",
-            "description": "Where the output lands: a sink connection."
+            "description": "Where the output lands: the sink connection's name."
+          }
+        }
+      },
+      "CredentialSpecInput": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "storage"
+            ],
+            "properties": {
+              "storage": {
+                "$ref": "#/components/schemas/StorageCredentialInput"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "model"
+            ],
+            "properties": {
+              "model": {
+                "$ref": "#/components/schemas/ModelCredentialInput"
+              }
+            }
+          }
+        ],
+        "description": "A credential as a request states it, secrets included."
+      },
+      "CredentialSpecView": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "storage"
+            ],
+            "properties": {
+              "storage": {
+                "$ref": "#/components/schemas/StorageCredentialView"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "model"
+            ],
+            "properties": {
+              "model": {
+                "$ref": "#/components/schemas/ModelCredentialView"
+              }
+            }
+          }
+        ],
+        "description": "A credential as a response shows it: no secret field exists here."
+      },
+      "CredentialView": {
+        "type": "object",
+        "required": [
+          "name",
+          "spec",
+          "used_by",
+          "created_by",
+          "created_at",
+          "updated_by",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/CredentialSpecView"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": "string"
+          },
+          "used_by": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The connections that use this credential."
+          },
+          "validation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ValidationReport"
+              }
+            ]
           }
         }
       },
@@ -2088,13 +2087,13 @@
             "items": {
               "type": "string"
             },
-            "description": "Paths relative to the dataset (or connection). The caller names them —\nthe executor's output, the corpus reader's enumeration — and keasy signs\nthe list it is handed."
+            "description": "Paths relative to the dataset. The caller names them — the executor's\noutput, the corpus reader's enumeration — and keasy signs the list it is\nhanded."
           }
         }
       },
       "Direction": {
         "type": "string",
-        "description": "Whether a connection is a READ source (programs reference it via `@conn`) or\nthe workspace's WRITE sink (where the owner's job output is materialised).\nOrthogonal to [`ConnectionKind`] (which describes a source's data) and\n[`LocationType`]: a connection is a named, credentialed storage location, and\n`direction` says how it is used. Exactly one `sink` exists per workspace (the\nowner output store); `kind` is source-only and ignored for a sink.",
+        "description": "A source is read through `@name/…`; the one sink is where job output lands.",
         "enum": [
           "source",
           "sink"
@@ -2108,6 +2107,13 @@
           "message"
         ],
         "properties": {
+          "dependents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What the refusal is about: what still uses a credential or connection,\nor the connections a rotation would break."
+          },
           "error": {
             "$ref": "#/components/schemas/ErrorCode"
           },
@@ -2136,49 +2142,17 @@
           "still_running",
           "invalid_destination",
           "no_destination",
-          "invalid_connection",
-          "container_not_found",
+          "already_exists",
+          "in_use",
+          "probe_failed",
           "list_files_failed",
           "store_error",
           "sign_error",
           "ai_not_configured",
+          "ai_connection_required",
           "insufficient_credits",
           "llm_failed"
         ]
-      },
-      "FieldSchema": {
-        "type": "object",
-        "required": [
-          "name",
-          "label",
-          "secret"
-        ],
-        "properties": {
-          "default_value": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "env_var": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "label": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "optional": {
-            "type": "boolean"
-          },
-          "secret": {
-            "type": "boolean"
-          }
-        }
       },
       "FileEntry": {
         "type": "object",
@@ -2211,7 +2185,7 @@
           "status",
           "created_at",
           "created_by",
-          "sink_connection_id"
+          "sink_connection"
         ],
         "properties": {
           "completed_at": {
@@ -2259,9 +2233,9 @@
               "null"
             ]
           },
-          "sink_connection_id": {
+          "sink_connection": {
             "type": "string",
-            "description": "The sink the output lands in, under `{sink.url}/{job_id}`, signed with\nthat connection's credentials."
+            "description": "The sink connection the output lands in, under `{sink.url}/{job_id}`,\nsigned with that connection's credential."
           },
           "started_at": {
             "type": [
@@ -2285,11 +2259,137 @@
           "cancelled"
         ]
       },
-      "LocationType": {
+      "ModelCredentialInput": {
+        "oneOf": [
+          {
+            "type": "object",
+            "title": "Anthropic",
+            "required": [
+              "api_key",
+              "kind"
+            ],
+            "properties": {
+              "api_key": {
+                "type": "string",
+                "format": "password",
+                "writeOnly": true
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "anthropic"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "OpenAI",
+            "required": [
+              "api_key",
+              "kind"
+            ],
+            "properties": {
+              "api_key": {
+                "type": "string",
+                "format": "password",
+                "writeOnly": true
+              },
+              "base_url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uri",
+                "description": "An OpenAI-compatible API root. Empty is `https://api.openai.com/v1`."
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "openai"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ModelCredentialView": {
+        "oneOf": [
+          {
+            "type": "object",
+            "title": "Anthropic",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "anthropic"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "OpenAI",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "base_url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "openai"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ModelTarget": {
+        "type": "object",
+        "properties": {
+          "max_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The most tokens an answer may take, unless the call asks for fewer.",
+            "minimum": 0
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The provider's model id. Empty runs the provider's default\n(Anthropic: claude-sonnet-4-20250514, OpenAI: gpt-4o)."
+          }
+        }
+      },
+      "Operation": {
+        "type": "string",
+        "description": "What a probe tried.",
+        "enum": [
+          "list",
+          "write",
+          "delete",
+          "models"
+        ]
+      },
+      "Outcome": {
         "type": "string",
         "enum": [
-          "cloud",
-          "local"
+          "pass",
+          "fail",
+          "skip"
         ]
       },
       "OutputRelation": {
@@ -2323,39 +2423,6 @@
           }
         }
       },
-      "ProviderSchema": {
-        "type": "object",
-        "required": [
-          "id",
-          "label",
-          "icon",
-          "common_fields",
-          "auth_methods"
-        ],
-        "properties": {
-          "auth_methods": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AuthMethodSchema"
-            }
-          },
-          "common_fields": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FieldSchema"
-            }
-          },
-          "icon": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          }
-        }
-      },
       "PublishRelationsRequest": {
         "type": "object",
         "description": "What the corpus reader enumerated for a finished job (PUT\n`/v1/jobs/{id}/relations`). It arrives after completion because naming a\nrelation is the corpus's answer, not the report's: only a reader with the\nmanifests in hand can say what the dataset is called and which files carry\nit.",
@@ -2370,6 +2437,14 @@
             }
           }
         }
+      },
+      "Purpose": {
+        "type": "string",
+        "description": "What a credential, and every connection that uses it, is for.",
+        "enum": [
+          "storage",
+          "model"
+        ]
       },
       "RelationColumn": {
         "type": "object",
@@ -2402,29 +2477,6 @@
             "propertyNames": {
               "type": "string"
             }
-          }
-        }
-      },
-      "SaveAiProviderRequest": {
-        "type": "object",
-        "properties": {
-          "api_key": {
-            "type": "string",
-            "description": "Empty keeps the stored key."
-          },
-          "max_tokens": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "minimum": 0
-          },
-          "model": {
-            "type": [
-              "string",
-              "null"
-            ]
           }
         }
       },
@@ -2461,32 +2513,292 @@
           }
         }
       },
-      "UpdateCloudAccountRequest": {
+      "StorageCredentialInput": {
+        "oneOf": [
+          {
+            "type": "object",
+            "title": "Amazon S3 / S3-compatible",
+            "required": [
+              "access_key_id",
+              "secret_access_key",
+              "kind"
+            ],
+            "properties": {
+              "access_key_id": {
+                "type": "string"
+              },
+              "endpoint": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uri",
+                "description": "MinIO, R2 or a gateway. An `http://` endpoint opts into plain HTTP."
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "s3"
+                ]
+              },
+              "region": {
+                "type": "string",
+                "default": "us-east-1"
+              },
+              "secret_access_key": {
+                "type": "string",
+                "format": "password",
+                "writeOnly": true
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "Azure Blob — account key",
+            "required": [
+              "account",
+              "key",
+              "kind"
+            ],
+            "properties": {
+              "account": {
+                "type": "string"
+              },
+              "key": {
+                "type": "string",
+                "format": "password",
+                "writeOnly": true
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "azure_account_key"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "Azure Blob — SAS token",
+            "required": [
+              "account",
+              "sas_token",
+              "kind"
+            ],
+            "properties": {
+              "account": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "azure_sas"
+                ]
+              },
+              "sas_token": {
+                "type": "string",
+                "format": "password",
+                "writeOnly": true
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "Azure Blob — service principal",
+            "required": [
+              "account",
+              "tenant_id",
+              "client_id",
+              "client_secret",
+              "kind"
+            ],
+            "properties": {
+              "account": {
+                "type": "string"
+              },
+              "client_id": {
+                "type": "string"
+              },
+              "client_secret": {
+                "type": "string",
+                "format": "password",
+                "writeOnly": true
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "azure_service_principal"
+                ]
+              },
+              "tenant_id": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "StorageCredentialView": {
+        "oneOf": [
+          {
+            "type": "object",
+            "title": "Amazon S3 / S3-compatible",
+            "required": [
+              "access_key_id",
+              "region",
+              "kind"
+            ],
+            "properties": {
+              "access_key_id": {
+                "type": "string"
+              },
+              "endpoint": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "s3"
+                ]
+              },
+              "region": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "Azure Blob — account key",
+            "required": [
+              "account",
+              "kind"
+            ],
+            "properties": {
+              "account": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "azure_account_key"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "Azure Blob — SAS token",
+            "required": [
+              "account",
+              "kind"
+            ],
+            "properties": {
+              "account": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "azure_sas"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "title": "Azure Blob — service principal",
+            "required": [
+              "account",
+              "tenant_id",
+              "client_id",
+              "kind"
+            ],
+            "properties": {
+              "account": {
+                "type": "string"
+              },
+              "client_id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "azure_service_principal"
+                ]
+              },
+              "tenant_id": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "StorageTarget": {
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "direction": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ConnectionKind"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The prefix the connection is: `s3://bucket/prefix/` or `az://container/prefix/`."
+          }
+        }
+      },
+      "UpdateConnectionRequest": {
         "type": "object",
         "properties": {
-          "auth_method": {
+          "credential": {
             "type": [
               "string",
               "null"
             ]
           },
-          "fields": {
-            "type": [
-              "object",
-              "null"
-            ],
-            "description": "An empty secret keeps the stored one.",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          },
           "name": {
             "type": [
               "string",
               "null"
+            ]
+          },
+          "target": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConnectionTarget"
+              }
+            ]
+          }
+        }
+      },
+      "UpdateCredentialRequest": {
+        "type": "object",
+        "description": "A rename, a rotation or both. `spec` replaces the whole spec, secrets\nincluded, and is stored only if every connection using the credential\nstill validates with it.",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "spec": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CredentialSpecInput"
+              }
             ]
           }
         }
@@ -2505,6 +2817,38 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "ValidateCredentialRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "A storage URL to LIST besides the connections that use the credential."
+          }
+        }
+      },
+      "ValidationReport": {
+        "type": "object",
+        "description": "One probe of a credential or a connection, check by check.",
+        "required": [
+          "at",
+          "results"
+        ],
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Check"
+            }
           }
         }
       },

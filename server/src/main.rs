@@ -27,9 +27,14 @@ async fn main() -> ExitCode {
 /// Configure from the environment, open the stores and serve until Ctrl+C.
 async fn serve() -> Result<(), String> {
     let settings = configuration::get_configuration()?;
+    let ctrl_c = async {
+        if tokio::signal::ctrl_c().await.is_ok() {
+            tracing::info!("Shutdown signal received");
+        }
+    };
     Application::build(settings)
         .await?
-        .run_until_stopped()
+        .run_until_stopped(ctrl_c)
         .await
 }
 

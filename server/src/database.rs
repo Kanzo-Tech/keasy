@@ -176,7 +176,7 @@ impl Database {
         self.write_conn.lock().await
     }
 
-    pub(crate) fn secret_key(&self) -> &SecretKey {
+    pub fn secret_key(&self) -> &SecretKey {
         &self.secret_key
     }
 

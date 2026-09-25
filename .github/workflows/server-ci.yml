@@ -31,19 +31,8 @@ jobs:
         working-directory: server
         run: cargo clippy --all-targets -- -D warnings
 
+      # Includes the golden test that the committed api/openapi.json is the
+      # contract the routes publish.
       - name: test
         working-directory: server
         run: cargo test
-
-      # The contract the routes publish must be the one committed in `api/`.
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --filter @keasy/api
-      - name: contract drift
-        run: make api && git diff --exit-code api/

@@ -99,15 +99,14 @@ impl Application {
         self.port
     }
 
-    /// Serve until Ctrl+C.
-    pub async fn run_until_stopped(self) -> Result<(), String> {
+    /// Serve until `shutdown` resolves, finishing the requests in flight.
+    pub async fn run_until_stopped(
+        self,
+        shutdown: impl Future<Output = ()> + Send + 'static,
+    ) -> Result<(), String> {
         info!(port = self.port, "Keasy server listening");
         axum::serve(self.listener, self.router)
-            .with_graceful_shutdown(async {
-                if tokio::signal::ctrl_c().await.is_ok() {
-                    info!("Shutdown signal received");
-                }
-            })
+            .with_graceful_shutdown(shutdown)
             .await
             .map_err(|e| format!("server error: {e}"))
     }

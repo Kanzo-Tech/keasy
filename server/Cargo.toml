@@ -2,7 +2,6 @@
 name = "keasy-server"
 version = "0.1.0"
 description = "Keasy host: identity, connections, signed URLs and the output catalog"
-default-run = "keasy-server"
 authors = ["Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>"]
 edition = "2024"
 publish = false

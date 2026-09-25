@@ -5,7 +5,6 @@ description = "Keasy host: identity, connections, signed URLs and the output cat
 default-run = "keasy-server"
 authors = ["Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>"]
 edition = "2024"
-rust-version = "1.90.0"
 publish = false
 
 [dependencies]

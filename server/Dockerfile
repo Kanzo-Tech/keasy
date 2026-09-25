@@ -1,9 +1,11 @@
 # Release image for keasy-server. Build context: `server/`.
 
-FROM rust:1.90-bookworm AS builder
+FROM rust:1-bookworm AS builder
 
 # Dep cache: build the manifests with a dummy main, then swap in the real source.
 WORKDIR /src/server
+COPY rust-toolchain.toml ./
+RUN rustup toolchain install
 COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo 'fn main() {}' > src/main.rs && cargo build --release && rm -rf src
 COPY src ./src

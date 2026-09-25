@@ -118,8 +118,10 @@ services:
       - "3000:3000"
     volumes:
       - ./web/src:/app/web/src
-      # The contract (@keasy/api), so `make api` reaches the running web.
-      - ./api/src:/app/api/src
+      # The contract (@keasy/api) whole — spec, types and client — so `make api` reaches
+      # the running web; its node_modules stay the image's.
+      - ./api:/app/api
+      - /app/api/node_modules
     environment:
       KEASY_API_URL: http://server:8080
       KEASY_OIDC_ISSUER_URL: http://keycloak.localhost:8180/realms/keasy

@@ -38,7 +38,7 @@ import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
 import { type Credential, kindTitle, type Purpose, specOf } from "@/lib/connections";
 import { getProviderIcon } from "@/lib/provider-icons";
-import { toastError } from "@/lib/toast-error";
+import { toastError } from "@/lib/errors";
 
 export default function CredentialsPage({
   searchParams,

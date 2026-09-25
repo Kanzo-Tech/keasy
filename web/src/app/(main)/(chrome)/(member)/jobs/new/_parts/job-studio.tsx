@@ -41,7 +41,7 @@ import {
 import { ChevronDown, Pencil, PlugZap, Save, X } from "lucide-react";
 import { $api, http, invalidate } from "@/lib/api/client";
 import { storageConnections } from "@/lib/connections";
-import { toastError } from "@/lib/toast-error";
+import { toastError } from "@/lib/errors";
 import * as checker from "@/lib/fossil/checker";
 import { AssistantWizard } from "./assistant-wizard";
 import { ModePicker } from "./mode-picker";

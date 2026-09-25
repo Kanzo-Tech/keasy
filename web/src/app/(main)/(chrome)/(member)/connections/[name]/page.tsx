@@ -37,7 +37,7 @@ import { $api, invalidate } from "@/lib/api/client";
 import { modelOf, storageOf } from "@/lib/connections";
 import { providersQuery } from "@/lib/fossil/checker";
 import { formatSize } from "@/lib/formatters";
-import { toastError } from "@/lib/toast-error";
+import { toastError } from "@/lib/errors";
 import { readableFiles } from "@/lib/utils";
 
 export default function ConnectionPage({ params }: { params: Promise<{ name: string }> }) {

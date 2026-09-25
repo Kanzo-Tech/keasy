@@ -21,7 +21,7 @@ import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { $api, type Inputs, invalidate } from "@/lib/api/client";
 import { type Credential, type Purpose, specOf } from "@/lib/connections";
-import { toastError } from "@/lib/toast-error";
+import { toastError } from "@/lib/errors";
 
 type Spec = Inputs["CredentialSpecInput"];
 

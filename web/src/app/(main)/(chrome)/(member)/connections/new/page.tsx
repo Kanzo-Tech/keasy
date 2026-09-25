@@ -26,7 +26,7 @@ import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { $api, type Inputs, invalidate } from "@/lib/api/client";
 import { specOf } from "@/lib/connections";
 import { getProviderIcon } from "@/lib/provider-icons";
-import { toastError } from "@/lib/toast-error";
+import { toastError } from "@/lib/errors";
 
 type Tab = "data" | "vocab" | "model";
 

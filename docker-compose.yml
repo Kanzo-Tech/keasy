@@ -76,7 +76,7 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile.dev
-    # Published for curl only; the app reaches the API through the web's `/v1`.
+    # Published for curl only; the app reaches the API through the web's `/api/v1`.
     ports:
       - "8080:8080"
     volumes:

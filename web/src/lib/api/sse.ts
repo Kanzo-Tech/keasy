@@ -1,5 +1,8 @@
 import { EventSourceParserStream } from "eventsource-parser/stream";
-import { ApiError, apiError, type ErrorBody } from "@keasy/api";
+import { ApiError, type ErrorBody, type paths } from "@keasy/api";
+import type { MaybeOptionalInit } from "openapi-fetch";
+
+import { http } from "./client";
 
 export interface SseFrame {
   event: string;
@@ -25,29 +28,30 @@ export async function* failOnError(
   }
 }
 
+/** The routes whose answer the spec declares as `text/event-stream`. */
+type StreamPath = {
+  [P in keyof paths]: paths[P] extends {
+    post: { responses: { 200: { content: { "text/event-stream": unknown } } } };
+  }
+    ? P
+    : never;
+}[keyof paths];
+
 /**
- * Parse SSE frames from a fetch Response, yielding `{ event, data }` for each.
- *
- * Uses eventsource-parser (WHATWG-compliant) for robust multi-line,
- * chunked-boundary, and edge-case handling.
+ * POST to a streaming endpoint through `http` — the same path types, the same
+ * error middleware — and yield its SSE frames as `{ event, data }`.
  */
-export async function* fetchSSE(
-  url: string,
-  body?: unknown,
+export async function* stream<P extends StreamPath>(
+  path: P,
+  init: MaybeOptionalInit<paths[P], "post">,
   signal?: AbortSignal,
 ): AsyncGenerator<SseFrame> {
-  const res = await fetch(url, {
-    method: "POST",
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-    signal,
-  });
+  // One generic call over a union of paths is past what openapi-fetch infers;
+  // `init` is already checked against `paths[P]` above.
+  const { response } = await http.POST(path, { ...init, parseAs: "stream", signal } as never);
+  if (!response.body) return;
 
-  if (!res.ok) throw await apiError(res);
-  if (!res.body) return;
-
-  const reader = res.body
+  const reader = response.body
     .pipeThrough(new TextDecoderStream())
     .pipeThrough(new EventSourceParserStream())
     .getReader();
@@ -56,9 +60,7 @@ export async function* fetchSSE(
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
-      if (value.data) {
-        yield { event: value.event ?? "message", data: value.data };
-      }
+      if (value.data) yield { event: value.event ?? "message", data: value.data };
     }
   } finally {
     reader.releaseLock();

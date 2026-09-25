@@ -1,9 +1,13 @@
-import client, { ApiError, unwrap } from "./api/client";
-import type { Schemas } from "./api/client";
-import { aiProvider } from "./ai-providers";
+import { ApiError, http as client, type Schemas } from "./api/client";
 import type { ProviderSchema } from "./types";
 
 export { ApiError };
+
+/**
+ * The per-endpoint facade the pages still call. New code uses `http`/`$api`
+ * from `lib/api/client` directly; this file goes once the last caller has.
+ */
+const unwrap = <T>(result: { data?: T }): T => result.data as T;
 
 export const api = {
   // ── Jobs ──────────────────────────────────────────────────────────────
@@ -134,13 +138,13 @@ export const api = {
 
     saveProvider: async (providerId: string, config: Schemas["SaveAiProviderRequest"]) =>
       unwrap(await client.PUT("/v1/settings/ai/providers/{provider}", {
-        params: { path: { provider: aiProvider(providerId) } },
+        params: { path: { provider: providerId as Schemas["AiProvider"] } },
         body: config,
       })),
 
     removeProvider: async (providerId: string) => {
       unwrap(await client.DELETE("/v1/settings/ai/providers/{provider}", {
-        params: { path: { provider: aiProvider(providerId) } },
+        params: { path: { provider: providerId as Schemas["AiProvider"] } },
       }));
     },
   },

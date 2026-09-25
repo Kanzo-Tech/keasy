@@ -16,7 +16,7 @@ No `.env`: every dev value is a literal in `docker-compose.yml`.
 
 | What | Where |
 |------|-------|
-| App (web BFF, `/v1`) | [http://localhost:3000](http://localhost:3000) |
+| App (web BFF, `/api/v1`) | [http://localhost:3000](http://localhost:3000) |
 | Keycloak | [http://keycloak.localhost:8180](http://keycloak.localhost:8180) (admin `admin` / `admin`) |
 | API, for curl | `http://localhost:8080` |
 
@@ -75,7 +75,7 @@ client, keeps the tokens in Valkey (`KEASY_SESSION_STORE_URL`), and gives the
 browser a sealed cookie carrying only the ticket to them.
 The **server** is a resource server: it validates the bearer token against the
 realm's JWKS (`iss`, `aud`, `exp`, `azp`, signature) and holds no client secret,
-no session and no cookie. `/v1` reaches it only through the web.
+no session and no cookie. It is reached only through the web's `/api/v1`.
 
 Mappings run in the browser (DuckDB-WASM + `@fossil-lang/*`), and so does source
 introspection; the server hosts connections, signed URLs, jobs and the catalog,

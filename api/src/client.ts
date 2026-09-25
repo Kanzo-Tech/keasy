@@ -1,8 +1,13 @@
 import createFetchClient, { type Middleware } from "openapi-fetch";
-import type { components, paths } from "./schema";
+import type { Readable, Writable, components, paths } from "./schema";
 
 export type { components, paths };
-export type Schemas = components["schemas"];
+
+type Components = components["schemas"];
+/** Every schema as the server sends it: write-only fields are absent. */
+export type Schemas = { [K in keyof Components]: Readable<Components[K]> };
+/** Every schema as a request body carries it: read-only fields are absent. */
+export type Inputs = { [K in keyof Components]: Writable<Components[K]> };
 export type ErrorCode = Schemas["ErrorCode"];
 export type ErrorBody = Schemas["ErrorBody"];
 

@@ -1,24 +1,25 @@
-import type { components } from "@keasy/api";
+import type { Inputs, Schemas } from "@keasy/api";
 
 // ---------------------------------------------------------------------------
 // Re-export types generated from the OpenAPI spec (source of truth: server)
 // ---------------------------------------------------------------------------
 
-type S = components["schemas"];
+type S = Schemas;
+type W = Inputs;
 
 export type JobStatus = S["JobStatus"];
 export type Job = S["Job"];
-export type CreateJobRequest = S["CreateJobRequest"];
-export type UpdateJobRequest = S["UpdateJobRequest"];
+export type CreateJobRequest = W["CreateJobRequest"];
+export type UpdateJobRequest = W["UpdateJobRequest"];
 export type Dataset = S["Dataset"];
 export type OutputRelation = S["OutputRelation"];
 export type CloudAccountSummary = S["CloudAccountSummary"];
-export type CreateCloudAccountRequest = S["CreateCloudAccountRequest"];
-export type UpdateCloudAccountRequest = S["UpdateCloudAccountRequest"];
+export type CreateCloudAccountRequest = W["CreateCloudAccountRequest"];
+export type UpdateCloudAccountRequest = W["UpdateCloudAccountRequest"];
 export type ConnectionKind = S["ConnectionKind"];
 export type LocationType = S["LocationType"];
 export type Connection = S["Connection"];
-export type CreateConnectionRequest = S["CreateConnectionRequest"];
+export type CreateConnectionRequest = W["CreateConnectionRequest"];
 export type AiSettings = S["AiSettingsPayload"];
 export type AiProvider = S["AiProvider"];
 

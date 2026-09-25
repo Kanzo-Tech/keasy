@@ -2,7 +2,13 @@ import "server-only";
 
 import { readFileSync } from "node:fs";
 
-import { authProxy, authSession, type AuthProxyHandlers } from "@kanzo-tech/auth/next";
+import {
+  authProxy,
+  authRoutes,
+  authSession,
+  type AuthProxyHandlers,
+  type AuthRouteHandlers,
+} from "@kanzo-tech/auth/next";
 import type { Session } from "@kanzo-tech/auth";
 import { ticketStore, type RelyingPartyConfig, type TicketAdapter } from "@kanzo-tech/auth/server";
 import { createClient } from "redis";
@@ -12,7 +18,9 @@ import { createClient } from "redis";
  *
  * This application is a Backend For Frontend: the confidential client lives
  * here, the tokens never reach the browser, and the Rust API behind it is a
- * resource server that validates the access token `app/v1` forwards.
+ * resource server that validates the access token `/api/v1` forwards. Every
+ * route handler lives under `/api`: `/api/auth` is the relying party and
+ * `/api/v1` the token-mediating proxy.
  *
  * Everything is bound on first use: `next build` collects every route's module
  * and the image is built without secrets, so a missing variable is a loud
@@ -65,10 +73,8 @@ function redisAdapter(url: string): TicketAdapter {
   };
 }
 
-type Config = Omit<RelyingPartyConfig, "redirectUri">;
-
 interface Bff {
-  readonly config: Config;
+  readonly routes: AuthRouteHandlers;
   readonly read: () => Promise<Session | null>;
   readonly proxy: AuthProxyHandlers;
 }
@@ -79,7 +85,7 @@ function bff(): Bff {
   if (bound !== undefined) return bound;
 
   const issuer = required("KEASY_OIDC_ISSUER_URL");
-  const config: Config = {
+  const config: Omit<RelyingPartyConfig, "redirectUri"> = {
     issuer,
     clientId: required("KEASY_OIDC_CLIENT_ID"),
     clientSecret: required("KEASY_OIDC_CLIENT_SECRET"),
@@ -93,20 +99,24 @@ function bff(): Bff {
   };
 
   bound = {
-    config,
+    // `redirectUri` is derived from the incoming request — its origin, this
+    // route's path and `/callback` — which lets one image serve every host. A
+    // forged `Host` yields a `redirect_uri` Keycloak has not registered.
+    routes: authRoutes(config),
     read: authSession(config),
+    // The spec's paths already start with `/v1`, so the proxy strips `/api` only.
     proxy: authProxy({
       ...config,
-      target: `${required("KEASY_API_URL").replace(/\/$/, "")}/v1`,
-      basePath: "/v1",
+      target: required("KEASY_API_URL").replace(/\/$/, ""),
+      basePath: "/api",
     }),
   };
   return bound;
 }
 
-/** The relying party's configuration, for the route handlers that mount it. */
-export function relyingPartyConfig(): Config {
-  return bff().config;
+/** `/api/auth`: sign-in, callback, sign-out, session. */
+export function authHandlers(): AuthRouteHandlers {
+  return bff().routes;
 }
 
 /** The session a server component reads, memoised per request by the package. */
@@ -114,7 +124,7 @@ export function getSession(): Promise<Session | null> {
   return bff().read();
 }
 
-/** `/v1`: the browser's API call, forwarded to the resource server with the access token. */
-export function apiProxy(): AuthProxyHandlers {
+/** `/api/v1`: the browser's API call, forwarded to the resource server with the access token. */
+export function apiHandlers(): AuthProxyHandlers {
   return bff().proxy;
 }

@@ -121,7 +121,7 @@ resource "docker_service" "server" {
   }
 
   # No Traefik router, and that is the BFF: the API is reachable only from the
-  # web service over the overlay network. `/v1` arrives at the web, which attaches
+  # web service over the overlay network. `/api/v1` arrives at the web, which attaches
   # the bearer token and forwards it here — a token the browser never held, at an
   # address the browser cannot reach.
   dynamic "labels" {
@@ -187,7 +187,7 @@ resource "docker_service" "web" {
         # Seals the session cookie, which carries only a ticket into Valkey.
         KEASY_SESSION_SECRET_FILE = "/run/secrets/session"
         KEASY_SESSION_STORE_URL   = "redis://keasy-ws-${each.key}-sessions:6379"
-        # Where the BFF forwards `/v1` once it has attached the bearer token.
+        # Where the BFF forwards `/api/v1` once it has attached the bearer token.
         KEASY_API_URL = "http://keasy-ws-${each.key}-server:8080"
       }
 

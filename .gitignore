@@ -3,7 +3,6 @@ target
 
 # editors
 .vscode/
-.cargo/
 .idea/
 
 # dependencies
@@ -15,7 +14,6 @@ pnpm-debug.log*
 
 # environment variables
 .env
-.env.production
 
 # macOS-specific files
 .DS_Store
@@ -31,6 +29,5 @@ data/
 # next.js
 .next/
 
-# Local runtime state and experiments; .cluster/ holds a private key.
-.cluster/
+# Local experiments.
 scratch/

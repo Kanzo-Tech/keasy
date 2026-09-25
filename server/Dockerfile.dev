@@ -4,7 +4,7 @@
 FROM rust:1.90-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    clang libclang-dev curl ca-certificates \
+    curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Same CA plumbing as the release image — see server/Dockerfile.

@@ -40,7 +40,5 @@ USER keasy
 COPY --from=builder /src/server/target/release/keasy-server /usr/local/bin/keasy-server
 
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/healthz/live || exit 1
 
 ENTRYPOINT ["/usr/local/bin/keasy-server"]

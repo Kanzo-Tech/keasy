@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import type { Job } from "@fossil-lang/executor";
 import { http, type Schemas } from "@/lib/api/client";
-import { openJobCorpus, relationsOf } from "./open-job-corpus";
-import { sourceHost } from "./source-host";
+import { openJobCorpus, relationsOf } from "@/lib/fossil/corpus";
+import { sourceHost } from "@/lib/fossil/source-host";
 
 /**
  * A job as `runJob` takes it: reads go through keasy's one {@link sourceHost};

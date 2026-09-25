@@ -33,7 +33,7 @@ import {
   useDataTable,
 } from "@kanzo-tech/ui/table";
 import { $api, invalidate, type Schemas } from "@/lib/api/client";
-import { formatDate, formatJobDuration } from "@/lib/formatters";
+import { formatDate, formatJobDuration } from "@/lib/ui/format";
 import { hasRunningJobs, isTerminalStatus } from "@/lib/jobs";
 
 type Job = Schemas["Job"];

@@ -17,7 +17,7 @@ import {
 } from "@kanzo-tech/ui";
 import { scaleOf } from "@kanzo-tech/graph";
 import type { GraphSchema } from "@/lib/graph-schema";
-import { corpusKey } from "@/lib/fossil/open-job-corpus";
+import { corpusKey } from "@/lib/fossil/corpus";
 import { ONCE, useCorpus } from "./corpus";
 
 export interface SelectedVertex {

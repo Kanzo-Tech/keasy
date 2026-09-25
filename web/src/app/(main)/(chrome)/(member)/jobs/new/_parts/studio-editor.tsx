@@ -25,7 +25,7 @@ import { forceLinting } from "@codemirror/lint";
 import type { EditorView } from "@codemirror/view";
 import { BookMarked, Database, PlugZap } from "lucide-react";
 import * as checker from "@/lib/fossil/checker";
-import { useSourceDescriptors } from "@/lib/fossil/use-source-descriptors";
+import { useSourceDescriptors } from "./use-source-descriptors";
 import type { StorageConnection } from "@/lib/connections";
 
 /** The chrome a floating cluster wears — the same utilities the canvas controls use. */

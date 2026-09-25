@@ -12,8 +12,8 @@ import type { ProgramSource } from "@fossil-lang/types";
 
 import { DuckDBDataProtocol } from "@duckdb/duckdb-wasm";
 
-import { bootDuckDB } from "@/lib/fossil/open-job-corpus";
-import { sourceHost } from "./source-host";
+import { bootDuckDB } from "@/lib/fossil/corpus";
+import { sourceHost } from "@/lib/fossil/source-host";
 import type { StorageConnection } from "@/lib/connections";
 
 /**

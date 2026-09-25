@@ -18,7 +18,7 @@ import {
   useFilter,
 } from "@kanzo-tech/ui";
 import { useChartQuery } from "@kanzo-tech/ui/analytics";
-import { distinctValuesQuery, OPERATOR_META, type Rule, type RuleOperator } from "@/lib/rule-engine";
+import { distinctValuesQuery, OPERATOR_META, type Rule, type RuleOperator } from "./rule-engine";
 import type { GraphSchema } from "@/lib/graph-schema";
 
 interface RuleFieldProps {

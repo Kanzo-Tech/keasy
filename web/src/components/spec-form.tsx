@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@kanzo-tech/ui";
-import { getProviderIcon } from "@/lib/provider-icons";
+import { getProviderIcon } from "@/lib/ui/provider-icons";
 
 /** The slice of JSON Schema utoipa emits and this form reads. */
 export interface JsonSchema {

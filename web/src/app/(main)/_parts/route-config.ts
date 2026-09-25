@@ -8,7 +8,7 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
-import type { WorkspaceRole } from "@/lib/roles";
+import type { WorkspaceRole } from "@/lib/auth/roles";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

@@ -17,7 +17,7 @@ import {
 } from "@kanzo-tech/ui";
 import { useMosaic } from "@kanzo-tech/ui/analytics";
 import type { GraphSchema } from "@/lib/graph-schema";
-import { type Rule, type RuleResult, runRules } from "@/lib/rule-engine";
+import { type Rule, type RuleResult, runRules } from "./rule-engine";
 import { EntitySelect, FieldSelect, OperatorSelect, ValueInput } from "./rule-fields";
 
 interface RulesState {

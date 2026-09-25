@@ -4,7 +4,7 @@ import { createContext, use, useMemo, type ReactNode } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import type { SchemaResult, SqlCorpus } from "@fossil-lang/corpus";
 import { MosaicProvider, type Coordinator } from "@kanzo-tech/ui/analytics";
-import { corpusKey, openJobCorpus } from "@/lib/fossil/open-job-corpus";
+import { corpusKey, openJobCorpus } from "@/lib/fossil/corpus";
 import { buildGraphSchema, type GraphSchema } from "@/lib/graph-schema";
 
 /**

@@ -19,11 +19,11 @@ import {
   SectionRoot,
   Skeleton,
 } from "@kanzo-tech/ui";
-import { useDelayedLoading } from "@/hooks/use-delayed-loading";
+import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api } from "@/lib/api/client";
 import { storageConnections } from "@/lib/connections";
-import { useBrowserJobRunner } from "@/lib/fossil/use-browser-job-runner";
-import { formatDate, formatJobDuration } from "@/lib/formatters";
+import { useBrowserJobRunner } from "@/app/(main)/(chrome)/(member)/jobs/[id]/_parts/use-browser-job-runner";
+import { formatDate, formatJobDuration } from "@/lib/ui/format";
 import { isTerminalStatus } from "@/lib/jobs";
 
 export default function JobPage({ params }: { params: Promise<{ id: string }> }) {

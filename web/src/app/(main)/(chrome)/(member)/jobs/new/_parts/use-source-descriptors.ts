@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { InferredDescriptor } from "@fossil-lang/introspect";
 
-import * as checker from "./checker";
+import * as checker from "@/lib/fossil/checker";
 import { describeSources, sourceDescriptorsKey } from "./describe-sources";
 
 const NONE: InferredDescriptor[] = [];

@@ -14,7 +14,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@kanzo-tech/ui";
-import { workspaceRole } from "@/lib/roles";
+import { workspaceRole } from "@/lib/auth/roles";
 
 const GENERAL = [
   { href: "/settings/preferences", label: "Preferences", icon: Paintbrush },

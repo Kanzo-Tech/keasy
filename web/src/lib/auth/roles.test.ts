@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Session } from "@kanzo-tech/auth";
-import { workspaceRole } from "@/lib/roles";
+import { workspaceRole } from "./roles";
 
 /** A session holding exactly these client roles, and nothing else that matters here. */
 function session(...roles: string[]): Session {

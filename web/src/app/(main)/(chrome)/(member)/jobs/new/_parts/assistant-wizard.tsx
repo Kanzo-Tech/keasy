@@ -58,7 +58,7 @@ import {
   suggestRequest,
 } from "@/lib/ai/prompts";
 import * as checker from "@/lib/fossil/checker";
-import { connectionPath, describeSources, sourceDescriptorsKey } from "@/lib/fossil/describe-sources";
+import { connectionPath, describeSources, sourceDescriptorsKey } from "./describe-sources";
 import { providerFor } from "@/lib/fossil/providers";
 import type { StorageConnection } from "@/lib/connections";
 

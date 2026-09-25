@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@kanzo-tech/ui";
-import { useDelayedLoading } from "@/hooks/use-delayed-loading";
+import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api, type Schemas } from "@/lib/api/client";
 
 export default function DatasetsPage() {

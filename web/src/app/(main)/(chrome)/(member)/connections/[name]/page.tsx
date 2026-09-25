@@ -33,7 +33,7 @@ import {
   toast,
 } from "@kanzo-tech/ui";
 import { ValidationBadge } from "@/components/validation-badge";
-import { useDelayedLoading } from "@/hooks/use-delayed-loading";
+import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api, invalidate } from "@/lib/api/client";
 import { modelOf, storageOf } from "@/lib/connections";
 import { providersQuery } from "@/lib/fossil/checker";

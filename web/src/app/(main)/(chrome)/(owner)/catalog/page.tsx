@@ -26,7 +26,7 @@ import {
   toast,
 } from "@kanzo-tech/ui";
 import { ValidationBadge } from "@/components/validation-badge";
-import { useDelayedLoading } from "@/hooks/use-delayed-loading";
+import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api, invalidate } from "@/lib/api/client";
 import { type Connection, type Credential, storageOf } from "@/lib/connections";
 import { toastError } from "@/lib/errors";

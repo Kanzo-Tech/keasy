@@ -55,10 +55,10 @@ import { MessageMarkdown } from "@kanzo-tech/ai/markdown";
 import { $api, ApiError } from "@/lib/api/client";
 import { type ChatMessage, completeText, streamText } from "@/lib/ai/stream";
 import { explainRequest, parsePlan, queryRequest } from "@/lib/ai/prompts";
-import { generateSuggestions } from "@/lib/schema-suggestions";
+import { generateSuggestions } from "./schema-suggestions";
 import { getErrorInfo } from "@/lib/errors";
 import type { GraphSchema } from "@/lib/graph-schema";
-import { describeDataSpace } from "@/lib/data-space";
+import { describeDataSpace } from "./data-space";
 import { useCorpus } from "./corpus";
 import { ResultTable } from "./result-table";
 

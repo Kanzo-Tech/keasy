@@ -1,6 +1,9 @@
 "use client";
 
+import { ApiError } from "@keasy/api";
 import { QueryClient } from "@tanstack/react-query";
+
+import { auth } from "@/lib/session";
 
 let redirected = false;
 
@@ -19,13 +22,13 @@ export const queryClient = new QueryClient({
   },
 });
 
+/** A refused session signs in again; a workspace the person left sends them home. */
 function handleAuthError(error: unknown) {
-  if (redirected) return;
-  const { code, status } = (error ?? {}) as { code?: string; status?: number };
-  if (status === 401) {
+  if (redirected || !(error instanceof ApiError)) return;
+  if (error.status === 401) {
     redirected = true;
-    window.location.href = "/api/auth/signin";
-  } else if (code === "rbac/no_membership") {
+    void auth.signIn();
+  } else if (error.code === "rbac/no_membership") {
     redirected = true;
     window.location.href = "/";
   }

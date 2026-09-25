@@ -1,27 +1,28 @@
-import type { components } from "@keasy/api";
+import type { Inputs, Schemas } from "@keasy/api";
 
 // ---------------------------------------------------------------------------
 // Re-export types generated from the OpenAPI spec (source of truth: server)
 // ---------------------------------------------------------------------------
 
-type S = components["schemas"];
+type S = Schemas;
+type W = Inputs;
 
 export type JobStatus = S["JobStatus"];
 export type RunMode = S["RunMode"];
 export type Job = S["Job"];
-export type CreateJobRequest = S["CreateJobRequest"];
-export type UpdateJobRequest = S["UpdateJobRequest"];
+export type CreateJobRequest = W["CreateJobRequest"];
+export type UpdateJobRequest = W["UpdateJobRequest"];
 export type CatalogDataset = S["CatalogDataset"];
 export type CatalogTable = S["CatalogTable"];
 export type CatalogColumn = S["CatalogColumn"];
 export type CloudAccountSummary = S["CloudAccountSummary"];
-export type CreateCloudAccountRequest = S["CreateCloudAccountRequest"];
-export type UpdateCloudAccountRequest = S["UpdateCloudAccountRequest"];
+export type CreateCloudAccountRequest = W["CreateCloudAccountRequest"];
+export type UpdateCloudAccountRequest = W["UpdateCloudAccountRequest"];
 export type OrgSettings = S["OrgSettings"];
 export type ConnectionKind = S["ConnectionKind"];
 export type LocationType = S["LocationType"];
 export type Connection = S["Connection"];
-export type CreateConnectionRequest = S["CreateConnectionRequest"];
+export type CreateConnectionRequest = W["CreateConnectionRequest"];
 export type ColumnInfo = S["ColumnInfo"];
 export type AiSettings = S["AiSettingsPayload"];
 export type AiProvider = S["AiProvider"];
@@ -29,9 +30,9 @@ export type AiProvider = S["AiProvider"];
 // Assistant types
 export type FileSchema = S["FileSchema"];
 export type CompetencyQuestion = S["CompetencyQuestion"];
-export type SuggestRequest = S["SuggestRequest"];
+export type SuggestRequest = W["SuggestRequest"];
 export type SuggestResponse = S["SuggestResponse"];
-export type GenerateRequest = S["GenerateRequest"];
+export type GenerateRequest = W["GenerateRequest"];
 export type GenerateResponse = S["GenerateResponse"];
 
 // Alias: server calls it JobRuntimeError, frontend used JobError

@@ -1,10 +1,14 @@
-import client, { ApiError, unwrap } from "./api/client";
-import type { Schemas } from "./api/client";
-import { fetchSSE } from "./api/sse";
-import { aiProvider } from "./ai-providers";
+import { ApiError, http as client, type Schemas } from "./api/client";
+import { stream } from "./api/sse";
 import type { ProviderSchema } from "./types";
 
 export { ApiError };
+
+/**
+ * The per-endpoint facade the pages still call. New code uses `http`/`$api`
+ * from `lib/api/client` directly; this file goes once the last caller has.
+ */
+const unwrap = <T>(result: { data?: T }): T => result.data as T;
 
 export const api = {
   // ── Jobs ──────────────────────────────────────────────────────────────
@@ -120,13 +124,16 @@ export const api = {
         signal?: AbortSignal;
       },
     ) =>
-      fetchSSE(`/v1/jobs/${id}/discover/ask-stream`, {
-        question,
-        ...(opts?.provider ? { provider: opts.provider } : {}),
-        ...(opts?.schema ? { schema: opts.schema } : {}),
-        ...(opts?.explain ? { explain: opts.explain } : {}),
-        ...(opts?.history?.length ? { history: opts.history } : {}),
-      } satisfies Schemas["AskRequest"], opts?.signal),
+      stream("/v1/jobs/{id}/discover/ask-stream", {
+        params: { path: { id } },
+        body: {
+          question,
+          ...(opts?.provider ? { provider: opts.provider } : {}),
+          ...(opts?.schema ? { schema: opts.schema } : {}),
+          ...(opts?.explain ? { explain: opts.explain } : {}),
+          ...(opts?.history?.length ? { history: opts.history } : {}),
+        },
+      }, opts?.signal),
   },
 
   // ── Catalog (governance) ──────────────────────────────────────────────
@@ -165,13 +172,13 @@ export const api = {
 
     saveProvider: async (providerId: string, config: Schemas["SaveAiProviderRequest"]) =>
       unwrap(await client.PUT("/v1/settings/ai/providers/{provider}", {
-        params: { path: { provider: aiProvider(providerId) } },
+        params: { path: { provider: providerId as Schemas["AiProvider"] } },
         body: config,
       })),
 
     removeProvider: async (providerId: string) => {
       unwrap(await client.DELETE("/v1/settings/ai/providers/{provider}", {
-        params: { path: { provider: aiProvider(providerId) } },
+        params: { path: { provider: providerId as Schemas["AiProvider"] } },
       }));
     },
   },
@@ -199,10 +206,10 @@ export const api = {
   // ── Assistant (SSE streaming) ───────────────────────────────────────────
   assistant: {
     suggestStream: (req: Schemas["SuggestRequest"], signal?: AbortSignal) =>
-      fetchSSE("/v1/assistant/suggest-stream", req, signal),
+      stream("/v1/assistant/suggest-stream", { body: req }, signal),
 
     generateStream: (req: Schemas["GenerateRequest"], signal?: AbortSignal) =>
-      fetchSSE("/v1/assistant/generate-stream", req, signal),
+      stream("/v1/assistant/generate-stream", { body: req }, signal),
   },
 
 };

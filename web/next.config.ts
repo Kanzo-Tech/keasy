@@ -7,7 +7,7 @@ const dev = process.env.NODE_ENV === "development";
  *
  * It matters more here than in most applications because this origin is a BFF:
  * the session cookie is `httpOnly`, so script cannot read it, but script running
- * here does not need to — it can call `/v1` and the proxy will attach the bearer
+ * here does not need to — it can call `/api/v1` and the proxy will attach the bearer
  * token for it. An XSS on this origin *is* API access. Keycloak has its own
  * origin, in dev as in prod, so the login screen is outside that blast radius.
  *

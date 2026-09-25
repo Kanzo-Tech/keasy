@@ -50,7 +50,7 @@ The relying party is the **web** tier (`@kanzo-tech/auth/next`, mounted at `/api
 it holds the tenant client's secret and seals the session cookie. The **server** is a
 resource server — it validates the bearer token the web forwards against the realm's JWKS
 and checks `aud` against the realm-wide bearer-only `keasy-api` client, so it needs no
-secret of its own. `/v1` is not routed from the edge; it reaches the API through the web.
+secret of its own. The API is not routed from the edge; the web's `/api/v1` forwards to it.
 
 Linking by email without the "account exists" prompt is the custom first-broker-login
 flow in `realm/idp_flow.tf`.

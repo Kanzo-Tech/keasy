@@ -8,11 +8,12 @@ import { authMiddleware } from "@kanzo-tech/auth/next";
  * resource server behind *that* validates the token it was sent. A forged cookie
  * gets somebody as far as a page that will find no session and say so.
  *
- * `/v1` is exempt because it is the API proxy, not a page: an expired session
- * there must come back as the 401 the API client knows how to route on, not as a
- * 302 to a sign-in screen it would try to parse as JSON.
+ * `/api/v1` is exempt because it is the API proxy, not a page: an expired
+ * session there must come back as the 401 the API client knows how to route on,
+ * not as a 302 to a sign-in screen it would try to parse as JSON. `/api/auth`
+ * is exempt by the package itself.
  */
-export const proxy = authMiddleware({ public: ["/v1", "/healthz"] });
+export const proxy = authMiddleware({ public: ["/api/v1"] });
 
 export const config = {
   // Skip Next internals and any static file (paths with an extension, e.g.

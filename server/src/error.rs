@@ -63,7 +63,8 @@ pub fn fail(status: StatusCode, error: ErrorCode, message: impl Into<String>) ->
     fail_about(status, error, message, Vec::new())
 }
 
-/// Why a credential, connection or model call was refused.
+/// Why a request was refused: a status, a code and a message, or a store
+/// failure that maps itself.
 #[derive(Debug)]
 pub enum Refusal {
     Status {

@@ -6,7 +6,8 @@ use utoipa_axum::routes;
 
 use crate::authentication::role::Owner;
 use crate::domain::{JobStatus, OutputRelation};
-use crate::jobs::errors::JobApiError;
+use crate::error::Refusal;
+use crate::jobs::persistence;
 use crate::startup::AppState;
 
 /// A completed job's output, as the owner's datasets view lists it.
@@ -31,11 +32,8 @@ pub struct Dataset {
 pub async fn list_datasets(
     _: Owner,
     State(state): State<AppState>,
-) -> Result<Json<Vec<Dataset>>, JobApiError> {
-    let datasets = state
-        .db
-        .list_jobs()
-        .await?
+) -> Result<Json<Vec<Dataset>>, Refusal> {
+    let datasets = persistence::list(&*state.db.read().await)?
         .into_iter()
         .filter(|job| job.status == JobStatus::Completed && !job.relations.is_empty())
         .map(|job| Dataset {

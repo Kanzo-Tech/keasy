@@ -12,9 +12,8 @@ use utoipa_axum::routes;
 
 use crate::authentication::role::Member;
 use crate::domain::{Job, JobStatus, OutputRelation};
-use crate::error::ErrorBody;
-use crate::jobs::errors::JobApiError;
-use crate::jobs::{now_iso8601, requested};
+use crate::error::{ErrorBody, ErrorCode, Refusal};
+use crate::jobs::{now_iso8601, owned, persistence, requested};
 use crate::startup::AppState;
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -60,21 +59,6 @@ pub struct PublishRelationsRequest {
     pub relations: Vec<OutputRelation>,
 }
 
-/// The job, if it exists and `member` created it. Anyone else's job is not
-/// found: a job is its creator's alone.
-pub(crate) async fn owned_job(
-    state: &AppState,
-    member: &Member,
-    id: &str,
-) -> Result<Job, JobApiError> {
-    state
-        .db
-        .get_job(id)
-        .await?
-        .filter(|job| job.created_by == member.user_id)
-        .ok_or(JobApiError::NotFound)
-}
-
 #[utoipa::path(get, path = "/v1/jobs", tag = "Jobs",
     responses(
         (status = 200, description = "The caller's jobs", body = Vec<Job>),
@@ -83,8 +67,11 @@ pub(crate) async fn owned_job(
 pub async fn list_jobs(
     member: Member,
     State(state): State<AppState>,
-) -> Result<impl IntoResponse, JobApiError> {
-    Ok(Json(state.db.list_jobs_of(&member.user_id).await?))
+) -> Result<impl IntoResponse, Refusal> {
+    Ok(Json(persistence::list_of(
+        &*state.db.read().await,
+        &member.user_id,
+    )?))
 }
 
 #[utoipa::path(post, path = "/v1/jobs", tag = "Jobs",
@@ -99,12 +86,16 @@ pub async fn create_job(
     member: Member,
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
-) -> Result<impl IntoResponse, JobApiError> {
+) -> Result<impl IntoResponse, Refusal> {
     let is_sink =
         crate::connections::persistence::get(&*state.db.read().await, &payload.sink_connection)?
             .is_some_and(|c| c.target.is_sink());
     if !is_sink {
-        return Err(JobApiError::InvalidDestination);
+        return Err(Refusal::new(
+            StatusCode::BAD_REQUEST,
+            ErrorCode::InvalidDestination,
+            "sink_connection must name the workspace sink",
+        ));
     }
 
     // A `Pending` job is run by the browser: sources by signed GET, output by
@@ -121,7 +112,7 @@ pub async fn create_job(
         payload.script,
         member.user_id,
     );
-    state.db.insert_job(&job).await?;
+    persistence::insert(&*state.db.write().await, &job)?;
 
     Ok((code, Json(job)).into_response())
 }
@@ -137,8 +128,8 @@ pub async fn get_job(
     member: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> Result<impl IntoResponse, JobApiError> {
-    Ok(Json(owned_job(&state, &member, &id).await?))
+) -> Result<impl IntoResponse, Refusal> {
+    Ok(Json(owned(&state.db, &member.user_id, &id).await?))
 }
 
 #[utoipa::path(put, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -155,23 +146,24 @@ pub async fn update_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateJobRequest>,
-) -> Result<impl IntoResponse, JobApiError> {
-    if owned_job(&state, &member, &id).await?.status != JobStatus::Draft {
-        return Err(JobApiError::NotDraft);
+) -> Result<impl IntoResponse, Refusal> {
+    if owned(&state.db, &member.user_id, &id).await?.status != JobStatus::Draft {
+        return Err(Refusal::new(
+            StatusCode::BAD_REQUEST,
+            ErrorCode::NotDraft,
+            "Only draft jobs can be updated",
+        ));
     }
-    state
-        .db
-        .update_job(&id, |job| {
-            if let Some(script) = payload.script {
-                job.script = Some(script);
-            }
-            if let Some(name) = payload.name {
-                job.name = Some(name);
-            }
-        })
-        .await?
-        .map(Json)
-        .ok_or(JobApiError::NotFound)
+    persistence::update(&*state.db.write().await, &id, |job| {
+        if let Some(script) = payload.script {
+            job.script = Some(script);
+        }
+        if let Some(name) = payload.name {
+            job.name = Some(name);
+        }
+    })?
+    .map(Json)
+    .ok_or_else(|| Refusal::not_found("Job"))
 }
 
 #[utoipa::path(patch, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -189,8 +181,8 @@ pub async fn complete_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<CompleteJobRequest>,
-) -> Result<impl IntoResponse, JobApiError> {
-    owned_job(&state, &member, &id).await?;
+) -> Result<impl IntoResponse, Refusal> {
+    owned(&state.db, &member.user_id, &id).await?;
     let now = now_iso8601();
     let CompleteJobRequest {
         status,
@@ -198,31 +190,28 @@ pub async fn complete_job(
         error,
     } = payload;
 
-    state
-        .db
-        .update_job(&id, move |job| {
-            match &status {
-                JobStatus::Completed => {
-                    job.started_at.get_or_insert_with(|| now.clone());
-                    job.completed_at = Some(now);
-                    job.manifest = manifest;
-                    job.error = None;
-                }
-                JobStatus::Failed => {
-                    job.started_at.get_or_insert_with(|| now.clone());
-                    job.completed_at = Some(now);
-                    job.error = Some(error.unwrap_or_else(|| "execution failed".into()));
-                }
-                JobStatus::Running => {
-                    job.started_at.get_or_insert(now);
-                }
-                _ => {}
+    persistence::update(&*state.db.write().await, &id, move |job| {
+        match &status {
+            JobStatus::Completed => {
+                job.started_at.get_or_insert_with(|| now.clone());
+                job.completed_at = Some(now);
+                job.manifest = manifest;
+                job.error = None;
             }
-            job.status = status;
-        })
-        .await?
-        .map(Json)
-        .ok_or(JobApiError::NotFound)
+            JobStatus::Failed => {
+                job.started_at.get_or_insert_with(|| now.clone());
+                job.completed_at = Some(now);
+                job.error = Some(error.unwrap_or_else(|| "execution failed".into()));
+            }
+            JobStatus::Running => {
+                job.started_at.get_or_insert(now);
+            }
+            _ => {}
+        }
+        job.status = status;
+    })?
+    .map(Json)
+    .ok_or_else(|| Refusal::not_found("Job"))
 }
 
 #[utoipa::path(put, path = "/v1/jobs/{id}/relations", tag = "Jobs",
@@ -247,19 +236,19 @@ pub async fn publish_relations(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<PublishRelationsRequest>,
-) -> Result<impl IntoResponse, JobApiError> {
-    owned_job(&state, &member, &id).await?;
+) -> Result<impl IntoResponse, Refusal> {
+    owned(&state.db, &member.user_id, &id).await?;
 
     let relations = payload.relations;
     for file in relations.iter().flat_map(|r| &r.files) {
-        crate::storage_client::relative_path(file).map_err(JobApiError::InvalidFormat)?;
+        crate::storage_client::relative_path(file)
+            .map_err(|e| Refusal::new(StatusCode::BAD_REQUEST, ErrorCode::InvalidFormat, e))?;
     }
-    state
-        .db
-        .update_job(&id, move |job| job.relations = relations)
-        .await?
-        .map(Json)
-        .ok_or(JobApiError::NotFound)
+    persistence::update(&*state.db.write().await, &id, move |job| {
+        job.relations = relations
+    })?
+    .map(Json)
+    .ok_or_else(|| Refusal::not_found("Job"))
 }
 
 #[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -274,13 +263,17 @@ pub async fn delete_job(
     member: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> Result<impl IntoResponse, JobApiError> {
-    let job = owned_job(&state, &member, &id).await?;
+) -> Result<impl IntoResponse, Refusal> {
+    let job = owned(&state.db, &member.user_id, &id).await?;
     if matches!(job.status, JobStatus::Pending | JobStatus::Running) {
-        return Err(JobApiError::StillRunning);
+        return Err(Refusal::new(
+            StatusCode::CONFLICT,
+            ErrorCode::StillRunning,
+            "Cannot delete a job that is still running",
+        ));
     }
 
-    state.db.remove_job(&id).await?;
+    persistence::delete(&*state.db.write().await, &id)?;
     Ok(StatusCode::NO_CONTENT)
 }
 

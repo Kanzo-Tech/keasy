@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::{Method, StatusCode};
-use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -14,7 +13,7 @@ use utoipa_axum::routes;
 use crate::authentication::role::Member;
 use crate::domain::StorageUrl;
 use crate::error::{ErrorBody, ErrorCode, Refusal};
-use crate::routes::jobs::owned_job;
+use crate::jobs::owned;
 use crate::startup::AppState;
 use crate::storage_client::{self, SIGNED_URL_EXPIRES, relative_path};
 
@@ -38,54 +37,44 @@ async fn sign_dataset_urls(
     member: &Member,
     id: &str,
     paths: &[String],
-) -> Result<Response, Response> {
-    let job = owned_job(state, member, id)
-        .await
-        .map_err(IntoResponse::into_response)?;
-    let signed = async {
-        let sink =
-            crate::connections::persistence::get(&*state.db.read().await, &job.sink_connection)?
-                .ok_or_else(|| {
-                    Refusal::new(
-                        StatusCode::BAD_REQUEST,
-                        ErrorCode::NoDestination,
-                        "The job's destination connection no longer exists",
-                    )
-                })?;
-        let (sink_url, credential) = crate::connections::storage(&state.db, &sink).await?;
-        let base = StorageUrl::parse(&crate::jobs::dataset_dest(sink_url.as_ref(), id))
-            .map_err(Refusal::invalid)?;
-        let store = storage_client::store(&credential, &base).map_err(|e| {
-            Refusal::new(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::StoreError, e)
+) -> Result<Json<ResolveResponse>, Refusal> {
+    let job = owned(&state.db, &member.user_id, id).await?;
+    let sink = crate::connections::persistence::get(&*state.db.read().await, &job.sink_connection)?
+        .ok_or_else(|| {
+            Refusal::new(
+                StatusCode::BAD_REQUEST,
+                ErrorCode::NoDestination,
+                "The job's destination connection no longer exists",
+            )
         })?;
-        let mut objects = Vec::with_capacity(paths.len());
-        for p in paths {
-            relative_path(p)
-                .map_err(|e| Refusal::new(StatusCode::BAD_REQUEST, ErrorCode::InvalidPath, e))?;
-            objects.push(base.path().child(p.as_str()));
-        }
-        let urls = store
-            .sign_urls(method, &objects, SIGNED_URL_EXPIRES)
-            .await
-            .map_err(|e| {
-                Refusal::new(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    ErrorCode::SignError,
-                    e.to_string(),
-                )
-            })?;
-        Ok::<_, Refusal>(ResolveResponse {
-            files: paths
-                .iter()
-                .cloned()
-                .zip(urls.into_iter().map(|u| u.to_string()))
-                .collect(),
-        })
-    };
-    signed
+    let (sink_url, credential) = crate::connections::storage(&state.db, &sink).await?;
+    let base = StorageUrl::parse(&crate::jobs::dataset_dest(sink_url.as_ref(), id))
+        .map_err(Refusal::invalid)?;
+    let store = storage_client::store(&credential, &base)
+        .map_err(|e| Refusal::new(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::StoreError, e))?;
+    let mut objects = Vec::with_capacity(paths.len());
+    for p in paths {
+        relative_path(p)
+            .map_err(|e| Refusal::new(StatusCode::BAD_REQUEST, ErrorCode::InvalidPath, e))?;
+        objects.push(base.path().child(p.as_str()));
+    }
+    let urls = store
+        .sign_urls(method, &objects, SIGNED_URL_EXPIRES)
         .await
-        .map(|r| Json(r).into_response())
-        .map_err(IntoResponse::into_response)
+        .map_err(|e| {
+            Refusal::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorCode::SignError,
+                e.to_string(),
+            )
+        })?;
+    Ok(Json(ResolveResponse {
+        files: paths
+            .iter()
+            .cloned()
+            .zip(urls.into_iter().map(|u| u.to_string()))
+            .collect(),
+    }))
 }
 
 #[utoipa::path(post, path = "/v1/jobs/{id}/output/urls", tag = "Discovery",
@@ -104,7 +93,7 @@ pub async fn resolve_output_urls(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<DatasetUrlsRequest>,
-) -> Result<Response, Response> {
+) -> Result<Json<ResolveResponse>, Refusal> {
     sign_dataset_urls(Method::PUT, &state, &member, &id, &req.paths).await
 }
 
@@ -125,7 +114,7 @@ pub async fn resolve_discover_urls(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<DatasetUrlsRequest>,
-) -> Result<Response, Response> {
+) -> Result<Json<ResolveResponse>, Refusal> {
     sign_dataset_urls(Method::GET, &state, &member, &id, &req.paths).await
 }
 

@@ -109,7 +109,7 @@ pub enum TokenError {
 
 impl axum::response::IntoResponse for TokenError {
     fn into_response(self) -> axum::response::Response {
-        use crate::api::ErrorCode;
+        use crate::error::ErrorCode;
         use axum::http::StatusCode;
         match self {
             TokenError::Missing | TokenError::Invalid | TokenError::Foreign => crate::error::fail(

@@ -10,10 +10,9 @@
 use serde::Deserialize;
 use tracing::{error, info};
 
-use crate::api::connections::CreateConnectionRequest;
-use crate::api::credentials::CreateCredentialRequest;
-
 use crate::database::Database;
+use crate::routes::connections::CreateConnectionRequest;
+use crate::routes::credentials::CreateCredentialRequest;
 
 /// Who a declared entry was created by: nobody who signs in, so only the
 /// owner may change it.
@@ -46,7 +45,15 @@ pub async fn ensure_declared(db: &Database, path: &str) {
                 continue;
             }
         }
-        match crate::credentials::create(db, request, BY).await {
+        match crate::credentials::create(
+            db,
+            &request.name,
+            &request.spec,
+            request.probe_url.as_deref(),
+            BY,
+        )
+        .await
+        {
             Ok(_) => info!(%name, "declared credential ready"),
             Err(e) => error!(%name, error = ?e, "declared credential: rejected"),
         }
@@ -62,7 +69,9 @@ pub async fn ensure_declared(db: &Database, path: &str) {
                 continue;
             }
         }
-        match crate::connections::create(db, request, BY).await {
+        match crate::connections::create(db, request.name, request.credential, request.target, BY)
+            .await
+        {
             Ok(_) => info!(%name, "declared connection ready"),
             Err(e) => error!(%name, error = ?e, "declared connection: rejected"),
         }

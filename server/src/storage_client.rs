@@ -14,10 +14,7 @@ use object_store::{ClientOptions, ObjectMeta, ObjectStore, PutPayload, RetryConf
 use secrecy::ExposeSecret;
 use url::Url;
 
-use crate::api::connections::FileEntry;
-use crate::api::credentials::StorageCredentialInput;
-
-use crate::domain::{StorageScheme, StorageUrl};
+use crate::domain::{StorageCredentialInput, StorageScheme, StorageUrl};
 
 pub const SIGNED_URL_EXPIRES: Duration = Duration::from_secs(300);
 
@@ -197,17 +194,12 @@ impl CloudStore {
 pub async fn list_files(
     credential: &StorageCredentialInput,
     url: &StorageUrl,
-) -> Result<Vec<FileEntry>, String> {
+) -> Result<Vec<ObjectMeta>, String> {
     let store = store(credential, url)?;
     let mut entries = Vec::new();
     let mut listing = store.list(url.path());
     while let Some(meta) = listing.next().await {
-        let meta = meta.map_err(|e| format!("listing failed: {e}"))?;
-        entries.push(FileEntry {
-            path: meta.location.to_string(),
-            size: meta.size,
-            last_modified: Some(meta.last_modified.to_string()),
-        });
+        entries.push(meta.map_err(|e| format!("listing failed: {e}"))?);
     }
     Ok(entries)
 }

@@ -3,21 +3,33 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::sse::{KeepAlive, Sse};
 use axum::response::{IntoResponse, Response};
+use serde::Deserialize;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::warn;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::api::ai::CompletionRequest;
-use crate::api::connections::ConnectionView;
-use crate::api::credentials::Purpose;
-use crate::api::{ErrorBody, ErrorCode};
-use crate::llm_client::stream;
-
 use crate::authentication::role::Member;
-use crate::error::Refusal;
+use crate::domain::{ConnectionView, Purpose};
+use crate::error::{ErrorBody, ErrorCode, Refusal};
+use crate::llm_client::{ChatMessage, stream};
 use crate::startup::AppState;
+
+/// One model call. The browser writes the prompt and keeps the conversation;
+/// the server holds the key and relays the answer.
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct CompletionRequest {
+    /// The model connection to call. May be left out while the workspace has
+    /// exactly one.
+    #[serde(default)]
+    pub connection: Option<String>,
+    pub system: String,
+    /// The conversation, oldest first, ending with the user's turn.
+    pub messages: Vec<ChatMessage>,
+    /// Fewer tokens than the connection allows.
+    pub max_tokens: Option<u32>,
+}
 
 /// The model connection a call runs on: the one it names, or the only one.
 async fn model_connection(state: &AppState, name: Option<&str>) -> Result<ConnectionView, Refusal> {

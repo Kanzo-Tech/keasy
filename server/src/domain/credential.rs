@@ -9,7 +9,7 @@ use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::api::validation::ValidationReport;
+use super::ValidationReport;
 
 /// What a credential, and every connection that uses it, is for.
 #[derive(
@@ -210,29 +210,6 @@ impl ModelCredentialInput {
     }
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct CreateCredentialRequest {
-    pub name: String,
-    pub spec: CredentialSpecInput,
-    /// A storage URL to LIST before the credential is stored. A storage
-    /// credential has no location of its own, so without one it is only
-    /// checked to build a client.
-    #[serde(default)]
-    #[schema(format = "uri")]
-    pub probe_url: Option<String>,
-}
-
-/// A rename, a rotation or both. `spec` replaces the whole spec, secrets
-/// included, and is stored only if every connection using the credential
-/// still validates with it.
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct UpdateCredentialRequest {
-    #[serde(default)]
-    pub name: Option<String>,
-    #[serde(default)]
-    pub spec: Option<CredentialSpecInput>,
-}
-
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CredentialView {
     pub name: String,
@@ -247,17 +224,28 @@ pub struct CredentialView {
     pub validation: Option<ValidationReport>,
 }
 
-#[derive(Debug, Deserialize, utoipa::IntoParams)]
-#[into_params(parameter_in = Query)]
-pub struct PurposeQuery {
-    /// Only those of this purpose.
-    pub purpose: Option<Purpose>,
+/// A stored credential, unsealed.
+pub struct Credential {
+    pub name: String,
+    pub spec: CredentialSpecInput,
+    pub created_by: String,
+    pub created_at: String,
+    pub updated_by: String,
+    pub updated_at: String,
+    pub validation: Option<ValidationReport>,
 }
 
-#[derive(Debug, Default, Deserialize, ToSchema)]
-pub struct ValidateCredentialRequest {
-    /// A storage URL to LIST besides the connections that use the credential.
-    #[serde(default)]
-    #[schema(format = "uri")]
-    pub url: Option<String>,
+impl Credential {
+    pub fn view(&self, used_by: Vec<String>) -> CredentialView {
+        CredentialView {
+            name: self.name.clone(),
+            spec: self.spec.view(),
+            used_by,
+            created_by: self.created_by.clone(),
+            created_at: self.created_at.clone(),
+            updated_by: self.updated_by.clone(),
+            updated_at: self.updated_at.clone(),
+            validation: self.validation.clone(),
+        }
+    }
 }

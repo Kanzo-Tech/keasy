@@ -5,12 +5,24 @@ use std::time::Duration;
 use axum::response::sse::Event;
 use futures::StreamExt;
 use secrecy::ExposeSecret;
+use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 
-use crate::api::ai::ChatMessage;
-use crate::api::connections::ModelTarget;
-use crate::api::credentials::ModelCredentialInput;
-use crate::api::{ErrorBody, ErrorCode};
+use crate::domain::{ModelCredentialInput, ModelTarget};
+use crate::error::{ErrorBody, ErrorCode};
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ChatRole {
+    User,
+    Assistant,
+}
+
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct ChatMessage {
+    pub role: ChatRole,
+    pub content: String,
+}
 
 pub type SseSender = mpsc::Sender<Result<Event, Infallible>>;
 

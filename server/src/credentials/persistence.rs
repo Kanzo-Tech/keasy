@@ -3,38 +3,11 @@
 
 use rusqlite::{Connection, OptionalExtension, params};
 
-use crate::api::credentials::{CredentialSpecInput, CredentialView, Purpose};
-use crate::api::validation::ValidationReport;
-
 use super::sealing::{self, SecretKey};
 use crate::database::{DbError, DbResult, constraint, json_column_opt};
-use crate::domain::ResourceName;
-
-/// A stored credential, unsealed.
-pub struct Credential {
-    pub name: String,
-    pub spec: CredentialSpecInput,
-    pub created_by: String,
-    pub created_at: String,
-    pub updated_by: String,
-    pub updated_at: String,
-    pub validation: Option<ValidationReport>,
-}
-
-impl Credential {
-    pub fn view(&self, used_by: Vec<String>) -> CredentialView {
-        CredentialView {
-            name: self.name.clone(),
-            spec: self.spec.view(),
-            used_by,
-            created_by: self.created_by.clone(),
-            created_at: self.created_at.clone(),
-            updated_by: self.updated_by.clone(),
-            updated_at: self.updated_at.clone(),
-            validation: self.validation.clone(),
-        }
-    }
-}
+use crate::domain::{
+    Credential, CredentialSpecInput, CredentialView, Purpose, ResourceName, ValidationReport,
+};
 
 const COLUMNS: &str = "name, spec, created_by, created_at, updated_by, updated_at, validation";
 
@@ -251,7 +224,7 @@ pub fn rekey(conn: &mut Connection, old: &SecretKey, new: &SecretKey) -> DbResul
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::api::credentials::StorageCredentialInput;
+    use crate::domain::StorageCredentialInput;
     use base64::Engine;
     use secrecy::{ExposeSecret, SecretString};
 

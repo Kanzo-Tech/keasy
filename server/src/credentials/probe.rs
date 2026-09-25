@@ -4,13 +4,11 @@
 use futures::StreamExt;
 use object_store::PutPayload;
 
-use crate::api::connections::{
-    ConnectionTarget, ConnectionView, Direction, ModelTarget, StorageTarget,
+use crate::domain::{
+    Check, ConnectionTarget, ConnectionView, CredentialSpecInput, Direction, ModelCredentialInput,
+    ModelTarget, Operation, Outcome, StorageCredentialInput, StorageTarget, StorageUrl,
+    ValidationReport,
 };
-use crate::api::credentials::{CredentialSpecInput, ModelCredentialInput, StorageCredentialInput};
-use crate::api::validation::{Check, Operation, Outcome, ValidationReport};
-
-use crate::domain::StorageUrl;
 use crate::storage_client;
 
 fn check(operation: Operation, outcome: Result<Option<String>, String>) -> Check {

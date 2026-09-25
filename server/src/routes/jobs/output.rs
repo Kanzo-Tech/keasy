@@ -1,22 +1,36 @@
 //! Signed URLs under a job's dataset, `{sink.url}/{job_id}`: PUT for the run
 //! that writes it, GET for the reader that opens it.
 
+use std::collections::HashMap;
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::{Method, StatusCode};
 use axum::response::{IntoResponse, Response};
+use serde::{Deserialize, Serialize};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::api::jobs::{DatasetUrlsRequest, ResolveResponse};
-use crate::api::{ErrorBody, ErrorCode};
-
 use crate::authentication::role::Member;
 use crate::domain::StorageUrl;
-use crate::error::Refusal;
+use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::routes::jobs::owned_job;
 use crate::startup::AppState;
 use crate::storage_client::{self, SIGNED_URL_EXPIRES, relative_path};
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct DatasetUrlsRequest {
+    /// Paths relative to the dataset. The caller names them — the executor's
+    /// output, the corpus reader's enumeration — and keasy signs the list it is
+    /// handed.
+    pub paths: Vec<String>,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct ResolveResponse {
+    /// Dataset-relative path → signed URL.
+    pub files: HashMap<String, String>,
+}
 
 async fn sign_dataset_urls(
     method: Method,

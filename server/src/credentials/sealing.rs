@@ -1,10 +1,11 @@
-use crate::api::credentials::{CredentialSpecInput, ModelCredentialInput, StorageCredentialInput};
 use aes_gcm::aead::{Aead, Payload};
 use aes_gcm::{Aes256Gcm, KeyInit, Nonce};
 use base64::Engine;
 use secrecy::ExposeSecret;
 use secrecy::zeroize::Zeroizing;
 use serde_json::json;
+
+use crate::domain::{CredentialSpecInput, ModelCredentialInput, StorageCredentialInput};
 
 const NONCE_LEN: usize = 12;
 const VERSION: u8 = 0x03;

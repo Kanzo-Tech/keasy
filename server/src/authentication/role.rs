@@ -10,10 +10,8 @@ use axum::http::StatusCode;
 use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
 
-use crate::api::ErrorCode;
-
 use super::middleware::AuthenticatedUser;
-use crate::error::fail;
+use crate::error::{ErrorCode, fail};
 
 /// A workspace role, from `resource_access.<client_id>.roles` on the token.
 #[derive(Clone, Copy, Debug, PartialEq)]

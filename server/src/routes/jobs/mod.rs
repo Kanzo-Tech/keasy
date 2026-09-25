@@ -6,18 +6,59 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
+use serde::Deserialize;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::api::ErrorBody;
-use crate::api::jobs::{
-    CompleteJobRequest, CreateJobRequest, Job, JobStatus, PublishRelationsRequest, UpdateJobRequest,
-};
 use crate::authentication::role::Member;
-use crate::startup::AppState;
-
+use crate::domain::{Job, JobStatus, OutputRelation};
+use crate::error::ErrorBody;
 use crate::jobs::errors::JobApiError;
 use crate::jobs::{now_iso8601, requested};
+use crate::startup::AppState;
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct CreateJobRequest {
+    pub script: String,
+    pub name: Option<String>,
+    /// Where the output lands: the sink connection's name.
+    pub sink_connection: String,
+    #[serde(default)]
+    pub draft: bool,
+}
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct UpdateJobRequest {
+    pub script: Option<String>,
+    pub name: Option<String>,
+}
+
+/// The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
+/// the mapping in the browser (`@fossil-lang/executor`) and uploading the output
+/// by signed PUT, the client reports the run's outcome. `manifest` is the
+/// executor's run report, stored verbatim and never read.
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct CompleteJobRequest {
+    /// The terminal (or `Running`) status the client is transitioning the job to.
+    pub status: JobStatus,
+    /// The run report for the uploaded output (on `Completed`) — opaque JSON.
+    #[serde(default)]
+    #[schema(value_type = Option<Value>)]
+    pub manifest: Option<serde_json::Value>,
+    /// Failure message (on `Failed`), stored verbatim.
+    #[serde(default)]
+    pub error: Option<String>,
+}
+
+/// What the corpus reader enumerated for a finished job (PUT
+/// `/v1/jobs/{id}/relations`). It arrives after completion because naming a
+/// relation is the corpus's answer, not the report's: only a reader with the
+/// manifests in hand can say what the dataset is called and which files carry
+/// it.
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct PublishRelationsRequest {
+    pub relations: Vec<OutputRelation>,
+}
 
 /// The job, if it exists and `member` created it. Anyone else's job is not
 /// found: a job is its creator's alone.
@@ -73,7 +114,13 @@ pub async fn create_job(
     } else {
         (JobStatus::Pending, StatusCode::ACCEPTED)
     };
-    let job = requested(status, payload, member.user_id);
+    let job = requested(
+        status,
+        payload.name,
+        payload.sink_connection,
+        payload.script,
+        member.user_id,
+    );
     state.db.insert_job(&job).await?;
 
     Ok((code, Json(job)).into_response())

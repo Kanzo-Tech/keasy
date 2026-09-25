@@ -11,15 +11,17 @@ use tower_governor::governor::GovernorConfigBuilder;
 use tower_governor::key_extractor::KeyExtractor;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tracing::info;
+use utoipa::Modify;
 use utoipa::OpenApi;
+use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa_axum::router::OpenApiRouter;
 
-use crate::api::{ApiDoc, ErrorCode};
 use crate::authentication::middleware::{AuthenticatedUser, bearer_required};
 use crate::authentication::token::{SharedValidator, Validator};
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::database::Database;
-use crate::error::fail;
+use crate::domain::Purpose;
+use crate::error::{ErrorBody, ErrorCode, fail};
 use crate::routes;
 
 #[derive(Clone)]
@@ -158,7 +160,7 @@ fn routes() -> (OpenApiRouter<AppState>, OpenApiRouter<AppState>) {
 pub fn openapi() -> utoipa::openapi::OpenApi {
     let (public, protected) = routes();
     let mut api = public.merge(protected).into_openapi();
-    crate::api::error::document_refusals(&mut api);
+    crate::error::document_refusals(&mut api);
     api
 }
 
@@ -228,5 +230,51 @@ fn over_rate(error: GovernorError) -> Response {
             ErrorCode::InternalError,
             "An internal error occurred",
         ),
+    }
+}
+
+/// The document every route is collected into: its info, the bearer scheme, and
+/// that scheme required by default. A public route opts out with `security(())`.
+#[derive(utoipa::OpenApi)]
+#[openapi(
+    info(
+        title = "Keasy API",
+        version = "1.0.0",
+        description = "Keasy host: identity, connections, signed URLs and the job record",
+    ),
+    components(schemas(ErrorBody, ErrorCode, Purpose)),
+    modifiers(&Bearer, &Unattributed),
+    security(("bearer" = [])),
+)]
+pub struct ApiDoc;
+
+pub const BEARER: &str = "bearer";
+
+struct Bearer;
+
+impl Modify for Bearer {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        openapi
+            .components
+            .get_or_insert_with(Default::default)
+            .add_security_scheme(
+                BEARER,
+                SecurityScheme::Http(
+                    HttpBuilder::new()
+                        .scheme(HttpAuthScheme::Bearer)
+                        .bearer_format("JWT")
+                        .build(),
+                ),
+            );
+    }
+}
+
+/// utoipa fills `info.contact` from the package's `authors`: who wrote the
+/// server is not whom a client of the API should write to.
+struct Unattributed;
+
+impl Modify for Unattributed {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        openapi.info.contact = None;
     }
 }

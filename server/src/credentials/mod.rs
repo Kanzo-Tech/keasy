@@ -5,14 +5,12 @@ pub mod persistence;
 pub mod probe;
 pub mod sealing;
 
-use crate::api::credentials::{CreateCredentialRequest, CredentialView};
+use sealing::SecretKey;
 
 use crate::configuration::DatabaseSettings;
 use crate::database::Database;
-use crate::domain::ResourceName;
+use crate::domain::{Credential, CredentialSpecInput, CredentialView, ResourceName};
 use crate::error::Refusal;
-use persistence::Credential;
-use sealing::SecretKey;
 
 /// The credential `name`, unsealed, or 404.
 pub async fn named(db: &Database, name: &str) -> Result<Credential, Refusal> {
@@ -24,16 +22,18 @@ pub async fn named(db: &Database, name: &str) -> Result<Credential, Refusal> {
 /// its models; a storage credential must list `probe_url` when one is given.
 pub async fn create(
     db: &Database,
-    request: CreateCredentialRequest,
+    name: &str,
+    spec: &CredentialSpecInput,
+    probe_url: Option<&str>,
     by: &str,
 ) -> Result<CredentialView, Refusal> {
-    let name = ResourceName::parse(&request.name).map_err(Refusal::invalid)?;
-    let (report, _) = probe::credential(&request.spec, request.probe_url.as_deref(), &[]).await;
+    let name = ResourceName::parse(name).map_err(Refusal::invalid)?;
+    let (report, _) = probe::credential(spec, probe_url, &[]).await;
     if !report.passed() {
         return Err(Refusal::probe_failed(report.failures(), Vec::new()));
     }
     let conn = db.write().await;
-    persistence::insert(&conn, db.secret_key(), &name, &request.spec, by, &report)?;
+    persistence::insert(&conn, db.secret_key(), &name, spec, by, &report)?;
     let stored = persistence::get(&conn, db.secret_key(), name.as_ref())?
         .ok_or_else(|| Refusal::not_found("Credential"))?;
     Ok(stored.view(Vec::new()))

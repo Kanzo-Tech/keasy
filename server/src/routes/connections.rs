@@ -5,24 +5,72 @@ use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::{Method, StatusCode};
 use axum::response::IntoResponse;
+use object_store::ObjectMeta;
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::api::connections::{
-    ConnectionView, CreateConnectionRequest, FileEntry, SignLocatorsRequest, SignLocatorsResponse,
-    UpdateConnectionRequest,
-};
-use crate::api::credentials::{CredentialSpecInput, PurposeQuery, StorageCredentialInput};
-use crate::api::validation::ValidationReport;
-use crate::api::{ErrorBody, ErrorCode};
-
+use super::credentials::PurposeQuery;
 use crate::authentication::role::{AnyRole, Member};
 use crate::connections::locator::{is_public_http, signer};
 use crate::connections::{named, persistence};
-use crate::domain::StorageUrl;
-use crate::error::Refusal;
+use crate::domain::{
+    ConnectionTarget, ConnectionView, CredentialSpecInput, StorageCredentialInput, StorageUrl,
+    ValidationReport,
+};
+use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::startup::AppState;
 use crate::storage_client::{self, SIGNED_URL_EXPIRES};
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct CreateConnectionRequest {
+    /// What programs write after `@`, and the connection's key.
+    pub name: String,
+    /// The credential it signs or calls with; of the same purpose.
+    pub credential: String,
+    pub target: ConnectionTarget,
+}
+
+#[derive(Debug, Default, Deserialize, ToSchema)]
+pub struct UpdateConnectionRequest {
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub credential: Option<String>,
+    #[serde(default)]
+    pub target: Option<ConnectionTarget>,
+}
+
+/// One object under a connection's prefix.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct FileEntry {
+    pub path: String,
+    pub size: u64,
+    pub last_modified: Option<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct SignLocatorsRequest {
+    /// Locators fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`).
+    pub locators: Vec<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SignLocatorsResponse {
+    /// Locator → fetchable URL. A locator keasy will not sign is absent.
+    pub urls: HashMap<String, String>,
+}
+
+impl From<ObjectMeta> for FileEntry {
+    fn from(meta: ObjectMeta) -> Self {
+        Self {
+            path: meta.location.to_string(),
+            size: meta.size,
+            last_modified: Some(meta.last_modified.to_string()),
+        }
+    }
+}
 
 /// The sink is the owner's alone; every other connection is a member's, and
 /// once made, its creator's or the owner's to change.
@@ -83,7 +131,14 @@ pub async fn create_connection(
     Json(request): Json<CreateConnectionRequest>,
 ) -> Result<impl IntoResponse, Refusal> {
     may_change(&caller, None, request.target.is_sink())?;
-    let view = crate::connections::create(&state.db, request, &caller.user_id).await?;
+    let view = crate::connections::create(
+        &state.db,
+        request.name,
+        request.credential,
+        request.target,
+        &caller.user_id,
+    )
+    .await?;
     Ok((StatusCode::CREATED, Json(view)))
 }
 
@@ -200,7 +255,7 @@ pub async fn list_connection_files(
     let (url, credential) = crate::connections::storage(&state.db, &connection).await?;
     storage_client::list_files(&credential, &url)
         .await
-        .map(Json)
+        .map(|files| Json(files.into_iter().map(FileEntry::from).collect::<Vec<_>>()))
         .map_err(|e| Refusal::new(StatusCode::BAD_GATEWAY, ErrorCode::ListFilesFailed, e))
 }
 

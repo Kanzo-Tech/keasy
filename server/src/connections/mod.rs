@@ -3,12 +3,11 @@
 pub mod locator;
 pub mod persistence;
 
-use crate::api::connections::{ConnectionTarget, ConnectionView, CreateConnectionRequest};
-use crate::api::credentials::{CredentialSpecInput, ModelCredentialInput, StorageCredentialInput};
-
-use crate::credentials::persistence::Credential;
 use crate::database::Database;
-use crate::domain::{ResourceName, StorageUrl};
+use crate::domain::{
+    ConnectionTarget, ConnectionView, Credential, CredentialSpecInput, ModelCredentialInput,
+    ResourceName, StorageCredentialInput, StorageUrl,
+};
 use crate::error::Refusal;
 
 /// The connection `name`, or 404.
@@ -77,13 +76,15 @@ pub async fn save(
 
 pub async fn create(
     db: &Database,
-    request: CreateConnectionRequest,
+    name: String,
+    credential: String,
+    target: ConnectionTarget,
     by: &str,
 ) -> Result<ConnectionView, Refusal> {
     let connection = ConnectionView {
-        name: request.name,
-        credential: request.credential,
-        target: request.target,
+        name,
+        credential,
+        target,
         created_by: by.into(),
         created_at: String::new(),
         updated_by: by.into(),
@@ -115,7 +116,7 @@ pub async fn storage(
 pub async fn model(
     db: &Database,
     connection: &ConnectionView,
-) -> Result<(crate::api::connections::ModelTarget, ModelCredentialInput), Refusal> {
+) -> Result<(crate::domain::ModelTarget, ModelCredentialInput), Refusal> {
     let ConnectionTarget::Model(target) = &connection.target else {
         return Err(Refusal::invalid(format!(
             "{:?} is not a model connection",

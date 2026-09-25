@@ -10,7 +10,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use crate::api::ErrorCode;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use rusqlite::Connection;
@@ -18,7 +17,7 @@ use serde::de::DeserializeOwned;
 use tokio::sync::{Mutex, MutexGuard};
 
 use crate::credentials::sealing::SecretKey;
-use crate::error::fail;
+use crate::error::{ErrorCode, fail};
 
 const READ_POOL_SIZE: usize = 4;
 

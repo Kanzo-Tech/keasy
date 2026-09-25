@@ -1,9 +1,7 @@
 //! Which connection signs a locator: the deepest storage source it lies
 //! under, at a path boundary, never the sink.
 
-use crate::api::connections::{ConnectionView, Direction};
-
-use crate::domain::StorageUrl;
+use crate::domain::{ConnectionView, Direction, StorageUrl};
 use crate::storage_client::relative_path;
 
 pub fn is_public_http(locator: &str) -> bool {
@@ -42,7 +40,7 @@ pub fn signer<'a>(locator: &str, connections: &'a [ConnectionView]) -> Option<&'
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::api::connections::{ConnectionKind, ConnectionTarget, ModelTarget, StorageTarget};
+    use crate::domain::{ConnectionKind, ConnectionTarget, ModelTarget, StorageTarget};
 
     fn view(name: &str, target: ConnectionTarget) -> ConnectionView {
         ConnectionView {

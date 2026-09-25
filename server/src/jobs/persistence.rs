@@ -1,8 +1,7 @@
 use rusqlite::{OptionalExtension, params};
 
 use crate::database::{Database, DbResult, enum_column, json_column_opt};
-
-use crate::api::jobs::{Job, JobStatus};
+use crate::domain::{Job, JobStatus};
 
 const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, error, \
                        created_by, sink_connection, script, manifest, relations";
@@ -130,7 +129,6 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::api::jobs::CreateJobRequest;
 
     async fn db() -> (Database, tempfile::TempDir) {
         let dir = tempfile::tempdir().unwrap();
@@ -146,12 +144,9 @@ mod tests {
     fn job(owner: &str) -> Job {
         crate::jobs::requested(
             JobStatus::Draft,
-            CreateJobRequest {
-                script: "x".into(),
-                name: None,
-                sink_connection: "sink".into(),
-                draft: true,
-            },
+            None,
+            "sink".into(),
+            "x".into(),
             owner.into(),
         )
     }

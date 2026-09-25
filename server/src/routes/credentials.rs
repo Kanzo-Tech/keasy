@@ -2,22 +2,55 @@ use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use serde::Deserialize;
+use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
-
-use crate::api::ErrorBody;
-use crate::api::credentials::{
-    CreateCredentialRequest, CredentialView, PurposeQuery, UpdateCredentialRequest,
-    ValidateCredentialRequest,
-};
-use crate::api::validation::ValidationReport;
 
 use crate::authentication::role::{AnyRole, Member};
 use crate::connections::persistence as connections;
 use crate::credentials::{named, persistence, probe};
-use crate::domain::ResourceName;
-use crate::error::Refusal;
+use crate::domain::{CredentialSpecInput, CredentialView, Purpose, ResourceName, ValidationReport};
+use crate::error::{ErrorBody, Refusal};
 use crate::startup::AppState;
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct CreateCredentialRequest {
+    pub name: String,
+    pub spec: CredentialSpecInput,
+    /// A storage URL to LIST before the credential is stored. A storage
+    /// credential has no location of its own, so without one it is only
+    /// checked to build a client.
+    #[serde(default)]
+    #[schema(format = "uri")]
+    pub probe_url: Option<String>,
+}
+
+/// A rename, a rotation or both. `spec` replaces the whole spec, secrets
+/// included, and is stored only if every connection using the credential
+/// still validates with it.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateCredentialRequest {
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub spec: Option<CredentialSpecInput>,
+}
+
+#[derive(Debug, Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct PurposeQuery {
+    /// Only those of this purpose.
+    pub purpose: Option<Purpose>,
+}
+
+#[derive(Debug, Default, Deserialize, ToSchema)]
+pub struct ValidateCredentialRequest {
+    /// A storage URL to LIST besides the connections that use the credential.
+    #[serde(default)]
+    #[schema(format = "uri")]
+    pub url: Option<String>,
+}
 
 fn may_change(caller: &AnyRole, created_by: &str) -> Result<(), Refusal> {
     if caller.owns(created_by) {
@@ -60,7 +93,14 @@ pub async fn create_credential(
     State(state): State<AppState>,
     Json(request): Json<CreateCredentialRequest>,
 ) -> Result<impl IntoResponse, Refusal> {
-    let view = crate::credentials::create(&state.db, request, &member.user_id).await?;
+    let view = crate::credentials::create(
+        &state.db,
+        &request.name,
+        &request.spec,
+        request.probe_url.as_deref(),
+        &member.user_id,
+    )
+    .await?;
     Ok((StatusCode::CREATED, Json(view)))
 }
 

@@ -1,6 +1,4 @@
-use crate::api::ErrorCode;
-
-use crate::error::fail;
+use crate::error::{ErrorCode, fail};
 
 /// API-level error for job route handlers.
 #[derive(Debug, thiserror::Error)]

@@ -1,7 +1,7 @@
 pub mod errors;
 pub mod persistence;
 
-use crate::api::jobs::{CreateJobRequest, Job, JobStatus};
+use crate::domain::{Job, JobStatus};
 
 /// Where a job's output lives: the destination the member chose, plus the job's
 /// own id. **This is the one place keasy composes an output path**, and it is
@@ -13,18 +13,24 @@ pub fn dataset_dest(base: &str, job_id: &str) -> String {
 }
 
 /// A job as a create request asks for it: `Draft` or `Pending`, not yet run.
-pub fn requested(status: JobStatus, request: CreateJobRequest, created_by: String) -> Job {
+pub fn requested(
+    status: JobStatus,
+    name: Option<String>,
+    sink_connection: String,
+    script: String,
+    created_by: String,
+) -> Job {
     let id = uuid::Uuid::new_v4().to_string();
     Job {
         status,
-        name: request.name.or_else(|| Some(id[..8].to_string())),
+        name: name.or_else(|| Some(id[..8].to_string())),
         created_at: now_iso8601(),
         started_at: None,
         completed_at: None,
         error: None,
         created_by,
-        sink_connection: request.sink_connection,
-        script: Some(request.script),
+        sink_connection,
+        script: Some(script),
         manifest: None,
         relations: Vec::new(),
         id,

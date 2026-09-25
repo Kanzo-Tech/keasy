@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -86,72 +84,4 @@ pub struct RelationColumn {
     pub name: String,
     /// The engine's spelling of the Parquet type (`VARCHAR`, `BIGINT`, …).
     pub data_type: String,
-}
-
-/// A completed job's output, as the owner's datasets view lists it.
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-pub struct Dataset {
-    pub job_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub completed_at: Option<String>,
-    pub relations: Vec<OutputRelation>,
-}
-
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct CreateJobRequest {
-    pub script: String,
-    pub name: Option<String>,
-    /// Where the output lands: the sink connection's name.
-    pub sink_connection: String,
-    #[serde(default)]
-    pub draft: bool,
-}
-
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct UpdateJobRequest {
-    pub script: Option<String>,
-    pub name: Option<String>,
-}
-
-/// The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
-/// the mapping in the browser (`@fossil-lang/executor`) and uploading the output
-/// by signed PUT, the client reports the run's outcome. `manifest` is the
-/// executor's run report, stored verbatim and never read.
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct CompleteJobRequest {
-    /// The terminal (or `Running`) status the client is transitioning the job to.
-    pub status: JobStatus,
-    /// The run report for the uploaded output (on `Completed`) — opaque JSON.
-    #[serde(default)]
-    #[schema(value_type = Option<Value>)]
-    pub manifest: Option<serde_json::Value>,
-    /// Failure message (on `Failed`), stored verbatim.
-    #[serde(default)]
-    pub error: Option<String>,
-}
-
-/// What the corpus reader enumerated for a finished job (PUT
-/// `/v1/jobs/{id}/relations`). It arrives after completion because naming a
-/// relation is the corpus's answer, not the report's: only a reader with the
-/// manifests in hand can say what the dataset is called and which files carry
-/// it.
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct PublishRelationsRequest {
-    pub relations: Vec<OutputRelation>,
-}
-
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct DatasetUrlsRequest {
-    /// Paths relative to the dataset. The caller names them — the executor's
-    /// output, the corpus reader's enumeration — and keasy signs the list it is
-    /// handed.
-    pub paths: Vec<String>,
-}
-
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-pub struct ResolveResponse {
-    /// Dataset-relative path → signed URL.
-    pub files: HashMap<String, String>,
 }

@@ -4,20 +4,19 @@ use std::sync::{Arc, Mutex};
 use axum::Router;
 use axum::body::Body;
 use axum::http::{Method, Request, StatusCode, header};
+use secrecy::SecretString;
 use serde_json::json;
 use tower::ServiceExt;
 use tracing_subscriber::fmt::MakeWriter;
 
-use crate::api::connections::{ConnectionTarget, ConnectionView, Direction, StorageTarget};
-use crate::api::credentials::{CredentialSpecInput, StorageCredentialInput};
-use crate::api::validation::ValidationReport;
 use crate::authentication::token::Validator;
 use crate::authentication::token::tests::{Realm, good, mint, realm};
 use crate::database::Database;
+use crate::domain::{
+    ConnectionTarget, ConnectionView, CredentialSpecInput, Direction, ResourceName,
+    StorageCredentialInput, StorageTarget, ValidationReport,
+};
 use crate::startup::AppState;
-use secrecy::SecretString;
-
-use crate::domain::ResourceName;
 
 /// The real router over a real database, verifying tokens against a
 /// fake realm.
@@ -472,10 +471,9 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
 async fn a_connection_names_a_credential_of_its_own_purpose() {
     let harness = Harness::new().await;
     let member = harness.token(&["member"]);
-    let model =
-        CredentialSpecInput::Model(crate::api::credentials::ModelCredentialInput::Anthropic {
-            api_key: SecretString::from("sk"),
-        });
+    let model = CredentialSpecInput::Model(crate::domain::ModelCredentialInput::Anthropic {
+        api_key: SecretString::from("sk"),
+    });
     crate::credentials::persistence::insert(
         &*harness.db.write().await,
         harness.db.secret_key(),

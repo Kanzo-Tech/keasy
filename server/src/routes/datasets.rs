@@ -1,12 +1,24 @@
-use crate::api::jobs::{Dataset, JobStatus};
 use axum::Json;
 use axum::extract::State;
+use serde::Serialize;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use crate::authentication::role::Owner;
+use crate::domain::{JobStatus, OutputRelation};
 use crate::jobs::errors::JobApiError;
 use crate::startup::AppState;
+
+/// A completed job's output, as the owner's datasets view lists it.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct Dataset {
+    pub job_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub completed_at: Option<String>,
+    pub relations: Vec<OutputRelation>,
+}
 
 #[utoipa::path(get, path = "/v1/datasets", tag = "Jobs",
     responses(

@@ -1,4 +1,3 @@
-pub mod api;
 pub mod authentication;
 pub mod bootstrap;
 pub mod configuration;

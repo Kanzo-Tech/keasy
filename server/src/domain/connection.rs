@@ -1,13 +1,10 @@
 //! Connections: where or what a credential is used for — a storage location
 //! or a model. None of these types can hold a secret.
 
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::api::credentials::Purpose;
-use crate::api::validation::ValidationReport;
+use super::{Purpose, ValidationReport};
 
 #[derive(
     Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq, ToSchema, strum::AsRefStr,
@@ -84,25 +81,6 @@ impl ConnectionTarget {
     }
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct CreateConnectionRequest {
-    /// What programs write after `@`, and the connection's key.
-    pub name: String,
-    /// The credential it signs or calls with; of the same purpose.
-    pub credential: String,
-    pub target: ConnectionTarget,
-}
-
-#[derive(Debug, Default, Deserialize, ToSchema)]
-pub struct UpdateConnectionRequest {
-    #[serde(default)]
-    pub name: Option<String>,
-    #[serde(default)]
-    pub credential: Option<String>,
-    #[serde(default)]
-    pub target: Option<ConnectionTarget>,
-}
-
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct ConnectionView {
     pub name: String,
@@ -114,24 +92,4 @@ pub struct ConnectionView {
     pub updated_at: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub validation: Option<ValidationReport>,
-}
-
-/// One object under a connection's prefix.
-#[derive(Debug, Serialize, ToSchema)]
-pub struct FileEntry {
-    pub path: String,
-    pub size: u64,
-    pub last_modified: Option<String>,
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct SignLocatorsRequest {
-    /// Locators fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`).
-    pub locators: Vec<String>,
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct SignLocatorsResponse {
-    /// Locator → fetchable URL. A locator keasy will not sign is absent.
-    pub urls: HashMap<String, String>,
 }

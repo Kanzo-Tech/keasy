@@ -26,6 +26,8 @@ import { redirect } from "next/navigation";
  */
 export type WorkspaceRole = "owner" | "member";
 
+export const ROLE_LABEL: Record<WorkspaceRole, string> = { owner: "Owner", member: "Member" };
+
 export function workspaceRole(session: Session | null | undefined): WorkspaceRole | null {
   const owner = can(session, "owner");
   const member = can(session, "member");

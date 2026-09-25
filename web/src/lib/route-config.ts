@@ -8,6 +8,7 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
+import type { WorkspaceRole } from "@/lib/roles";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,17 +16,12 @@ type RouteDef = {
   name: string;
   icon?: LucideIcon;
   /** Which workspace roles see this in the sidebar. Omit = not in sidebar. */
-  sidebar?: readonly ("owner" | "member")[];
+  sidebar?: readonly WorkspaceRole[];
 };
 
 export type RouteEntry = RouteDef & { path: string };
 
 // ── Data ─────────────────────────────────────────────────────────────────────
-
-export const ROLE_LABEL: Record<string, string> = {
-  owner: "Owner",
-  member: "Member",
-};
 
 /**
  * Single source of truth — every known route in the app.
@@ -78,11 +74,10 @@ export function generateBreadcrumbs(path: string): RouteEntry[] {
   return crumbs;
 }
 
-export function getSidebarRoutes(effectiveRole?: string): RouteEntry[] {
+export function getSidebarRoutes(role: WorkspaceRole): RouteEntry[] {
   // Two disjoint planes: the member sees the data surface, the owner sees the
   // metadata/people surface. Each role sees only its own plane (plus Dashboard).
-  const key: "owner" | "member" = effectiveRole === "owner" ? "owner" : "member";
   return Object.entries(ROUTES)
-    .filter(([, def]) => def.sidebar?.includes(key))
+    .filter(([, def]) => def.sidebar?.includes(role))
     .map(([path, def]) => ({ ...def, path }));
 }

@@ -143,14 +143,4 @@ export const api = {
       }));
     },
   },
-
-  // ── Auth ───────────────────────────────────────────────────────────────
-  // Who you are and what you may do come from `useSession` — the BFF's own
-  // session endpoint — so the only thing left here is the switcher's list, which
-  // is a claim on the token rather than a property of the session.
-  auth: {
-    workspaces: async () =>
-      unwrap(await client.GET("/v1/auth/workspaces")),
-  },
-
 };

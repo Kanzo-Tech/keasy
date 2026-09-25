@@ -44,9 +44,3 @@ export type ProviderSchema = S["ProviderSchema"];
 
 // The source providers fossil supports, from `@fossil-lang/wasm`'s `providers()`.
 export type { ProviderInfo } from "@fossil-lang/wasm";
-
-// ---------------------------------------------------------------------------
-// Auth types — re-exported from schema
-// ---------------------------------------------------------------------------
-
-export type WorkspacesResponse = S["WorkspacesResponse"];

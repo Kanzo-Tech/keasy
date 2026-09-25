@@ -1,9 +1,6 @@
 import type { ConnectionKind } from "@/lib/types";
 
 export const queryKeys = {
-  // Auth
-  workspaces: ["workspaces"] as const,
-
   // Jobs
   jobs: {
     all: ["jobs"] as const,

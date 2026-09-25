@@ -11,11 +11,11 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use crate::authentication::role::Member;
-use crate::domain::StorageUrl;
+use crate::domain::RelativePath;
 use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::jobs::owned;
 use crate::startup::AppState;
-use crate::storage_client::{self, SIGNED_URL_EXPIRES, relative_path};
+use crate::storage_client::{self, SIGNED_URL_EXPIRES};
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct DatasetUrlsRequest {
@@ -48,15 +48,14 @@ async fn sign_dataset_urls(
             )
         })?;
     let (sink_url, credential) = crate::connections::storage(&state.db, &sink).await?;
-    let base = StorageUrl::parse(&crate::jobs::dataset_dest(sink_url.as_ref(), id))
-        .map_err(Refusal::invalid)?;
+    let base = job.output_under(&sink_url).map_err(Refusal::invalid)?;
     let store = storage_client::store(&credential, &base)
         .map_err(|e| Refusal::new(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::StoreError, e))?;
     let mut objects = Vec::with_capacity(paths.len());
     for p in paths {
-        relative_path(p)
+        let p = RelativePath::parse(p)
             .map_err(|e| Refusal::new(StatusCode::BAD_REQUEST, ErrorCode::InvalidPath, e))?;
-        objects.push(base.path().child(p.as_str()));
+        objects.push(base.path().child(p.as_ref()));
     }
     let urls = store
         .sign_urls(method, &objects, SIGNED_URL_EXPIRES)

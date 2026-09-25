@@ -136,7 +136,7 @@ mod tests {
     }
 
     fn job(owner: &str) -> Job {
-        crate::jobs::requested(
+        Job::new(
             JobStatus::Draft,
             None,
             "sink".into(),

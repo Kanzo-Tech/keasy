@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use super::{StorageUrl, now_iso8601};
+
 #[derive(
     Debug,
     Clone,
@@ -59,6 +61,46 @@ pub struct Job {
     /// for reading.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub relations: Vec<OutputRelation>,
+}
+
+impl Job {
+    /// A job as a create request asks for it: `Draft` or `Pending`, not yet run.
+    pub fn new(
+        status: JobStatus,
+        name: Option<String>,
+        sink_connection: String,
+        script: String,
+        created_by: String,
+    ) -> Self {
+        let id = uuid::Uuid::new_v4().to_string();
+        Self {
+            status,
+            name: name.or_else(|| Some(id[..8].to_string())),
+            created_at: now_iso8601(),
+            started_at: None,
+            completed_at: None,
+            error: None,
+            created_by,
+            sink_connection,
+            script: Some(script),
+            manifest: None,
+            relations: Vec::new(),
+            id,
+        }
+    }
+
+    /// Where the output lives: the sink the member chose, plus the job's own
+    /// id. **This is the one place keasy composes an output path**, and it is
+    /// keasy's to compose — a job's home is the host's decision, not the
+    /// language's. Everything below it (relation names, file names, tile names)
+    /// belongs to fossil and travels from fossil.
+    pub fn output_under(&self, sink: &StorageUrl) -> Result<StorageUrl, String> {
+        StorageUrl::parse(&format!(
+            "{}/{}",
+            sink.as_ref().trim_end_matches('/'),
+            self.id
+        ))
+    }
 }
 
 /// One addressable relation of a job's output, named by fossil.

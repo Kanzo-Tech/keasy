@@ -57,7 +57,7 @@ pub fn insert(conn: &Connection, connection: &ConnectionView, by: &str) -> DbRes
             connection.credential,
             serde_json::to_string(&connection.target)?,
             by,
-            crate::jobs::now_iso8601(),
+            crate::domain::now_iso8601(),
             connection
                 .validation
                 .as_ref()
@@ -115,7 +115,7 @@ pub fn update(conn: &Connection, name: &str, updated: &ConnectionView, by: &str)
             updated.credential,
             serde_json::to_string(&updated.target)?,
             by,
-            crate::jobs::now_iso8601(),
+            crate::domain::now_iso8601(),
             updated
                 .validation
                 .as_ref()

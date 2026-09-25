@@ -28,7 +28,7 @@ fn check(operation: Operation, outcome: Result<Option<String>, String>) -> Check
 
 fn report(results: Vec<Check>) -> ValidationReport {
     ValidationReport {
-        at: crate::jobs::now_iso8601(),
+        at: crate::domain::now_iso8601(),
         results,
     }
 }

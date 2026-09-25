@@ -11,9 +11,9 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use crate::authentication::role::Member;
-use crate::domain::{Job, JobStatus, OutputRelation};
+use crate::domain::{Job, JobStatus, OutputRelation, RelativePath, now_iso8601};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
-use crate::jobs::{now_iso8601, owned, persistence, requested};
+use crate::jobs::{owned, persistence};
 use crate::startup::AppState;
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -105,7 +105,7 @@ pub async fn create_job(
     } else {
         (JobStatus::Pending, StatusCode::ACCEPTED)
     };
-    let job = requested(
+    let job = Job::new(
         status,
         payload.name,
         payload.sink_connection,
@@ -241,7 +241,7 @@ pub async fn publish_relations(
 
     let relations = payload.relations;
     for file in relations.iter().flat_map(|r| &r.files) {
-        crate::storage_client::relative_path(file)
+        RelativePath::parse(file)
             .map_err(|e| Refusal::new(StatusCode::BAD_REQUEST, ErrorCode::InvalidFormat, e))?;
     }
     persistence::update(&*state.db.write().await, &id, move |job| {

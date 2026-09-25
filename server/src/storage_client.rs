@@ -28,25 +28,6 @@ fn reaches(credential: &StorageCredentialInput) -> StorageScheme {
     }
 }
 
-/// A client-supplied path under a base URL: relative, no scheme, no `..`
-/// leaving the base, no quote to close a SQL literal with.
-pub(crate) fn relative_path(path: &str) -> Result<(), String> {
-    let invalid = |why: &str| Err(format!("{path:?} {why}"));
-    if path.is_empty() {
-        return invalid("is empty");
-    }
-    if path.starts_with(['/', '\\']) || path.contains(':') {
-        return invalid("must be relative");
-    }
-    if path.split(['/', '\\']).any(|segment| segment == "..") {
-        return invalid("must not leave its base");
-    }
-    if path.contains(['\'', '"', '\0']) {
-        return invalid("must not contain quotes");
-    }
-    Ok(())
-}
-
 /// A probe or a listing is a question a person is waiting on: a store that
 /// does not answer is a failed check in seconds, not after object_store's
 /// default three minutes of retries.
@@ -215,24 +196,6 @@ mod tests {
             secret_access_key: SecretString::from("SK"),
             region: "us-east-1".into(),
             endpoint: None,
-        }
-    }
-
-    #[test]
-    fn a_client_path_stays_under_its_base() {
-        for ok in ["Person.parquet", "vertex/Person/chunk0.parquet"] {
-            assert!(relative_path(ok).is_ok(), "{ok}");
-        }
-        for bad in [
-            "",
-            "/etc/passwd",
-            "../other-job/Person.parquet",
-            "vertex/../../x.parquet",
-            "s3://elsewhere/x.parquet",
-            "it's.parquet",
-            "a\"b.parquet",
-        ] {
-            assert!(relative_path(bad).is_err(), "{bad}");
         }
     }
 

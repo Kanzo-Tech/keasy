@@ -8,7 +8,6 @@ use utoipa_axum::routes;
 
 use crate::AppState;
 use crate::auth::bearer::AuthenticatedUser;
-use crate::db::DbError;
 
 /// GET /v1/auth/workspaces
 ///
@@ -25,19 +24,12 @@ use crate::db::DbError;
 pub async fn list_workspaces(
     State(state): State<AppState>,
     axum::Extension(user): axum::Extension<AuthenticatedUser>,
-) -> Result<impl IntoResponse, DbError> {
-    let current_name = state
-        .db
-        .get_workspace_identity()
-        .await?
-        .map(|i| i.name)
-        .unwrap_or_default();
-
-    Ok(Json(WorkspacesResponse {
+) -> impl IntoResponse {
+    Json(WorkspacesResponse {
         workspaces: user.claims.workspaces,
         current: state.workspace_slug.clone().unwrap_or_default(),
-        current_name,
-    }))
+        current_name: state.workspace_name.clone(),
+    })
 }
 
 /// The routes this module serves.

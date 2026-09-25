@@ -26,7 +26,7 @@ pub struct ServerConfig {
     /// Read from KEASY_OIDC_INTERNAL_BASE_URL.
     pub oidc_internal_base_url: Option<String>,
     /// Display name of this workspace. Read from `KEASY_WORKSPACE_NAME`,
-    /// default `"Workspace"`. Used to seed the local workspace identity at boot.
+    /// default `"Workspace"`. The switcher's name for this instance.
     pub workspace_name: String,
     /// This instance's workspace slug. Read from `KEASY_ORG_ALIAS`. The "current"
     /// entry in the workspace switcher.

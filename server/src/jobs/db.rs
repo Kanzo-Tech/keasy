@@ -169,7 +169,6 @@ mod tests {
                 script: "x".into(),
                 name: None,
                 mode: None,
-                dcat_enabled: None,
                 sink_connection_id: "sink".into(),
                 draft: true,
             },

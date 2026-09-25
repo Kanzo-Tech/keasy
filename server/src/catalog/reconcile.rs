@@ -258,6 +258,7 @@ mod tests {
         let state = AppState {
             db,
             workspace_slug: None,
+            workspace_name: String::new(),
             auth: Arc::new(Validator::new(
                 "https://id.test/realms/keasy",
                 "keasy-api",

@@ -379,22 +379,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/org/identity": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_org_identity"];
-        put: operations["update_org_identity"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/settings/ai/providers": {
         parameters: {
             query?: never;
@@ -436,22 +420,6 @@ export interface paths {
         };
         get: operations["get_catalog_storage"];
         put: operations["save_catalog_storage"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/settings/organization": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_org_settings"];
-        put: operations["save_org_settings"];
         post?: never;
         delete?: never;
         options?: never;
@@ -650,8 +618,6 @@ export interface components {
             url: string;
         };
         CreateJobRequest: {
-            /** @description Accepted, not acted on: DCAT publication is not built. */
-            dcat_enabled?: boolean | null;
             draft?: boolean;
             mode?: null | components["schemas"]["RunMode"];
             name?: string | null;
@@ -691,7 +657,7 @@ export interface components {
          *     declare here cannot be sent, and the web keys its copy by this enum.
          * @enum {string}
          */
-        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "bad_request" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "still_running" | "invalid_destination" | "no_destination" | "invalid_connection" | "container_not_found" | "list_files_failed" | "store_error" | "sign_error" | "catalog_error" | "ai_not_configured" | "schema_required" | "insufficient_credits" | "llm_failed";
+        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "still_running" | "invalid_destination" | "no_destination" | "invalid_connection" | "container_not_found" | "list_files_failed" | "store_error" | "sign_error" | "catalog_error" | "ai_not_configured" | "schema_required" | "insufficient_credits" | "llm_failed";
         FieldSchema: {
             default_value?: string | null;
             env_var?: string | null;
@@ -767,20 +733,6 @@ export interface components {
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
         /** @enum {string} */
         LocationType: "cloud" | "local";
-        OrgIdentity: {
-            country: string;
-            country_subdivision_code?: string | null;
-            legal_name: string;
-            registration_number?: string | null;
-            registration_number_type?: string | null;
-        };
-        OrgSettings: {
-            catalog_description?: string | null;
-            contact_email?: string | null;
-            license_uri?: string | null;
-            publisher_name: string;
-            publisher_uri?: string | null;
-        };
         /**
          * @description One addressable relation of a job's output, named by fossil.
          *
@@ -870,7 +822,7 @@ export interface components {
             /** @description This instance's slug — the "current" entry in the switcher. */
             current: string;
             /**
-             * @description This instance's display name, from its workspace identity. The other
+             * @description This instance's display name (`KEASY_WORKSPACE_NAME`). The other
              *     entries show their slug: an instance only knows its own name.
              */
             current_name: string;
@@ -1941,69 +1893,6 @@ export interface operations {
             503: components["responses"]["KeysUnavailable"];
         };
     };
-    get_org_identity: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Workspace identity */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrgIdentity"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    update_org_identity: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["OrgIdentity"];
-            };
-        };
-        responses: {
-            /** @description Identity updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrgIdentity"];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
     list_ai_providers: {
         parameters: {
             query?: never;
@@ -2157,76 +2046,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogStoragePayload"];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    get_org_settings: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Organization settings */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrgSettings"];
-                };
-            };
-            /** @description No settings configured */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    save_org_settings: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["OrgSettings"];
-            };
-        };
-        responses: {
-            /** @description Settings saved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrgSettings"];
                 };
             };
             /** @description Validation error */

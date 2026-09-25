@@ -1,7 +1,7 @@
 //! Who may call a handler, read off the verified token.
 //!
 //! Two disjoint roles, not a hierarchy: the owner administers the workspace's
-//! identity and catalog and never touches data; a member holds connections,
+//! catalog and never touches data; a member holds connections,
 //! runs jobs and reads their output and administers nothing. A handler states
 //! which it admits by taking [`Owner`], [`Member`] or [`AnyRole`].
 
@@ -116,13 +116,13 @@ mod tests {
     use tower::ServiceExt;
 
     async fn owner_only(_: Owner) -> &'static str {
-        "identity, catalog storage, the data catalog"
+        "catalog storage, the data catalog"
     }
     async fn member_only(_: Member) -> &'static str {
         "connections, jobs, discovery, AI"
     }
     async fn either(_: AnyRole) -> &'static str {
-        "the workspace's legal identity"
+        "the cloud accounts list"
     }
 
     /// The three extractors, entered as `role`. A `None` role is a verified

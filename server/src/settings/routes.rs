@@ -17,7 +17,6 @@ use keasy_api::ErrorBody;
 use keasy_api::connections::{ConnectionKind, CreateConnectionRequest, Direction, LocationType};
 use keasy_api::settings::CatalogStoragePayload;
 use keasy_api::settings::ai::{AiProvider, AiSettingsPayload, SaveAiProviderRequest};
-use keasy_api::settings::org::OrgSettings;
 use keasy_api::settings::schema::{PROVIDER_REGISTRY, ProviderSchema};
 
 #[utoipa::path(get, path = "/v1/settings/schema", tag = "Settings", security(()),
@@ -25,43 +24,6 @@ use keasy_api::settings::schema::{PROVIDER_REGISTRY, ProviderSchema};
 )]
 pub async fn get_schema() -> impl IntoResponse {
     Json(PROVIDER_REGISTRY)
-}
-
-// The DCAT publisher block behind the workspace catalog: catalog metadata, the
-// owner's to read and write.
-#[utoipa::path(get, path = "/v1/settings/organization", tag = "Settings",
-    responses(
-        (status = 200, description = "Organization settings", body = OrgSettings),
-        (status = 204, description = "No settings configured"),
-    )
-)]
-pub async fn get_org_settings(
-    _: Owner,
-    State(state): State<AppState>,
-) -> Result<Response, DbError> {
-    Ok(match state.db.get_org_settings().await? {
-        Some(settings) => Json(settings).into_response(),
-        None => StatusCode::NO_CONTENT.into_response(),
-    })
-}
-
-#[utoipa::path(put, path = "/v1/settings/organization", tag = "Settings",
-    request_body = OrgSettings,
-    responses(
-        (status = 200, description = "Settings saved", body = OrgSettings),
-        (status = 400, description = "Validation error", body = ErrorBody),
-    )
-)]
-pub async fn save_org_settings(
-    _: Owner,
-    State(state): State<AppState>,
-    Json(payload): Json<OrgSettings>,
-) -> Result<impl IntoResponse, DbError> {
-    if payload.publisher_name.trim().is_empty() {
-        return Err(DbError::Invalid("publisher_name is required".into()));
-    }
-    state.db.set_org_settings(&payload).await?;
-    Ok(Json(payload))
 }
 
 // ── AI providers ──────────────────────────────────────────────────────────
@@ -242,7 +204,6 @@ pub fn public_router() -> OpenApiRouter<AppState> {
 /// The routes this module serves.
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
-        .routes(routes!(get_org_settings, save_org_settings))
         .routes(routes!(get_catalog_storage, save_catalog_storage))
         .routes(routes!(list_ai_providers))
         .routes(routes!(save_ai_provider, delete_ai_provider))

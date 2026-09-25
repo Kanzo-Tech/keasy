@@ -1,5 +1,4 @@
 pub mod ai;
-pub mod org;
 pub mod schema;
 
 use serde::{Deserialize, Serialize};

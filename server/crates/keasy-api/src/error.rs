@@ -16,7 +16,6 @@ pub enum ErrorCode {
     #[serde(rename = "rbac/insufficient_role")]
     InsufficientRole,
     RateLimited,
-    BadRequest,
     ValidationFailed,
     InvalidFormat,
     InvalidPath,

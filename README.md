@@ -68,7 +68,7 @@ graph TD
     Web -->|"OIDC code flow"| Keycloak
     Web -->|"session records"| Valkey[("Valkey")]
     Server -->|"JWKS"| Keycloak
-    Server --> SQLite[("SQLite + DuckLake catalog")]
+    Server --> SQLite[("SQLite")]
     Keycloak --> PostgreSQL[("PostgreSQL")]
 ```
 

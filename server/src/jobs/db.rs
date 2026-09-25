@@ -84,7 +84,7 @@ impl Database {
         Ok(Some(job))
     }
 
-    /// Every job in the workspace (the catalog and its reconciler).
+    /// Every job in the workspace (the owner's datasets view).
     pub async fn list_jobs(&self) -> DbResult<Vec<Job>> {
         self.select_jobs("", None).await
     }

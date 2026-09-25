@@ -13,7 +13,7 @@ use crate::auth::jwt::tests::{Realm, good, mint, realm};
 use crate::{AppState, Database};
 use keasy_api::connections::{ConnectionKind, CreateConnectionRequest, Direction, LocationType};
 
-/// The real router over a real database and catalog, verifying tokens against a
+/// The real router over a real database, verifying tokens against a
 /// fake realm.
 struct Harness {
     app: Router,
@@ -31,7 +31,6 @@ impl Harness {
             crate::crypto::SecretKey::for_tests(),
         )
         .unwrap();
-        let catalog = crate::catalog::Catalog::open(dir.path()).unwrap();
         let state = AppState {
             db: db.clone(),
             workspace_slug: Some("dev".into()),
@@ -41,7 +40,6 @@ impl Harness {
                 "keasy-ws-dev",
                 None,
             )),
-            catalog: Arc::new(catalog),
         };
         Self {
             app: super::build_router(state),
@@ -258,7 +256,7 @@ const ROUTES: &[(&str, &str, Admits)] = &[
     ("PUT", "/v1/settings/organization", Admits::Owner),
     ("GET", "/v1/settings/catalog-storage", Admits::Owner),
     ("PUT", "/v1/settings/catalog-storage", Admits::Owner),
-    ("GET", "/v1/catalog/datasets", Admits::Owner),
+    ("GET", "/v1/datasets", Admits::Owner),
     ("PUT", "/v1/org/identity", Admits::Owner),
     ("GET", "/v1/cloud-accounts", Admits::AnyRole),
     ("GET", "/v1/org/identity", Admits::AnyRole),
@@ -339,7 +337,7 @@ async fn every_role_gated_route_is_in_the_table() {
         "/v1/assistant/generate-stream",
         "/v1/settings/organization",
         "/v1/settings/catalog-storage",
-        "/v1/catalog/datasets",
+        "/v1/datasets",
         "/v1/org/identity",
         "/v1/settings/schema",
         "/v1/auth/workspaces",

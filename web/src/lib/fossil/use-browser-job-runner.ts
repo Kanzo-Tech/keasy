@@ -49,10 +49,10 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         // Tell the host what it is now storing. The run report says what was
         // written; it does not say what the relations are CALLED, which is a
         // reader's answer — so the corpus is opened and asked, here, in the tab
-        // that just produced it. The catalog registration hangs off this.
+        // that just produced it.
         //
         // Its own `catch`: the job IS done and its data IS at the sink. A
-        // failure here loses the catalog entry, not the run, and reporting it as
+        // failure here loses the datasets entry, not the run, and reporting it as
         // a failed run would be a lie about durable data.
         try {
           const { corpus } = await openJobCorpus(jobId);

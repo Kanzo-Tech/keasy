@@ -1,7 +1,6 @@
 mod ai;
 mod assistant;
 mod auth;
-mod catalog;
 mod cloud;
 mod config;
 mod connections;
@@ -14,7 +13,6 @@ mod routes;
 mod settings;
 
 use std::sync::Arc;
-use std::time::Duration;
 
 use tracing::info;
 
@@ -29,8 +27,6 @@ struct AppState {
     workspace_slug: Option<String>,
     /// Verifies the bearer token every protected request carries.
     auth: auth::jwt::SharedValidator,
-    /// The DuckLake catalog: the authority over output metadata.
-    catalog: Arc<catalog::Catalog>,
 }
 
 /// Configure from the environment, open the stores and serve until Ctrl+C.
@@ -78,10 +74,6 @@ pub async fn run() -> Result<(), String> {
     // After the key check: declaring a connection writes encrypted credentials.
     connections::bootstrap::ensure_declared_connections(&db).await;
 
-    let catalog = catalog::Catalog::open(&config.data_dir)
-        .map_err(|e| format!("failed to open the DuckLake catalog: {e}"))?;
-    info!("DuckLake catalog opened");
-
     // Built without touching the network: Keycloak is routinely not up yet, and
     // the keys are fetched on the first request that needs them.
     let auth = Arc::new(auth::jwt::Validator::new(
@@ -101,11 +93,7 @@ pub async fn run() -> Result<(), String> {
         db,
         workspace_slug: config.workspace_slug,
         auth,
-        catalog: Arc::new(catalog),
     };
-
-    // Registers what a completion missed and forgets what was deleted.
-    catalog::reconcile::spawn(state.clone(), Duration::from_secs(60));
 
     let app = routes::build_router(state);
     let listener = tokio::net::TcpListener::bind(config.bind_addr)

@@ -1,4 +1,5 @@
 pub mod bootstrap;
+pub mod datasets;
 pub mod db;
 pub mod errors;
 pub mod routes;

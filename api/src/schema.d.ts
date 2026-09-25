@@ -114,29 +114,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/catalog/datasets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List the workspace catalog: every registered dataset (a completed job's
-         *     output) with its types, columns and row counts.
-         * @description Governance metadata, and therefore the owner's: it is the index over what
-         *     the whole workspace produced. The member reaches their own output through
-         *     the job that made it, which carries the bytes; this carries none.
-         */
-        get: operations["list_catalog_datasets"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/cloud-accounts": {
         parameters: {
             query?: never;
@@ -259,6 +236,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/datasets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every dataset the workspace produced, as the corpus reader named it: the
+         *     owner's index over the whole workspace. It carries metadata only; the
+         *     member reaches the bytes through the job that made them.
+         */
+        get: operations["list_datasets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/jobs": {
         parameters: {
             query?: never;
@@ -366,10 +364,8 @@ export interface paths {
          *     enumerated them in the browser.
          * @description It is a second call and not a field of the completion because naming a
          *     relation is an answer only a reader holding the manifests can give, and the
-         *     run report is not that reader. keasy stores the answer and registers the
-         *     dataset in the DuckLake catalog by reference — one atomic snapshot,
-         *     idempotent, composing nothing: every name and every path in that SQL came
-         *     from this payload.
+         *     run report is not that reader. keasy stores the answer verbatim; it is what
+         *     the owner's datasets view lists.
          */
         put: operations["publish_relations"];
         post?: never;
@@ -538,34 +534,10 @@ export interface components {
             label: string;
             name: string;
         };
-        CatalogColumn: {
-            /** @description DuckDB type spelling (`VARCHAR`, `BIGINT`, …). */
-            data_type: string;
-            name: string;
-        };
-        /** @description One registered dataset (a completed job's output) as the catalog sees it. */
-        CatalogDataset: {
-            /** @description The job id (the `job_` schema suffix), the dataset's stable handle. */
-            job_id: string;
-            /** @description One entry per registered relation. */
-            tables: components["schemas"]["CatalogTable"][];
-        };
         /** @description The workspace write sink, as the owner's Catalog Storage page edits it. */
         CatalogStoragePayload: {
             base_url: string;
             cloud_account_id: string;
-        };
-        /** @description A registered type within a dataset and its SQL shape. */
-        CatalogTable: {
-            /** @description Property columns, in declaration order. */
-            columns: components["schemas"]["CatalogColumn"][];
-            /** @description The relation's name, as fossil named it (`Person`, `Person_knows_Person`). */
-            name: string;
-            /**
-             * Format: int64
-             * @description Row count, as the corpus reported it when the relation was published.
-             */
-            rows?: number | null;
         };
         /**
          * @description One earlier message of the conversation. The client keeps the conversation;
@@ -659,6 +631,13 @@ export interface components {
             /** @description Where the output lands: a sink connection. */
             sink_connection_id: string;
         };
+        /** @description A completed job's output, as the owner's datasets view lists it. */
+        Dataset: {
+            completed_at?: string | null;
+            job_id: string;
+            name?: string | null;
+            relations: components["schemas"]["OutputRelation"][];
+        };
         DatasetUrlsRequest: {
             /**
              * @description Paths relative to the dataset (or connection). The caller names them —
@@ -666,10 +645,6 @@ export interface components {
              *     the list it is handed.
              */
             paths: string[];
-        };
-        DatasetsResponse: {
-            /** @description Every registered dataset in the workspace catalog. */
-            datasets: components["schemas"]["CatalogDataset"][];
         };
         /**
          * @description Whether a connection is a READ source (programs reference it via `@conn`) or
@@ -691,7 +666,7 @@ export interface components {
          *     declare here cannot be sent, and the web keys its copy by this enum.
          * @enum {string}
          */
-        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "bad_request" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "still_running" | "invalid_destination" | "no_destination" | "invalid_connection" | "container_not_found" | "list_files_failed" | "store_error" | "sign_error" | "catalog_error" | "ai_not_configured" | "schema_required" | "insufficient_credits" | "llm_failed";
+        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "bad_request" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "still_running" | "invalid_destination" | "no_destination" | "invalid_connection" | "container_not_found" | "list_files_failed" | "store_error" | "sign_error" | "ai_not_configured" | "schema_required" | "insufficient_credits" | "llm_failed";
         FieldSchema: {
             default_value?: string | null;
             env_var?: string | null;
@@ -744,8 +719,8 @@ export interface components {
             /**
              * @description What the corpus holds and what it is called, as the corpus reader
              *     enumerated it (`@fossil-lang/corpus`). fossil names every relation and
-             *     every file; keasy joins them to the destination it owns, signs them for
-             *     reading and registers them in the catalog by reference.
+             *     every file; keasy joins them to the destination it owns and signs them
+             *     for reading.
              */
             relations?: components["schemas"]["OutputRelation"][];
             script?: string | null;
@@ -787,9 +762,11 @@ export interface components {
          *     `name` is the relation the corpus registers and queries by (`Person`,
          *     `Person_knows_Person`) — **keasy does not compose it**; it is what the
          *     corpus reader answered. `files` are the dataset-relative payload files the
-         *     corpus addressing enumerated, and `rows` the count it reported.
+         *     corpus addressing enumerated, `rows` the count it reported and `columns`
+         *     what a row carries.
          */
         OutputRelation: {
+            columns?: components["schemas"]["RelationColumn"][];
             files?: string[];
             name: string;
             /** Format: int64 */
@@ -811,6 +788,11 @@ export interface components {
          */
         PublishRelationsRequest: {
             relations: components["schemas"]["OutputRelation"][];
+        };
+        RelationColumn: {
+            /** @description The engine's spelling of the Parquet type (`VARCHAR`, `BIGINT`, …). */
+            data_type: string;
+            name: string;
         };
         ResolveResponse: {
             /** @description Dataset-relative path → signed URL. */
@@ -1085,31 +1067,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkspacesResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    list_catalog_datasets: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Registered datasets with their types/columns/rows */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DatasetsResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -1515,6 +1472,31 @@ export interface operations {
             503: components["responses"]["KeysUnavailable"];
         };
     };
+    list_datasets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every completed job's output */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dataset"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
     list_jobs: {
         parameters: {
             query?: never;
@@ -1907,7 +1889,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Relations stored and the dataset registered */
+            /** @description Relations stored */
             200: {
                 headers: {
                     [name: string]: unknown;

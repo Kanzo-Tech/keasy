@@ -187,7 +187,7 @@ pub async fn complete_job(
     params(("id" = String, Path, description = "Job ID")),
     request_body = PublishRelationsRequest,
     responses(
-        (status = 200, description = "Relations stored and the dataset registered", body = Job),
+        (status = 200, description = "Relations stored", body = Job),
         (status = 400, description = "A file path outside the dataset", body = ErrorBody),
         (status = 404, description = "Job not found", body = ErrorBody),
     )
@@ -198,53 +198,26 @@ pub async fn complete_job(
 ///
 /// It is a second call and not a field of the completion because naming a
 /// relation is an answer only a reader holding the manifests can give, and the
-/// run report is not that reader. keasy stores the answer and registers the
-/// dataset in the DuckLake catalog by reference — one atomic snapshot,
-/// idempotent, composing nothing: every name and every path in that SQL came
-/// from this payload.
+/// run report is not that reader. keasy stores the answer verbatim; it is what
+/// the owner's datasets view lists.
 pub async fn publish_relations(
     member: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<PublishRelationsRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    let job = owned_job(&state, &member, &id).await?;
+    owned_job(&state, &member, &id).await?;
 
     let relations = payload.relations;
     for file in relations.iter().flat_map(|r| &r.files) {
         crate::cloud::relative_path(file).map_err(JobApiError::InvalidFormat)?;
     }
-    let for_catalog = relations.clone();
-    let updated = state
+    state
         .db
         .update_job(&id, move |job| job.relations = relations)
-        .await?;
-
-    // Fire-and-forget: the data is already durable at the sink, so a slow or
-    // failing catalog write must not delay or fail this call. Whatever it
-    // misses, the reconciler picks up from the relations just stored.
-    if !for_catalog.is_empty()
-        && let Some((base, creds)) = state.db.job_output_target(&job).await?
-    {
-        let catalog = state.catalog.clone();
-        let dest = crate::jobs::dataset_dest(&base, &id);
-        let job_id = id.clone();
-        tokio::spawn(async move {
-            match tokio::task::spawn_blocking(move || {
-                catalog.register(&job_id, &dest, &for_catalog, &creds)
-            })
-            .await
-            {
-                Ok(Ok(())) => {}
-                Ok(Err(e)) => {
-                    tracing::warn!(error = %e, "catalog registration failed (reconciler will retry)")
-                }
-                Err(e) => tracing::warn!(error = %e, "catalog registration task panicked"),
-            }
-        });
-    }
-
-    updated.map(Json).ok_or(JobApiError::NotFound)
+        .await?
+        .map(Json)
+        .ok_or(JobApiError::NotFound)
 }
 
 #[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -266,16 +239,6 @@ pub async fn delete_job(
     }
 
     state.db.remove_job(&id).await?;
-
-    // Only the catalog's metadata goes; the Parquet at the sink is the member's.
-    // Whatever this misses, the reconciler's deregister pass cleans up.
-    let catalog = state.catalog.clone();
-    tokio::spawn(async move {
-        if let Ok(Err(e)) = tokio::task::spawn_blocking(move || catalog.unregister(&id)).await {
-            tracing::warn!(error = %e, "catalog unregister failed (reconciler will retry)");
-        }
-    });
-
     Ok(StatusCode::NO_CONTENT)
 }
 

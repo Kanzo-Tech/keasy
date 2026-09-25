@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1
 # Dev image for keasy-server (hot reload). Build context: `server/`.
 
-FROM rust:1.90-bookworm
+FROM rust:1-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    clang libclang-dev curl ca-certificates \
+    curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Same CA plumbing as the release image — see server/Dockerfile.
@@ -13,11 +13,12 @@ RUN mkdir -p /etc/pki/tls/certs \
 ENV CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
     SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-RUN cargo install cargo-watch
+WORKDIR /src/server
+COPY rust-toolchain.toml ./
+RUN rustup toolchain install && cargo install cargo-watch
 
 # Manifests only: `src/` is bind-mounted, and deps compile once at runtime into
-# the persistent `server-target` + `cargo-registry` volumes (docker-compose.dev.yml).
-WORKDIR /src/server
+# the persistent `server-target` + `cargo-registry` volumes (docker-compose.yml).
 COPY Cargo.toml Cargo.lock ./
 
 EXPOSE 8080

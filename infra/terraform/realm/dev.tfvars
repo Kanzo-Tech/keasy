@@ -2,14 +2,14 @@
 # `keycloak-realm` service with deploy_stacks=false: the app runs as compose services.
 # Prod uses terraform.tfvars (gitignored).
 
-kc_url      = "http://keycloak:8080"
-kc_hostname = "localhost:3000"
-base_domain = "localhost"
-dev_origins = ["http://localhost:3000"]
+kc_url            = "http://keycloak.localhost:8180"
+kc_hostname       = "keycloak.localhost:8180"
+kc_admin_password = "admin"
+base_domain       = "localhost"
+dev_origins       = ["http://localhost:3000"]
 
-deploy_stacks = false
-server_image  = "unused-in-dev"
-web_image     = "unused-in-dev"
+deploy_stacks   = false
+release_version = "unused-in-dev"
 
 # No IdP: the declared users log in to Keycloak directly.
 dev_user_password = "password"
@@ -27,6 +27,6 @@ tenants = {
     display_name  = "Dev Workspace"
     owners        = ["owner@keasy.local"]
     members       = ["dev@keasy.local"]
-    client_secret = "keasy-dev-secret" # fixed so the compose server can use it directly
+    client_secret = "keasy-dev-secret" # fixed so compose can hand it to the web
   }
 }

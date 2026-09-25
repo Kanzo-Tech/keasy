@@ -1,0 +1,36 @@
+name: infra-ci
+
+on:
+  pull_request:
+    paths: ["infra/terraform/**", ".github/workflows/infra-ci.yml"]
+  push:
+    branches: [main]
+    paths: ["infra/terraform/**", ".github/workflows/infra-ci.yml"]
+
+concurrency:
+  group: infra-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  terraform:
+    name: terraform (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [platform, realm]
+    defaults:
+      run:
+        working-directory: infra/terraform/${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The version the dev stack's keycloak-realm service runs.
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9"
+          terraform_wrapper: false
+
+      - run: terraform fmt -check -diff
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate

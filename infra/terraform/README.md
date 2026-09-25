@@ -18,7 +18,7 @@ terraform -chdir=platform init
 terraform -chdir=platform apply -var kc_hostname=auth.keasy.example.com -var acme_email=ops@kanzo.tech
 
 # Wait for Keycloak health (it has no realm yet, but the admin API must answer):
-until curl -fsS https://auth.keasy.example.com/auth/health/ready >/dev/null; do sleep 3; done
+until curl -fsS https://auth.keasy.example.com/health/ready >/dev/null; do sleep 3; done
 
 # Phase 2 — realm + tenants. Feed it phase 1's admin password.
 cp realm/terraform.tfvars.example realm/terraform.tfvars   # then edit: IdP creds + tenants
@@ -30,8 +30,12 @@ terraform -chdir=realm apply \
 - **`realm/terraform.tfvars`** is the tenant **registry** — operator-local, gitignored
   (emails are PII). Adding a tenant = an entry under `tenants` + `terraform -chdir=realm apply`.
   No CLI, no shell.
-- **State** holds every secret → it lives on the manager, gitignored. Back it up; a future
-  multi-manager setup moves it to an encrypted S3 backend.
+- **State** holds every secret → it lives on the manager, gitignored. Back it up: each
+  tenant's credential-sealing key (`random_bytes.secret_key`) exists nowhere else, so
+  losing the state leaves that tenant's `keasy.db` unreadable. A future multi-manager
+  setup moves it to an encrypted S3 backend.
+- **`release_version`** is the one version of record: every tenant runs
+  `ghcr.io/kanzo-tech/keasy-{server,web}:<release_version>`.
 
 ## SSO
 Users log in through the IdP configured in `realm/` (`var.idp` — Google example in the

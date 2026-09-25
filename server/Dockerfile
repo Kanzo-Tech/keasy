@@ -1,9 +1,11 @@
 # Release image for keasy-server. Build context: `server/`.
 
-FROM rust:1.90-bookworm AS builder
+FROM rust:1-bookworm AS builder
 
 # Dep cache: build the manifests with a dummy main, then swap in the real source.
 WORKDIR /src/server
+COPY rust-toolchain.toml ./
+RUN rustup toolchain install
 COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo 'fn main() {}' > src/main.rs && cargo build --release && rm -rf src
 COPY src ./src
@@ -40,7 +42,5 @@ USER keasy
 COPY --from=builder /src/server/target/release/keasy-server /usr/local/bin/keasy-server
 
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/healthz/live || exit 1
 
 ENTRYPOINT ["/usr/local/bin/keasy-server"]

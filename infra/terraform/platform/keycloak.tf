@@ -69,16 +69,15 @@ resource "docker_service" "keycloak" {
         KC_DB_URL                   = "jdbc:postgresql://keasy-base-keycloak-postgres:5432/keycloak"
         KC_DB_USERNAME              = "keycloak"
         KC_DB_PASSWORD              = random_password.kc_db.result
-        KC_HOSTNAME                 = "https://${var.kc_hostname}/auth"
+        KC_HOSTNAME                 = "https://${var.kc_hostname}"
         KC_HTTP_ENABLED             = "true"
-        KC_HTTP_RELATIVE_PATH       = "/auth"
         KC_HEALTH_ENABLED           = "true"
         KC_PROXY_HEADERS            = "xforwarded"
         KC_BOOTSTRAP_ADMIN_USERNAME = "admin"
         KC_BOOTSTRAP_ADMIN_PASSWORD = random_password.kc_admin.result
       }
       healthcheck {
-        test         = ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nhost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+        test         = ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nhost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
         interval     = "10s"
         timeout      = "5s"
         retries      = 15
@@ -91,7 +90,7 @@ resource "docker_service" "keycloak" {
     }
     networks_advanced {
       name = docker_network.edge.name
-      # Tenants reach it as `keycloak`, the name compose gives it in dev.
+      # Tenants reach it as `keycloak`.
       aliases = ["keycloak"]
     }
   }

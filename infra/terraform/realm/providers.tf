@@ -5,7 +5,6 @@ provider "keycloak" {
   username  = var.kc_admin_username
   password  = var.kc_admin_password
   url       = coalesce(var.kc_url, "https://${var.kc_hostname}")
-  base_path = "/auth"
 }
 
 # Docker: the local manager's Engine (override with DOCKER_HOST for a remote manager).

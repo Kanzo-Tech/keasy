@@ -8,9 +8,8 @@ const dev = process.env.NODE_ENV === "development";
  * It matters more here than in most applications because this origin is a BFF:
  * the session cookie is `httpOnly`, so script cannot read it, but script running
  * here does not need to — it can call `/v1` and the proxy will attach the bearer
- * token for it. An XSS on this origin *is* API access. Keycloak is served from
- * the same origin too (`/auth/*` in the Caddyfile), which puts the login screen
- * inside the same blast radius.
+ * token for it. An XSS on this origin *is* API access. Keycloak has its own
+ * origin, in dev as in prod, so the login screen is outside that blast radius.
  *
  * **`script-src` carries `'unsafe-inline'`, and that is a real hole.** Next's App
  * Router emits the RSC payload and its bootstrap as inline `<script>` tags;

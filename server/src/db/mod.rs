@@ -1,5 +1,6 @@
 mod schema;
-pub mod secrets;
+
+pub(crate) use schema::apply as apply_schema;
 
 use std::path::Path;
 use std::str::FromStr;
@@ -13,7 +14,7 @@ use rusqlite::Connection;
 use serde::de::DeserializeOwned;
 use tokio::sync::{Mutex, MutexGuard};
 
-use crate::crypto::SecretKey;
+use crate::credentials::sealing::SecretKey;
 use crate::error::fail;
 
 const READ_POOL_SIZE: usize = 4;
@@ -21,10 +22,19 @@ const READ_POOL_SIZE: usize = 4;
 /// What reading or writing the instance database can fail with.
 #[derive(Debug, thiserror::Error)]
 pub enum DbError {
-    /// The caller asked for something the data does not allow (an unknown
-    /// provider, a missing field, a cloud account that does not exist).
+    /// The caller asked for something the data does not allow (a credential
+    /// that does not exist, or of the other purpose).
     #[error("{0}")]
     Invalid(String),
+    /// A second row of that name, or a second sink.
+    #[error("{0}")]
+    AlreadyExists(String),
+    /// Still referenced by `dependents`.
+    #[error("{message}")]
+    InUse {
+        message: String,
+        dependents: Vec<String>,
+    },
     #[error("database: {0}")]
     Sql(#[from] rusqlite::Error),
     #[error("stored JSON: {0}")]
@@ -43,6 +53,18 @@ impl IntoResponse for DbError {
                 ErrorCode::ValidationFailed,
                 message,
             ),
+            DbError::AlreadyExists(message) => {
+                fail(StatusCode::CONFLICT, ErrorCode::AlreadyExists, message)
+            }
+            DbError::InUse {
+                message,
+                dependents,
+            } => crate::error::fail_about(
+                StatusCode::CONFLICT,
+                ErrorCode::InUse,
+                message,
+                dependents,
+            ),
             e => {
                 tracing::error!(error = %e, "database failure");
                 fail(
@@ -52,6 +74,19 @@ impl IntoResponse for DbError {
                 )
             }
         }
+    }
+}
+
+/// The extended code of a constraint the schema enforced
+/// (`SQLITE_CONSTRAINT_FOREIGNKEY`, `…_UNIQUE`, …), when that is what failed.
+pub(crate) fn constraint(e: &rusqlite::Error) -> Option<std::ffi::c_int> {
+    match e {
+        rusqlite::Error::SqliteFailure(err, _)
+            if err.code == rusqlite::ErrorCode::ConstraintViolation =>
+        {
+            Some(err.extended_code)
+        }
+        _ => None,
     }
 }
 
@@ -137,6 +172,16 @@ impl Database {
     /// The one write connection.
     pub async fn write(&self) -> MutexGuard<'_, Connection> {
         self.write_conn.lock().await
+    }
+
+    pub(crate) fn secret_key(&self) -> &SecretKey {
+        &self.secret_key
+    }
+
+    /// Whether the configured key opens the stored credentials; true when
+    /// none is stored.
+    pub async fn key_opens_credentials(&self) -> DbResult<bool> {
+        crate::credentials::persistence::key_opens(&*self.read().await, &self.secret_key)
     }
 
     /// A free read connection, or — when all are busy — the next one in turn.

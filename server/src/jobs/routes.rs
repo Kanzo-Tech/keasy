@@ -10,7 +10,6 @@ use utoipa_axum::routes;
 use crate::AppState;
 use crate::auth::role::Member;
 use keasy_api::ErrorBody;
-use keasy_api::connections::Direction;
 use keasy_api::jobs::{
     CompleteJobRequest, CreateJobRequest, Job, JobStatus, PublishRelationsRequest, UpdateJobRequest,
 };
@@ -58,11 +57,9 @@ pub async fn create_job(
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    let is_sink = state
-        .db
-        .get_connection(&payload.sink_connection_id)
-        .await?
-        .is_some_and(|c| c.direction == Direction::Sink);
+    let is_sink =
+        crate::connections::persistence::get(&*state.db.read().await, &payload.sink_connection)?
+            .is_some_and(|c| c.target.is_sink());
     if !is_sink {
         return Err(JobApiError::InvalidDestination);
     }
@@ -206,7 +203,7 @@ pub async fn publish_relations(
 
     let relations = payload.relations;
     for file in relations.iter().flat_map(|r| &r.files) {
-        crate::cloud::relative_path(file).map_err(JobApiError::InvalidFormat)?;
+        crate::storage_client::relative_path(file).map_err(JobApiError::InvalidFormat)?;
     }
     state
         .db

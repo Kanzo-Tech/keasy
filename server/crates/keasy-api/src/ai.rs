@@ -1,14 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use crate::settings::ai::AiProvider;
-
-/// A provider keasy can call, and the model it runs when none is configured.
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-pub struct AiProviderInfo {
-    pub provider: AiProvider,
-    pub default_model: &'static str,
-}
-
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ChatRole {
@@ -26,11 +17,13 @@ pub struct ChatMessage {
 /// the server holds the key and relays the answer.
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CompletionRequest {
-    /// The configured provider to call; the first configured one when absent.
-    pub provider: Option<AiProvider>,
+    /// The model connection to call. May be left out while the workspace has
+    /// exactly one.
+    #[serde(default)]
+    pub connection: Option<String>,
     pub system: String,
     /// The conversation, oldest first, ending with the user's turn.
     pub messages: Vec<ChatMessage>,
-    /// Overrides the provider's configured `max_tokens`.
+    /// Fewer tokens than the connection allows.
     pub max_tokens: Option<u32>,
 }

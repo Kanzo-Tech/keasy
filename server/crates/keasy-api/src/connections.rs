@@ -1,43 +1,30 @@
+//! Connections: where or what a credential is used for — a storage location
+//! or a model. None of these types can hold a secret.
+
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+
+use crate::credentials::Purpose;
+use crate::validation::ValidationReport;
 
 #[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    utoipa::ToSchema,
-    strum::AsRefStr,
-    strum::EnumString,
+    Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq, ToSchema, strum::AsRefStr,
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
 pub enum ConnectionKind {
+    /// Tables a program reads.
+    #[default]
     Data,
+    /// Shapes and vocabularies the editor offers.
     Vocab,
 }
 
-/// Whether a connection is a READ source (programs reference it via `@conn`) or
-/// the workspace's WRITE sink (where the owner's job output is materialised).
-/// Orthogonal to [`ConnectionKind`] (which describes a source's data) and
-/// [`LocationType`]: a connection is a named, credentialed storage location, and
-/// `direction` says how it is used. Exactly one `sink` exists per workspace (the
-/// owner output store); `kind` is source-only and ignored for a sink.
+/// A source is read through `@name/…`; the one sink is where job output lands.
 #[derive(
-    Debug,
-    Clone,
-    Copy,
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    Default,
-    utoipa::ToSchema,
-    strum::AsRefStr,
-    strum::EnumString,
+    Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq, ToSchema, strum::AsRefStr,
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
@@ -47,86 +34,103 @@ pub enum Direction {
     Sink,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    utoipa::ToSchema,
-    strum::AsRefStr,
-    strum::EnumString,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct StorageTarget {
+    /// The prefix the connection is: `s3://bucket/prefix/` or `az://container/prefix/`.
+    #[schema(format = "uri")]
+    pub url: String,
+    #[serde(default)]
+    pub kind: ConnectionKind,
+    #[serde(default)]
+    pub direction: Direction,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ModelTarget {
+    /// The provider's model id. Empty runs the provider's default
+    /// (Anthropic: claude-sonnet-4-20250514, OpenAI: gpt-4o).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    /// The most tokens an answer may take, unless the call asks for fewer.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_tokens: Option<u32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
-#[strum(serialize_all = "snake_case")]
-pub enum LocationType {
-    Cloud,
-    Local,
+pub enum ConnectionTarget {
+    Storage(StorageTarget),
+    Model(ModelTarget),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct Connection {
-    pub id: String,
-    pub name: String,
-    pub kind: ConnectionKind,
-    pub location_type: LocationType,
-    /// Read source vs the workspace write sink. Defaults to `source`.
-    #[serde(default)]
-    pub direction: Direction,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cloud_account_id: Option<String>,
-    pub url: String,
-}
+impl ConnectionTarget {
+    pub fn purpose(&self) -> Purpose {
+        match self {
+            Self::Storage(_) => Purpose::Storage,
+            Self::Model(_) => Purpose::Model,
+        }
+    }
 
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct CreateConnectionRequest {
-    pub name: String,
-    pub kind: ConnectionKind,
-    pub location_type: LocationType,
-    /// `source` (default) or `sink` (the owner output store; one per workspace).
-    #[serde(default)]
-    pub direction: Direction,
-    pub cloud_account_id: Option<String>,
-    pub url: String,
-}
+    pub fn storage(&self) -> Option<&StorageTarget> {
+        match self {
+            Self::Storage(s) => Some(s),
+            Self::Model(_) => None,
+        }
+    }
 
-impl CreateConnectionRequest {
-    pub fn validate(&self) -> Result<(), String> {
-        if self.name.trim().is_empty() {
-            return Err("name is required".into());
-        }
-        if self.url.trim().is_empty() {
-            return Err("url is required".into());
-        }
-        if self.location_type == LocationType::Cloud && self.cloud_account_id.is_none() {
-            return Err("cloud_account_id is required for cloud connections".into());
-        }
-        Ok(())
+    pub fn is_sink(&self) -> bool {
+        self.storage()
+            .is_some_and(|s| s.direction == Direction::Sink)
     }
 }
 
-#[derive(Debug, Deserialize, utoipa::IntoParams)]
-#[into_params(parameter_in = Query)]
-pub struct ListConnectionsQuery {
-    /// Only connections of this kind.
-    #[serde(rename = "type")]
-    pub kind: Option<ConnectionKind>,
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct CreateConnectionRequest {
+    /// What programs write after `@`, and the connection's key.
+    pub name: String,
+    /// The credential it signs or calls with; of the same purpose.
+    pub credential: String,
+    pub target: ConnectionTarget,
 }
 
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-pub struct ConnectionRefsResponse {
-    /// Source connection name → base URL, the map `@name/…` expands against.
-    pub refs: HashMap<String, String>,
+#[derive(Debug, Default, Deserialize, ToSchema)]
+pub struct UpdateConnectionRequest {
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub credential: Option<String>,
+    #[serde(default)]
+    pub target: Option<ConnectionTarget>,
 }
 
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct ConnectionView {
+    pub name: String,
+    pub credential: String,
+    pub target: ConnectionTarget,
+    pub created_by: String,
+    pub created_at: String,
+    pub updated_by: String,
+    pub updated_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub validation: Option<ValidationReport>,
+}
+
+/// One object under a connection's prefix.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct FileEntry {
+    pub path: String,
+    pub size: u64,
+    pub last_modified: Option<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct SignLocatorsRequest {
     /// Locators fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`).
     pub locators: Vec<String>,
 }
 
-#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct SignLocatorsResponse {
     /// Locator → fetchable URL. A locator keasy will not sign is absent.
     pub urls: HashMap<String, String>,

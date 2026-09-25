@@ -37,7 +37,7 @@ impl axum::response::IntoResponse for JobApiError {
             JobApiError::InvalidDestination => fail(
                 StatusCode::BAD_REQUEST,
                 ErrorCode::InvalidDestination,
-                "sink_connection_id must name the workspace sink",
+                "sink_connection must name the workspace sink",
             ),
             JobApiError::StillRunning => fail(
                 StatusCode::CONFLICT,

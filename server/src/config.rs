@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::crypto::SecretKey;
+use crate::credentials::sealing::SecretKey;
 
 pub struct ServerConfig {
     pub bind_addr: SocketAddr,
@@ -31,6 +31,9 @@ pub struct ServerConfig {
     /// This instance's workspace slug. Read from `KEASY_ORG_ALIAS`. The "current"
     /// entry in the workspace switcher.
     pub workspace_slug: Option<String>,
+    /// The credentials and connections to ensure at boot, in the API's own
+    /// request format. Read from `KEASY_BOOTSTRAP_FILE`.
+    pub bootstrap_file: Option<String>,
 }
 
 impl ServerConfig {
@@ -40,21 +43,8 @@ impl ServerConfig {
             .parse()
             .unwrap_or_else(|e| fatal(&format!("KEASY_BIND_ADDR is not a socket address: {e}")));
 
-        let data_dir =
-            PathBuf::from(std::env::var("KEASY_DATA_DIR").unwrap_or_else(|_| "./data".to_string()));
-
-        let secret_key = match resolve_secret("KEASY_SECRET_KEY") {
-            Some(encoded) => SecretKey::from_base64(encoded.expose_secret()).unwrap_or_else(|e| {
-                fatal(&format!(
-                    "KEASY_SECRET_KEY must be 32 random bytes in base64 \
-                     (openssl rand -base64 32): it {e}"
-                ))
-            }),
-            None => fatal(
-                "KEASY_SECRET_KEY is required to encrypt stored credentials \
-                 (generate one with: openssl rand -base64 32)",
-            ),
-        };
+        let data_dir = data_dir();
+        let secret_key = secret_key("KEASY_SECRET_KEY");
 
         // There is no unauthenticated mode to fall back to: a resource server that
         // cannot name its issuer cannot refuse anything.
@@ -77,7 +67,28 @@ impl ServerConfig {
             workspace_name: nonblank("KEASY_WORKSPACE_NAME")
                 .unwrap_or_else(|| "Workspace".to_string()),
             workspace_slug: nonblank("KEASY_ORG_ALIAS"),
+            bootstrap_file: nonblank("KEASY_BOOTSTRAP_FILE"),
         }
+    }
+}
+
+/// `KEASY_DATA_DIR`, default `./data`.
+pub fn data_dir() -> PathBuf {
+    PathBuf::from(std::env::var("KEASY_DATA_DIR").unwrap_or_else(|_| "./data".to_string()))
+}
+
+/// The sealing key in `name` (or the file `name_FILE` points to).
+pub fn secret_key(name: &str) -> SecretKey {
+    match resolve_secret(name) {
+        Some(encoded) => SecretKey::from_base64(encoded.expose_secret()).unwrap_or_else(|e| {
+            fatal(&format!(
+                "{name} must be 32 random bytes in base64 (openssl rand -base64 32): it {e}"
+            ))
+        }),
+        None => fatal(&format!(
+            "{name} is required to seal stored credentials \
+             (generate one with: openssl rand -base64 32)"
+        )),
     }
 }
 

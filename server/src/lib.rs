@@ -1,15 +1,15 @@
 mod ai;
 mod auth;
-mod cloud;
+mod bootstrap;
 mod config;
 mod connections;
-mod crypto;
+mod credentials;
 mod db;
-mod discovery;
+mod domain;
 mod error;
 mod jobs;
 mod routes;
-mod settings;
+mod storage_client;
 
 use std::sync::Arc;
 
@@ -30,6 +30,22 @@ struct AppState {
     auth: auth::jwt::SharedValidator,
 }
 
+/// `keasy-server rekey`: seal every stored credential again under
+/// `KEASY_NEW_SECRET_KEY`, reading them with `KEASY_SECRET_KEY`. One
+/// transaction: all move or none does. Run it with the server stopped, then
+/// restart the server with the new key.
+pub fn rekey() -> Result<usize, String> {
+    let old = config::secret_key("KEASY_SECRET_KEY");
+    let new = config::secret_key("KEASY_NEW_SECRET_KEY");
+    let path = config::data_dir().join("keasy.db");
+    let mut conn = rusqlite::Connection::open(&path)
+        .map_err(|e| format!("failed to open {}: {e}", path.display()))?;
+    conn.execute_batch("PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;")
+        .map_err(|e| e.to_string())?;
+    db::apply_schema(&conn)?;
+    credentials::persistence::rekey(&mut conn, &old, &new).map_err(|e| e.to_string())
+}
+
 /// Configure from the environment, open the stores and serve until Ctrl+C.
 pub async fn run() -> Result<(), String> {
     let config = config::ServerConfig::from_env();
@@ -43,9 +59,9 @@ pub async fn run() -> Result<(), String> {
     info!(path = %db_path.display(), "Database opened");
 
     if !db
-        .verify_secret_key()
+        .key_opens_credentials()
         .await
-        .map_err(|e| format!("failed to read the stored secrets: {e}"))?
+        .map_err(|e| format!("failed to read the stored credentials: {e}"))?
     {
         return Err(
             "KEASY_SECRET_KEY does not open the secrets this database stores. \
@@ -54,8 +70,10 @@ pub async fn run() -> Result<(), String> {
         );
     }
 
-    // After the key check: declaring a connection writes encrypted credentials.
-    connections::bootstrap::ensure_declared_connections(&db).await;
+    // After the key check: a declared credential is sealed with the key.
+    if let Some(path) = &config.bootstrap_file {
+        bootstrap::ensure_declared(&db, path).await;
+    }
 
     // Built without touching the network: Keycloak is routinely not up yet, and
     // the keys are fetched on the first request that needs them.

@@ -1,81 +1,23 @@
-use std::collections::HashMap;
-use std::time::Duration;
+//! Signed URLs under a job's dataset, `{sink.url}/{job_id}`: PUT for the run
+//! that writes it, GET for the reader that opens it.
 
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::{Method, StatusCode};
 use axum::response::{IntoResponse, Response};
-
-use keasy_api::discovery::{DatasetUrlsRequest, ResolveResponse};
-use keasy_api::{ErrorBody, ErrorCode};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use keasy_api::jobs::{DatasetUrlsRequest, ResolveResponse};
+use keasy_api::{ErrorBody, ErrorCode};
+
 use crate::AppState;
 use crate::auth::role::Member;
-use crate::error::fail;
+use crate::domain::StorageUrl;
+use crate::error::Refusal;
 use crate::jobs::routes::owned_job;
+use crate::storage_client::{self, SIGNED_URL_EXPIRES, relative_path};
 
-pub(crate) const SIGNED_URL_EXPIRES: Duration = Duration::from_secs(300);
-
-/// Sign `files`, each relative to `base_url`, for `method` with `creds`.
-pub(crate) async fn sign_dataset_paths(
-    method: Method,
-    base_url: &str,
-    creds: &HashMap<String, String>,
-    files: &[String],
-) -> Result<Response, Response> {
-    for f in files {
-        crate::cloud::relative_path(f)
-            .map_err(|e| fail(StatusCode::BAD_REQUEST, ErrorCode::InvalidPath, e))?;
-    }
-    let (store, prefix) = crate::cloud::build_store(base_url, creds).map_err(|e| {
-        fail(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            ErrorCode::StoreError,
-            e.to_string(),
-        )
-    })?;
-
-    let paths = files
-        .iter()
-        .map(|f| {
-            let full = if prefix.as_ref().is_empty() {
-                f.to_string()
-            } else {
-                format!("{prefix}/{f}")
-            };
-            object_store::path::Path::parse(&full).map_err(|e| {
-                fail(
-                    StatusCode::BAD_REQUEST,
-                    ErrorCode::InvalidPath,
-                    e.to_string(),
-                )
-            })
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let urls = store
-        .sign_urls(method, &paths, SIGNED_URL_EXPIRES)
-        .await
-        .map_err(|e| {
-            fail(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                ErrorCode::SignError,
-                e.to_string(),
-            )
-        })?;
-
-    let files = files
-        .iter()
-        .cloned()
-        .zip(urls.into_iter().map(|u| u.to_string()))
-        .collect();
-    Ok(Json(ResolveResponse { files }).into_response())
-}
-
-/// Sign `paths` under the job's dataset, `{sink.url}/{job_id}` — the one path
-/// keasy composes, because where a job's output lives is the host's decision.
 async fn sign_dataset_urls(
     method: Method,
     state: &AppState,
@@ -86,19 +28,50 @@ async fn sign_dataset_urls(
     let job = owned_job(state, member, id)
         .await
         .map_err(IntoResponse::into_response)?;
-    let (base, creds) = state
-        .db
-        .job_output_target(&job)
-        .await
-        .map_err(IntoResponse::into_response)?
-        .ok_or_else(|| {
-            fail(
-                StatusCode::BAD_REQUEST,
-                ErrorCode::NoDestination,
-                "The job's destination connection no longer exists",
-            )
+    let signed = async {
+        let sink =
+            crate::connections::persistence::get(&*state.db.read().await, &job.sink_connection)?
+                .ok_or_else(|| {
+                    Refusal::new(
+                        StatusCode::BAD_REQUEST,
+                        ErrorCode::NoDestination,
+                        "The job's destination connection no longer exists",
+                    )
+                })?;
+        let (sink_url, credential) = crate::connections::storage(&state.db, &sink).await?;
+        let base = StorageUrl::parse(&crate::jobs::dataset_dest(sink_url.as_ref(), id))
+            .map_err(Refusal::invalid)?;
+        let store = storage_client::store(&credential, &base).map_err(|e| {
+            Refusal::new(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::StoreError, e)
         })?;
-    sign_dataset_paths(method, &crate::jobs::dataset_dest(&base, id), &creds, paths).await
+        let mut objects = Vec::with_capacity(paths.len());
+        for p in paths {
+            relative_path(p)
+                .map_err(|e| Refusal::new(StatusCode::BAD_REQUEST, ErrorCode::InvalidPath, e))?;
+            objects.push(base.path().child(p.as_str()));
+        }
+        let urls = store
+            .sign_urls(method, &objects, SIGNED_URL_EXPIRES)
+            .await
+            .map_err(|e| {
+                Refusal::new(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    ErrorCode::SignError,
+                    e.to_string(),
+                )
+            })?;
+        Ok::<_, Refusal>(ResolveResponse {
+            files: paths
+                .iter()
+                .cloned()
+                .zip(urls.into_iter().map(|u| u.to_string()))
+                .collect(),
+        })
+    };
+    signed
+        .await
+        .map(|r| Json(r).into_response())
+        .map_err(IntoResponse::into_response)
 }
 
 #[utoipa::path(post, path = "/v1/jobs/{id}/output/urls", tag = "Discovery",

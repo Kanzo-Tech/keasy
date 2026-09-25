@@ -1,18 +1,16 @@
 use std::convert::Infallible;
 use std::fmt;
+use std::time::Duration;
 
 use axum::response::sse::Event;
-use axum::response::{IntoResponse, Response};
 use futures::StreamExt;
 use secrecy::ExposeSecret;
 use tokio::sync::mpsc;
 
-use crate::db::{DbError, DbResult};
 use keasy_api::ai::ChatMessage;
-use keasy_api::settings::ai::AiProvider;
+use keasy_api::connections::ModelTarget;
+use keasy_api::credentials::ModelCredentialInput;
 use keasy_api::{ErrorBody, ErrorCode};
-
-use crate::settings::ai::AiSettings;
 
 pub type SseSender = mpsc::Sender<Result<Event, Infallible>>;
 
@@ -39,6 +37,7 @@ impl AiError {
         let body = ErrorBody {
             error,
             message: self.to_string(),
+            dependents: Vec::new(),
         };
         Event::default()
             .event("error")
@@ -46,40 +45,45 @@ impl AiError {
     }
 }
 
-static HTTP_CLIENT: std::sync::LazyLock<reqwest::Client> =
-    std::sync::LazyLock::new(reqwest::Client::new);
+static HTTP_CLIENT: std::sync::LazyLock<reqwest::Client> = std::sync::LazyLock::new(|| {
+    reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(10))
+        .build()
+        .expect("a default HTTP client builds")
+});
 
-/// Why a call has no provider to run on.
-pub enum AiUnavailable {
-    NotConfigured,
-    Db(DbError),
+const ANTHROPIC: &str = "https://api.anthropic.com/v1";
+const OPENAI: &str = "https://api.openai.com/v1";
+const ANTHROPIC_VERSION: &str = "2023-06-01";
+
+fn name(credential: &ModelCredentialInput) -> &'static str {
+    match credential {
+        ModelCredentialInput::Anthropic { .. } => "anthropic",
+        ModelCredentialInput::Openai { .. } => "openai",
+    }
 }
 
-impl IntoResponse for AiUnavailable {
-    fn into_response(self) -> Response {
-        match self {
-            AiUnavailable::NotConfigured => crate::error::fail(
-                axum::http::StatusCode::BAD_REQUEST,
-                ErrorCode::AiNotConfigured,
-                "AI settings are not configured. Go to Settings > AI to add an API key.",
-            ),
-            AiUnavailable::Db(e) => e.into_response(),
+/// A request to `path` under the provider's API, carrying the key.
+fn request(
+    credential: &ModelCredentialInput,
+    method: reqwest::Method,
+    path: &str,
+) -> reqwest::RequestBuilder {
+    match credential {
+        ModelCredentialInput::Anthropic { api_key } => HTTP_CLIENT
+            .request(method, format!("{ANTHROPIC}{path}"))
+            .header("x-api-key", api_key.expose_secret())
+            .header("anthropic-version", ANTHROPIC_VERSION),
+        ModelCredentialInput::Openai { api_key, base_url } => {
+            let base = base_url.as_deref().unwrap_or(OPENAI).trim_end_matches('/');
+            HTTP_CLIENT
+                .request(method, format!("{base}{path}"))
+                .bearer_auth(api_key.expose_secret())
         }
     }
 }
 
-/// The provider a call runs on: configured, and holding a key.
-pub fn require_ai_settings(
-    settings: DbResult<Option<AiSettings>>,
-) -> Result<AiSettings, AiUnavailable> {
-    match settings.map_err(AiUnavailable::Db)? {
-        Some(s) if !s.api_key.expose_secret().is_empty() => Ok(s),
-        _ => Err(AiUnavailable::NotConfigured),
-    }
-}
-
-async fn classify_api_error(res: reqwest::Response, provider: AiProvider) -> AiError {
-    let provider = provider.as_ref();
+async fn classify_api_error(res: reqwest::Response, provider: &str) -> AiError {
     let status = res.status();
     let body: serde_json::Value = res.json().await.unwrap_or_default();
     let message = body["error"]["message"]
@@ -99,61 +103,88 @@ async fn classify_api_error(res: reqwest::Response, provider: AiProvider) -> AiE
     }
 }
 
+/// The ids of the models the key may call: the provider's `GET /models`.
+pub async fn models(credential: &ModelCredentialInput) -> Result<Vec<String>, String> {
+    let provider = name(credential);
+    let path = match credential {
+        ModelCredentialInput::Anthropic { .. } => "/models?limit=1000",
+        ModelCredentialInput::Openai { .. } => "/models",
+    };
+    let res = request(credential, reqwest::Method::GET, path)
+        .timeout(Duration::from_secs(20))
+        .send()
+        .await
+        .map_err(|e| format!("{provider} did not answer: {e}"))?;
+    if !res.status().is_success() {
+        return Err(classify_api_error(res, provider).await.to_string());
+    }
+    let body: serde_json::Value = res
+        .json()
+        .await
+        .map_err(|e| format!("{provider} answered with no model list: {e}"))?;
+    Ok(body["data"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|m| m["id"].as_str().map(str::to_owned))
+        .collect())
+}
+
 /// Call the provider and relay each text chunk it streams as a `delta` frame.
 pub async fn stream(
-    settings: &AiSettings,
+    credential: &ModelCredentialInput,
+    target: &ModelTarget,
     system: &str,
     messages: &[ChatMessage],
     max_tokens: Option<u32>,
     tx: &SseSender,
 ) -> Result<(), AiError> {
-    let provider = settings.provider;
-    let model = settings
+    let provider = name(credential);
+    let model = target
         .model
         .as_deref()
-        .unwrap_or(provider.default_model());
-    let max_tokens = max_tokens.or(settings.max_tokens).unwrap_or(2048);
-    let key = settings.api_key.expose_secret();
+        .unwrap_or(credential.default_model());
+    let max_tokens = match (max_tokens, target.max_tokens) {
+        (Some(asked), Some(cap)) => asked.min(cap),
+        (asked, cap) => asked.or(cap).unwrap_or(2048),
+    };
 
-    let request = match provider {
-        AiProvider::Anthropic => HTTP_CLIENT
-            .post("https://api.anthropic.com/v1/messages")
-            .header("x-api-key", key)
-            .header("anthropic-version", "2023-06-01")
-            .json(&serde_json::json!({
+    let request = match credential {
+        ModelCredentialInput::Anthropic { .. } => {
+            request(credential, reqwest::Method::POST, "/messages").json(&serde_json::json!({
                 "model": model,
                 "max_tokens": max_tokens,
                 "system": system,
                 "messages": messages,
                 "stream": true,
-            })),
-        AiProvider::Openai => {
+            }))
+        }
+        ModelCredentialInput::Openai { .. } => {
             let mut all = vec![serde_json::json!({ "role": "system", "content": system })];
             all.extend(messages.iter().map(|m| serde_json::json!(m)));
-            HTTP_CLIENT
-                .post("https://api.openai.com/v1/chat/completions")
-                .bearer_auth(key)
-                .json(&serde_json::json!({
+            request(credential, reqwest::Method::POST, "/chat/completions").json(
+                &serde_json::json!({
                     "model": model,
                     "max_tokens": max_tokens,
                     "messages": all,
                     "stream": true,
-                }))
+                }),
+            )
         }
     };
 
     let res = request
         .send()
         .await
-        .map_err(|e| AiError::Failed(format!("{} request failed: {e}", provider.as_ref())))?;
+        .map_err(|e| AiError::Failed(format!("{provider} request failed: {e}")))?;
     if !res.status().is_success() {
         return Err(classify_api_error(res, provider).await);
     }
 
     let text = |v: &serde_json::Value| -> Option<String> {
-        match provider {
-            AiProvider::Anthropic => v["delta"]["text"].as_str(),
-            AiProvider::Openai => v["choices"][0]["delta"]["content"].as_str(),
+        match credential {
+            ModelCredentialInput::Anthropic { .. } => v["delta"]["text"].as_str(),
+            ModelCredentialInput::Openai { .. } => v["choices"][0]["delta"]["content"].as_str(),
         }
         .map(str::to_owned)
     };
@@ -172,7 +203,9 @@ pub async fn stream(
                     && let Some(delta) = text(&v)
                     && !delta.is_empty()
                 {
-                    let _ = tx.send(Ok(Event::default().event("delta").data(delta))).await;
+                    let _ = tx
+                        .send(Ok(Event::default().event("delta").data(delta)))
+                        .await;
                 }
             }
             buf.drain(..pos + 2);

@@ -70,8 +70,23 @@ pub struct Member {
     pub user_id: String,
 }
 
-/// Admits either role.
-pub struct AnyRole;
+/// Admits either role, and says which and who: a handler that admits both
+/// decides the rest itself (the creator or the owner may change a credential).
+pub struct AnyRole {
+    pub user_id: String,
+    pub role: Role,
+}
+
+impl AnyRole {
+    pub fn is_owner(&self) -> bool {
+        self.role == Role::Owner
+    }
+
+    /// The workspace owner, or the one who made the thing.
+    pub fn owns(&self, created_by: &str) -> bool {
+        self.is_owner() || self.user_id == created_by
+    }
+}
 
 impl<S: Send + Sync> FromRequestParts<S> for Owner {
     type Rejection = RbacError;
@@ -101,7 +116,10 @@ impl<S: Send + Sync> FromRequestParts<S> for AnyRole {
     type Rejection = RbacError;
 
     async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, RbacError> {
-        role(parts).map(|_| AnyRole)
+        role(parts).map(|(role, user)| AnyRole {
+            user_id: user.user_id.clone(),
+            role,
+        })
     }
 }
 
@@ -122,7 +140,7 @@ mod tests {
         "connections, jobs, discovery, AI"
     }
     async fn either(_: AnyRole) -> &'static str {
-        "the cloud accounts list"
+        "credentials and connections"
     }
 
     /// The three extractors, entered as `role`. A `None` role is a verified

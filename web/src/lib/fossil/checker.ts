@@ -41,11 +41,6 @@ import { sourceHost } from "./source-host";
 export type { CheckRow, CompletionRow, DefinitionRow, HoverRow, ProviderInfo, SourceRefInfo };
 export { tokenize, tokenKinds } from "@fossil-lang/wasm";
 
-// Staged into public/ by scripts/copy-fossil-wasm.mjs (predev/prebuild). One
-// artefact, one instantiation, one workspace — `initFossilWasm` is memoised, so
-// the awaits scattered below are free after the first.
-const WASM_URL = "/fossil/fossil_wasm_bg.wasm";
-
 /** The key the job's program is open under. `CheckRow.uri` carries it, and
  *  `fossil()` drops rows belonging to any other buffer. */
 export const PROGRAM_URI = "job.fossil";
@@ -59,7 +54,7 @@ let pushed: string | null = null;
 /** Instantiate the module and open the program buffer. Idempotent. */
 export function load(): Promise<void> {
   booting ??= (async () => {
-    await initFossilWasm({ wasmUrl: WASM_URL });
+    await initFossilWasm();
     playground = new FossilPlayground();
     handle = playground.openFile(PROGRAM_URI, "");
     pushed = "";

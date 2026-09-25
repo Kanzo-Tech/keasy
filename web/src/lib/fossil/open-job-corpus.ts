@@ -29,10 +29,6 @@ import { Coordinator, wasmConnector } from "@kanzo-tech/ui/analytics";
 
 import { http, type Schemas } from "@/lib/api/client";
 
-// fossil-graph-wasm, staged into public/ by scripts/copy-fossil-wasm.mjs
-// (predev/prebuild) — Next resolves no `.wasm` asset for us.
-export const GRAPH_WASM_URL = "/fossil/fossil_graph_wasm_bg.wasm";
-
 /** The root of every cached read of a job's opened output; its own, so invalidating a job never reopens it. */
 export const corpusKey = (jobId: string) => ["corpus", jobId] as const;
 
@@ -120,7 +116,7 @@ export async function openJobCorpus(jobId: string): Promise<JobCorpus> {
     return text;
   };
 
-  const addressing = await open("", { readText, wasmUrl: GRAPH_WASM_URL });
+  const addressing = await open("", { readText });
   const signedUrls = await signDatasetUrls(jobId, addressableFiles(addressing));
 
   // DuckDB's file registry is where keasy's access meets fossil's names: the name fossil composes
@@ -139,7 +135,6 @@ export async function openJobCorpus(jobId: string): Promise<JobCorpus> {
     query,
     manifestFiles,
     sql: "allowed",
-    wasmUrl: GRAPH_WASM_URL,
   });
 
   return { coordinator, corpus, manifestFiles };

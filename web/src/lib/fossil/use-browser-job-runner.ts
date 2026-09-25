@@ -3,10 +3,6 @@ import { http, type Schemas } from "@/lib/api/client";
 import { makeJob } from "./job-transport";
 import { openJobCorpus, relationsOf } from "./open-job-corpus";
 
-// Served by `copy-fossil-wasm.mjs` (predev/prebuild) — the DataFusion-WASM
-// executor artefact. Heavy (~lazy-loaded only when a job actually runs).
-const DF_WASM_URL = "/fossil/fossil_df_wasm_bg.wasm";
-
 // Jobs whose browser run has been kicked off this session. Guards the detail
 // view from re-triggering on re-render / poll-refetch. The run is idempotent by
 // deterministic dest (`{owner_base}/{job_id}`), so a stray double-run would only
@@ -43,7 +39,7 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         });
 
         const mod = await import("@fossil-lang/executor");
-        await mod.initFossilExecutor({ wasmUrl: DF_WASM_URL });
+        await mod.initFossilExecutor();
         // runJob reads every document and source the program names through the
         // host, and reports the terminal `completed`/`failed` PATCH itself.
         await mod.runJob(program, makeJob(jobId));

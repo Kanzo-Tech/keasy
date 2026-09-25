@@ -1,9 +1,6 @@
 import type { ConnectionKind } from "@/lib/types";
 
 export const queryKeys = {
-  // Auth
-  workspaces: ["workspaces"] as const,
-
   // Jobs
   jobs: {
     all: ["jobs"] as const,
@@ -22,8 +19,6 @@ export const queryKeys = {
   // A program's sources as fossil resolved them, and their descriptions
   programSources: (program: string) => ["program-sources", program] as const,
   sourceDescriptors: (sources: string[]) => ["source-descriptors", sources] as const,
-
-  datasets: ["datasets"] as const,
 
   // Cloud
   cloud: {

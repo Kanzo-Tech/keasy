@@ -118,7 +118,7 @@ function Workspace({ jobId }: { jobId: string }) {
   const [activePanel, setActivePanel] = useState<string | null>("info");
   const panels = [
     { id: "info", icon: Info, label: "Info", content: <NodeInfo schema={schema} vertex={selected} /> },
-    { id: "ask", icon: MessageCircle, label: "Ask AI", content: <AskPanel graphSchema={schema} jobId={jobId} /> },
+    { id: "ask", icon: MessageCircle, label: "Ask AI", content: <AskPanel graphSchema={schema} /> },
     { id: "rules", icon: ShieldCheck, label: "Rules", content: <RulesPanel jobId={jobId} schema={schema} /> },
     { id: "sql", icon: Terminal, label: "SQL", content: <SqlPanel /> },
     { id: "analysis", icon: BarChart3, label: "Analysis", content: <AnalysisPanel schema={schema} /> },

@@ -46,7 +46,7 @@
         "tags": [
           "AI"
         ],
-        "summary": "The providers an ask can run on, and the model each runs when its settings\nname none. Whether one is configured is `/v1/settings/ai/providers`.",
+        "summary": "The providers a call can run on, and the model each runs when its settings\nname none. Whether one is configured is `/v1/settings/ai/providers`.",
         "operationId": "list_providers",
         "responses": {
           "200": {
@@ -80,17 +80,18 @@
         }
       }
     },
-    "/v1/assistant/generate-stream": {
+    "/v1/ai/stream": {
       "post": {
         "tags": [
-          "Assistant"
+          "AI"
         ],
-        "operationId": "generate_script_stream",
+        "summary": "The one model call: the browser sends the prompt, the server adds the key\nand relays the answer as it streams.",
+        "operationId": "complete_stream",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenerateRequest"
+                "$ref": "#/components/schemas/CompletionRequest"
               }
             }
           },
@@ -98,58 +99,13 @@
         },
         "responses": {
           "200": {
-            "description": "SSE stream: delta events + complete with GenerateResponse"
-          },
-          "400": {
-            "description": "AI provider not configured",
+            "description": "SSE stream: `delta` frames carry text; an `error` frame carries an ErrorBody; the stream ends when the model does",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
+              "text/event-stream": {}
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
-    "/v1/assistant/suggest-stream": {
-      "post": {
-        "tags": [
-          "Assistant"
-        ],
-        "operationId": "suggest_cqs_stream",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SuggestRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "SSE stream: delta events + complete with SuggestResponse"
           },
           "400": {
-            "description": "AI provider not configured",
+            "description": "No AI provider configured",
             "content": {
               "application/json": {
                 "schema": {
@@ -1199,58 +1155,6 @@
         }
       }
     },
-    "/v1/jobs/{id}/discover/ask-stream": {
-      "post": {
-        "tags": [
-          "Discovery"
-        ],
-        "operationId": "ask_discover_stream",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AskRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "SSE stream of LLM deltas",
-            "content": {
-              "text/event-stream": {}
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
     "/v1/jobs/{id}/discover/urls": {
       "post": {
         "tags": [
@@ -1832,45 +1736,6 @@
           }
         }
       },
-      "AskRequest": {
-        "type": "object",
-        "required": [
-          "question"
-        ],
-        "properties": {
-          "explain": {
-            "type": "boolean",
-            "description": "When true, the model reads query results back instead of writing SQL;\n`question` then carries the question, the SQL and the rows."
-          },
-          "history": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChatMessage"
-            },
-            "description": "The conversation so far, oldest first."
-          },
-          "provider": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/AiProvider"
-              }
-            ]
-          },
-          "question": {
-            "type": "string"
-          },
-          "schema": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "DuckDB DDL of the views the browser mounted: the whole of what the model\nknows about the data. Required unless `explain`."
-          }
-        }
-      },
       "AuthMethodSchema": {
         "type": "object",
         "required": [
@@ -1911,7 +1776,6 @@
       },
       "ChatMessage": {
         "type": "object",
-        "description": "One earlier message of the conversation. The client keeps the conversation;\nthe server sees only what each ask carries.",
         "required": [
           "role",
           "content"
@@ -1967,41 +1831,6 @@
           }
         }
       },
-      "ColumnInfo": {
-        "type": "object",
-        "description": "A source column as the browser described it.",
-        "required": [
-          "name",
-          "data_type"
-        ],
-        "properties": {
-          "data_type": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        }
-      },
-      "CompetencyQuestion": {
-        "type": "object",
-        "required": [
-          "id",
-          "question",
-          "rationale"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "question": {
-            "type": "string"
-          },
-          "rationale": {
-            "type": "string"
-          }
-        }
-      },
       "CompleteJobRequest": {
         "type": "object",
         "description": "The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running\nthe mapping in the browser (`@fossil-lang/executor`) and uploading the output\nby signed PUT, the client reports the run's outcome. `manifest` is the\nexecutor's run report, stored verbatim and never read.",
@@ -2022,6 +1851,46 @@
           "status": {
             "$ref": "#/components/schemas/JobStatus",
             "description": "The terminal (or `Running`) status the client is transitioning the job to."
+          }
+        }
+      },
+      "CompletionRequest": {
+        "type": "object",
+        "description": "One model call. The browser writes the prompt and keeps the conversation;\nthe server holds the key and relays the answer.",
+        "required": [
+          "system",
+          "messages"
+        ],
+        "properties": {
+          "max_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Overrides the provider's configured `max_tokens`.",
+            "minimum": 0
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "description": "The conversation, oldest first, ending with the user's turn."
+          },
+          "provider": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AiProvider",
+                "description": "The configured provider to call; the first configured one when absent."
+              }
+            ]
+          },
+          "system": {
+            "type": "string"
           }
         }
       },
@@ -2273,7 +2142,6 @@
           "store_error",
           "sign_error",
           "ai_not_configured",
-          "schema_required",
           "insufficient_credits",
           "llm_failed"
         ]
@@ -2333,64 +2201,6 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
-          }
-        }
-      },
-      "FileSchema": {
-        "type": "object",
-        "required": [
-          "connection_name",
-          "file_path",
-          "columns"
-        ],
-        "properties": {
-          "columns": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ColumnInfo"
-            }
-          },
-          "connection_name": {
-            "type": "string"
-          },
-          "file_path": {
-            "type": "string"
-          }
-        }
-      },
-      "GenerateRequest": {
-        "type": "object",
-        "required": [
-          "domain",
-          "competency_questions",
-          "schemas"
-        ],
-        "properties": {
-          "competency_questions": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "domain": {
-            "type": "string"
-          },
-          "schemas": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FileSchema"
-            }
-          }
-        }
-      },
-      "GenerateResponse": {
-        "type": "object",
-        "required": [
-          "script"
-        ],
-        "properties": {
-          "script": {
-            "type": "string"
           }
         }
       },
@@ -2647,38 +2457,6 @@
             },
             "propertyNames": {
               "type": "string"
-            }
-          }
-        }
-      },
-      "SuggestRequest": {
-        "type": "object",
-        "required": [
-          "domain",
-          "schemas"
-        ],
-        "properties": {
-          "domain": {
-            "type": "string"
-          },
-          "schemas": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FileSchema"
-            }
-          }
-        }
-      },
-      "SuggestResponse": {
-        "type": "object",
-        "required": [
-          "competency_questions"
-        ],
-        "properties": {
-          "competency_questions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CompetencyQuestion"
             }
           }
         }

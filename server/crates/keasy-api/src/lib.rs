@@ -4,7 +4,6 @@
 //! storage along with it — the server maps its rows onto these.
 
 pub mod ai;
-pub mod assistant;
 pub mod auth;
 pub mod cloud;
 pub mod connections;
@@ -28,13 +27,7 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
         version = "1.0.0",
         description = "Keasy host: identity, connections, signed URLs and the job record",
     ),
-    // The `complete` frames of the assistant streams: no response body names them.
-    components(schemas(
-        ErrorBody,
-        ErrorCode,
-        assistant::SuggestResponse,
-        assistant::GenerateResponse
-    )),
+    components(schemas(ErrorBody, ErrorCode)),
     modifiers(&Bearer),
     security(("bearer" = [])),
 )]

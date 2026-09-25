@@ -33,7 +33,6 @@ pub enum ErrorCode {
     StoreError,
     SignError,
     AiNotConfigured,
-    SchemaRequired,
     InsufficientCredits,
     LlmFailed,
 }

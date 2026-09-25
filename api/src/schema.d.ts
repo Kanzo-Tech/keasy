@@ -44,7 +44,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * The providers an ask can run on, and the model each runs when its settings
+         * The providers a call can run on, and the model each runs when its settings
          *     name none. Whether one is configured is `/v1/settings/ai/providers`.
          */
         get: operations["list_providers"];
@@ -56,7 +56,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/assistant/generate-stream": {
+    "/v1/ai/stream": {
         parameters: {
             query?: never;
             header?: never;
@@ -65,23 +65,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["generate_script_stream"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/assistant/suggest-stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["suggest_cqs_stream"];
+        /**
+         * The one model call: the browser sends the prompt, the server adds the key
+         *     and relays the answer as it streams.
+         */
+        post: operations["complete_stream"];
         delete?: never;
         options?: never;
         head?: never;
@@ -293,22 +281,6 @@ export interface paths {
         patch: operations["complete_job"];
         trace?: never;
     };
-    "/v1/jobs/{id}/discover/ask-stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ask_discover_stream"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/jobs/{id}/discover/urls": {
         parameters: {
             query?: never;
@@ -481,22 +453,6 @@ export interface components {
             model?: string | null;
             provider: components["schemas"]["AiProvider"];
         };
-        AskRequest: {
-            /**
-             * @description When true, the model reads query results back instead of writing SQL;
-             *     `question` then carries the question, the SQL and the rows.
-             */
-            explain?: boolean;
-            /** @description The conversation so far, oldest first. */
-            history?: components["schemas"]["ChatMessage"][];
-            provider?: null | components["schemas"]["AiProvider"];
-            question: string;
-            /**
-             * @description DuckDB DDL of the views the browser mounted: the whole of what the model
-             *     knows about the data. Required unless `explain`.
-             */
-            schema?: string | null;
-        };
         AuthMethodSchema: {
             fields: components["schemas"]["FieldSchema"][];
             label: string;
@@ -507,10 +463,6 @@ export interface components {
             base_url: string;
             cloud_account_id: string;
         };
-        /**
-         * @description One earlier message of the conversation. The client keeps the conversation;
-         *     the server sees only what each ask carries.
-         */
         ChatMessage: {
             content: string;
             role: components["schemas"]["ChatRole"];
@@ -526,16 +478,6 @@ export interface components {
             name: string;
             provider_id: string;
         };
-        /** @description A source column as the browser described it. */
-        ColumnInfo: {
-            data_type: string;
-            name: string;
-        };
-        CompetencyQuestion: {
-            id: string;
-            question: string;
-            rationale: string;
-        };
         /**
          * @description The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
          *     the mapping in the browser (`@fossil-lang/executor`) and uploading the output
@@ -549,6 +491,21 @@ export interface components {
             manifest?: unknown;
             /** @description The terminal (or `Running`) status the client is transitioning the job to. */
             status: components["schemas"]["JobStatus"];
+        };
+        /**
+         * @description One model call. The browser writes the prompt and keeps the conversation;
+         *     the server holds the key and relays the answer.
+         */
+        CompletionRequest: {
+            /**
+             * Format: int32
+             * @description Overrides the provider's configured `max_tokens`.
+             */
+            max_tokens?: number | null;
+            /** @description The conversation, oldest first, ending with the user's turn. */
+            messages: components["schemas"]["ChatMessage"][];
+            provider?: null | components["schemas"]["AiProvider"];
+            system: string;
         };
         Connection: {
             cloud_account_id?: string | null;
@@ -631,7 +588,7 @@ export interface components {
          *     declare here cannot be sent, and the web keys its copy by this enum.
          * @enum {string}
          */
-        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "still_running" | "invalid_destination" | "no_destination" | "invalid_connection" | "container_not_found" | "list_files_failed" | "store_error" | "sign_error" | "ai_not_configured" | "schema_required" | "insufficient_credits" | "llm_failed";
+        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "still_running" | "invalid_destination" | "no_destination" | "invalid_connection" | "container_not_found" | "list_files_failed" | "store_error" | "sign_error" | "ai_not_configured" | "insufficient_credits" | "llm_failed";
         FieldSchema: {
             default_value?: string | null;
             env_var?: string | null;
@@ -646,19 +603,6 @@ export interface components {
             path: string;
             /** Format: int64 */
             size: number;
-        };
-        FileSchema: {
-            columns: components["schemas"]["ColumnInfo"][];
-            connection_name: string;
-            file_path: string;
-        };
-        GenerateRequest: {
-            competency_questions: string[];
-            domain: string;
-            schemas: components["schemas"]["FileSchema"][];
-        };
-        GenerateResponse: {
-            script: string;
         };
         Job: {
             completed_at?: string | null;
@@ -761,13 +705,6 @@ export interface components {
             urls: {
                 [key: string]: string;
             };
-        };
-        SuggestRequest: {
-            domain: string;
-            schemas: components["schemas"]["FileSchema"][];
-        };
-        SuggestResponse: {
-            competency_questions: components["schemas"]["CompetencyQuestion"][];
         };
         UpdateCloudAccountRequest: {
             auth_method?: string | null;
@@ -922,7 +859,7 @@ export interface operations {
             503: components["responses"]["KeysUnavailable"];
         };
     };
-    generate_script_stream: {
+    complete_stream: {
         parameters: {
             query?: never;
             header?: never;
@@ -931,54 +868,20 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenerateRequest"];
+                "application/json": components["schemas"]["CompletionRequest"];
             };
         };
         responses: {
-            /** @description SSE stream: delta events + complete with GenerateResponse */
+            /** @description SSE stream: `delta` frames carry text; an `error` frame carries an ErrorBody; the stream ends when the model does */
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description AI provider not configured */
-            400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "text/event-stream": unknown;
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    suggest_cqs_stream: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SuggestRequest"];
-            };
-        };
-        responses: {
-            /** @description SSE stream: delta events + complete with SuggestResponse */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description AI provider not configured */
+            /** @description No AI provider configured */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1679,38 +1582,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    ask_discover_stream: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AskRequest"];
-            };
-        };
-        responses: {
-            /** @description SSE stream of LLM deltas */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": unknown;
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];

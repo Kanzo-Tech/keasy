@@ -7,7 +7,6 @@ use axum::http::{Method, StatusCode};
 use axum::response::{IntoResponse, Response};
 
 use keasy_api::discovery::{DatasetUrlsRequest, ResolveResponse};
-use keasy_api::jobs::{Job, JobStatus};
 use keasy_api::{ErrorBody, ErrorCode};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -16,25 +15,6 @@ use crate::AppState;
 use crate::auth::role::Member;
 use crate::error::fail;
 use crate::jobs::routes::owned_job;
-
-/// The caller's job, once it has finished and its output can be read.
-pub(crate) async fn output_ready(
-    state: &AppState,
-    member: &Member,
-    id: &str,
-) -> Result<Job, Response> {
-    let job = owned_job(state, member, id)
-        .await
-        .map_err(IntoResponse::into_response)?;
-    if job.status != JobStatus::Completed {
-        return Err(fail(
-            StatusCode::BAD_REQUEST,
-            ErrorCode::NotCompleted,
-            "Job is not completed yet",
-        ));
-    }
-    Ok(job)
-}
 
 pub(crate) const SIGNED_URL_EXPIRES: Duration = Duration::from_secs(300);
 

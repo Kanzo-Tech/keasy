@@ -48,12 +48,20 @@ import {
   useDataTable,
 } from "@kanzo-tech/ui/table";
 import { api } from "@/lib/api";
-import { type SseFrame, failOnError } from "@/lib/api/sse";
+import { type CompletionRequest, streamText } from "@/lib/ai/stream";
+import {
+  type CompetencyQuestion,
+  type FileSchema,
+  generateRequest,
+  parseScript,
+  parseSuggestions,
+  suggestRequest,
+} from "@/lib/ai/prompts";
 import { formatSize } from "@/lib/formatters";
 import * as checker from "@/lib/fossil/checker";
 import { connectionPath, describeSources } from "@/lib/fossil/describe-sources";
 import { queryKeys } from "@/lib/query-keys";
-import type { CompetencyQuestion, Connection, FileSchema, ProviderInfo } from "@/lib/types";
+import type { Connection, ProviderInfo } from "@/lib/types";
 import { readableFiles } from "@/lib/utils";
 
 type Selection = Record<string, boolean>;
@@ -98,22 +106,25 @@ const FILE_COLUMNS: ColumnDef<ConnectionFile>[] = [
   },
 ];
 
-/** keasy's SSE frames through the library's stream: deltas accumulate, `complete` is the result. */
-function useScriptStream() {
-  const stream = useAiStream<SseFrame>();
+/** One model call through the library's stream: deltas accumulate, and the whole text is the result. */
+function useModelStream() {
+  const stream = useAiStream<string>();
   const [text, setText] = useState("");
   const { run } = stream;
 
   const start = useCallback(
-    <T,>(source: (signal: AbortSignal) => AsyncGenerator<SseFrame>, onComplete: (result: T) => void) => {
+    (request: CompletionRequest, onComplete: (text: string) => void) => {
       setText("");
+      let full = "";
       void run(
-        (signal) => failOnError(source(signal)),
-        (frame) => {
-          if (frame.event === "delta") setText((prev) => prev + frame.data);
-          else if (frame.event === "complete") onComplete(JSON.parse(frame.data) as T);
+        (signal) => streamText(request, signal),
+        (delta) => {
+          full += delta;
+          setText((prev) => prev + delta);
         },
-      );
+      ).then((status) => {
+        if (status === "ready") onComplete(full);
+      });
     },
     [run],
   );
@@ -293,26 +304,21 @@ export function AssistantWizard({
     .rows.map((row) => row.original.question.trim())
     .filter(Boolean);
 
-  const suggest = useScriptStream();
-  const generate = useScriptStream();
+  const suggest = useModelStream();
+  const generate = useModelStream();
 
   const askForRequirements = () =>
-    suggest.start<{ competency_questions: CompetencyQuestion[] }>(
-      (signal) => api.assistant.suggestStream({ domain, schemas }, signal),
-      ({ competency_questions }) => {
-        setReqs(competency_questions);
-        reqTable.setRowSelection(Object.fromEntries(competency_questions.map((q) => [q.id, true])));
-      },
-    );
+    suggest.start(suggestRequest(domain, schemas), (text) => {
+      const suggested = parseSuggestions(text);
+      setReqs(suggested);
+      reqTable.setRowSelection(Object.fromEntries(suggested.map((q) => [q.id, true])));
+    });
 
   const generateProgram = () =>
-    generate.start<{ script: string }>(
-      (signal) => api.assistant.generateStream({ domain, competency_questions: questions, schemas }, signal),
-      ({ script }) => {
-        onComplete(script);
-        toast.create({ title: "Script generated — review before submitting", type: "success" });
-      },
-    );
+    generate.start(generateRequest(domain, questions, schemas), (text) => {
+      onComplete(parseScript(text));
+      toast.create({ title: "Script generated — review before submitting", type: "success" });
+    });
 
   const addRequirement = () => {
     const id = `custom-${Date.now()}`;

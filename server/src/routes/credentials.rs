@@ -12,12 +12,12 @@ use crate::api::credentials::{
 };
 use crate::api::validation::ValidationReport;
 
-use crate::AppState;
 use crate::authentication::role::{AnyRole, Member};
 use crate::connections::persistence as connections;
 use crate::credentials::{named, persistence, probe};
 use crate::domain::ResourceName;
 use crate::error::Refusal;
+use crate::startup::AppState;
 
 fn may_change(caller: &AnyRole, created_by: &str) -> Result<(), Refusal> {
     if caller.owns(created_by) {

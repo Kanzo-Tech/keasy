@@ -16,12 +16,12 @@ use crate::api::credentials::{CredentialSpecInput, PurposeQuery, StorageCredenti
 use crate::api::validation::ValidationReport;
 use crate::api::{ErrorBody, ErrorCode};
 
-use crate::AppState;
 use crate::authentication::role::{AnyRole, Member};
 use crate::connections::locator::{is_public_http, signer};
 use crate::connections::{named, persistence};
 use crate::domain::StorageUrl;
 use crate::error::Refusal;
+use crate::startup::AppState;
 use crate::storage_client::{self, SIGNED_URL_EXPIRES};
 
 /// The sink is the owner's alone; every other connection is a member's, and

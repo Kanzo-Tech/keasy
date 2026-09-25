@@ -11,11 +11,11 @@ use utoipa_axum::routes;
 use crate::api::jobs::{DatasetUrlsRequest, ResolveResponse};
 use crate::api::{ErrorBody, ErrorCode};
 
-use crate::AppState;
 use crate::authentication::role::Member;
 use crate::domain::StorageUrl;
 use crate::error::Refusal;
 use crate::routes::jobs::owned_job;
+use crate::startup::AppState;
 use crate::storage_client::{self, SIGNED_URL_EXPIRES, relative_path};
 
 async fn sign_dataset_urls(

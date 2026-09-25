@@ -1,3 +1,7 @@
+//! Everything the server is told, read from the environment: `KEASY_*`, and
+//! `NAME_FILE` for a secret mounted as a file. The image carries no config
+//! files.
+
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
@@ -5,26 +9,16 @@ use secrecy::{ExposeSecret, SecretString};
 
 use crate::credentials::sealing::SecretKey;
 
-pub struct ServerConfig {
+pub struct Settings {
+    pub application: ApplicationSettings,
+    pub database: DatabaseSettings,
+    pub oidc: OidcSettings,
+}
+
+pub struct ApplicationSettings {
+    /// Read from `KEASY_BIND_ADDR`, default `0.0.0.0:8080`. Port 0 binds a
+    /// free port, which [`crate::startup::Application::port`] reports.
     pub bind_addr: SocketAddr,
-    pub data_dir: PathBuf,
-    /// Seals every stored credential. Required: there is no plaintext mode.
-    pub secret_key: SecretKey,
-    /// The **public** OIDC issuer, exactly as it appears in a token's `iss`.
-    /// Read from KEASY_OIDC_ISSUER_URL. Example: https://auth.example/auth/realms/keasy
-    pub oidc_issuer_url: String,
-    /// This workspace's Keycloak client. Two jobs: the expected `azp` on every
-    /// token, and the key into `resource_access` that carries the roles.
-    /// Read from KEASY_OIDC_CLIENT_ID. Example: keasy-ws-dev
-    pub oidc_client_id: String,
-    /// This API's audience — what the tenant client's audience mapper names, and
-    /// what `aud` must contain. Read from KEASY_OIDC_AUDIENCE, default "keasy-api".
-    pub oidc_audience: String,
-    /// The **origin** at which this process reaches Keycloak, when that is not
-    /// where the browser reaches it (`http://keycloak:8080`). Only the origin is
-    /// replaced; the issuer's path is its own.
-    /// Read from KEASY_OIDC_INTERNAL_BASE_URL.
-    pub oidc_internal_base_url: Option<String>,
     /// Display name of this workspace. Read from `KEASY_WORKSPACE_NAME`,
     /// default `"Workspace"`. The switcher's name for this instance.
     pub workspace_name: String,
@@ -36,65 +30,89 @@ pub struct ServerConfig {
     pub bootstrap_file: Option<String>,
 }
 
-impl ServerConfig {
-    pub fn from_env() -> Self {
-        let bind_addr = std::env::var("KEASY_BIND_ADDR")
-            .unwrap_or_else(|_| "0.0.0.0:8080".to_string())
-            .parse()
-            .unwrap_or_else(|e| fatal(&format!("KEASY_BIND_ADDR is not a socket address: {e}")));
+pub struct DatabaseSettings {
+    /// Read from `KEASY_DATA_DIR`, default `./data`.
+    pub data_dir: PathBuf,
+    /// Seals every stored credential. Required: there is no plaintext mode.
+    pub secret_key: SecretKey,
+}
 
-        let data_dir = data_dir();
-        let secret_key = secret_key("KEASY_SECRET_KEY");
+impl DatabaseSettings {
+    pub fn from_env() -> Result<Self, String> {
+        Ok(Self {
+            data_dir: PathBuf::from(
+                std::env::var("KEASY_DATA_DIR").unwrap_or_else(|_| "./data".to_string()),
+            ),
+            secret_key: secret_key("KEASY_SECRET_KEY")?,
+        })
+    }
 
-        // There is no unauthenticated mode to fall back to: a resource server that
-        // cannot name its issuer cannot refuse anything.
-        let oidc_issuer_url = nonblank("KEASY_OIDC_ISSUER_URL").unwrap_or_else(|| {
-            fatal("KEASY_OIDC_ISSUER_URL is required — it is what tokens are validated against")
-        });
-        let oidc_client_id = nonblank("KEASY_OIDC_CLIENT_ID").unwrap_or_else(|| {
-            fatal("KEASY_OIDC_CLIENT_ID is required — it names this workspace's client")
-        });
+    /// The instance database file.
+    pub fn path(&self) -> PathBuf {
+        self.data_dir.join("keasy.db")
+    }
+}
 
-        Self {
+pub struct OidcSettings {
+    /// The **public** OIDC issuer, exactly as it appears in a token's `iss`.
+    /// Read from KEASY_OIDC_ISSUER_URL. Example: https://auth.example/auth/realms/keasy
+    pub issuer_url: String,
+    /// This workspace's Keycloak client. Two jobs: the expected `azp` on every
+    /// token, and the key into `resource_access` that carries the roles.
+    /// Read from KEASY_OIDC_CLIENT_ID. Example: keasy-ws-dev
+    pub client_id: String,
+    /// This API's audience — what the tenant client's audience mapper names, and
+    /// what `aud` must contain. Read from KEASY_OIDC_AUDIENCE, default "keasy-api".
+    pub audience: String,
+    /// The **origin** at which this process reaches Keycloak, when that is not
+    /// where the browser reaches it (`http://keycloak:8080`). Only the origin is
+    /// replaced; the issuer's path is its own.
+    /// Read from KEASY_OIDC_INTERNAL_BASE_URL.
+    pub internal_base_url: Option<String>,
+}
+
+pub fn get_configuration() -> Result<Settings, String> {
+    let bind_addr = std::env::var("KEASY_BIND_ADDR")
+        .unwrap_or_else(|_| "0.0.0.0:8080".to_string())
+        .parse()
+        .map_err(|e| format!("KEASY_BIND_ADDR is not a socket address: {e}"))?;
+
+    // There is no unauthenticated mode to fall back to: a resource server that
+    // cannot name its issuer cannot refuse anything.
+    let issuer_url = nonblank("KEASY_OIDC_ISSUER_URL")
+        .ok_or("KEASY_OIDC_ISSUER_URL is required — it is what tokens are validated against")?;
+    let client_id = nonblank("KEASY_OIDC_CLIENT_ID")
+        .ok_or("KEASY_OIDC_CLIENT_ID is required — it names this workspace's client")?;
+
+    Ok(Settings {
+        application: ApplicationSettings {
             bind_addr,
-            data_dir,
-            secret_key,
-            oidc_issuer_url,
-            oidc_client_id,
-            oidc_audience: nonblank("KEASY_OIDC_AUDIENCE")
-                .unwrap_or_else(|| "keasy-api".to_string()),
-            oidc_internal_base_url: nonblank("KEASY_OIDC_INTERNAL_BASE_URL"),
             workspace_name: nonblank("KEASY_WORKSPACE_NAME")
                 .unwrap_or_else(|| "Workspace".to_string()),
             workspace_slug: nonblank("KEASY_ORG_ALIAS"),
             bootstrap_file: nonblank("KEASY_BOOTSTRAP_FILE"),
-        }
-    }
-}
-
-/// `KEASY_DATA_DIR`, default `./data`.
-pub fn data_dir() -> PathBuf {
-    PathBuf::from(std::env::var("KEASY_DATA_DIR").unwrap_or_else(|_| "./data".to_string()))
+        },
+        database: DatabaseSettings::from_env()?,
+        oidc: OidcSettings {
+            issuer_url,
+            client_id,
+            audience: nonblank("KEASY_OIDC_AUDIENCE").unwrap_or_else(|| "keasy-api".to_string()),
+            internal_base_url: nonblank("KEASY_OIDC_INTERNAL_BASE_URL"),
+        },
+    })
 }
 
 /// The sealing key in `name` (or the file `name_FILE` points to).
-pub fn secret_key(name: &str) -> SecretKey {
-    match resolve_secret(name) {
-        Some(encoded) => SecretKey::from_base64(encoded.expose_secret()).unwrap_or_else(|e| {
-            fatal(&format!(
-                "{name} must be 32 random bytes in base64 (openssl rand -base64 32): it {e}"
-            ))
+pub fn secret_key(name: &str) -> Result<SecretKey, String> {
+    match resolve_secret(name)? {
+        Some(encoded) => SecretKey::from_base64(encoded.expose_secret()).map_err(|e| {
+            format!("{name} must be 32 random bytes in base64 (openssl rand -base64 32): it {e}")
         }),
-        None => fatal(&format!(
+        None => Err(format!(
             "{name} is required to seal stored credentials \
              (generate one with: openssl rand -base64 32)"
         )),
     }
-}
-
-fn fatal(message: &str) -> ! {
-    eprintln!("FATAL: {message}");
-    std::process::exit(1);
 }
 
 /// An environment variable, or `None` when it is absent or blank.
@@ -106,16 +124,13 @@ fn nonblank(name: &str) -> Option<String> {
 }
 
 /// `NAME_FILE` (a mounted secret) if set, else `NAME`.
-fn resolve_secret(name: &str) -> Option<SecretString> {
+fn resolve_secret(name: &str) -> Result<Option<SecretString>, String> {
     let file_var = format!("{name}_FILE");
     if let Ok(path) = std::env::var(&file_var) {
-        let contents = std::fs::read_to_string(&path).unwrap_or_else(|e| {
-            fatal(&format!(
-                "{file_var} points to {path} but could not read it: {e}"
-            ))
-        });
-        return Some(SecretString::from(contents.trim().to_string()))
-            .filter(|s| !s.expose_secret().is_empty());
+        let contents = std::fs::read_to_string(&path)
+            .map_err(|e| format!("{file_var} points to {path} but could not read it: {e}"))?;
+        return Ok(Some(SecretString::from(contents.trim().to_string()))
+            .filter(|s| !s.expose_secret().is_empty()));
     }
-    nonblank(name).map(SecretString::from)
+    Ok(nonblank(name).map(SecretString::from))
 }

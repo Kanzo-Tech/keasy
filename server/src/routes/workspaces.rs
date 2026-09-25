@@ -6,8 +6,8 @@ use crate::api::auth::WorkspacesResponse;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::AppState;
 use crate::authentication::middleware::AuthenticatedUser;
+use crate::startup::AppState;
 
 /// GET /v1/auth/workspaces
 ///

@@ -4,7 +4,7 @@ use axum::response::Response;
 
 use super::role::Role;
 use super::token::{Claims, TokenError, bearer};
-use crate::AppState;
+use crate::startup::AppState;
 
 /// Inserted into request extensions by [`bearer_required`]: who the caller is
 /// and the one role they hold here, which the role extractors read.

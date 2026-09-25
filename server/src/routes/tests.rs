@@ -13,7 +13,8 @@ use crate::api::credentials::{CredentialSpecInput, StorageCredentialInput};
 use crate::api::validation::ValidationReport;
 use crate::authentication::token::Validator;
 use crate::authentication::token::tests::{Realm, good, mint, realm};
-use crate::{AppState, Database};
+use crate::database::Database;
+use crate::startup::AppState;
 use secrecy::SecretString;
 
 use crate::domain::ResourceName;
@@ -48,7 +49,7 @@ impl Harness {
             )),
         };
         Self {
-            app: super::build_router(state),
+            app: crate::startup::router(state),
             db,
             realm,
             _dir: dir,
@@ -298,7 +299,7 @@ async fn no_response_carries_a_secret() {
         assert!(!body.to_string().contains("secret_access_key"), "{body}");
     }
 
-    let spec = serde_json::to_value(crate::openapi()).unwrap();
+    let spec = serde_json::to_value(crate::startup::openapi()).unwrap();
     for view in [
         "StorageCredentialView",
         "ModelCredentialView",

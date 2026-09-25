@@ -7,10 +7,12 @@ pub mod sealing;
 
 use crate::api::credentials::{CreateCredentialRequest, CredentialView};
 
+use crate::configuration::DatabaseSettings;
 use crate::database::Database;
 use crate::domain::ResourceName;
 use crate::error::Refusal;
 use persistence::Credential;
+use sealing::SecretKey;
 
 /// The credential `name`, unsealed, or 404.
 pub async fn named(db: &Database, name: &str) -> Result<Credential, Refusal> {
@@ -35,4 +37,16 @@ pub async fn create(
     let stored = persistence::get(&conn, db.secret_key(), name.as_ref())?
         .ok_or_else(|| Refusal::not_found("Credential"))?;
     Ok(stored.view(Vec::new()))
+}
+
+/// Seal every stored credential again under `new`, reading them with the
+/// configured key. One transaction: all move or none does.
+pub fn rekey(database: &DatabaseSettings, new: &SecretKey) -> Result<usize, String> {
+    let path = database.path();
+    let mut conn = rusqlite::Connection::open(&path)
+        .map_err(|e| format!("failed to open {}: {e}", path.display()))?;
+    conn.execute_batch("PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;")
+        .map_err(|e| e.to_string())?;
+    crate::database::apply_schema(&conn)?;
+    persistence::rekey(&mut conn, &database.secret_key, new).map_err(|e| e.to_string())
 }

@@ -5,7 +5,7 @@ use axum::response::IntoResponse;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::AppState;
+use crate::startup::AppState;
 
 #[utoipa::path(get, path = "/healthz/live", tag = "Health", security(()),
     responses((status = 200, description = "Service is alive"))

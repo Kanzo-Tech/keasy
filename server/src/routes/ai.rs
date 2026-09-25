@@ -15,9 +15,9 @@ use crate::api::credentials::Purpose;
 use crate::api::{ErrorBody, ErrorCode};
 use crate::llm_client::stream;
 
-use crate::AppState;
 use crate::authentication::role::Member;
 use crate::error::Refusal;
+use crate::startup::AppState;
 
 /// The model connection a call runs on: the one it names, or the only one.
 async fn model_connection(state: &AppState, name: Option<&str>) -> Result<ConnectionView, Refusal> {

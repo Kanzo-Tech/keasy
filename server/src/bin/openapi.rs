@@ -1,7 +1,7 @@
 //! Prints the API contract. `make api` writes it to `api/openapi.json`.
 
 fn main() {
-    let spec = keasy_server::openapi()
+    let spec = keasy_server::startup::openapi()
         .to_pretty_json()
         .expect("the contract serializes");
     println!("{spec}");

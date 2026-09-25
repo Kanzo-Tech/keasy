@@ -9,33 +9,28 @@ pub struct AiProviderInfo {
     pub default_model: &'static str,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ChatRole {
     User,
     Assistant,
 }
 
-/// One earlier message of the conversation. The client keeps the conversation;
-/// the server sees only what each ask carries.
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ChatMessage {
     pub role: ChatRole,
     pub content: String,
 }
 
+/// One model call. The browser writes the prompt and keeps the conversation;
+/// the server holds the key and relays the answer.
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct AskRequest {
-    pub question: String,
+pub struct CompletionRequest {
+    /// The configured provider to call; the first configured one when absent.
     pub provider: Option<AiProvider>,
-    /// DuckDB DDL of the views the browser mounted: the whole of what the model
-    /// knows about the data. Required unless `explain`.
-    pub schema: Option<String>,
-    /// When true, the model reads query results back instead of writing SQL;
-    /// `question` then carries the question, the SQL and the rows.
-    #[serde(default)]
-    pub explain: bool,
-    /// The conversation so far, oldest first.
-    #[serde(default)]
-    pub history: Vec<ChatMessage>,
+    pub system: String,
+    /// The conversation, oldest first, ending with the user's turn.
+    pub messages: Vec<ChatMessage>,
+    /// Overrides the provider's configured `max_tokens`.
+    pub max_tokens: Option<u32>,
 }

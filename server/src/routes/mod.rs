@@ -37,7 +37,6 @@ fn routes() -> (OpenApiRouter<AppState>, OpenApiRouter<AppState>) {
         .merge(crate::cloud::routes::router())
         .merge(crate::settings::routes::router())
         .merge(crate::ai::routes::router())
-        .merge(crate::assistant::routes::router())
         .merge(org::router());
     (public, protected)
 }

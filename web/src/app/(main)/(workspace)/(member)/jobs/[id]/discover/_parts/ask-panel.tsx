@@ -54,7 +54,8 @@ import {
 } from "@kanzo-tech/ai";
 import { MessageMarkdown } from "@kanzo-tech/ai/markdown";
 import { ApiError, api } from "@/lib/api";
-import { sseFailure } from "@/lib/api/sse";
+import { completeText, streamText } from "@/lib/ai/stream";
+import { explainRequest, parsePlan, queryRequest } from "@/lib/ai/prompts";
 import { queryKeys } from "@/lib/query-keys";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
 import { generateSuggestions } from "@/lib/schema-suggestions";
@@ -82,7 +83,6 @@ type TurnEvent =
   | { kind: "plan"; sql: string | null; answer: string; reasoning: string }
   | { kind: "rows"; result: ExecuteSqlResult }
   | { kind: "explain"; text: string }
-  | { kind: "explained"; text: string }
   | { kind: "failed"; code: string };
 
 interface Turn {
@@ -109,8 +109,6 @@ function apply(turn: Turn, event: TurnEvent): Turn {
       return { ...turn, result: event.result };
     case "explain":
       return { ...turn, explanation: turn.explanation + event.text };
-    case "explained":
-      return { ...turn, explanation: event.text };
     case "failed":
       return { ...turn, failure: event.code, failedAt: turn.phase };
   }
@@ -154,18 +152,11 @@ function toolState(turn: Turn): RunState {
 const SAMPLE_ROWS = 30;
 const SAMPLE_CHARS = 4000;
 
-interface Plan {
-  sql?: string;
-  answer: string;
-  reasoning?: string;
-}
-
 interface AskOptions {
-  jobId: string;
   question: string;
   history: ChatMessage[];
   provider?: AiProvider;
-  schema?: string;
+  schema: string;
   corpus: SqlCorpus;
   signal: AbortSignal;
 }
@@ -181,37 +172,12 @@ function sample(result: ExecuteSqlResult): string {
  * because a turn that broke still belongs in the transcript.
  */
 async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
-  const { jobId, question, history, provider, schema, corpus, signal } = options;
+  const { question, history, provider, schema, corpus, signal } = options;
   try {
-    let plan: Plan | null = null;
-
-    for await (const frame of api.discovery.askStream(jobId, question, {
-      provider,
-      schema,
-      history,
-      signal,
-    })) {
-      const failure = sseFailure(frame);
-      if (failure) {
-        yield { kind: "failed", code: failure.error };
-        return;
-      }
-      if (frame.event === "complete") {
-        plan = JSON.parse(frame.data) as Plan;
-      }
-    }
-
-    if (!plan) {
-      yield { kind: "phase", phase: "done" };
-      return;
-    }
-
-    yield {
-      kind: "plan",
-      sql: plan.sql ?? null,
-      answer: plan.answer,
-      reasoning: plan.reasoning ?? "",
-    };
+    const plan = parsePlan(
+      await completeText(queryRequest(schema, history, question, provider), signal),
+    );
+    yield { kind: "plan", ...plan };
 
     if (!plan.sql) {
       yield { kind: "phase", phase: "done" };
@@ -229,20 +195,11 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     yield { kind: "rows", result };
 
     yield { kind: "phase", phase: "explaining" };
-    const reading = `Original question: ${question}\n\nSQL executed:\n${plan.sql}\n\nResults (showing first rows):\n${sample(result)}`;
-    for await (const frame of api.discovery.askStream(jobId, reading, {
-      provider,
-      explain: true,
+    for await (const text of streamText(
+      explainRequest(question, plan.sql, sample(result), provider),
       signal,
-    })) {
-      const failure = sseFailure(frame);
-      if (failure) {
-        yield { kind: "failed", code: failure.error };
-        return;
-      }
-      if (frame.event === "delta") yield { kind: "explain", text: frame.data };
-      else if (frame.event === "complete")
-        yield { kind: "explained", text: (JSON.parse(frame.data) as Plan).answer };
+    )) {
+      yield { kind: "explain", text };
     }
     yield { kind: "phase", phase: "done" };
   } catch (err) {
@@ -383,7 +340,7 @@ function Answer({ turn }: { turn: Turn }) {
 
 // ── The panel ────────────────────────────────────────────────────────────
 
-export function AskPanel({ jobId, graphSchema }: { jobId: string; graphSchema: GraphSchema }) {
+export function AskPanel({ graphSchema }: { graphSchema: GraphSchema }) {
   const { coordinator, corpus } = useCorpus();
   const engine = useAiStream<TurnEvent>();
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -456,7 +413,6 @@ export function AskPanel({ jobId, graphSchema }: { jobId: string; graphSchema: G
     void engine.run(
       (signal) =>
         askTurn({
-          jobId,
           question: text,
           history: historyOf(turns),
           provider,

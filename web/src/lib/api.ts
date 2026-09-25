@@ -1,6 +1,5 @@
 import client, { ApiError, unwrap } from "./api/client";
 import type { Schemas } from "./api/client";
-import { fetchSSE } from "./api/sse";
 import { aiProvider } from "./ai-providers";
 import type { ProviderSchema } from "./types";
 
@@ -106,29 +105,6 @@ export const api = {
     },
   },
 
-  // ── Discovery ─────────────────────────────────────────────────────────
-  discovery: {
-    askStream: (
-      id: string,
-      question: string,
-      opts?: {
-        provider?: Schemas["AiProvider"];
-        schema?: string;
-        explain?: boolean;
-        /// The conversation so far, oldest first. The server keeps none.
-        history?: Schemas["ChatMessage"][];
-        signal?: AbortSignal;
-      },
-    ) =>
-      fetchSSE(`/v1/jobs/${id}/discover/ask-stream`, {
-        question,
-        ...(opts?.provider ? { provider: opts.provider } : {}),
-        ...(opts?.schema ? { schema: opts.schema } : {}),
-        ...(opts?.explain ? { explain: opts.explain } : {}),
-        ...(opts?.history?.length ? { history: opts.history } : {}),
-      } satisfies Schemas["AskRequest"], opts?.signal),
-  },
-
   // ── Catalog (governance) ──────────────────────────────────────────────
   catalog: {
     datasets: async () =>
@@ -194,15 +170,4 @@ export const api = {
     saveIdentity: async (data: Schemas["OrgIdentity"]) =>
       unwrap(await client.PUT("/v1/org/identity", { body: data })),
   },
-
-
-  // ── Assistant (SSE streaming) ───────────────────────────────────────────
-  assistant: {
-    suggestStream: (req: Schemas["SuggestRequest"], signal?: AbortSignal) =>
-      fetchSSE("/v1/assistant/suggest-stream", req, signal),
-
-    generateStream: (req: Schemas["GenerateRequest"], signal?: AbortSignal) =>
-      fetchSSE("/v1/assistant/generate-stream", req, signal),
-  },
-
 };

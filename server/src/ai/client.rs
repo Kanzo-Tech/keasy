@@ -1,20 +1,20 @@
 use std::convert::Infallible;
 use std::fmt;
 
-use axum::response::sse::{Event, KeepAlive, Sse};
+use axum::response::sse::Event;
 use axum::response::{IntoResponse, Response};
 use futures::StreamExt;
 use secrecy::ExposeSecret;
-use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
-use tracing::warn;
 
 use crate::db::{DbError, DbResult};
+use keasy_api::ai::ChatMessage;
 use keasy_api::settings::ai::AiProvider;
 use keasy_api::{ErrorBody, ErrorCode};
 
 use crate::settings::ai::AiSettings;
+
+pub type SseSender = mpsc::Sender<Result<Event, Infallible>>;
 
 pub enum AiError {
     InsufficientCredits(String),
@@ -29,16 +29,27 @@ impl fmt::Display for AiError {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct Message {
-    pub role: String,
-    pub content: String,
+impl AiError {
+    /// The `error` frame: an [`ErrorBody`], the same shape a refused request gets.
+    pub fn event(&self) -> Event {
+        let error = match self {
+            AiError::InsufficientCredits(_) => ErrorCode::InsufficientCredits,
+            AiError::Failed(_) => ErrorCode::LlmFailed,
+        };
+        let body = ErrorBody {
+            error,
+            message: self.to_string(),
+        };
+        Event::default()
+            .event("error")
+            .data(serde_json::to_string(&body).expect("an ErrorBody serializes"))
+    }
 }
 
 static HTTP_CLIENT: std::sync::LazyLock<reqwest::Client> =
     std::sync::LazyLock::new(reqwest::Client::new);
 
-/// Why an ask has no provider to run on.
+/// Why a call has no provider to run on.
 pub enum AiUnavailable {
     NotConfigured,
     Db(DbError),
@@ -57,7 +68,7 @@ impl IntoResponse for AiUnavailable {
     }
 }
 
-/// The provider an ask runs on: configured, and holding a key.
+/// The provider a call runs on: configured, and holding a key.
 pub fn require_ai_settings(
     settings: DbResult<Option<AiSettings>>,
 ) -> Result<AiSettings, AiUnavailable> {
@@ -88,267 +99,84 @@ async fn classify_api_error(res: reqwest::Response, provider: AiProvider) -> AiE
     }
 }
 
-pub async fn ask_llm_stream(
+/// Call the provider and relay each text chunk it streams as a `delta` frame.
+pub async fn stream(
     settings: &AiSettings,
     system: &str,
-    messages: &[Message],
-    max_tokens_override: Option<u32>,
-    tx: mpsc::Sender<String>,
-) -> Result<String, AiError> {
-    let client = &*HTTP_CLIENT;
-    let max_tokens = max_tokens_override.unwrap_or(settings.max_tokens.unwrap_or(2048));
+    messages: &[ChatMessage],
+    max_tokens: Option<u32>,
+    tx: &SseSender,
+) -> Result<(), AiError> {
+    let provider = settings.provider;
+    let model = settings
+        .model
+        .as_deref()
+        .unwrap_or(provider.default_model());
+    let max_tokens = max_tokens.or(settings.max_tokens).unwrap_or(2048);
+    let key = settings.api_key.expose_secret();
 
-    match settings.provider {
-        AiProvider::Anthropic => {
-            stream_anthropic(client, settings, system, messages, max_tokens, tx).await
-        }
+    let request = match provider {
+        AiProvider::Anthropic => HTTP_CLIENT
+            .post("https://api.anthropic.com/v1/messages")
+            .header("x-api-key", key)
+            .header("anthropic-version", "2023-06-01")
+            .json(&serde_json::json!({
+                "model": model,
+                "max_tokens": max_tokens,
+                "system": system,
+                "messages": messages,
+                "stream": true,
+            })),
         AiProvider::Openai => {
-            stream_openai(client, settings, system, messages, max_tokens, tx).await
+            let mut all = vec![serde_json::json!({ "role": "system", "content": system })];
+            all.extend(messages.iter().map(|m| serde_json::json!(m)));
+            HTTP_CLIENT
+                .post("https://api.openai.com/v1/chat/completions")
+                .bearer_auth(key)
+                .json(&serde_json::json!({
+                    "model": model,
+                    "max_tokens": max_tokens,
+                    "messages": all,
+                    "stream": true,
+                }))
         }
-    }
-}
+    };
 
-async fn stream_anthropic(
-    client: &reqwest::Client,
-    settings: &AiSettings,
-    system: &str,
-    messages: &[Message],
-    max_tokens: u32,
-    tx: mpsc::Sender<String>,
-) -> Result<String, AiError> {
-    let model = settings
-        .model
-        .as_deref()
-        .unwrap_or(AiProvider::Anthropic.default_model());
-
-    let body = serde_json::json!({
-        "model": model,
-        "max_tokens": max_tokens,
-        "system": system,
-        "messages": messages,
-        "stream": true,
-    });
-
-    let res = client
-        .post("https://api.anthropic.com/v1/messages")
-        .header("x-api-key", settings.api_key.expose_secret())
-        .header("anthropic-version", "2023-06-01")
-        .header("content-type", "application/json")
-        .json(&body)
+    let res = request
         .send()
         .await
-        .map_err(|e| AiError::Failed(format!("Anthropic stream request failed: {e}")))?;
-
+        .map_err(|e| AiError::Failed(format!("{} request failed: {e}", provider.as_ref())))?;
     if !res.status().is_success() {
-        return Err(classify_api_error(res, AiProvider::Anthropic).await);
+        return Err(classify_api_error(res, provider).await);
     }
 
-    consume_sse_stream(res, &tx, |v| v["delta"]["text"].as_str()).await
-}
+    let text = |v: &serde_json::Value| -> Option<String> {
+        match provider {
+            AiProvider::Anthropic => v["delta"]["text"].as_str(),
+            AiProvider::Openai => v["choices"][0]["delta"]["content"].as_str(),
+        }
+        .map(str::to_owned)
+    };
 
-async fn stream_openai(
-    client: &reqwest::Client,
-    settings: &AiSettings,
-    system: &str,
-    messages: &[Message],
-    max_tokens: u32,
-    tx: mpsc::Sender<String>,
-) -> Result<String, AiError> {
-    let model = settings
-        .model
-        .as_deref()
-        .unwrap_or(AiProvider::Openai.default_model());
-
-    let mut all_messages = vec![Message {
-        role: "system".to_string(),
-        content: system.to_string(),
-    }];
-    all_messages.extend_from_slice(messages);
-
-    let body = serde_json::json!({
-        "model": model,
-        "max_tokens": max_tokens,
-        "messages": all_messages,
-        "stream": true,
-    });
-
-    let res = client
-        .post("https://api.openai.com/v1/chat/completions")
-        .header(
-            "Authorization",
-            format!("Bearer {}", settings.api_key.expose_secret()),
-        )
-        .header("content-type", "application/json")
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| AiError::Failed(format!("OpenAI stream request failed: {e}")))?;
-
-    if !res.status().is_success() {
-        return Err(classify_api_error(res, AiProvider::Openai).await);
-    }
-
-    consume_sse_stream(res, &tx, |v| v["choices"][0]["delta"]["content"].as_str()).await
-}
-
-async fn consume_sse_stream(
-    res: reqwest::Response,
-    tx: &mpsc::Sender<String>,
-    extract_text: impl Fn(&serde_json::Value) -> Option<&str>,
-) -> Result<String, AiError> {
-    let mut accumulated = String::new();
-    let mut stream = res.bytes_stream();
+    let mut body = res.bytes_stream();
     let mut buf = String::new();
-
-    while let Some(chunk) = stream.next().await {
+    while let Some(chunk) = body.next().await {
         let chunk = chunk.map_err(|e| AiError::Failed(format!("Stream read error: {e}")))?;
         buf.push_str(&String::from_utf8_lossy(&chunk));
-
         while let Some(pos) = buf.find("\n\n") {
-            let event_block = &buf[..pos];
-            for line in event_block.lines() {
-                if let Some(data) = line.strip_prefix("data: ") {
-                    if data == "[DONE]" {
-                        continue;
-                    }
-                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(data)
-                        && let Some(text) = extract_text(&v)
-                    {
-                        accumulated.push_str(text);
-                        let _ = tx.send(text.to_string()).await;
-                    }
+            for line in buf[..pos].lines() {
+                let Some(data) = line.strip_prefix("data: ") else {
+                    continue;
+                };
+                if let Ok(v) = serde_json::from_str::<serde_json::Value>(data)
+                    && let Some(delta) = text(&v)
+                    && !delta.is_empty()
+                {
+                    let _ = tx.send(Ok(Event::default().event("delta").data(delta))).await;
                 }
             }
             buf.drain(..pos + 2);
         }
     }
-
-    Ok(accumulated)
-}
-
-pub struct SseChannels {
-    pub sse_tx: mpsc::Sender<Result<Event, Infallible>>,
-    pub sse_rx: mpsc::Receiver<Result<Event, Infallible>>,
-    pub delta_tx: mpsc::Sender<String>,
-}
-
-pub fn setup_sse_channels() -> SseChannels {
-    let (sse_tx, sse_rx) = mpsc::channel::<Result<Event, Infallible>>(32);
-    let (delta_tx, mut delta_rx) = mpsc::channel::<String>(32);
-
-    let tx_fwd = sse_tx.clone();
-    tokio::spawn(async move {
-        while let Some(delta) = delta_rx.recv().await {
-            let _ = tx_fwd
-                .send(Ok(Event::default().event("delta").data(delta)))
-                .await;
-        }
-    });
-
-    SseChannels {
-        sse_tx,
-        sse_rx,
-        delta_tx,
-    }
-}
-
-/// The `code` an `error` frame carries for a failed model call.
-pub fn failure_code(e: &AiError) -> ErrorCode {
-    match e {
-        AiError::InsufficientCredits(_) => ErrorCode::InsufficientCredits,
-        AiError::Failed(_) => ErrorCode::LlmFailed,
-    }
-}
-
-/// The `error` frame: an [`ErrorBody`], the same shape a refused request gets.
-pub fn error_event(error: ErrorCode, message: &str) -> Event {
-    let body = ErrorBody {
-        error,
-        message: message.to_string(),
-    };
-    Event::default()
-        .event("error")
-        .data(serde_json::to_string(&body).expect("an ErrorBody serializes"))
-}
-
-/// Runs `call` only while someone reads the stream. A reader who leaves drops
-/// the call, and with it the upstream request to the model.
-pub async fn while_read<T>(
-    sse_tx: &mpsc::Sender<Result<Event, Infallible>>,
-    call: impl Future<Output = T>,
-) -> Option<T> {
-    tokio::select! {
-        () = sse_tx.closed() => None,
-        out = call => Some(out),
-    }
-}
-
-pub fn into_sse_response(sse_rx: mpsc::Receiver<Result<Event, Infallible>>) -> Response {
-    Sse::new(ReceiverStream::new(sse_rx))
-        .keep_alive(KeepAlive::default())
-        .into_response()
-}
-
-pub fn stream_llm_to_sse(
-    ai_settings: AiSettings,
-    system_prompt: String,
-    user_message: String,
-    max_tokens: Option<u32>,
-    parse_result: impl FnOnce(&str) -> serde_json::Value + Send + 'static,
-) -> Response {
-    let ch = setup_sse_channels();
-
-    let sse_tx = ch.sse_tx;
-    let delta_tx = ch.delta_tx;
-    tokio::spawn(async move {
-        let msgs = [Message {
-            role: "user".into(),
-            content: user_message,
-        }];
-
-        let call = ask_llm_stream(&ai_settings, &system_prompt, &msgs, max_tokens, delta_tx);
-        let Some(result) = while_read(&sse_tx, call).await else {
-            return;
-        };
-        match result {
-            Ok(full_text) => {
-                let payload = parse_result(&full_text);
-                let _ = sse_tx
-                    .send(Ok(Event::default()
-                        .event("complete")
-                        .data(payload.to_string())))
-                    .await;
-            }
-            Err(e) => {
-                warn!("LLM stream failed: {e}");
-                let _ = sse_tx
-                    .send(Ok(error_event(failure_code(&e), &e.to_string())))
-                    .await;
-            }
-        }
-    });
-
-    into_sse_response(ch.sse_rx)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn a_reader_who_leaves_drops_the_call() {
-        let (sse_tx, sse_rx) = mpsc::channel(1);
-        drop(sse_rx);
-        assert!(
-            while_read(&sse_tx, std::future::pending::<()>())
-                .await
-                .is_none()
-        );
-    }
-
-    #[tokio::test]
-    async fn a_reader_who_stays_gets_the_answer() {
-        let (sse_tx, _sse_rx) = mpsc::channel(1);
-        assert_eq!(while_read(&sse_tx, async { 7 }).await, Some(7));
-    }
+    Ok(())
 }

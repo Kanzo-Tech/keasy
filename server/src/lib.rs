@@ -1,5 +1,4 @@
 mod ai;
-mod assistant;
 mod auth;
 mod catalog;
 mod cloud;

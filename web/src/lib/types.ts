@@ -22,17 +22,8 @@ export type ConnectionKind = S["ConnectionKind"];
 export type LocationType = S["LocationType"];
 export type Connection = S["Connection"];
 export type CreateConnectionRequest = S["CreateConnectionRequest"];
-export type ColumnInfo = S["ColumnInfo"];
 export type AiSettings = S["AiSettingsPayload"];
 export type AiProvider = S["AiProvider"];
-
-// Assistant types
-export type FileSchema = S["FileSchema"];
-export type CompetencyQuestion = S["CompetencyQuestion"];
-export type SuggestRequest = S["SuggestRequest"];
-export type SuggestResponse = S["SuggestResponse"];
-export type GenerateRequest = S["GenerateRequest"];
-export type GenerateResponse = S["GenerateResponse"];
 
 // Alias: server calls it JobRuntimeError, frontend used JobError
 export type JobError = S["JobRuntimeError"];

@@ -13,24 +13,6 @@ use serde::{Deserialize, Serialize};
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-pub enum RunMode {
-    Integrated,
-    Scheduled,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    utoipa::ToSchema,
-    strum::AsRefStr,
-    strum::EnumString,
-)]
-#[serde(rename_all = "snake_case")]
-#[strum(serialize_all = "snake_case")]
 pub enum JobStatus {
     Draft,
     Pending,
@@ -51,9 +33,9 @@ pub struct Job {
     pub started_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub completed_at: Option<String>,
+    /// Why a `Failed` run failed, as the browser that ran it reported it.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<JobRuntimeError>,
-    pub mode: RunMode,
+    pub error: Option<String>,
     /// Keycloak `sub` of the member who created the job, and the only one who
     /// may see, change, run or read it. Taken from the token, never the body.
     pub created_by: String,
@@ -77,15 +59,6 @@ pub struct Job {
     /// for reading.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub relations: Vec<OutputRelation>,
-}
-
-/// What went wrong in a run, recorded on the failed job.
-#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct JobRuntimeError {
-    pub code: String,
-    pub message: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub detail: Option<String>,
 }
 
 /// One addressable relation of a job's output, named by fossil.
@@ -128,7 +101,6 @@ pub struct Dataset {
 pub struct CreateJobRequest {
     pub script: String,
     pub name: Option<String>,
-    pub mode: Option<RunMode>,
     /// Where the output lands: a sink connection.
     pub sink_connection_id: String,
     #[serde(default)]
@@ -153,7 +125,7 @@ pub struct CompleteJobRequest {
     #[serde(default)]
     #[schema(value_type = Option<Value>)]
     pub manifest: Option<serde_json::Value>,
-    /// Failure message (on `Failed`) — classified into a `JobRuntimeError`.
+    /// Failure message (on `Failed`), stored verbatim.
     #[serde(default)]
     pub error: Option<String>,
 }

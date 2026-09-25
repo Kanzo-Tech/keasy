@@ -2014,7 +2014,7 @@
               "string",
               "null"
             ],
-            "description": "Failure message (on `Failed`) — classified into a `JobRuntimeError`."
+            "description": "Failure message (on `Failed`), stored verbatim."
           },
           "manifest": {
             "description": "The run report for the uploaded output (on `Completed`) — opaque JSON."
@@ -2161,16 +2161,6 @@
         "properties": {
           "draft": {
             "type": "boolean"
-          },
-          "mode": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/RunMode"
-              }
-            ]
           },
           "name": {
             "type": [
@@ -2410,7 +2400,6 @@
           "id",
           "status",
           "created_at",
-          "mode",
           "created_by",
           "sink_connection_id"
         ],
@@ -2429,23 +2418,17 @@
             "description": "Keycloak `sub` of the member who created the job, and the only one who\nmay see, change, run or read it. Taken from the token, never the body."
           },
           "error": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/JobRuntimeError"
-              }
-            ]
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why a `Failed` run failed, as the browser that ran it reported it."
           },
           "id": {
             "type": "string"
           },
           "manifest": {
             "description": "What the run reported, verbatim and **opaque**: fossil's own run report,\nwhich IS the manifest the corpus carries. keasy stores it, hands it back\nand never reads a field of it — the last time a host re-typed this\nstruct, it ended up asking for `vertex/<Type>.parquet`, a file the\nlayout pass deletes. Its presence is the one thing keasy asks of it:\n\"this job produced output\"."
-          },
-          "mode": {
-            "$ref": "#/components/schemas/RunMode"
           },
           "name": {
             "type": [
@@ -2478,28 +2461,6 @@
           },
           "status": {
             "$ref": "#/components/schemas/JobStatus"
-          }
-        }
-      },
-      "JobRuntimeError": {
-        "type": "object",
-        "description": "What went wrong in a run, recorded on the failed job.",
-        "required": [
-          "code",
-          "message"
-        ],
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "detail": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "message": {
-            "type": "string"
           }
         }
       },
@@ -2633,13 +2594,6 @@
             }
           }
         }
-      },
-      "RunMode": {
-        "type": "string",
-        "enum": [
-          "integrated",
-          "scheduled"
-        ]
       },
       "SaveAiProviderRequest": {
         "type": "object",

@@ -7,7 +7,6 @@ import type { components } from "@keasy/api";
 type S = components["schemas"];
 
 export type JobStatus = S["JobStatus"];
-export type RunMode = S["RunMode"];
 export type Job = S["Job"];
 export type CreateJobRequest = S["CreateJobRequest"];
 export type UpdateJobRequest = S["UpdateJobRequest"];
@@ -32,8 +31,6 @@ export type SuggestResponse = S["SuggestResponse"];
 export type GenerateRequest = S["GenerateRequest"];
 export type GenerateResponse = S["GenerateResponse"];
 
-// Alias: server calls it JobRuntimeError, frontend used JobError
-export type JobError = S["JobRuntimeError"];
 
 export type FileEntry = S["FileEntry"];
 export type ChatMessage = S["ChatMessage"];

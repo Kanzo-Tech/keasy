@@ -107,7 +107,6 @@ export function JobStudio() {
     store.restoreDraft(
       draftJob.script ?? "",
       draftJob.name ?? "",
-      draftJob.mode,
       draftJob.sink_connection_id,
     );
     setSaved(true);
@@ -167,7 +166,6 @@ export function JobStudio() {
       const created = await api.jobs.create({
         script: store.script,
         name,
-        mode: store.mode,
         draft: true,
         sink_connection_id: destination,
       });
@@ -204,7 +202,6 @@ export function JobStudio() {
       return api.jobs.create({
         script: store.script,
         name: store.name.trim() || undefined,
-        mode: store.mode,
         sink_connection_id: destination,
       });
     },
@@ -219,12 +216,10 @@ export function JobStudio() {
   useBeforeUnload(!saved && !submitting);
 
   const config: ConfigValues = {
-    mode: store.mode,
     sinkConnectionId: store.sinkConnectionId,
   };
   const onConfigChange = useCallback((patch: Partial<ConfigValues>) => {
     const s = useJobEditorStore.getState();
-    if (patch.mode !== undefined) s.setMode(patch.mode);
     if (patch.sinkConnectionId !== undefined) s.setSinkConnectionId(patch.sinkConnectionId);
   }, []);
 

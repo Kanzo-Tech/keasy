@@ -10,7 +10,7 @@
  */
 
 import { create } from "zustand";
-import type { CreationMode, RunMode } from "@/lib/types";
+import type { CreationMode } from "@/lib/types";
 
 interface JobEditorState {
   /** `null` until the member has chosen how to write the program. */
@@ -20,7 +20,6 @@ interface JobEditorState {
 
   script: string;
   name: string;
-  mode: RunMode;
   /** The connection the member picks as the output destination. */
   sinkConnectionId: string | null;
 
@@ -28,11 +27,10 @@ interface JobEditorState {
   setStep: (step: number) => void;
   setScript: (script: string) => void;
   setName: (name: string) => void;
-  setMode: (mode: RunMode) => void;
   setSinkConnectionId: (id: string | null) => void;
 
   completeAssistant: (generatedScript: string) => void;
-  restoreDraft: (script: string, name: string, mode: RunMode, sinkConnectionId: string | null) => void;
+  restoreDraft: (script: string, name: string, sinkConnectionId: string | null) => void;
   reset: () => void;
 }
 
@@ -41,7 +39,6 @@ const EMPTY = {
   step: 0,
   script: "",
   name: "",
-  mode: "integrated" as RunMode,
   sinkConnectionId: null,
 };
 
@@ -52,11 +49,10 @@ export const useJobEditorStore = create<JobEditorState>((set) => ({
   setStep: (step) => set({ step }),
   setScript: (script) => set({ script }),
   setName: (name) => set({ name }),
-  setMode: (mode) => set({ mode }),
   setSinkConnectionId: (sinkConnectionId) => set({ sinkConnectionId }),
 
   completeAssistant: (script) => set({ script, creationMode: "studio", step: 0 }),
-  restoreDraft: (script, name, mode, sinkConnectionId) =>
-    set({ script, name, mode, sinkConnectionId, creationMode: "studio", step: 0 }),
+  restoreDraft: (script, name, sinkConnectionId) =>
+    set({ script, name, sinkConnectionId, creationMode: "studio", step: 0 }),
   reset: () => set(EMPTY),
 }));

@@ -1,10 +1,9 @@
-pub mod bootstrap;
 pub mod datasets;
 pub mod db;
 pub mod errors;
 pub mod routes;
 
-use keasy_api::jobs::{CreateJobRequest, Job, JobStatus, RunMode};
+use keasy_api::jobs::{CreateJobRequest, Job, JobStatus};
 
 /// Where a job's output lives: the destination the member chose, plus the job's
 /// own id. **This is the one place keasy composes an output path**, and it is
@@ -25,7 +24,6 @@ pub fn requested(status: JobStatus, request: CreateJobRequest, created_by: Strin
         started_at: None,
         completed_at: None,
         error: None,
-        mode: request.mode.unwrap_or(RunMode::Integrated),
         created_by,
         sink_connection_id: request.sink_connection_id,
         script: Some(request.script),

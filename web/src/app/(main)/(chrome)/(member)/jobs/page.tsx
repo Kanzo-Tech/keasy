@@ -87,13 +87,6 @@ export default function JobsPage() {
         filterFn: (row, id, value: string[]) => value.includes(row.getValue(id)),
       },
       {
-        accessorKey: "mode",
-        header: "Mode",
-        cell: ({ getValue }) => (
-          <span className="text-muted-foreground capitalize">{getValue<string>()}</span>
-        ),
-      },
-      {
         accessorKey: "created_at",
         header: sortableHeader("Created"),
         cell: ({ getValue }) => (

@@ -48,11 +48,8 @@ Both are declared in `infra/terraform/realm/dev.tfvars` (`tenants`,
 At boot the instance declares, over that bucket, the **MinIO dev bucket** source
 connection, the **MinIO dev shapes** vocabulary connection (`vocab/`), the sink
 (`output/`). Access is proved before each connection row is written, and an
-existing sink is never overwritten. The draft job **Shop orders**
-(`infra/dev/shop.fossil`) goes to the first member who lists jobs on an instance
-with none — a job belongs to its creator, and at boot there is no one to give it
-to. A member opens the workspace with data, shapes, a destination and a job
-ready to launch.
+existing sink is never overwritten. `infra/dev/shop.fossil` is a program over
+those two connections, ready to paste into a new job.
 
 `minio.localhost` and `keycloak.localhost` are load-bearing: Docker's DNS answers
 them inside the compose network and `*.localhost` is loopback on the host, so a
@@ -128,7 +125,7 @@ make api   # api/openapi.json + api/src/schema.d.ts
 
 ```
 api/                @keasy/api: the committed spec, its generated types and the client
-infra/dev/          MinIO seed and the draft job, dev-only
+infra/dev/          MinIO seed and an example program, dev-only
 infra/terraform/    platform/ and realm/ — the Swarm deployment, and dev's realm
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)
 web/                Next.js app and BFF (Dockerfile = release, Dockerfile.dev = HMR)

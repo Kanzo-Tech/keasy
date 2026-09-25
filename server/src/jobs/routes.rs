@@ -15,7 +15,7 @@ use keasy_api::jobs::{
     CompleteJobRequest, CreateJobRequest, Job, JobStatus, PublishRelationsRequest, UpdateJobRequest,
 };
 
-use super::errors::{JobApiError, classify_error, runtime_error};
+use super::errors::JobApiError;
 use super::{now_iso8601, requested};
 
 /// The job, if it exists and `member` created it. Anyone else's job is not
@@ -42,7 +42,6 @@ pub async fn list_jobs(
     member: Member,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, JobApiError> {
-    super::bootstrap::claim_declared_draft(&state.db, &member.user_id).await?;
     Ok(Json(state.db.list_jobs_of(&member.user_id).await?))
 }
 
@@ -166,10 +165,7 @@ pub async fn complete_job(
                 JobStatus::Failed => {
                     job.started_at.get_or_insert_with(|| now.clone());
                     job.completed_at = Some(now);
-                    job.error = Some(error.as_deref().map_or_else(
-                        || runtime_error("EXECUTION_ERROR", "execution failed", None),
-                        classify_error,
-                    ));
+                    job.error = Some(error.unwrap_or_else(|| "execution failed".into()));
                 }
                 JobStatus::Running => {
                     job.started_at.get_or_insert(now);

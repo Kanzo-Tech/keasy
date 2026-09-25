@@ -2,14 +2,8 @@
 
 import { useMemo } from "react";
 import {
-  Badge,
   Field,
   FieldDescription,
-  Float,
-  RadioGroup,
-  RadioGroupCard,
-  RadioGroupIndicator,
-  RadioGroupText,
   Select,
   SelectContent,
   SelectItem,
@@ -19,11 +13,9 @@ import {
   Show,
   createListCollection,
 } from "@kanzo-tech/ui";
-import { CalendarClock, Zap } from "lucide-react";
-import type { Connection, RunMode } from "@/lib/types";
+import type { Connection } from "@/lib/types";
 
 export interface ConfigValues {
-  mode: RunMode;
   sinkConnectionId: string | null;
 }
 
@@ -51,7 +43,7 @@ function Setting({
 }
 
 /**
- * When this job runs, and where the graph it produces is written.
+ * Where the graph this job produces is written.
  *
  * It was a narrow stack of hand-rolled `FormField`s around controlled inputs —
  * three settings in a column with a great deal of nothing either side. This is
@@ -97,54 +89,9 @@ export function StudioConfigure({
       <div className="flex flex-col gap-1">
         <h2 className="font-heading font-semibold text-lg">Configure</h2>
         <p className="text-muted-foreground text-sm">
-          When this job runs, and where the graph it produces is written.
+          Where the graph this job produces is written.
         </p>
       </div>
-
-      <Separator />
-
-      <Setting
-        description="Integrated jobs run once, as soon as they are created. A schedule repeats them."
-        title="Run mode"
-      >
-        <RadioGroup
-          columns={2}
-          onValueChange={(d) => d.value && set("mode", d.value as RunMode)}
-          value={values.mode}
-        >
-          <RadioGroupCard className="items-start" value="integrated">
-            <Zap className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <RadioGroupText>Integrated</RadioGroupText>
-              <span className="text-muted-foreground text-xs leading-snug">
-                Runs as soon as it is created.
-              </span>
-            </div>
-            <RadioGroupIndicator className="order-last mt-0.5 ms-auto" />
-          </RadioGroupCard>
-
-          {/* Not shipped, and the badge says so ON the control rather than
-              leaving `disabled` to mean whatever a reader guesses. `Float` over
-              a `relative` box is the whole of it. */}
-          <div className="relative">
-            <RadioGroupCard className="h-full items-start" disabled value="scheduled">
-              <CalendarClock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <RadioGroupText>Scheduled</RadioGroupText>
-                <span className="text-muted-foreground text-xs leading-snug">
-                  Runs on a cron you define.
-                </span>
-              </div>
-              <RadioGroupIndicator className="order-last mt-0.5 ms-auto" />
-            </RadioGroupCard>
-            <Float className="-end-2 -top-2" placement="top-end">
-              <Badge size="xs" variant="secondary">
-                Coming soon
-              </Badge>
-            </Float>
-          </div>
-        </RadioGroup>
-      </Setting>
 
       <Separator />
 

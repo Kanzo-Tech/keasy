@@ -1,8 +1,5 @@
-pub mod datasets;
-pub mod db;
 pub mod errors;
-pub mod output;
-pub mod routes;
+pub mod persistence;
 
 use crate::api::jobs::{CreateJobRequest, Job, JobStatus};
 

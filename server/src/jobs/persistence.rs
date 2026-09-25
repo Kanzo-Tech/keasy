@@ -1,6 +1,6 @@
 use rusqlite::{OptionalExtension, params};
 
-use crate::db::{Database, DbResult, enum_column, json_column_opt};
+use crate::database::{Database, DbResult, enum_column, json_column_opt};
 
 use crate::api::jobs::{Job, JobStatus};
 

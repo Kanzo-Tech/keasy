@@ -116,7 +116,7 @@ pub async fn connection(spec: &CredentialSpecInput, target: &ConnectionTarget) -
     report(match (spec, target) {
         (CredentialSpecInput::Storage(s), ConnectionTarget::Storage(t)) => storage(s, t).await,
         (CredentialSpecInput::Model(m), ConnectionTarget::Model(t)) => {
-            vec![offers(m, t, &crate::ai::client::models(m).await)]
+            vec![offers(m, t, &crate::llm_client::models(m).await)]
         }
         _ => vec![check(
             Operation::List,
@@ -144,7 +144,7 @@ pub async fn credential(
     };
     match spec {
         CredentialSpecInput::Model(m) => {
-            let listed = crate::ai::client::models(m).await;
+            let listed = crate::llm_client::models(m).await;
             checks.push(check(
                 Operation::Models,
                 listed

@@ -3,12 +3,11 @@
 
 pub mod persistence;
 pub mod probe;
-pub mod routes;
 pub mod sealing;
 
 use crate::api::credentials::{CreateCredentialRequest, CredentialView};
 
-use crate::db::Database;
+use crate::database::Database;
 use crate::domain::ResourceName;
 use crate::error::Refusal;
 use persistence::Credential;

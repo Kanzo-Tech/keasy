@@ -4,9 +4,9 @@ use axum::extract::State;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::errors::JobApiError;
 use crate::AppState;
-use crate::auth::role::Owner;
+use crate::authentication::role::Owner;
+use crate::jobs::errors::JobApiError;
 
 #[utoipa::path(get, path = "/v1/datasets", tag = "Jobs",
     responses(

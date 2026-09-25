@@ -6,7 +6,7 @@ use crate::api::connections::ConnectionView;
 use crate::api::credentials::Purpose;
 use crate::api::validation::ValidationReport;
 
-use crate::db::{DbError, DbResult, constraint, json_column, json_column_opt};
+use crate::database::{DbError, DbResult, constraint, json_column, json_column_opt};
 
 const COLUMNS: &str =
     "name, credential, target, created_by, created_at, updated_by, updated_at, validation";
@@ -231,7 +231,7 @@ pub(crate) mod tests {
     fn a_connection_cannot_reference_a_credential_of_the_other_purpose() {
         let conn = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
-        crate::db::apply_schema(&conn).unwrap();
+        crate::database::apply_schema(&conn).unwrap();
         let key = CredentialSpecInput::Model(ModelCredentialInput::Anthropic {
             api_key: SecretString::from("sk-ant"),
         });

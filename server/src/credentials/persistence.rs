@@ -7,7 +7,7 @@ use crate::api::credentials::{CredentialSpecInput, CredentialView, Purpose};
 use crate::api::validation::ValidationReport;
 
 use super::sealing::{self, SecretKey};
-use crate::db::{DbError, DbResult, constraint, json_column_opt};
+use crate::database::{DbError, DbResult, constraint, json_column_opt};
 use crate::domain::ResourceName;
 
 /// A stored credential, unsealed.
@@ -258,7 +258,7 @@ mod tests {
     fn conn() -> Connection {
         let conn = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
-        crate::db::apply_schema(&conn).unwrap();
+        crate::database::apply_schema(&conn).unwrap();
         conn
     }
 

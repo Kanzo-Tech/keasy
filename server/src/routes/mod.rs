@@ -1,4 +1,10 @@
-pub mod health;
+pub mod ai;
+pub mod connections;
+pub mod credentials;
+pub mod datasets;
+pub mod health_check;
+pub mod jobs;
+pub mod workspaces;
 
 use std::sync::Arc;
 
@@ -16,7 +22,7 @@ use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 
 use crate::AppState;
-use crate::auth::bearer::{AuthenticatedUser, bearer_required};
+use crate::authentication::middleware::{AuthenticatedUser, bearer_required};
 use crate::error::fail;
 
 /// Every route, once: the public ones, and those behind a verified token. Each
@@ -24,15 +30,15 @@ use crate::error::fail;
 /// verified caller with no role here, who still needs to be told where they do
 /// belong.
 fn routes() -> (OpenApiRouter<AppState>, OpenApiRouter<AppState>) {
-    let public = OpenApiRouter::with_openapi(ApiDoc::openapi()).merge(health::router());
+    let public = OpenApiRouter::with_openapi(ApiDoc::openapi()).merge(health_check::router());
     let protected = OpenApiRouter::new()
-        .merge(crate::auth::routes::router())
-        .merge(crate::jobs::routes::router())
-        .merge(crate::jobs::datasets::router())
-        .merge(crate::jobs::output::router())
-        .merge(crate::credentials::routes::router())
-        .merge(crate::connections::routes::router())
-        .merge(crate::ai::routes::router());
+        .merge(crate::routes::workspaces::router())
+        .merge(crate::routes::jobs::router())
+        .merge(crate::routes::datasets::router())
+        .merge(crate::routes::jobs::output::router())
+        .merge(crate::routes::credentials::router())
+        .merge(crate::routes::connections::router())
+        .merge(crate::routes::ai::router());
     (public, protected)
 }
 

@@ -12,10 +12,10 @@ use crate::api::credentials::{
 };
 use crate::api::validation::ValidationReport;
 
-use super::{named, persistence, probe};
 use crate::AppState;
-use crate::auth::role::{AnyRole, Member};
+use crate::authentication::role::{AnyRole, Member};
 use crate::connections::persistence as connections;
+use crate::credentials::{named, persistence, probe};
 use crate::domain::ResourceName;
 use crate::error::Refusal;
 
@@ -60,7 +60,7 @@ pub async fn create_credential(
     State(state): State<AppState>,
     Json(request): Json<CreateCredentialRequest>,
 ) -> Result<impl IntoResponse, Refusal> {
-    let view = super::create(&state.db, request, &member.user_id).await?;
+    let view = crate::credentials::create(&state.db, request, &member.user_id).await?;
     Ok((StatusCode::CREATED, Json(view)))
 }
 

@@ -16,7 +16,7 @@ pub enum JobApiError {
     #[error("cannot delete a running job")]
     StillRunning,
     #[error(transparent)]
-    Db(#[from] crate::db::DbError),
+    Db(#[from] crate::database::DbError),
 }
 
 impl axum::response::IntoResponse for JobApiError {

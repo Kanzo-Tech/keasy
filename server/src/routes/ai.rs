@@ -9,14 +9,14 @@ use tracing::warn;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::client::stream;
 use crate::api::ai::CompletionRequest;
 use crate::api::connections::ConnectionView;
 use crate::api::credentials::Purpose;
 use crate::api::{ErrorBody, ErrorCode};
+use crate::llm_client::stream;
 
 use crate::AppState;
-use crate::auth::role::Member;
+use crate::authentication::role::Member;
 use crate::error::Refusal;
 
 /// The model connection a call runs on: the one it names, or the only one.

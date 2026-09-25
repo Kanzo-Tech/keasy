@@ -12,7 +12,7 @@ use axum::response::{IntoResponse, Response};
 
 use crate::api::ErrorCode;
 
-use super::bearer::AuthenticatedUser;
+use super::middleware::AuthenticatedUser;
 use crate::error::fail;
 
 /// A workspace role, from `resource_access.<client_id>.roles` on the token.

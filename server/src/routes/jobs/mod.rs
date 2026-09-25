@@ -1,3 +1,5 @@
+pub mod output;
+
 use axum::{
     Json,
     extract::{Path, State},
@@ -12,10 +14,10 @@ use crate::api::ErrorBody;
 use crate::api::jobs::{
     CompleteJobRequest, CreateJobRequest, Job, JobStatus, PublishRelationsRequest, UpdateJobRequest,
 };
-use crate::auth::role::Member;
+use crate::authentication::role::Member;
 
-use super::errors::JobApiError;
-use super::{now_iso8601, requested};
+use crate::jobs::errors::JobApiError;
+use crate::jobs::{now_iso8601, requested};
 
 /// The job, if it exists and `member` created it. Anyone else's job is not
 /// found: a job is its creator's alone.

@@ -11,8 +11,8 @@ use tracing_subscriber::fmt::MakeWriter;
 use crate::api::connections::{ConnectionTarget, ConnectionView, Direction, StorageTarget};
 use crate::api::credentials::{CredentialSpecInput, StorageCredentialInput};
 use crate::api::validation::ValidationReport;
-use crate::auth::jwt::Validator;
-use crate::auth::jwt::tests::{Realm, good, mint, realm};
+use crate::authentication::token::Validator;
+use crate::authentication::token::tests::{Realm, good, mint, realm};
 use crate::{AppState, Database};
 use secrecy::SecretString;
 

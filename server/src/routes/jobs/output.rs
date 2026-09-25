@@ -12,10 +12,10 @@ use crate::api::jobs::{DatasetUrlsRequest, ResolveResponse};
 use crate::api::{ErrorBody, ErrorCode};
 
 use crate::AppState;
-use crate::auth::role::Member;
+use crate::authentication::role::Member;
 use crate::domain::StorageUrl;
 use crate::error::Refusal;
-use crate::jobs::routes::owned_job;
+use crate::routes::jobs::owned_job;
 use crate::storage_client::{self, SIGNED_URL_EXPIRES, relative_path};
 
 async fn sign_dataset_urls(

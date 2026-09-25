@@ -16,10 +16,10 @@ use crate::api::credentials::{CredentialSpecInput, PurposeQuery, StorageCredenti
 use crate::api::validation::ValidationReport;
 use crate::api::{ErrorBody, ErrorCode};
 
-use super::locator::{is_public_http, signer};
-use super::{named, persistence};
 use crate::AppState;
-use crate::auth::role::{AnyRole, Member};
+use crate::authentication::role::{AnyRole, Member};
+use crate::connections::locator::{is_public_http, signer};
+use crate::connections::{named, persistence};
 use crate::domain::StorageUrl;
 use crate::error::Refusal;
 use crate::storage_client::{self, SIGNED_URL_EXPIRES};
@@ -83,7 +83,7 @@ pub async fn create_connection(
     Json(request): Json<CreateConnectionRequest>,
 ) -> Result<impl IntoResponse, Refusal> {
     may_change(&caller, None, request.target.is_sink())?;
-    let view = super::create(&state.db, request, &caller.user_id).await?;
+    let view = crate::connections::create(&state.db, request, &caller.user_id).await?;
     Ok((StatusCode::CREATED, Json(view)))
 }
 
@@ -138,7 +138,7 @@ pub async fn update_connection(
         current.target.is_sink() || updated.target.is_sink(),
     )?;
     Ok(Json(
-        super::save(&state.db, Some(&name), updated, &caller.user_id).await?,
+        crate::connections::save(&state.db, Some(&name), updated, &caller.user_id).await?,
     ))
 }
 
@@ -197,7 +197,7 @@ pub async fn list_connection_files(
     Path(name): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     let connection = named(&state.db, &name).await?;
-    let (url, credential) = super::storage(&state.db, &connection).await?;
+    let (url, credential) = crate::connections::storage(&state.db, &connection).await?;
     storage_client::list_files(&credential, &url)
         .await
         .map(Json)

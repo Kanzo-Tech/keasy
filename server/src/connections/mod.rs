@@ -2,13 +2,12 @@
 
 pub mod locator;
 pub mod persistence;
-pub mod routes;
 
 use crate::api::connections::{ConnectionTarget, ConnectionView, CreateConnectionRequest};
 use crate::api::credentials::{CredentialSpecInput, ModelCredentialInput, StorageCredentialInput};
 
 use crate::credentials::persistence::Credential;
-use crate::db::Database;
+use crate::database::Database;
 use crate::domain::{ResourceName, StorageUrl};
 use crate::error::Refusal;
 

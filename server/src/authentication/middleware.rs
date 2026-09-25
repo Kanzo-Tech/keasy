@@ -2,8 +2,8 @@ use axum::extract::{Request, State};
 use axum::middleware::Next;
 use axum::response::Response;
 
-use super::jwt::{Claims, TokenError, bearer};
 use super::role::Role;
+use super::token::{Claims, TokenError, bearer};
 use crate::AppState;
 
 /// Inserted into request extensions by [`bearer_required`]: who the caller is

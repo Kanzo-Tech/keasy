@@ -17,7 +17,7 @@ pub enum Refusal {
         message: String,
         dependents: Vec<String>,
     },
-    Db(crate::db::DbError),
+    Db(crate::database::DbError),
 }
 
 impl Refusal {
@@ -61,8 +61,8 @@ impl Refusal {
     }
 }
 
-impl From<crate::db::DbError> for Refusal {
-    fn from(e: crate::db::DbError) -> Self {
+impl From<crate::database::DbError> for Refusal {
+    fn from(e: crate::database::DbError) -> Self {
         Self::Db(e)
     }
 }

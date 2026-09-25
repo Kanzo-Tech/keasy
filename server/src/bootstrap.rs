@@ -13,7 +13,7 @@ use tracing::{error, info};
 use crate::api::connections::CreateConnectionRequest;
 use crate::api::credentials::CreateCredentialRequest;
 
-use crate::db::Database;
+use crate::database::Database;
 
 /// Who a declared entry was created by: nobody who signs in, so only the
 /// owner may change it.

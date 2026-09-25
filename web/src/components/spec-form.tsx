@@ -1,6 +1,5 @@
 "use client";
 
-import spec from "@keasy/api/openapi.json";
 import {
   createListCollection,
   Field,
@@ -21,31 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@kanzo-tech/ui";
+import { schemaOf, type JsonSchema } from "@/lib/api/spec";
 import { getProviderIcon } from "@/lib/ui/provider-icons";
-
-/** The slice of JSON Schema utoipa emits and this form reads. */
-export interface JsonSchema {
-  $ref?: string;
-  type?: string | string[];
-  title?: string;
-  description?: string;
-  format?: string;
-  enum?: string[];
-  default?: unknown;
-  writeOnly?: boolean;
-  required?: string[];
-  properties?: Record<string, JsonSchema>;
-  oneOf?: JsonSchema[];
-}
-
-const components = spec.components.schemas as unknown as Record<string, JsonSchema>;
-
-/** A component of the published contract, by name. */
-export function schemaOf(name: string): JsonSchema {
-  const found = components[name];
-  if (!found) throw new Error(`openapi.json has no schema ${name}`);
-  return found;
-}
 
 function resolve(s: JsonSchema): JsonSchema {
   return s.$ref ? schemaOf(s.$ref.replace("#/components/schemas/", "")) : s;

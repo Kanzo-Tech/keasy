@@ -1,4 +1,4 @@
-"use client";
+import "client-only";
 
 import { ApiError } from "@keasy/api";
 import { QueryClient } from "@tanstack/react-query";

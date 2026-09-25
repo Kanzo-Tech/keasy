@@ -1,3 +1,5 @@
+import "client-only";
+
 import type { SourceHost } from "@fossil-lang/types";
 
 import { http } from "@/lib/api/client";

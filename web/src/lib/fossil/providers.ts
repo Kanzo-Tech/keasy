@@ -1,3 +1,5 @@
+import "client-only";
+
 import type { ProviderInfo } from "@fossil-lang/wasm";
 
 /** The provider that reads `path` as `kind`, by case-insensitive extension. */

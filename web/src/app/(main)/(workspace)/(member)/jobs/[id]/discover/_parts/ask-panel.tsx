@@ -54,7 +54,7 @@ import {
 import { MessageMarkdown } from "@kanzo-tech/ai/markdown";
 import { $api, ApiError } from "@/lib/api/client";
 import { type ChatMessage, completeText, streamText } from "@/lib/ai/stream";
-import { explainRequest, parsePlan, queryRequest } from "@/lib/ai/prompts";
+import { explainRequest, parsePlan, queryRequest } from "./query-prompts";
 import { generateSuggestions } from "./schema-suggestions";
 import { getErrorInfo } from "@/lib/errors";
 import type { SchemaResult } from "@fossil-lang/corpus";

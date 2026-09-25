@@ -1,3 +1,5 @@
+import "client-only";
+
 import { EventSourceParserStream } from "eventsource-parser/stream";
 import { ApiError, type ErrorBody, type paths } from "@keasy/api";
 import type { MaybeOptionalInit } from "openapi-fetch";

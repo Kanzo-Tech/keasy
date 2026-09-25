@@ -1,5 +1,5 @@
 import type { Schemas } from "@/lib/api/client";
-import { schemaOf } from "@/components/spec-form";
+import { schemaOf } from "@/lib/api/spec";
 
 export type Connection = Schemas["ConnectionView"];
 export type Credential = Schemas["CredentialView"];

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { parsePlan, parseScript, parseSuggestions, queryRequest } from "../lib/ai/prompts";
+import { parsePlan, queryRequest } from "./query-prompts";
 
-describe("the browser's prompts", () => {
+describe("the query prompts", () => {
   it("reads a fenced JSON plan", () => {
     const plan = parsePlan('```json\n{"sql":"SELECT 1","explanation":"One.","reasoning":"r"}\n```');
     expect(plan).toEqual({ sql: "SELECT 1", answer: "One.", reasoning: "r" });
@@ -9,14 +9,6 @@ describe("the browser's prompts", () => {
 
   it("keeps an answer that is not the JSON asked for as prose", () => {
     expect(parsePlan(" just words ")).toEqual({ sql: null, answer: "just words", reasoning: "" });
-  });
-
-  it("takes a program out of its fence", () => {
-    expect(parseScript("```fossil\nA := io.csv(\"@c/a.csv\")\n```")).toBe('A := io.csv("@c/a.csv")');
-  });
-
-  it("suggests nothing when the answer does not parse", () => {
-    expect(parseSuggestions("nope")).toEqual([]);
   });
 
   it("sends only the latest window of history, then the question", () => {

@@ -16,7 +16,8 @@ import {
   Skeleton,
   toast,
 } from "@kanzo-tech/ui";
-import { initialValues, schemaOf, SpecForm, toBody } from "@/components/spec-form";
+import { initialValues, SpecForm, toBody } from "@/components/spec-form";
+import { schemaOf } from "@/lib/api/spec";
 import { useBeforeUnload } from "@/lib/ui/use-before-unload";
 import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api, type Inputs, invalidate } from "@/lib/api/client";

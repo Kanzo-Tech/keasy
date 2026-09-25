@@ -56,7 +56,7 @@ import {
   parseScript,
   parseSuggestions,
   suggestRequest,
-} from "@/lib/ai/prompts";
+} from "./assistant-prompts";
 import * as checker from "@/lib/fossil/checker";
 import { connectionPath, describeSources, sourceDescriptorsKey } from "./describe-sources";
 import { providerFor } from "@/lib/fossil/providers";

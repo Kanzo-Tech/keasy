@@ -33,8 +33,9 @@ pub struct Job {
     pub started_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub completed_at: Option<String>,
+    /// Why a `Failed` run failed, as the browser that ran it reported it.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<JobRuntimeError>,
+    pub error: Option<String>,
     /// Keycloak `sub` of the member who created the job, and the only one who
     /// may see, change, run or read it. Taken from the token, never the body.
     pub created_by: String,
@@ -58,15 +59,6 @@ pub struct Job {
     /// reading and registers them in the catalog by reference.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub relations: Vec<OutputRelation>,
-}
-
-/// What went wrong in a run, recorded on the failed job.
-#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct JobRuntimeError {
-    pub code: String,
-    pub message: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub detail: Option<String>,
 }
 
 /// One addressable relation of a job's output, named by fossil.
@@ -114,7 +106,7 @@ pub struct CompleteJobRequest {
     #[serde(default)]
     #[schema(value_type = Option<Value>)]
     pub manifest: Option<serde_json::Value>,
-    /// Failure message (on `Failed`) — classified into a `JobRuntimeError`.
+    /// Failure message (on `Failed`), stored verbatim.
     #[serde(default)]
     pub error: Option<String>,
 }

@@ -10,9 +10,6 @@ import {
   AlertDescription,
   AlertTitle,
   Button,
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
   DataList,
   DataListItem,
   DataListItemLabel,
@@ -25,7 +22,6 @@ import {
 } from "@kanzo-tech/ui";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { api } from "@/lib/api";
-import { getErrorInfo } from "@/lib/error-codes";
 import { useBrowserJobRunner } from "@/lib/fossil/use-browser-job-runner";
 import { formatDuration } from "@/lib/formatters";
 import { queryKeys } from "@/lib/query-keys";
@@ -63,7 +59,6 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
   if (!job) notFound();
 
   const sink = connections.find((c) => c.id === job.sink_connection_id);
-  const error = job.error && getErrorInfo(job.error.code);
 
   return (
     <SectionRoot>
@@ -106,26 +101,12 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
           )}
         </DataList>
 
-        {job.error && error && (
+        {job.error && (
           <Alert variant="destructive">
             <AlertCircle />
-            <AlertTitle>{error.message}</AlertTitle>
+            <AlertTitle>The run failed</AlertTitle>
             <AlertDescription>
-              {error.link && (
-                <Button asChild className="w-fit" size="sm" variant="outline">
-                  <Link href={error.link.href}>{error.link.label}</Link>
-                </Button>
-              )}
-              {job.error.detail && (
-                <Collapsible>
-                  <CollapsibleTrigger className="text-xs underline underline-offset-2">
-                    Technical details
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <pre className="mt-2 whitespace-pre-wrap font-mono text-xs">{job.error.detail}</pre>
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
+              <pre className="whitespace-pre-wrap font-mono text-xs">{job.error}</pre>
             </AlertDescription>
           </Alert>
         )}

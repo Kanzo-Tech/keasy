@@ -33,9 +33,6 @@ export type SuggestResponse = S["SuggestResponse"];
 export type GenerateRequest = S["GenerateRequest"];
 export type GenerateResponse = S["GenerateResponse"];
 
-// Alias: server calls it JobRuntimeError, frontend used JobError
-export type JobError = S["JobRuntimeError"];
-
 export type OrgIdentity = S["OrgIdentity"];
 
 export type FileEntry = S["FileEntry"];

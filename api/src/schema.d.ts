@@ -603,7 +603,7 @@ export interface components {
          *     executor's run report, stored verbatim and never read.
          */
         CompleteJobRequest: {
-            /** @description Failure message (on `Failed`) — classified into a `JobRuntimeError`. */
+            /** @description Failure message (on `Failed`), stored verbatim. */
             error?: string | null;
             /** @description The run report for the uploaded output (on `Completed`) — opaque JSON. */
             manifest?: unknown;
@@ -727,7 +727,8 @@ export interface components {
              *     may see, change, run or read it. Taken from the token, never the body.
              */
             created_by: string;
-            error?: null | components["schemas"]["JobRuntimeError"];
+            /** @description Why a `Failed` run failed, as the browser that ran it reported it. */
+            error?: string | null;
             id: string;
             /**
              * @description What the run reported, verbatim and **opaque**: fossil's own run report,
@@ -754,12 +755,6 @@ export interface components {
             sink_connection_id: string;
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
-        };
-        /** @description What went wrong in a run, recorded on the failed job. */
-        JobRuntimeError: {
-            code: string;
-            detail?: string | null;
-            message: string;
         };
         /** @enum {string} */
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";

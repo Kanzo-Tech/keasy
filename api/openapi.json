@@ -2257,7 +2257,7 @@
               "string",
               "null"
             ],
-            "description": "Failure message (on `Failed`) — classified into a `JobRuntimeError`."
+            "description": "Failure message (on `Failed`), stored verbatim."
           },
           "manifest": {
             "description": "The run report for the uploaded output (on `Completed`) — opaque JSON."
@@ -2654,14 +2654,11 @@
             "description": "Keycloak `sub` of the member who created the job, and the only one who\nmay see, change, run or read it. Taken from the token, never the body."
           },
           "error": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/JobRuntimeError"
-              }
-            ]
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why a `Failed` run failed, as the browser that ran it reported it."
           },
           "id": {
             "type": "string"
@@ -2700,28 +2697,6 @@
           },
           "status": {
             "$ref": "#/components/schemas/JobStatus"
-          }
-        }
-      },
-      "JobRuntimeError": {
-        "type": "object",
-        "description": "What went wrong in a run, recorded on the failed job.",
-        "required": [
-          "code",
-          "message"
-        ],
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "detail": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "message": {
-            "type": "string"
           }
         }
       },

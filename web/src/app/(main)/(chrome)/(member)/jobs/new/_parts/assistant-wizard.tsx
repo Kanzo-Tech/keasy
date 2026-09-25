@@ -11,6 +11,7 @@ import {
   AlertDescription,
   AlertTitle,
   Button,
+  FormatByte,
   Field,
   FieldDescription,
   FieldLabel,
@@ -57,7 +58,6 @@ import {
   parseSuggestions,
   suggestRequest,
 } from "@/lib/ai/prompts";
-import { formatSize } from "@/lib/formatters";
 import * as checker from "@/lib/fossil/checker";
 import { connectionPath, describeSources, sourceDescriptorsKey } from "@/lib/fossil/describe-sources";
 import { readableFiles } from "@/lib/utils";
@@ -101,7 +101,7 @@ const FILE_COLUMNS: ColumnDef<ConnectionFile>[] = [
     accessorKey: "size",
     header: () => <div className="text-end">Size</div>,
     cell: ({ row }) => (
-      <div className="text-end text-muted-foreground text-xs">{formatSize(row.original.size)}</div>
+      <div className="text-end text-muted-foreground text-xs"><FormatByte unitSystem="binary" value={row.original.size} /></div>
     ),
   },
 ];

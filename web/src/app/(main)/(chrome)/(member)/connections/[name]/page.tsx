@@ -10,6 +10,7 @@ import {
   AlertTitle,
   Button,
   DataList,
+  FormatByte,
   DataListItem,
   DataListItemLabel,
   DataListItemValue,
@@ -36,7 +37,6 @@ import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { $api, invalidate } from "@/lib/api/client";
 import { modelOf, storageOf } from "@/lib/connections";
 import { providersQuery } from "@/lib/fossil/checker";
-import { formatSize } from "@/lib/formatters";
 import { toastError } from "@/lib/errors";
 import { readableFiles } from "@/lib/utils";
 
@@ -139,7 +139,7 @@ export default function ConnectionPage({ params }: { params: Promise<{ name: str
                     <TableRow key={f.path}>
                       <TableCell className="font-mono text-xs">{f.path}</TableCell>
                       <TableCell className="text-end text-muted-foreground text-xs">
-                        {formatSize(f.size)}
+                        <FormatByte unitSystem="binary" value={f.size} />
                       </TableCell>
                       <TableCell>
                         <Menu positioning={{ placement: "bottom-end" }}>

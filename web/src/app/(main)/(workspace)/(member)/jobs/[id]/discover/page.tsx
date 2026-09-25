@@ -15,7 +15,7 @@ import {
   Terminal,
   X,
 } from "lucide-react";
-import { GraphRootProvider, useGraph, type GraphApi } from "@kanzo-tech/graph";
+import { GraphRootProvider, useGraph, useGraphPrefs, type GraphApi } from "@kanzo-tech/graph";
 import {
   Alert,
   AlertDescription,
@@ -40,7 +40,6 @@ import { AskPanel } from "./_parts/ask-panel";
 import { ClassLegend } from "./_parts/class-legend";
 import { CorpusProvider, corpusQuery, useCorpus, useGraphSchema } from "./_parts/corpus";
 import { undrawnEdges, useCorpusSource } from "./_parts/corpus-source";
-import { useGraphPrefs } from "./_parts/graph-prefs";
 import { NodeInfo, type SelectedVertex } from "./_parts/node-info";
 import { RulesPanel } from "./_parts/rules-panel";
 import { SqlPanel } from "./_parts/sql-panel";

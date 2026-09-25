@@ -1,12 +1,7 @@
 import { useEffect, useRef } from "react";
-import { api } from "@/lib/api";
-import type { Schemas } from "@/lib/api/client";
+import { http, type Schemas } from "@/lib/api/client";
 import { makeJob } from "./job-transport";
 import { openJobCorpus, relationsOf } from "./open-job-corpus";
-
-// Served by `copy-fossil-wasm.mjs` (predev/prebuild) — the DataFusion-WASM
-// executor artefact. Heavy (~lazy-loaded only when a job actually runs).
-const DF_WASM_URL = "/fossil/fossil_df_wasm_bg.wasm";
 
 // Jobs whose browser run has been kicked off this session. Guards the detail
 // view from re-triggering on re-render / poll-refetch. The run is idempotent by
@@ -38,10 +33,13 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
       try {
         // Start marker: flip Pending → Running. Reuses the completion PATCH so
         // the UI (and any other viewer) sees it in progress.
-        await api.jobs.complete(jobId, { status: "running" });
+        await http.PATCH("/v1/jobs/{id}", {
+          params: { path: { id: jobId } },
+          body: { status: "running" },
+        });
 
         const mod = await import("@fossil-lang/executor");
-        await mod.initFossilExecutor({ wasmUrl: DF_WASM_URL });
+        await mod.initFossilExecutor();
         // runJob reads every document and source the program names through the
         // host, and reports the terminal `completed`/`failed` PATCH itself.
         await mod.runJob(program, makeJob(jobId));
@@ -56,7 +54,10 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         // a failed run would be a lie about durable data.
         try {
           const { corpus } = await openJobCorpus(jobId);
-          await api.jobs.publishRelations(jobId, await relationsOf(corpus));
+          await http.PUT("/v1/jobs/{id}/relations", {
+            params: { path: { id: jobId } },
+            body: { relations: await relationsOf(corpus) },
+          });
         } catch (err) {
           console.error(`publishing the corpus relations failed (${jobId})`, err);
         }

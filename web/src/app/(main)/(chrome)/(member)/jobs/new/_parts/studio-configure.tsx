@@ -13,7 +13,7 @@ import {
   Show,
   createListCollection,
 } from "@kanzo-tech/ui";
-import type { Connection } from "@/lib/types";
+import type { Schemas } from "@/lib/api/client";
 
 export interface ConfigValues {
   sinkConnectionId: string | null;
@@ -65,7 +65,7 @@ export function StudioConfigure({
   onChange: (patch: Partial<ConfigValues>) => void;
   /** Only to show the path the output will actually land on. */
   jobName: string;
-  connections: Connection[];
+  connections: Schemas["Connection"][];
 }) {
   const set = <K extends keyof ConfigValues>(key: K, value: ConfigValues[K]) =>
     onChange({ [key]: value } as Partial<ConfigValues>);

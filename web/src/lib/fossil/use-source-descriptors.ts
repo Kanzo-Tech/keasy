@@ -11,9 +11,8 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { InferredDescriptor } from "@fossil-lang/introspect";
 
-import { queryKeys } from "@/lib/query-keys";
 import * as checker from "./checker";
-import { describeSources } from "./describe-sources";
+import { describeSources, sourceDescriptorsKey } from "./describe-sources";
 
 const NONE: InferredDescriptor[] = [];
 
@@ -31,13 +30,13 @@ export function useSourceDescriptors(script: string): InferredDescriptor[] {
   const program = useDebouncedValue(script, 400);
 
   const { data: sources } = useQuery({
-    queryKey: queryKeys.programSources(program),
+    queryKey: ["program-sources", program],
     queryFn: () => checker.sources(program),
     staleTime: Infinity,
   });
 
   const { data } = useQuery({
-    queryKey: queryKeys.sourceDescriptors(
+    queryKey: sourceDescriptorsKey(
       (sources ?? []).map((s) => `${s.format}:${s.locator}:${s.option ?? ""}`).sort(),
     ),
     queryFn: () => describeSources(sources ?? []),

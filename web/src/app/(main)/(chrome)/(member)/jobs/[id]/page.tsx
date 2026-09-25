@@ -4,7 +4,6 @@ import { use } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertCircle, Compass } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import {
   Alert,
   AlertDescription,
@@ -21,25 +20,24 @@ import {
   Skeleton,
 } from "@kanzo-tech/ui";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { api } from "@/lib/api";
+import { $api } from "@/lib/api/client";
 import { useBrowserJobRunner } from "@/lib/fossil/use-browser-job-runner";
 import { formatDuration } from "@/lib/formatters";
-import { queryKeys } from "@/lib/query-keys";
 import { isTerminalStatus } from "@/lib/utils";
 
 export default function JobPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
-  const { data: job, isLoading } = useQuery({
-    queryKey: queryKeys.jobs.detail(id),
-    queryFn: () => api.jobs.get(id),
-    refetchInterval: (query) =>
-      query.state.data && !isTerminalStatus(query.state.data.status) ? 3000 : false,
-  });
-  const { data: connections = [] } = useQuery({
-    queryKey: queryKeys.connections.all(),
-    queryFn: () => api.connections.list(),
-  });
+  const { data: job, isLoading } = $api.useQuery(
+    "get",
+    "/v1/jobs/{id}",
+    { params: { path: { id } } },
+    {
+      refetchInterval: (query) =>
+        query.state.data && !isTerminalStatus(query.state.data.status) ? 3000 : false,
+    },
+  );
+  const { data: connections = [] } = $api.useQuery("get", "/v1/connections");
 
   // A `pending` job runs here, in the browser; the server never runs the mapping.
   useBrowserJobRunner(job);

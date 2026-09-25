@@ -24,7 +24,6 @@ USER keasy
 # at `web/server.js` inside it.
 COPY --from=builder /app/web/.next/standalone ./
 COPY --from=builder /app/web/.next/static ./web/.next/static
-COPY --from=builder /app/web/public ./web/public
 
 EXPOSE 3000
 ENV PORT=3000

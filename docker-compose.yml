@@ -125,8 +125,6 @@ services:
       - "3000:3000"
     volumes:
       - ./web/src:/app/web/src
-      - ./web/public:/app/web/public
-      - ./web/scripts:/app/web/scripts
       # The contract (@keasy/api), so `make api` reaches the running web.
       - ./api/src:/app/api/src
     environment:

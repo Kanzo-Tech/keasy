@@ -26,7 +26,7 @@ import type { EditorView } from "@codemirror/view";
 import { BookMarked, Database, PlugZap } from "lucide-react";
 import * as checker from "@/lib/fossil/checker";
 import { useSourceDescriptors } from "@/lib/fossil/use-source-descriptors";
-import type { Connection } from "@/lib/types";
+import type { Schemas } from "@/lib/api/client";
 
 /** The chrome a floating cluster wears — the same utilities the canvas controls use. */
 const FLOATING = "rounded-lg border bg-card shadow-sm";
@@ -49,7 +49,7 @@ export function StudioEditor({
 }: {
   program: string;
   onProgramChange: (program: string) => void;
-  connections: Connection[];
+  connections: Schemas["Connection"][];
   /** Connection names the program references — fossil's `refs()`, not a regex. */
   used: Set<string>;
   railOpen: boolean;
@@ -107,7 +107,7 @@ export function StudioEditor({
     if (view.current) forceLinting(view.current);
   }, [booted, descriptors]);
 
-  const insert = (connection: Connection) => {
+  const insert = (connection: Schemas["Connection"]) => {
     const v = view.current;
     if (!v) return;
     const text = connection.kind === "vocab" ? `@${connection.name}` : `@${connection.name}/`;

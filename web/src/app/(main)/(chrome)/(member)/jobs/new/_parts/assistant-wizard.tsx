@@ -47,7 +47,7 @@ import {
   selectColumn,
   useDataTable,
 } from "@kanzo-tech/ui/table";
-import { api } from "@/lib/api";
+import { $api, type Schemas } from "@/lib/api/client";
 import { type CompletionRequest, streamText } from "@/lib/ai/stream";
 import {
   type CompetencyQuestion,
@@ -59,11 +59,10 @@ import {
 } from "@/lib/ai/prompts";
 import { formatSize } from "@/lib/formatters";
 import * as checker from "@/lib/fossil/checker";
-import { connectionPath, describeSources } from "@/lib/fossil/describe-sources";
-import { queryKeys } from "@/lib/query-keys";
-import type { Connection, ProviderInfo } from "@/lib/types";
+import { connectionPath, describeSources, sourceDescriptorsKey } from "@/lib/fossil/describe-sources";
 import { readableFiles } from "@/lib/utils";
 
+type Connection = Schemas["Connection"];
 type Selection = Record<string, boolean>;
 type ConnectionFile = { path: string; size: number };
 
@@ -177,7 +176,7 @@ export function AssistantWizard({
 }: {
   onComplete: (script: string) => void;
   connections: Connection[];
-  providers: ProviderInfo[];
+  providers: checker.ProviderInfo[];
 }) {
   const [step, setStep] = useState(0);
   // Per connection, once the member has touched it; untouched means every readable file.
@@ -195,10 +194,9 @@ export function AssistantWizard({
   const cloud = selected.filter((c) => c.location_type === "cloud");
 
   const listings = useQueries({
-    queries: cloud.map((c) => ({
-      queryKey: queryKeys.connections.files(c.id),
-      queryFn: () => api.connections.files(c.id),
-    })),
+    queries: cloud.map((c) =>
+      $api.queryOptions("get", "/v1/connections/{id}/files", { params: { path: { id: c.id } } }),
+    ),
   });
   const readable = cloud.map((connection, i) => {
     const files = readableFiles(listings[i]?.data ?? [], providers, "data");
@@ -225,7 +223,7 @@ export function AssistantWizard({
   });
   const program = bindings.map((b, i) => `f${i} := io.${b.constructor}("${b.uri}")`).join("\n");
   const described = useQuery({
-    queryKey: queryKeys.sourceDescriptors(bindings.map((b) => b.uri)),
+    queryKey: sourceDescriptorsKey(bindings.map((b) => b.uri)),
     queryFn: async () => describeSources(await checker.sources(program)),
     enabled: step > 0 && bindings.length > 0,
   });

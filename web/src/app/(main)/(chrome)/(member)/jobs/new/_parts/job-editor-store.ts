@@ -10,7 +10,8 @@
  */
 
 import { create } from "zustand";
-import type { CreationMode } from "@/lib/types";
+
+export type CreationMode = "studio" | "assistant";
 
 interface JobEditorState {
   /** `null` until the member has chosen how to write the program. */

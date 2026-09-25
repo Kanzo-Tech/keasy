@@ -27,12 +27,19 @@ import {
 } from "@fossil-lang/corpus";
 import { Coordinator, wasmConnector } from "@kanzo-tech/ui/analytics";
 
-import { api } from "@/lib/api";
-import type { OutputRelation } from "@/lib/types";
+import { http, type Schemas } from "@/lib/api/client";
 
-// fossil-graph-wasm, staged into public/ by scripts/copy-fossil-wasm.mjs
-// (predev/prebuild) — Next resolves no `.wasm` asset for us.
-export const GRAPH_WASM_URL = "/fossil/fossil_graph_wasm_bg.wasm";
+/** The root of every cached read of a job's opened output; its own, so invalidating a job never reopens it. */
+export const corpusKey = (jobId: string) => ["corpus", jobId] as const;
+
+/** Signed GET URLs for the dataset-relative keys the corpus reader enumerated. */
+async function signDatasetUrls(jobId: string, paths: string[]): Promise<Record<string, string>> {
+  const { data } = await http.POST("/v1/jobs/{id}/discover/urls", {
+    params: { path: { id: jobId } },
+    body: { paths },
+  });
+  return data!.files;
+}
 
 type DuckDB = Awaited<ReturnType<ReturnType<typeof wasmConnector>["getDuckDB"]>>;
 
@@ -101,7 +108,7 @@ export interface JobCorpus {
 export async function openJobCorpus(jobId: string): Promise<JobCorpus> {
   const manifestFiles: Record<string, string> = {};
   const readText = async (path: string): Promise<string> => {
-    const signed = await api.jobs.signDatasetUrls(jobId, [path]);
+    const signed = await signDatasetUrls(jobId, [path]);
     const res = await fetch(signed[path] ?? path);
     if (!res.ok) throw new Error(`${path}: ${res.status}`);
     const text = await res.text();
@@ -109,8 +116,8 @@ export async function openJobCorpus(jobId: string): Promise<JobCorpus> {
     return text;
   };
 
-  const addressing = await open("", { readText, wasmUrl: GRAPH_WASM_URL });
-  const signedUrls = await api.jobs.signDatasetUrls(jobId, addressableFiles(addressing));
+  const addressing = await open("", { readText });
+  const signedUrls = await signDatasetUrls(jobId, addressableFiles(addressing));
 
   // DuckDB's file registry is where keasy's access meets fossil's names: the name fossil composes
   // resolves to the URL keasy signed, and a file keasy never signed fails by name.
@@ -128,7 +135,6 @@ export async function openJobCorpus(jobId: string): Promise<JobCorpus> {
     query,
     manifestFiles,
     sql: "allowed",
-    wasmUrl: GRAPH_WASM_URL,
   });
 
   return { coordinator, corpus, manifestFiles };
@@ -145,7 +151,7 @@ export async function openJobCorpus(jobId: string): Promise<JobCorpus> {
  * engine (a relation's name is a reader's answer, not the report's), which is
  * why it happens here, in the browser that just ran the job.
  */
-export async function relationsOf(corpus: SqlCorpus): Promise<OutputRelation[]> {
+export async function relationsOf(corpus: SqlCorpus): Promise<Schemas["OutputRelation"][]> {
   const schema = await corpus.schema();
   const addressing = corpus.addressing;
 

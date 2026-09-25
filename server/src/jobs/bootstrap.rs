@@ -40,7 +40,6 @@ pub async fn claim_declared_draft(db: &Database, user_id: &str) -> DbResult<()> 
         name: env_nonblank("KEASY_BOOTSTRAP_DRAFT_NAME"),
         mode: None,
         dcat_enabled: None,
-        connection_ids: Vec::new(),
         sink_connection_id: sink.id,
         draft: true,
     };

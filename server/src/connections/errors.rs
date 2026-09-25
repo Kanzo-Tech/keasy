@@ -15,6 +15,8 @@ pub enum ConnectionError {
     Forbidden(String),
     #[error("failed to list files: {0}")]
     ListFilesFailed(String),
+    #[error("failed to sign: {0}")]
+    SignFailed(String),
     #[error(transparent)]
     Db(DbError),
 }
@@ -45,6 +47,9 @@ impl IntoResponse for ConnectionError {
             ConnectionError::Forbidden(msg) => (StatusCode::FORBIDDEN, "forbidden", msg),
             ConnectionError::ListFilesFailed(msg) => {
                 (StatusCode::BAD_GATEWAY, "list_files_failed", msg)
+            }
+            ConnectionError::SignFailed(msg) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "sign_error", msg)
             }
             ConnectionError::Db(e) => return e.into_response(),
         };

@@ -352,6 +352,58 @@
         }
       }
     },
+    "/v1/connections/refs": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "The connections a program may read, by the name it writes after `@`. No\ncredentials: signing is [`sign_locators`].",
+        "operationId": "connection_refs",
+        "responses": {
+          "200": {
+            "description": "Every source connection's base URL, by name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionRefsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/connections/urls": {
+      "post": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Sign GET URLs for locators, each with the credentials of the connection it\nlies under. Serves the editor and a job's run alike: a member reads what\nevery source connection holds, and the sink only through the job that\nwrote it. Public HTTP locators come back as they are.",
+        "operationId": "sign_locators",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignLocatorsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Signed GET URLs for the locators the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignLocatorsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/connections/{id}": {
       "get": {
         "tags": [
@@ -441,54 +493,6 @@
           },
           "400": {
             "description": "File listing not supported"
-          },
-          "404": {
-            "description": "Connection not found"
-          }
-        }
-      }
-    },
-    "/v1/connections/{id}/urls": {
-      "post": {
-        "tags": [
-          "Connections"
-        ],
-        "summary": "Sign GET URLs for files of a source connection, relative to its URL, so the\nbrowser can read them before any job exists (the editor describes the\nsources a program binds). The sink holds every job's output and is read\nonly through the job that wrote it.",
-        "operationId": "sign_connection_urls",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Connection ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DatasetUrlsRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Signed GET URLs, keyed by the requested paths",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResolveResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Not a source connection, or a path outside it"
           },
           "404": {
             "description": "Connection not found"
@@ -885,86 +889,6 @@
           },
           "400": {
             "description": "A file path outside the dataset"
-          },
-          "404": {
-            "description": "Job not found"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/source-refs": {
-      "get": {
-        "tags": [
-          "Discovery"
-        ],
-        "summary": "The job's connection ref-map (name → base URL). No credentials: signing is\na separate, per-URL call.",
-        "operationId": "resolve_source_refs",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Connection ref-map for the job's sources",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SourceRefsResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Job not found"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/sources/urls": {
-      "post": {
-        "tags": [
-          "Discovery"
-        ],
-        "summary": "Sign GET URLs so the browser fetches the program's cloud sources directly.\nEach cloud URI is signed with the credentials of the job connection it lies\nunder (the deepest one); public HTTP URIs pass through.",
-        "operationId": "resolve_source_urls",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SourceUrlsRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Fetch URLs (signed GET for cloud) per source URI",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SourceUrlsResponse"
-                }
-              }
-            }
           },
           "404": {
             "description": "Job not found"
@@ -1610,6 +1534,24 @@
           "vocab"
         ]
       },
+      "ConnectionRefsResponse": {
+        "type": "object",
+        "required": [
+          "refs"
+        ],
+        "properties": {
+          "refs": {
+            "type": "object",
+            "description": "Source connection name → base URL, the map `@name/…` expands against.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "CreateCloudAccountRequest": {
         "type": "object",
         "description": "Every field value arrives as a secret: which of them are credentials is the\nprovider schema's to say, and until it has, none is logged or printed.",
@@ -1682,12 +1624,6 @@
           "sink_connection_id"
         ],
         "properties": {
-          "connection_ids": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
           "dcat_enabled": {
             "type": [
               "boolean",
@@ -1901,12 +1837,6 @@
               "string",
               "null"
             ]
-          },
-          "connection_ids": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           },
           "created_at": {
             "type": "string"
@@ -2196,40 +2126,22 @@
           }
         }
       },
-      "SourceRefsResponse": {
+      "SignLocatorsRequest": {
         "type": "object",
         "required": [
-          "refs"
+          "locators"
         ],
         "properties": {
-          "refs": {
-            "type": "object",
-            "description": "Connection ref-map `{ name: baseUrl }`, so the executor resolves\n`@name/path` to `{baseUrl}/path`.",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "SourceUrlsRequest": {
-        "type": "object",
-        "required": [
-          "uris"
-        ],
-        "properties": {
-          "uris": {
+          "locators": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "The resolved source URIs (`s3://bucket/prefix/users.csv`)."
+            "description": "Locators fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`)."
           }
         }
       },
-      "SourceUrlsResponse": {
+      "SignLocatorsResponse": {
         "type": "object",
         "required": [
           "urls"
@@ -2237,7 +2149,7 @@
         "properties": {
           "urls": {
             "type": "object",
-            "description": "Each URI → a fetch URL: signed GET for cloud sources, the URI itself for\npublic HTTP ones.",
+            "description": "Locator → fetchable URL. A locator keasy will not sign is absent.",
             "additionalProperties": {
               "type": "string"
             },

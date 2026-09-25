@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::AppState;
 use crate::auth::role::Member;
-use crate::connections::models::Connection;
 use crate::error::{data_response, error_body};
 use crate::jobs::models::{Job, JobStatus};
 use crate::jobs::routes::owned_job;
@@ -37,7 +36,7 @@ pub(crate) async fn output_ready(
     Ok(job)
 }
 
-const SIGNED_URL_EXPIRES: Duration = Duration::from_secs(300);
+pub(crate) const SIGNED_URL_EXPIRES: Duration = Duration::from_secs(300);
 
 #[derive(Serialize, utoipa::ToSchema)]
 pub struct ResolveResponse {
@@ -169,143 +168,4 @@ pub async fn resolve_discover_urls(
     Json(req): Json<DatasetUrlsRequest>,
 ) -> Result<Response, Response> {
     sign_dataset_urls(Method::GET, &state, &member, &id, &req.paths).await
-}
-
-#[derive(Serialize, utoipa::ToSchema)]
-struct SourceRefsResponse {
-    /// Connection ref-map `{ name: baseUrl }`, so the executor resolves
-    /// `@name/path` to `{baseUrl}/path`.
-    refs: HashMap<String, String>,
-}
-
-#[utoipa::path(get, path = "/v1/jobs/{id}/source-refs", tag = "Discovery",
-    params(("id" = String, Path, description = "Job ID")),
-    responses(
-        (status = 200, description = "Connection ref-map for the job's sources", body = SourceRefsResponse),
-        (status = 404, description = "Job not found"),
-    )
-)]
-/// The job's connection ref-map (name → base URL). No credentials: signing is
-/// a separate, per-URL call.
-pub async fn resolve_source_refs(
-    member: Member,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Result<Response, Response> {
-    let refs = job_connections(&state, &member, &id)
-        .await?
-        .into_iter()
-        .map(|c| (c.name, c.url))
-        .collect();
-    Ok(data_response(SourceRefsResponse { refs }).into_response())
-}
-
-/// The connections the caller's job reads, as far as they still exist.
-async fn job_connections(
-    state: &AppState,
-    member: &Member,
-    id: &str,
-) -> Result<Vec<Connection>, Response> {
-    let job = owned_job(state, member, id)
-        .await
-        .map_err(IntoResponse::into_response)?;
-    let mut connections = Vec::with_capacity(job.connection_ids.len());
-    for cid in &job.connection_ids {
-        if let Some(c) = state
-            .db
-            .get_connection(cid)
-            .await
-            .map_err(IntoResponse::into_response)?
-        {
-            connections.push(c);
-        }
-    }
-    Ok(connections)
-}
-
-#[derive(Deserialize, utoipa::ToSchema)]
-pub struct SourceUrlsRequest {
-    /// The resolved source URIs (`s3://bucket/prefix/users.csv`).
-    uris: Vec<String>,
-}
-
-#[derive(Serialize, utoipa::ToSchema)]
-struct SourceUrlsResponse {
-    /// Each URI → a fetch URL: signed GET for cloud sources, the URI itself for
-    /// public HTTP ones.
-    urls: HashMap<String, String>,
-}
-
-/// Whether `uri` names an object under the connection rooted at `base`.
-fn under(uri: &str, base: &str) -> bool {
-    let base = base.trim_end_matches('/');
-    uri.strip_prefix(base)
-        .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
-}
-
-#[utoipa::path(post, path = "/v1/jobs/{id}/sources/urls", tag = "Discovery",
-    params(("id" = String, Path, description = "Job ID")),
-    request_body = SourceUrlsRequest,
-    responses(
-        (status = 200, description = "Fetch URLs (signed GET for cloud) per source URI", body = SourceUrlsResponse),
-        (status = 404, description = "Job not found"),
-    )
-)]
-/// Sign GET URLs so the browser fetches the program's cloud sources directly.
-/// Each cloud URI is signed with the credentials of the job connection it lies
-/// under (the deepest one); public HTTP URIs pass through.
-pub async fn resolve_source_urls(
-    member: Member,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-    Json(req): Json<SourceUrlsRequest>,
-) -> Result<Response, Response> {
-    let conns = job_connections(&state, &member, &id).await?;
-
-    let mut urls = HashMap::with_capacity(req.uris.len());
-    for uri in &req.uris {
-        if !crate::cloud::is_cloud_url(uri) {
-            urls.insert(uri.clone(), uri.clone());
-            continue;
-        }
-        let creds = match conns
-            .iter()
-            .filter(|c| under(uri, &c.url))
-            .max_by_key(|c| c.url.len())
-        {
-            Some(conn) => state
-                .db
-                .connection_credentials(conn)
-                .await
-                .map_err(IntoResponse::into_response)?,
-            None => HashMap::new(),
-        };
-        let (store, path) = crate::cloud::build_store(uri, &creds)
-            .map_err(|e| fail(StatusCode::BAD_REQUEST, "store_error", e.to_string()))?;
-        let signed = store
-            .sign_url(Method::GET, &path, SIGNED_URL_EXPIRES)
-            .await
-            .map_err(|e| {
-                fail(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "sign_error",
-                    e.to_string(),
-                )
-            })?;
-        urls.insert(uri.clone(), signed.to_string());
-    }
-    Ok(data_response(SourceUrlsResponse { urls }).into_response())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::under;
-
-    #[test]
-    fn a_source_is_under_a_connection_only_at_a_path_boundary() {
-        assert!(under("s3://b/data/x.csv", "s3://b/data"));
-        assert!(under("s3://b/data/x.csv", "s3://b/data/"));
-        assert!(under("s3://b/data", "s3://b/data"));
-        assert!(!under("s3://b/data-private/x.csv", "s3://b/data"));
-    }
 }

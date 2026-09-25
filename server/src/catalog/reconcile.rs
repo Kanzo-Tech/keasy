@@ -149,7 +149,6 @@ mod tests {
             completed_at: None,
             error: None,
             mode: RunMode::Integrated,
-            connection_ids: vec![],
             created_by: String::new(),
             sink_connection_id: "sink".into(),
             script: None,

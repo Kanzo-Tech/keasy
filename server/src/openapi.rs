@@ -25,7 +25,8 @@ use utoipa::OpenApi;
         crate::connections::routes::get_connection,
         crate::connections::routes::delete_connection,
         crate::connections::routes::list_connection_files,
-        crate::connections::routes::sign_connection_urls,
+        crate::connections::routes::connection_refs,
+        crate::connections::routes::sign_locators,
         // Cloud Accounts
         crate::cloud::routes::list_accounts,
         crate::cloud::routes::create_account,
@@ -48,8 +49,6 @@ use utoipa::OpenApi;
         crate::routes::org::update_org_identity,
         // Discovery
         crate::discovery::routes::resolve_output_urls,
-        crate::discovery::routes::resolve_source_refs,
-        crate::discovery::routes::resolve_source_urls,
         crate::discovery::routes::resolve_discover_urls,
         crate::jobs::routes::publish_relations,
         crate::catalog::routes::list_catalog_datasets,

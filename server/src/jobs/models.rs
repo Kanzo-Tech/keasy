@@ -81,8 +81,6 @@ pub struct Job {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<super::errors::JobRuntimeError>,
     pub mode: RunMode,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub connection_ids: Vec<String>,
     /// Keycloak `sub` of the member who created the job, and the only one who
     /// may see, change, run or read it. Taken from the token, never the body.
     pub created_by: String,
@@ -120,7 +118,6 @@ impl Job {
             completed_at: None,
             error: None,
             mode: request.mode.unwrap_or(RunMode::Integrated),
-            connection_ids: request.connection_ids,
             created_by,
             sink_connection_id: request.sink_connection_id,
             script: Some(request.script),
@@ -153,8 +150,6 @@ pub struct CreateJobRequest {
     pub mode: Option<RunMode>,
     #[expect(dead_code, reason = "DCAT publication is accepted but not built yet")]
     pub dcat_enabled: Option<bool>,
-    #[serde(default)]
-    pub connection_ids: Vec<String>,
     /// Where the output lands: a sink connection.
     pub sink_connection_id: String,
     #[serde(default)]

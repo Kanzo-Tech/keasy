@@ -1,11 +1,11 @@
 use rusqlite::{OptionalExtension, params};
 
-use crate::db::{Database, DbResult, json_column, json_column_opt};
+use crate::db::{Database, DbResult, json_column_opt};
 
 use super::models::{Job, JobStatus};
 
 const COLUMNS: &str = "id, name, status, mode, created_at, started_at, completed_at, error, \
-                       connection_ids, created_by, sink_connection_id, script, manifest, relations";
+                       created_by, sink_connection_id, script, manifest, relations";
 
 impl Database {
     pub async fn insert_job(&self, job: &Job) -> DbResult<()> {
@@ -22,7 +22,7 @@ impl Database {
         let inserted = self.write().await.execute(
             &format!(
                 "INSERT INTO jobs ({COLUMNS})
-                 SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14 {condition}"
+                 SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13 {condition}"
             ),
             params![
                 job.id,
@@ -33,7 +33,6 @@ impl Database {
                 job.started_at,
                 job.completed_at,
                 job.error.as_ref().map(serde_json::to_string).transpose()?,
-                serde_json::to_string(&job.connection_ids)?,
                 job.created_by,
                 job.sink_connection_id,
                 job.script,
@@ -68,15 +67,14 @@ impl Database {
 
         self.write().await.execute(
             "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, error = ?5,
-                             connection_ids = ?6, script = ?7, manifest = ?8, relations = ?9
-             WHERE id = ?10",
+                             script = ?6, manifest = ?7, relations = ?8
+             WHERE id = ?9",
             params![
                 job.name,
                 job.status,
                 job.started_at,
                 job.completed_at,
                 job.error.as_ref().map(serde_json::to_string).transpose()?,
-                serde_json::to_string(&job.connection_ids)?,
                 job.script,
                 job.manifest.as_ref().map(serde_json::to_string).transpose()?,
                 serde_json::to_string(&job.relations)?,
@@ -141,7 +139,6 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
         started_at: row.get("started_at")?,
         completed_at: row.get("completed_at")?,
         error: json_column_opt(row, "error")?,
-        connection_ids: json_column(row, "connection_ids")?,
         created_by: row.get("created_by")?,
         sink_connection_id: row.get("sink_connection_id")?,
         script,
@@ -173,7 +170,6 @@ mod tests {
                 name: None,
                 mode: None,
                 dcat_enabled: None,
-                connection_ids: vec![],
                 sink_connection_id: "sink".into(),
                 draft: true,
             },
@@ -198,7 +194,7 @@ mod tests {
         db.write()
             .await
             .execute(
-                "UPDATE jobs SET status = 'draft', connection_ids = 'not json'",
+                "UPDATE jobs SET status = 'draft', relations = 'not json'",
                 [],
             )
             .unwrap();

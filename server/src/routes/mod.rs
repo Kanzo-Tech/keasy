@@ -70,14 +70,6 @@ pub fn build_router(state: AppState) -> Router {
             axum::routing::post(crate::discovery::routes::resolve_output_urls),
         )
         .route(
-            "/v1/jobs/{id}/source-refs",
-            axum::routing::get(crate::discovery::routes::resolve_source_refs),
-        )
-        .route(
-            "/v1/jobs/{id}/sources/urls",
-            axum::routing::post(crate::discovery::routes::resolve_source_urls),
-        )
-        .route(
             "/v1/jobs/{id}/discover/urls",
             axum::routing::post(crate::discovery::routes::resolve_discover_urls),
         )
@@ -119,8 +111,12 @@ pub fn build_router(state: AppState) -> Router {
             axum::routing::get(crate::connections::routes::list_connection_files),
         )
         .route(
-            "/v1/connections/{id}/urls",
-            axum::routing::post(crate::connections::routes::sign_connection_urls),
+            "/v1/connections/refs",
+            axum::routing::get(crate::connections::routes::connection_refs),
+        )
+        .route(
+            "/v1/connections/urls",
+            axum::routing::post(crate::connections::routes::sign_locators),
         )
         // Assistant (SSE streaming)
         .route(

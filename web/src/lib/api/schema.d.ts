@@ -165,6 +165,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/connections/refs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The connections a program may read, by the name it writes after `@`. No
+         *     credentials: signing is [`sign_locators`].
+         */
+        get: operations["connection_refs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connections/urls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign GET URLs for locators, each with the credentials of the connection it
+         *     lies under. Serves the editor and a job's run alike: a member reads what
+         *     every source connection holds, and the sink only through the job that
+         *     wrote it. Public HTTP locators come back as they are.
+         */
+        post: operations["sign_locators"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/connections/{id}": {
         parameters: {
             query?: never;
@@ -191,28 +233,6 @@ export interface paths {
         get: operations["list_connection_files"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/connections/{id}/urls": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sign GET URLs for files of a source connection, relative to its URL, so the
-         *     browser can read them before any job exists (the editor describes the
-         *     sources a program binds). The sink holds every job's output and is read
-         *     only through the job that wrote it.
-         */
-        post: operations["sign_connection_urls"];
         delete?: never;
         options?: never;
         head?: never;
@@ -333,47 +353,6 @@ export interface paths {
          */
         put: operations["publish_relations"];
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/source-refs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * The job's connection ref-map (name → base URL). No credentials: signing is
-         *     a separate, per-URL call.
-         */
-        get: operations["resolve_source_refs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/sources/urls": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sign GET URLs so the browser fetches the program's cloud sources directly.
-         *     Each cloud URI is signed with the credentials of the job connection it lies
-         *     under (the deepest one); public HTTP URIs pass through.
-         */
-        post: operations["resolve_source_urls"];
         delete?: never;
         options?: never;
         head?: never;
@@ -617,6 +596,12 @@ export interface components {
         };
         /** @enum {string} */
         ConnectionKind: "data" | "vocab";
+        ConnectionRefsResponse: {
+            /** @description Source connection name → base URL, the map `@name/…` expands against. */
+            refs: {
+                [key: string]: string;
+            };
+        };
         /**
          * @description Every field value arrives as a secret: which of them are credentials is the
          *     provider schema's to say, and until it has, none is logged or printed.
@@ -639,7 +624,6 @@ export interface components {
             url: string;
         };
         CreateJobRequest: {
-            connection_ids?: string[];
             dcat_enabled?: boolean | null;
             draft?: boolean;
             mode?: null | components["schemas"]["RunMode"];
@@ -703,7 +687,6 @@ export interface components {
         };
         Job: {
             completed_at?: string | null;
-            connection_ids?: string[];
             created_at: string;
             /**
              * @description Keycloak `sub` of the member who created the job, and the only one who
@@ -811,24 +794,12 @@ export interface components {
             max_tokens?: number | null;
             model?: string | null;
         };
-        SourceRefsResponse: {
-            /**
-             * @description Connection ref-map `{ name: baseUrl }`, so the executor resolves
-             *     `@name/path` to `{baseUrl}/path`.
-             */
-            refs: {
-                [key: string]: string;
-            };
+        SignLocatorsRequest: {
+            /** @description Locators fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`). */
+            locators: string[];
         };
-        SourceUrlsRequest: {
-            /** @description The resolved source URIs (`s3://bucket/prefix/users.csv`). */
-            uris: string[];
-        };
-        SourceUrlsResponse: {
-            /**
-             * @description Each URI → a fetch URL: signed GET for cloud sources, the URI itself for
-             *     public HTTP ones.
-             */
+        SignLocatorsResponse: {
+            /** @description Locator → fetchable URL. A locator keasy will not sign is absent. */
             urls: {
                 [key: string]: string;
             };
@@ -1210,6 +1181,50 @@ export interface operations {
             };
         };
     };
+    connection_refs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every source connection's base URL, by name */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionRefsResponse"];
+                };
+            };
+        };
+    };
+    sign_locators: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignLocatorsRequest"];
+            };
+        };
+        responses: {
+            /** @description Signed GET URLs for the locators the caller may read */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignLocatorsResponse"];
+                };
+            };
+        };
+    };
     get_connection: {
         parameters: {
             query?: never;
@@ -1283,47 +1298,6 @@ export interface operations {
                 };
             };
             /** @description File listing not supported */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Connection not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    sign_connection_urls: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Connection ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DatasetUrlsRequest"];
-            };
-        };
-        responses: {
-            /** @description Signed GET URLs, keyed by the requested paths */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResolveResponse"];
-                };
-            };
-            /** @description Not a source connection, or a path outside it */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1679,70 +1653,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    resolve_source_refs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Connection ref-map for the job's sources */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SourceRefsResponse"];
-                };
-            };
-            /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    resolve_source_urls: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SourceUrlsRequest"];
-            };
-        };
-        responses: {
-            /** @description Fetch URLs (signed GET for cloud) per source URI */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SourceUrlsResponse"];
-                };
             };
             /** @description Job not found */
             404: {

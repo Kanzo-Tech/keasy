@@ -1,6 +1,6 @@
 "use client";
 
-import { createElement, use } from "react";
+import { use } from "react";
 import { notFound } from "next/navigation";
 import { AlertCircle, MoreHorizontal } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -31,41 +31,32 @@ import {
   TableRow,
   toast,
 } from "@kanzo-tech/ui";
+import { ValidationBadge } from "@/components/validation-badge";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { api } from "@/lib/api";
+import { $api, invalidate } from "@/lib/api/client";
+import { modelOf, storageOf } from "@/lib/connections";
 import { providers as fossilProviders } from "@/lib/fossil/checker";
 import { formatSize } from "@/lib/formatters";
-import { getProviderIcon } from "@/lib/provider-icons";
 import { queryKeys } from "@/lib/query-keys";
+import { toastError } from "@/lib/toast-error";
 import { readableFiles } from "@/lib/utils";
 
-export default function ConnectionPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ConnectionPage({ params }: { params: Promise<{ name: string }> }) {
+  const path = { params: { path: { name: decodeURIComponent(use(params).name) } } };
 
-  const { data: connection, isLoading: connLoading } = useQuery({
-    queryKey: queryKeys.connections.detail(id),
-    queryFn: () => api.connections.get(id),
-  });
-  const { data: schema = [], isLoading: schemaLoading } = useQuery({
-    queryKey: queryKeys.settings.schema,
-    queryFn: api.settings.schema,
-  });
-  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
-    queryKey: queryKeys.cloud.accounts,
-    queryFn: api.cloud.list,
-  });
+  const { data: connection, isLoading: connLoading } = $api.useQuery("get", "/v1/connections/{name}", path);
   const { data: providers = [], isLoading: providersLoading } = useQuery({
     queryKey: queryKeys.settings.providers,
     queryFn: () => fossilProviders(),
   });
-  const cloud = connection?.location_type === "cloud";
-  const files = useQuery({
-    queryKey: queryKeys.connections.files(id),
-    queryFn: () => api.connections.files(id),
-    enabled: cloud,
+  const storage = connection && storageOf(connection);
+  const files = $api.useQuery("get", "/v1/connections/{name}/files", path, { enabled: !!storage });
+  const validate = $api.useMutation("post", "/v1/connections/{name}/validate", {
+    onSuccess: () => invalidate("/v1/connections"),
+    onError: (err) => toastError(err, "Failed to validate"),
   });
 
-  const isLoading = connLoading || schemaLoading || accountsLoading || providersLoading;
+  const isLoading = connLoading || providersLoading;
   const showSkeleton = useDelayedLoading(isLoading || files.isLoading);
 
   if (isLoading) {
@@ -80,11 +71,9 @@ export default function ConnectionPage({ params }: { params: Promise<{ id: strin
   }
   if (!connection) notFound();
 
-  const account = accounts.find((a) => a.id === connection.cloud_account_id);
-  const provider = schema.find((s) => s.id === account?.provider_id);
-
+  const model = modelOf(connection);
   const listed = files.data ?? [];
-  const readable = readableFiles(listed, providers, connection.kind === "data" ? "data" : "schema");
+  const readable = readableFiles(listed, providers, storage?.kind === "data" ? "data" : "schema");
 
   const { name } = connection;
   function copyReference(path: string) {
@@ -95,30 +84,33 @@ export default function ConnectionPage({ params }: { params: Promise<{ id: strin
   return (
     <SectionRoot>
       <SectionBody scale="page">
-        <DataList className="grid gap-x-12 sm:grid-cols-3" orientation="vertical">
-          {cloud && (
-            <DataListItem>
-              <DataListItemLabel>Cloud Account</DataListItemLabel>
-              <DataListItemValue className="flex items-center gap-2 font-medium">
-                {provider &&
-                  createElement(getProviderIcon(provider.icon), {
-                    className: "size-4 text-muted-foreground",
-                  })}
-                {account?.name ?? connection.cloud_account_id}
-              </DataListItemValue>
-            </DataListItem>
-          )}
+        <DataList className="grid gap-x-12 sm:grid-cols-4" orientation="vertical">
           <DataListItem>
-            <DataListItemLabel>URL</DataListItemLabel>
-            <DataListItemValue className="break-all font-mono">{connection.url}</DataListItemValue>
+            <DataListItemLabel>Credential</DataListItemLabel>
+            <DataListItemValue className="font-medium">{connection.credential}</DataListItemValue>
           </DataListItem>
           <DataListItem>
-            <DataListItemLabel>Location</DataListItemLabel>
-            <DataListItemValue>{cloud ? "Cloud" : "Local"}</DataListItemValue>
+            <DataListItemLabel>{storage ? "URL" : "Model"}</DataListItemLabel>
+            <DataListItemValue className="break-all font-mono">
+              {storage?.url ?? model?.model ?? "provider default"}
+            </DataListItemValue>
+          </DataListItem>
+          <DataListItem>
+            <DataListItemLabel>{storage ? "Kind" : "Max tokens"}</DataListItemLabel>
+            <DataListItemValue>{storage ? storage.kind : (model?.max_tokens ?? "—")}</DataListItemValue>
+          </DataListItem>
+          <DataListItem>
+            <DataListItemLabel>Status</DataListItemLabel>
+            <DataListItemValue className="flex items-center gap-2">
+              <ValidationBadge report={connection.validation} />
+              <Button isLoading={validate.isPending} onClick={() => validate.mutate(path)} size="sm" variant="outline">
+                Test
+              </Button>
+            </DataListItemValue>
           </DataListItem>
         </DataList>
 
-        {cloud && (
+        {storage && (
           <section className="space-y-2">
             <SectionHeader>
               <SectionTitleGroup>

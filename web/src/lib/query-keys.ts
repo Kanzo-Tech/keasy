@@ -1,5 +1,3 @@
-import type { ConnectionKind } from "@/lib/types";
-
 export const queryKeys = {
   // Auth
   workspaces: ["workspaces"] as const,
@@ -13,37 +11,15 @@ export const queryKeys = {
   // A job's output, opened in the browser. Its own root so invalidating a job never reopens it.
   corpus: (jobId: string) => ["corpus", jobId] as const,
 
-  // Connections
-  connections: {
-    all: (tab?: ConnectionKind) => (tab ? (["connections", tab] as const) : (["connections"] as const)),
-    detail: (id: string) => ["connections", id] as const,
-    files: (id: string) => ["connections", id, "files"] as const,
-    // Under `connections`, so adding or deleting one drops the map with it.
-    refs: ["connections", "refs"] as const,
-  },
-
   // A program's sources as fossil resolved them, and their descriptions
   programSources: (program: string) => ["program-sources", program] as const,
   sourceDescriptors: (sources: string[]) => ["source-descriptors", sources] as const,
 
   datasets: ["datasets"] as const,
 
-  // Cloud
-  cloud: {
-    accounts: ["cloud-accounts"] as const,
-    detail: (id: string) => ["cloud", id] as const,
-  },
-
   // Settings
   settings: {
-    schema: ["schema"] as const,
+    // The source providers fossil supports.
     providers: ["providers"] as const,
-    catalogStorage: ["catalog-storage"] as const,
-  },
-
-  // AI
-  ai: {
-    providers: ["ai-providers"] as const,
-    catalog: ["ai-catalog"] as const,
   },
 } as const;

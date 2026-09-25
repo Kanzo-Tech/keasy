@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Cloud, Database, FileText, GalleryVerticalEnd, type LucideIcon } from "lucide-react";
+import { Database, FileText, GalleryVerticalEnd, KeyRound, type LucideIcon } from "lucide-react";
 import {
   Card,
   SectionHeader,
@@ -12,6 +12,8 @@ import {
   StatTile,
 } from "@kanzo-tech/ui";
 import { api } from "@/lib/api";
+import { $api } from "@/lib/api/client";
+import { storageOf } from "@/lib/connections";
 import { queryKeys } from "@/lib/query-keys";
 import { hasRunningJobs } from "@/lib/utils";
 
@@ -27,10 +29,8 @@ interface Tile {
 }
 
 export function OwnerDashboard() {
-  const catalog = useQuery({
-    queryKey: queryKeys.settings.catalogStorage,
-    queryFn: api.settings.catalogStorage,
-  });
+  const catalog = $api.useQuery("get", "/v1/connections", { params: { query: { purpose: "storage" } } });
+  const sink = catalog.data?.find((c) => storageOf(c)?.direction === "sink");
 
   return (
     <Tiles
@@ -40,7 +40,7 @@ export function OwnerDashboard() {
           href: "/catalog",
           icon: GalleryVerticalEnd,
           title: "Catalog Storage",
-          value: catalog.isLoading ? undefined : catalog.data ? "Configured" : "Not set",
+          value: catalog.isLoading ? undefined : sink ? "Configured" : "Not set",
           description: "where the catalog is published",
         },
       ]}
@@ -54,11 +54,8 @@ export function MemberDashboard() {
     queryFn: api.jobs.list,
     refetchInterval: (query) => (hasRunningJobs(query.state.data) ? 2000 : 0),
   });
-  const accounts = useQuery({ queryKey: queryKeys.cloud.accounts, queryFn: api.cloud.list });
-  const connections = useQuery({
-    queryKey: queryKeys.connections.all(),
-    queryFn: () => api.connections.list(),
-  });
+  const accounts = $api.useQuery("get", "/v1/credentials");
+  const connections = $api.useQuery("get", "/v1/connections");
   const loading = jobs.isLoading || accounts.isLoading || connections.isLoading;
 
   const all = jobs.data ?? [];
@@ -73,11 +70,11 @@ export function MemberDashboard() {
         heading="Workspace readiness"
         tiles={[
           {
-            href: "/settings/cloud-accounts",
-            icon: Cloud,
-            title: "Cloud Accounts",
+            href: "/settings/credentials",
+            icon: KeyRound,
+            title: "Credentials",
             value: loading ? undefined : String(accountCount),
-            description: accountCount === 1 ? "account configured" : "accounts configured",
+            description: accountCount === 1 ? "credential configured" : "credentials configured",
             ok: loading ? undefined : accountCount > 0,
           },
           {

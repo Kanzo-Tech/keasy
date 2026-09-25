@@ -40,6 +40,8 @@ import {
 } from "@kanzo-tech/ui";
 import { ChevronDown, Pencil, PlugZap, Save, X } from "lucide-react";
 import { api } from "@/lib/api";
+import { $api } from "@/lib/api/client";
+import { storageConnections } from "@/lib/connections";
 import { queryKeys } from "@/lib/query-keys";
 import { toastError } from "@/lib/toast-error";
 import * as checker from "@/lib/fossil/checker";
@@ -87,10 +89,8 @@ export function JobStudio() {
   // creating a second draft per keystroke pause.
   const [draftId, setDraftId] = useState<string | null>(searchParams.get("draft"));
 
-  const { data: connections = [] } = useQuery({
-    queryKey: queryKeys.connections.all(),
-    queryFn: () => api.connections.list(),
-  });
+  const { data: allConnections = [] } = $api.useQuery("get", "/v1/connections");
+  const connections = useMemo(() => storageConnections(allConnections), [allConnections]);
   const { data: providers = [] } = useQuery({
     queryKey: queryKeys.settings.providers,
     queryFn: checker.providers,
@@ -107,7 +107,7 @@ export function JobStudio() {
     store.restoreDraft(
       draftJob.script ?? "",
       draftJob.name ?? "",
-      draftJob.sink_connection_id,
+      draftJob.sink_connection,
     );
     setSaved(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,7 +144,7 @@ export function JobStudio() {
   const sinks = useMemo(() => connections.filter((c) => c.direction === "sink"), [connections]);
   useEffect(() => {
     if (sinks.length === 1 && !useJobEditorStore.getState().sinkConnectionId) {
-      store.setSinkConnectionId(sinks[0].id);
+      store.setSinkConnectionId(sinks[0].name);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sinks]);
@@ -167,7 +167,7 @@ export function JobStudio() {
         script: store.script,
         name,
         draft: true,
-        sink_connection_id: destination,
+        sink_connection: destination,
       });
       return created.id;
     },
@@ -202,7 +202,7 @@ export function JobStudio() {
       return api.jobs.create({
         script: store.script,
         name: store.name.trim() || undefined,
-        sink_connection_id: destination,
+        sink_connection: destination,
       });
     },
     onSuccess: async (job) => {

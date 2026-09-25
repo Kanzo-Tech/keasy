@@ -56,7 +56,7 @@ export function StudioSummary({
   creating: boolean;
   onCreate: () => void;
 }) {
-  const destination = connections.find((c) => c.id === values.sinkConnectionId);
+  const destination = connections.find((c) => c.name === values.sinkConnectionId);
   const errors = findings.filter((f) => f.severity === 1).length;
 
   return (

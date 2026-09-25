@@ -76,12 +76,12 @@ export function StudioConfigure({
   const destinations = useMemo(
     () =>
       createListCollection({
-        items: sinks.map((c) => ({ label: `@${c.name}`, value: c.id, url: c.url })),
+        items: sinks.map((c) => ({ label: `@${c.name}`, value: c.name, url: c.url })),
       }),
     [sinks],
   );
 
-  const destination = sinks.find((c) => c.id === values.sinkConnectionId);
+  const destination = sinks.find((c) => c.name === values.sinkConnectionId);
   const slug = (jobName || "unnamed-job").trim().toLowerCase().replace(/\s+/g, "-");
 
   return (

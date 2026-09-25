@@ -3,7 +3,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, Sparkles } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import type { ExecuteSqlResult, SqlCorpus } from "@fossil-lang/corpus";
 import {
   Alert,
@@ -53,15 +52,14 @@ import {
   useAiStream,
 } from "@kanzo-tech/ai";
 import { MessageMarkdown } from "@kanzo-tech/ai/markdown";
-import { ApiError, api } from "@/lib/api";
+import { ApiError } from "@/lib/api";
+import { $api } from "@/lib/api/client";
 import { completeText, streamText } from "@/lib/ai/stream";
 import { explainRequest, parsePlan, queryRequest } from "@/lib/ai/prompts";
-import { queryKeys } from "@/lib/query-keys";
-import { AI_PROVIDERS } from "@/lib/ai-providers";
 import { generateSuggestions } from "@/lib/schema-suggestions";
 import { getErrorInfo } from "@/lib/error-codes";
 import type { GraphSchema } from "@/lib/graph-schema";
-import type { AiProvider, ChatMessage } from "@/lib/types";
+import type { ChatMessage } from "@/lib/types";
 import { describeDataSpace } from "@/lib/data-space";
 import { useCorpus } from "./corpus";
 import { ResultTable } from "./result-table";
@@ -155,7 +153,7 @@ const SAMPLE_CHARS = 4000;
 interface AskOptions {
   question: string;
   history: ChatMessage[];
-  provider?: AiProvider;
+  connection?: string;
   schema: string;
   corpus: SqlCorpus;
   signal: AbortSignal;
@@ -172,10 +170,10 @@ function sample(result: ExecuteSqlResult): string {
  * because a turn that broke still belongs in the transcript.
  */
 async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
-  const { question, history, provider, schema, corpus, signal } = options;
+  const { question, history, connection, schema, corpus, signal } = options;
   try {
     const plan = parsePlan(
-      await completeText(queryRequest(schema, history, question, provider), signal),
+      await completeText(queryRequest(schema, history, question, connection), signal),
     );
     yield { kind: "plan", ...plan };
 
@@ -196,7 +194,7 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
 
     yield { kind: "phase", phase: "explaining" };
     for await (const text of streamText(
-      explainRequest(question, plan.sql, sample(result), provider),
+      explainRequest(question, plan.sql, sample(result), connection),
       signal,
     )) {
       yield { kind: "explain", text };
@@ -348,14 +346,11 @@ export function AskPanel({ graphSchema }: { graphSchema: GraphSchema }) {
   const nextTurn = useRef(0);
   const live = useRef<number | null>(null);
 
-  const { data: aiProviders, isLoading: loadingAiProviders } = useQuery({
-    queryKey: queryKeys.ai.providers,
-    queryFn: api.ai.providers,
+  // The model connection the panel asks through: the first there is.
+  const { data: models, isLoading: loadingAiProviders } = $api.useQuery("get", "/v1/connections", {
+    params: { query: { purpose: "model" } },
   });
-  const provider = useMemo(
-    () => AI_PROVIDERS.find((p) => aiProviders?.some((s) => s.provider === p.id && s.api_key))?.id,
-    [aiProviders],
-  );
+  const connection = models?.[0]?.name;
 
   // The schema the assistant reasons over: DuckDB's own catalog, read back from
   // the views the corpus mounted. Names, columns and TYPES are the ones a query
@@ -415,7 +410,7 @@ export function AskPanel({ graphSchema }: { graphSchema: GraphSchema }) {
         askTurn({
           question: text,
           history: historyOf(turns),
-          provider,
+          connection,
           schema: duckSchema,
           corpus,
           signal,
@@ -430,7 +425,7 @@ export function AskPanel({ graphSchema }: { graphSchema: GraphSchema }) {
     if (id !== null) patch(id, { kind: "failed", code: "stopped" });
   };
 
-  if (!loadingAiProviders && !provider) {
+  if (!loadingAiProviders && !connection) {
     return (
       <Item className="mx-auto my-auto max-w-md flex-col gap-2 py-10 text-center">
         <ItemMedia className="text-muted-foreground" variant="icon">
@@ -440,7 +435,7 @@ export function AskPanel({ graphSchema }: { graphSchema: GraphSchema }) {
         <ItemDescription>An API key is required.</ItemDescription>
         <ItemActions>
           <Button asChild size="sm" variant="outline">
-            <Link href="/settings/ai">Configure</Link>
+            <Link href="/connections?type=model">Configure</Link>
           </Button>
         </ItemActions>
       </Item>

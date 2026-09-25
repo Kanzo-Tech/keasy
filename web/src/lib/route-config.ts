@@ -1,9 +1,9 @@
 import {
-  Bot,
   Boxes,
   Database,
   GalleryVerticalEnd,
   Home,
+  KeyRound,
   Settings2,
   Workflow,
   type LucideIcon,
@@ -44,9 +44,8 @@ const ROUTES: Record<string, RouteDef> = {
   "/settings":                    { name: "Settings", icon: Settings2 },
   "/settings/preferences":        { name: "Preferences" },
   "/settings/security":           { name: "Security" },
-  "/settings/ai":                 { name: "AI Settings", icon: Bot },
-  "/settings/cloud-accounts":     { name: "Cloud Accounts", icon: GalleryVerticalEnd },
-  "/settings/cloud-accounts/new": { name: "New Cloud Account" },
+  "/settings/credentials":        { name: "Credentials", icon: KeyRound },
+  "/settings/credentials/new":    { name: "New Credential" },
 };
 
 // ── Derived ──────────────────────────────────────────────────────────────────

@@ -198,7 +198,7 @@ export function StudioEditor({
                     return (
                       // The button sits inside the `Item`: `asChild` would put
                       // `role="listitem"` on it and it would stop being announced as one.
-                      <Item className="p-0" key={c.id} variant="outline">
+                      <Item className="p-0" key={c.name} variant="outline">
                         <button
                           className="flex w-full flex-wrap items-center gap-(--space) rounded-xl p-(--space) text-start transition-colors hover:border-primary/40"
                           onClick={() => insert(c)}

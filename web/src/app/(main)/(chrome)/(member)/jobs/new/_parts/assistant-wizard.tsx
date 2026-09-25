@@ -47,7 +47,7 @@ import {
   selectColumn,
   useDataTable,
 } from "@kanzo-tech/ui/table";
-import { api } from "@/lib/api";
+import { $api } from "@/lib/api/client";
 import { type CompletionRequest, streamText } from "@/lib/ai/stream";
 import {
   type CompetencyQuestion,
@@ -189,21 +189,20 @@ export function AssistantWizard({
   const connectionTable = useDataTable({
     columns: CONNECTION_COLUMNS,
     data: dataConnections,
-    getRowId: (c) => c.id,
+    getRowId: (c) => c.name,
   });
   const selected = connectionTable.getSelectedRowModel().rows.map((row) => row.original);
-  const cloud = selected.filter((c) => c.location_type === "cloud");
+  const cloud = selected;
 
   const listings = useQueries({
-    queries: cloud.map((c) => ({
-      queryKey: queryKeys.connections.files(c.id),
-      queryFn: () => api.connections.files(c.id),
-    })),
+    queries: cloud.map((c) =>
+      $api.queryOptions("get", "/v1/connections/{name}/files", { params: { path: { name: c.name } } }),
+    ),
   });
   const readable = cloud.map((connection, i) => {
     const files = readableFiles(listings[i]?.data ?? [], providers, "data");
     const selection =
-      fileSelection[connection.id] ?? Object.fromEntries(files.map((f) => [f.path, true]));
+      fileSelection[connection.name] ?? Object.fromEntries(files.map((f) => [f.path, true]));
     return { connection, files, selection, loading: listings[i]?.isPending ?? true };
   });
   const picked = readable.flatMap(({ connection, files, selection }) =>
@@ -380,7 +379,7 @@ export function AssistantWizard({
             <p className="text-muted-foreground text-sm">Select the data connections to include.</p>
             <DataTableRoot table={connectionTable}>
               <DataTableContent<Connection>
-                onRowClick={(c) => connectionTable.getRow(c.id).toggleSelected()}
+                onRowClick={(c) => connectionTable.getRow(c.name).toggleSelected()}
               />
               <DataTablePagination />
             </DataTableRoot>
@@ -388,9 +387,9 @@ export function AssistantWizard({
               <ConnectionFiles
                 connection={connection}
                 files={files}
-                key={connection.id}
+                key={connection.name}
                 loading={loading}
-                onSelectionChange={(next) => setFileSelection((prev) => ({ ...prev, [connection.id]: next }))}
+                onSelectionChange={(next) => setFileSelection((prev) => ({ ...prev, [connection.name]: next }))}
                 selection={selection}
               />
             ))}

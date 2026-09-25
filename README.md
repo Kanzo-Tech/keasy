@@ -12,6 +12,13 @@ make dev
 
 Open [http://localhost:3000](http://localhost:3000) and log in at Keycloak. The first
 `up` compiles the server's dependencies once; later ones reuse the cached volumes.
+No `.env`: every dev value is a literal in `docker-compose.yml`.
+
+| What | Where |
+|------|-------|
+| App (web BFF, `/v1`) | [http://localhost:3000](http://localhost:3000) |
+| Keycloak | [http://keycloak.localhost:8180](http://keycloak.localhost:8180) (admin `admin` / `admin`) |
+| API, for curl | `http://localhost:8080` |
 
 ## Dev accounts
 
@@ -47,17 +54,16 @@ with none — a job belongs to its creator, and at boot there is no one to give 
 to. A member opens the workspace with data, shapes, a destination and a job
 ready to launch.
 
-`minio.localhost` is load-bearing: Docker's DNS answers it inside the compose
-network and `*.localhost` is loopback on the host, so a URL the server presigns
-is one the browser can fetch.
+`minio.localhost` and `keycloak.localhost` are load-bearing: Docker's DNS answers
+them inside the compose network and `*.localhost` is loopback on the host, so a
+URL the server presigns, and the issuer a token names, work from both sides.
 
 ## Architecture
 
 ```mermaid
 graph TD
-    Browser -->|":3000"| Caddy
-    Caddy -->|"/auth/*"| Keycloak["Keycloak (OIDC)"]
-    Caddy -->|"/*"| Web["Web (Next.js BFF)"]
+    Browser --> Web["Web (Next.js BFF)"]
+    Browser -->|"sign-in"| Keycloak["Keycloak (OIDC)"]
     Web -->|"/v1 + bearer token"| Server["Server (Rust/Axum)"]
     Web -->|"OIDC code flow"| Keycloak
     Web -->|"session records"| Valkey[("Valkey")]
@@ -87,13 +93,10 @@ the volume (`make clean`) instead.
 ## Deployment
 
 Docker Swarm, driven by Terraform — see [`infra/terraform/README.md`](infra/terraform/README.md).
-`make deploy-platform` brings up Traefik, Keycloak and Postgres; `make deploy-realm`
-applies the realm and one server + web stack per tenant declared in
-`realm/terraform.tfvars`. Images are published to GHCR by `.github/workflows/images.yml`
-on `v*` tags, after the server and web CI pass.
-
-`make prod` builds and runs the release Dockerfiles locally, with the dev identity.
-It is not a deployment.
+`make deploy-platform` brings up Traefik, Keycloak (on its own host) and Postgres;
+`make deploy-realm` applies the realm and one server + web + Valkey stack per tenant
+declared in `realm/terraform.tfvars`. Images are published to GHCR by
+`.github/workflows/images.yml` on `v*` tags, after the server and web CI pass.
 
 ## Development
 
@@ -105,11 +108,10 @@ It is not a deployment.
 | `make logs` / `make logs-<svc>` | Tail logs |
 | `make restart` / `make restart-<svc>` | Restart without rebuilding |
 | `make shell-<svc>` | Shell in a container |
-| `make prod` / `make build` | Run / build the release images |
 
-Compose is a base file plus an overlay: `docker-compose.dev.yml` (hot reload,
-MinIO, seed) or `docker-compose.prod.yml` (release images). Every setting has its
-default in compose as `${VAR:-default}`; export a variable to override it.
+`docker-compose.yml` is the dev stack and nothing else. Dev applies the same
+`infra/terraform/realm` module as prod, with `dev.tfvars`.
+The Rust toolchain is pinned once, in `server/rust-toolchain.toml`.
 
 ## OpenAPI
 
@@ -124,7 +126,6 @@ cd web && pnpm run openapi                     # writes src/lib/api/schema.d.ts
 ## Layout
 
 ```
-infra/caddy/        the local edge (/auth → Keycloak, everything else → web)
 infra/dev/          MinIO seed and the draft job, dev-only
 infra/terraform/    platform/ and realm/ — the Swarm deployment, and dev's realm
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)

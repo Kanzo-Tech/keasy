@@ -29,7 +29,6 @@ CREATE TABLE jobs (
     id              TEXT PRIMARY KEY,
     name            TEXT,
     status          TEXT NOT NULL DEFAULT 'pending',
-    mode            TEXT NOT NULL DEFAULT 'integrated',
     created_at      TEXT NOT NULL,
     started_at      TEXT,
     completed_at    TEXT,

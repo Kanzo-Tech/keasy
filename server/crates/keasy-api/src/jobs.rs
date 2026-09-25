@@ -13,24 +13,6 @@ use serde::{Deserialize, Serialize};
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-pub enum RunMode {
-    Integrated,
-    Scheduled,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    utoipa::ToSchema,
-    strum::AsRefStr,
-    strum::EnumString,
-)]
-#[serde(rename_all = "snake_case")]
-#[strum(serialize_all = "snake_case")]
 pub enum JobStatus {
     Draft,
     Pending,
@@ -53,7 +35,6 @@ pub struct Job {
     pub completed_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<JobRuntimeError>,
-    pub mode: RunMode,
     /// Keycloak `sub` of the member who created the job, and the only one who
     /// may see, change, run or read it. Taken from the token, never the body.
     pub created_by: String,
@@ -107,7 +88,6 @@ pub struct OutputRelation {
 pub struct CreateJobRequest {
     pub script: String,
     pub name: Option<String>,
-    pub mode: Option<RunMode>,
     /// Accepted, not acted on: DCAT publication is not built.
     pub dcat_enabled: Option<bool>,
     /// Where the output lands: a sink connection.

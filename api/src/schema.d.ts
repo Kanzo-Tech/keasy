@@ -653,7 +653,6 @@ export interface components {
             /** @description Accepted, not acted on: DCAT publication is not built. */
             dcat_enabled?: boolean | null;
             draft?: boolean;
-            mode?: null | components["schemas"]["RunMode"];
             name?: string | null;
             script: string;
             /** @description Where the output lands: a sink connection. */
@@ -739,7 +738,6 @@ export interface components {
              *     "this job produced output".
              */
             manifest?: unknown;
-            mode: components["schemas"]["RunMode"];
             name?: string | null;
             /**
              * @description What the corpus holds and what it is called, as the corpus reader
@@ -818,8 +816,6 @@ export interface components {
                 [key: string]: string;
             };
         };
-        /** @enum {string} */
-        RunMode: "integrated" | "scheduled";
         SaveAiProviderRequest: {
             /** @description Empty keeps the stored key. */
             api_key?: string;

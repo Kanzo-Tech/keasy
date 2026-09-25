@@ -2412,16 +2412,6 @@
           "draft": {
             "type": "boolean"
           },
-          "mode": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/RunMode"
-              }
-            ]
-          },
           "name": {
             "type": [
               "string",
@@ -2646,7 +2636,6 @@
           "id",
           "status",
           "created_at",
-          "mode",
           "created_by",
           "sink_connection_id"
         ],
@@ -2679,9 +2668,6 @@
           },
           "manifest": {
             "description": "What the run reported, verbatim and **opaque**: fossil's own run report,\nwhich IS the manifest the corpus carries. keasy stores it, hands it back\nand never reads a field of it — the last time a host re-typed this\nstruct, it ended up asking for `vertex/<Type>.parquet`, a file the\nlayout pass deletes. Its presence is the one thing keasy asks of it:\n\"this job produced output\"."
-          },
-          "mode": {
-            "$ref": "#/components/schemas/RunMode"
           },
           "name": {
             "type": [
@@ -2915,13 +2901,6 @@
             }
           }
         }
-      },
-      "RunMode": {
-        "type": "string",
-        "enum": [
-          "integrated",
-          "scheduled"
-        ]
       },
       "SaveAiProviderRequest": {
         "type": "object",

@@ -150,7 +150,7 @@ mod tests {
 
     #[test]
     fn fill_row_counts_matches_jobs_to_datasets_by_sanitized_id() {
-        use keasy_api::jobs::{Job, JobStatus, RunMode};
+        use keasy_api::jobs::{Job, JobStatus};
 
         // A dataset as datasets() returns it: sanitized id, sanitized table name.
         let mut datasets = vec![CatalogDataset {
@@ -177,7 +177,6 @@ mod tests {
             started_at: None,
             completed_at: None,
             error: None,
-            mode: RunMode::Integrated,
             created_by: String::new(),
             sink_connection_id: "sink".into(),
             script: None,

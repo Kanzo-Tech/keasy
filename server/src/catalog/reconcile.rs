@@ -137,7 +137,7 @@ pub fn spawn(state: AppState, every: Duration) -> tokio::task::JoinHandle<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use keasy_api::jobs::{OutputRelation, RunMode};
+    use keasy_api::jobs::{OutputRelation};
 
     fn job(id: &str, status: JobStatus, relations: Vec<OutputRelation>) -> Job {
         Job {
@@ -148,7 +148,6 @@ mod tests {
             started_at: None,
             completed_at: None,
             error: None,
-            mode: RunMode::Integrated,
             created_by: String::new(),
             sink_connection_id: "sink".into(),
             script: None,

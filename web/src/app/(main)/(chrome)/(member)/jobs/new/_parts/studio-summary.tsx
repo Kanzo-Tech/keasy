@@ -64,7 +64,7 @@ export function StudioSummary({
       <div className="flex flex-col gap-1">
         <h2 className="font-heading font-semibold text-lg">What this job reads</h2>
         <p className="text-muted-foreground text-sm">
-          {refs.length} reference{refs.length === 1 ? "" : "s"} · runs {values.mode} · landing in{" "}
+          {refs.length} reference{refs.length === 1 ? "" : "s"} · landing in{" "}
           <Show
             fallback={<span className="text-destructive">no destination</span>}
             when={!!destination}

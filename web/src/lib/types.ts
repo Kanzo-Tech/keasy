@@ -7,7 +7,6 @@ import type { components } from "@keasy/api";
 type S = components["schemas"];
 
 export type JobStatus = S["JobStatus"];
-export type RunMode = S["RunMode"];
 export type Job = S["Job"];
 export type CreateJobRequest = S["CreateJobRequest"];
 export type UpdateJobRequest = S["UpdateJobRequest"];

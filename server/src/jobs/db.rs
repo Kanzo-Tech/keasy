@@ -4,7 +4,7 @@ use crate::db::{Database, DbResult, enum_column, json_column_opt};
 
 use keasy_api::jobs::{Job, JobStatus};
 
-const COLUMNS: &str = "id, name, status, mode, created_at, started_at, completed_at, error, \
+const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, error, \
                        created_by, sink_connection_id, script, manifest, relations";
 
 impl Database {
@@ -22,13 +22,12 @@ impl Database {
         let inserted = self.write().await.execute(
             &format!(
                 "INSERT INTO jobs ({COLUMNS})
-                 SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13 {condition}"
+                 SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12 {condition}"
             ),
             params![
                 job.id,
                 job.name,
                 job.status.as_ref(),
-                job.mode.as_ref(),
                 job.created_at,
                 job.started_at,
                 job.completed_at,
@@ -134,7 +133,6 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
         id: row.get("id")?,
         name: row.get("name")?,
         status,
-        mode: enum_column(row, "mode")?,
         created_at: row.get("created_at")?,
         started_at: row.get("started_at")?,
         completed_at: row.get("completed_at")?,
@@ -168,7 +166,6 @@ mod tests {
             CreateJobRequest {
                 script: "x".into(),
                 name: None,
-                mode: None,
                 dcat_enabled: None,
                 sink_connection_id: "sink".into(),
                 draft: true,

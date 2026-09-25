@@ -38,7 +38,6 @@ pub async fn claim_declared_draft(db: &Database, user_id: &str) -> DbResult<()> 
     let request = CreateJobRequest {
         script,
         name: env_nonblank("KEASY_BOOTSTRAP_DRAFT_NAME"),
-        mode: None,
         dcat_enabled: None,
         sink_connection_id: sink.id,
         draft: true,

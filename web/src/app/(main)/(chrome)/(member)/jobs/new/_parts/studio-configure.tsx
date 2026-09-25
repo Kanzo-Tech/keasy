@@ -5,7 +5,6 @@ import {
   Badge,
   Field,
   FieldDescription,
-  FieldLabel,
   Float,
   RadioGroup,
   RadioGroupCard,
@@ -18,7 +17,6 @@ import {
   SelectValue,
   Separator,
   Show,
-  Switch,
   createListCollection,
 } from "@kanzo-tech/ui";
 import { CalendarClock, Zap } from "lucide-react";
@@ -27,7 +25,6 @@ import type { Connection, RunMode } from "@/lib/types";
 export interface ConfigValues {
   mode: RunMode;
   sinkConnectionId: string | null;
-  dcatEnabled: boolean;
 }
 
 /** One setting, said the way a settings page says it: what it is on the left, the
@@ -71,16 +68,12 @@ export function StudioConfigure({
   onChange,
   jobName,
   connections,
-  orgConfigured,
-  orgName,
 }: {
   values: ConfigValues;
   onChange: (patch: Partial<ConfigValues>) => void;
   /** Only to show the path the output will actually land on. */
   jobName: string;
   connections: Connection[];
-  orgConfigured: boolean;
-  orgName: string | null;
 }) {
   const set = <K extends keyof ConfigValues>(key: K, value: ConfigValues[K]) =>
     onChange({ [key]: value } as Partial<ConfigValues>);
@@ -197,26 +190,6 @@ export function StudioConfigure({
               </code>
             </Show>
           </FieldDescription>
-        </Field>
-      </Setting>
-
-      <Separator />
-
-      <Setting
-        description={
-          orgConfigured
-            ? `Publishes a DCAT-AP record for ${orgName} alongside the graph, so the datasets are discoverable in a catalogue.`
-            : "Publishes a DCAT-AP record alongside the graph. It names the publisher, so it needs the organisation's identity configured first."
-        }
-        title="Catalogue"
-      >
-        <Field disabled={!orgConfigured} orientation="horizontal">
-          <FieldLabel className="w-fit flex-1">Publish a DCAT-AP record</FieldLabel>
-          <Switch
-            checked={values.dcatEnabled && orgConfigured}
-            disabled={!orgConfigured}
-            onCheckedChange={(d) => set("dcatEnabled", d.checked)}
-          />
         </Field>
       </Setting>
     </div>

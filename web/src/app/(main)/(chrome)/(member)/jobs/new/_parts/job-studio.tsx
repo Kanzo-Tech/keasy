@@ -87,10 +87,6 @@ export function JobStudio() {
   // creating a second draft per keystroke pause.
   const [draftId, setDraftId] = useState<string | null>(searchParams.get("draft"));
 
-  const { data: orgIdentity } = useQuery({
-    queryKey: queryKeys.org.identity,
-    queryFn: api.org.identity,
-  });
   const { data: connections = [] } = useQuery({
     queryKey: queryKeys.connections.all(),
     queryFn: () => api.connections.list(),
@@ -99,13 +95,6 @@ export function JobStudio() {
     queryKey: queryKeys.settings.providers,
     queryFn: checker.providers,
   });
-
-  const orgConfigured = orgIdentity != null && !!orgIdentity.legal_name;
-
-  useEffect(() => {
-    if (orgConfigured) store.setDcatEnabled(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgConfigured]);
 
   const { data: draftJob } = useQuery({
     queryKey: queryKeys.jobs.detail(draftId!),
@@ -216,7 +205,6 @@ export function JobStudio() {
         script: store.script,
         name: store.name.trim() || undefined,
         mode: store.mode,
-        dcat_enabled: store.dcatEnabled || undefined,
         sink_connection_id: destination,
       });
     },
@@ -233,13 +221,11 @@ export function JobStudio() {
   const config: ConfigValues = {
     mode: store.mode,
     sinkConnectionId: store.sinkConnectionId,
-    dcatEnabled: store.dcatEnabled,
   };
   const onConfigChange = useCallback((patch: Partial<ConfigValues>) => {
     const s = useJobEditorStore.getState();
     if (patch.mode !== undefined) s.setMode(patch.mode);
     if (patch.sinkConnectionId !== undefined) s.setSinkConnectionId(patch.sinkConnectionId);
-    if (patch.dcatEnabled !== undefined) s.setDcatEnabled(patch.dcatEnabled);
   }, []);
 
   // ── Before the studio opens ─────────────────────────────────────────────
@@ -382,8 +368,6 @@ export function JobStudio() {
             connections={connections}
             jobName={store.name}
             onChange={onConfigChange}
-            orgConfigured={orgConfigured}
-            orgName={orgIdentity?.legal_name ?? null}
             values={config}
           />
         </StepsContent>

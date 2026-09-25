@@ -71,7 +71,6 @@ export function StudioSummary({
           >
             <span className="font-mono">@{destination?.name}</span>
           </Show>
-          {values.dcatEnabled ? " · with a DCAT-AP record" : ""}
         </p>
       </div>
 

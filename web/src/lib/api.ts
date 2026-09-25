@@ -140,12 +140,6 @@ export const api = {
     schema: async (): Promise<ProviderSchema[]> =>
       unwrap(await client.GET("/v1/settings/schema")),
 
-    org: async () => {
-      const result = await client.GET("/v1/settings/organization");
-      if (result.data === undefined) return null;
-      return result.data;
-    },
-
     /// `null` until the owner has set it (204).
     catalogStorage: async () =>
       (await client.GET("/v1/settings/catalog-storage")).data ?? null,
@@ -183,16 +177,6 @@ export const api = {
   auth: {
     workspaces: async () =>
       unwrap(await client.GET("/v1/auth/workspaces")),
-  },
-
-  // ── Workspace legal identity ──────────────────────────────────────────────
-  // Membership (owner/member) is declared in Terraform, not managed here.
-  org: {
-    identity: async () =>
-      unwrap(await client.GET("/v1/org/identity")),
-
-    saveIdentity: async (data: Schemas["OrgIdentity"]) =>
-      unwrap(await client.PUT("/v1/org/identity", { body: data })),
   },
 
 

@@ -21,7 +21,6 @@ interface JobEditorState {
   script: string;
   name: string;
   mode: RunMode;
-  dcatEnabled: boolean;
   /** The connection the member picks as the output destination. */
   sinkConnectionId: string | null;
 
@@ -30,7 +29,6 @@ interface JobEditorState {
   setScript: (script: string) => void;
   setName: (name: string) => void;
   setMode: (mode: RunMode) => void;
-  setDcatEnabled: (enabled: boolean) => void;
   setSinkConnectionId: (id: string | null) => void;
 
   completeAssistant: (generatedScript: string) => void;
@@ -44,7 +42,6 @@ const EMPTY = {
   script: "",
   name: "",
   mode: "integrated" as RunMode,
-  dcatEnabled: false,
   sinkConnectionId: null,
 };
 
@@ -56,7 +53,6 @@ export const useJobEditorStore = create<JobEditorState>((set) => ({
   setScript: (script) => set({ script }),
   setName: (name) => set({ name }),
   setMode: (mode) => set({ mode }),
-  setDcatEnabled: (dcatEnabled) => set({ dcatEnabled }),
   setSinkConnectionId: (sinkConnectionId) => set({ sinkConnectionId }),
 
   completeAssistant: (script) => set({ script, creationMode: "studio", step: 0 }),

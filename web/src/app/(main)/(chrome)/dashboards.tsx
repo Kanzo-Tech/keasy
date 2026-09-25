@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, Cloud, Database, FileText, GalleryVerticalEnd, type LucideIcon } from "lucide-react";
+import { Cloud, Database, FileText, GalleryVerticalEnd, type LucideIcon } from "lucide-react";
 import {
   Card,
   SectionHeader,
@@ -27,7 +27,6 @@ interface Tile {
 }
 
 export function OwnerDashboard() {
-  const identity = useQuery({ queryKey: queryKeys.org.identity, queryFn: api.org.identity });
   const catalog = useQuery({
     queryKey: queryKeys.settings.catalogStorage,
     queryFn: api.settings.catalogStorage,
@@ -37,13 +36,6 @@ export function OwnerDashboard() {
     <Tiles
       heading="Workspace overview"
       tiles={[
-        {
-          href: "/identity",
-          icon: Building2,
-          title: "Identity",
-          value: identity.isLoading ? undefined : identity.data?.legal_name?.trim() || "Not set",
-          description: "DCAT publisher",
-        },
         {
           href: "/catalog",
           icon: GalleryVerticalEnd,
@@ -73,7 +65,7 @@ export function MemberDashboard() {
   const count = (status: string[]) => all.filter((j) => status.includes(j.status)).length;
   const accountCount = accounts.data?.length ?? 0;
   const connectionCount = connections.data?.length ?? 0;
-  const catalogCount = all.filter((j) => j.status === "completed" && j.manifest).length;
+  const outputCount = all.filter((j) => j.status === "completed" && j.manifest).length;
 
   return (
     <>
@@ -99,9 +91,9 @@ export function MemberDashboard() {
           {
             href: "/jobs",
             icon: FileText,
-            title: "DCAT Catalogs",
-            value: loading ? undefined : String(catalogCount),
-            description: catalogCount === 1 ? "catalog generated" : "catalogs generated",
+            title: "Outputs",
+            value: loading ? undefined : String(outputCount),
+            description: outputCount === 1 ? "output published" : "outputs published",
           },
         ]}
       />

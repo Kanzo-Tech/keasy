@@ -169,3 +169,10 @@ export async function providers(): Promise<ProviderInfo[]> {
   await load();
   return wasmProviders();
 }
+
+/** They are compiled into the module, so they never go stale. */
+export const providersQuery = {
+  queryKey: ["fossil", "providers"],
+  queryFn: providers,
+  staleTime: Infinity,
+} as const;

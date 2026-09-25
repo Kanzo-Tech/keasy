@@ -9,10 +9,7 @@ type W = Inputs;
 
 export type JobStatus = S["JobStatus"];
 export type Job = S["Job"];
-export type CreateJobRequest = W["CreateJobRequest"];
-export type UpdateJobRequest = W["UpdateJobRequest"];
 export type Dataset = S["Dataset"];
-export type OutputRelation = S["OutputRelation"];
 export type CloudAccountSummary = S["CloudAccountSummary"];
 export type CreateCloudAccountRequest = W["CreateCloudAccountRequest"];
 export type UpdateCloudAccountRequest = W["UpdateCloudAccountRequest"];
@@ -27,12 +24,6 @@ export type AiProvider = S["AiProvider"];
 export type FileEntry = S["FileEntry"];
 export type ChatMessage = S["ChatMessage"];
 
-
-// ---------------------------------------------------------------------------
-// UI-only union types
-// ---------------------------------------------------------------------------
-
-export type CreationMode = "studio" | "assistant";
 
 // ---------------------------------------------------------------------------
 // Connection-provider registry schema — codegen'd from the OpenAPI spec

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Badge,
   Button,
@@ -39,8 +39,7 @@ import {
   toast,
 } from "@kanzo-tech/ui";
 import { ChevronDown, Pencil, PlugZap, Save, X } from "lucide-react";
-import { api } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
+import { $api, http, invalidate } from "@/lib/api/client";
 import { toastError } from "@/lib/toast-error";
 import * as checker from "@/lib/fossil/checker";
 import { AssistantWizard } from "./assistant-wizard";
@@ -73,7 +72,6 @@ const AUTOSAVE_MS = 1500;
  */
 export function JobStudio() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
 
   const store = useJobEditorStore();
@@ -87,20 +85,15 @@ export function JobStudio() {
   // creating a second draft per keystroke pause.
   const [draftId, setDraftId] = useState<string | null>(searchParams.get("draft"));
 
-  const { data: connections = [] } = useQuery({
-    queryKey: queryKeys.connections.all(),
-    queryFn: () => api.connections.list(),
-  });
-  const { data: providers = [] } = useQuery({
-    queryKey: queryKeys.settings.providers,
-    queryFn: checker.providers,
-  });
+  const { data: connections = [] } = $api.useQuery("get", "/v1/connections");
+  const { data: providers = [] } = useQuery(checker.providersQuery);
 
-  const { data: draftJob } = useQuery({
-    queryKey: queryKeys.jobs.detail(draftId!),
-    queryFn: () => api.jobs.get(draftId!),
-    enabled: !!searchParams.get("draft"),
-  });
+  const { data: draftJob } = $api.useQuery(
+    "get",
+    "/v1/jobs/{id}",
+    { params: { path: { id: draftId! } } },
+    { enabled: !!searchParams.get("draft") },
+  );
 
   useEffect(() => {
     if (!draftJob || draftJob.status !== "draft") return;
@@ -159,22 +152,22 @@ export function JobStudio() {
     mutationFn: async () => {
       const name = store.name.trim() || undefined;
       if (draftId) {
-        await api.jobs.update(draftId, { script: store.script, name });
+        await http.PUT("/v1/jobs/{id}", {
+          params: { path: { id: draftId } },
+          body: { script: store.script, name },
+        });
         return draftId;
       }
       if (!destination) throw new Error("Pick a destination before saving");
-      const created = await api.jobs.create({
-        script: store.script,
-        name,
-        draft: true,
-        sink_connection_id: destination,
+      const { data: created } = await http.POST("/v1/jobs", {
+        body: { script: store.script, name, draft: true, sink_connection_id: destination },
       });
-      return created.id;
+      return created!.id;
     },
     onSuccess: async (id) => {
       setDraftId(id);
       setSaved(true);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
+      await invalidate("/v1/jobs");
     },
     onError: (err) => toastError(err, "Failed to save draft"),
   });
@@ -198,15 +191,20 @@ export function JobStudio() {
       // The draft becomes the job: keasy has no promote endpoint, so the draft
       // is dropped and the real job created in its place.
       if (!destination) throw new Error("Pick a destination before launching");
-      if (draftId) await api.jobs.remove(draftId).catch(() => {});
-      return api.jobs.create({
-        script: store.script,
-        name: store.name.trim() || undefined,
-        sink_connection_id: destination,
+      if (draftId) {
+        await http.DELETE("/v1/jobs/{id}", { params: { path: { id: draftId } } }).catch(() => {});
+      }
+      const { data: job } = await http.POST("/v1/jobs", {
+        body: {
+          script: store.script,
+          name: store.name.trim() || undefined,
+          sink_connection_id: destination,
+        },
       });
+      return job!;
     },
     onSuccess: async (job) => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
+      await invalidate("/v1/jobs");
       router.push(`/jobs/${job.id}`);
     },
     onError: (err) => toastError(err, "Failed to create job"),

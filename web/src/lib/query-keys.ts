@@ -22,10 +22,6 @@ export const queryKeys = {
     refs: ["connections", "refs"] as const,
   },
 
-  // A program's sources as fossil resolved them, and their descriptions
-  programSources: (program: string) => ["program-sources", program] as const,
-  sourceDescriptors: (sources: string[]) => ["source-descriptors", sources] as const,
-
   datasets: ["datasets"] as const,
 
   // Cloud

@@ -9,7 +9,7 @@ import {
   RadioGroupText,
 } from "@kanzo-tech/ui";
 import { Code, Wand2 } from "lucide-react";
-import type { CreationMode } from "@/lib/types";
+import type { CreationMode } from "./job-editor-store";
 
 /** How the program gets written, asked once before the studio opens. */
 export function ModePicker({ onSelect }: { onSelect: (mode: CreationMode) => void }) {

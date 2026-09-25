@@ -18,7 +18,7 @@ import {
 import { Check, Shapes } from "lucide-react";
 import type { CheckRow, SourceRefInfo } from "@/lib/fossil/checker";
 import type { ConfigValues } from "./studio-configure";
-import type { Connection } from "@/lib/types";
+import type { Schemas } from "@/lib/api/client";
 
 /** LSP severity: 1 error, 2 warning, 3 information, 4 hint. */
 const SEVERITY_LABEL = ["error", "error", "warning", "info", "hint"] as const;
@@ -49,7 +49,7 @@ export function StudioSummary({
 }: {
   name: string;
   values: ConfigValues;
-  connections: Connection[];
+  connections: Schemas["Connection"][];
   refs: SourceRefInfo[];
   findings: readonly CheckRow[];
   blocked: boolean;

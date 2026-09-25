@@ -1,5 +1,5 @@
 import type { CompletePayload, Job } from "@fossil-lang/executor";
-import { api } from "@/lib/api";
+import { http } from "@/lib/api/client";
 import { sourceHost } from "./source-host";
 
 /**
@@ -14,12 +14,17 @@ export function makeJob(id: string): Job {
   return {
     host: sourceHost,
     output: {
-      signOutputUrls: (paths: string[]) => api.jobs.signOutputUrls(id, paths),
+      signOutputUrls: async (paths: string[]) =>
+        (await http.POST("/v1/jobs/{id}/output/urls", { params: { path: { id } }, body: { paths } }))
+          .data!.files,
       complete: async (req: CompletePayload): Promise<void> => {
-        await api.jobs.complete(id, {
+        await http.PATCH("/v1/jobs/{id}", {
+          params: { path: { id } },
+          body: {
           status: req.status,
           manifest: req.manifest,
           error: req.error,
+          },
         });
       },
     },

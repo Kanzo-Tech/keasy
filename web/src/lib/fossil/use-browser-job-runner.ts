@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
-import { api } from "@/lib/api";
-import type { Schemas } from "@/lib/api/client";
+import { http, type Schemas } from "@/lib/api/client";
 import { makeJob } from "./job-transport";
 import { openJobCorpus, relationsOf } from "./open-job-corpus";
 
@@ -38,7 +37,10 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
       try {
         // Start marker: flip Pending → Running. Reuses the completion PATCH so
         // the UI (and any other viewer) sees it in progress.
-        await api.jobs.complete(jobId, { status: "running" });
+        await http.PATCH("/v1/jobs/{id}", {
+          params: { path: { id: jobId } },
+          body: { status: "running" },
+        });
 
         const mod = await import("@fossil-lang/executor");
         await mod.initFossilExecutor({ wasmUrl: DF_WASM_URL });
@@ -56,7 +58,10 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         // a failed run would be a lie about durable data.
         try {
           const { corpus } = await openJobCorpus(jobId);
-          await api.jobs.publishRelations(jobId, await relationsOf(corpus));
+          await http.PUT("/v1/jobs/{id}/relations", {
+            params: { path: { id: jobId } },
+            body: { relations: await relationsOf(corpus) },
+          });
         } catch (err) {
           console.error(`publishing the corpus relations failed (${jobId})`, err);
         }

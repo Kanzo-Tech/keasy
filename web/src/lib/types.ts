@@ -25,7 +25,6 @@ export type AiProvider = S["AiProvider"];
 
 
 export type FileEntry = S["FileEntry"];
-export type ChatMessage = S["ChatMessage"];
 
 
 // ---------------------------------------------------------------------------

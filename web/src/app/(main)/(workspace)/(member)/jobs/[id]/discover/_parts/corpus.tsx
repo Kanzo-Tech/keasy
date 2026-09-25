@@ -6,12 +6,14 @@ import type { SchemaResult, SqlCorpus } from "@fossil-lang/corpus";
 import { MosaicProvider, type Coordinator } from "@kanzo-tech/ui/analytics";
 import { openJobCorpus } from "@/lib/fossil/open-job-corpus";
 import { buildGraphSchema, type GraphSchema } from "@/lib/graph-schema";
-import { queryKeys } from "@/lib/query-keys";
 
 /**
  * Everything read off a corpus is read once and dropped with the page: the signed URLs behind it
  * expire, so a cached corpus outliving the visit would be one that can no longer read its files.
  */
+/** The root of everything read off one job's corpus: local reads, never the API's cache. */
+export const corpusKey = (jobId: string) => ["corpus", jobId] as const;
+
 export const ONCE = { staleTime: Infinity, gcTime: 0, retry: false } as const;
 
 export interface Corpus {
@@ -26,7 +28,7 @@ export interface Corpus {
 
 export function corpusQuery(jobId: string) {
   return queryOptions({
-    queryKey: queryKeys.corpus(jobId),
+    queryKey: corpusKey(jobId),
     queryFn: async (): Promise<Corpus> => {
       const opened = await openJobCorpus(jobId);
       // Also what boots the verb transport, which registers the relations every chart and rule
@@ -60,7 +62,7 @@ export function useCorpus(): Corpus {
 export function useGraphSchema(): { schema: GraphSchema; error: Error | null } {
   const { jobId, corpus, schema } = useCorpus();
   const stats = useQuery({
-    queryKey: [...queryKeys.corpus(jobId), "stats"],
+    queryKey: [...corpusKey(jobId), "stats"],
     queryFn: async () =>
       new Map(
         await Promise.all(

@@ -3,7 +3,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, Sparkles } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import type { ExecuteSqlResult, SqlCorpus } from "@fossil-lang/corpus";
 import {
   Alert,
@@ -53,15 +52,13 @@ import {
   useAiStream,
 } from "@kanzo-tech/ai";
 import { MessageMarkdown } from "@kanzo-tech/ai/markdown";
-import { ApiError, api } from "@/lib/api";
-import { completeText, streamText } from "@/lib/ai/stream";
+import { $api, ApiError, type Schemas } from "@/lib/api/client";
+import { type ChatMessage, completeText, streamText } from "@/lib/ai/stream";
 import { explainRequest, parsePlan, queryRequest } from "@/lib/ai/prompts";
-import { queryKeys } from "@/lib/query-keys";
 import { AI_PROVIDERS } from "@/lib/ai-providers";
 import { generateSuggestions } from "@/lib/schema-suggestions";
 import { getErrorInfo } from "@/lib/error-codes";
 import type { GraphSchema } from "@/lib/graph-schema";
-import type { AiProvider, ChatMessage } from "@/lib/types";
 import { describeDataSpace } from "@/lib/data-space";
 import { useCorpus } from "./corpus";
 import { ResultTable } from "./result-table";
@@ -155,7 +152,7 @@ const SAMPLE_CHARS = 4000;
 interface AskOptions {
   question: string;
   history: ChatMessage[];
-  provider?: AiProvider;
+  provider?: Schemas["AiProvider"];
   schema: string;
   corpus: SqlCorpus;
   signal: AbortSignal;
@@ -348,10 +345,7 @@ export function AskPanel({ graphSchema }: { graphSchema: GraphSchema }) {
   const nextTurn = useRef(0);
   const live = useRef<number | null>(null);
 
-  const { data: aiProviders, isLoading: loadingAiProviders } = useQuery({
-    queryKey: queryKeys.ai.providers,
-    queryFn: api.ai.providers,
-  });
+  const { data: aiProviders, isLoading: loadingAiProviders } = $api.useQuery("get", "/v1/settings/ai/providers");
   const provider = useMemo(
     () => AI_PROVIDERS.find((p) => aiProviders?.some((s) => s.provider === p.id && s.api_key))?.id,
     [aiProviders],

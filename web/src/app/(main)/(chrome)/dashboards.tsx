@@ -12,6 +12,7 @@ import {
   StatTile,
 } from "@kanzo-tech/ui";
 import { api } from "@/lib/api";
+import { $api, type Schemas } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query-keys";
 import { hasRunningJobs } from "@/lib/utils";
 
@@ -49,20 +50,15 @@ export function OwnerDashboard() {
 }
 
 export function MemberDashboard() {
-  const jobs = useQuery({
-    queryKey: queryKeys.jobs.all,
-    queryFn: api.jobs.list,
+  const jobs = $api.useQuery("get", "/v1/jobs", {}, {
     refetchInterval: (query) => (hasRunningJobs(query.state.data) ? 2000 : 0),
   });
-  const accounts = useQuery({ queryKey: queryKeys.cloud.accounts, queryFn: api.cloud.list });
-  const connections = useQuery({
-    queryKey: queryKeys.connections.all(),
-    queryFn: () => api.connections.list(),
-  });
+  const accounts = $api.useQuery("get", "/v1/cloud-accounts");
+  const connections = $api.useQuery("get", "/v1/connections");
   const loading = jobs.isLoading || accounts.isLoading || connections.isLoading;
 
   const all = jobs.data ?? [];
-  const count = (status: string[]) => all.filter((j) => status.includes(j.status)).length;
+  const count = (status: Schemas["JobStatus"][]) => all.filter((j) => status.includes(j.status)).length;
   const accountCount = accounts.data?.length ?? 0;
   const connectionCount = connections.data?.length ?? 0;
   const outputCount = all.filter((j) => j.status === "completed" && j.manifest).length;

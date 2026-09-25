@@ -131,8 +131,7 @@ export function JobStudio() {
   // A job's connections are its program's `@conn` references, read out of
   // fossil's typed lineage — the same parse `fossil refs` runs natively, so the
   // browser and the CLI never disagree about what a job reads. One computation
-  // feeds the rail's "in use" marks, the status strip's count, Summary's list
-  // and the `connection_ids` the create request carries.
+  // feeds the rail's "in use" marks, the status strip's count and Summary's list.
   useEffect(() => {
     let alive = true;
     const id = setTimeout(() => {
@@ -150,10 +149,6 @@ export function JobStudio() {
   const usedNames = useMemo(
     () => new Set(refs.map((r) => r.connection).filter((c): c is string => !!c)),
     [refs],
-  );
-  const connectionIds = useMemo(
-    () => connections.filter((c) => usedNames.has(c.name)).map((c) => c.id),
-    [connections, usedNames],
   );
 
   // Every job lands in a sink. With one in the workspace there is nothing to
@@ -185,7 +180,6 @@ export function JobStudio() {
         name,
         mode: store.mode,
         draft: true,
-        connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
         sink_connection_id: destination,
       });
       return created.id;
@@ -223,7 +217,6 @@ export function JobStudio() {
         name: store.name.trim() || undefined,
         mode: store.mode,
         dcat_enabled: store.dcatEnabled || undefined,
-        connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
         sink_connection_id: destination,
       });
     },

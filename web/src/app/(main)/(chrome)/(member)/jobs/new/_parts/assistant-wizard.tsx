@@ -50,6 +50,7 @@ import {
 import { api } from "@/lib/api";
 import { type SseFrame, failOnError } from "@/lib/api/sse";
 import { formatSize } from "@/lib/formatters";
+import * as checker from "@/lib/fossil/checker";
 import { connectionPath, describeSources } from "@/lib/fossil/describe-sources";
 import { queryKeys } from "@/lib/query-keys";
 import type { CompetencyQuestion, Connection, FileSchema, ProviderInfo } from "@/lib/types";
@@ -213,11 +214,8 @@ export function AssistantWizard({
   });
   const program = bindings.map((b, i) => `f${i} := io.${b.constructor}("${b.uri}")`).join("\n");
   const described = useQuery({
-    queryKey: queryKeys.sourceDescriptors(
-      bindings.map((b) => b.uri),
-      connections.map((c) => c.id),
-    ),
-    queryFn: () => describeSources(program, connections),
+    queryKey: queryKeys.sourceDescriptors(bindings.map((b) => b.uri)),
+    queryFn: async () => describeSources(await checker.sources(program)),
     enabled: step > 0 && bindings.length > 0,
   });
   const schemasReady =

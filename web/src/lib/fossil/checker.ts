@@ -30,9 +30,13 @@ import {
   type FileHandle,
   type HoverRow,
   type InferredDescriptorJson,
+  type ProgramSource,
   type ProviderInfo,
   type SourceRefInfo,
 } from "@fossil-lang/wasm";
+import { resolveDocuments } from "@fossil-lang/types";
+
+import { sourceHost } from "./source-host";
 
 export type { CheckRow, CompletionRow, DefinitionRow, HoverRow, ProviderInfo, SourceRefInfo };
 export { tokenize, tokenKinds } from "@fossil-lang/wasm";
@@ -82,13 +86,32 @@ function sync(text: string): void {
   pushed = text;
 }
 
+/**
+ * Push the buffer and read the documents it names that the workspace lacks.
+ * Fossil reports what is missing and where; keasy signs, and nothing is fetched
+ * when nothing is missing. A document that cannot be read stays missing, and the
+ * check says so in its own words.
+ */
+async function settle(program: string): Promise<void> {
+  if (!playground || handle === null) return;
+  sync(program);
+  await resolveDocuments(playground.workspace(handle), sourceHost);
+}
+
 /** Re-check after an edit — the `didChange` path, and the same Salsa setter.
  *  No debounce here: `fossil()`'s linter waits out its own delay AND waits for
  *  this to return before scheduling again. */
-export function checkText(program: string): CheckRow[] {
-  if (!playground || handle === null) return [];
-  sync(program);
-  return playground.check();
+export async function checkText(program: string): Promise<CheckRow[]> {
+  await settle(program);
+  return playground?.check() ?? [];
+}
+
+/** The data sources the program reads, as fossil resolved them — what the
+ *  editor's introspection describes. */
+export async function sources(program: string): Promise<ProgramSource[]> {
+  await load();
+  await settle(program);
+  return playground && handle !== null ? playground.sources(handle) : [];
 }
 
 /** Check without editing — used after a descriptor lands. */

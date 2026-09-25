@@ -1,18 +1,18 @@
 "use client";
 
 /**
- * The descriptors of the sources the job editor's program binds, for
- * source-field completion. Described in the browser (see `describe-sources`),
- * re-asked only when the set of bindings or connections changes, never on a
- * keystroke that leaves them alone.
+ * The descriptors of the sources the job editor's program reads, for
+ * source-field completion. Fossil answers which sources those are; they are
+ * described only when that answer changes, never on a keystroke that leaves it
+ * alone.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { extractSourceRefs, type InferredDescriptor } from "@fossil-lang/introspect";
+import type { InferredDescriptor } from "@fossil-lang/introspect";
 
 import { queryKeys } from "@/lib/query-keys";
-import type { Connection } from "@/lib/types";
+import * as checker from "./checker";
 import { describeSources } from "./describe-sources";
 
 const NONE: InferredDescriptor[] = [];
@@ -27,34 +27,21 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
   return debounced;
 }
 
-export function useSourceDescriptors(
-  script: string,
-  connections: Connection[],
-): InferredDescriptor[] {
+export function useSourceDescriptors(script: string): InferredDescriptor[] {
   const program = useDebouncedValue(script, 400);
 
-  // What the answer depends on: the bindings (constructor, URI, option) and the
-  // data connections they can resolve against.
-  const bindings = useMemo(
-    () =>
-      extractSourceRefs(program)
-        .map((ref) => `${ref.format}:${ref.url}:${ref.option ?? ""}`)
-        .sort(),
-    [program],
-  );
-  const sources = useMemo(
-    () =>
-      connections
-        .filter((c) => c.kind === "data")
-        .map((c) => `${c.id}:${c.name}`)
-        .sort(),
-    [connections],
-  );
+  const { data: sources } = useQuery({
+    queryKey: queryKeys.programSources(program),
+    queryFn: () => checker.sources(program),
+    staleTime: Infinity,
+  });
 
   const { data } = useQuery({
-    queryKey: queryKeys.sourceDescriptors(bindings, sources),
-    queryFn: () => describeSources(program, connections),
-    enabled: bindings.length > 0,
+    queryKey: queryKeys.sourceDescriptors(
+      (sources ?? []).map((s) => `${s.format}:${s.locator}:${s.option ?? ""}`).sort(),
+    ),
+    queryFn: () => describeSources(sources ?? []),
+    enabled: !!sources && sources.length > 0,
     retry: false,
     // Signed URLs live five minutes; a description older than that is re-asked.
     staleTime: 4 * 60_000,

@@ -100,7 +100,7 @@ export function StudioEditor({
 
   // Schema-aware completion: each `@conn/path` binding is described in the
   // browser over a signed URL and pushed at the compiler before the next check.
-  const descriptors = useSourceDescriptors(program, connections);
+  const descriptors = useSourceDescriptors(program);
   useEffect(() => {
     if (!booted || descriptors.length === 0) return;
     for (const descriptor of descriptors) checker.registerDescriptor(descriptor);

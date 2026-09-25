@@ -18,11 +18,13 @@ export const queryKeys = {
     all: (tab?: ConnectionKind) => (tab ? (["connections", tab] as const) : (["connections"] as const)),
     detail: (id: string) => ["connections", id] as const,
     files: (id: string) => ["connections", id, "files"] as const,
+    // Under `connections`, so adding or deleting one drops the map with it.
+    refs: ["connections", "refs"] as const,
   },
 
-  // Source bindings described in the browser
-  sourceDescriptors: (bindings: string[], connections: string[]) =>
-    ["source-descriptors", bindings, connections] as const,
+  // A program's sources as fossil resolved them, and their descriptions
+  programSources: (program: string) => ["program-sources", program] as const,
+  sourceDescriptors: (sources: string[]) => ["source-descriptors", sources] as const,
 
   // Catalog (governance)
   catalog: {

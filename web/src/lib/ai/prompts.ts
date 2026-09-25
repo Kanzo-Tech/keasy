@@ -1,6 +1,6 @@
 import type { InferredDescriptor } from "@fossil-lang/introspect";
+import { FOSSIL_PROMPT } from "@fossil-lang/prompt";
 
-import { FOSSIL_PROMPT } from "./fossil-prompt";
 import { type ChatMessage, type CompletionRequest, stripFences } from "./stream";
 
 // ── The assistant: requirements, then a program ─────────────────────────
@@ -31,6 +31,19 @@ Return ONLY valid JSON (no markdown fences) with this structure:
     }
   ]
 }`;
+
+/** Fossil's surface, plus how keasy's connections are named and what the answer must be. */
+const PROGRAM_PROMPT = `${FOSSIL_PROMPT}
+
+## Rules
+
+1. Open the program with exactly one \`type { … } := io.shex("@connection_name/<name>.shex")\` binding, naming a shape document that sits in the same connection as the data. Every shape you map to, and every property key you write, must be one that document declares — pick the connection of the files you were given and a \`.shex\` name that matches the domain.
+2. Reference every file as \`@connection_name/path\` inside a quoted string; never a bare path.
+3. Model distinct entities as distinct shapes and distinct mappings, not one mega-shape.
+4. Relate entities with an edge — a call of the destination shape, \`Shape(<key expression>)\` — where the key expression builds the same identity that shape's own mapping declares.
+5. Give every mapping an \`@subject\` whose template incorporates a row value that is unique.
+6. Map all the source columns the competency questions need, and no columns that do not exist in the schemas given.
+7. Return ONLY the Fossil program: no JSON, no markdown fences, no commentary.`;
 
 function describeFiles(sources: readonly InferredDescriptor[]): string {
   return sources
@@ -66,7 +79,7 @@ export function generateRequest(
 ): CompletionRequest {
   const listed = questions.map((q, i) => `${i + 1}. ${q}\n`).join("");
   return asked(
-    FOSSIL_PROMPT,
+    PROGRAM_PROMPT,
     `Domain: ${domain}\n\nCompetency Questions:\n${listed}\nData Schemas:\n${describeFiles(schemas)}`,
   );
 }

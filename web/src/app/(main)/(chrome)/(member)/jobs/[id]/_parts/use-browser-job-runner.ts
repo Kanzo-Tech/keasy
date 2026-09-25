@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { Job } from "@fossil-lang/executor";
 import { http, type Schemas } from "@/lib/api/client";
-import { openJobCorpus, relationsOf } from "@/lib/fossil/corpus";
+import { openJobCorpus } from "@/lib/fossil/corpus";
 import { sourceHost } from "@/lib/fossil/source-host";
 
 /**
@@ -74,10 +74,13 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         // a failed run would be a lie about durable data.
         try {
           const { corpus } = await openJobCorpus(jobId);
-          await http.PUT("/v1/jobs/{id}/relations", {
-            params: { path: { id: jobId } },
-            body: { relations: await relationsOf(corpus) },
-          });
+          const relations = (await corpus.relations()).map((r) => ({
+            name: r.name,
+            rows: r.rows,
+            files: [...r.files],
+            columns: r.kind === "vertex" ? r.columns.map((c) => ({ name: c.name, data_type: c.type })) : undefined,
+          }));
+          await http.PUT("/v1/jobs/{id}/relations", { params: { path: { id: jobId } }, body: { relations } });
         } catch (err) {
           console.error(`publishing the corpus relations failed (${jobId})`, err);
         }

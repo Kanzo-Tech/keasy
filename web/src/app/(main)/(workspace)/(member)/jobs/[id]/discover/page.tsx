@@ -80,7 +80,7 @@ function Workspace({ jobId }: { jobId: string }) {
   const { schema, error: schemaError } = useGraphSchema();
   const [chosenType, setChosenType] = useState<string | null>(null);
   // Derived, not synced: the first class the corpus names is drawn until a reader picks another.
-  const vertexType = chosenType ?? schema.types[0]?.name ?? null;
+  const vertexType = chosenType ?? schema.vertices[0]?.name ?? null;
   const [selected, setSelected] = useState<SelectedVertex | null>(null);
   const [simulate, setSimulate] = useState(true);
   const [failure, setFailure] = useState<string | null>(null);
@@ -130,7 +130,7 @@ function Workspace({ jobId }: { jobId: string }) {
         <div className="absolute start-2 top-2 z-10 max-w-52">
           <ClassLegend
             onChange={setChosenType}
-            types={schema.types}
+            types={schema.vertices}
             undrawn={undrawnEdges(view.data?.undrawn, overview)}
             value={vertexType}
           />
@@ -206,7 +206,7 @@ function Workspace({ jobId }: { jobId: string }) {
       <ShellFooter className="h-8 flex-row items-center justify-between gap-3 px-2 text-muted-foreground text-xs">
         <div className="flex min-w-0 items-center gap-3 truncate">
           <span className="tabular-nums">
-            {schema.types.reduce((sum, t) => sum + t.entityCount, 0).toLocaleString()} nodes
+            {schema.vertices.reduce((sum, t) => sum + t.count, 0).toLocaleString()} nodes
             {" · "}
             {schema.edges.reduce((sum, e) => sum + e.count, 0).toLocaleString()} edges
           </span>

@@ -219,7 +219,7 @@ export function AssistantWizard({
   const program = bindings.map((b, i) => `f${i} := io.${b.constructor}("${b.uri}")`).join("\n");
   const described = useQuery({
     queryKey: sourceDescriptorsKey(bindings.map((b) => b.uri)),
-    queryFn: async () => describeSources(await checker.sources(program)),
+    queryFn: async () => describeSources(await (await checker.jobProgram()).sources(program)),
     enabled: step > 0 && bindings.length > 0,
   });
   const schemasReady =

@@ -31,7 +31,7 @@ export function useSourceDescriptors(script: string): InferredDescriptor[] {
 
   const { data: sources } = useQuery({
     queryKey: ["program-sources", program],
-    queryFn: () => checker.sources(program),
+    queryFn: async () => (await checker.jobProgram()).sources(program),
     staleTime: Infinity,
   });
 

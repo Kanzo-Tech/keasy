@@ -1,4 +1,4 @@
-import type { EdgeType } from "@/lib/graph-schema";
+import type { EdgeTypeSummary } from "@fossil-lang/corpus";
 
 interface ColumnRow {
   table_name: string;
@@ -20,7 +20,7 @@ interface ColumnRow {
  */
 export async function describeDataSpace(
   query: (sql: string) => Promise<unknown>,
-  edges: EdgeType[],
+  edges: EdgeTypeSummary[],
 ): Promise<string> {
   const rows = (await query(
     `SELECT table_name, column_name, data_type
@@ -37,7 +37,7 @@ export async function describeDataSpace(
   }
 
   const endpoints = new Map(
-    edges.map((e) => [e.tableName, `${e.sourceType} --[${e.name}]--> ${e.targetType}`] as const),
+    edges.map((e) => [e.table_name, `${e.source_type} --[${e.name}]--> ${e.target_type}`] as const),
   );
 
   return [...byTable]

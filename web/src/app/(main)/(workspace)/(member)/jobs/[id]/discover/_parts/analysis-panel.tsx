@@ -39,7 +39,7 @@ import {
   min,
   sum,
 } from "@kanzo-tech/ui/analytics";
-import { isBinnable, isTemporalType, type FieldInfo, type GraphSchema } from "@/lib/graph-schema";
+import type { FieldKind, FieldStat, SchemaResult } from "@fossil-lang/corpus";
 
 const AGGREGATIONS = ["count", "sum", "avg", "min", "max"] as const;
 type Aggregation = (typeof AGGREGATIONS)[number];
@@ -48,7 +48,7 @@ interface ChartSpec {
   id: string;
   table: string;
   x: string;
-  xType: string;
+  xKind: FieldKind;
   /** `null` counts rows. */
   y: string | null;
   agg: Aggregation;
@@ -66,7 +66,7 @@ function Chart({ spec }: { spec: ChartSpec }) {
   const frame = { height: 120, margin: { top: 4, right: 4, bottom: 20, left: 30 }, table: spec.table };
   const axes = [<ChartAxisX key="x" label={null} />, <ChartAxisY anchor={null} key="y" />];
 
-  if (spec.y && spec.agg !== "count" && isBinnable(spec.xType)) {
+  if (spec.y && spec.agg !== "count" && spec.xKind !== "categorical") {
     return (
       <ChartRoot {...frame}>
         <ChartDot {...BEHIND} fill={MUTED} r={2} x={spec.x} y={spec.y} />
@@ -76,7 +76,7 @@ function Chart({ spec }: { spec: ChartSpec }) {
       </ChartRoot>
     );
   }
-  if (isTemporalType(spec.xType)) {
+  if (spec.xKind === "temporal") {
     return (
       <ChartRoot {...frame}>
         <ChartLineY {...BEHIND} stroke={MUTED} x={spec.x} y={y} />
@@ -86,7 +86,7 @@ function Chart({ spec }: { spec: ChartSpec }) {
       </ChartRoot>
     );
   }
-  if (isBinnable(spec.xType)) {
+  if (spec.xKind !== "categorical") {
     return (
       <ChartRoot {...frame}>
         <ChartRectY {...BEHIND} fill={MUTED} x={bin(spec.x)} y={y} />
@@ -106,16 +106,13 @@ function Chart({ spec }: { spec: ChartSpec }) {
   );
 }
 
-interface Field extends FieldInfo {
+interface Field extends FieldStat {
   table: string;
 }
 
-function chartable(schema: GraphSchema): Field[] {
-  return schema.types.flatMap((t) =>
-    schema
-      .fieldsOf(t.name)
-      .filter((f) => f.name !== "_id" && f.name !== "subject")
-      .map((f) => ({ ...f, table: t.name })),
+function chartable(schema: SchemaResult): Field[] {
+  return schema.vertices.flatMap((t) =>
+    t.stats.filter((f) => f.name !== "_id" && f.name !== "subject").map((f) => ({ ...f, table: t.name })),
   );
 }
 
@@ -123,7 +120,7 @@ const specOf = (f: Field): ChartSpec => ({
   id: crypto.randomUUID(),
   table: f.table,
   x: f.name,
-  xType: f.type,
+  xKind: f.kind,
   y: null,
   agg: "count",
 });
@@ -149,7 +146,7 @@ function ChartEditor({
       createListCollection({
         items: [
           { label: "count", value: "" },
-          ...fields.filter((f) => isBinnable(f.type)).map((f) => ({ label: f.name, value: f.name })),
+          ...fields.filter((f) => f.kind !== "categorical").map((f) => ({ label: f.name, value: f.name })),
         ],
       }),
     [fields],
@@ -167,7 +164,7 @@ function ChartEditor({
           collection={xs}
           onValueChange={(d) => {
             const f = fields.find((field) => `${field.table}.${field.name}` === d.value[0]);
-            if (f) onChange({ ...spec, table: f.table, x: f.name, xType: f.type });
+            if (f) onChange({ ...spec, table: f.table, x: f.name, xKind: f.kind });
           }}
           value={[`${spec.table}.${spec.x}`]}
         >
@@ -226,7 +223,7 @@ function ChartEditor({
   );
 }
 
-export function AnalysisPanel({ schema }: { schema: GraphSchema }) {
+export function AnalysisPanel({ schema }: { schema: SchemaResult }) {
   const fields = useMemo(() => chartable(schema), [schema]);
   const [charts, setCharts] = useState<ChartSpec[]>(() =>
     fields

@@ -19,11 +19,12 @@ import {
 } from "@kanzo-tech/ui";
 import { useChartQuery } from "@kanzo-tech/ui/analytics";
 import { distinctValuesQuery, OPERATOR_META, type Rule, type RuleOperator } from "./rule-engine";
-import type { GraphSchema } from "@/lib/graph-schema";
+import type { SchemaResult } from "@fossil-lang/corpus";
+import { fieldsOf } from "./corpus";
 
 interface RuleFieldProps {
   rule: Rule;
-  schema: GraphSchema;
+  schema: SchemaResult;
   onChange: (updated: Rule) => void;
 }
 
@@ -64,7 +65,7 @@ function InlineSelect({
 
 export function EntitySelect({ rule, schema, onChange }: RuleFieldProps) {
   const items = useMemo(
-    () => createListCollection({ items: schema.types.map((t) => ({ label: t.name, value: t.name })) }),
+    () => createListCollection({ items: schema.vertices.map((t) => ({ label: t.name, value: t.name })) }),
     [schema],
   );
   return (
@@ -74,19 +75,19 @@ export function EntitySelect({ rule, schema, onChange }: RuleFieldProps) {
         onChange({
           ...rule,
           typeName,
-          fieldKey: schema.fieldsOf(typeName)[0]?.name ?? rule.fieldKey,
+          fieldKey: fieldsOf(schema, typeName)[0]?.name ?? rule.fieldKey,
           value: undefined,
           values: undefined,
         })
       }
       placeholder="Entity"
-      value={rule.typeName ?? schema.types[0]?.name ?? ""}
+      value={rule.typeName ?? schema.vertices[0]?.name ?? ""}
     />
   );
 }
 
 export function FieldSelect({ rule, schema, onChange }: RuleFieldProps) {
-  const fields = schema.fieldsOf(rule.typeName ?? "");
+  const fields = fieldsOf(schema, rule.typeName ?? "");
   const items = useMemo(
     () => createListCollection({ items: fields.map((f) => ({ label: f.name, value: f.name })) }),
     [fields],

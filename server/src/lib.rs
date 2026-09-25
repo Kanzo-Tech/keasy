@@ -27,6 +27,8 @@ struct AppState {
     /// This instance's workspace slug (`KEASY_ORG_ALIAS`), the "current" entry
     /// in the workspace switcher.
     workspace_slug: Option<String>,
+    /// This instance's display name (`KEASY_WORKSPACE_NAME`).
+    workspace_name: String,
     /// Verifies the bearer token every protected request carries.
     auth: auth::jwt::SharedValidator,
     /// The DuckLake catalog: the authority over output metadata.
@@ -57,24 +59,6 @@ pub async fn run() -> Result<(), String> {
         );
     }
 
-    // The workspace's legal identity, seeded once from its display name.
-    let identity = db
-        .get_workspace_identity()
-        .await
-        .map_err(|e| format!("failed to read the workspace identity: {e}"))?;
-    if identity.is_none() {
-        db.set_workspace_identity(&settings::org::WorkspaceIdentity {
-            name: config.workspace_name.clone(),
-            identity: keasy_api::settings::org::OrgIdentity {
-                legal_name: config.workspace_name.clone(),
-                country: "EU".to_string(),
-                ..Default::default()
-            },
-        })
-        .await
-        .map_err(|e| format!("failed to seed the workspace identity: {e}"))?;
-    }
-
     // After the key check: declaring a connection writes encrypted credentials.
     connections::bootstrap::ensure_declared_connections(&db).await;
 
@@ -100,6 +84,7 @@ pub async fn run() -> Result<(), String> {
     let state = AppState {
         db,
         workspace_slug: config.workspace_slug,
+        workspace_name: config.workspace_name,
         auth,
         catalog: Arc::new(catalog),
     };

@@ -1481,94 +1481,6 @@
         }
       }
     },
-    "/v1/org/identity": {
-      "get": {
-        "tags": [
-          "Organization"
-        ],
-        "operationId": "get_org_identity",
-        "responses": {
-          "200": {
-            "description": "Workspace identity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OrgIdentity"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Organization"
-        ],
-        "operationId": "update_org_identity",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OrgIdentity"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Identity updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OrgIdentity"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
     "/v1/settings/ai/providers": {
       "get": {
         "tags": [
@@ -1779,97 +1691,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CatalogStoragePayload"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
-    "/v1/settings/organization": {
-      "get": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "get_org_settings",
-        "responses": {
-          "200": {
-            "description": "Organization settings",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OrgSettings"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "No settings configured"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Settings"
-        ],
-        "operationId": "save_org_settings",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OrgSettings"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Settings saved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OrgSettings"
                 }
               }
             }
@@ -2402,13 +2223,6 @@
           "sink_connection_id"
         ],
         "properties": {
-          "dcat_enabled": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "Accepted, not acted on: DCAT publication is not built."
-          },
           "draft": {
             "type": "boolean"
           },
@@ -2500,7 +2314,6 @@
           "rbac/no_membership",
           "rbac/insufficient_role",
           "rate_limited",
-          "bad_request",
           "validation_failed",
           "invalid_format",
           "invalid_path",
@@ -2756,74 +2569,6 @@
           "cloud",
           "local"
         ]
-      },
-      "OrgIdentity": {
-        "type": "object",
-        "required": [
-          "legal_name",
-          "country"
-        ],
-        "properties": {
-          "country": {
-            "type": "string"
-          },
-          "country_subdivision_code": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "legal_name": {
-            "type": "string"
-          },
-          "registration_number": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "registration_number_type": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "OrgSettings": {
-        "type": "object",
-        "required": [
-          "publisher_name"
-        ],
-        "properties": {
-          "catalog_description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "contact_email": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "license_uri": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "publisher_name": {
-            "type": "string"
-          },
-          "publisher_uri": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
       },
       "OutputRelation": {
         "type": "object",
@@ -3096,7 +2841,7 @@
           },
           "current_name": {
             "type": "string",
-            "description": "This instance's display name, from its workspace identity. The other\nentries show their slug: an instance only knows its own name."
+            "description": "This instance's display name (`KEASY_WORKSPACE_NAME`). The other\nentries show their slug: an instance only knows its own name."
           },
           "workspaces": {
             "type": "array",

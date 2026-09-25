@@ -41,13 +41,7 @@ export const queryKeys = {
   settings: {
     schema: ["schema"] as const,
     providers: ["providers"] as const,
-    org: ["settings-org"] as const,
     catalogStorage: ["catalog-storage"] as const,
-  },
-
-  // Workspace legal identity
-  org: {
-    identity: ["org-identity"] as const,
   },
 
   // AI

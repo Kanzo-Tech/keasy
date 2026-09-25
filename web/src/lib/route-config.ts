@@ -1,7 +1,6 @@
 import {
   Bot,
   Boxes,
-  Building2,
   Database,
   GalleryVerticalEnd,
   Home,
@@ -39,7 +38,6 @@ const ROUTES: Record<string, RouteDef> = {
   "/connections":                 { name: "Connections", icon: Database, sidebar: ["member"] },
   "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: ["member"] },
   // Owner plane (metadata)
-  "/identity":                    { name: "Identity", icon: Building2, sidebar: ["owner"] },
   "/datasets":                    { name: "Data Catalog", icon: Boxes, sidebar: ["owner"] },
   "/catalog":                     { name: "Catalog Storage", icon: GalleryVerticalEnd, sidebar: ["owner"] },
   // Settings (not in main sidebar — reached via the user menu)

@@ -17,7 +17,6 @@ export type CatalogColumn = S["CatalogColumn"];
 export type CloudAccountSummary = S["CloudAccountSummary"];
 export type CreateCloudAccountRequest = S["CreateCloudAccountRequest"];
 export type UpdateCloudAccountRequest = S["UpdateCloudAccountRequest"];
-export type OrgSettings = S["OrgSettings"];
 export type ConnectionKind = S["ConnectionKind"];
 export type LocationType = S["LocationType"];
 export type Connection = S["Connection"];
@@ -36,8 +35,6 @@ export type GenerateResponse = S["GenerateResponse"];
 
 // Alias: server calls it JobRuntimeError, frontend used JobError
 export type JobError = S["JobRuntimeError"];
-
-export type OrgIdentity = S["OrgIdentity"];
 
 export type FileEntry = S["FileEntry"];
 export type ChatMessage = S["ChatMessage"];

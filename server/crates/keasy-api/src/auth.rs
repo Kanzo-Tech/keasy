@@ -8,7 +8,7 @@ pub struct WorkspacesResponse {
     pub workspaces: Vec<String>,
     /// This instance's slug — the "current" entry in the switcher.
     pub current: String,
-    /// This instance's display name, from its workspace identity. The other
+    /// This instance's display name (`KEASY_WORKSPACE_NAME`). The other
     /// entries show their slug: an instance only knows its own name.
     pub current_name: String,
 }

@@ -108,8 +108,6 @@ pub struct CreateJobRequest {
     pub script: String,
     pub name: Option<String>,
     pub mode: Option<RunMode>,
-    /// Accepted, not acted on: DCAT publication is not built.
-    pub dcat_enabled: Option<bool>,
     /// Where the output lands: a sink connection.
     pub sink_connection_id: String,
     #[serde(default)]

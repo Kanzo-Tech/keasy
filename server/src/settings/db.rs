@@ -4,11 +4,9 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::db::{Database, DbError, DbResult};
 use keasy_api::settings::ai::AiProvider;
-use keasy_api::settings::org::OrgSettings;
 use strum::VariantArray;
 
 use crate::settings::ai::AiSettings;
-use crate::settings::org::WorkspaceIdentity;
 
 /// What an AI provider stores in `settings`; the key lives in `secrets`.
 #[derive(Serialize, Deserialize)]
@@ -47,22 +45,6 @@ impl Database {
             .await
             .execute("DELETE FROM settings WHERE key = ?1", [key])?;
         Ok(())
-    }
-
-    pub async fn get_org_settings(&self) -> DbResult<Option<OrgSettings>> {
-        self.get_setting("org_settings").await
-    }
-
-    pub async fn set_org_settings(&self, settings: &OrgSettings) -> DbResult<()> {
-        self.set_setting("org_settings", settings).await
-    }
-
-    pub async fn get_workspace_identity(&self) -> DbResult<Option<WorkspaceIdentity>> {
-        self.get_setting("workspace_identity").await
-    }
-
-    pub async fn set_workspace_identity(&self, identity: &WorkspaceIdentity) -> DbResult<()> {
-        self.set_setting("workspace_identity", identity).await
     }
 
     pub async fn get_ai_provider(&self, provider: AiProvider) -> DbResult<Option<AiSettings>> {

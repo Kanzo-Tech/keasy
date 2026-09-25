@@ -35,6 +35,7 @@ impl Harness {
         let state = AppState {
             db: db.clone(),
             workspace_slug: Some("dev".into()),
+            workspace_name: "Dev".into(),
             auth: Arc::new(Validator::new(
                 &realm.issuer,
                 "keasy-api",
@@ -254,14 +255,10 @@ const ROUTES: &[(&str, &str, Admits)] = &[
     ("POST", "/v1/connections/urls", Admits::Member),
     ("POST", "/v1/assistant/suggest-stream", Admits::Member),
     ("POST", "/v1/assistant/generate-stream", Admits::Member),
-    ("GET", "/v1/settings/organization", Admits::Owner),
-    ("PUT", "/v1/settings/organization", Admits::Owner),
     ("GET", "/v1/settings/catalog-storage", Admits::Owner),
     ("PUT", "/v1/settings/catalog-storage", Admits::Owner),
     ("GET", "/v1/catalog/datasets", Admits::Owner),
-    ("PUT", "/v1/org/identity", Admits::Owner),
     ("GET", "/v1/cloud-accounts", Admits::AnyRole),
-    ("GET", "/v1/org/identity", Admits::AnyRole),
 ];
 
 fn method(name: &str) -> Method {
@@ -337,10 +334,8 @@ async fn every_role_gated_route_is_in_the_table() {
         "/v1/connections/urls",
         "/v1/assistant/suggest-stream",
         "/v1/assistant/generate-stream",
-        "/v1/settings/organization",
         "/v1/settings/catalog-storage",
         "/v1/catalog/datasets",
-        "/v1/org/identity",
         "/v1/settings/schema",
         "/v1/auth/workspaces",
     ];

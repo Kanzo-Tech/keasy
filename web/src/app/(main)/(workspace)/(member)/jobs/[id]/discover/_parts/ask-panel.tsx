@@ -193,7 +193,7 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     })) {
       const failure = sseFailure(frame);
       if (failure) {
-        yield { kind: "failed", code: failure.code };
+        yield { kind: "failed", code: failure.error };
         return;
       }
       if (frame.event === "complete") {
@@ -237,7 +237,7 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     })) {
       const failure = sseFailure(frame);
       if (failure) {
-        yield { kind: "failed", code: failure.code };
+        yield { kind: "failed", code: failure.error };
         return;
       }
       if (frame.event === "delta") yield { kind: "explain", text: frame.data };

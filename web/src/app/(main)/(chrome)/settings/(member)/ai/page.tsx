@@ -51,6 +51,11 @@ export default function AiPage() {
     queryKey: queryKeys.ai.providers,
     queryFn: api.ai.providers,
   });
+  const { data: catalog = [] } = useQuery({
+    queryKey: queryKeys.ai.catalog,
+    queryFn: api.ai.catalog,
+    staleTime: Infinity,
+  });
   const showSkeleton = useDelayedLoading(isLoading);
 
   const { mutate: remove } = useMutation({
@@ -85,7 +90,7 @@ export default function AiPage() {
         cell: ({ row }) => (
           <span className="text-muted-foreground">
             {row.original.model ??
-              `Default: ${AI_PROVIDERS.find((p) => p.id === row.original.provider)?.defaultModel ?? "—"}`}
+              `Default: ${catalog.find((c) => c.provider === row.original.provider)?.default_model ?? "—"}`}
           </span>
         ),
       },
@@ -122,7 +127,7 @@ export default function AiPage() {
         ),
       },
     ],
-    [remove],
+    [catalog, remove],
   );
   const table = useDataTable({ columns, data: providers });
 

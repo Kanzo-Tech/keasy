@@ -36,6 +36,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The providers an ask can run on, and the model each runs when its settings
+         *     name none. Whether one is configured is `/v1/settings/ai/providers`.
+         */
+        get: operations["list_providers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/assistant/generate-stream": {
         parameters: {
             query?: never;
@@ -480,6 +500,11 @@ export interface components {
          * @enum {string}
          */
         AiProvider: "anthropic" | "openai";
+        /** @description A provider keasy can call, and the model it runs when none is configured. */
+        AiProviderInfo: {
+            default_model: string;
+            provider: components["schemas"]["AiProvider"];
+        };
         /**
          * @description A configured provider as the settings page shows it: the key is only ever
          *     said to be there.
@@ -525,6 +550,7 @@ export interface components {
             /** @description One entry per registered relation. */
             tables: components["schemas"]["CatalogTable"][];
         };
+        /** @description The workspace write sink, as the owner's Catalog Storage page edits it. */
         CatalogStoragePayload: {
             base_url: string;
             cloud_account_id: string;
@@ -624,6 +650,7 @@ export interface components {
             url: string;
         };
         CreateJobRequest: {
+            /** @description Accepted, not acted on: DCAT publication is not built. */
             dcat_enabled?: boolean | null;
             draft?: boolean;
             mode?: null | components["schemas"]["RunMode"];
@@ -631,10 +658,6 @@ export interface components {
             script: string;
             /** @description Where the output lands: a sink connection. */
             sink_connection_id: string;
-        };
-        /** @description Typed envelope for successful API responses: `{ "data": T }`. */
-        DataResponse_Value: {
-            data: unknown;
         };
         DatasetUrlsRequest: {
             /**
@@ -658,6 +681,17 @@ export interface components {
          * @enum {string}
          */
         Direction: "source" | "sink";
+        /** @description The body of every 4xx/5xx, and the payload of an SSE `error` frame. */
+        ErrorBody: {
+            error: components["schemas"]["ErrorCode"];
+            message: string;
+        };
+        /**
+         * @description Every error the server answers with. Closed: a code the server does not
+         *     declare here cannot be sent, and the web keys its copy by this enum.
+         * @enum {string}
+         */
+        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "bad_request" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "still_running" | "invalid_destination" | "no_destination" | "invalid_connection" | "container_not_found" | "list_files_failed" | "store_error" | "sign_error" | "catalog_error" | "ai_not_configured" | "schema_required" | "insufficient_credits" | "llm_failed";
         FieldSchema: {
             default_value?: string | null;
             env_var?: string | null;
@@ -666,6 +700,7 @@ export interface components {
             optional?: boolean;
             secret: boolean;
         };
+        /** @description One object under a connection's prefix. */
         FileEntry: {
             last_modified?: string | null;
             path: string;
@@ -722,10 +757,7 @@ export interface components {
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
         };
-        /**
-         * @description Runtime job error — stored in the database as JSON on a failed job.
-         *     This is NOT an API error type; it is a serializable record of what went wrong during execution.
-         */
+        /** @description What went wrong in a run, recorded on the failed job. */
         JobRuntimeError: {
             code: string;
             detail?: string | null;
@@ -781,6 +813,7 @@ export interface components {
             relations: components["schemas"]["OutputRelation"][];
         };
         ResolveResponse: {
+            /** @description Dataset-relative path → signed URL. */
             files: {
                 [key: string]: string;
             };
@@ -849,7 +882,53 @@ export interface components {
             workspaces: string[];
         };
     };
-    responses: never;
+    responses: {
+        /** @description The caller holds no role this route admits */
+        Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorBody"];
+            };
+        };
+        /** @description The server failed */
+        InternalError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorBody"];
+            };
+        };
+        /** @description The identity provider's keys are unreachable */
+        KeysUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorBody"];
+            };
+        };
+        /** @description The caller exceeded their request rate */
+        RateLimited: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorBody"];
+            };
+        };
+        /** @description No verified bearer token */
+        Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorBody"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;
@@ -893,6 +972,31 @@ export interface operations {
             };
         };
     };
+    list_providers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every provider keasy can call, with its default model */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiProviderInfo"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
     generate_script_stream: {
         parameters: {
             query?: never;
@@ -918,8 +1022,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     suggest_cqs_stream: {
@@ -947,8 +1058,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     list_workspaces: {
@@ -969,6 +1087,11 @@ export interface operations {
                     "application/json": components["schemas"]["WorkspacesResponse"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     list_catalog_datasets: {
@@ -989,6 +1112,11 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetsResponse"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     list_accounts: {
@@ -1009,6 +1137,11 @@ export interface operations {
                     "application/json": components["schemas"]["CloudAccountSummary"][];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     create_account: {
@@ -1038,8 +1171,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     get_account: {
@@ -1063,13 +1203,20 @@ export interface operations {
                     "application/json": components["schemas"]["CloudAccountSummary"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             /** @description Cloud account not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     update_account: {
@@ -1102,8 +1249,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     delete_account: {
@@ -1125,13 +1279,18 @@ export interface operations {
                 };
                 content?: never;
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     list_connections: {
         parameters: {
             query?: {
-                /** @description Filter by connection type */
-                type?: string;
+                /** @description Only connections of this kind. */
+                type?: components["schemas"]["ConnectionKind"];
             };
             header?: never;
             path?: never;
@@ -1148,6 +1307,11 @@ export interface operations {
                     "application/json": components["schemas"]["Connection"][];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     create_connection: {
@@ -1177,8 +1341,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     connection_refs: {
@@ -1199,6 +1370,11 @@ export interface operations {
                     "application/json": components["schemas"]["ConnectionRefsResponse"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     sign_locators: {
@@ -1223,6 +1399,11 @@ export interface operations {
                     "application/json": components["schemas"]["SignLocatorsResponse"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     get_connection: {
@@ -1246,13 +1427,20 @@ export interface operations {
                     "application/json": components["schemas"]["Connection"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             /** @description Connection not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     delete_connection: {
@@ -1274,6 +1462,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     list_connection_files: {
@@ -1302,15 +1495,24 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             /** @description Connection not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     list_jobs: {
@@ -1331,6 +1533,11 @@ export interface operations {
                     "application/json": components["schemas"]["Job"][];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     create_job: {
@@ -1369,8 +1576,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     get_job: {
@@ -1394,13 +1608,20 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     update_job: {
@@ -1433,15 +1654,24 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     delete_job: {
@@ -1463,20 +1693,29 @@ export interface operations {
                 };
                 content?: never;
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
             /** @description Job is still running */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     complete_job: {
@@ -1504,13 +1743,20 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     ask_discover_stream: {
@@ -1538,6 +1784,11 @@ export interface operations {
                     "text/event-stream": unknown;
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     resolve_discover_urls: {
@@ -1570,15 +1821,24 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     resolve_output_urls: {
@@ -1611,15 +1871,24 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     publish_relations: {
@@ -1652,15 +1921,24 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     get_org_identity: {
@@ -1681,6 +1959,11 @@ export interface operations {
                     "application/json": components["schemas"]["OrgIdentity"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     update_org_identity: {
@@ -1710,8 +1993,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     list_ai_providers: {
@@ -1732,6 +2022,11 @@ export interface operations {
                     "application/json": components["schemas"]["AiSettingsPayload"][];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     save_ai_provider: {
@@ -1764,8 +2059,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     delete_ai_provider: {
@@ -1792,8 +2094,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     get_catalog_storage: {
@@ -1821,6 +2130,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     save_catalog_storage: {
@@ -1850,8 +2164,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     get_org_settings: {
@@ -1879,6 +2200,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     save_org_settings: {
@@ -1908,8 +2234,15 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     get_schema: {

@@ -1,13 +1,17 @@
 FROM node:22-alpine
 
 # pnpm (pnpm-lock.yaml is v9). @fossil-lang/* are published to npm and consumed
-# via the `alpha` dist-tag — no vendoring.
+# via the `alpha` dist-tag — no vendoring. Build context: the repo root, since
+# the web depends on the workspace package `api/` (@keasy/api).
 RUN npm install -g pnpm@9
 
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY api/package.json ./api/
+COPY web/package.json ./web/
 RUN pnpm install --frozen-lockfile
-COPY tsconfig.json next.config.ts postcss.config.mjs eslint.config.mjs ./
+COPY web/tsconfig.json web/next.config.ts web/postcss.config.mjs web/eslint.config.mjs ./web/
 
+WORKDIR /app/web
 EXPOSE 3000
 CMD ["pnpm", "dev"]

@@ -15,7 +15,7 @@ COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 # persistent `server-target` + `cargo-registry` volumes, so only the first `up`
 # (or one after `make clean`) pays a cold compile.
 
-.PHONY: help dev down prod build logs restart clean ps deploy-platform deploy-realm
+.PHONY: help dev down prod build logs restart clean ps api deploy-platform deploy-realm
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -54,6 +54,13 @@ shell-%: ## Open shell in container (e.g., make shell-server)
 
 ps: ## Show running services
 	$(COMPOSE_DEV) ps
+
+# ── The API contract ───────────────────────────────────────────────────────
+# The server's routes publish the spec; `api/` (@keasy/api) holds it and the
+# types generated from it. CI fails when a committed copy is stale.
+api: ## Regenerate api/openapi.json and api/src/schema.d.ts from the server's routes
+	cargo run --quiet --manifest-path server/Cargo.toml --bin openapi > api/openapi.json
+	pnpm --filter @keasy/api generate
 
 # ── Prod / Swarm deploy — Terraform owns everything (see infra/terraform/README.md) ──
 # Two phases: platform (Traefik+Keycloak+Postgres) then realm (SSO + tenants). Adding a

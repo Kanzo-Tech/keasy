@@ -60,15 +60,17 @@ services:
 
   web:
     build:
-      context: ./web
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: web/Dockerfile.dev
     volumes:
-      - ./web/src:/app/src
-      - ./web/public:/app/public
+      - ./web/src:/app/web/src
+      - ./web/public:/app/web/public
       # The dev image is deps-only (source is bind-mounted for hot reload). `scripts/`
       # is part of that source — `predev` runs `scripts/copy-fossil-wasm.mjs` — so it
       # must be mounted like src/public, else the container exits 1 (→ Caddy 502).
-      - ./web/scripts:/app/scripts
+      - ./web/scripts:/app/web/scripts
+      # The contract (@keasy/api), so `make api` reaches the running web.
+      - ./api/src:/app/api/src
 
   # ── Dev object store (MinIO) ────────────────────────────────────────────────
   # The S3 substrate a developer can actually read and write, dev-only: prod

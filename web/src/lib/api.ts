@@ -55,7 +55,7 @@ export const api = {
 
   // ── Connections ────────────────────────────────────────────────────────
   connections: {
-    list: async (type?: string) =>
+    list: async (type?: Schemas["ConnectionKind"]) =>
       unwrap(await client.GET("/v1/connections", {
         params: { query: type ? { type } : {} },
       })),
@@ -146,31 +146,20 @@ export const api = {
       return result.data;
     },
 
-    catalogStorage: async (): Promise<{ cloud_account_id: string; base_url: string } | null> => {
-      const res = await fetch("/v1/settings/catalog-storage", { credentials: "same-origin" });
-      if (res.status === 204 || !res.ok) return null;
-      const json = await res.json();
-      return json?.data ?? json;
-    },
+    /// `null` until the owner has set it (204).
+    catalogStorage: async () =>
+      (await client.GET("/v1/settings/catalog-storage")).data ?? null,
 
-    saveCatalogStorage: async (data: { cloud_account_id: string; base_url: string }) => {
-      const res = await fetch("/v1/settings/catalog-storage", {
-        method: "PUT",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new ApiError(body?.error ?? "unknown", body?.message ?? "Failed to save", res.status);
-      }
-      const json = await res.json();
-      return json?.data ?? json;
-    },
+    saveCatalogStorage: async (data: Schemas["CatalogStoragePayload"]) =>
+      unwrap(await client.PUT("/v1/settings/catalog-storage", { body: data })),
   },
 
   // ── AI Providers ──────────────────────────────────────────────────────
   ai: {
+    /// Every provider keasy can call, with the model it runs by default.
+    catalog: async () =>
+      unwrap(await client.GET("/v1/ai/providers")),
+
     providers: async () =>
       unwrap(await client.GET("/v1/settings/ai/providers")),
 

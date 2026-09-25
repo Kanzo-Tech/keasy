@@ -6,12 +6,11 @@ export interface AiProviderOption {
   id: AiProvider;
   label: string;
   icon: ComponentType<{ className?: string }>;
-  defaultModel: string;
 }
 
 export const AI_PROVIDERS: AiProviderOption[] = [
-  { id: "anthropic", label: "Anthropic", icon: SiAnthropic, defaultModel: "claude-sonnet-4-20250514" },
-  { id: "openai", label: "OpenAI", icon: SiOpenai, defaultModel: "gpt-4o" },
+  { id: "anthropic", label: "Anthropic", icon: SiAnthropic },
+  { id: "openai", label: "OpenAI", icon: SiOpenai },
 ];
 
 /** The provider a route or form names, or an error for one keasy does not know. */

@@ -1,4 +1,4 @@
-import type { components } from "./api/schema";
+import type { components } from "@keasy/api";
 
 // ---------------------------------------------------------------------------
 // Re-export types generated from the OpenAPI spec (source of truth: server)

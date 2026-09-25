@@ -10,8 +10,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "openapi": "openapi-typescript ../openapi.json -o src/lib/api/schema.d.ts"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.0",
@@ -35,6 +34,7 @@
     "@kanzo-tech/mosaic": "^0.6.0",
     "@kanzo-tech/theme": "^0.6.0",
     "@kanzo-tech/ui": "^0.6.0",
+    "@keasy/api": "workspace:*",
     "@lezer/highlight": "^1.2.3",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-query-devtools": "^5.91.3",
@@ -47,7 +47,6 @@
     "jose": "^6.2.12",
     "lucide-react": "^1.47.0",
     "next": "16.1.6",
-    "openapi-fetch": "^0.17.0",
     "openid-client": "^6.8.8",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -64,7 +63,6 @@
     "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.4"

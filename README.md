@@ -111,19 +111,21 @@ Compose is a base file plus an overlay: `docker-compose.dev.yml` (hot reload,
 MinIO, seed) or `docker-compose.prod.yml` (release images). Every setting has its
 default in compose as `${VAR:-default}`; export a variable to override it.
 
-## OpenAPI
+## API contract
 
-The server's `#[utoipa]` annotations are the schema; the web generates its types
-from the committed `openapi.json`.
+The wire types live in `server/crates/keasy-api`; each server module's
+`routes::router()` is both its routes and their spec. `api/` (`@keasy/api`) holds
+the committed `openapi.json`, the types generated from it and the client the web
+uses. CI fails when they are stale.
 
 ```bash
-cd server && cargo run --quiet --bin openapi   # writes ../openapi.json
-cd web && pnpm run openapi                     # writes src/lib/api/schema.d.ts
+make api   # api/openapi.json + api/src/schema.d.ts
 ```
 
 ## Layout
 
 ```
+api/                @keasy/api: the committed spec, its generated types and the client
 infra/caddy/        the local edge (/auth → Keycloak, everything else → web)
 infra/dev/          MinIO seed and the draft job, dev-only
 infra/terraform/    platform/ and realm/ — the Swarm deployment, and dev's realm

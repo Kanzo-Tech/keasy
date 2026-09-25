@@ -69,6 +69,12 @@ function Form({ configured, existing }: { configured: AiSettings[]; existing?: A
   const [model, setModel] = useState(existing?.model ?? "");
   const [maxTokens, setMaxTokens] = useState(existing?.max_tokens?.toString() ?? "");
   const option = AI_PROVIDERS.find((p) => p.id === selectedId);
+  const { data: catalog = [] } = useQuery({
+    queryKey: queryKeys.ai.catalog,
+    queryFn: api.ai.catalog,
+    staleTime: Infinity,
+  });
+  const defaultModel = catalog.find((c) => c.provider === selectedId)?.default_model;
 
   const save = useMutation({
     mutationFn: () =>
@@ -144,11 +150,11 @@ function Form({ configured, existing }: { configured: AiSettings[]; existing?: A
             <Field>
               <FieldLabel>Model</FieldLabel>
               <FieldDescription>
-                Defaults to {option?.defaultModel ?? "the provider default"} if left empty.
+                Defaults to {defaultModel ?? "the provider default"} if left empty.
               </FieldDescription>
               <Input
                 onChange={(e) => setModel(e.target.value)}
-                placeholder={option?.defaultModel}
+                placeholder={defaultModel}
                 value={model}
               />
             </Field>

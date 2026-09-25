@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -39,9 +41,9 @@ pub struct Job {
     /// Keycloak `sub` of the member who created the job, and the only one who
     /// may see, change, run or read it. Taken from the token, never the body.
     pub created_by: String,
-    /// The sink the output lands in, under `{sink.url}/{job_id}`, signed with
-    /// that connection's credentials.
-    pub sink_connection_id: String,
+    /// The sink connection the output lands in, under `{sink.url}/{job_id}`,
+    /// signed with that connection's credential.
+    pub sink_connection: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,
     /// What the run reported, verbatim and **opaque**: fossil's own run report,
@@ -101,8 +103,8 @@ pub struct Dataset {
 pub struct CreateJobRequest {
     pub script: String,
     pub name: Option<String>,
-    /// Where the output lands: a sink connection.
-    pub sink_connection_id: String,
+    /// Where the output lands: the sink connection's name.
+    pub sink_connection: String,
     #[serde(default)]
     pub draft: bool,
 }
@@ -138,4 +140,18 @@ pub struct CompleteJobRequest {
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct PublishRelationsRequest {
     pub relations: Vec<OutputRelation>,
+}
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct DatasetUrlsRequest {
+    /// Paths relative to the dataset. The caller names them — the executor's
+    /// output, the corpus reader's enumeration — and keasy signs the list it is
+    /// handed.
+    pub paths: Vec<String>,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct ResolveResponse {
+    /// Dataset-relative path → signed URL.
+    pub files: HashMap<String, String>,
 }

@@ -5,13 +5,12 @@
 
 pub mod ai;
 pub mod auth;
-pub mod cloud;
 pub mod connections;
-pub mod discovery;
+pub mod credentials;
 pub mod error;
 pub mod health;
 pub mod jobs;
-pub mod settings;
+pub mod validation;
 
 pub use error::{ErrorBody, ErrorCode};
 
@@ -27,7 +26,7 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
         version = "1.0.0",
         description = "Keasy host: identity, connections, signed URLs and the job record",
     ),
-    components(schemas(ErrorBody, ErrorCode)),
+    components(schemas(ErrorBody, ErrorCode, credentials::Purpose)),
     modifiers(&Bearer),
     security(("bearer" = [])),
 )]

@@ -27,12 +27,19 @@ pub enum ErrorCode {
     StillRunning,
     InvalidDestination,
     NoDestination,
-    InvalidConnection,
-    ContainerNotFound,
+    /// A credential or connection of that name exists already, or a second sink.
+    AlreadyExists,
+    /// Still used: `dependents` names what uses it.
+    InUse,
+    /// A credential or connection did not validate against its store or
+    /// provider; `dependents` names the connections that failed.
+    ProbeFailed,
     ListFilesFailed,
     StoreError,
     SignError,
     AiNotConfigured,
+    /// Several model connections exist and the call named none.
+    AiConnectionRequired,
     InsufficientCredits,
     LlmFailed,
 }
@@ -42,6 +49,10 @@ pub enum ErrorCode {
 pub struct ErrorBody {
     pub error: ErrorCode,
     pub message: String,
+    /// What the refusal is about: what still uses a credential or connection,
+    /// or the connections a rotation would break.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub dependents: Vec<String>,
 }
 
 /// Every route behind the bearer scheme can be refused before its handler runs:

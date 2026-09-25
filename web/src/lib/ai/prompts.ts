@@ -1,4 +1,3 @@
-import type { AiProvider } from "@/lib/types";
 import { FOSSIL_PROMPT } from "./fossil-prompt";
 import { type ChatMessage, type CompletionRequest, stripFences } from "./stream";
 
@@ -149,10 +148,10 @@ export function queryRequest(
   schema: string,
   history: ChatMessage[],
   question: string,
-  provider?: AiProvider,
+  connection?: string,
 ): CompletionRequest {
   return {
-    provider,
+    connection,
     system: queryPrompt(schema),
     messages: [...history.slice(-HISTORY_WINDOW), { role: "user", content: question }],
     max_tokens: 2048,
@@ -181,10 +180,10 @@ export function explainRequest(
   question: string,
   sql: string,
   rows: string,
-  provider?: AiProvider,
+  connection?: string,
 ): CompletionRequest {
   return {
-    provider,
+    connection,
     system: EXPLAIN_PROMPT,
     messages: [
       {

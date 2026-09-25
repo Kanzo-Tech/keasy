@@ -40,6 +40,7 @@ import {
 } from "@kanzo-tech/ui";
 import { ChevronDown, Pencil, PlugZap, Save, X } from "lucide-react";
 import { $api, http, invalidate } from "@/lib/api/client";
+import { storageConnections } from "@/lib/connections";
 import { toastError } from "@/lib/toast-error";
 import * as checker from "@/lib/fossil/checker";
 import { AssistantWizard } from "./assistant-wizard";
@@ -85,7 +86,8 @@ export function JobStudio() {
   // creating a second draft per keystroke pause.
   const [draftId, setDraftId] = useState<string | null>(searchParams.get("draft"));
 
-  const { data: connections = [] } = $api.useQuery("get", "/v1/connections");
+  const { data: allConnections = [] } = $api.useQuery("get", "/v1/connections");
+  const connections = useMemo(() => storageConnections(allConnections), [allConnections]);
   const { data: providers = [] } = useQuery(checker.providersQuery);
 
   const { data: draftJob } = $api.useQuery(
@@ -100,7 +102,7 @@ export function JobStudio() {
     store.restoreDraft(
       draftJob.script ?? "",
       draftJob.name ?? "",
-      draftJob.sink_connection_id,
+      draftJob.sink_connection,
     );
     setSaved(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -137,7 +139,7 @@ export function JobStudio() {
   const sinks = useMemo(() => connections.filter((c) => c.direction === "sink"), [connections]);
   useEffect(() => {
     if (sinks.length === 1 && !useJobEditorStore.getState().sinkConnectionId) {
-      store.setSinkConnectionId(sinks[0].id);
+      store.setSinkConnectionId(sinks[0].name);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sinks]);
@@ -160,7 +162,7 @@ export function JobStudio() {
       }
       if (!destination) throw new Error("Pick a destination before saving");
       const { data: created } = await http.POST("/v1/jobs", {
-        body: { script: store.script, name, draft: true, sink_connection_id: destination },
+        body: { script: store.script, name, draft: true, sink_connection: destination },
       });
       return created!.id;
     },
@@ -198,7 +200,7 @@ export function JobStudio() {
         body: {
           script: store.script,
           name: store.name.trim() || undefined,
-          sink_connection_id: destination,
+          sink_connection: destination,
         },
       });
       return job!;

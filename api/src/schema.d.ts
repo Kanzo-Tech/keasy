@@ -50,26 +50,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/ai/providers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * The providers a call can run on, and the model each runs when its settings
-         *     name none. Whether one is configured is `/v1/settings/ai/providers`.
-         */
-        get: operations["list_providers"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/ai/stream": {
         parameters: {
             query?: never;
@@ -81,7 +61,7 @@ export interface paths {
         put?: never;
         /**
          * The one model call: the browser sends the prompt, the server adds the key
-         *     and relays the answer as it streams.
+         *     of the model connection and relays the answer as it streams.
          */
         post: operations["complete_stream"];
         delete?: never;
@@ -116,38 +96,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/cloud-accounts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_accounts"];
-        put?: never;
-        post: operations["create_account"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/cloud-accounts/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_account"];
-        put: operations["update_account"];
-        post?: never;
-        delete: operations["delete_account"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/connections": {
         parameters: {
             query?: never;
@@ -164,26 +112,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/connections/refs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * The connections a program may read, by the name it writes after `@`. No
-         *     credentials: signing is [`sign_locators`].
-         */
-        get: operations["connection_refs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/connections/urls": {
         parameters: {
             query?: never;
@@ -194,10 +122,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Sign GET URLs for locators, each with the credentials of the connection it
-         *     lies under. Serves the editor and a job's run alike: a member reads what
-         *     every source connection holds, and the sink only through the job that
-         *     wrote it. Public HTTP locators come back as they are.
+         * Sign GET URLs for locators, each with the credential of the source it lies
+         *     under. A member reads what every source holds, and the sink only through
+         *     the job that wrote it. Public HTTP locators come back as they are.
          */
         post: operations["sign_locators"];
         delete?: never;
@@ -206,7 +133,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/connections/{id}": {
+    "/v1/connections/{name}": {
         parameters: {
             query?: never;
             header?: never;
@@ -219,10 +146,10 @@ export interface paths {
         delete: operations["delete_connection"];
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["update_connection"];
         trace?: never;
     };
-    "/v1/connections/{id}/files": {
+    "/v1/connections/{name}/files": {
         parameters: {
             query?: never;
             header?: never;
@@ -232,6 +159,76 @@ export interface paths {
         get: operations["list_connection_files"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connections/{name}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** LIST a source, WRITE and DELETE under the sink, list a model's provider. */
+        post: operations["validate_connection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_credentials"];
+        put?: never;
+        post: operations["create_credential"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/credentials/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_credential"];
+        put?: never;
+        post?: never;
+        delete: operations["delete_credential"];
+        options?: never;
+        head?: never;
+        /**
+         * Rotation replaces the whole spec, and is committed only if every connection
+         *     using the credential still validates with the new one.
+         */
+        patch: operations["update_credential"];
+        trace?: never;
+    };
+    "/v1/credentials/{name}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Probe the credential through every connection that uses it, and at `url`. */
+        post: operations["validate_credential"];
         delete?: never;
         options?: never;
         head?: never;
@@ -361,70 +358,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/settings/ai/providers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_ai_providers"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/settings/ai/providers/{provider}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put: operations["save_ai_provider"];
-        post?: never;
-        delete: operations["delete_ai_provider"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/settings/catalog-storage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_catalog_storage"];
-        put: operations["save_catalog_storage"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/settings/schema": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_schema"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/version": {
         parameters: {
             query?: never;
@@ -445,52 +378,16 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /**
-         * @description An LLM provider keasy can call.
-         * @enum {string}
-         */
-        AiProvider: "anthropic" | "openai";
-        /** @description A provider keasy can call, and the model it runs when none is configured. */
-        AiProviderInfo: {
-            default_model: string;
-            provider: components["schemas"]["AiProvider"];
-        };
-        /**
-         * @description A configured provider as the settings page shows it: the key is only ever
-         *     said to be there.
-         */
-        AiSettingsPayload: {
-            /** @description `"••••"` when a key is stored, empty otherwise. */
-            api_key: string;
-            /** Format: int32 */
-            max_tokens?: number | null;
-            model?: string | null;
-            provider: components["schemas"]["AiProvider"];
-        };
-        AuthMethodSchema: {
-            fields: components["schemas"]["FieldSchema"][];
-            label: string;
-            name: string;
-        };
-        /** @description The workspace write sink, as the owner's Catalog Storage page edits it. */
-        CatalogStoragePayload: {
-            base_url: string;
-            cloud_account_id: string;
-        };
         ChatMessage: {
             content: string;
             role: components["schemas"]["ChatRole"];
         };
         /** @enum {string} */
         ChatRole: "user" | "assistant";
-        CloudAccountSummary: {
-            auth_method?: string | null;
-            fields: {
-                [key: string]: string;
-            };
-            id: string;
-            name: string;
-            provider_id: string;
+        Check: {
+            message?: string | null;
+            operation: components["schemas"]["Operation"];
+            result: components["schemas"]["Outcome"];
         };
         /**
          * @description The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
@@ -512,60 +409,83 @@ export interface components {
          */
         CompletionRequest: {
             /**
+             * @description The model connection to call. May be left out while the workspace has
+             *     exactly one.
+             */
+            connection?: string | null;
+            /**
              * Format: int32
-             * @description Overrides the provider's configured `max_tokens`.
+             * @description Fewer tokens than the connection allows.
              */
             max_tokens?: number | null;
             /** @description The conversation, oldest first, ending with the user's turn. */
             messages: components["schemas"]["ChatMessage"][];
-            provider?: null | components["schemas"]["AiProvider"];
             system: string;
-        };
-        Connection: {
-            cloud_account_id?: string | null;
-            /** @description Read source vs the workspace write sink. Defaults to `source`. */
-            direction?: components["schemas"]["Direction"];
-            id: string;
-            kind: components["schemas"]["ConnectionKind"];
-            location_type: components["schemas"]["LocationType"];
-            name: string;
-            url: string;
         };
         /** @enum {string} */
         ConnectionKind: "data" | "vocab";
-        ConnectionRefsResponse: {
-            /** @description Source connection name → base URL, the map `@name/…` expands against. */
-            refs: {
-                [key: string]: string;
-            };
+        ConnectionTarget: {
+            storage: components["schemas"]["StorageTarget"];
+        } | {
+            model: components["schemas"]["ModelTarget"];
         };
-        /**
-         * @description Every field value arrives as a secret: which of them are credentials is the
-         *     provider schema's to say, and until it has, none is logged or printed.
-         */
-        CreateCloudAccountRequest: {
-            auth_method?: string | null;
-            fields: {
-                [key: string]: string;
-            };
+        ConnectionView: {
+            created_at: string;
+            created_by: string;
+            credential: string;
             name: string;
-            provider_id: string;
+            target: components["schemas"]["ConnectionTarget"];
+            updated_at: string;
+            updated_by: string;
+            validation?: null | components["schemas"]["ValidationReport"];
         };
         CreateConnectionRequest: {
-            cloud_account_id?: string | null;
-            /** @description `source` (default) or `sink` (the owner output store; one per workspace). */
-            direction?: components["schemas"]["Direction"];
-            kind: components["schemas"]["ConnectionKind"];
-            location_type: components["schemas"]["LocationType"];
+            /** @description The credential it signs or calls with; of the same purpose. */
+            credential: string;
+            /** @description What programs write after `@`, and the connection's key. */
             name: string;
-            url: string;
+            target: components["schemas"]["ConnectionTarget"];
+        };
+        CreateCredentialRequest: {
+            name: string;
+            /**
+             * Format: uri
+             * @description A storage URL to LIST before the credential is stored. A storage
+             *     credential has no location of its own, so without one it is only
+             *     checked to build a client.
+             */
+            probe_url?: string | null;
+            spec: components["schemas"]["CredentialSpecInput"];
         };
         CreateJobRequest: {
             draft?: boolean;
             name?: string | null;
             script: string;
-            /** @description Where the output lands: a sink connection. */
-            sink_connection_id: string;
+            /** @description Where the output lands: the sink connection's name. */
+            sink_connection: string;
+        };
+        /** @description A credential as a request states it, secrets included. */
+        CredentialSpecInput: {
+            storage: components["schemas"]["StorageCredentialInput"];
+        } | {
+            model: components["schemas"]["ModelCredentialInput"];
+        };
+        /** @description A credential as a response shows it: no secret field exists here. */
+        CredentialSpecView: {
+            storage: components["schemas"]["StorageCredentialView"];
+        } | {
+            model: components["schemas"]["ModelCredentialView"];
+        };
+        CredentialView: {
+            created_at: string;
+            created_by: string;
+            name: string;
+            spec: components["schemas"]["CredentialSpecView"];
+            updated_at: string;
+            updated_by: string;
+            /** @description The connections that use this credential. */
+            used_by: string[];
+            validation?: null | components["schemas"]["ValidationReport"];
         };
         /** @description A completed job's output, as the owner's datasets view lists it. */
         Dataset: {
@@ -576,24 +496,24 @@ export interface components {
         };
         DatasetUrlsRequest: {
             /**
-             * @description Paths relative to the dataset (or connection). The caller names them —
-             *     the executor's output, the corpus reader's enumeration — and keasy signs
-             *     the list it is handed.
+             * @description Paths relative to the dataset. The caller names them — the executor's
+             *     output, the corpus reader's enumeration — and keasy signs the list it is
+             *     handed.
              */
             paths: string[];
         };
         /**
-         * @description Whether a connection is a READ source (programs reference it via `@conn`) or
-         *     the workspace's WRITE sink (where the owner's job output is materialised).
-         *     Orthogonal to [`ConnectionKind`] (which describes a source's data) and
-         *     [`LocationType`]: a connection is a named, credentialed storage location, and
-         *     `direction` says how it is used. Exactly one `sink` exists per workspace (the
-         *     owner output store); `kind` is source-only and ignored for a sink.
+         * @description A source is read through `@name/…`; the one sink is where job output lands.
          * @enum {string}
          */
         Direction: "source" | "sink";
         /** @description The body of every 4xx/5xx, and the payload of an SSE `error` frame. */
         ErrorBody: {
+            /**
+             * @description What the refusal is about: what still uses a credential or connection,
+             *     or the connections a rotation would break.
+             */
+            dependents?: string[];
             error: components["schemas"]["ErrorCode"];
             message: string;
         };
@@ -602,15 +522,7 @@ export interface components {
          *     declare here cannot be sent, and the web keys its copy by this enum.
          * @enum {string}
          */
-        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "still_running" | "invalid_destination" | "no_destination" | "invalid_connection" | "container_not_found" | "list_files_failed" | "store_error" | "sign_error" | "ai_not_configured" | "insufficient_credits" | "llm_failed";
-        FieldSchema: {
-            default_value?: string | null;
-            env_var?: string | null;
-            label: string;
-            name: string;
-            optional?: boolean;
-            secret: boolean;
-        };
+        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "still_running" | "invalid_destination" | "no_destination" | "already_exists" | "in_use" | "probe_failed" | "list_files_failed" | "store_error" | "sign_error" | "ai_not_configured" | "ai_connection_required" | "insufficient_credits" | "llm_failed";
         /** @description One object under a connection's prefix. */
         FileEntry: {
             last_modified?: string | null;
@@ -648,17 +560,58 @@ export interface components {
             relations?: components["schemas"]["OutputRelation"][];
             script?: string | null;
             /**
-             * @description The sink the output lands in, under `{sink.url}/{job_id}`, signed with
-             *     that connection's credentials.
+             * @description The sink connection the output lands in, under `{sink.url}/{job_id}`,
+             *     signed with that connection's credential.
              */
-            sink_connection_id: string;
+            sink_connection: string;
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
         };
         /** @enum {string} */
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
+        ModelCredentialInput: {
+            /** Format: password */
+            api_key: $Write<string>;
+            /** @enum {string} */
+            kind: "anthropic";
+        } | {
+            /** Format: password */
+            api_key: $Write<string>;
+            /**
+             * Format: uri
+             * @description An OpenAI-compatible API root. Empty is `https://api.openai.com/v1`.
+             */
+            base_url?: string | null;
+            /** @enum {string} */
+            kind: "openai";
+        };
+        ModelCredentialView: {
+            /** @enum {string} */
+            kind: "anthropic";
+        } | {
+            base_url?: string | null;
+            /** @enum {string} */
+            kind: "openai";
+        };
+        ModelTarget: {
+            /**
+             * Format: int32
+             * @description The most tokens an answer may take, unless the call asks for fewer.
+             */
+            max_tokens?: number | null;
+            /**
+             * @description The provider's model id. Empty runs the provider's default
+             *     (Anthropic: claude-sonnet-4-20250514, OpenAI: gpt-4o).
+             */
+            model?: string | null;
+        };
+        /**
+         * @description What a probe tried.
+         * @enum {string}
+         */
+        Operation: "list" | "write" | "delete" | "models";
         /** @enum {string} */
-        LocationType: "cloud" | "local";
+        Outcome: "pass" | "fail" | "skip";
         /**
          * @description One addressable relation of a job's output, named by fossil.
          *
@@ -675,13 +628,6 @@ export interface components {
             /** Format: int64 */
             rows?: number | null;
         };
-        ProviderSchema: {
-            auth_methods: components["schemas"]["AuthMethodSchema"][];
-            common_fields: components["schemas"]["FieldSchema"][];
-            icon: string;
-            id: string;
-            label: string;
-        };
         /**
          * @description What the corpus reader enumerated for a finished job (PUT
          *     `/v1/jobs/{id}/relations`). It arrives after completion because naming a
@@ -692,6 +638,11 @@ export interface components {
         PublishRelationsRequest: {
             relations: components["schemas"]["OutputRelation"][];
         };
+        /**
+         * @description What a credential, and every connection that uses it, is for.
+         * @enum {string}
+         */
+        Purpose: "storage" | "model";
         RelationColumn: {
             /** @description The engine's spelling of the Parquet type (`VARCHAR`, `BIGINT`, …). */
             data_type: string;
@@ -703,13 +654,6 @@ export interface components {
                 [key: string]: string;
             };
         };
-        SaveAiProviderRequest: {
-            /** @description Empty keeps the stored key. */
-            api_key?: string;
-            /** Format: int32 */
-            max_tokens?: number | null;
-            model?: string | null;
-        };
         SignLocatorsRequest: {
             /** @description Locators fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`). */
             locators: string[];
@@ -720,17 +664,99 @@ export interface components {
                 [key: string]: string;
             };
         };
-        UpdateCloudAccountRequest: {
-            auth_method?: string | null;
-            /** @description An empty secret keeps the stored one. */
-            fields?: {
-                [key: string]: string;
-            } | null;
+        StorageCredentialInput: {
+            access_key_id: string;
+            /**
+             * Format: uri
+             * @description MinIO, R2 or a gateway. An `http://` endpoint opts into plain HTTP.
+             */
+            endpoint?: string | null;
+            /** @enum {string} */
+            kind: "s3";
+            /** @default us-east-1 */
+            region?: string;
+            /** Format: password */
+            secret_access_key: $Write<string>;
+        } | {
+            account: string;
+            /** Format: password */
+            key: $Write<string>;
+            /** @enum {string} */
+            kind: "azure_account_key";
+        } | {
+            account: string;
+            /** @enum {string} */
+            kind: "azure_sas";
+            /** Format: password */
+            sas_token: $Write<string>;
+        } | {
+            account: string;
+            client_id: string;
+            /** Format: password */
+            client_secret: $Write<string>;
+            /** @enum {string} */
+            kind: "azure_service_principal";
+            tenant_id: string;
+        };
+        StorageCredentialView: {
+            access_key_id: string;
+            endpoint?: string | null;
+            /** @enum {string} */
+            kind: "s3";
+            region: string;
+        } | {
+            account: string;
+            /** @enum {string} */
+            kind: "azure_account_key";
+        } | {
+            account: string;
+            /** @enum {string} */
+            kind: "azure_sas";
+        } | {
+            account: string;
+            client_id: string;
+            /** @enum {string} */
+            kind: "azure_service_principal";
+            tenant_id: string;
+        };
+        StorageTarget: {
+            direction?: components["schemas"]["Direction"];
+            kind?: components["schemas"]["ConnectionKind"];
+            /**
+             * Format: uri
+             * @description The prefix the connection is: `s3://bucket/prefix/` or `az://container/prefix/`.
+             */
+            url: string;
+        };
+        UpdateConnectionRequest: {
+            credential?: string | null;
             name?: string | null;
+            target?: null | components["schemas"]["ConnectionTarget"];
+        };
+        /**
+         * @description A rename, a rotation or both. `spec` replaces the whole spec, secrets
+         *     included, and is stored only if every connection using the credential
+         *     still validates with it.
+         */
+        UpdateCredentialRequest: {
+            name?: string | null;
+            spec?: null | components["schemas"]["CredentialSpecInput"];
         };
         UpdateJobRequest: {
             name?: string | null;
             script?: string | null;
+        };
+        ValidateCredentialRequest: {
+            /**
+             * Format: uri
+             * @description A storage URL to LIST besides the connections that use the credential.
+             */
+            url?: string | null;
+        };
+        /** @description One probe of a credential or a connection, check by check. */
+        ValidationReport: {
+            at: string;
+            results: components["schemas"]["Check"][];
         };
         /**
          * @description The running build's version, so an operator can see which image a tenant is
@@ -848,31 +874,6 @@ export interface operations {
             };
         };
     };
-    list_providers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Every provider keasy can call, with its default model */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AiProviderInfo"][];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
     complete_stream: {
         parameters: {
             query?: never;
@@ -895,7 +896,7 @@ export interface operations {
                     "text/event-stream": unknown;
                 };
             };
-            /** @description No AI provider configured */
+            /** @description No model connection, or several and none named */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -906,6 +907,15 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            /** @description No such connection */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
@@ -936,178 +946,11 @@ export interface operations {
             503: components["responses"]["KeysUnavailable"];
         };
     };
-    list_accounts: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of cloud accounts */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CloudAccountSummary"][];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    create_account: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateCloudAccountRequest"];
-            };
-        };
-        responses: {
-            /** @description Cloud account created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CloudAccountSummary"];
-                };
-            };
-            /** @description Validation failed */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    get_account: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Cloud account ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cloud account details */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CloudAccountSummary"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description Cloud account not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    update_account: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Cloud account ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateCloudAccountRequest"];
-            };
-        };
-        responses: {
-            /** @description Cloud account updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CloudAccountSummary"];
-                };
-            };
-            /** @description Validation failed */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    delete_account: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Cloud account ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cloud account deleted */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
     list_connections: {
         parameters: {
             query?: {
-                /** @description Only connections of this kind. */
-                type?: components["schemas"]["ConnectionKind"];
+                /** @description Only those of this purpose. */
+                purpose?: components["schemas"]["Purpose"];
             };
             header?: never;
             path?: never;
@@ -1115,13 +958,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description List of connections */
+            /** @description The connections */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Connection"][];
+                    "application/json": components["schemas"]["ConnectionView"][];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -1144,16 +987,16 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Connection created */
+            /** @description Validated and stored */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Connection"];
+                    "application/json": components["schemas"]["ConnectionView"];
                 };
             };
-            /** @description Invalid connection or container not found */
+            /** @description No such credential, one of the other purpose, or a URL it does not reach */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1163,32 +1006,33 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    connection_refs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Every source connection's base URL, by name */
-            200: {
+            /** @description A sink by a member, or a source or model by the owner */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConnectionRefsResponse"];
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
+            /** @description A connection of that name, or a second sink */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The connection did not validate */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
@@ -1228,25 +1072,25 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Connection ID */
-                id: string;
+                /** @description Connection name */
+                name: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Connection details */
+            /** @description The connection */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Connection"];
+                    "application/json": components["schemas"]["ConnectionView"];
                 };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            /** @description Connection not found */
+            /** @description No such connection */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1265,14 +1109,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Connection ID */
-                id: string;
+                /** @description Connection name */
+                name: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Connection deleted */
+            /** @description Deleted */
             204: {
                 headers: {
                     [name: string]: unknown;
@@ -1280,7 +1124,91 @@ export interface operations {
                 content?: never;
             };
             401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
+            /** @description Not the caller's to delete */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such connection */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Jobs wrote their output to it; `dependents` names them */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    update_connection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Connection name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Validated again and stored */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionView"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Not the caller's to change */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such connection */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The connection did not validate */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
@@ -1291,14 +1219,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Connection ID */
-                id: string;
+                /** @description Connection name */
+                name: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description List of files in the connection */
+            /** @description Every object under the connection's prefix */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1307,7 +1235,7 @@ export interface operations {
                     "application/json": components["schemas"]["FileEntry"][];
                 };
             };
-            /** @description File listing not supported */
+            /** @description Not a storage connection */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1318,7 +1246,325 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            /** @description Connection not found */
+            /** @description No such connection */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            /** @description The store refused the listing */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    validate_connection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Connection name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The probe's report, stored with the connection */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationReport"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description No such connection */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    list_credentials: {
+        parameters: {
+            query?: {
+                /** @description Only those of this purpose. */
+                purpose?: components["schemas"]["Purpose"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The credentials, with the connections using each; never a secret */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CredentialView"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    create_credential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCredentialRequest"];
+            };
+        };
+        responses: {
+            /** @description Validated and stored */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CredentialView"];
+                };
+            };
+            /** @description An invalid name */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description A credential of that name exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The credential did not validate */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    get_credential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Credential name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The credential; never a secret */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CredentialView"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description No such credential */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    delete_credential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Credential name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Neither its creator nor the owner */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such credential */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Connections still use it; `dependents` names them */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    update_credential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Credential name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCredentialRequest"];
+            };
+        };
+        responses: {
+            /** @description Renamed and/or rotated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CredentialView"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Neither its creator nor the owner */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such credential */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description A connection using it would not validate with the new spec; `dependents` names them */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    validate_credential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Credential name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateCredentialRequest"];
+            };
+        };
+        responses: {
+            /** @description The probe's report, stored with the credential */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationReport"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description No such credential */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1749,197 +1995,6 @@ export interface operations {
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    list_ai_providers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of AI providers */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AiSettingsPayload"][];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    save_ai_provider: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The provider */
-                provider: components["schemas"]["AiProvider"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SaveAiProviderRequest"];
-            };
-        };
-        responses: {
-            /** @description Provider saved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AiSettingsPayload"];
-                };
-            };
-            /** @description Unknown provider */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    delete_ai_provider: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The provider */
-                provider: components["schemas"]["AiProvider"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Provider deleted */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Unknown provider */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    get_catalog_storage: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Catalog storage config */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CatalogStoragePayload"];
-                };
-            };
-            /** @description Not configured */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    save_catalog_storage: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CatalogStoragePayload"];
-            };
-        };
-        responses: {
-            /** @description Catalog storage saved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CatalogStoragePayload"];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    get_schema: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Provider registry schema */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProviderSchema"][];
-                };
-            };
         };
     };
     version: {

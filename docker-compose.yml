@@ -83,6 +83,7 @@ services:
       - ./server/src:/src/server/src
       - ./server/crates:/src/server/crates
       - keasy-data:/var/lib/keasy
+      - ./infra/dev/bootstrap.json:/etc/keasy/bootstrap.json:ro
       - server-target:/src/server/target
       - cargo-registry:/usr/local/cargo/registry
     environment:
@@ -94,16 +95,9 @@ services:
       KEASY_WORKSPACE_NAME: Dev Workspace
       KEASY_OIDC_ISSUER_URL: http://keycloak.localhost:8180/realms/keasy
       KEASY_OIDC_CLIENT_ID: keasy-ws-dev
-      # Separate prefixes let @-completion tell a shape from a table.
-      KEASY_BOOTSTRAP_CONNECTION_NAME: MinIO dev bucket
-      KEASY_BOOTSTRAP_CONNECTION_URL: s3://keasy-dev/
-      KEASY_BOOTSTRAP_VOCAB_NAME: MinIO dev shapes
-      KEASY_BOOTSTRAP_VOCAB_URL: s3://keasy-dev/vocab/
-      KEASY_BOOTSTRAP_SINK_URL: s3://keasy-dev/output/
-      AWS_ACCESS_KEY_ID: minioadmin
-      AWS_SECRET_ACCESS_KEY: minioadmin
-      AWS_DEFAULT_REGION: us-east-1
-      AWS_ENDPOINT_URL: http://minio.localhost:9000
+      # The MinIO credential, its data and shapes sources and the sink, in the
+      # API's own request format.
+      KEASY_BOOTSTRAP_FILE: /etc/keasy/bootstrap.json
     depends_on:
       keycloak-realm:
         condition: service_completed_successfully

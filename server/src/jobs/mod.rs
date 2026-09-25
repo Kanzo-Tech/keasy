@@ -1,6 +1,7 @@
 pub mod datasets;
 pub mod db;
 pub mod errors;
+pub mod output;
 pub mod routes;
 
 use keasy_api::jobs::{CreateJobRequest, Job, JobStatus};
@@ -25,7 +26,7 @@ pub fn requested(status: JobStatus, request: CreateJobRequest, created_by: Strin
         completed_at: None,
         error: None,
         created_by,
-        sink_connection_id: request.sink_connection_id,
+        sink_connection: request.sink_connection,
         script: Some(request.script),
         manifest: None,
         relations: Vec::new(),

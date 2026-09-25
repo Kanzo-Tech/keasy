@@ -82,8 +82,15 @@ introspection; the server hosts connections, signed URLs, jobs and the catalog,
 and never reads a data file. Every job names a sink as its destination and is
 visible only to the member who created it.
 
+A **credential** (storage: S3 or Azure; model: Anthropic or OpenAI) is who keasy is
+when it reaches a store or a provider; a **connection** puts one to use (a storage
+prefix — a source or the one sink — or a model). Both are validated on every write,
+and a credential in use cannot be deleted. `KEASY_BOOTSTRAP_FILE` declares them at
+boot in the API's own request format (dev: `infra/dev/bootstrap.json`).
+
 Stored credentials are sealed with `KEASY_SECRET_KEY`: 32 random bytes in base64
-(`openssl rand -base64 32`). The server refuses to start without one, and refuses
+(`openssl rand -base64 32`); `keasy-server rekey` seals them again under
+`KEASY_NEW_SECRET_KEY`. The server refuses to start without one, and refuses
 a database whose schema is not the one it ships — there are no migrations; wipe
 the volume (`make clean`) instead.
 

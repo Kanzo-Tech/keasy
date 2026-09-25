@@ -10,10 +10,14 @@ type ClientCode = "stopped" | "query_failed" | "unknown";
 
 const FALLBACK: ErrorInfo = { message: "Something went wrong." };
 
-const aiLink = { label: "Go to AI Settings", href: "/settings/ai" };
+const aiLink = { label: "Go to AI credentials", href: "/settings/credentials?purpose=model" };
 
 const registry: Partial<Record<ErrorCode | ClientCode, ErrorInfo>> = {
-  ai_not_configured: { message: "AI settings are not configured.", link: aiLink },
+  ai_not_configured: {
+    message: "No model connection exists yet.",
+    link: { label: "Add a model connection", href: "/connections?type=model" },
+  },
+  ai_connection_required: { message: "Several model connections exist; pick one." },
   insufficient_credits: {
     message: "Your AI provider account has insufficient credits.",
     link: aiLink,
@@ -24,10 +28,11 @@ const registry: Partial<Record<ErrorCode | ClientCode, ErrorInfo>> = {
     message:
       "Query execution failed. The AI may have generated invalid SQL. Try rephrasing your question.",
   },
-  container_not_found: {
-    message: "The specified bucket or container was not found.",
-    link: { label: "Go to Cloud Accounts", href: "/settings/cloud-accounts" },
+  probe_failed: {
+    message: "The store or provider did not accept the credential.",
+    link: { label: "Go to Credentials", href: "/settings/credentials" },
   },
+  in_use: { message: "It is still in use." },
 };
 
 /** UI copy for a code; a job's runtime error carries codes of its own, hence the open string. */

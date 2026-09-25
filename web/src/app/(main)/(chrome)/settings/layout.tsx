@@ -1,6 +1,6 @@
 "use client";
 
-import { Cloud, Paintbrush, ShieldCheck, Sparkles } from "lucide-react";
+import { KeyRound, Paintbrush, ShieldCheck } from "lucide-react";
 import { useSession } from "@kanzo-tech/auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,11 +21,8 @@ const GENERAL = [
   { href: "/settings/security", label: "Security", icon: ShieldCheck },
 ];
 
-// Cloud accounts and AI are the member's own data-plane infrastructure.
-const DATA = [
-  { href: "/settings/cloud-accounts", label: "Cloud Accounts", icon: Cloud },
-  { href: "/settings/ai", label: "AI", icon: Sparkles },
-];
+// Storage and AI credentials are the member's own data-plane infrastructure.
+const DATA = [{ href: "/settings/credentials", label: "Credentials", icon: KeyRound }];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

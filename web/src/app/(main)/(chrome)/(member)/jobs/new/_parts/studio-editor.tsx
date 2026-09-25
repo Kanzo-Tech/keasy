@@ -26,7 +26,7 @@ import type { EditorView } from "@codemirror/view";
 import { BookMarked, Database, PlugZap } from "lucide-react";
 import * as checker from "@/lib/fossil/checker";
 import { useSourceDescriptors } from "@/lib/fossil/use-source-descriptors";
-import type { Schemas } from "@/lib/api/client";
+import type { StorageConnection } from "@/lib/connections";
 
 /** The chrome a floating cluster wears — the same utilities the canvas controls use. */
 const FLOATING = "rounded-lg border bg-card shadow-sm";
@@ -49,7 +49,7 @@ export function StudioEditor({
 }: {
   program: string;
   onProgramChange: (program: string) => void;
-  connections: Schemas["Connection"][];
+  connections: StorageConnection[];
   /** Connection names the program references — fossil's `refs()`, not a regex. */
   used: Set<string>;
   railOpen: boolean;
@@ -107,7 +107,7 @@ export function StudioEditor({
     if (view.current) forceLinting(view.current);
   }, [booted, descriptors]);
 
-  const insert = (connection: Schemas["Connection"]) => {
+  const insert = (connection: StorageConnection) => {
     const v = view.current;
     if (!v) return;
     const text = connection.kind === "vocab" ? `@${connection.name}` : `@${connection.name}/`;
@@ -198,7 +198,7 @@ export function StudioEditor({
                     return (
                       // The button sits inside the `Item`: `asChild` would put
                       // `role="listitem"` on it and it would stop being announced as one.
-                      <Item className="p-0" key={c.id} variant="outline">
+                      <Item className="p-0" key={c.name} variant="outline">
                         <button
                           className="flex w-full flex-wrap items-center gap-(--space) rounded-xl p-(--space) text-start transition-colors hover:border-primary/40"
                           onClick={() => insert(c)}

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 
 use axum::Json;
 use axum::extract::{Path, Query, State};
@@ -7,194 +8,219 @@ use axum::response::IntoResponse;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::AppState;
-use crate::auth::role::Member;
-use crate::cloud::reader;
-use crate::discovery::routes::SIGNED_URL_EXPIRES;
-use keasy_api::ErrorBody;
-use keasy_api::cloud::FileEntry;
 use keasy_api::connections::{
-    Connection, ConnectionRefsResponse, CreateConnectionRequest, Direction, ListConnectionsQuery,
-    LocationType, SignLocatorsRequest, SignLocatorsResponse,
+    ConnectionView, CreateConnectionRequest, FileEntry, SignLocatorsRequest, SignLocatorsResponse,
+    UpdateConnectionRequest,
 };
+use keasy_api::credentials::{CredentialSpecInput, PurposeQuery, StorageCredentialInput};
+use keasy_api::validation::ValidationReport;
+use keasy_api::{ErrorBody, ErrorCode};
 
-use super::errors::ConnectionError;
+use super::locator::{is_public_http, signer};
+use super::{named, persistence};
+use crate::AppState;
+use crate::auth::role::{AnyRole, Member};
+use crate::domain::StorageUrl;
+use crate::error::Refusal;
+use crate::storage_client::{self, SIGNED_URL_EXPIRES};
 
-/// A cloud connection and the credentials it signs with.
-async fn resolve_cloud_connection(
-    state: &AppState,
-    id: &str,
-) -> Result<(Connection, HashMap<String, String>), ConnectionError> {
-    let connection = state
-        .db
-        .get_connection(id)
-        .await?
-        .ok_or(ConnectionError::NotFound)?;
-    if connection.location_type == LocationType::Local || connection.cloud_account_id.is_none() {
-        return Err(ConnectionError::InvalidConnection(
-            "Operation not supported for a connection without a cloud account".to_string(),
-        ));
+/// The sink is the owner's alone; every other connection is a member's, and
+/// once made, its creator's or the owner's to change.
+fn may_change(
+    caller: &AnyRole,
+    current: Option<&ConnectionView>,
+    sink: bool,
+) -> Result<(), Refusal> {
+    if sink {
+        return if caller.is_owner() {
+            Ok(())
+        } else {
+            Err(Refusal::forbidden(
+                "only the owner manages the workspace sink",
+            ))
+        };
     }
-    let creds = state.db.connection_credentials(&connection).await?;
-    Ok((connection, creds))
+    match current {
+        None if caller.is_owner() => Err(Refusal::forbidden(
+            "the owner manages the sink; sources and models are the members'",
+        )),
+        None => Ok(()),
+        Some(c) if caller.owns(&c.created_by) => Ok(()),
+        Some(_) => Err(Refusal::forbidden(
+            "only who created a connection, or the owner, may change it",
+        )),
+    }
 }
 
 #[utoipa::path(get, path = "/v1/connections", tag = "Connections",
-    params(ListConnectionsQuery),
-    responses((status = 200, description = "List of connections", body = Vec<Connection>))
+    params(PurposeQuery),
+    responses((status = 200, description = "The connections", body = Vec<ConnectionView>))
 )]
 pub async fn list_connections(
-    _: Member,
+    _: AnyRole,
     State(state): State<AppState>,
-    Query(query): Query<ListConnectionsQuery>,
-) -> Result<impl IntoResponse, ConnectionError> {
-    Ok(Json(
-        state
-            .db
-            .list_connections(query.kind.as_ref().map(AsRef::as_ref))
-            .await?,
-    ))
+    Query(query): Query<PurposeQuery>,
+) -> Result<impl IntoResponse, Refusal> {
+    Ok(Json(persistence::list(
+        &*state.db.read().await,
+        query.purpose,
+    )?))
 }
 
 #[utoipa::path(post, path = "/v1/connections", tag = "Connections",
     request_body = CreateConnectionRequest,
     responses(
-        (status = 201, description = "Connection created", body = Connection),
-        (status = 400, description = "Invalid connection or container not found", body = ErrorBody),
+        (status = 201, description = "Validated and stored", body = ConnectionView),
+        (status = 400, description = "No such credential, one of the other purpose, or a URL it does not reach", body = ErrorBody),
+        (status = 403, description = "A sink by a member, or a source or model by the owner", body = ErrorBody),
+        (status = 409, description = "A connection of that name, or a second sink", body = ErrorBody),
+        (status = 422, description = "The connection did not validate", body = ErrorBody),
     )
 )]
 pub async fn create_connection(
-    _: Member,
+    caller: AnyRole,
     State(state): State<AppState>,
-    Json(req): Json<CreateConnectionRequest>,
-) -> Result<impl IntoResponse, ConnectionError> {
-    // The sink is the owner's, set on the catalog-storage page.
-    if req.direction == Direction::Sink {
-        return Err(ConnectionError::Forbidden(
-            "only the owner can manage the workspace sink".to_string(),
-        ));
-    }
-
-    if req.location_type == LocationType::Cloud
-        && let Some(ref account_id) = req.cloud_account_id
-    {
-        let creds = state
-            .db
-            .build_storage_config(std::slice::from_ref(account_id))
-            .await?;
-        if let Err(msg) = reader::list_files(&req.url, &creds).await {
-            return Err(ConnectionError::ContainerNotFound(format!(
-                "Cannot access container '{}': {msg}",
-                req.url
-            )));
-        }
-    }
-
-    let connection = state.db.create_connection(req).await?;
-    Ok((StatusCode::CREATED, Json(connection)))
+    Json(request): Json<CreateConnectionRequest>,
+) -> Result<impl IntoResponse, Refusal> {
+    may_change(&caller, None, request.target.is_sink())?;
+    let view = super::create(&state.db, request, &caller.user_id).await?;
+    Ok((StatusCode::CREATED, Json(view)))
 }
 
-#[utoipa::path(get, path = "/v1/connections/{id}", tag = "Connections",
-    params(("id" = String, Path, description = "Connection ID")),
+#[utoipa::path(get, path = "/v1/connections/{name}", tag = "Connections",
+    params(("name" = String, Path, description = "Connection name")),
     responses(
-        (status = 200, description = "Connection details", body = Connection),
-        (status = 404, description = "Connection not found", body = ErrorBody),
+        (status = 200, description = "The connection", body = ConnectionView),
+        (status = 404, description = "No such connection", body = ErrorBody),
     )
 )]
 pub async fn get_connection(
-    _: Member,
+    _: AnyRole,
     State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Result<impl IntoResponse, ConnectionError> {
-    state
-        .db
-        .get_connection(&id)
-        .await?
-        .map(Json)
-        .ok_or(ConnectionError::NotFound)
+    Path(name): Path<String>,
+) -> Result<impl IntoResponse, Refusal> {
+    Ok(Json(named(&state.db, &name).await?))
 }
 
-#[utoipa::path(delete, path = "/v1/connections/{id}", tag = "Connections",
-    params(("id" = String, Path, description = "Connection ID")),
+#[utoipa::path(patch, path = "/v1/connections/{name}", tag = "Connections",
+    params(("name" = String, Path, description = "Connection name")),
+    request_body = UpdateConnectionRequest,
     responses(
-        (status = 204, description = "Connection deleted"),
+        (status = 200, description = "Validated again and stored", body = ConnectionView),
+        (status = 403, description = "Not the caller's to change", body = ErrorBody),
+        (status = 404, description = "No such connection", body = ErrorBody),
+        (status = 422, description = "The connection did not validate", body = ErrorBody),
+    )
+)]
+pub async fn update_connection(
+    caller: AnyRole,
+    State(state): State<AppState>,
+    Path(name): Path<String>,
+    Json(request): Json<UpdateConnectionRequest>,
+) -> Result<impl IntoResponse, Refusal> {
+    let current = named(&state.db, &name).await?;
+    let mut updated = current.clone();
+    if let Some(new_name) = request.name {
+        updated.name = new_name;
+    }
+    if let Some(credential) = request.credential {
+        updated.credential = credential;
+    }
+    if let Some(target) = request.target {
+        updated.target = target;
+    }
+    if updated.target.purpose() != current.target.purpose() {
+        return Err(Refusal::invalid("a connection's purpose cannot change"));
+    }
+    may_change(
+        &caller,
+        Some(&current),
+        current.target.is_sink() || updated.target.is_sink(),
+    )?;
+    Ok(Json(
+        super::save(&state.db, Some(&name), updated, &caller.user_id).await?,
+    ))
+}
+
+#[utoipa::path(delete, path = "/v1/connections/{name}", tag = "Connections",
+    params(("name" = String, Path, description = "Connection name")),
+    responses(
+        (status = 204, description = "Deleted"),
+        (status = 403, description = "Not the caller's to delete", body = ErrorBody),
+        (status = 404, description = "No such connection", body = ErrorBody),
+        (status = 409, description = "Jobs wrote their output to it; `dependents` names them", body = ErrorBody),
     )
 )]
 pub async fn delete_connection(
-    _: Member,
+    caller: AnyRole,
     State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Result<impl IntoResponse, ConnectionError> {
-    if state
-        .db
-        .get_connection(&id)
-        .await?
-        .is_some_and(|c| c.direction == Direction::Sink)
-    {
-        return Err(ConnectionError::Forbidden(
-            "only the owner can manage the workspace sink".to_string(),
-        ));
-    }
-    state.db.remove_connection(&id).await?;
+    Path(name): Path<String>,
+) -> Result<impl IntoResponse, Refusal> {
+    let current = named(&state.db, &name).await?;
+    may_change(&caller, Some(&current), current.target.is_sink())?;
+    persistence::delete(&*state.db.write().await, &name)?;
     Ok(StatusCode::NO_CONTENT)
 }
 
-#[utoipa::path(get, path = "/v1/connections/{id}/files", tag = "Connections",
-    params(("id" = String, Path, description = "Connection ID")),
+#[utoipa::path(post, path = "/v1/connections/{name}/validate", tag = "Connections",
+    params(("name" = String, Path, description = "Connection name")),
     responses(
-        (status = 200, description = "List of files in the connection", body = Vec<FileEntry>),
-        (status = 400, description = "File listing not supported", body = ErrorBody),
-        (status = 404, description = "Connection not found", body = ErrorBody),
+        (status = 200, description = "The probe's report, stored with the connection", body = ValidationReport),
+        (status = 404, description = "No such connection", body = ErrorBody),
+    )
+)]
+/// LIST a source, WRITE and DELETE under the sink, list a model's provider.
+pub async fn validate_connection(
+    _: AnyRole,
+    State(state): State<AppState>,
+    Path(name): Path<String>,
+) -> Result<impl IntoResponse, Refusal> {
+    let connection = named(&state.db, &name).await?;
+    let credential = crate::credentials::named(&state.db, &connection.credential).await?;
+    let report = crate::credentials::probe::connection(&credential.spec, &connection.target).await;
+    persistence::set_validation(&*state.db.write().await, &name, &report)?;
+    Ok(Json(report))
+}
+
+#[utoipa::path(get, path = "/v1/connections/{name}/files", tag = "Connections",
+    params(("name" = String, Path, description = "Connection name")),
+    responses(
+        (status = 200, description = "Every object under the connection's prefix", body = Vec<FileEntry>),
+        (status = 400, description = "Not a storage connection", body = ErrorBody),
+        (status = 404, description = "No such connection", body = ErrorBody),
+        (status = 502, description = "The store refused the listing", body = ErrorBody),
     )
 )]
 pub async fn list_connection_files(
     _: Member,
     State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Result<impl IntoResponse, ConnectionError> {
-    let (connection, creds) = resolve_cloud_connection(&state, &id).await?;
-    reader::list_files(&connection.url, &creds)
+    Path(name): Path<String>,
+) -> Result<impl IntoResponse, Refusal> {
+    let connection = named(&state.db, &name).await?;
+    let (url, credential) = super::storage(&state.db, &connection).await?;
+    storage_client::list_files(&credential, &url)
         .await
         .map(Json)
-        .map_err(ConnectionError::ListFilesFailed)
-}
-
-#[utoipa::path(get, path = "/v1/connections/refs", tag = "Connections",
-    responses((status = 200, description = "Every source connection's base URL, by name", body = ConnectionRefsResponse))
-)]
-/// The connections a program may read, by the name it writes after `@`. No
-/// credentials: signing is [`sign_locators`].
-pub async fn connection_refs(
-    _: Member,
-    State(state): State<AppState>,
-) -> Result<impl IntoResponse, ConnectionError> {
-    let refs = state
-        .db
-        .list_connections(None)
-        .await?
-        .into_iter()
-        .filter(|c| c.direction == Direction::Source)
-        .map(|c| (c.name, c.url))
-        .collect();
-    Ok(Json(ConnectionRefsResponse { refs }))
+        .map_err(|e| Refusal::new(StatusCode::BAD_GATEWAY, ErrorCode::ListFilesFailed, e))
 }
 
 #[utoipa::path(post, path = "/v1/connections/urls", tag = "Connections",
     request_body = SignLocatorsRequest,
     responses((status = 200, description = "Signed GET URLs for the locators the caller may read", body = SignLocatorsResponse))
 )]
-/// Sign GET URLs for locators, each with the credentials of the connection it
-/// lies under. Serves the editor and a job's run alike: a member reads what
-/// every source connection holds, and the sink only through the job that
-/// wrote it. Public HTTP locators come back as they are.
+/// Sign GET URLs for locators, each with the credential of the source it lies
+/// under. A member reads what every source holds, and the sink only through
+/// the job that wrote it. Public HTTP locators come back as they are.
 pub async fn sign_locators(
     _: Member,
     State(state): State<AppState>,
     Json(req): Json<SignLocatorsRequest>,
-) -> Result<impl IntoResponse, ConnectionError> {
-    let connections = state.db.list_connections(None).await?;
-    let mut signing: HashMap<&str, HashMap<String, String>> = HashMap::new();
+) -> Result<impl IntoResponse, Refusal> {
+    let connections = persistence::list(&*state.db.read().await, None)?;
+    let mut credentials: HashMap<&str, StorageCredentialInput> = HashMap::new();
     let mut urls = HashMap::with_capacity(req.locators.len());
+    let sign_failed =
+        |e: String| Refusal::new(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::SignError, e);
     for locator in &req.locators {
         let Some(conn) = signer(locator, &connections) else {
             if is_public_http(locator) {
@@ -202,132 +228,37 @@ pub async fn sign_locators(
             }
             continue;
         };
-        let creds = match signing.entry(conn.id.as_str()) {
-            std::collections::hash_map::Entry::Occupied(e) => e.into_mut(),
-            std::collections::hash_map::Entry::Vacant(e) => {
-                e.insert(state.db.connection_credentials(conn).await?)
-            }
+        let credential = match credentials.entry(conn.credential.as_str()) {
+            Entry::Occupied(e) => e.into_mut(),
+            Entry::Vacant(e) => match crate::credentials::named(&state.db, &conn.credential)
+                .await?
+                .spec
+            {
+                CredentialSpecInput::Storage(spec) => e.insert(spec),
+                CredentialSpecInput::Model(_) => continue,
+            },
         };
-        let (store, path) = crate::cloud::build_store(locator, creds)
-            .map_err(|e| ConnectionError::SignFailed(e.to_string()))?;
+        let url = StorageUrl::parse(locator).map_err(sign_failed)?;
+        let store = storage_client::store(credential, &url).map_err(sign_failed)?;
         let signed = store
-            .sign_url(Method::GET, &path, SIGNED_URL_EXPIRES)
+            .sign_url(Method::GET, url.path(), SIGNED_URL_EXPIRES)
             .await
-            .map_err(|e| ConnectionError::SignFailed(e.to_string()))?;
+            .map_err(|e| sign_failed(e.to_string()))?;
         urls.insert(locator.clone(), signed.to_string());
     }
     Ok(Json(SignLocatorsResponse { urls }))
-}
-
-fn is_public_http(locator: &str) -> bool {
-    locator.starts_with("https://") || locator.starts_with("http://")
-}
-
-/// The object path `locator` names under `base`, when it names one.
-fn object_under<'a>(locator: &'a str, base: &str) -> Option<&'a str> {
-    let rest = locator
-        .strip_prefix(base.trim_end_matches('/'))?
-        .strip_prefix('/')?;
-    crate::cloud::relative_path(rest).ok().map(|()| rest)
-}
-
-/// The deepest connection `locator` lies under.
-fn owner<'a>(locator: &str, connections: &'a [Connection]) -> Option<&'a Connection> {
-    connections
-        .iter()
-        .filter(|c| object_under(locator, &c.url).is_some())
-        .max_by_key(|c| c.url.trim_end_matches('/').len())
-}
-
-/// The connection that signs `locator`: its owner, when that is a cloud source.
-/// A source rooted above the sink does not reach into it.
-fn signer<'a>(locator: &str, connections: &'a [Connection]) -> Option<&'a Connection> {
-    owner(locator, connections).filter(|c| {
-        c.direction == Direction::Source
-            && c.location_type == LocationType::Cloud
-            && c.cloud_account_id.is_some()
-            && crate::cloud::is_cloud_url(locator)
-    })
 }
 
 /// The routes this module serves.
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(list_connections, create_connection))
-        .routes(routes!(get_connection, delete_connection))
+        .routes(routes!(
+            get_connection,
+            update_connection,
+            delete_connection
+        ))
+        .routes(routes!(validate_connection))
         .routes(routes!(list_connection_files))
-        .routes(routes!(connection_refs))
         .routes(routes!(sign_locators))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use keasy_api::connections::ConnectionKind;
-
-    fn conn(name: &str, url: &str, direction: Direction) -> Connection {
-        Connection {
-            id: name.into(),
-            name: name.into(),
-            kind: ConnectionKind::Data,
-            location_type: LocationType::Cloud,
-            direction,
-            cloud_account_id: Some("acct".into()),
-            url: url.into(),
-        }
-    }
-
-    fn workspace() -> Vec<Connection> {
-        vec![
-            conn("bucket", "s3://b/", Direction::Source),
-            conn("shapes", "s3://b/vocab/", Direction::Source),
-            conn("data", "s3://b/data", Direction::Source),
-            conn("sink", "s3://b/output/", Direction::Sink),
-        ]
-    }
-
-    fn signed_by(locator: &str) -> Option<String> {
-        signer(locator, &workspace()).map(|c| c.name.clone())
-    }
-
-    #[test]
-    fn the_deepest_connection_signs() {
-        assert_eq!(
-            signed_by("s3://b/vocab/shop.shex").as_deref(),
-            Some("shapes")
-        );
-        assert_eq!(signed_by("s3://b/people.csv").as_deref(), Some("bucket"));
-        assert_eq!(signed_by("s3://b/data/x.csv").as_deref(), Some("data"));
-    }
-
-    #[test]
-    fn a_connection_owns_a_locator_only_at_a_path_boundary() {
-        let only_data = vec![conn("data", "s3://b/data", Direction::Source)];
-        assert!(signer("s3://b/data/x.csv", &only_data).is_some());
-        assert!(signer("s3://b/data-private/x.csv", &only_data).is_none());
-        assert!(signer("s3://b/data", &only_data).is_none());
-        assert!(signer("s3://b/data/", &only_data).is_none());
-        assert_eq!(
-            signed_by("s3://b/data-private/x.csv").as_deref(),
-            Some("bucket")
-        );
-    }
-
-    #[test]
-    fn the_sink_is_not_signed_even_under_a_source_rooted_above_it() {
-        assert_eq!(signed_by("s3://b/output/job/vertex/Person.parquet"), None);
-    }
-
-    #[test]
-    fn a_locator_cannot_climb_out_of_its_connection() {
-        assert_eq!(signed_by("s3://b/vocab/../output/job/x.parquet"), None);
-        assert_eq!(signed_by("s3://other/x.csv"), None);
-    }
-
-    #[test]
-    fn a_source_without_credentials_does_not_sign() {
-        let mut local = conn("local", "s3://b/", Direction::Source);
-        local.cloud_account_id = None;
-        assert!(signer("s3://b/x.csv", &[local]).is_none());
-    }
 }

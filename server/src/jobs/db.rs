@@ -5,7 +5,7 @@ use crate::db::{Database, DbResult, enum_column, json_column_opt};
 use keasy_api::jobs::{Job, JobStatus};
 
 const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, error, \
-                       created_by, sink_connection_id, script, manifest, relations";
+                       created_by, sink_connection, script, manifest, relations";
 
 impl Database {
     pub async fn insert_job(&self, job: &Job) -> DbResult<()> {
@@ -23,7 +23,7 @@ impl Database {
                 job.completed_at,
                 job.error,
                 job.created_by,
-                job.sink_connection_id,
+                job.sink_connection,
                 job.script,
                 job.manifest
                     .as_ref()
@@ -120,7 +120,7 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
         completed_at: row.get("completed_at")?,
         error: row.get("error")?,
         created_by: row.get("created_by")?,
-        sink_connection_id: row.get("sink_connection_id")?,
+        sink_connection: row.get("sink_connection")?,
         script,
         manifest: json_column_opt(row, "manifest")?,
         relations: json_column_opt(row, "relations")?.unwrap_or_default(),
@@ -132,13 +132,14 @@ mod tests {
     use super::*;
     use keasy_api::jobs::CreateJobRequest;
 
-    fn db() -> (Database, tempfile::TempDir) {
+    async fn db() -> (Database, tempfile::TempDir) {
         let dir = tempfile::tempdir().unwrap();
         let db = Database::open(
             &dir.path().join("keasy.db"),
-            crate::crypto::SecretKey::for_tests(),
+            crate::credentials::sealing::SecretKey::for_tests(),
         )
         .unwrap();
+        crate::connections::persistence::tests::seed_sink(&*db.write().await, "sink");
         (db, dir)
     }
 
@@ -148,7 +149,7 @@ mod tests {
             CreateJobRequest {
                 script: "x".into(),
                 name: None,
-                sink_connection_id: "sink".into(),
+                sink_connection: "sink".into(),
                 draft: true,
             },
             owner.into(),
@@ -158,7 +159,7 @@ mod tests {
     /// A row that does not decode is an error, not a job with defaults filled in.
     #[tokio::test]
     async fn a_corrupt_row_is_an_error_not_a_default() {
-        let (db, _dir) = db();
+        let (db, _dir) = db().await;
         let stored = job("u-1");
         db.insert_job(&stored).await.unwrap();
         db.write()
@@ -178,5 +179,4 @@ mod tests {
             .unwrap();
         assert!(db.get_job(&stored.id).await.is_err());
     }
-
 }

@@ -11,7 +11,12 @@ use tracing_subscriber::fmt::MakeWriter;
 use crate::auth::jwt::Validator;
 use crate::auth::jwt::tests::{Realm, good, mint, realm};
 use crate::{AppState, Database};
-use keasy_api::connections::{ConnectionKind, CreateConnectionRequest, Direction, LocationType};
+use keasy_api::connections::{ConnectionTarget, ConnectionView, Direction, StorageTarget};
+use keasy_api::credentials::{CredentialSpecInput, StorageCredentialInput};
+use keasy_api::validation::ValidationReport;
+use secrecy::SecretString;
+
+use crate::domain::ResourceName;
 
 /// The real router over a real database, verifying tokens against a
 /// fake realm.
@@ -28,7 +33,7 @@ impl Harness {
         let dir = tempfile::tempdir().unwrap();
         let db = Database::open(
             &dir.path().join("keasy.db"),
-            crate::crypto::SecretKey::for_tests(),
+            crate::credentials::sealing::SecretKey::for_tests(),
         )
         .unwrap();
         let state = AppState {
@@ -85,20 +90,88 @@ impl Harness {
         (status, serde_json::from_slice(&bytes).unwrap_or_default())
     }
 
-    async fn connection(&self, name: &str, direction: Direction) -> String {
-        self.db
-            .create_connection(CreateConnectionRequest {
-                name: name.into(),
-                kind: ConnectionKind::Data,
-                location_type: LocationType::Local,
-                direction,
-                cloud_account_id: None,
-                url: format!("/tmp/{name}"),
-            })
-            .await
-            .unwrap()
-            .id
+    /// A stored S3 credential on `endpoint`, unprobed, created by `by`.
+    async fn credential(&self, name: &str, endpoint: &str, by: &str) {
+        crate::credentials::persistence::insert(
+            &*self.db.write().await,
+            self.db.secret_key(),
+            &ResourceName::parse(name).unwrap(),
+            &s3(endpoint, "original-secret"),
+            by,
+            &unprobed(),
+        )
+        .unwrap();
     }
+
+    /// A stored storage connection on `credential`, unprobed.
+    async fn connection(&self, name: &str, credential: &str, direction: Direction, by: &str) {
+        let target = ConnectionTarget::Storage(StorageTarget {
+            url: format!("s3://b/{name}/"),
+            kind: Default::default(),
+            direction,
+        });
+        let view = ConnectionView {
+            name: name.into(),
+            credential: credential.into(),
+            target,
+            created_by: by.into(),
+            created_at: String::new(),
+            updated_by: by.into(),
+            updated_at: String::new(),
+            validation: None,
+        };
+        crate::connections::persistence::insert(&*self.db.write().await, &view, by).unwrap();
+    }
+}
+
+fn unprobed() -> ValidationReport {
+    ValidationReport {
+        at: "now".into(),
+        results: Vec::new(),
+    }
+}
+
+fn s3(endpoint: &str, secret: &str) -> CredentialSpecInput {
+    CredentialSpecInput::Storage(StorageCredentialInput::S3 {
+        access_key_id: "AK".into(),
+        secret_access_key: SecretString::from(secret),
+        region: "us-east-1".into(),
+        endpoint: Some(endpoint.into()),
+    })
+}
+
+/// Nothing listens here: a probe through it fails at once.
+const DEAD: &str = "http://127.0.0.1:1";
+
+/// A store that answers as S3 does, enough for LIST, PUT and DELETE: every
+/// bucket is empty and every write lands.
+async fn fake_s3() -> String {
+    use axum::http::HeaderMap;
+    use axum::response::IntoResponse;
+    async fn answer(method: Method) -> axum::response::Response {
+        match method {
+            Method::GET => (
+                [(header::CONTENT_TYPE, "application/xml")],
+                r#"<?xml version="1.0" encoding="UTF-8"?><ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>b</Name><KeyCount>0</KeyCount><MaxKeys>1000</MaxKeys><IsTruncated>false</IsTruncated></ListBucketResult>"#,
+            )
+                .into_response(),
+            Method::PUT => {
+                let mut headers = HeaderMap::new();
+                headers.insert(header::ETAG, "\"e\"".parse().unwrap());
+                (StatusCode::OK, headers).into_response()
+            }
+            Method::DELETE => StatusCode::NO_CONTENT.into_response(),
+            _ => StatusCode::METHOD_NOT_ALLOWED.into_response(),
+        }
+    }
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        axum::serve(listener, Router::new().fallback(answer))
+            .await
+            .unwrap();
+    });
+    format!("http://{addr}")
 }
 
 /// A job needs a destination, and it must be the sink.
@@ -106,25 +179,30 @@ impl Harness {
 async fn a_job_goes_to_the_sink_or_is_refused() {
     let harness = Harness::new().await;
     let member = harness.token(&["member"]);
-    let source = harness.connection("source", Direction::Source).await;
-    let sink = harness.connection("sink", Direction::Sink).await;
+    harness.credential("key", DEAD, "u-1").await;
+    harness
+        .connection("source", "key", Direction::Source, "u-1")
+        .await;
+    harness
+        .connection("sink", "key", Direction::Sink, "u-1")
+        .await;
 
     let create = |sink: Option<&str>| {
         let mut body = json!({ "script": "x", "draft": true });
         if let Some(sink) = sink {
-            body["sink_connection_id"] = json!(sink);
+            body["sink_connection"] = json!(sink);
         }
         harness.send(Method::POST, "/v1/jobs", &member, body)
     };
 
     assert_eq!(create(None).await.0, StatusCode::UNPROCESSABLE_ENTITY);
-    let (status, body) = create(Some(&source)).await;
+    let (status, body) = create(Some("source")).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(body["error"], "invalid_destination");
     assert_eq!(create(Some("gone")).await.0, StatusCode::BAD_REQUEST);
-    let (status, job) = create(Some(&sink)).await;
+    let (status, job) = create(Some("sink")).await;
     assert_eq!(status, StatusCode::CREATED);
-    assert_eq!(job["sink_connection_id"], json!(sink));
+    assert_eq!(job["sink_connection"], json!("sink"));
 }
 
 /// A job is its creator's: another member neither lists, reads, edits, runs,
@@ -134,14 +212,17 @@ async fn a_job_is_its_creators_alone() {
     let harness = Harness::new().await;
     let mine = harness.token_for("u-1", &["member"]);
     let theirs = harness.token_for("u-2", &["member"]);
-    let sink = harness.connection("sink", Direction::Sink).await;
+    harness.credential("key", DEAD, "u-1").await;
+    harness
+        .connection("sink", "key", Direction::Sink, "u-1")
+        .await;
 
     let (_, job) = harness
         .send(
             Method::POST,
             "/v1/jobs",
             &mine,
-            json!({ "script": "x", "draft": true, "sink_connection_id": sink }),
+            json!({ "script": "x", "draft": true, "sink_connection": "sink" }),
         )
         .await;
     let id = job["id"].as_str().unwrap().to_string();
@@ -184,6 +265,363 @@ async fn a_job_is_its_creators_alone() {
     let (status, job) = harness.send(Method::GET, &path, &mine, json!(null)).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(job["id"], json!(id));
+}
+
+/// A secret goes in and never comes out: not in a create's answer, not in a
+/// listing, not in a read, and no response schema has a field to carry one.
+#[tokio::test]
+async fn no_response_carries_a_secret() {
+    let harness = Harness::new().await;
+    let member = harness.token(&["member"]);
+    let (status, created) = harness
+        .send(
+            Method::POST,
+            "/v1/credentials",
+            &member,
+            json!({ "name": "minio", "spec": { "storage": {
+                "kind": "s3", "access_key_id": "AK", "secret_access_key": "top-secret"
+            }}}),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{created}");
+    assert_eq!(created["spec"]["storage"]["region"], "us-east-1");
+    for (_, body) in [
+        (status, created),
+        harness
+            .send(Method::GET, "/v1/credentials", &member, json!(null))
+            .await,
+        harness
+            .send(Method::GET, "/v1/credentials/minio", &member, json!(null))
+            .await,
+    ] {
+        assert!(!body.to_string().contains("top-secret"), "{body}");
+        assert!(!body.to_string().contains("secret_access_key"), "{body}");
+    }
+
+    let spec = serde_json::to_value(crate::openapi()).unwrap();
+    for view in [
+        "StorageCredentialView",
+        "ModelCredentialView",
+        "CredentialView",
+        "ConnectionView",
+    ] {
+        let schema = spec["components"]["schemas"][view].to_string();
+        for secret in [
+            "writeOnly",
+            "password",
+            "secret",
+            "api_key",
+            "sas_token",
+            "\"key\"",
+        ] {
+            assert!(
+                !schema.contains(secret),
+                "{view} mentions {secret}: {schema}"
+            );
+        }
+    }
+}
+
+/// The credential a connection uses cannot be deleted, nor the sink a job wrote
+/// to; the refusal names what is in the way.
+#[tokio::test]
+async fn what_is_in_use_is_not_deleted() {
+    let harness = Harness::new().await;
+    let member = harness.token(&["member"]);
+    let owner = harness.token_for("u-owner", &["owner"]);
+    harness.credential("key", DEAD, "u-1").await;
+    harness
+        .connection("data", "key", Direction::Source, "u-1")
+        .await;
+    harness
+        .connection("sink", "key", Direction::Sink, "u-1")
+        .await;
+
+    let (status, body) = harness
+        .send(Method::DELETE, "/v1/credentials/key", &member, json!(null))
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(body["error"], "in_use");
+    assert_eq!(body["dependents"], json!(["data", "sink"]));
+
+    let (_, job) = harness
+        .send(
+            Method::POST,
+            "/v1/jobs",
+            &member,
+            json!({ "script": "x", "draft": true, "sink_connection": "sink" }),
+        )
+        .await;
+    let (status, body) = harness
+        .send(Method::DELETE, "/v1/connections/sink", &owner, json!(null))
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(body["dependents"], json!([job["id"]]));
+
+    assert_eq!(
+        harness
+            .send(Method::DELETE, "/v1/connections/data", &member, json!(null))
+            .await
+            .0,
+        StatusCode::NO_CONTENT
+    );
+}
+
+/// A credential or connection is its creator's or the owner's to change; the
+/// sink is the owner's alone, and sources and models are the members'.
+#[tokio::test]
+async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_the_sink() {
+    let harness = Harness::new().await;
+    let creator = harness.token_for("u-1", &["member"]);
+    let other = harness.token_for("u-2", &["member"]);
+    let owner = harness.token_for("u-owner", &["owner"]);
+    harness.credential("key", DEAD, "u-1").await;
+    harness.credential("spare", DEAD, "u-1").await;
+    harness
+        .connection("data", "key", Direction::Source, "u-1")
+        .await;
+    harness
+        .connection("sink", "key", Direction::Sink, "u-1")
+        .await;
+
+    let rename = json!({ "name": "renamed" });
+    let refused = harness
+        .send(Method::PATCH, "/v1/credentials/key", &other, rename.clone())
+        .await;
+    assert_eq!(
+        (refused.0, refused.1["error"].clone()),
+        (StatusCode::FORBIDDEN, json!("forbidden"))
+    );
+    assert_eq!(
+        harness
+            .send(Method::DELETE, "/v1/credentials/spare", &other, json!(null))
+            .await
+            .0,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        harness
+            .send(Method::DELETE, "/v1/connections/data", &other, json!(null))
+            .await
+            .0,
+        StatusCode::FORBIDDEN
+    );
+
+    let (status, renamed) = harness
+        .send(Method::PATCH, "/v1/credentials/key", &creator, rename)
+        .await;
+    assert_eq!(status, StatusCode::OK, "{renamed}");
+    assert_eq!(
+        renamed["used_by"],
+        json!(["data", "sink"]),
+        "the rename cascades"
+    );
+    assert_eq!(
+        harness
+            .send(Method::DELETE, "/v1/credentials/spare", &owner, json!(null))
+            .await
+            .0,
+        StatusCode::NO_CONTENT
+    );
+
+    let sink = json!({ "name": "sink2", "credential": "renamed", "target": { "storage": {
+        "url": "s3://b/out2/", "direction": "sink" } } });
+    let source = json!({ "name": "more", "credential": "renamed", "target": { "storage": {
+        "url": "s3://b/more/" } } });
+    assert_eq!(
+        harness
+            .send(Method::POST, "/v1/connections", &creator, sink)
+            .await
+            .0,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        harness
+            .send(Method::POST, "/v1/connections", &owner, source)
+            .await
+            .0,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        harness
+            .send(
+                Method::DELETE,
+                "/v1/connections/sink",
+                &creator,
+                json!(null)
+            )
+            .await
+            .0,
+        StatusCode::FORBIDDEN,
+        "not even its creator: the sink is the owner's"
+    );
+    let to_sink =
+        json!({ "target": { "storage": { "url": "s3://b/data/", "direction": "sink" } } });
+    assert_eq!(
+        harness
+            .send(Method::PATCH, "/v1/connections/data", &creator, to_sink)
+            .await
+            .0,
+        StatusCode::FORBIDDEN
+    );
+}
+
+/// A storage connection cannot sign with a model key: refused before any probe.
+#[tokio::test]
+async fn a_connection_names_a_credential_of_its_own_purpose() {
+    let harness = Harness::new().await;
+    let member = harness.token(&["member"]);
+    let model =
+        CredentialSpecInput::Model(keasy_api::credentials::ModelCredentialInput::Anthropic {
+            api_key: SecretString::from("sk"),
+        });
+    crate::credentials::persistence::insert(
+        &*harness.db.write().await,
+        harness.db.secret_key(),
+        &ResourceName::parse("claude").unwrap(),
+        &model,
+        "u-1",
+        &unprobed(),
+    )
+    .unwrap();
+    let (status, body) = harness
+        .send(
+            Method::POST,
+            "/v1/connections",
+            &member,
+            json!({ "name": "b", "credential": "claude", "target": { "storage": { "url": "s3://b/" } } }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+    assert!(
+        body["message"]
+            .as_str()
+            .unwrap()
+            .contains("model credential"),
+        "{body}"
+    );
+}
+
+/// Everything through the API against a store that answers: a credential
+/// probed at a URL, a source LISTed, the sink written and deleted, a rotation
+/// every dependent accepts — and one they do not, which changes nothing.
+#[tokio::test]
+async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
+    let harness = Harness::new().await;
+    let member = harness.token(&["member"]);
+    let owner = harness.token_for("u-owner", &["owner"]);
+    let s3 = fake_s3().await;
+    let spec = |endpoint: &str, secret: &str| {
+        json!({ "storage": {
+            "kind": "s3", "access_key_id": "AK", "secret_access_key": secret, "endpoint": endpoint
+        }})
+    };
+
+    let (status, body) = harness
+        .send(
+            Method::POST,
+            "/v1/credentials",
+            &member,
+            json!({ "name": "minio", "spec": spec(DEAD, "s"), "probe_url": "s3://b/" }),
+        )
+        .await;
+    assert_eq!(
+        (status, body["error"].clone()),
+        (StatusCode::UNPROCESSABLE_ENTITY, json!("probe_failed")),
+        "{body}"
+    );
+
+    let (status, body) = harness
+        .send(
+            Method::POST,
+            "/v1/credentials",
+            &member,
+            json!({ "name": "minio", "spec": spec(&s3, "first"), "probe_url": "s3://b/" }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{body}");
+    assert_eq!(body["validation"]["results"][0]["result"], "pass");
+
+    let (status, body) = harness
+        .send(
+            Method::POST,
+            "/v1/connections",
+            &member,
+            json!({ "name": "data", "credential": "minio",
+            "target": { "storage": { "url": "s3://b/data/" } } }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{body}");
+    let (status, body) = harness
+        .send(
+            Method::POST,
+            "/v1/connections",
+            &owner,
+            json!({ "name": "out", "credential": "minio",
+            "target": { "storage": { "url": "s3://b/out/", "direction": "sink" } } }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{body}");
+    let ops: Vec<_> = body["validation"]["results"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| (c["operation"].clone(), c["result"].clone()))
+        .collect();
+    assert_eq!(
+        ops,
+        [
+            (json!("write"), json!("pass")),
+            (json!("delete"), json!("pass"))
+        ]
+    );
+
+    let (status, body) = harness
+        .send(
+            Method::PATCH,
+            "/v1/credentials/minio",
+            &member,
+            json!({ "spec": spec(DEAD, "second") }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+    assert_eq!(body["dependents"], json!(["data", "out"]));
+    let kept = crate::credentials::named(&harness.db, "minio")
+        .await
+        .unwrap();
+    assert!(
+        matches!(&kept.spec, CredentialSpecInput::Storage(StorageCredentialInput::S3 { endpoint, .. })
+        if endpoint.as_deref() == Some(s3.as_str())),
+        "the old spec stands"
+    );
+
+    let (status, body) = harness
+        .send(
+            Method::PATCH,
+            "/v1/credentials/minio",
+            &member,
+            json!({ "spec": spec(&s3, "second") }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    let rotated = crate::credentials::named(&harness.db, "minio")
+        .await
+        .unwrap();
+    assert!(
+        matches!(&rotated.spec, CredentialSpecInput::Storage(StorageCredentialInput::S3 { secret_access_key, .. })
+        if secrecy::ExposeSecret::expose_secret(secret_access_key) == "second")
+    );
+
+    let (status, report) = harness
+        .send(
+            Method::POST,
+            "/v1/connections/data/validate",
+            &member,
+            json!(null),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(report["results"][0]["operation"], "list");
 }
 
 impl Harness {
@@ -235,26 +673,22 @@ const ROUTES: &[(&str, &str, Admits)] = &[
     ("PUT", "/v1/jobs/x/relations", Admits::Member),
     ("POST", "/v1/jobs/x/output/urls", Admits::Member),
     ("POST", "/v1/jobs/x/discover/urls", Admits::Member),
-    ("GET", "/v1/ai/providers", Admits::Member),
     ("POST", "/v1/ai/stream", Admits::Member),
-    ("GET", "/v1/settings/ai/providers", Admits::Member),
-    ("PUT", "/v1/settings/ai/providers/x", Admits::Member),
-    ("DELETE", "/v1/settings/ai/providers/x", Admits::Member),
-    ("POST", "/v1/cloud-accounts", Admits::Member),
-    ("GET", "/v1/cloud-accounts/x", Admits::Member),
-    ("PUT", "/v1/cloud-accounts/x", Admits::Member),
-    ("DELETE", "/v1/cloud-accounts/x", Admits::Member),
-    ("GET", "/v1/connections", Admits::Member),
-    ("POST", "/v1/connections", Admits::Member),
-    ("GET", "/v1/connections/x", Admits::Member),
-    ("DELETE", "/v1/connections/x", Admits::Member),
+    ("GET", "/v1/credentials", Admits::AnyRole),
+    ("POST", "/v1/credentials", Admits::Member),
+    ("GET", "/v1/credentials/x", Admits::AnyRole),
+    ("PATCH", "/v1/credentials/x", Admits::AnyRole),
+    ("DELETE", "/v1/credentials/x", Admits::AnyRole),
+    ("POST", "/v1/credentials/x/validate", Admits::AnyRole),
+    ("GET", "/v1/connections", Admits::AnyRole),
+    ("POST", "/v1/connections", Admits::AnyRole),
+    ("GET", "/v1/connections/x", Admits::AnyRole),
+    ("PATCH", "/v1/connections/x", Admits::AnyRole),
+    ("DELETE", "/v1/connections/x", Admits::AnyRole),
+    ("POST", "/v1/connections/x/validate", Admits::AnyRole),
     ("GET", "/v1/connections/x/files", Admits::Member),
-    ("GET", "/v1/connections/refs", Admits::Member),
     ("POST", "/v1/connections/urls", Admits::Member),
-    ("GET", "/v1/settings/catalog-storage", Admits::Owner),
-    ("PUT", "/v1/settings/catalog-storage", Admits::Owner),
     ("GET", "/v1/datasets", Admits::Owner),
-    ("GET", "/v1/cloud-accounts", Admits::AnyRole),
 ];
 
 fn method(name: &str) -> Method {
@@ -317,20 +751,16 @@ async fn every_role_gated_route_is_in_the_table() {
         "/v1/jobs/x/relations",
         "/v1/jobs/x/output/urls",
         "/v1/jobs/x/discover/urls",
-        "/v1/ai/providers",
         "/v1/ai/stream",
-        "/v1/settings/ai/providers",
-        "/v1/settings/ai/providers/x",
-        "/v1/cloud-accounts",
-        "/v1/cloud-accounts/x",
+        "/v1/credentials",
+        "/v1/credentials/x",
+        "/v1/credentials/x/validate",
         "/v1/connections",
         "/v1/connections/x",
+        "/v1/connections/x/validate",
         "/v1/connections/x/files",
-        "/v1/connections/refs",
         "/v1/connections/urls",
-        "/v1/settings/catalog-storage",
         "/v1/datasets",
-        "/v1/settings/schema",
         "/v1/auth/workspaces",
     ];
     for path in candidates {

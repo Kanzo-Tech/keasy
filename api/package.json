@@ -5,7 +5,8 @@
   "description": "The keasy HTTP contract, TypeScript side: the spec the server publishes, its types and a client over them",
   "type": "module",
   "exports": {
-    ".": "./src/client.ts"
+    ".": "./src/client.ts",
+    "./openapi.json": "./openapi.json"
   },
   "scripts": {
     "generate": "openapi-typescript openapi.json -o src/schema.d.ts --read-write-markers --default-non-nullable=false",

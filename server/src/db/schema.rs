@@ -5,22 +5,34 @@
 //! by deleting the data volume and rebuilding, never by migrating a live file.
 
 const SCHEMA: &str = "
-CREATE TABLE cloud_accounts (
-    id              TEXT PRIMARY KEY,
-    name            TEXT NOT NULL,
-    provider_id     TEXT NOT NULL,
-    auth_method     TEXT,
-    fields          TEXT NOT NULL DEFAULT '{}'
+-- The spec is sealed whole (AES-256-GCM, AAD = 'credential:' || name).
+CREATE TABLE credentials (
+    name        TEXT PRIMARY KEY,
+    purpose     TEXT NOT NULL CHECK (purpose IN ('storage', 'model')),
+    spec        BLOB NOT NULL,
+    created_by  TEXT NOT NULL,
+    created_at  TEXT NOT NULL,
+    updated_by  TEXT NOT NULL,
+    updated_at  TEXT NOT NULL,
+    validation  TEXT,
+    UNIQUE (name, purpose)
 );
 
+-- The composite key keeps a storage connection off a model credential, and
+-- RESTRICT keeps a credential in use from being deleted.
 CREATE TABLE connections (
-    id               TEXT PRIMARY KEY,
-    name             TEXT NOT NULL UNIQUE,
-    kind             TEXT NOT NULL CHECK(kind IN ('data', 'vocab')),
-    location_type    TEXT NOT NULL CHECK(location_type IN ('cloud', 'local')),
-    direction        TEXT NOT NULL DEFAULT 'source' CHECK(direction IN ('source', 'sink')),
-    cloud_account_id TEXT REFERENCES cloud_accounts(id) ON DELETE SET NULL,
-    url              TEXT NOT NULL
+    name        TEXT PRIMARY KEY,
+    purpose     TEXT NOT NULL CHECK (purpose IN ('storage', 'model')),
+    credential  TEXT NOT NULL,
+    target      TEXT NOT NULL CHECK (json_type(target, '$.' || purpose) = 'object'),
+    direction   TEXT GENERATED ALWAYS AS (json_extract(target, '$.storage.direction')) VIRTUAL,
+    created_by  TEXT NOT NULL,
+    created_at  TEXT NOT NULL,
+    updated_by  TEXT NOT NULL,
+    updated_at  TEXT NOT NULL,
+    validation  TEXT,
+    FOREIGN KEY (credential, purpose) REFERENCES credentials (name, purpose)
+        ON UPDATE CASCADE ON DELETE RESTRICT
 );
 -- Exactly one write sink per workspace.
 CREATE UNIQUE INDEX connections_one_sink ON connections(direction) WHERE direction = 'sink';
@@ -34,20 +46,11 @@ CREATE TABLE jobs (
     completed_at    TEXT,
     error           TEXT,
     created_by      TEXT NOT NULL,
-    sink_connection_id TEXT NOT NULL,
+    sink_connection TEXT NOT NULL REFERENCES connections (name)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
     script          TEXT,
     manifest        TEXT,
     relations       TEXT
-);
-
-CREATE TABLE settings (
-    key   TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-);
-
-CREATE TABLE secrets (
-    key   TEXT PRIMARY KEY,
-    value BLOB NOT NULL
 );
 ";
 
@@ -101,12 +104,12 @@ mod tests {
         let tables: i64 = conn
             .query_row(
                 "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN \
-                 ('connections','jobs','settings','secrets','cloud_accounts')",
+                 ('credentials','connections','jobs')",
                 [],
                 |r| r.get(0),
             )
             .unwrap();
-        assert_eq!(tables, 5);
+        assert_eq!(tables, 3);
     }
 
     #[test]

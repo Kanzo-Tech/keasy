@@ -21,6 +21,7 @@ import {
 } from "@kanzo-tech/ui";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
 import { $api } from "@/lib/api/client";
+import { storageConnections } from "@/lib/connections";
 import { useBrowserJobRunner } from "@/lib/fossil/use-browser-job-runner";
 import { formatDuration } from "@/lib/formatters";
 import { isTerminalStatus } from "@/lib/utils";
@@ -56,7 +57,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
   }
   if (!job) notFound();
 
-  const sink = connections.find((c) => c.id === job.sink_connection_id);
+  const sink = storageConnections(connections).find((c) => c.name === job.sink_connection);
 
   return (
     <SectionRoot>

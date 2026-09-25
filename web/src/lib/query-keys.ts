@@ -26,8 +26,6 @@ export const queryKeys = {
   programSources: (program: string) => ["program-sources", program] as const,
   sourceDescriptors: (sources: string[]) => ["source-descriptors", sources] as const,
 
-  datasets: ["datasets"] as const,
-
   // Cloud
   cloud: {
     accounts: ["cloud-accounts"] as const,

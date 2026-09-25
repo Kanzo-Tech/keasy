@@ -109,11 +109,6 @@ export const api = {
     },
   },
 
-  // ── Datasets (owner) ──────────────────────────────────────────────────
-  datasets: {
-    list: async () => unwrap(await client.GET("/v1/datasets")),
-  },
-
   // ── Settings ──────────────────────────────────────────────────────────
   settings: {
     schema: async (): Promise<ProviderSchema[]> =>

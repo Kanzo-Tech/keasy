@@ -11,7 +11,6 @@ export type JobStatus = S["JobStatus"];
 export type Job = S["Job"];
 export type CreateJobRequest = W["CreateJobRequest"];
 export type UpdateJobRequest = W["UpdateJobRequest"];
-export type Dataset = S["Dataset"];
 export type OutputRelation = S["OutputRelation"];
 export type CloudAccountSummary = S["CloudAccountSummary"];
 export type CreateCloudAccountRequest = W["CreateCloudAccountRequest"];

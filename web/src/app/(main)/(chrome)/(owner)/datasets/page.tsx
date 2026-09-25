@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { Boxes, Table2 } from "lucide-react";
 
 import {
@@ -28,15 +27,10 @@ import {
   TableRow,
 } from "@kanzo-tech/ui";
 import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { api } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
-import type { Dataset } from "@/lib/types";
+import { $api, type Schemas } from "@/lib/api/client";
 
 export default function DatasetsPage() {
-  const { data: datasets, isLoading } = useQuery({
-    queryKey: queryKeys.datasets,
-    queryFn: api.datasets.list,
-  });
+  const { data: datasets, isLoading } = $api.useQuery("get", "/v1/datasets");
   const showSkeleton = useDelayedLoading(isLoading);
 
   return (
@@ -81,7 +75,7 @@ export default function DatasetsPage() {
   );
 }
 
-function DatasetCard({ dataset }: { dataset: Dataset }) {
+function DatasetCard({ dataset }: { dataset: Schemas["Dataset"] }) {
   const totalRows = dataset.relations.reduce((sum, r) => sum + (r.rows ?? 0), 0);
 
   return (

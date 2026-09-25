@@ -17,8 +17,7 @@ import {
 } from "@kanzo-tech/ui";
 import { scaleOf } from "@kanzo-tech/graph";
 import type { GraphSchema } from "@/lib/graph-schema";
-import { queryKeys } from "@/lib/query-keys";
-import { ONCE, useCorpus } from "./corpus";
+import { corpusKey, ONCE, useCorpus } from "./corpus";
 
 export interface SelectedVertex {
   id: string;
@@ -29,7 +28,7 @@ export interface SelectedVertex {
 export function NodeInfo({ schema, vertex }: { schema: GraphSchema; vertex: SelectedVertex | null }) {
   const { jobId, corpus } = useCorpus();
   const { data: fields, isPending } = useQuery({
-    queryKey: [...queryKeys.corpus(jobId), "node", vertex?.type, vertex?.id],
+    queryKey: [...corpusKey(jobId), "node", vertex?.type, vertex?.id],
     queryFn: vertex
       ? async () => (await corpus.node(vertex.id, { type: vertex.type }))?.fields ?? null
       : skipToken,

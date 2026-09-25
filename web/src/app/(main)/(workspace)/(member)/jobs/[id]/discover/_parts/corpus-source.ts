@@ -16,8 +16,7 @@ import { openCorpus, type UndrawnRelation } from "@kanzo-tech/graph/duckdb";
 import { useCrossfilter, useMosaic } from "@kanzo-tech/ui/analytics";
 import type { SchemaResult } from "@fossil-lang/corpus";
 import { GRAPH_WASM_URL } from "@/lib/fossil/open-job-corpus";
-import { queryKeys } from "@/lib/query-keys";
-import { ONCE, useCorpus } from "./corpus";
+import { corpusKey, ONCE, useCorpus } from "./corpus";
 
 export function useCorpusSource(vertexType: string | null) {
   const { jobId, manifestFiles } = useCorpus();
@@ -29,7 +28,7 @@ export function useCorpusSource(vertexType: string | null) {
     return text;
   };
   return useQuery({
-    queryKey: [...queryKeys.corpus(jobId), "source", vertexType],
+    queryKey: [...corpusKey(jobId), "source", vertexType],
     queryFn:
       vertexType === null
         ? skipToken

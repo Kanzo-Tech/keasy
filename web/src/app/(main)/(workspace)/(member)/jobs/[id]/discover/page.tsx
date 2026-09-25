@@ -34,8 +34,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@kanzo-tech/ui";
-import { api } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
+import { $api } from "@/lib/api/client";
 import { AnalysisPanel } from "./_parts/analysis-panel";
 import { AskPanel } from "./_parts/ask-panel";
 import { ClassLegend } from "./_parts/class-legend";
@@ -48,7 +47,7 @@ import { SqlPanel } from "./_parts/sql-panel";
 
 export default function DiscoverPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const job = useQuery({ queryKey: queryKeys.jobs.detail(id), queryFn: () => api.jobs.get(id) });
+  const job = $api.useQuery("get", "/v1/jobs/{id}", { params: { path: { id } } });
   const corpus = useQuery({ ...corpusQuery(id), enabled: Boolean(job.data?.manifest) });
 
   if (corpus.error) {

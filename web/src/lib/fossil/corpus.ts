@@ -24,18 +24,18 @@ import { DuckDBDataProtocol } from "@duckdb/duckdb-wasm";
 import { open, type QueryRow, type SqlCorpus } from "@fossil-lang/corpus";
 import { Coordinator, wasmConnector } from "@kanzo-tech/ui/analytics";
 
-import { http } from "@/lib/api/client";
 
 /** The root of every cached read of a job's opened output; its own, so invalidating a job never reopens it. */
 export const corpusKey = (jobId: string) => ["corpus", jobId] as const;
 
-/** Signed GET URLs for the dataset-relative keys the corpus reader enumerated. */
+/** The URL a reader holds for each dataset-relative key: keasy redirects it to the store, signed per request. */
 async function signDatasetUrls(jobId: string, paths: string[]): Promise<Record<string, string>> {
-  const { data } = await http.POST("/v1/jobs/{id}/discover/urls", {
-    params: { path: { id: jobId } },
-    body: { paths },
-  });
-  return data!.files;
+  return Object.fromEntries(
+    paths.map((path) => [
+      path,
+      new URL(`/api/v1/jobs/${jobId}/objects?path=${encodeURIComponent(path)}`, location.origin).href,
+    ]),
+  );
 }
 
 type DuckDB = Awaited<ReturnType<ReturnType<typeof wasmConnector>["getDuckDB"]>>;

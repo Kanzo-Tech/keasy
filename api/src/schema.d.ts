@@ -112,27 +112,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/connections/urls": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sign GET URLs for locators, each with the credential of the source it lies
-         *     under. A member reads what every source holds, and the sink only through
-         *     the job that wrote it. Public HTTP locators come back as they are.
-         */
-        post: operations["sign_locators"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/connections/{name}": {
         parameters: {
             query?: never;
@@ -292,21 +271,21 @@ export interface paths {
         patch: operations["complete_job"];
         trace?: never;
     };
-    "/v1/jobs/{id}/discover/urls": {
+    "/v1/jobs/{id}/objects": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
         /**
-         * Sign GET URLs so the browser reads the dataset directly — the reading twin of
-         *     [`resolve_output_urls`]. It takes the list the corpus reader enumerated and
-         *     derives none.
+         * Read one object of the dataset: the URL a reader holds for as long as it
+         *     reads, which redirects to the store. GET and HEAD alike — a range reader
+         *     probes with HEAD, and S3 refuses one sent to a URL signed for GET.
          */
-        post: operations["resolve_discover_urls"];
+        get: operations["read_output_object"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -351,6 +330,29 @@ export interface paths {
          *     the owner's datasets view lists.
          */
         put: operations["publish_relations"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/objects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read what a locator names, with the credential of the source it lies under:
+         *     the URL a reader holds for as long as it reads, which redirects to the store
+         *     signed for this request's method. A member reads what every source holds,
+         *     and the sink only through the job that wrote it. A public HTTP locator
+         *     redirects to itself.
+         */
+        get: operations["read_source_object"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -496,9 +498,8 @@ export interface components {
         };
         DatasetUrlsRequest: {
             /**
-             * @description Paths relative to the dataset. The caller names them — the executor's
-             *     output, the corpus reader's enumeration — and keasy signs the list it is
-             *     handed.
+             * @description Paths relative to the dataset: the executor's output, which keasy signs
+             *     as it is handed.
              */
             paths: string[];
         };
@@ -651,16 +652,6 @@ export interface components {
         ResolveResponse: {
             /** @description Dataset-relative path → signed URL. */
             files: {
-                [key: string]: string;
-            };
-        };
-        SignLocatorsRequest: {
-            /** @description Locators fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`). */
-            locators: string[];
-        };
-        SignLocatorsResponse: {
-            /** @description Locator → fetchable URL. A locator keasy will not sign is absent. */
-            urls: {
                 [key: string]: string;
             };
         };
@@ -1033,35 +1024,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    sign_locators: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SignLocatorsRequest"];
-            };
-        };
-        responses: {
-            /** @description Signed GET URLs for the locators the caller may read */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SignLocatorsResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
@@ -1847,9 +1809,12 @@ export interface operations {
             503: components["responses"]["KeysUnavailable"];
         };
     };
-    resolve_discover_urls: {
+    read_output_object: {
         parameters: {
-            query?: never;
+            query: {
+                /** @description A path relative to the dataset (`vertex/Person/tiles.parquet`). */
+                path: string;
+            };
             header?: never;
             path: {
                 /** @description Job ID */
@@ -1857,20 +1822,14 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DatasetUrlsRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description Signed GET URLs for the requested dataset keys */
-            200: {
+            /** @description To the object, signed for this request's method */
+            307: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["ResolveResponse"];
-                };
+                content?: never;
             };
             /** @description The destination connection is gone, or a path outside the dataset */
             400: {
@@ -1984,6 +1943,41 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    read_source_object: {
+        parameters: {
+            query: {
+                /** @description A locator fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`). */
+                locator: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description To the object, signed for this request's method */
+            307: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description No source connection holds the locator */
             404: {
                 headers: {
                     [name: string]: unknown;

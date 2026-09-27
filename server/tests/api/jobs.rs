@@ -71,9 +71,9 @@ async fn a_job_is_its_creators_alone() {
             json!({ "paths": ["a.parquet"] }),
         ),
         (
-            Method::POST,
-            format!("{path}/discover/urls"),
-            json!({ "paths": ["a.parquet"] }),
+            Method::GET,
+            format!("{path}/objects?path=a.parquet"),
+            json!(null),
         ),
         (
             Method::PUT,

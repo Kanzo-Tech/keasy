@@ -123,6 +123,9 @@ fn azure(container: &str, account: &str) -> MicrosoftAzureBuilder {
 }
 
 impl CloudStore {
+    /// A URL `method` may be sent to. S3 binds a signature to its method, so
+    /// a HEAD needs its own; an Azure SAS grants a permission instead, and `r`
+    /// covers HEAD, which object_store would sign with no permission at all.
     pub async fn sign_url(
         &self,
         method: Method,
@@ -130,7 +133,14 @@ impl CloudStore {
         expires_in: Duration,
     ) -> object_store::Result<Url> {
         match self {
-            Self::Azure(s) => s.signed_url(method, path, expires_in).await,
+            Self::Azure(s) => {
+                let method = if method == Method::HEAD {
+                    Method::GET
+                } else {
+                    method
+                };
+                s.signed_url(method, path, expires_in).await
+            }
             Self::S3(s) => s.signed_url(method, path, expires_in).await,
         }
     }

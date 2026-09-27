@@ -9,8 +9,9 @@ import { queryClient } from "@/lib/api/query-client";
 /**
  * keasy as fossil's `SourceHost` — the editor's and a job run's alike. Fossil
  * decides what a program reads and expands every `@name/…` into a locator; keasy
- * only hands over the source connections' prefixes and signs locators with the
- * credential of the connection each one lies under.
+ * only hands over the source connections' prefixes and, for each locator, the
+ * URL a reader holds while it reads: keasy redirects every request through it
+ * to the store, signed then with the credential of the source it lies under.
  *
  * The editor asks for the map on every check, so it reads the connection list
  * through the query cache under `/v1/connections`: `invalidate("/v1/connections")`
@@ -31,5 +32,10 @@ export const sourceHost: SourceHost = {
     );
   },
   sign: async (locators) =>
-    (await http.POST("/v1/connections/urls", { body: { locators } })).data?.urls ?? {},
+    Object.fromEntries(
+      locators.map((locator) => [
+        locator,
+        new URL(`/api/v1/objects?locator=${encodeURIComponent(locator)}`, location.origin).href,
+      ]),
+    ),
 };

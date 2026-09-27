@@ -1,12 +1,10 @@
-use std::collections::HashMap;
-use std::collections::hash_map::Entry;
-
 use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::{Method, StatusCode};
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, Response};
 use object_store::ObjectMeta;
 use serde::{Deserialize, Serialize};
+use url::Url;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -16,10 +14,10 @@ use crate::authentication::role::{AnyRole, Member};
 use crate::connections::locator::{is_public_http, signer};
 use crate::connections::{named, persistence};
 use crate::domain::{
-    ConnectionTarget, ConnectionView, CredentialSpecInput, StorageCredentialInput, StorageUrl,
-    ValidationReport,
+    ConnectionTarget, ConnectionView, CredentialSpecInput, StorageUrl, ValidationReport,
 };
 use crate::error::{ErrorBody, ErrorCode, Refusal};
+use crate::routes::signed_redirect;
 use crate::startup::AppState;
 use crate::storage_client::{self, SIGNED_URL_EXPIRES};
 
@@ -50,16 +48,10 @@ pub struct FileEntry {
     pub last_modified: Option<String>,
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct SignLocatorsRequest {
-    /// Locators fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`).
-    pub locators: Vec<String>,
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct SignLocatorsResponse {
-    /// Locator → fetchable URL. A locator keasy will not sign is absent.
-    pub urls: HashMap<String, String>,
+#[derive(Debug, Deserialize, utoipa::IntoParams)]
+pub struct LocatorQuery {
+    /// A locator fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`).
+    pub locator: String,
 }
 
 impl From<ObjectMeta> for FileEntry {
@@ -259,49 +251,55 @@ pub async fn list_connection_files(
         .map_err(|e| Refusal::new(StatusCode::BAD_GATEWAY, ErrorCode::ListFilesFailed, e))
 }
 
-#[utoipa::path(post, path = "/v1/connections/urls", tag = "Connections",
-    request_body = SignLocatorsRequest,
-    responses((status = 200, description = "Signed GET URLs for the locators the caller may read", body = SignLocatorsResponse))
+#[utoipa::path(get, path = "/v1/objects", tag = "Connections",
+    params(LocatorQuery),
+    responses(
+        (status = 307, description = "To the object, signed for this request's method"),
+        (status = 404, description = "No source connection holds the locator", body = ErrorBody),
+    )
 )]
-/// Sign GET URLs for locators, each with the credential of the source it lies
-/// under. A member reads what every source holds, and the sink only through
-/// the job that wrote it. Public HTTP locators come back as they are.
-pub async fn sign_locators(
+/// Read what a locator names, with the credential of the source it lies under:
+/// the URL a reader holds for as long as it reads, which redirects to the store
+/// signed for this request's method. A member reads what every source holds,
+/// and the sink only through the job that wrote it. A public HTTP locator
+/// redirects to itself.
+pub async fn read_source_object(
     _: Member,
+    method: Method,
     State(state): State<AppState>,
-    Json(req): Json<SignLocatorsRequest>,
-) -> Result<impl IntoResponse, Refusal> {
-    let connections = persistence::list(&*state.db.read().await, None)?;
-    let mut credentials: HashMap<&str, StorageCredentialInput> = HashMap::new();
-    let mut urls = HashMap::with_capacity(req.locators.len());
+    Query(query): Query<LocatorQuery>,
+) -> Result<Response, Refusal> {
     let sign_failed =
         |e: String| Refusal::new(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::SignError, e);
-    for locator in &req.locators {
-        let Some(conn) = signer(locator, &connections) else {
-            if is_public_http(locator) {
-                urls.insert(locator.clone(), locator.clone());
-            }
-            continue;
+    let locator = query.locator;
+    let connections = persistence::list(&*state.db.read().await, None)?;
+    let Some(conn) = signer(&locator, &connections) else {
+        return match Url::parse(&locator) {
+            Ok(url) if is_public_http(&locator) => Ok(signed_redirect(url)),
+            _ => Err(Refusal::new(
+                StatusCode::NOT_FOUND,
+                ErrorCode::NotFound,
+                format!("No source connection holds {locator}"),
+            )),
         };
-        let credential = match credentials.entry(conn.credential.as_str()) {
-            Entry::Occupied(e) => e.into_mut(),
-            Entry::Vacant(e) => match crate::credentials::named(&state.db, &conn.credential)
-                .await?
-                .spec
-            {
-                CredentialSpecInput::Storage(spec) => e.insert(spec),
-                CredentialSpecInput::Model(_) => continue,
-            },
-        };
-        let url = StorageUrl::parse(locator).map_err(sign_failed)?;
-        let store = storage_client::store(credential, &url).map_err(sign_failed)?;
-        let signed = store
-            .sign_url(Method::GET, url.path(), SIGNED_URL_EXPIRES)
-            .await
-            .map_err(|e| sign_failed(e.to_string()))?;
-        urls.insert(locator.clone(), signed.to_string());
-    }
-    Ok(Json(SignLocatorsResponse { urls }))
+    };
+    let CredentialSpecInput::Storage(credential) =
+        crate::credentials::named(&state.db, &conn.credential)
+            .await?
+            .spec
+    else {
+        return Err(sign_failed(format!(
+            "{} is not a storage credential",
+            conn.credential
+        )));
+    };
+    let url = StorageUrl::parse(&locator).map_err(sign_failed)?;
+    let store = storage_client::store(&credential, &url).map_err(sign_failed)?;
+    let signed = store
+        .sign_url(method, url.path(), SIGNED_URL_EXPIRES)
+        .await
+        .map_err(|e| sign_failed(e.to_string()))?;
+    Ok(signed_redirect(signed))
 }
 
 /// The routes this module serves.
@@ -315,5 +313,5 @@ pub fn router() -> OpenApiRouter<AppState> {
         ))
         .routes(routes!(validate_connection))
         .routes(routes!(list_connection_files))
-        .routes(routes!(sign_locators))
+        .routes(routes!(read_source_object))
 }

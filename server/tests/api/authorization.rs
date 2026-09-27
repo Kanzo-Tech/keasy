@@ -21,7 +21,7 @@ const ROUTES: &[(&str, &str, Admits)] = &[
     ("DELETE", "/v1/jobs/x", Admits::Member),
     ("PUT", "/v1/jobs/x/relations", Admits::Member),
     ("POST", "/v1/jobs/x/output/urls", Admits::Member),
-    ("POST", "/v1/jobs/x/discover/urls", Admits::Member),
+    ("GET", "/v1/jobs/x/objects", Admits::Member),
     ("POST", "/v1/ai/stream", Admits::Member),
     ("GET", "/v1/credentials", Admits::AnyRole),
     ("POST", "/v1/credentials", Admits::Member),
@@ -36,7 +36,7 @@ const ROUTES: &[(&str, &str, Admits)] = &[
     ("DELETE", "/v1/connections/x", Admits::AnyRole),
     ("POST", "/v1/connections/x/validate", Admits::AnyRole),
     ("GET", "/v1/connections/x/files", Admits::Member),
-    ("POST", "/v1/connections/urls", Admits::Member),
+    ("GET", "/v1/objects", Admits::Member),
     ("GET", "/v1/datasets", Admits::Owner),
 ];
 
@@ -99,7 +99,7 @@ async fn every_role_gated_route_is_in_the_table() {
         "/v1/jobs/x",
         "/v1/jobs/x/relations",
         "/v1/jobs/x/output/urls",
-        "/v1/jobs/x/discover/urls",
+        "/v1/jobs/x/objects",
         "/v1/ai/stream",
         "/v1/credentials",
         "/v1/credentials/x",
@@ -108,7 +108,7 @@ async fn every_role_gated_route_is_in_the_table() {
         "/v1/connections/x",
         "/v1/connections/x/validate",
         "/v1/connections/x/files",
-        "/v1/connections/urls",
+        "/v1/objects",
         "/v1/datasets",
         "/v1/auth/workspaces",
     ];

@@ -269,52 +269,6 @@
         }
       }
     },
-    "/v1/connections/urls": {
-      "post": {
-        "tags": [
-          "Connections"
-        ],
-        "summary": "Sign GET URLs for locators, each with the credential of the source it lies\nunder. A member reads what every source holds, and the sink only through\nthe job that wrote it. Public HTTP locators come back as they are.",
-        "operationId": "sign_locators",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SignLocatorsRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Signed GET URLs for the locators the caller may read",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SignLocatorsResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
     "/v1/connections/{name}": {
       "get": {
         "tags": [
@@ -1435,13 +1389,13 @@
         }
       }
     },
-    "/v1/jobs/{id}/discover/urls": {
-      "post": {
+    "/v1/jobs/{id}/objects": {
+      "get": {
         "tags": [
           "Discovery"
         ],
-        "summary": "Sign GET URLs so the browser reads the dataset directly — the reading twin of\n[`resolve_output_urls`]. It takes the list the corpus reader enumerated and\nderives none.",
-        "operationId": "resolve_discover_urls",
+        "summary": "Read one object of the dataset: the URL a reader holds for as long as it\nreads, which redirects to the store. GET and HEAD alike — a range reader\nprobes with HEAD, and S3 refuses one sent to a URL signed for GET.",
+        "operationId": "read_output_object",
         "parameters": [
           {
             "name": "id",
@@ -1451,28 +1405,20 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "description": "A path relative to the dataset (`vertex/Person/tiles.parquet`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DatasetUrlsRequest"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
-          "200": {
-            "description": "Signed GET URLs for the requested dataset keys",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResolveResponse"
-                }
-              }
-            }
+          "307": {
+            "description": "To the object, signed for this request's method"
           },
           "400": {
             "description": "The destination connection is gone, or a path outside the dataset",
@@ -1647,6 +1593,56 @@
           },
           "404": {
             "description": "Job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/objects": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Read what a locator names, with the credential of the source it lies under:\nthe URL a reader holds for as long as it reads, which redirects to the store\nsigned for this request's method. A member reads what every source holds,\nand the sink only through the job that wrote it. A public HTTP locator\nredirects to itself.",
+        "operationId": "read_source_object",
+        "parameters": [
+          {
+            "name": "locator",
+            "in": "query",
+            "description": "A locator fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "307": {
+            "description": "To the object, signed for this request's method"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No source connection holds the locator",
             "content": {
               "application/json": {
                 "schema": {
@@ -2087,7 +2083,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Paths relative to the dataset. The caller names them — the executor's\noutput, the corpus reader's enumeration — and keasy signs the list it is\nhanded."
+            "description": "Paths relative to the dataset: the executor's output, which keasy signs\nas it is handed."
           }
         }
       },
@@ -2471,39 +2467,6 @@
           "files": {
             "type": "object",
             "description": "Dataset-relative path → signed URL.",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "SignLocatorsRequest": {
-        "type": "object",
-        "required": [
-          "locators"
-        ],
-        "properties": {
-          "locators": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Locators fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`)."
-          }
-        }
-      },
-      "SignLocatorsResponse": {
-        "type": "object",
-        "required": [
-          "urls"
-        ],
-        "properties": {
-          "urls": {
-            "type": "object",
-            "description": "Locator → fetchable URL. A locator keasy will not sign is absent.",
             "additionalProperties": {
               "type": "string"
             },

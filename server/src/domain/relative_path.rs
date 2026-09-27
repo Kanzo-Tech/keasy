@@ -1,3 +1,5 @@
+use object_store::path::{Path as ObjectPath, PathPart};
+
 /// A client-supplied path under a base URL: relative, no scheme, no `..`
 /// leaving the base, no quote to close a SQL literal with.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -20,6 +22,15 @@ impl RelativePath {
         }
         Ok(Self(path.to_string()))
     }
+
+    /// The object this path names under `root`, one part per segment:
+    /// `ObjectPath::child` would take the whole path as one part and store
+    /// `vertex%2FPerson%2Ftiles.parquet`.
+    pub fn under(&self, root: &ObjectPath) -> ObjectPath {
+        root.parts()
+            .chain(self.0.split('/').map(PathPart::from))
+            .collect()
+    }
 }
 
 impl AsRef<str> for RelativePath {
@@ -30,7 +41,17 @@ impl AsRef<str> for RelativePath {
 
 #[cfg(test)]
 mod tests {
-    use super::RelativePath;
+    use super::{ObjectPath, RelativePath};
+
+    #[test]
+    fn a_path_is_placed_segment_by_segment() {
+        let root = ObjectPath::from("output/job");
+        let object = RelativePath::parse("vertex/Person/tiles.parquet")
+            .unwrap()
+            .under(&root);
+        assert_eq!(object.as_ref(), "output/job/vertex/Person/tiles.parquet");
+        assert_eq!(object.parts().count(), 5);
+    }
 
     #[test]
     fn a_client_path_stays_under_its_base() {

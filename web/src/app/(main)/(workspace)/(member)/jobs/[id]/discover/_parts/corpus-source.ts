@@ -13,20 +13,14 @@
 
 import { skipToken, useQuery } from "@tanstack/react-query";
 import { openCorpus, type UndrawnRelation } from "@kanzo-tech/graph/duckdb";
-import { useCrossfilter, useMosaic } from "@kanzo-tech/ui/analytics";
+import { useCrossfilter } from "@kanzo-tech/ui/analytics";
 import type { SchemaResult } from "@fossil-lang/corpus";
 import { corpusKey } from "@/lib/fossil/corpus";
 import { ONCE, useCorpus } from "./corpus";
 
 export function useCorpusSource(vertexType: string | null) {
-  const { jobId, manifestFiles } = useCorpus();
-  const { coordinator } = useMosaic();
+  const { jobId, coordinator, corpus } = useCorpus();
   const crossfilter = useCrossfilter();
-  const readText = async (url: string) => {
-    const text = manifestFiles[url];
-    if (text === undefined) throw new Error(`${url} is not a manifest this job published`);
-    return text;
-  };
   return useQuery({
     queryKey: [...corpusKey(jobId), "source", vertexType],
     queryFn:
@@ -34,10 +28,9 @@ export function useCorpusSource(vertexType: string | null) {
         ? skipToken
         : () =>
             openCorpus({
-              coordinator,
-              dest: "",
+              corpus,
+              engine: { coordinator },
               filterBy: crossfilter,
-              readText,
               subjects: true,
               vertexType,
             }),

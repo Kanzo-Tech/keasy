@@ -20,7 +20,7 @@ import {
 import { useChartQuery } from "@kanzo-tech/ui/analytics";
 import { distinctValuesQuery, OPERATOR_META, type Rule, type RuleOperator } from "./rule-engine";
 import type { SchemaResult } from "@fossil-lang/corpus";
-import { fieldsOf } from "./corpus";
+import { fieldsOf, useCorpus } from "./corpus";
 
 interface RuleFieldProps {
   rule: Rule;
@@ -117,10 +117,11 @@ export function OperatorSelect({ rule, onChange }: Omit<RuleFieldProps, "schema"
 export function ValueInput({ rule, onChange }: Omit<RuleFieldProps, "schema">) {
   const meta = OPERATOR_META[rule.operator];
   const { typeName, fieldKey } = rule;
+  const { relation } = useCorpus();
   const facets = useChartQuery({
     filterBy: null,
     deps: [typeName, fieldKey],
-    query: () => (typeName && fieldKey ? distinctValuesQuery(fieldKey, typeName) : null),
+    query: () => (typeName && fieldKey ? distinctValuesQuery(fieldKey, relation(typeName)) : null),
   });
   // Ark's combobox reads a collection; the query text is held here and the collection derived
   // from it, so a facet list that arrives late is never stale.

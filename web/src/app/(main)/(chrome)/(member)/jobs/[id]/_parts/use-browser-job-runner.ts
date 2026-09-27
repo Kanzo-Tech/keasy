@@ -33,8 +33,8 @@ const started = new Set<string>();
  * Browser-driven execution (client-compute): when a job is `Pending`, the
  * browser is its worker. Reads the program from the job record, marks it
  * `Running` (reusing the completion PATCH), then runs the mapping on
- * DataFusion-WASM end-to-end via `runJob` — sources by signed GET, GraphAr
- * output by signed PUT, outcome by `PATCH /v1/jobs/{id}`. The server never runs
+ * DataFusion-WASM end-to-end via `runJob` — sources through keasy's redirect,
+ * GraphAr output by signed PUT, outcome by `PATCH /v1/jobs/{id}`. The server never runs
  * the mapping. The detail view's existing poll surfaces the terminal status.
  */
 export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
@@ -73,14 +73,21 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         // failure here loses the datasets entry, not the run, and reporting it as
         // a failed run would be a lie about durable data.
         try {
-          const { corpus } = await openJobCorpus(jobId);
-          const relations = (await corpus.relations()).map((r) => ({
-            name: r.name,
-            rows: r.rows,
-            files: [...r.files],
-            columns: r.kind === "vertex" ? r.columns.map((c) => ({ name: c.name, data_type: c.type })) : undefined,
-          }));
-          await http.PUT("/v1/jobs/{id}/relations", { params: { path: { id: jobId } }, body: { relations } });
+          const corpus = await openJobCorpus(jobId);
+          try {
+            // A lent corpus names its files as it lent them, under its own name; keasy stores
+            // them relative to the dataset.
+            const lent = `${corpus.url}/`;
+            const relations = (await corpus.relations()).map((r) => ({
+              name: r.name,
+              rows: r.rows,
+              files: r.files.map((f) => (f.startsWith(lent) ? f.slice(lent.length) : f)),
+              columns: r.kind === "vertex" ? r.columns.map((c) => ({ name: c.name, data_type: c.type })) : undefined,
+            }));
+            await http.PUT("/v1/jobs/{id}/relations", { params: { path: { id: jobId } }, body: { relations } });
+          } finally {
+            await corpus.close();
+          }
         } catch (err) {
           console.error(`publishing the corpus relations failed (${jobId})`, err);
         }

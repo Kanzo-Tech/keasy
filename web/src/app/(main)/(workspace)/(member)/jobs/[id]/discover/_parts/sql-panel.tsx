@@ -9,11 +9,12 @@ import { ResultTable } from "./result-table";
 
 /**
  * Raw SQL over the producer's own dataset, run in the browser by `corpus.executeSql`
- * (DuckDB-WASM over the signed-URL Parquet). Sovereignty is enforced where the URLs are signed:
- * only the producer gets them for their job.
+ * (DuckDB-WASM reading the Parquet by range through keasy's redirect). Sovereignty is enforced
+ * where each read is signed: only the producer is redirected for their job.
  */
 export function SqlPanel() {
-  const { corpus } = useCorpus();
+  const { corpus, relation, schema } = useCorpus();
+  const first = schema.vertices[0]?.name;
   const [sql, setSql] = useState("");
   const run = useMutation({ mutationFn: (statement: string) => corpus.executeSql({ sql: statement }) });
   const submit = () => {
@@ -29,7 +30,7 @@ export function SqlPanel() {
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
           }}
-          placeholder='SELECT * FROM "Person" LIMIT 10'
+          placeholder={first ? `SELECT * FROM ${relation(first)} LIMIT 10` : ""}
           spellCheck={false}
           value={sql}
         />

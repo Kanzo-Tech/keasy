@@ -337,7 +337,7 @@ function Answer({ turn }: { turn: Turn }) {
 // ── The panel ────────────────────────────────────────────────────────────
 
 export function AskPanel({ graphSchema }: { graphSchema: SchemaResult }) {
-  const { coordinator, corpus } = useCorpus();
+  const { coordinator, corpus, relation } = useCorpus();
   const engine = useAiStream<TurnEvent>();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [question, setQuestion] = useState("");
@@ -356,7 +356,12 @@ export function AskPanel({ graphSchema }: { graphSchema: SchemaResult }) {
   const [duckSchema, setDuckSchema] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    describeDataSpace((sql) => coordinator.query(sql, { type: "json" }), graphSchema.edges)
+    describeDataSpace(
+      (sql) => coordinator.query(sql, { type: "json" }),
+      corpus.url,
+      relation,
+      graphSchema.edges,
+    )
       .then((ddl) => {
         if (!cancelled) setDuckSchema(ddl);
       })
@@ -366,7 +371,7 @@ export function AskPanel({ graphSchema }: { graphSchema: SchemaResult }) {
     return () => {
       cancelled = true;
     };
-  }, [coordinator, graphSchema]);
+  }, [coordinator, corpus, relation, graphSchema]);
 
   const starters = useMemo(() => generateSuggestions(graphSchema), [graphSchema]);
   // Derived from the schema the reader already has, so asking costs nothing and

@@ -8,6 +8,9 @@ import {
   type Rule,
 } from "./rule-engine";
 
+/** A relation as the corpus names it: catalog and all, quoted already. */
+const REL = '"jobs/7"."Person"';
+
 describe("rule-engine", () => {
   describe("isRuleComplete", () => {
     it("returns true for not_null (no value needed)", () => {
@@ -42,25 +45,24 @@ describe("rule-engine", () => {
   });
 
   describe("query builders produce valid SQL", () => {
-    it("totalRowCountQuery generates COUNT(*) from given type", () => {
-      const q = totalRowCountQuery("orders");
-      const sql = q.toString();
+    it("totalRowCountQuery reads the relation as the corpus names it, unquoted again", () => {
+      const sql = totalRowCountQuery(REL).toString();
       expect(sql).toMatch(/COUNT\(\*\)/i);
-      expect(sql).toMatch(/FROM\s+"orders"/i);
+      expect(sql).toContain(`FROM ${REL}`);
     });
 
     it("distinctValuesQuery generates DISTINCT + ORDER BY + LIMIT", () => {
-      const q = distinctValuesQuery("category", "products", 10);
+      const q = distinctValuesQuery("category", REL, 10);
       const sql = q.toString();
       expect(sql).toMatch(/DISTINCT/i);
       expect(sql).toMatch(/"category"/);
       expect(sql).toMatch(/LIMIT\s+10/i);
-      expect(sql).toMatch(/FROM\s+"products"/i);
+      expect(sql).toContain(`FROM ${REL}`);
     });
 
     it("ruleViolationQuery for not_null finds IS NULL rows", () => {
       const rule: Rule = { id: "1", fieldKey: "name", operator: "not_null" };
-      const q = ruleViolationQuery(rule);
+      const q = ruleViolationQuery(rule, REL);
       expect(q).not.toBeNull();
       const sql = q!.toString();
       expect(sql).toMatch(/IS NULL/i);
@@ -70,7 +72,7 @@ describe("rule-engine", () => {
 
     it("ruleViolationQuery for unique uses GROUP BY + HAVING", () => {
       const rule: Rule = { id: "1", fieldKey: "email", operator: "unique" };
-      const q = ruleViolationQuery(rule);
+      const q = ruleViolationQuery(rule, REL);
       expect(q).not.toBeNull();
       const sql = q!.toString();
       expect(sql).toMatch(/GROUP BY/i);
@@ -80,14 +82,14 @@ describe("rule-engine", () => {
 
     it("ruleViolationQuery for min finds values below threshold", () => {
       const rule: Rule = { id: "1", fieldKey: "price", operator: "min", value: "5" };
-      const q = ruleViolationQuery(rule);
+      const q = ruleViolationQuery(rule, REL);
       const sql = q!.toString();
       expect(sql).toMatch(/"price"\s*<\s*5/);
     });
 
     it("ruleViolationQuery for in_set finds values NOT IN set", () => {
       const rule: Rule = { id: "1", fieldKey: "status", operator: "in_set", values: ["active", "pending"] };
-      const q = ruleViolationQuery(rule);
+      const q = ruleViolationQuery(rule, REL);
       const sql = q!.toString();
       expect(sql).toMatch(/NOT/i);
       expect(sql).toMatch(/IN/i);
@@ -97,7 +99,7 @@ describe("rule-engine", () => {
 
     it("ruleViolationQuery for pattern finds non-matching rows", () => {
       const rule: Rule = { id: "1", fieldKey: "email", operator: "pattern", value: "^.+@.+$" };
-      const q = ruleViolationQuery(rule);
+      const q = ruleViolationQuery(rule, REL);
       const sql = q!.toString();
       expect(sql).toMatch(/REGEXP_MATCHES/i);
       expect(sql).toMatch(/NOT/i);
@@ -105,7 +107,7 @@ describe("rule-engine", () => {
 
     it("ruleCountQuery for not_null returns count of NULLs", () => {
       const rule: Rule = { id: "1", fieldKey: "name", operator: "not_null" };
-      const q = ruleCountQuery(rule);
+      const q = ruleCountQuery(rule, REL);
       expect(q).not.toBeNull();
       const sql = q!.toString();
       expect(sql).toMatch(/COUNT\(\*\)/i);
@@ -114,7 +116,7 @@ describe("rule-engine", () => {
 
     it("ruleCountQuery for unique wraps in subquery", () => {
       const rule: Rule = { id: "1", fieldKey: "email", operator: "unique" };
-      const q = ruleCountQuery(rule);
+      const q = ruleCountQuery(rule, REL);
       const sql = q!.toString();
       expect(sql).toMatch(/COUNT\(\*\)/i);
       expect(sql).toMatch(/GROUP BY/i);
@@ -123,8 +125,8 @@ describe("rule-engine", () => {
 
     it("returns null for incomplete rules", () => {
       const rule: Rule = { id: "1", fieldKey: "price", operator: "min" };
-      expect(ruleViolationQuery(rule)).toBeNull();
-      expect(ruleCountQuery(rule)).toBeNull();
+      expect(ruleViolationQuery(rule, REL)).toBeNull();
+      expect(ruleCountQuery(rule, REL)).toBeNull();
     });
   });
 });

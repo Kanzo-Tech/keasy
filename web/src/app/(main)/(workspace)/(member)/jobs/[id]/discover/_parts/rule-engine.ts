@@ -13,6 +13,7 @@ import {
   neq,
   not,
   regexp_matches,
+  verbatim,
   type ExprNode,
 } from "@uwdata/mosaic-sql";
 
@@ -115,11 +116,16 @@ function violationExpr(rule: Rule): ExprNode | null {
 
 // ── Query builders (return mosaic-sql Query objects) ─────────────────────
 
+/**
+ * The builders read FROM a relation as the corpus names it — `"jobs/7"."Person"`, catalog and all —
+ * which mosaic-sql would quote again as one identifier, so it rides `verbatim`.
+ */
+const from = (relation: string) => Query.from(verbatim(relation));
+
 /** Query that returns sample violation rows (up to limit). */
-export function ruleViolationQuery(rule: Rule, limit = 100): Query | null {
-  const table = rule.typeName ?? "data";
+export function ruleViolationQuery(rule: Rule, relation: string, limit = 100): Query | null {
   if (rule.operator === "unique") {
-    return Query.from(table)
+    return from(relation)
       .select({ [rule.fieldKey]: column(rule.fieldKey), duplicate_count: count() })
       .groupby(column(rule.fieldKey))
       .having(gt(count(), literal(1)))
@@ -128,14 +134,13 @@ export function ruleViolationQuery(rule: Rule, limit = 100): Query | null {
   }
   const expr = violationExpr(rule);
   if (!expr) return null;
-  return Query.from(table).select("*").where(expr).limit(limit);
+  return from(relation).select("*").where(expr).limit(limit);
 }
 
 /** Query that returns the count of violations. */
-export function ruleCountQuery(rule: Rule): Query | null {
-  const table = rule.typeName ?? "data";
+export function ruleCountQuery(rule: Rule, relation: string): Query | null {
   if (rule.operator === "unique") {
-    const sub = Query.from(table)
+    const sub = from(relation)
       .select({ one: literal(1) })
       .groupby(column(rule.fieldKey))
       .having(gt(count(), literal(1)));
@@ -143,17 +148,17 @@ export function ruleCountQuery(rule: Rule): Query | null {
   }
   const expr = violationExpr(rule);
   if (!expr) return null;
-  return Query.from(table).select({ cnt: count() }).where(expr);
+  return from(relation).select({ cnt: count() }).where(expr);
 }
 
 /** Query that returns total row count for a given type. */
-export function totalRowCountQuery(typeName: string): Query {
-  return Query.from(typeName).select({ cnt: count() });
+export function totalRowCountQuery(relation: string): Query {
+  return from(relation).select({ cnt: count() });
 }
 
 /** Query for distinct values of a field (autocomplete). */
-export function distinctValuesQuery(field: string, typeName: string, limit = 50): Query {
-  return Query.from(typeName)
+export function distinctValuesQuery(field: string, relation: string, limit = 50): Query {
+  return from(relation)
     .select({ value: column(field) })
     .distinct()
     .orderby(asc("value"))
@@ -172,13 +177,17 @@ export function isRuleComplete(rule: Rule): boolean {
 
 type QueryFn = (query: Query) => Promise<Record<string, unknown>[]>;
 
-export async function runRules(rules: Rule[], execQuery: QueryFn): Promise<RuleResult[]> {
+export async function runRules(
+  rules: Rule[],
+  execQuery: QueryFn,
+  relation: (typeName: string) => string,
+): Promise<RuleResult[]> {
   // Fetch total row counts per unique type in parallel
-  const uniqueTypes = [...new Set(rules.map((r) => r.typeName ?? "data"))];
+  const uniqueTypes = [...new Set(rules.map((r) => r.typeName ?? ""))];
   const typeCounts = new Map<string, number>();
   await Promise.all(
     uniqueTypes.map(async (t) => {
-      const [row] = await execQuery(totalRowCountQuery(t));
+      const [row] = await execQuery(totalRowCountQuery(relation(t)));
       typeCounts.set(t, Number(row.cnt));
     }),
   );
@@ -186,19 +195,19 @@ export async function runRules(rules: Rule[], execQuery: QueryFn): Promise<RuleR
   // Execute all rules in parallel
   const results = await Promise.all(
     rules.map(async (rule): Promise<RuleResult> => {
-      const totalRows = typeCounts.get(rule.typeName ?? "data") ?? 0;
+      const totalRows = typeCounts.get(rule.typeName ?? "") ?? 0;
       if (!isRuleComplete(rule)) {
         return { rule, passed: false, violationCount: -1, violations: [], totalRows };
       }
       try {
-        const countQ = ruleCountQuery(rule);
+        const countQ = ruleCountQuery(rule, relation(rule.typeName ?? ""));
         if (!countQ) {
           return { rule, passed: false, violationCount: -1, violations: [], totalRows };
         }
         const [countRow] = await execQuery(countQ);
         const violationCount = Number(countRow.cnt);
 
-        const violationQ = ruleViolationQuery(rule);
+        const violationQ = ruleViolationQuery(rule, relation(rule.typeName ?? ""));
         const violations = violationCount > 0 && violationQ
           ? await execQuery(violationQ)
           : [];

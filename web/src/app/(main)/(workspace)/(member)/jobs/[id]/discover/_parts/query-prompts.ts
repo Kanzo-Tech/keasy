@@ -35,6 +35,8 @@ JOIN "TargetTable" t ON t."_id" = e."target"
 \`\`\`
 
 ## DuckDB SQL rules
+- Name every table exactly as its CREATE TABLE above does, catalog included
+  (\`"jobs/7"."Person"\`): an unqualified name matches nothing.
 - Always quote identifiers with double quotes: \`"Table"."column"\`.
 - Default to \`LIMIT 100\`; for top-N use \`ORDER BY ... DESC LIMIT N\`.
 - Always include readable columns (subject, name, label, title) in SELECT.

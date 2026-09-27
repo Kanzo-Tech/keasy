@@ -15,7 +15,7 @@ import {
   ScrollArea,
   Spinner,
 } from "@kanzo-tech/ui";
-import { useMosaic } from "@kanzo-tech/ui/analytics";
+import { useCorpus } from "./corpus";
 import type { SchemaResult } from "@fossil-lang/corpus";
 import { type Rule, type RuleResult, runRules } from "./rule-engine";
 import { EntitySelect, FieldSelect, OperatorSelect, ValueInput } from "./rule-fields";
@@ -37,7 +37,7 @@ function createRulesStore(jobId: string) {
 }
 
 export function RulesPanel({ jobId, schema }: { jobId: string; schema: SchemaResult }) {
-  const { coordinator } = useMosaic();
+  const { coordinator, relation } = useCorpus();
   const [useRules] = useState(() => createRulesStore(jobId));
   const { rules, results, running } = useRules();
 
@@ -60,6 +60,7 @@ export function RulesPanel({ jobId, schema }: { jobId: string; schema: SchemaRes
     try {
       const results = await runRules(rules, async (q) =>
         (await coordinator.query(q, { type: "json" })) as unknown as Record<string, unknown>[],
+        relation,
       );
       useRules.setState({ results });
     } finally {

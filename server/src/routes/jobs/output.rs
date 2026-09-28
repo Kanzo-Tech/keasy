@@ -54,8 +54,8 @@ async fn dataset(
                 "The job's destination connection no longer exists",
             )
         })?;
-    let (sink_url, credential) = crate::connections::storage(&state.db, &sink).await?;
-    let base = job.output_under(&sink_url).map_err(Refusal::invalid)?;
+    let (sink, credential) = crate::connections::storage(&state.db, &sink).await?;
+    let base = job.output_under(&sink);
     let store = storage_client::store(&credential, &base)
         .map_err(|e| Refusal::new(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::StoreError, e))?;
     Ok((store, base.path().clone()))

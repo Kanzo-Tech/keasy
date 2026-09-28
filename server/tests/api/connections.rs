@@ -80,3 +80,52 @@ async fn a_connection_names_a_credential_of_its_own_purpose() {
         "{body}"
     );
 }
+
+/// Storage locations never overlap — Unity Catalog's rule for external
+/// locations. A source cannot hold the sink, sit inside it, or share a prefix
+/// with another source, however its URL is spelt; the refusal names who it
+/// collides with, and comes before any probe.
+#[tokio::test]
+async fn a_storage_location_never_overlaps_another() {
+    let app = spawn_app().await;
+    let member = app.token(&["member"]);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("data", "key", Direction::Source, "u-1")
+        .await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+
+    for (url, collides) in [
+        ("s3://b/", vec!["data", "sink"]),
+        ("s3a://b/sink/", vec!["sink"]),
+        ("s3://b/sink/job-1/", vec!["sink"]),
+        ("s3://b/data/nested", vec!["data"]),
+    ] {
+        let (status, body) = app
+            .send(
+                Method::POST,
+                "/v1/connections",
+                &member,
+                json!({ "name": "other", "credential": "key",
+                        "target": { "storage": { "url": url, "direction": "source" } } }),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CONFLICT, "{url}: {body}");
+        assert_eq!(body["error"], "overlaps", "{url}");
+        assert_eq!(body["dependents"], json!(collides), "{url}");
+    }
+
+    let (status, body) = app
+        .send(
+            Method::POST,
+            "/v1/connections",
+            &member,
+            json!({ "name": "other", "credential": "key",
+                    "target": { "storage": { "url": "s3://b/data-private/", "direction": "source" } } }),
+        )
+        .await;
+    assert_ne!(
+        status,
+        StatusCode::CONFLICT,
+        "a sibling prefix is not an overlap: {body}"
+    );
+}

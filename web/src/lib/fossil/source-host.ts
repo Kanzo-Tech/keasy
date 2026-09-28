@@ -35,7 +35,10 @@ export const sourceHost: SourceHost = {
     Object.fromEntries(
       locators.map((locator) => [
         locator,
-        new URL(`/api/v1/objects?locator=${encodeURIComponent(locator)}`, location.origin).href,
+        // A public URL needs no credential, so keasy has nothing to add to it.
+        /^https?:\/\//.test(locator)
+          ? locator
+          : new URL(`/api/v1/objects?locator=${encodeURIComponent(locator)}`, location.origin).href,
       ]),
     ),
 };

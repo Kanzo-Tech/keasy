@@ -65,7 +65,7 @@ async fn a_jobs_object_redirects_signed_for_the_method_asked() {
 }
 
 /// A locator reads through the source it lies under; the sink is read only
-/// through the job that wrote it, and a public URL redirects to itself.
+/// through the job that wrote it, and a public URL is not keasy's to redirect.
 #[tokio::test]
 async fn a_locator_redirects_through_its_source_only() {
     let (app, member) = workspace().await;
@@ -96,6 +96,30 @@ async fn a_locator_redirects_through_its_source_only() {
             &member,
         )
         .await;
-    assert_eq!(status, StatusCode::TEMPORARY_REDIRECT);
-    assert_eq!(location(&headers), "https://example.org/people.csv");
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(!headers.contains_key(LOCATION));
+}
+
+/// The bypass that authorised one text and signed another: a dot segment,
+/// however it is spelt, is refused where it is written.
+#[tokio::test]
+async fn a_locator_cannot_climb_out_of_its_source() {
+    let (app, member) = workspace().await;
+    for locator in [
+        "s3://b/source/../sink/job/x.parquet",
+        "s3://b/source/%2e%2e/sink/job/x.parquet",
+        "s3://b/source/.%2e/sink/job/x.parquet",
+        "s3://b/./sink/job/x.parquet",
+    ] {
+        let encoded: String = url::form_urlencoded::byte_serialize(locator.as_bytes()).collect();
+        let (status, headers) = app
+            .read(
+                Method::GET,
+                &format!("/v1/objects?locator={encoded}"),
+                &member,
+            )
+            .await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{locator}");
+        assert!(!headers.contains_key(LOCATION), "{locator}");
+    }
 }

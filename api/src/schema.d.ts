@@ -345,11 +345,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Read what a locator names, with the credential of the source it lies under:
-         *     the URL a reader holds for as long as it reads, which redirects to the store
-         *     signed for this request's method. A member reads what every source holds,
-         *     and the sink only through the job that wrote it. A public HTTP locator
-         *     redirects to itself.
+         * Read what a storage locator names, with the credential of the source that
+         *     holds it: the URL a reader holds for as long as it reads, which redirects
+         *     to the store signed for this request's method. A member reads what every
+         *     source holds, and the sink only through the job that wrote it.
          */
         get: operations["read_source_object"];
         put?: never;
@@ -523,7 +522,7 @@ export interface components {
          *     declare here cannot be sent, and the web keys its copy by this enum.
          * @enum {string}
          */
-        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "still_running" | "invalid_destination" | "no_destination" | "already_exists" | "in_use" | "probe_failed" | "list_files_failed" | "store_error" | "sign_error" | "ai_not_configured" | "ai_connection_required" | "insufficient_credits" | "llm_failed";
+        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "still_running" | "invalid_destination" | "no_destination" | "already_exists" | "in_use" | "overlaps" | "probe_failed" | "list_files_failed" | "store_error" | "sign_error" | "ai_not_configured" | "ai_connection_required" | "insufficient_credits" | "llm_failed";
         /** @description One object under a connection's prefix. */
         FileEntry: {
             last_modified?: string | null;
@@ -1974,6 +1973,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Not a storage locator, or held by several connections */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];

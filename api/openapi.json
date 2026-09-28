@@ -1618,7 +1618,7 @@
         "tags": [
           "Connections"
         ],
-        "summary": "Read what a locator names, with the credential of the source it lies under:\nthe URL a reader holds for as long as it reads, which redirects to the store\nsigned for this request's method. A member reads what every source holds,\nand the sink only through the job that wrote it. A public HTTP locator\nredirects to itself.",
+        "summary": "Read what a storage locator names, with the credential of the source that\nholds it: the URL a reader holds for as long as it reads, which redirects\nto the store signed for this request's method. A member reads what every\nsource holds, and the sink only through the job that wrote it.",
         "operationId": "read_source_object",
         "parameters": [
           {
@@ -1634,6 +1634,16 @@
         "responses": {
           "307": {
             "description": "To the object, signed for this request's method"
+          },
+          "400": {
+            "description": "Not a storage locator, or held by several connections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -2140,6 +2150,7 @@
           "no_destination",
           "already_exists",
           "in_use",
+          "overlaps",
           "probe_failed",
           "list_files_failed",
           "store_error",

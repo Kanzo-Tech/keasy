@@ -6,7 +6,7 @@ use object_store::PutPayload;
 
 use crate::domain::{
     Check, ConnectionTarget, ConnectionView, CredentialSpecInput, Direction, ModelCredentialInput,
-    ModelTarget, Operation, Outcome, StorageCredentialInput, StorageTarget, StorageUrl,
+    ModelTarget, Operation, Outcome, StorageCredentialInput, StorageLocation, StorageTarget,
     ValidationReport,
 };
 use crate::storage_client;
@@ -50,7 +50,7 @@ fn through(name: &str, checks: Vec<Check>) -> Vec<Check> {
 /// LIST under `url`: the first page is proof enough.
 async fn list(credential: &StorageCredentialInput, url: &str) -> Check {
     let listed = async {
-        let url = StorageUrl::parse(url)?;
+        let url = StorageLocation::parse(url)?;
         let store = storage_client::store(credential, &url)?;
         match store.list(url.path()).next().await {
             Some(Err(e)) => Err(e.to_string()),
@@ -63,7 +63,7 @@ async fn list(credential: &StorageCredentialInput, url: &str) -> Check {
 /// WRITE an object under the sink, then DELETE it: a listing would only prove
 /// the credential can read.
 async fn write_delete(credential: &StorageCredentialInput, url: &str) -> Vec<Check> {
-    let (store, url) = match StorageUrl::parse(url)
+    let (store, url) = match StorageLocation::parse(url)
         .and_then(|url| Ok((storage_client::store(credential, &url)?, url)))
     {
         Ok(opened) => opened,

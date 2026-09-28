@@ -4,18 +4,15 @@ use axum::http::{Method, StatusCode};
 use axum::response::{IntoResponse, Response};
 use object_store::ObjectMeta;
 use serde::{Deserialize, Serialize};
-use url::Url;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::credentials::PurposeQuery;
 use crate::authentication::role::{AnyRole, Member};
-use crate::connections::locator::{is_public_http, signer};
+use crate::connections::locator;
 use crate::connections::{named, persistence};
-use crate::domain::{
-    ConnectionTarget, ConnectionView, CredentialSpecInput, StorageUrl, ValidationReport,
-};
+use crate::domain::{ConnectionTarget, ConnectionView, StorageLocation, ValidationReport};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::routes::signed_redirect;
 use crate::startup::AppState;
@@ -255,48 +252,33 @@ pub async fn list_connection_files(
     params(LocatorQuery),
     responses(
         (status = 307, description = "To the object, signed for this request's method"),
+        (status = 400, description = "Not a storage locator, or held by several connections", body = ErrorBody),
         (status = 404, description = "No source connection holds the locator", body = ErrorBody),
     )
 )]
-/// Read what a locator names, with the credential of the source it lies under:
-/// the URL a reader holds for as long as it reads, which redirects to the store
-/// signed for this request's method. A member reads what every source holds,
-/// and the sink only through the job that wrote it. A public HTTP locator
-/// redirects to itself.
+/// Read what a storage locator names, with the credential of the source that
+/// holds it: the URL a reader holds for as long as it reads, which redirects
+/// to the store signed for this request's method. A member reads what every
+/// source holds, and the sink only through the job that wrote it.
 pub async fn read_source_object(
     _: Member,
     method: Method,
     State(state): State<AppState>,
     Query(query): Query<LocatorQuery>,
 ) -> Result<Response, Refusal> {
+    let locator = StorageLocation::parse(&query.locator).map_err(Refusal::invalid)?;
+    let (_, object, credential) = locator::holder(&state.db, &locator).await?.ok_or_else(|| {
+        Refusal::new(
+            StatusCode::NOT_FOUND,
+            ErrorCode::NotFound,
+            format!("No source connection holds {locator}"),
+        )
+    })?;
     let sign_failed =
         |e: String| Refusal::new(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::SignError, e);
-    let locator = query.locator;
-    let connections = persistence::list(&*state.db.read().await, None)?;
-    let Some(conn) = signer(&locator, &connections) else {
-        return match Url::parse(&locator) {
-            Ok(url) if is_public_http(&locator) => Ok(signed_redirect(url)),
-            _ => Err(Refusal::new(
-                StatusCode::NOT_FOUND,
-                ErrorCode::NotFound,
-                format!("No source connection holds {locator}"),
-            )),
-        };
-    };
-    let CredentialSpecInput::Storage(credential) =
-        crate::credentials::named(&state.db, &conn.credential)
-            .await?
-            .spec
-    else {
-        return Err(sign_failed(format!(
-            "{} is not a storage credential",
-            conn.credential
-        )));
-    };
-    let url = StorageUrl::parse(&locator).map_err(sign_failed)?;
-    let store = storage_client::store(&credential, &url).map_err(sign_failed)?;
+    let store = storage_client::store(&credential, &object).map_err(sign_failed)?;
     let signed = store
-        .sign_url(method, url.path(), SIGNED_URL_EXPIRES)
+        .sign_url(method, object.path(), SIGNED_URL_EXPIRES)
         .await
         .map_err(|e| sign_failed(e.to_string()))?;
     Ok(signed_redirect(signed))

@@ -14,23 +14,10 @@ use object_store::{ClientOptions, ObjectMeta, ObjectStore, PutPayload, RetryConf
 use secrecy::ExposeSecret;
 use url::Url;
 
-use crate::domain::{StorageCredentialInput, StorageScheme, StorageUrl};
+use crate::domain::{StorageCredentialInput, StorageLocation, StoreKind};
 
 pub const SIGNED_URL_EXPIRES: Duration = Duration::from_secs(300);
 
-/// The store a credential reaches.
-fn reaches(credential: &StorageCredentialInput) -> StorageScheme {
-    match credential {
-        StorageCredentialInput::S3 { .. } => StorageScheme::S3,
-        StorageCredentialInput::AzureAccountKey { .. }
-        | StorageCredentialInput::AzureSas { .. }
-        | StorageCredentialInput::AzureServicePrincipal { .. } => StorageScheme::Azure,
-    }
-}
-
-/// A probe or a listing is a question a person is waiting on: a store that
-/// does not answer is a failed check in seconds, not after object_store's
-/// default three minutes of retries.
 fn client_options() -> ClientOptions {
     ClientOptions::new()
         .with_connect_timeout(Duration::from_secs(5))
@@ -51,16 +38,19 @@ pub enum CloudStore {
     S3(AmazonS3),
 }
 
-/// The client `credential` opens on the bucket or container `url` names.
-pub fn store(credential: &StorageCredentialInput, url: &StorageUrl) -> Result<CloudStore, String> {
-    if reaches(credential) != url.scheme() {
+/// The client `credential` opens on the bucket or container `location` names.
+pub fn store(
+    credential: &StorageCredentialInput,
+    location: &StorageLocation,
+) -> Result<CloudStore, String> {
+    if StoreKind::of(credential) != location.kind() {
         return Err(format!(
             "this credential reaches {} URLs, not {}",
-            reaches(credential).spellings(),
-            url.scheme().spellings()
+            StoreKind::of(credential).spellings(),
+            location.kind().spellings()
         ));
     }
-    let bucket = url.bucket();
+    let bucket = location.bucket();
 
     let store = match credential {
         StorageCredentialInput::S3 {
@@ -181,14 +171,14 @@ impl CloudStore {
     }
 }
 
-/// Every object under the connection `url` is.
+/// Every object under `location`.
 pub async fn list_files(
     credential: &StorageCredentialInput,
-    url: &StorageUrl,
+    location: &StorageLocation,
 ) -> Result<Vec<ObjectMeta>, String> {
-    let store = store(credential, url)?;
+    let store = store(credential, location)?;
     let mut entries = Vec::new();
-    let mut listing = store.list(url.path());
+    let mut listing = store.list(location.path());
     while let Some(meta) = listing.next().await {
         entries.push(meta.map_err(|e| format!("listing failed: {e}"))?);
     }
@@ -211,7 +201,7 @@ mod tests {
 
     #[test]
     fn a_credential_opens_only_its_own_stores() {
-        let url = |s: &str| StorageUrl::parse(s).unwrap();
+        let url = |s: &str| StorageLocation::parse(s).unwrap();
         assert!(store(&s3(), &url("s3://bucket/data/x.csv")).is_ok());
         assert!(store(&s3(), &url("az://container/x.csv")).is_err());
     }

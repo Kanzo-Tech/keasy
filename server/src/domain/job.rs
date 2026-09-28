@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{StorageUrl, now_iso8601};
+use super::{StorageLocation, now_iso8601};
 
 #[derive(
     Debug,
@@ -94,12 +94,8 @@ impl Job {
     /// keasy's to compose — a job's home is the host's decision, not the
     /// language's. Everything below it (relation names, file names, tile names)
     /// belongs to fossil and travels from fossil.
-    pub fn output_under(&self, sink: &StorageUrl) -> Result<StorageUrl, String> {
-        StorageUrl::parse(&format!(
-            "{}/{}",
-            sink.as_ref().trim_end_matches('/'),
-            self.id
-        ))
+    pub fn output_under(&self, sink: &StorageLocation) -> StorageLocation {
+        sink.child(&self.id)
     }
 }
 

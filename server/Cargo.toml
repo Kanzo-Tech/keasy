@@ -41,6 +41,11 @@ secrecy = { version = "0.10", features = ["serde"] }
 base64 = "0.22"
 utoipa = { version = "5", features = ["axum_extras"] }
 utoipa-axum = "0.2"
+aws-sdk-sts = { version = "1.97.0", default-features = false, features = ["rustls", "rt-tokio", "behavior-version-latest"] }
+hmac = "0.13.0"
+sha2 = "0.11.0"
+quick-xml = { version = "0.42.0", features = ["serialize"] }
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
 
 [dev-dependencies]
 rcgen = "0.13"

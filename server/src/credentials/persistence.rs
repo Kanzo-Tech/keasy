@@ -252,6 +252,8 @@ mod tests {
             secret_access_key: SecretString::from(secret),
             region: "eu-west-1".into(),
             endpoint: None,
+            role_arn: None,
+            external_id: None,
         })
     }
 

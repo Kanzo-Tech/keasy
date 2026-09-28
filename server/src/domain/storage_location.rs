@@ -33,7 +33,6 @@ impl StoreKind {
         match credential {
             StorageCredentialInput::S3 { .. } => Self::S3,
             StorageCredentialInput::AzureAccountKey { .. }
-            | StorageCredentialInput::AzureSas { .. }
             | StorageCredentialInput::AzureServicePrincipal { .. } => Self::Azure,
         }
     }
@@ -121,6 +120,10 @@ impl StorageLocation {
         }
     }
 
+    pub fn store(&self) -> &Store {
+        &self.store
+    }
+
     /// The bucket (S3) or container (Azure).
     pub fn bucket(&self) -> &str {
         match &self.store {
@@ -153,7 +156,6 @@ impl StorageLocation {
             (
                 Store::Azure { account, .. },
                 StorageCredentialInput::AzureAccountKey { account: a, .. }
-                | StorageCredentialInput::AzureSas { account: a, .. }
                 | StorageCredentialInput::AzureServicePrincipal { account: a, .. },
             ) => match account {
                 Some(named) if named != a => {
@@ -225,6 +227,8 @@ mod tests {
             secret_access_key: SecretString::from("SK"),
             region: "us-east-1".into(),
             endpoint: endpoint.map(Into::into),
+            role_arn: None,
+            external_id: None,
         }
     }
 

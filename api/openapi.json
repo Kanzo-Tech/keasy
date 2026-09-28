@@ -470,6 +470,93 @@
         }
       }
     },
+    "/v1/connections/{name}/credentials": {
+      "post": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Vend a read credential over a source connection's prefix — Unity Catalog's\ntemporary path credentials over an external location. Sources are read,\nnever written; the sink is reached only through its jobs.",
+        "operationId": "vend_source_credentials",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Connection name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredentialsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A credential that opens the source's prefix, and only it, for an hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendedCredentials"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a storage source, or an access a source does not give",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "502": {
+            "description": "The store refused to vend",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      }
+    },
     "/v1/connections/{name}/files": {
       "get": {
         "tags": [
@@ -1389,6 +1476,93 @@
         }
       }
     },
+    "/v1/jobs/{id}/credentials": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Vend a credential over the job's dataset, `{sink}/{job_id}/`: to read it\nonce the job has completed, or to write it while the job runs. The store\nholds the boundary, so the credential opens nothing else.",
+        "operationId": "vend_job_credentials",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredentialsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A credential that opens the job's dataset, and only it, for an hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendedCredentials"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Read before the job completed, or write while it is not running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "502": {
+            "description": "The store refused to vend",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      }
+    },
     "/v1/jobs/{id}/objects": {
       "get": {
         "tags": [
@@ -1699,6 +1873,14 @@
   },
   "components": {
     "schemas": {
+      "Access": {
+        "type": "string",
+        "description": "What a vended credential lets its holder do under its prefix.",
+        "enum": [
+          "read",
+          "write"
+        ]
+      },
       "ChatMessage": {
         "type": "object",
         "required": [
@@ -2051,6 +2233,17 @@
           }
         }
       },
+      "CredentialsRequest": {
+        "type": "object",
+        "required": [
+          "access"
+        ],
+        "properties": {
+          "access": {
+            "$ref": "#/components/schemas/Access"
+          }
+        }
+      },
       "Dataset": {
         "type": "object",
         "description": "A completed job's output, as the owner's datasets view lists it.",
@@ -2145,6 +2338,7 @@
           "internal_error",
           "not_draft",
           "not_completed",
+          "not_running",
           "still_running",
           "invalid_destination",
           "no_destination",
@@ -2509,6 +2703,13 @@
                 "format": "uri",
                 "description": "MinIO, R2 or a gateway. An `http://` endpoint opts into plain HTTP."
               },
+              "external_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "AWS's guard against the confused deputy, when the role's trust\npolicy asks for one."
+              },
               "kind": {
                 "type": "string",
                 "enum": [
@@ -2518,6 +2719,13 @@
               "region": {
                 "type": "string",
                 "default": "us-east-1"
+              },
+              "role_arn": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The role keasy assumes to vend a credential scoped to one prefix.\nAWS needs it; S3-compatible stores (MinIO, Ceph) ignore it."
               },
               "secret_access_key": {
                 "type": "string",
@@ -2548,31 +2756,6 @@
                 "enum": [
                   "azure_account_key"
                 ]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "title": "Azure Blob — SAS token",
-            "required": [
-              "account",
-              "sas_token",
-              "kind"
-            ],
-            "properties": {
-              "account": {
-                "type": "string"
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "azure_sas"
-                ]
-              },
-              "sas_token": {
-                "type": "string",
-                "format": "password",
-                "writeOnly": true
               }
             }
           },
@@ -2631,6 +2814,12 @@
                   "null"
                 ]
               },
+              "external_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "kind": {
                 "type": "string",
                 "enum": [
@@ -2639,6 +2828,12 @@
               },
               "region": {
                 "type": "string"
+              },
+              "role_arn": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             }
           },
@@ -2657,25 +2852,6 @@
                 "type": "string",
                 "enum": [
                   "azure_account_key"
-                ]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "title": "Azure Blob — SAS token",
-            "required": [
-              "account",
-              "kind"
-            ],
-            "properties": {
-              "account": {
-                "type": "string"
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "azure_sas"
                 ]
               }
             }
@@ -2823,6 +2999,44 @@
             "items": {
               "$ref": "#/components/schemas/Check"
             }
+          }
+        }
+      },
+      "VendedCredential": {
+        "type": "object",
+        "description": "A credential scoped to one prefix, for a lifetime — Iceberg REST's\n`StorageCredential`, keys and all (`s3.access-key-id`, `s3.session-token`,\n`s3.session-token-expires-at-ms`, `adls.sas-token.<host>`, …), so any\nreader of vended credentials reads it. Handing it out is the point, so\nthis is the one response type that carries a secret: its values stay\n[`SecretString`] until the moment they are written into the response.",
+        "required": [
+          "prefix",
+          "config"
+        ],
+        "properties": {
+          "config": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "prefix": {
+            "type": "string",
+            "description": "The canonical prefix it opens, ending in `/`."
+          }
+        }
+      },
+      "VendedCredentials": {
+        "type": "object",
+        "required": [
+          "storage_credentials"
+        ],
+        "properties": {
+          "storage_credentials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VendedCredential"
+            },
+            "description": "One per prefix; a reader picks the longest prefix that holds a path."
           }
         }
       },

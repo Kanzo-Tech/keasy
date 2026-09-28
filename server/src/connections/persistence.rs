@@ -189,6 +189,8 @@ pub(crate) mod tests {
             secret_access_key: SecretString::from("SK"),
             region: "us-east-1".into(),
             endpoint: None,
+            role_arn: None,
+            external_id: None,
         });
         let credential = format!("{name}-key");
         credentials::insert(

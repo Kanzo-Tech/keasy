@@ -1,13 +1,15 @@
 //! A storage credential turned into an object store client, and the few
 //! operations keasy performs with one: sign, list, and the sink's write probe.
 
+pub mod vend;
+
 use std::time::Duration;
 
 use axum::http::Method;
 use futures::StreamExt;
 use futures::stream::BoxStream;
 use object_store::aws::{AmazonS3, AmazonS3Builder};
-use object_store::azure::{AzureConfigKey, MicrosoftAzure, MicrosoftAzureBuilder};
+use object_store::azure::{MicrosoftAzure, MicrosoftAzureBuilder};
 use object_store::path::Path as ObjectPath;
 use object_store::signer::Signer;
 use object_store::{ClientOptions, ObjectMeta, ObjectStore, PutPayload, RetryConfig};
@@ -58,6 +60,7 @@ pub fn store(
             secret_access_key,
             region,
             endpoint,
+            ..
         } => {
             let mut builder = AmazonS3Builder::new()
                 .with_bucket_name(bucket)
@@ -78,12 +81,6 @@ pub fn store(
         StorageCredentialInput::AzureAccountKey { account, key } => CloudStore::Azure(
             azure(bucket, account)
                 .with_access_key(key.expose_secret())
-                .build()
-                .map_err(|e| e.to_string())?,
-        ),
-        StorageCredentialInput::AzureSas { account, sas_token } => CloudStore::Azure(
-            azure(bucket, account)
-                .with_config(AzureConfigKey::SasKey, sas_token.expose_secret())
                 .build()
                 .map_err(|e| e.to_string())?,
         ),
@@ -196,6 +193,8 @@ mod tests {
             secret_access_key: SecretString::from("SK"),
             region: "us-east-1".into(),
             endpoint: None,
+            role_arn: None,
+            external_id: None,
         }
     }
 

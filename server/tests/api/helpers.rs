@@ -194,6 +194,8 @@ pub fn s3(endpoint: &str, secret: &str) -> CredentialSpecInput {
         secret_access_key: SecretString::from(secret),
         region: "us-east-1".into(),
         endpoint: Some(endpoint.into()),
+        role_arn: None,
+        external_id: None,
     })
 }
 

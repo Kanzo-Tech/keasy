@@ -128,6 +128,27 @@ export interface paths {
         patch: operations["update_connection"];
         trace?: never;
     };
+    "/v1/connections/{name}/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Vend a read credential over a source connection's prefix — Unity Catalog's
+         *     temporary path credentials over an external location. Sources are read,
+         *     never written; the sink is reached only through its jobs.
+         */
+        post: operations["vend_source_credentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/connections/{name}/files": {
         parameters: {
             query?: never;
@@ -271,6 +292,27 @@ export interface paths {
         patch: operations["complete_job"];
         trace?: never;
     };
+    "/v1/jobs/{id}/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Vend a credential over the job's dataset, `{sink}/{job_id}/`: to read it
+         *     once the job has completed, or to write it while the job runs. The store
+         *     holds the boundary, so the credential opens nothing else.
+         */
+        post: operations["vend_job_credentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/jobs/{id}/objects": {
         parameters: {
             query?: never;
@@ -379,6 +421,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description What a vended credential lets its holder do under its prefix.
+         * @enum {string}
+         */
+        Access: "read" | "write";
         ChatMessage: {
             content: string;
             role: components["schemas"]["ChatRole"];
@@ -488,6 +535,9 @@ export interface components {
             used_by: string[];
             validation?: null | components["schemas"]["ValidationReport"];
         };
+        CredentialsRequest: {
+            access: components["schemas"]["Access"];
+        };
         /** @description A completed job's output, as the owner's datasets view lists it. */
         Dataset: {
             completed_at?: string | null;
@@ -522,7 +572,7 @@ export interface components {
          *     declare here cannot be sent, and the web keys its copy by this enum.
          * @enum {string}
          */
-        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "still_running" | "invalid_destination" | "no_destination" | "already_exists" | "in_use" | "overlaps" | "probe_failed" | "list_files_failed" | "store_error" | "sign_error" | "ai_not_configured" | "ai_connection_required" | "insufficient_credits" | "llm_failed";
+        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "not_running" | "still_running" | "invalid_destination" | "no_destination" | "already_exists" | "in_use" | "overlaps" | "probe_failed" | "list_files_failed" | "store_error" | "sign_error" | "ai_not_configured" | "ai_connection_required" | "insufficient_credits" | "llm_failed";
         /** @description One object under a connection's prefix. */
         FileEntry: {
             last_modified?: string | null;
@@ -661,10 +711,20 @@ export interface components {
              * @description MinIO, R2 or a gateway. An `http://` endpoint opts into plain HTTP.
              */
             endpoint?: string | null;
+            /**
+             * @description AWS's guard against the confused deputy, when the role's trust
+             *     policy asks for one.
+             */
+            external_id?: string | null;
             /** @enum {string} */
             kind: "s3";
             /** @default us-east-1 */
             region?: string;
+            /**
+             * @description The role keasy assumes to vend a credential scoped to one prefix.
+             *     AWS needs it; S3-compatible stores (MinIO, Ceph) ignore it.
+             */
+            role_arn?: string | null;
             /** Format: password */
             secret_access_key: $Write<string>;
         } | {
@@ -673,12 +733,6 @@ export interface components {
             key: $Write<string>;
             /** @enum {string} */
             kind: "azure_account_key";
-        } | {
-            account: string;
-            /** @enum {string} */
-            kind: "azure_sas";
-            /** Format: password */
-            sas_token: $Write<string>;
         } | {
             account: string;
             client_id: string;
@@ -691,17 +745,15 @@ export interface components {
         StorageCredentialView: {
             access_key_id: string;
             endpoint?: string | null;
+            external_id?: string | null;
             /** @enum {string} */
             kind: "s3";
             region: string;
+            role_arn?: string | null;
         } | {
             account: string;
             /** @enum {string} */
             kind: "azure_account_key";
-        } | {
-            account: string;
-            /** @enum {string} */
-            kind: "azure_sas";
         } | {
             account: string;
             client_id: string;
@@ -747,6 +799,25 @@ export interface components {
         ValidationReport: {
             at: string;
             results: components["schemas"]["Check"][];
+        };
+        /**
+         * @description A credential scoped to one prefix, for a lifetime — Iceberg REST's
+         *     `StorageCredential`, keys and all (`s3.access-key-id`, `s3.session-token`,
+         *     `s3.session-token-expires-at-ms`, `adls.sas-token.<host>`, …), so any
+         *     reader of vended credentials reads it. Handing it out is the point, so
+         *     this is the one response type that carries a secret: its values stay
+         *     [`SecretString`] until the moment they are written into the response.
+         */
+        VendedCredential: {
+            config: {
+                [key: string]: string;
+            };
+            /** @description The canonical prefix it opens, ending in `/`. */
+            prefix: string;
+        };
+        VendedCredentials: {
+            /** @description One per prefix; a reader picks the longest prefix that holds a path. */
+            storage_credentials: components["schemas"]["VendedCredential"][];
         };
         /**
          * @description The running build's version, so an operator can see which image a tenant is
@@ -1172,6 +1243,65 @@ export interface operations {
             };
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    vend_source_credentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Connection name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CredentialsRequest"];
+            };
+        };
+        responses: {
+            /** @description A credential that opens the source's prefix, and only it, for an hour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendedCredentials"];
+                };
+            };
+            /** @description Not a storage source, or an access a source does not give */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description No such connection */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            /** @description The store refused to vend */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             503: components["responses"]["KeysUnavailable"];
         };
     };
@@ -1805,6 +1935,65 @@ export interface operations {
             };
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    vend_job_credentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CredentialsRequest"];
+            };
+        };
+        responses: {
+            /** @description A credential that opens the job's dataset, and only it, for an hour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendedCredentials"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Read before the job completed, or write while it is not running */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            /** @description The store refused to vend */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             503: components["responses"]["KeysUnavailable"];
         };
     };

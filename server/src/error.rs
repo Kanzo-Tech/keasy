@@ -26,7 +26,10 @@ pub enum ErrorCode {
     Forbidden,
     InternalError,
     NotDraft,
+    /// A job's output is read once the job has completed.
     NotCompleted,
+    /// A job's output is written only while the job runs.
+    NotRunning,
     StillRunning,
     InvalidDestination,
     NoDestination,

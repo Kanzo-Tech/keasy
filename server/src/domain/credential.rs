@@ -58,18 +58,20 @@ pub enum StorageCredentialInput {
         #[serde(default)]
         #[schema(format = "uri")]
         endpoint: Option<String>,
+        /// The role keasy assumes to vend a credential scoped to one prefix.
+        /// AWS needs it; S3-compatible stores (MinIO, Ceph) ignore it.
+        #[serde(default)]
+        role_arn: Option<String>,
+        /// AWS's guard against the confused deputy, when the role's trust
+        /// policy asks for one.
+        #[serde(default)]
+        external_id: Option<String>,
     },
     #[schema(title = "Azure Blob — account key")]
     AzureAccountKey {
         account: String,
         #[schema(value_type = String, format = Password, write_only)]
         key: SecretString,
-    },
-    #[schema(title = "Azure Blob — SAS token")]
-    AzureSas {
-        account: String,
-        #[schema(value_type = String, format = Password, write_only)]
-        sas_token: SecretString,
     },
     #[schema(title = "Azure Blob — service principal")]
     AzureServicePrincipal {
@@ -117,11 +119,13 @@ pub enum StorageCredentialView {
         region: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         endpoint: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        role_arn: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        external_id: Option<String>,
     },
     #[schema(title = "Azure Blob — account key")]
     AzureAccountKey { account: String },
-    #[schema(title = "Azure Blob — SAS token")]
-    AzureSas { account: String },
     #[schema(title = "Azure Blob — service principal")]
     AzureServicePrincipal {
         account: String,
@@ -165,16 +169,17 @@ impl StorageCredentialInput {
                 access_key_id,
                 region,
                 endpoint,
+                role_arn,
+                external_id,
                 ..
             } => StorageCredentialView::S3 {
                 access_key_id: access_key_id.clone(),
                 region: region.clone(),
                 endpoint: endpoint.clone(),
+                role_arn: role_arn.clone(),
+                external_id: external_id.clone(),
             },
             Self::AzureAccountKey { account, .. } => StorageCredentialView::AzureAccountKey {
-                account: account.clone(),
-            },
-            Self::AzureSas { account, .. } => StorageCredentialView::AzureSas {
                 account: account.clone(),
             },
             Self::AzureServicePrincipal {

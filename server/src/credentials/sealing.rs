@@ -98,22 +98,19 @@ fn aad(name: &str) -> String {
 fn plaintext(spec: &CredentialSpecInput) -> Vec<u8> {
     let value = match spec {
         CredentialSpecInput::Storage(s) => json!({ "storage": match s {
-            StorageCredentialInput::S3 { access_key_id, secret_access_key, region, endpoint } => json!({
+            StorageCredentialInput::S3 { access_key_id, secret_access_key, region, endpoint, role_arn, external_id } => json!({
                 "kind": "s3",
                 "access_key_id": access_key_id,
                 "secret_access_key": secret_access_key.expose_secret(),
                 "region": region,
                 "endpoint": endpoint,
+                "role_arn": role_arn,
+                "external_id": external_id,
             }),
             StorageCredentialInput::AzureAccountKey { account, key } => json!({
                 "kind": "azure_account_key",
                 "account": account,
                 "key": key.expose_secret(),
-            }),
-            StorageCredentialInput::AzureSas { account, sas_token } => json!({
-                "kind": "azure_sas",
-                "account": account,
-                "sas_token": sas_token.expose_secret(),
             }),
             StorageCredentialInput::AzureServicePrincipal { account, tenant_id, client_id, client_secret } => json!({
                 "kind": "azure_service_principal",

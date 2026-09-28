@@ -1,6 +1,3 @@
-COMPOSE_DEV  = docker compose -f docker-compose.yml -f docker-compose.dev.yml
-COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
-
 # ── Dev loop: when do I rebuild? ───────────────────────────────────────────
 # The dev image is DEPS-ONLY; `server/src` + `web/src` are bind-mounted and
 # hot-reloaded inside the running container (cargo-watch / Next HMR). So:
@@ -11,49 +8,47 @@ COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 #   • Changed server deps (Cargo.toml/lock)
 #     or the Dockerfile .................... `make dev` (rebuilds the image).
 #
-# Crates compile at runtime into the
-# persistent `server-target` + `cargo-registry` volumes, so only the first `up`
-# (or one after `make clean`) pays a cold compile.
+# Crates compile at runtime into the persistent `server-target` + `cargo-registry`
+# volumes, so only the first `up` (or one after `make clean`) pays a cold compile.
 
-.PHONY: help dev down prod build logs restart clean ps deploy-platform deploy-realm
+.PHONY: help dev down logs restart clean ps api deploy-platform deploy-realm
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 dev: ## Start/rebuild dev env (only needed for dep/Dockerfile changes — code hot-reloads)
-	$(COMPOSE_DEV) up --build -d
+	docker compose up --build -d
 
 down: ## Stop all services
-	$(COMPOSE_DEV) down
-	@$(COMPOSE_PROD) down 2>/dev/null || true
-
-prod: ## Start with production builds (local test)
-	$(COMPOSE_PROD) up --build -d
-
-build: ## Build production images without starting
-	$(COMPOSE_PROD) build
+	docker compose down
 
 logs: ## Tail all service logs
-	$(COMPOSE_DEV) logs -f
+	docker compose logs -f
 
 logs-%: ## Tail logs for one service (e.g., make logs-server)
-	$(COMPOSE_DEV) logs -f $*
+	docker compose logs -f $*
 
 restart: ## Restart all services
-	$(COMPOSE_DEV) restart
+	docker compose restart
 
 restart-%: ## Restart one service (e.g., make restart-web)
-	$(COMPOSE_DEV) restart $*
+	docker compose restart $*
 
 clean: ## Nuclear reset: remove containers, volumes, images
-	$(COMPOSE_DEV) down -v --rmi local
-	@$(COMPOSE_PROD) down -v --rmi local 2>/dev/null || true
+	docker compose down -v --rmi local
 
 shell-%: ## Open shell in container (e.g., make shell-server)
-	$(COMPOSE_DEV) exec $* sh
+	docker compose exec $* sh
 
 ps: ## Show running services
-	$(COMPOSE_DEV) ps
+	docker compose ps
+
+# ── The API contract ───────────────────────────────────────────────────────
+# The server's routes publish the spec; `api/` (@keasy/api) holds it and the
+# types generated from it. CI fails when a committed copy is stale.
+api: ## Regenerate api/openapi.json and api/src/schema.d.ts from the server's routes
+	UPDATE_EXPECT=1 cargo test --quiet --manifest-path server/Cargo.toml --test api openapi
+	pnpm --filter @keasy/api generate
 
 # ── Prod / Swarm deploy — Terraform owns everything (see infra/terraform/README.md) ──
 # Two phases: platform (Traefik+Keycloak+Postgres) then realm (SSO + tenants). Adding a

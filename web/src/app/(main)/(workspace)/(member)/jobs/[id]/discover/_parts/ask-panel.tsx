@@ -3,7 +3,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, Sparkles } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import type { ExecuteSqlResult, SqlCorpus } from "@fossil-lang/corpus";
 import {
   Alert,
@@ -53,15 +52,13 @@ import {
   useAiStream,
 } from "@kanzo-tech/ai";
 import { MessageMarkdown } from "@kanzo-tech/ai/markdown";
-import { ApiError, api } from "@/lib/api";
-import { sseFailure } from "@/lib/api/sse";
-import { queryKeys } from "@/lib/query-keys";
-import { AI_PROVIDERS } from "@/lib/ai-providers";
-import { generateSuggestions } from "@/lib/schema-suggestions";
-import { getErrorInfo } from "@/lib/error-codes";
-import type { GraphSchema } from "@/lib/graph-schema";
-import type { AiProvider, ChatMessage } from "@/lib/types";
-import { describeDataSpace } from "@/lib/data-space";
+import { $api, ApiError } from "@/lib/api/client";
+import { type ChatMessage, completeText, streamText } from "@/lib/ai/stream";
+import { explainRequest, parsePlan, queryRequest } from "./query-prompts";
+import { generateSuggestions } from "./schema-suggestions";
+import { getErrorInfo } from "@/lib/errors";
+import type { SchemaResult } from "@fossil-lang/corpus";
+import { describeDataSpace } from "./data-space";
 import { useCorpus } from "./corpus";
 import { ResultTable } from "./result-table";
 
@@ -82,7 +79,6 @@ type TurnEvent =
   | { kind: "plan"; sql: string | null; answer: string; reasoning: string }
   | { kind: "rows"; result: ExecuteSqlResult }
   | { kind: "explain"; text: string }
-  | { kind: "explained"; text: string }
   | { kind: "failed"; code: string };
 
 interface Turn {
@@ -109,8 +105,6 @@ function apply(turn: Turn, event: TurnEvent): Turn {
       return { ...turn, result: event.result };
     case "explain":
       return { ...turn, explanation: turn.explanation + event.text };
-    case "explained":
-      return { ...turn, explanation: event.text };
     case "failed":
       return { ...turn, failure: event.code, failedAt: turn.phase };
   }
@@ -154,18 +148,11 @@ function toolState(turn: Turn): RunState {
 const SAMPLE_ROWS = 30;
 const SAMPLE_CHARS = 4000;
 
-interface Plan {
-  sql?: string;
-  answer: string;
-  reasoning?: string;
-}
-
 interface AskOptions {
-  jobId: string;
   question: string;
   history: ChatMessage[];
-  provider?: AiProvider;
-  schema?: string;
+  connection?: string;
+  schema: string;
   corpus: SqlCorpus;
   signal: AbortSignal;
 }
@@ -181,37 +168,12 @@ function sample(result: ExecuteSqlResult): string {
  * because a turn that broke still belongs in the transcript.
  */
 async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
-  const { jobId, question, history, provider, schema, corpus, signal } = options;
+  const { question, history, connection, schema, corpus, signal } = options;
   try {
-    let plan: Plan | null = null;
-
-    for await (const frame of api.discovery.askStream(jobId, question, {
-      provider,
-      schema,
-      history,
-      signal,
-    })) {
-      const failure = sseFailure(frame);
-      if (failure) {
-        yield { kind: "failed", code: failure.code };
-        return;
-      }
-      if (frame.event === "complete") {
-        plan = JSON.parse(frame.data) as Plan;
-      }
-    }
-
-    if (!plan) {
-      yield { kind: "phase", phase: "done" };
-      return;
-    }
-
-    yield {
-      kind: "plan",
-      sql: plan.sql ?? null,
-      answer: plan.answer,
-      reasoning: plan.reasoning ?? "",
-    };
+    const plan = parsePlan(
+      await completeText(queryRequest(schema, history, question, connection), signal),
+    );
+    yield { kind: "plan", ...plan };
 
     if (!plan.sql) {
       yield { kind: "phase", phase: "done" };
@@ -229,20 +191,11 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     yield { kind: "rows", result };
 
     yield { kind: "phase", phase: "explaining" };
-    const reading = `Original question: ${question}\n\nSQL executed:\n${plan.sql}\n\nResults (showing first rows):\n${sample(result)}`;
-    for await (const frame of api.discovery.askStream(jobId, reading, {
-      provider,
-      explain: true,
+    for await (const text of streamText(
+      explainRequest(question, plan.sql, sample(result), connection),
       signal,
-    })) {
-      const failure = sseFailure(frame);
-      if (failure) {
-        yield { kind: "failed", code: failure.code };
-        return;
-      }
-      if (frame.event === "delta") yield { kind: "explain", text: frame.data };
-      else if (frame.event === "complete")
-        yield { kind: "explained", text: (JSON.parse(frame.data) as Plan).answer };
+    )) {
+      yield { kind: "explain", text };
     }
     yield { kind: "phase", phase: "done" };
   } catch (err) {
@@ -383,22 +336,19 @@ function Answer({ turn }: { turn: Turn }) {
 
 // ── The panel ────────────────────────────────────────────────────────────
 
-export function AskPanel({ jobId, graphSchema }: { jobId: string; graphSchema: GraphSchema }) {
-  const { coordinator, corpus } = useCorpus();
+export function AskPanel({ graphSchema }: { graphSchema: SchemaResult }) {
+  const { coordinator, corpus, relation } = useCorpus();
   const engine = useAiStream<TurnEvent>();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [question, setQuestion] = useState("");
   const nextTurn = useRef(0);
   const live = useRef<number | null>(null);
 
-  const { data: aiProviders, isLoading: loadingAiProviders } = useQuery({
-    queryKey: queryKeys.ai.providers,
-    queryFn: api.ai.providers,
+  // The model connection the panel asks through: the first there is.
+  const { data: models, isLoading: loadingAiProviders } = $api.useQuery("get", "/v1/connections", {
+    params: { query: { purpose: "model" } },
   });
-  const provider = useMemo(
-    () => AI_PROVIDERS.find((p) => aiProviders?.some((s) => s.provider === p.id && s.api_key))?.id,
-    [aiProviders],
-  );
+  const connection = models?.[0]?.name;
 
   // The schema the assistant reasons over: DuckDB's own catalog, read back from
   // the views the corpus mounted. Names, columns and TYPES are the ones a query
@@ -406,7 +356,12 @@ export function AskPanel({ jobId, graphSchema }: { jobId: string; graphSchema: G
   const [duckSchema, setDuckSchema] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    describeDataSpace((sql) => coordinator.query(sql, { type: "json" }), graphSchema.edges)
+    describeDataSpace(
+      (sql) => coordinator.query(sql, { type: "json" }),
+      corpus.url,
+      relation,
+      graphSchema.edges,
+    )
       .then((ddl) => {
         if (!cancelled) setDuckSchema(ddl);
       })
@@ -416,7 +371,7 @@ export function AskPanel({ jobId, graphSchema }: { jobId: string; graphSchema: G
     return () => {
       cancelled = true;
     };
-  }, [coordinator, graphSchema]);
+  }, [coordinator, corpus, relation, graphSchema]);
 
   const starters = useMemo(() => generateSuggestions(graphSchema), [graphSchema]);
   // Derived from the schema the reader already has, so asking costs nothing and
@@ -456,10 +411,9 @@ export function AskPanel({ jobId, graphSchema }: { jobId: string; graphSchema: G
     void engine.run(
       (signal) =>
         askTurn({
-          jobId,
           question: text,
           history: historyOf(turns),
-          provider,
+          connection,
           schema: duckSchema,
           corpus,
           signal,
@@ -474,7 +428,7 @@ export function AskPanel({ jobId, graphSchema }: { jobId: string; graphSchema: G
     if (id !== null) patch(id, { kind: "failed", code: "stopped" });
   };
 
-  if (!loadingAiProviders && !provider) {
+  if (!loadingAiProviders && !connection) {
     return (
       <Item className="mx-auto my-auto max-w-md flex-col gap-2 py-10 text-center">
         <ItemMedia className="text-muted-foreground" variant="icon">
@@ -484,7 +438,7 @@ export function AskPanel({ jobId, graphSchema }: { jobId: string; graphSchema: G
         <ItemDescription>An API key is required.</ItemDescription>
         <ItemActions>
           <Button asChild size="sm" variant="outline">
-            <Link href="/settings/ai">Configure</Link>
+            <Link href="/connections?type=model">Configure</Link>
           </Button>
         </ItemActions>
       </Item>

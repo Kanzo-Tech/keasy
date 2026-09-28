@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Cloud } from "lucide-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { KeyRound } from "lucide-react";
 import {
   Button,
   createListCollection,
@@ -26,23 +25,17 @@ import {
   Skeleton,
   toast,
 } from "@kanzo-tech/ui";
-import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { api } from "@/lib/api";
-import type { Schemas } from "@/lib/api/client";
-import { queryKeys } from "@/lib/query-keys";
-import { toastError } from "@/lib/toast-error";
-import type { CloudAccountSummary } from "@/lib/types";
+import { ValidationBadge } from "@/components/validation-badge";
+import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
+import { $api, invalidate } from "@/lib/api/client";
+import { type Connection, type Credential, storageOf } from "@/lib/connections";
+import { toastError } from "@/lib/errors";
 
+/** The workspace sink: the one storage connection where job output lands, the owner's alone. */
 export default function CatalogStoragePage() {
-  const { data: accounts, isLoading: loadingAccounts } = useQuery({
-    queryKey: queryKeys.cloud.accounts,
-    queryFn: api.cloud.list,
-  });
-  const { data: config, isLoading: loadingConfig } = useQuery({
-    queryKey: queryKeys.settings.catalogStorage,
-    queryFn: api.settings.catalogStorage,
-  });
-  const isLoading = loadingAccounts || loadingConfig;
+  const credentials = $api.useQuery("get", "/v1/credentials", { params: { query: { purpose: "storage" } } });
+  const connections = $api.useQuery("get", "/v1/connections", { params: { query: { purpose: "storage" } } });
+  const isLoading = credentials.isLoading || connections.isLoading;
   const showSkeleton = useDelayedLoading(isLoading);
 
   if (isLoading) {
@@ -56,7 +49,7 @@ export default function CatalogStoragePage() {
     ) : null;
   }
 
-  if (!accounts?.length) {
+  if (!credentials.data?.length) {
     return (
       <SectionRoot>
         <SectionBody scale="page">
@@ -65,12 +58,12 @@ export default function CatalogStoragePage() {
               className="group-has-data-[slot=item-description]/item:self-center text-muted-foreground [&_svg:not([class*='size-'])]:size-8"
               variant="icon"
             >
-              <Cloud />
+              <KeyRound />
             </ItemMedia>
-            <ItemTitle className="text-base">No cloud accounts</ItemTitle>
+            <ItemTitle className="text-base">No storage credentials</ItemTitle>
             <ItemDescription>
-              A member must add a cloud account (Settings → Cloud Accounts) before you can choose a
-              catalog storage destination.
+              A member must add a storage credential (Settings → Credentials) before you can choose
+              where job output is stored.
             </ItemDescription>
           </Item>
         </SectionBody>
@@ -78,52 +71,55 @@ export default function CatalogStoragePage() {
     );
   }
 
-  return <Form accounts={accounts} config={config ?? null} />;
+  const sink = connections.data?.find((c) => storageOf(c)?.direction === "sink");
+  return <Form credentials={credentials.data} key={sink?.name ?? "new"} sink={sink} />;
 }
 
-function Form({
-  accounts,
-  config,
-}: {
-  accounts: CloudAccountSummary[];
-  config: Schemas["CatalogStoragePayload"] | null;
-}) {
-  const queryClient = useQueryClient();
-  const [cloudAccountId, setCloudAccountId] = useState(config?.cloud_account_id ?? "");
-  const [baseUrl, setBaseUrl] = useState(config?.base_url ?? "");
-  const accountCollection = useMemo(
-    () => createListCollection({ items: accounts.map((a) => ({ label: a.name, value: a.id })) }),
-    [accounts],
+function Form({ credentials, sink }: { credentials: Credential[]; sink?: Connection }) {
+  const [credential, setCredential] = useState(sink?.credential ?? "");
+  const [url, setUrl] = useState((sink && storageOf(sink)?.url) ?? "");
+  const collection = useMemo(
+    () => createListCollection({ items: credentials.map((c) => ({ label: c.name, value: c.name })) }),
+    [credentials],
   );
 
-  const save = useMutation({
-    mutationFn: () =>
-      api.settings.saveCatalogStorage({ cloud_account_id: cloudAccountId, base_url: baseUrl.trim() }),
-    onSuccess: async () => {
-      toast.create({ title: "Catalog storage saved", type: "success" });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.settings.catalogStorage });
-    },
-    onError: (err) => toastError(err, "Failed to save catalog storage"),
-  });
+  const onSuccess = async () => {
+    toast.create({ title: "Catalog storage validated and saved", type: "success" });
+    await invalidate("/v1/connections", "/v1/credentials");
+  };
+  const onError = (err: unknown) => toastError(err, "Catalog storage was not saved");
+  const create = $api.useMutation("post", "/v1/connections", { onSuccess, onError });
+  const update = $api.useMutation("patch", "/v1/connections/{name}", { onSuccess, onError });
+  const target = { storage: { url: url.trim(), kind: "data" as const, direction: "sink" as const } };
+
+  const save = () =>
+    sink
+      ? update.mutate({ params: { path: { name: sink.name } }, body: { credential, target } })
+      : create.mutate({ body: { name: "Workspace output", credential, target } });
 
   return (
     <SectionRoot>
       <SectionBody scale="page">
+        {sink && (
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            Last check <ValidationBadge report={sink.validation} />
+          </div>
+        )}
         <Field required>
           <FieldLabel>
-            Cloud Account
+            Credential
             <FieldRequiredIndicator />
           </FieldLabel>
           <Select
-            collection={accountCollection}
-            onValueChange={(details) => setCloudAccountId(details.value[0] ?? "")}
-            value={cloudAccountId ? [cloudAccountId] : []}
+            collection={collection}
+            onValueChange={(details) => setCredential(details.value[0] ?? "")}
+            value={credential ? [credential] : []}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a cloud account" />
+              <SelectValue placeholder="Select a storage credential" />
             </SelectTrigger>
             <SelectContent>
-              {accountCollection.items.map((item) => (
+              {collection.items.map((item) => (
                 <SelectItem item={item} key={item.value}>
                   {item.label}
                 </SelectItem>
@@ -138,24 +134,26 @@ function Form({
             <FieldRequiredIndicator />
           </FieldLabel>
           <FieldDescription>
-            Root path where catalog data will be stored (e.g. s3://my-bucket/catalog)
+            Where job output is written, one folder per job (e.g. s3://my-bucket/catalog). Saving
+            writes and deletes a test object there.
           </FieldDescription>
           <Input
-            onChange={(e) => setBaseUrl(e.target.value)}
+            className="font-mono"
+            onChange={(e) => setUrl(e.target.value)}
             placeholder="s3://my-bucket/catalog"
-            value={baseUrl}
+            value={url}
           />
         </Field>
       </SectionBody>
 
       <SectionFooter className="justify-end">
         <Button
-          disabled={!cloudAccountId || !baseUrl.trim()}
-          isLoading={save.isPending}
-          onClick={() => save.mutate()}
+          disabled={!credential || !url.trim()}
+          isLoading={create.isPending || update.isPending}
+          onClick={save}
           size="sm"
         >
-          Save
+          Validate and save
         </Button>
       </SectionFooter>
     </SectionRoot>

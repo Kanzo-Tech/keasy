@@ -2,7 +2,7 @@
 
 import { Fragment, useState } from "react";
 import { useSession } from "@kanzo-tech/auth";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2, LogOut, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -51,10 +51,9 @@ import {
   useSidebar,
 } from "@kanzo-tech/ui";
 
-import { api } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
-import { workspaceRole } from "@/lib/roles";
-import { generateBreadcrumbs, getSidebarRoutes, ROLE_LABEL } from "@/lib/route-config";
+import { $api } from "@/lib/api/client";
+import { ROLE_LABEL, workspaceRole } from "@/lib/auth/roles";
+import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";
 
 const titleCase = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
@@ -91,10 +90,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const { data: workspacesData } = useQuery({
-    queryKey: queryKeys.workspaces,
-    queryFn: api.auth.workspaces,
-  });
+  const { data: workspacesData } = $api.useQuery("get", "/v1/auth/workspaces");
 
   const role = workspaceRole(session) ?? "member";
   const routes = getSidebarRoutes(role);
@@ -137,7 +133,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                         <SidebarIdentityLabel>
                           {switching ? `Switching to ${switching}…` : workspaceName}
                         </SidebarIdentityLabel>
-                        <SidebarIdentityDescription>{ROLE_LABEL[role] ?? role}</SidebarIdentityDescription>
+                        <SidebarIdentityDescription>{ROLE_LABEL[role]}</SidebarIdentityDescription>
                       </SidebarIdentityText>
                     </SidebarIdentity>
                     <Show when={workspaces.length > 1}>

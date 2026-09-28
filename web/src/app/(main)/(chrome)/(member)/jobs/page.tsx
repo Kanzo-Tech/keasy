@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Briefcase, MoreHorizontal, Plus } from "lucide-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Badge,
   Button,
@@ -33,11 +32,12 @@ import {
   sortableHeader,
   useDataTable,
 } from "@kanzo-tech/ui/table";
-import { api } from "@/lib/api";
-import { formatDate, formatJobDuration } from "@/lib/formatters";
-import { queryKeys } from "@/lib/query-keys";
-import type { Job, JobStatus } from "@/lib/types";
-import { hasRunningJobs, isTerminalStatus } from "@/lib/utils";
+import { $api, invalidate, type Schemas } from "@/lib/api/client";
+import { formatDate, formatJobDuration } from "@/lib/ui/format";
+import { hasRunningJobs, isTerminalStatus } from "@/lib/jobs";
+
+type Job = Schemas["Job"];
+type JobStatus = Schemas["JobStatus"];
 
 const STATUS: Record<JobStatus, { label: string; variant: React.ComponentProps<typeof Badge>["variant"] }> = {
   draft: { label: "Draft", variant: "secondary" },
@@ -50,22 +50,22 @@ const STATUS: Record<JobStatus, { label: string; variant: React.ComponentProps<t
 
 export default function JobsPage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
 
-  const { data: jobs = [] } = useQuery({
-    queryKey: queryKeys.jobs.all,
-    queryFn: api.jobs.list,
+  const { data: jobs = [] } = $api.useQuery("get", "/v1/jobs", {}, {
     refetchInterval: (query) => (hasRunningJobs(query.state.data) ? 2000 : 0),
   });
 
-  const { mutate: remove } = useMutation({
-    mutationFn: (id: string) => api.jobs.remove(id),
+  const { mutate: deleteJob } = $api.useMutation("delete", "/v1/jobs/{id}", {
     onSuccess: () => {
       toast.create({ title: "Job deleted", type: "success" });
-      queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
+      void invalidate("/v1/jobs");
     },
     onError: () => toast.create({ title: "Failed to delete job", type: "error" }),
   });
+  const remove = useCallback(
+    (id: string) => deleteJob({ params: { path: { id } } }),
+    [deleteJob],
+  );
 
   const columns = useMemo<ColumnDef<Job>[]>(
     () => [
@@ -85,13 +85,6 @@ export default function JobsPage() {
           return <Badge variant={variant}>{label}</Badge>;
         },
         filterFn: (row, id, value: string[]) => value.includes(row.getValue(id)),
-      },
-      {
-        accessorKey: "mode",
-        header: "Mode",
-        cell: ({ getValue }) => (
-          <span className="text-muted-foreground capitalize">{getValue<string>()}</span>
-        ),
       },
       {
         accessorKey: "created_at",

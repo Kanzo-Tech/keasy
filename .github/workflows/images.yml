@@ -31,8 +31,10 @@ jobs:
         include:
           - name: keasy-server
             context: server
+            file: server/Dockerfile
           - name: keasy-web
-            context: web
+            context: .
+            file: web/Dockerfile
     steps:
       - uses: actions/checkout@v4
 
@@ -56,6 +58,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

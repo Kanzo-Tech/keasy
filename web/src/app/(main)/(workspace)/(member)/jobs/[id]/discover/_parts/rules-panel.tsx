@@ -15,9 +15,9 @@ import {
   ScrollArea,
   Spinner,
 } from "@kanzo-tech/ui";
-import { useMosaic } from "@kanzo-tech/ui/analytics";
-import type { GraphSchema } from "@/lib/graph-schema";
-import { type Rule, type RuleResult, runRules } from "@/lib/rule-engine";
+import { useCorpus } from "./corpus";
+import type { SchemaResult } from "@fossil-lang/corpus";
+import { type Rule, type RuleResult, runRules } from "./rule-engine";
 import { EntitySelect, FieldSelect, OperatorSelect, ValueInput } from "./rule-fields";
 
 interface RulesState {
@@ -36,15 +36,15 @@ function createRulesStore(jobId: string) {
   );
 }
 
-export function RulesPanel({ jobId, schema }: { jobId: string; schema: GraphSchema }) {
-  const { coordinator } = useMosaic();
+export function RulesPanel({ jobId, schema }: { jobId: string; schema: SchemaResult }) {
+  const { coordinator, relation } = useCorpus();
   const [useRules] = useState(() => createRulesStore(jobId));
   const { rules, results, running } = useRules();
 
   const add = () => {
-    const t = schema.types[0];
+    const t = schema.vertices[0];
     if (!t?.fields[0]) return;
-    const rule: Rule = { id: crypto.randomUUID(), fieldKey: t.fields[0].name, operator: "not_null", typeName: t.name };
+    const rule: Rule = { id: crypto.randomUUID(), fieldKey: t.fields[0], operator: "not_null", typeName: t.name };
     useRules.setState((s) => ({ rules: [...s.rules, rule] }));
   };
   const update = (id: string, updated: Rule) =>
@@ -60,6 +60,7 @@ export function RulesPanel({ jobId, schema }: { jobId: string; schema: GraphSche
     try {
       const results = await runRules(rules, async (q) =>
         (await coordinator.query(q, { type: "json" })) as unknown as Record<string, unknown>[],
+        relation,
       );
       useRules.setState({ results });
     } finally {
@@ -79,7 +80,7 @@ export function RulesPanel({ jobId, schema }: { jobId: string; schema: GraphSche
         <ItemTitle>No rules</ItemTitle>
         <ItemDescription>Add data quality rules to validate your dataset.</ItemDescription>
         <ItemActions>
-          <Button disabled={schema.types.length === 0} onClick={add} size="sm" variant="outline">
+          <Button disabled={schema.vertices.length === 0} onClick={add} size="sm" variant="outline">
             <Plus /> Add rule
           </Button>
         </ItemActions>

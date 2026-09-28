@@ -1,57 +1,29 @@
-import createClient, { type Middleware } from "openapi-fetch";
-import type { paths, components } from "./schema";
+import { createApiClient, type paths } from "@keasy/api";
+import createQueryHooks from "openapi-react-query";
 
-export class ApiError extends Error {
-  constructor(
-    public readonly code: string,
-    message: string,
-    public readonly status?: number,
-  ) {
-    super(message);
-  }
-}
+import { queryClient } from "./query-client";
+import { auth } from "./session";
 
-const envelopeMiddleware: Middleware = {
-  async onResponse({ response }) {
-    if (!response.ok) {
-      const body = await response.clone().json().catch(() => null);
-      const code =
-        (typeof body?.error === "string" ? body.error : body?.error?.code) ??
-        "unknown";
-      const message =
-        (typeof body?.error === "string"
-          ? body?.message
-          : body?.error?.message) ?? `Request failed (${response.status})`;
-      throw new ApiError(code, message, response.status);
-    }
+export { ApiError } from "@keasy/api";
+export type { ErrorCode, Inputs, Schemas, paths } from "@keasy/api";
 
-    if (response.status === 204) {
-      return undefined;
-    }
+/**
+ * The one runtime client. `paths` is the interface: every call names a spec
+ * path, and a non-2xx has already thrown an `ApiError` by the time it returns.
+ * Same origin: `/api/v1` is the BFF, which attaches the session's bearer token.
+ */
+export const http = createApiClient({ baseUrl: "/api", fetch: auth.fetch });
 
-    // Unwrap { "data": ... } envelope
-    const json = await response.clone().json().catch(() => null);
-    if (json === null) return undefined;
-    const unwrapped = json?.data !== undefined ? json.data : json;
-    return new Response(JSON.stringify(unwrapped), {
-      status: response.status,
-      headers: { "Content-Type": "application/json" },
-    });
-  },
-};
+/** React Query bound to `http`; its keys are `[method, path, init]`. */
+export const $api = createQueryHooks(http);
 
-const client = createClient<paths>({ baseUrl: "/" });
-client.use(envelopeMiddleware);
+type GetPath = {
+  [P in keyof paths]: paths[P] extends { get: object } ? P : never;
+}[keyof paths];
 
-export default client;
-export type { paths, components };
-export type Schemas = components["schemas"];
-
-export function unwrap<T>(result: { data?: T; error?: unknown }): T {
-  if (result.error !== undefined) {
-    throw result.error instanceof Error
-      ? result.error
-      : new ApiError("unknown", String(result.error));
-  }
-  return result.data as T;
+/** Drop every cached read under these paths, whatever its params. */
+export function invalidate(...resources: GetPath[]): Promise<void> {
+  return Promise.all(
+    resources.map((path) => queryClient.invalidateQueries({ queryKey: ["get", path] })),
+  ).then(() => undefined);
 }

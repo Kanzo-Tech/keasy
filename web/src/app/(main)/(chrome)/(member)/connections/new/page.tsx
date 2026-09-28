@@ -3,29 +3,14 @@
 import { use, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Badge,
   Button,
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
   createListCollection,
   Field,
   FieldDescription,
   FieldLabel,
   FieldRequiredIndicator,
-  Float,
   Input,
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-  InputGroupText,
-  RadioGroup,
-  RadioGroupCard,
-  RadioGroupText,
   SectionBody,
   SectionFooter,
   SectionRoot,
@@ -35,106 +20,61 @@ import {
   SelectTrigger,
   SelectValue,
   toast,
-  useFilter,
 } from "@kanzo-tech/ui";
-import { useBeforeUnload } from "@/hooks/use-before-unload";
-import { api } from "@/lib/api";
-import { getProviderIcon } from "@/lib/provider-icons";
-import { queryKeys } from "@/lib/query-keys";
-import { toastError } from "@/lib/toast-error";
-import type { ConnectionKind, LocationType } from "@/lib/types";
+import { initialValues, SpecForm, toBody } from "@/components/spec-form";
+import { schemaOf } from "@/lib/api/spec";
+import { useBeforeUnload } from "@/lib/ui/use-before-unload";
+import { $api, type Inputs, invalidate } from "@/lib/api/client";
+import { specOf } from "@/lib/connections";
+import { getProviderIcon } from "@/lib/ui/provider-icons";
+import { toastError } from "@/lib/errors";
 
-/** URL schemes per provider; the first is the default. */
-const PROVIDER_SCHEMES: Record<string, string[]> = {
-  azure: ["az://", "azure://", "abfss://", "abfs://", "adl://"],
-  s3: ["s3://"],
-};
-const NO_SCHEMES: string[] = [];
+type Tab = "data" | "vocab" | "model";
 
-const PROVIDER_PLACEHOLDERS: Record<string, string> = {
-  azure: "my-container",
-  s3: "my-bucket/prefix/",
-};
-
-export default function NewConnectionPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ type?: ConnectionKind }>;
-}) {
+/** A member's connection: a source (the sink is the owner's) or a model. */
+export default function NewConnectionPage({ searchParams }: { searchParams: Promise<{ type?: Tab }> }) {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { type = "data" } = use(searchParams);
+  const purpose = type === "model" ? "model" : "storage";
+  const schema = schemaOf(purpose === "storage" ? "StorageTarget" : "ModelTarget");
+  const omit = purpose === "storage" ? ["direction"] : [];
 
-  const { data } = useQuery({ queryKey: queryKeys.cloud.accounts, queryFn: api.cloud.list });
-  // Memoised: a fresh `[]` each render would rebuild every collection below.
-  const accounts = useMemo(() => data ?? [], [data]);
-
-  const [name, setName] = useState("");
-  const [kind, setKind] = useState<ConnectionKind>(type);
-  const [locationType, setLocationType] = useState<LocationType>("cloud");
-  const [accountId, setAccountId] = useState("");
-  const [url, setUrl] = useState("");
-  // Tagged with the account it was picked for, so switching account falls back to that
-  // provider's default scheme without an effect.
-  const [schemeChoice, setSchemeChoice] = useState<{ account: string; scheme: string } | null>(null);
-
-  const account = accounts.find((a) => a.id === accountId);
-  const schemes = useMemo(
-    () => (account ? (PROVIDER_SCHEMES[account.provider_id] ?? NO_SCHEMES) : NO_SCHEMES),
-    [account],
-  );
-  const scheme = schemeChoice?.account === accountId ? schemeChoice.scheme : (schemes[0] ?? "");
-  const placeholder =
-    locationType === "local"
-      ? "/data/uploads/project/"
-      : ((account && PROVIDER_PLACEHOLDERS[account.provider_id]) ?? "Container URL");
-
-  // Derived from the query rather than seeded through `useListCollection`, whose own state
-  // would keep the `[]` of the first render of an async list.
-  const { contains } = useFilter({ sensitivity: "base" });
-  const [accountQuery, setAccountQuery] = useState("");
-  const accountCollection = useMemo(
+  const { data: credentials = [] } = $api.useQuery("get", "/v1/credentials", {
+    params: { query: { purpose } },
+  });
+  const collection = useMemo(
     () =>
       createListCollection({
-        items: accounts
-          .filter((a) => contains(a.name, accountQuery))
-          .map((a) => ({ label: a.name, provider: a.provider_id, value: a.id })),
+        items: credentials.map((c) => ({ label: c.name, value: c.name, kind: String(specOf(c).spec.kind) })),
       }),
-    [accounts, accountQuery, contains],
-  );
-  const schemeCollection = useMemo(
-    () => createListCollection({ items: schemes.map((s) => ({ label: s, value: s })) }),
-    [schemes],
+    [credentials],
   );
 
-  const create = useMutation({
-    mutationFn: () =>
-      api.connections.create({
-        name: name.trim(),
-        kind,
-        location_type: locationType,
-        cloud_account_id: locationType === "cloud" ? accountId : undefined,
-        url: locationType === "cloud" ? `${scheme}${url.trim()}` : url.trim(),
-      }),
+  const [name, setName] = useState("");
+  const [credential, setCredential] = useState("");
+  const [values, setValues] = useState(() =>
+    initialValues(schema, purpose === "storage" ? { kind: type } : undefined),
+  );
+  const inner = toBody(schema, values, omit);
+
+  const create = $api.useMutation("post", "/v1/connections", {
     onSuccess: async () => {
-      toast.create({ title: "Connection created", type: "success" });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.connections.all() });
-      router.push(`/connections?type=${kind}`);
+      toast.create({ title: "Connection validated and created", type: "success" });
+      await invalidate("/v1/connections", "/v1/credentials");
+      router.push(`/connections?type=${type}`);
     },
-    onError: (err) => toastError(err, "Failed to create connection"),
+    onError: (err) => toastError(err, "The connection was not created"),
   });
   const creating = create.isPending || create.isSuccess;
+  useBeforeUnload(!!(name || credential) && !creating);
 
-  useBeforeUnload(!!(name || url || accountId) && !creating);
-
-  const urlInput = (
-    <Input
-      className="font-mono"
-      onChange={(e) => setUrl(e.target.value)}
-      placeholder={placeholder}
-      value={url}
-    />
-  );
+  const submit = () => {
+    if (!inner) return;
+    const target = { [purpose]: purpose === "storage" ? { ...inner, direction: "source" } : inner };
+    create.mutate({
+      body: { name: name.trim(), credential, target: target as unknown as Inputs["ConnectionTarget"] },
+    });
+  };
 
   return (
     <SectionRoot>
@@ -145,169 +85,59 @@ export default function NewConnectionPage({
             <FieldRequiredIndicator />
           </FieldLabel>
           <FieldDescription>
-            Used as identifier in @references (e.g. @my-connection/file.csv)
+            {purpose === "storage"
+              ? "Used as identifier in @references (e.g. @my-connection/file.csv)"
+              : "What the assistant and Discovery call it by"}
           </FieldDescription>
           <Input onChange={(e) => setName(e.target.value)} placeholder="e.g. hr-data" value={name} />
         </Field>
 
         <Field required>
           <FieldLabel>
-            Type
+            Credential
             <FieldRequiredIndicator />
           </FieldLabel>
-          <RadioGroup
-            className="*:items-start"
-            columns={2}
-            onValueChange={(details) => setKind((details.value ?? "data") as ConnectionKind)}
-            value={kind}
-          >
-            <RadioGroupCard className="flex-col gap-1" value="data">
-              <RadioGroupText className="font-medium text-sm leading-none">Data</RadioGroupText>
-              <span className="text-muted-foreground text-xs">Read/write data for fossil pipelines</span>
-            </RadioGroupCard>
-            <RadioGroupCard className="flex-col gap-1" value="vocab">
-              <RadioGroupText className="font-medium text-sm leading-none">Vocabulary</RadioGroupText>
-              <span className="text-muted-foreground text-xs">RDF vocabularies and ontologies</span>
-            </RadioGroupCard>
-          </RadioGroup>
+          {credentials.length === 0 ? (
+            <p className="text-muted-foreground text-xs">
+              No {purpose === "storage" ? "storage" : "AI"} credentials yet.{" "}
+              <Link
+                className="text-primary hover:underline"
+                href={`/settings/credentials/new?purpose=${purpose}`}
+              >
+                Add one first
+              </Link>
+              .
+            </p>
+          ) : (
+            <Select
+              collection={collection}
+              onValueChange={(details) => setCredential(details.value[0] ?? "")}
+              value={credential ? [credential] : []}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a credential" />
+              </SelectTrigger>
+              <SelectContent>
+                {collection.items.map((item) => {
+                  const Icon = getProviderIcon(item.kind);
+                  return (
+                    <SelectItem item={item} key={item.value}>
+                      <Icon className="size-3.5 opacity-60" />
+                      {item.label}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          )}
         </Field>
 
-        <Field required>
-          <FieldLabel>
-            Location
-            <FieldRequiredIndicator />
-          </FieldLabel>
-          <RadioGroup
-            className="*:items-start"
-            columns={2}
-            onValueChange={(details) => setLocationType((details.value ?? "cloud") as LocationType)}
-            value={locationType}
-          >
-            <RadioGroupCard className="flex-col gap-1" value="cloud">
-              <RadioGroupText className="font-medium text-sm leading-none">Cloud</RadioGroupText>
-              <span className="text-muted-foreground text-xs">S3 or Azure storage</span>
-            </RadioGroupCard>
-            {/* `h-full` on both wrappers keeps the gated card as tall as its grid neighbour. */}
-            <div className="relative h-full">
-              <div className="pointer-events-none h-full opacity-50" inert>
-                <RadioGroupCard className="h-full flex-col gap-1" disabled value="local">
-                  <RadioGroupText className="font-medium text-sm leading-none">Local</RadioGroupText>
-                  <span className="text-muted-foreground text-xs">Local filesystem path</span>
-                </RadioGroupCard>
-              </div>
-              <Float className="-end-2 -top-2" placement="top-end">
-                <Badge size="xs">Coming soon</Badge>
-              </Float>
-            </div>
-          </RadioGroup>
-        </Field>
-
-        {locationType === "cloud" ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field required>
-              <FieldLabel>
-                Cloud Account
-                <FieldRequiredIndicator />
-              </FieldLabel>
-              {accounts.length === 0 ? (
-                <p className="text-muted-foreground text-xs">
-                  No cloud accounts configured.{" "}
-                  <Link className="text-primary hover:underline" href="/settings/cloud-accounts">
-                    Create one first
-                  </Link>
-                  .
-                </p>
-              ) : (
-                <Combobox
-                  collection={accountCollection}
-                  onInputValueChange={(details) => setAccountQuery(details.inputValue)}
-                  onValueChange={(details) => setAccountId(details.value[0] ?? "")}
-                  value={accountId ? [accountId] : []}
-                >
-                  <ComboboxInput placeholder="Select account..." />
-                  <ComboboxContent>
-                    <ComboboxEmpty>No accounts found.</ComboboxEmpty>
-                    {accountCollection.items.map((item) => {
-                      const Icon = getProviderIcon(item.provider);
-                      return (
-                        <ComboboxItem item={item} key={item.value}>
-                          {item.label}
-                          <Icon className="ms-auto size-3.5 opacity-60" />
-                        </ComboboxItem>
-                      );
-                    })}
-                  </ComboboxContent>
-                </Combobox>
-              )}
-            </Field>
-            <Field required>
-              <FieldLabel>
-                URL
-                <FieldRequiredIndicator />
-              </FieldLabel>
-              {schemes.length === 1 ? (
-                <InputGroup>
-                  <InputGroupAddon>
-                    <InputGroupText className="font-mono">{scheme}</InputGroupText>
-                  </InputGroupAddon>
-                  <InputGroupInput
-                    className="font-mono"
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder={placeholder}
-                    value={url}
-                  />
-                </InputGroup>
-              ) : schemes.length > 1 ? (
-                <div className="flex">
-                  <Select
-                    collection={schemeCollection}
-                    onValueChange={(details) =>
-                      setSchemeChoice({ account: accountId, scheme: details.value[0] ?? "" })
-                    }
-                    value={scheme ? [scheme] : []}
-                  >
-                    <SelectTrigger className="w-auto shrink-0 rounded-e-none border-e-0 font-mono">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {schemeCollection.items.map((item) => (
-                        <SelectItem className="font-mono" item={item} key={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    className="flex-1 rounded-s-none font-mono"
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder={placeholder}
-                    value={url}
-                  />
-                </div>
-              ) : (
-                urlInput
-              )}
-            </Field>
-          </div>
-        ) : (
-          <Field required>
-            <FieldLabel>
-              URL
-              <FieldRequiredIndicator />
-            </FieldLabel>
-            {urlInput}
-          </Field>
-        )}
+        <SpecForm omit={omit} onChange={setValues} schema={schema} value={values} />
       </SectionBody>
 
       <SectionFooter className="justify-end">
-        <Button
-          disabled={!name.trim() || !url.trim() || (locationType === "cloud" && !accountId)}
-          isLoading={creating}
-          onClick={() => create.mutate()}
-          size="sm"
-        >
-          Create
+        <Button disabled={!name.trim() || !credential || !inner} isLoading={creating} onClick={submit} size="sm">
+          Validate and create
         </Button>
       </SectionFooter>
     </SectionRoot>

@@ -2,15 +2,8 @@
 
 import { useMemo } from "react";
 import {
-  Badge,
   Field,
   FieldDescription,
-  FieldLabel,
-  Float,
-  RadioGroup,
-  RadioGroupCard,
-  RadioGroupIndicator,
-  RadioGroupText,
   Select,
   SelectContent,
   SelectItem,
@@ -18,16 +11,12 @@ import {
   SelectValue,
   Separator,
   Show,
-  Switch,
   createListCollection,
 } from "@kanzo-tech/ui";
-import { CalendarClock, Zap } from "lucide-react";
-import type { Connection, RunMode } from "@/lib/types";
+import type { StorageConnection } from "@/lib/connections";
 
 export interface ConfigValues {
-  mode: RunMode;
   sinkConnectionId: string | null;
-  dcatEnabled: boolean;
 }
 
 /** One setting, said the way a settings page says it: what it is on the left, the
@@ -54,7 +43,7 @@ function Setting({
 }
 
 /**
- * When this job runs, and where the graph it produces is written.
+ * Where the graph this job produces is written.
  *
  * It was a narrow stack of hand-rolled `FormField`s around controlled inputs —
  * three settings in a column with a great deal of nothing either side. This is
@@ -71,16 +60,12 @@ export function StudioConfigure({
   onChange,
   jobName,
   connections,
-  orgConfigured,
-  orgName,
 }: {
   values: ConfigValues;
   onChange: (patch: Partial<ConfigValues>) => void;
   /** Only to show the path the output will actually land on. */
   jobName: string;
-  connections: Connection[];
-  orgConfigured: boolean;
-  orgName: string | null;
+  connections: StorageConnection[];
 }) {
   const set = <K extends keyof ConfigValues>(key: K, value: ConfigValues[K]) =>
     onChange({ [key]: value } as Partial<ConfigValues>);
@@ -91,12 +76,12 @@ export function StudioConfigure({
   const destinations = useMemo(
     () =>
       createListCollection({
-        items: sinks.map((c) => ({ label: `@${c.name}`, value: c.id, url: c.url })),
+        items: sinks.map((c) => ({ label: `@${c.name}`, value: c.name, url: c.url })),
       }),
     [sinks],
   );
 
-  const destination = sinks.find((c) => c.id === values.sinkConnectionId);
+  const destination = sinks.find((c) => c.name === values.sinkConnectionId);
   const slug = (jobName || "unnamed-job").trim().toLowerCase().replace(/\s+/g, "-");
 
   return (
@@ -104,54 +89,9 @@ export function StudioConfigure({
       <div className="flex flex-col gap-1">
         <h2 className="font-heading font-semibold text-lg">Configure</h2>
         <p className="text-muted-foreground text-sm">
-          When this job runs, and where the graph it produces is written.
+          Where the graph this job produces is written.
         </p>
       </div>
-
-      <Separator />
-
-      <Setting
-        description="Integrated jobs run once, as soon as they are created. A schedule repeats them."
-        title="Run mode"
-      >
-        <RadioGroup
-          columns={2}
-          onValueChange={(d) => d.value && set("mode", d.value as RunMode)}
-          value={values.mode}
-        >
-          <RadioGroupCard className="items-start" value="integrated">
-            <Zap className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <RadioGroupText>Integrated</RadioGroupText>
-              <span className="text-muted-foreground text-xs leading-snug">
-                Runs as soon as it is created.
-              </span>
-            </div>
-            <RadioGroupIndicator className="order-last mt-0.5 ms-auto" />
-          </RadioGroupCard>
-
-          {/* Not shipped, and the badge says so ON the control rather than
-              leaving `disabled` to mean whatever a reader guesses. `Float` over
-              a `relative` box is the whole of it. */}
-          <div className="relative">
-            <RadioGroupCard className="h-full items-start" disabled value="scheduled">
-              <CalendarClock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <RadioGroupText>Scheduled</RadioGroupText>
-                <span className="text-muted-foreground text-xs leading-snug">
-                  Runs on a cron you define.
-                </span>
-              </div>
-              <RadioGroupIndicator className="order-last mt-0.5 ms-auto" />
-            </RadioGroupCard>
-            <Float className="-end-2 -top-2" placement="top-end">
-              <Badge size="xs" variant="secondary">
-                Coming soon
-              </Badge>
-            </Float>
-          </div>
-        </RadioGroup>
-      </Setting>
 
       <Separator />
 
@@ -197,26 +137,6 @@ export function StudioConfigure({
               </code>
             </Show>
           </FieldDescription>
-        </Field>
-      </Setting>
-
-      <Separator />
-
-      <Setting
-        description={
-          orgConfigured
-            ? `Publishes a DCAT-AP record for ${orgName} alongside the graph, so the datasets are discoverable in a catalogue.`
-            : "Publishes a DCAT-AP record alongside the graph. It names the publisher, so it needs the organisation's identity configured first."
-        }
-        title="Catalogue"
-      >
-        <Field disabled={!orgConfigured} orientation="horizontal">
-          <FieldLabel className="w-fit flex-1">Publish a DCAT-AP record</FieldLabel>
-          <Switch
-            checked={values.dcatEnabled && orgConfigured}
-            disabled={!orgConfigured}
-            onCheckedChange={(d) => set("dcatEnabled", d.checked)}
-          />
         </Field>
       </Setting>
     </div>

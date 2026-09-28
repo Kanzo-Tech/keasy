@@ -11,6 +11,7 @@ import {
   AlertDescription,
   AlertTitle,
   Button,
+  FormatByte,
   Field,
   FieldDescription,
   FieldLabel,
@@ -47,14 +48,21 @@ import {
   selectColumn,
   useDataTable,
 } from "@kanzo-tech/ui/table";
-import { api } from "@/lib/api";
-import { type SseFrame, failOnError } from "@/lib/api/sse";
-import { formatSize } from "@/lib/formatters";
-import { connectionPath, describeSources } from "@/lib/fossil/describe-sources";
-import { queryKeys } from "@/lib/query-keys";
-import type { CompetencyQuestion, Connection, FileSchema, ProviderInfo } from "@/lib/types";
-import { readableFiles } from "@/lib/utils";
+import { $api } from "@/lib/api/client";
+import { type CompletionRequest, streamText } from "@/lib/ai/stream";
+import {
+  type CompetencyQuestion,
+  generateRequest,
+  parseScript,
+  parseSuggestions,
+  suggestRequest,
+} from "./assistant-prompts";
+import * as checker from "@/lib/fossil/checker";
+import { connectionPath, describeSources, sourceDescriptorsKey } from "./describe-sources";
+import { providerFor } from "@/lib/fossil/providers";
+import type { StorageConnection } from "@/lib/connections";
 
+type Connection = StorageConnection;
 type Selection = Record<string, boolean>;
 type ConnectionFile = { path: string; size: number };
 
@@ -92,27 +100,30 @@ const FILE_COLUMNS: ColumnDef<ConnectionFile>[] = [
     accessorKey: "size",
     header: () => <div className="text-end">Size</div>,
     cell: ({ row }) => (
-      <div className="text-end text-muted-foreground text-xs">{formatSize(row.original.size)}</div>
+      <div className="text-end text-muted-foreground text-xs"><FormatByte unitSystem="binary" value={row.original.size} /></div>
     ),
   },
 ];
 
-/** keasy's SSE frames through the library's stream: deltas accumulate, `complete` is the result. */
-function useScriptStream() {
-  const stream = useAiStream<SseFrame>();
+/** One model call through the library's stream: deltas accumulate, and the whole text is the result. */
+function useModelStream() {
+  const stream = useAiStream<string>();
   const [text, setText] = useState("");
   const { run } = stream;
 
   const start = useCallback(
-    <T,>(source: (signal: AbortSignal) => AsyncGenerator<SseFrame>, onComplete: (result: T) => void) => {
+    (request: CompletionRequest, onComplete: (text: string) => void) => {
       setText("");
+      let full = "";
       void run(
-        (signal) => failOnError(source(signal)),
-        (frame) => {
-          if (frame.event === "delta") setText((prev) => prev + frame.data);
-          else if (frame.event === "complete") onComplete(JSON.parse(frame.data) as T);
+        (signal) => streamText(request, signal),
+        (delta) => {
+          full += delta;
+          setText((prev) => prev + delta);
         },
-      );
+      ).then((status) => {
+        if (status === "ready") onComplete(full);
+      });
     },
     [run],
   );
@@ -165,7 +176,7 @@ export function AssistantWizard({
 }: {
   onComplete: (script: string) => void;
   connections: Connection[];
-  providers: ProviderInfo[];
+  providers: checker.ProviderInfo[];
 }) {
   const [step, setStep] = useState(0);
   // Per connection, once the member has touched it; untouched means every readable file.
@@ -177,21 +188,20 @@ export function AssistantWizard({
   const connectionTable = useDataTable({
     columns: CONNECTION_COLUMNS,
     data: dataConnections,
-    getRowId: (c) => c.id,
+    getRowId: (c) => c.name,
   });
   const selected = connectionTable.getSelectedRowModel().rows.map((row) => row.original);
-  const cloud = selected.filter((c) => c.location_type === "cloud");
+  const cloud = selected;
 
   const listings = useQueries({
-    queries: cloud.map((c) => ({
-      queryKey: queryKeys.connections.files(c.id),
-      queryFn: () => api.connections.files(c.id),
-    })),
+    queries: cloud.map((c) =>
+      $api.queryOptions("get", "/v1/connections/{name}/files", { params: { path: { name: c.name } } }),
+    ),
   });
   const readable = cloud.map((connection, i) => {
-    const files = readableFiles(listings[i]?.data ?? [], providers, "data");
+    const files = (listings[i]?.data ?? []).filter((f) => providerFor(f.path, "data", providers));
     const selection =
-      fileSelection[connection.id] ?? Object.fromEntries(files.map((f) => [f.path, true]));
+      fileSelection[connection.name] ?? Object.fromEntries(files.map((f) => [f.path, true]));
     return { connection, files, selection, loading: listings[i]?.isPending ?? true };
   });
   const picked = readable.flatMap(({ connection, files, selection }) =>
@@ -200,40 +210,21 @@ export function AssistantWizard({
 
   // The picked files, written as the source bindings the generated program will
   // hold and described the way the editor describes a program's sources.
-  const constructorByExt = new Map(
-    providers
-      .filter((p) => p.kind === "data" || p.kind === "both")
-      .flatMap((p) => p.extensions.map((ext) => [ext, p.name] as const)),
-  );
   const bindings = picked.flatMap(({ connection, path }) => {
-    const constructor = constructorByExt.get(path.split(".").pop()?.toLowerCase() ?? "");
-    return constructor
-      ? [{ connection, path, constructor, uri: `@${connection.name}/${connectionPath(connection, path)}` }]
+    const provider = providerFor(path, "data", providers);
+    return provider
+      ? [{ constructor: provider.name, uri: `@${connection.name}/${connectionPath(connection, path)}` }]
       : [];
   });
   const program = bindings.map((b, i) => `f${i} := io.${b.constructor}("${b.uri}")`).join("\n");
   const described = useQuery({
-    queryKey: queryKeys.sourceDescriptors(
-      bindings.map((b) => b.uri),
-      connections.map((c) => c.id),
-    ),
-    queryFn: () => describeSources(program, connections),
+    queryKey: sourceDescriptorsKey(bindings.map((b) => b.uri)),
+    queryFn: async () => describeSources(await (await checker.jobProgram()).sources(program)),
     enabled: step > 0 && bindings.length > 0,
   });
   const schemasReady =
     readable.every((r) => !r.loading) && (bindings.length === 0 || !described.isPending);
-  const schemas: FileSchema[] = bindings.flatMap(({ connection, path, uri }) => {
-    const descriptor = described.data?.find((d) => d.uri === uri);
-    return descriptor
-      ? [
-          {
-            connection_name: connection.name,
-            file_path: path,
-            columns: descriptor.columns.map((c) => ({ name: c.name, data_type: c.primitive })),
-          },
-        ]
-      : [];
-  });
+  const schemas = described.data ?? [];
 
   const reqColumns = useMemo<ColumnDef<CompetencyQuestion>[]>(
     () => [
@@ -295,26 +286,21 @@ export function AssistantWizard({
     .rows.map((row) => row.original.question.trim())
     .filter(Boolean);
 
-  const suggest = useScriptStream();
-  const generate = useScriptStream();
+  const suggest = useModelStream();
+  const generate = useModelStream();
 
   const askForRequirements = () =>
-    suggest.start<{ competency_questions: CompetencyQuestion[] }>(
-      (signal) => api.assistant.suggestStream({ domain, schemas }, signal),
-      ({ competency_questions }) => {
-        setReqs(competency_questions);
-        reqTable.setRowSelection(Object.fromEntries(competency_questions.map((q) => [q.id, true])));
-      },
-    );
+    suggest.start(suggestRequest(domain, schemas), (text) => {
+      const suggested = parseSuggestions(text);
+      setReqs(suggested);
+      reqTable.setRowSelection(Object.fromEntries(suggested.map((q) => [q.id, true])));
+    });
 
   const generateProgram = () =>
-    generate.start<{ script: string }>(
-      (signal) => api.assistant.generateStream({ domain, competency_questions: questions, schemas }, signal),
-      ({ script }) => {
-        onComplete(script);
-        toast.create({ title: "Script generated — review before submitting", type: "success" });
-      },
-    );
+    generate.start(generateRequest(domain, questions, schemas), (text) => {
+      onComplete(parseScript(text));
+      toast.create({ title: "Script generated — review before submitting", type: "success" });
+    });
 
   const addRequirement = () => {
     const id = `custom-${Date.now()}`;
@@ -376,7 +362,7 @@ export function AssistantWizard({
             <p className="text-muted-foreground text-sm">Select the data connections to include.</p>
             <DataTableRoot table={connectionTable}>
               <DataTableContent<Connection>
-                onRowClick={(c) => connectionTable.getRow(c.id).toggleSelected()}
+                onRowClick={(c) => connectionTable.getRow(c.name).toggleSelected()}
               />
               <DataTablePagination />
             </DataTableRoot>
@@ -384,9 +370,9 @@ export function AssistantWizard({
               <ConnectionFiles
                 connection={connection}
                 files={files}
-                key={connection.id}
+                key={connection.name}
                 loading={loading}
-                onSelectionChange={(next) => setFileSelection((prev) => ({ ...prev, [connection.id]: next }))}
+                onSelectionChange={(next) => setFileSelection((prev) => ({ ...prev, [connection.name]: next }))}
                 selection={selection}
               />
             ))}

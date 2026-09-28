@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { Boxes, Table2 } from "lucide-react";
 
 import {
@@ -27,16 +26,11 @@ import {
   TableHeader,
   TableRow,
 } from "@kanzo-tech/ui";
-import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { api } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
-import type { CatalogDataset } from "@/lib/types";
+import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
+import { $api, type Schemas } from "@/lib/api/client";
 
 export default function DatasetsPage() {
-  const { data: datasets, isLoading } = useQuery({
-    queryKey: queryKeys.catalog.datasets,
-    queryFn: api.catalog.datasets,
-  });
+  const { data: datasets, isLoading } = $api.useQuery("get", "/v1/datasets");
   const showSkeleton = useDelayedLoading(isLoading);
 
   return (
@@ -47,9 +41,8 @@ export default function DatasetsPage() {
             Data Catalog
           </SectionTitle>
           <SectionDescription>
-            Every dataset registered in the workspace catalog — the metadata view of what each
-            completed job produced. The data itself stays at its sink; this is the governance
-            index over it.
+            Every dataset the workspace produced — the metadata view of what each completed job
+            wrote. The data itself stays at its sink.
           </SectionDescription>
         </SectionTitleGroup>
       </SectionHeader>
@@ -69,9 +62,9 @@ export default function DatasetsPage() {
             >
               <Boxes />
             </ItemMedia>
-            <ItemTitle className="text-base">No datasets registered yet</ItemTitle>
+            <ItemTitle className="text-base">No datasets yet</ItemTitle>
             <ItemDescription>
-              When a job completes, its output is registered here automatically.
+              When a job completes, its output is listed here automatically.
             </ItemDescription>
           </Item>
         ) : (
@@ -82,18 +75,18 @@ export default function DatasetsPage() {
   );
 }
 
-function DatasetCard({ dataset }: { dataset: CatalogDataset }) {
-  const totalRows = dataset.tables.reduce((sum, t) => sum + (t.rows ?? 0), 0);
+function DatasetCard({ dataset }: { dataset: Schemas["Dataset"] }) {
+  const totalRows = dataset.relations.reduce((sum, r) => sum + (r.rows ?? 0), 0);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-mono text-sm">
           <Boxes size={15} className="text-muted-foreground" />
-          {dataset.job_id}
+          {dataset.name ?? dataset.job_id}
         </CardTitle>
         <span className="text-xs text-muted-foreground">
-          {dataset.tables.length} {dataset.tables.length === 1 ? "type" : "types"} ·{" "}
+          {dataset.relations.length} {dataset.relations.length === 1 ? "type" : "types"} ·{" "}
           {totalRows.toLocaleString()} rows
         </span>
       </CardHeader>
@@ -107,20 +100,20 @@ function DatasetCard({ dataset }: { dataset: CatalogDataset }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {dataset.tables.map((table) => (
-              <TableRow key={table.name}>
+            {dataset.relations.map((relation) => (
+              <TableRow key={relation.name}>
                 <TableCell className="font-medium">
                   <span className="flex items-center gap-2">
                     <Table2 size={14} className="text-muted-foreground" />
-                    {table.name}
+                    {relation.name}
                   </span>
                 </TableCell>
                 <TableCell className="text-right tabular-nums text-muted-foreground">
-                  {table.rows?.toLocaleString() ?? "—"}
+                  {relation.rows?.toLocaleString() ?? "—"}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    {table.columns.map((col) => (
+                    {relation.columns?.map((col) => (
                       <Badge key={col.name} variant="secondary" className="font-normal">
                         {col.name}
                         <span className="ml-1 text-muted-foreground">{col.data_type.toLowerCase()}</span>

@@ -4,15 +4,11 @@ import { use } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertCircle, Compass } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
   Button,
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
   DataList,
   DataListItem,
   DataListItemLabel,
@@ -23,27 +19,26 @@ import {
   SectionRoot,
   Skeleton,
 } from "@kanzo-tech/ui";
-import { useDelayedLoading } from "@/hooks/use-delayed-loading";
-import { api } from "@/lib/api";
-import { getErrorInfo } from "@/lib/error-codes";
-import { useBrowserJobRunner } from "@/lib/fossil/use-browser-job-runner";
-import { formatDuration } from "@/lib/formatters";
-import { queryKeys } from "@/lib/query-keys";
-import { isTerminalStatus } from "@/lib/utils";
+import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
+import { $api } from "@/lib/api/client";
+import { storageConnections } from "@/lib/connections";
+import { useBrowserJobRunner } from "@/app/(main)/(chrome)/(member)/jobs/[id]/_parts/use-browser-job-runner";
+import { formatDate, formatJobDuration } from "@/lib/ui/format";
+import { isTerminalStatus } from "@/lib/jobs";
 
 export default function JobPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
-  const { data: job, isLoading } = useQuery({
-    queryKey: queryKeys.jobs.detail(id),
-    queryFn: () => api.jobs.get(id),
-    refetchInterval: (query) =>
-      query.state.data && !isTerminalStatus(query.state.data.status) ? 3000 : false,
-  });
-  const { data: connections = [] } = useQuery({
-    queryKey: queryKeys.connections.all(),
-    queryFn: () => api.connections.list(),
-  });
+  const { data: job, isLoading } = $api.useQuery(
+    "get",
+    "/v1/jobs/{id}",
+    { params: { path: { id } } },
+    {
+      refetchInterval: (query) =>
+        query.state.data && !isTerminalStatus(query.state.data.status) ? 3000 : false,
+    },
+  );
+  const { data: connections = [] } = $api.useQuery("get", "/v1/connections");
 
   // A `pending` job runs here, in the browser; the server never runs the mapping.
   useBrowserJobRunner(job);
@@ -62,8 +57,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
   }
   if (!job) notFound();
 
-  const sink = connections.find((c) => c.id === job.sink_connection_id);
-  const error = job.error && getErrorInfo(job.error.code);
+  const sink = storageConnections(connections).find((c) => c.name === job.sink_connection);
 
   return (
     <SectionRoot>
@@ -87,14 +81,14 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
           </DataListItem>
           <DataListItem>
             <DataListItemLabel>Created</DataListItemLabel>
-            <DataListItemValue>{new Date(job.created_at).toLocaleString()}</DataListItemValue>
+            <DataListItemValue>{formatDate(job.created_at)}</DataListItemValue>
           </DataListItem>
           {job.started_at && (
             <DataListItem>
               <DataListItemLabel>Run</DataListItemLabel>
               <DataListItemValue>
                 {new Date(job.started_at).toLocaleTimeString()} (
-                {job.completed_at ? formatDuration(job.started_at, job.completed_at) : "running"})
+                {job.completed_at ? formatJobDuration(job) : "running"})
               </DataListItemValue>
             </DataListItem>
           )}
@@ -106,26 +100,12 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
           )}
         </DataList>
 
-        {job.error && error && (
+        {job.error && (
           <Alert variant="destructive">
             <AlertCircle />
-            <AlertTitle>{error.message}</AlertTitle>
+            <AlertTitle>The run failed</AlertTitle>
             <AlertDescription>
-              {error.link && (
-                <Button asChild className="w-fit" size="sm" variant="outline">
-                  <Link href={error.link.href}>{error.link.label}</Link>
-                </Button>
-              )}
-              {job.error.detail && (
-                <Collapsible>
-                  <CollapsibleTrigger className="text-xs underline underline-offset-2">
-                    Technical details
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <pre className="mt-2 whitespace-pre-wrap font-mono text-xs">{job.error.detail}</pre>
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
+              <pre className="whitespace-pre-wrap font-mono text-xs">{job.error}</pre>
             </AlertDescription>
           </Alert>
         )}

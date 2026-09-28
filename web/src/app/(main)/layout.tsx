@@ -1,7 +1,7 @@
 import { forbidden, redirect } from "next/navigation";
 import { SidebarProvider } from "@kanzo-tech/ui";
-import { getSession } from "@/lib/auth";
-import { workspaceRole } from "@/lib/roles";
+import { getSession } from "@/lib/auth/server";
+import { workspaceRole } from "@/lib/auth/roles";
 import { Shell } from "./shell";
 
 /**

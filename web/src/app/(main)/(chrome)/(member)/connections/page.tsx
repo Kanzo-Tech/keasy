@@ -3,8 +3,7 @@
 import { use, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, Database, MoreHorizontal, Plus } from "lucide-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BookOpen, Database, MoreHorizontal, Plus, Sparkles } from "lucide-react";
 import {
   Badge,
   Button,
@@ -36,37 +35,49 @@ import {
   sortableHeader,
   useDataTable,
 } from "@kanzo-tech/ui/table";
-import { api } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
-import { toastError } from "@/lib/toast-error";
-import type { Connection, ConnectionKind } from "@/lib/types";
+import { ValidationBadge } from "@/components/validation-badge";
+import { $api, invalidate } from "@/lib/api/client";
+import { type Connection, modelOf, storageOf } from "@/lib/connections";
+import { toastError } from "@/lib/errors";
+
+/** A tab: a storage connection's kind, or the model connections. */
+type Tab = "data" | "vocab" | "model";
 
 export default function ConnectionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: ConnectionKind }>;
+  searchParams: Promise<{ type?: Tab }>;
 }) {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { type: tab = "data" } = use(searchParams);
-  const noun = tab === "data" ? "data" : "vocabulary";
+  const noun = { data: "data", vocab: "vocabulary", model: "model" }[tab];
 
-  const { data: connections = [] } = useQuery({
-    queryKey: queryKeys.connections.all(tab),
-    queryFn: () => api.connections.list(tab),
-  });
-  const { data: accounts = [] } = useQuery({
-    queryKey: queryKeys.cloud.accounts,
-    queryFn: api.cloud.list,
-  });
+  const { data: all = [] } = $api.useQuery("get", "/v1/connections");
+  // The sink is the owner's, on Catalog Storage.
+  const connections = useMemo(
+    () =>
+      all.filter((c) => {
+        const storage = storageOf(c);
+        return tab === "model" ? !!modelOf(c) : storage?.kind === tab && storage.direction === "source";
+      }),
+    [all, tab],
+  );
 
-  const { mutate: remove } = useMutation({
-    mutationFn: api.connections.remove,
+  const refresh = () => invalidate("/v1/connections", "/v1/credentials");
+  const { mutate: remove } = $api.useMutation("delete", "/v1/connections/{name}", {
     onSuccess: () => {
       toast.create({ title: "Connection deleted", type: "success" });
-      queryClient.invalidateQueries({ queryKey: queryKeys.connections.all(tab) });
+      return refresh();
     },
     onError: (err) => toastError(err, "Failed to delete connection"),
+  });
+  const { mutate: validate } = $api.useMutation("post", "/v1/connections/{name}/validate", {
+    onSuccess: (report) => {
+      const failed = report.results.some((c) => c.result === "fail");
+      toast.create({ title: failed ? "Validation failed" : "Validation passed", type: failed ? "error" : "success" });
+      return refresh();
+    },
+    onError: (err) => toastError(err, "Failed to validate"),
   });
 
   const columns = useMemo<ColumnDef<Connection>[]>(
@@ -78,24 +89,23 @@ export default function ConnectionsPage({
         cell: ({ getValue }) => <span className="font-medium">{getValue<string>()}</span>,
       },
       {
-        id: "location",
-        header: "Location",
-        cell: ({ row }) =>
-          row.original.location_type === "cloud" && row.original.cloud_account_id ? (
-            <span className="text-muted-foreground">
-              {accounts.find((a) => a.id === row.original.cloud_account_id)?.name ??
-                row.original.cloud_account_id}
-            </span>
-          ) : (
-            <Badge variant="outline">Local</Badge>
-          ),
+        accessorKey: "credential",
+        header: "Credential",
+        cell: ({ getValue }) => <Badge variant="outline">{getValue<string>()}</Badge>,
       },
       {
-        accessorKey: "url",
-        header: "URL",
-        cell: ({ getValue }) => (
-          <span className="font-mono text-muted-foreground text-xs">{getValue<string>()}</span>
+        id: "target",
+        header: tab === "model" ? "Model" : "URL",
+        cell: ({ row }) => (
+          <span className="font-mono text-muted-foreground text-xs">
+            {storageOf(row.original)?.url ?? modelOf(row.original)?.model ?? "provider default"}
+          </span>
         ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <ValidationBadge report={row.original.validation} />,
       },
       {
         id: "actions",
@@ -116,7 +126,17 @@ export default function ConnectionsPage({
                 </Button>
               </MenuTrigger>
               <MenuContent>
-                <MenuItem onSelect={() => remove(row.original.id)} value="delete" variant="destructive">
+                <MenuItem
+                  onSelect={() => validate({ params: { path: { name: row.original.name } } })}
+                  value="validate"
+                >
+                  Test
+                </MenuItem>
+                <MenuItem
+                  onSelect={() => remove({ params: { path: { name: row.original.name } } })}
+                  value="delete"
+                  variant="destructive"
+                >
                   Delete
                 </MenuItem>
               </MenuContent>
@@ -125,7 +145,7 @@ export default function ConnectionsPage({
         ),
       },
     ],
-    [accounts, remove],
+    [remove, tab, validate],
   );
   const table = useDataTable({ columns, data: connections });
 
@@ -142,6 +162,10 @@ export default function ConnectionsPage({
               <BookOpen />
               Vocabulary
             </TabsTrigger>
+            <TabsTrigger value="model">
+              <Sparkles />
+              Models
+            </TabsTrigger>
           </TabsList>
 
           {connections.length === 0 ? (
@@ -150,7 +174,7 @@ export default function ConnectionsPage({
                 className="group-has-data-[slot=item-description]/item:self-center text-muted-foreground [&_svg:not([class*='size-'])]:size-8"
                 variant="icon"
               >
-                {tab === "data" ? <Database /> : <BookOpen />}
+                {{ data: <Database />, vocab: <BookOpen />, model: <Sparkles /> }[tab]}
               </ItemMedia>
               <ItemTitle className="text-base">No {noun} connections</ItemTitle>
               <ItemDescription>Create a {noun} connection to get started.</ItemDescription>
@@ -176,7 +200,7 @@ export default function ConnectionsPage({
               </DataTableToolbar>
               <DataTableContent<Connection>
                 empty="No connections match this filter."
-                onRowClick={(conn) => router.push(`/connections/${conn.id}`)}
+                onRowClick={(conn) => router.push(`/connections/${encodeURIComponent(conn.name)}`)}
               />
               <DataTablePagination />
             </DataTableRoot>

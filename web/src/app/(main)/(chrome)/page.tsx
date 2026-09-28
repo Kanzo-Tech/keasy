@@ -1,6 +1,6 @@
 import { SectionBody, SectionRoot } from "@kanzo-tech/ui";
-import { getSession } from "@/lib/auth";
-import { workspaceRole } from "@/lib/roles";
+import { getSession } from "@/lib/auth/server";
+import { workspaceRole } from "@/lib/auth/roles";
 import { MemberDashboard, OwnerDashboard } from "./dashboards";
 
 export default async function HomePage() {

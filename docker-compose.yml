@@ -1,15 +1,16 @@
-# Base compose — shared config for all environments.
-# Use with an overlay: docker compose -f docker-compose.yml -f docker-compose.{dev,prod}.yml up
+# The dev stack. Every value is a dev literal; prod is infra/terraform.
+#
+# `*.localhost` is loopback on the host and a network alias here, so one URL
+# works from the browser and from a container: Keycloak's issuer and MinIO's
+# presigned URLs are both addressed that way.
 
 services:
-  # ── Infrastructure ──────────────────────────────────────────────────────────
-
   keycloak-postgres:
     image: postgres:15
     environment:
       POSTGRES_DB: keycloak
       POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: ${KC_DB_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: keycloak
     volumes:
       - keycloak-postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -18,24 +19,27 @@ services:
       timeout: 5s
       retries: 5
 
+  # Boots empty; keycloak-realm provisions it with the Terraform prod applies.
+  # Its own origin, like prod's auth host.
   keycloak:
-    # Boots EMPTY — the keycloak-realm service below provisions it with the SAME
-    # Terraform prod applies. Same pin as infra/terraform/platform.
-    image: ${KEASY_KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.2}
+    image: quay.io/keycloak/keycloak:26.2
     command: ["start-dev"]
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
       KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-changeme}
-      KC_HOSTNAME: http://localhost:3000/auth
-      KC_HOSTNAME_STRICT: "false"
-      KC_HTTP_ENABLED: "true"
-      KC_HTTP_RELATIVE_PATH: /auth
+      KC_DB_PASSWORD: keycloak
+      KC_HOSTNAME: http://keycloak.localhost:8180
+      KC_HTTP_PORT: "8180"
       KC_HEALTH_ENABLED: "true"
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-changeme}
-      KC_PROXY_HEADERS: xforwarded
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "8180:8180"
+    networks:
+      default:
+        aliases:
+          - keycloak.localhost
     depends_on:
       keycloak-postgres:
         condition: service_healthy
@@ -43,106 +47,94 @@ services:
       test:
         [
           "CMD-SHELL",
-          "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nhost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'",
+          "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nhost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'",
         ]
-      interval: 30s
+      interval: 10s
       timeout: 10s
-      retries: 10
+      retries: 30
       start_period: 300s
 
-  # ── Realm provisioning — the SAME Terraform realm module as prod ─────────────
-  # deploy_stacks=false: identity only; the app runs as the compose services below.
-  # Its state lives in a volume, so `make clean` resets it with Keycloak's database
-  # and it never mixes with the checkout's prod state (`make deploy-realm`).
+  # The realm module prod applies, with dev.tfvars. State lives in a volume, so
+  # `make clean` resets it together with Keycloak's database.
   keycloak-realm:
-    image: ${KEASY_TERRAFORM_IMAGE:-hashicorp/terraform:1.9}
+    image: hashicorp/terraform:1.9
     restart: "no"
     working_dir: /work
     entrypoint: ["/bin/sh", "-ec"]
     command:
-      - terraform init -input=false && terraform apply -input=false -auto-approve -state=/state/terraform.tfstate -var-file=dev.tfvars -var kc_admin_password="$$KC_ADMIN_PASSWORD"
+      - terraform init -input=false && terraform apply -input=false -auto-approve -state=/state/terraform.tfstate -var-file=dev.tfvars
     volumes:
       - ./infra/terraform/realm:/work
       - keycloak-realm-state:/state
     environment:
       TF_DATA_DIR: /state/.terraform
-      KC_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-changeme}
     depends_on:
       keycloak:
         condition: service_healthy
-
-  # ── Application ─────────────────────────────────────────────────────────────
 
   server:
-    # The API is NOT published here. The browser reaches it through the web's
-    # `/v1` proxy, which is the only process holding a credential; a published
-    # 8080 is a way around that, so the dev overlay opens it (for curl) and the
-    # prod overlay does not.
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev
+    # Published for curl only; the app reaches the API through the web's `/api/v1`.
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./server/src:/src/server/src
+      - keasy-data:/var/lib/keasy
+      - ./infra/dev/bootstrap.json:/etc/keasy/bootstrap.json:ro
+      - server-target:/src/server/target
+      - cargo-registry:/usr/local/cargo/registry
     environment:
-      KEASY_BIND_ADDR: "0.0.0.0:8080"
+      RUST_LOG: debug
       KEASY_DATA_DIR: /var/lib/keasy
-      # DEV-ONLY placeholder. Prod injects it as a Swarm secret (*_FILE); never
-      # commit a real secret here.
-      # 32 bytes in base64 — "dev-only-insecure-secret-key!!!!". DEV-ONLY.
-      KEASY_SECRET_KEY: ${KEASY_SECRET_KEY:-ZGV2LW9ubHktaW5zZWN1cmUtc2VjcmV0LWtleSEhISE=}
-      # Dev runs as the `dev` tenant (provisioned by the realm module / dev.tfvars).
+      # "dev-only-insecure-secret-key!!!!" in base64.
+      KEASY_SECRET_KEY: ZGV2LW9ubHktaW5zZWN1cmUtc2VjcmV0LWtleSEhISE=
       KEASY_ORG_ALIAS: dev
       KEASY_WORKSPACE_NAME: Dev Workspace
-      # The server is a RESOURCE SERVER: it validates a bearer token and holds no
-      # client secret, no session and no cookie. The relying party is the web.
-      KEASY_OIDC_ISSUER_URL: http://localhost:3000/auth/realms/keasy
+      KEASY_OIDC_ISSUER_URL: http://keycloak.localhost:8180/realms/keasy
       KEASY_OIDC_CLIENT_ID: keasy-ws-dev
-      KEASY_OIDC_AUDIENCE: keasy-api
-      KEASY_OIDC_INTERNAL_BASE_URL: http://keycloak:8080
-    volumes:
-      - keasy-data:/var/lib/keasy
+      # The MinIO credential, its data and shapes sources and the sink, in the
+      # API's own request format.
+      KEASY_BOOTSTRAP_FILE: /etc/keasy/bootstrap.json
     depends_on:
-      keycloak:
-        condition: service_healthy
       keycloak-realm:
+        condition: service_completed_successfully
+      minio-init:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/healthz/live"]
-      interval: 30s
+      interval: 10s
       timeout: 5s
-      start_period: 5s
-      retries: 3
+      retries: 30
+      # The first `up` after `make clean` compiles every dependency.
+      start_period: 900s
 
   web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./web/src:/app/web/src
+      # The contract (@keasy/api) whole — spec, types and client — so `make api` reaches
+      # the running web; its node_modules stay the image's.
+      - ./api:/app/api
+      - /app/api/node_modules
     environment:
-      # Where the BFF forwards `/v1` once it has attached the bearer token.
       KEASY_API_URL: http://server:8080
-      # The confidential client: the web is the relying party now.
-      KEASY_OIDC_ISSUER_URL: http://localhost:3000/auth/realms/keasy
+      KEASY_OIDC_ISSUER_URL: http://keycloak.localhost:8180/realms/keasy
       KEASY_OIDC_CLIENT_ID: keasy-ws-dev
-      KEASY_OIDC_CLIENT_SECRET: ${KEASY_OIDC_CLIENT_SECRET:-keasy-dev-secret}
-      KEASY_OIDC_INTERNAL_BASE_URL: http://keycloak:8080
-      # Seals the session cookie. DEV-ONLY placeholder; prod mounts a Swarm
-      # secret at KEASY_SESSION_SECRET_FILE.
-      KEASY_SESSION_SECRET: ${KEASY_SESSION_SECRET:-dev-only-insecure-session-secret-change-me}
-      # The cookie carries a ticket; the tokens behind it live here.
+      # dev.tfvars fixes it.
+      KEASY_OIDC_CLIENT_SECRET: keasy-dev-secret
+      KEASY_SESSION_SECRET: dev-only-insecure-session-secret-change-me
       KEASY_SESSION_STORE_URL: redis://valkey:6379
     depends_on:
       server:
         condition: service_healthy
       valkey:
         condition: service_healthy
-      keycloak-realm:
-        condition: service_completed_successfully
-    healthcheck:
-      # `/` redirects to a route only Caddy can reach, so don't follow it: any
-      # answer below 500 means Next is serving.
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://localhost:3000/',{redirect:'manual'}).then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))",
-        ]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
 
   valkey:
     image: valkey/valkey:8.1-alpine
@@ -152,17 +144,49 @@ services:
       timeout: 3s
       retries: 10
 
-  caddy:
-    image: caddy:2-alpine
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "3000:3000"
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      default:
+        aliases:
+          - minio.localhost
     volumes:
-      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  # Idempotent, so a re-`up` converges. Every file in the seed directory lands.
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+    restart: "no"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        mc alias set dev http://minio:9000 minioadmin minioadmin
+        mc mb --ignore-existing dev/keasy-dev
+        mc cp --recursive /seed/ dev/keasy-dev/
+        mc ls --recursive dev/keasy-dev
+    volumes:
+      - ./infra/dev/seed:/seed:ro
     depends_on:
-      keycloak:
+      minio:
         condition: service_healthy
 
 volumes:
   keasy-data:
   keycloak-postgres-data:
   keycloak-realm-state:
+  server-target:
+  cargo-registry:
+  minio-data:

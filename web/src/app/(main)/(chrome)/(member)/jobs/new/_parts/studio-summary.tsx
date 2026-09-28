@@ -18,7 +18,7 @@ import {
 import { Check, Shapes } from "lucide-react";
 import type { CheckRow, SourceRefInfo } from "@/lib/fossil/checker";
 import type { ConfigValues } from "./studio-configure";
-import type { Connection } from "@/lib/types";
+import type { StorageConnection } from "@/lib/connections";
 
 /** LSP severity: 1 error, 2 warning, 3 information, 4 hint. */
 const SEVERITY_LABEL = ["error", "error", "warning", "info", "hint"] as const;
@@ -49,14 +49,14 @@ export function StudioSummary({
 }: {
   name: string;
   values: ConfigValues;
-  connections: Connection[];
+  connections: StorageConnection[];
   refs: SourceRefInfo[];
   findings: readonly CheckRow[];
   blocked: boolean;
   creating: boolean;
   onCreate: () => void;
 }) {
-  const destination = connections.find((c) => c.id === values.sinkConnectionId);
+  const destination = connections.find((c) => c.name === values.sinkConnectionId);
   const errors = findings.filter((f) => f.severity === 1).length;
 
   return (
@@ -64,14 +64,13 @@ export function StudioSummary({
       <div className="flex flex-col gap-1">
         <h2 className="font-heading font-semibold text-lg">What this job reads</h2>
         <p className="text-muted-foreground text-sm">
-          {refs.length} reference{refs.length === 1 ? "" : "s"} · runs {values.mode} · landing in{" "}
+          {refs.length} reference{refs.length === 1 ? "" : "s"} · landing in{" "}
           <Show
             fallback={<span className="text-destructive">no destination</span>}
             when={!!destination}
           >
             <span className="font-mono">@{destination?.name}</span>
           </Show>
-          {values.dcatEnabled ? " · with a DCAT-AP record" : ""}
         </p>
       </div>
 

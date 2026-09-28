@@ -2,7 +2,7 @@
 
 import { Swatch, ToggleGroup, ToggleGroupItem } from "@kanzo-tech/ui";
 import { scaleOf } from "@kanzo-tech/graph";
-import type { VertexType } from "@/lib/graph-schema";
+import type { VertexTypeSummary } from "@fossil-lang/corpus";
 import type { UndrawnSummary } from "./corpus-source";
 
 /**
@@ -19,7 +19,7 @@ export function ClassLegend({
   onChange,
   undrawn,
 }: {
-  types: VertexType[];
+  types: VertexTypeSummary[];
   value: string | null;
   onChange: (type: string) => void;
   undrawn: UndrawnSummary;
@@ -40,7 +40,7 @@ export function ClassLegend({
           <ToggleGroupItem className="justify-start gap-1.5 px-1.5 text-xs" key={t.name} value={t.name}>
             <Swatch color={scale.color(i)} shape="round" size="xs" />
             <span className="flex-1 truncate text-start">{t.name}</span>
-            <span className="text-muted-foreground tabular-nums">{t.entityCount.toLocaleString()}</span>
+            <span className="text-muted-foreground tabular-nums">{t.count.toLocaleString()}</span>
           </ToggleGroupItem>
         ))}
       </ToggleGroup>

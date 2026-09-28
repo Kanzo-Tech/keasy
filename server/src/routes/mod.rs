@@ -1,202 +1,38 @@
-pub mod health;
-pub mod org;
+pub mod ai;
+pub mod connections;
+pub mod credentials;
+pub mod datasets;
+pub mod health_check;
+pub mod jobs;
+pub mod workspaces;
 
-use axum::extract::DefaultBodyLimit;
-use axum::http::HeaderValue;
-use axum::http::header::{self, HeaderName};
-use axum::{Router, middleware};
-use tower::ServiceBuilder;
-use tower_http::set_header::SetResponseHeaderLayer;
-use tower_http::trace::{DefaultOnResponse, TraceLayer};
+use axum::http::StatusCode;
+use axum::http::header::{CACHE_CONTROL, LOCATION};
+use axum::response::{IntoResponse, Response};
+use url::Url;
 
-use crate::AppState;
-use crate::auth::bearer::bearer_required;
+use crate::storage_client::SIGNED_URL_EXPIRES;
 
-pub fn build_router(state: AppState) -> Router {
-    let health_routes = Router::new()
-        .route("/healthz/live", axum::routing::get(health::liveness))
-        .route("/healthz/ready", axum::routing::get(health::readiness))
-        .route("/version", axum::routing::get(health::version))
-        .with_state(state.clone());
-
-    let public_api_routes = Router::new()
-        .route(
-            "/v1/settings/schema",
-            axum::routing::get(crate::settings::routes::get_schema),
-        )
-        .with_state(state.clone());
-
-    // Behind a verified token. Each handler's role extractor says whom it admits;
-    // the workspace list admits a verified caller with no role here, who still
-    // needs to be told where they do belong.
-    let api_routes = Router::new()
-        .route(
-            "/v1/auth/workspaces",
-            axum::routing::get(crate::auth::routes::list_workspaces),
-        )
-        .route(
-            "/v1/jobs",
-            axum::routing::get(crate::jobs::routes::list_jobs)
-                .post(crate::jobs::routes::create_job),
-        )
-        .route(
-            "/v1/jobs/{id}",
-            axum::routing::get(crate::jobs::routes::get_job)
-                .put(crate::jobs::routes::update_job)
-                .patch(crate::jobs::routes::complete_job)
-                .delete(crate::jobs::routes::delete_job),
-        )
-        .route(
-            "/v1/settings/organization",
-            axum::routing::get(crate::settings::routes::get_org_settings)
-                .put(crate::settings::routes::save_org_settings),
-        )
-        .route(
-            "/v1/settings/catalog-storage",
-            axum::routing::get(crate::settings::routes::get_catalog_storage)
-                .put(crate::settings::routes::save_catalog_storage),
-        )
-        .route(
-            "/v1/settings/ai/providers",
-            axum::routing::get(crate::settings::routes::list_ai_providers),
-        )
-        .route(
-            "/v1/settings/ai/providers/{provider}",
-            axum::routing::put(crate::settings::routes::save_ai_provider)
-                .delete(crate::settings::routes::delete_ai_provider),
-        )
-        .route(
-            "/v1/jobs/{id}/output/urls",
-            axum::routing::post(crate::discovery::routes::resolve_output_urls),
-        )
-        .route(
-            "/v1/jobs/{id}/source-refs",
-            axum::routing::get(crate::discovery::routes::resolve_source_refs),
-        )
-        .route(
-            "/v1/jobs/{id}/sources/urls",
-            axum::routing::post(crate::discovery::routes::resolve_source_urls),
-        )
-        .route(
-            "/v1/jobs/{id}/discover/urls",
-            axum::routing::post(crate::discovery::routes::resolve_discover_urls),
-        )
-        .route(
-            "/v1/jobs/{id}/relations",
-            axum::routing::put(crate::jobs::routes::publish_relations),
-        )
-        .route(
-            "/v1/catalog/datasets",
-            axum::routing::get(crate::catalog::routes::list_catalog_datasets),
-        )
-        .route(
-            "/v1/jobs/{id}/discover/ask-stream",
-            axum::routing::post(crate::ai::routes::ask_discover_stream),
-        )
-        .route(
-            "/v1/cloud-accounts",
-            axum::routing::get(crate::cloud::routes::list_accounts)
-                .post(crate::cloud::routes::create_account),
-        )
-        .route(
-            "/v1/cloud-accounts/{id}",
-            axum::routing::get(crate::cloud::routes::get_account)
-                .put(crate::cloud::routes::update_account)
-                .delete(crate::cloud::routes::delete_account),
-        )
-        .route(
-            "/v1/connections",
-            axum::routing::get(crate::connections::routes::list_connections)
-                .post(crate::connections::routes::create_connection),
-        )
-        .route(
-            "/v1/connections/{id}",
-            axum::routing::get(crate::connections::routes::get_connection)
-                .delete(crate::connections::routes::delete_connection),
-        )
-        .route(
-            "/v1/connections/{id}/files",
-            axum::routing::get(crate::connections::routes::list_connection_files),
-        )
-        .route(
-            "/v1/connections/{id}/urls",
-            axum::routing::post(crate::connections::routes::sign_connection_urls),
-        )
-        // Assistant (SSE streaming)
-        .route(
-            "/v1/assistant/suggest-stream",
-            axum::routing::post(crate::assistant::routes::suggest_cqs_stream),
-        )
-        .route(
-            "/v1/assistant/generate-stream",
-            axum::routing::post(crate::assistant::routes::generate_script_stream),
-        )
-        .route(
-            "/v1/org/identity",
-            axum::routing::get(org::get_org_identity).put(org::update_org_identity),
-        )
-        .layer(middleware::from_fn_with_state(
-            state.clone(),
-            bearer_required,
-        ))
-        .with_state(state);
-
-    let security_headers = ServiceBuilder::new()
-        .layer(SetResponseHeaderLayer::overriding(
-            header::X_CONTENT_TYPE_OPTIONS,
-            HeaderValue::from_static("nosniff"),
-        ))
-        .layer(SetResponseHeaderLayer::overriding(
-            header::X_FRAME_OPTIONS,
-            HeaderValue::from_static("DENY"),
-        ))
-        .layer(SetResponseHeaderLayer::overriding(
-            HeaderName::from_static("x-xss-protection"),
-            HeaderValue::from_static("1; mode=block"),
-        ))
-        .layer(SetResponseHeaderLayer::overriding(
-            header::STRICT_TRANSPORT_SECURITY,
-            HeaderValue::from_static("max-age=31536000; includeSubDomains"),
-        ));
-
-    // Rate limiting, relaxed in dev.
-    let (rps, burst) = if cfg!(debug_assertions) {
-        (100, 500)
-    } else {
-        (20, 100)
-    };
-    let governor_conf = tower_governor::governor::GovernorConfigBuilder::default()
-        .per_second(rps)
-        .burst_size(burst)
-        .finish()
-        .unwrap();
-
-    // Rate-limited routes (excludes health checks so LB probes don't eat the budget)
-    let rated_routes = Router::new()
-        .merge(public_api_routes)
-        .merge(api_routes)
-        .layer(tower_governor::GovernorLayer::new(governor_conf));
-
-    Router::new()
-        .merge(health_routes)
-        .merge(rated_routes)
-        .layer(security_headers)
-        .layer(DefaultBodyLimit::max(2 * 1024 * 1024))
-        .layer(
-            // The one request log. `bearer_required` records `user_id` into this
-            // span once the token verifies, so the response line names the caller.
-            TraceLayer::new_for_http()
-                .make_span_with(|request: &axum::http::Request<_>| {
-                    tracing::info_span!(
-                        "request",
-                        method = %request.method(),
-                        path = %request.uri().path(),
-                        user_id = tracing::field::Empty,
-                    )
-                })
-                .on_response(DefaultOnResponse::new().level(tracing::Level::INFO)),
-        )
+/// A read through keasy: the stable URL a reader holds answers with the
+/// store's URL, signed now for the method asked. The browser keeps the redirect
+/// for half the signature's life, so a reader's range requests go straight to
+/// the store and a lapsed signature is never reused. Uncached, every range
+/// read pays the proxy and a signing (~270 ms in dev against ~1 ms).
+///
+/// The one cost: a browser may answer a HEAD from the redirect it cached for a
+/// GET, whose URL S3 refuses for HEAD. Chrome does so for a HEAD without
+/// `Range` after a ranged GET, never for one with it — and DuckDB-WASM, the
+/// only reader that sends HEAD, always sends `Range: bytes=0-`.
+pub(crate) fn signed_redirect(url: Url) -> Response {
+    (
+        StatusCode::TEMPORARY_REDIRECT,
+        [
+            (LOCATION, url.to_string()),
+            (
+                CACHE_CONTROL,
+                format!("private, max-age={}", SIGNED_URL_EXPIRES.as_secs() / 2),
+            ),
+        ],
+    )
+        .into_response()
 }
-
-#[cfg(test)]
-mod tests;

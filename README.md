@@ -12,6 +12,13 @@ make dev
 
 Open [http://localhost:3000](http://localhost:3000) and log in at Keycloak. The first
 `up` compiles the server's dependencies once; later ones reuse the cached volumes.
+No `.env`: every dev value is a literal in `docker-compose.yml`.
+
+| What | Where |
+|------|-------|
+| App (web BFF, `/api/v1`) | [http://localhost:3000](http://localhost:3000) |
+| Keycloak | [http://keycloak.localhost:8180](http://keycloak.localhost:8180) (admin `admin` / `admin`) |
+| API, for curl | `http://localhost:8080` |
 
 ## Dev accounts
 
@@ -41,28 +48,24 @@ Both are declared in `infra/terraform/realm/dev.tfvars` (`tenants`,
 At boot the instance declares, over that bucket, the **MinIO dev bucket** source
 connection, the **MinIO dev shapes** vocabulary connection (`vocab/`), the sink
 (`output/`). Access is proved before each connection row is written, and an
-existing sink is never overwritten. The draft job **Shop orders**
-(`infra/dev/shop.fossil`) goes to the first member who lists jobs on an instance
-with none — a job belongs to its creator, and at boot there is no one to give it
-to. A member opens the workspace with data, shapes, a destination and a job
-ready to launch.
+existing sink is never overwritten. `infra/dev/shop.fossil` is a program over
+those two connections, ready to paste into a new job.
 
-`minio.localhost` is load-bearing: Docker's DNS answers it inside the compose
-network and `*.localhost` is loopback on the host, so a URL the server presigns
-is one the browser can fetch.
+`minio.localhost` and `keycloak.localhost` are load-bearing: Docker's DNS answers
+them inside the compose network and `*.localhost` is loopback on the host, so a
+URL the server presigns, and the issuer a token names, work from both sides.
 
 ## Architecture
 
 ```mermaid
 graph TD
-    Browser -->|":3000"| Caddy
-    Caddy -->|"/auth/*"| Keycloak["Keycloak (OIDC)"]
-    Caddy -->|"/*"| Web["Web (Next.js BFF)"]
+    Browser --> Web["Web (Next.js BFF)"]
+    Browser -->|"sign-in"| Keycloak["Keycloak (OIDC)"]
     Web -->|"/v1 + bearer token"| Server["Server (Rust/Axum)"]
     Web -->|"OIDC code flow"| Keycloak
     Web -->|"session records"| Valkey[("Valkey")]
     Server -->|"JWKS"| Keycloak
-    Server --> SQLite[("SQLite + DuckLake catalog")]
+    Server --> SQLite[("SQLite")]
     Keycloak --> PostgreSQL[("PostgreSQL")]
 ```
 
@@ -72,28 +75,32 @@ client, keeps the tokens in Valkey (`KEASY_SESSION_STORE_URL`), and gives the
 browser a sealed cookie carrying only the ticket to them.
 The **server** is a resource server: it validates the bearer token against the
 realm's JWKS (`iss`, `aud`, `exp`, `azp`, signature) and holds no client secret,
-no session and no cookie. `/v1` reaches it only through the web.
+no session and no cookie. It is reached only through the web's `/api/v1`.
 
 Mappings run in the browser (DuckDB-WASM + `@fossil-lang/*`), and so does source
 introspection; the server hosts connections, signed URLs, jobs and the catalog,
 and never reads a data file. Every job names a sink as its destination and is
 visible only to the member who created it.
 
+A **credential** (storage: S3 or Azure; model: Anthropic or OpenAI) is who keasy is
+when it reaches a store or a provider; a **connection** puts one to use (a storage
+prefix — a source or the one sink — or a model). Both are validated on every write,
+and a credential in use cannot be deleted. `KEASY_BOOTSTRAP_FILE` declares them at
+boot in the API's own request format (dev: `infra/dev/bootstrap.json`).
+
 Stored credentials are sealed with `KEASY_SECRET_KEY`: 32 random bytes in base64
-(`openssl rand -base64 32`). The server refuses to start without one, and refuses
+(`openssl rand -base64 32`); `keasy-server rekey` seals them again under
+`KEASY_NEW_SECRET_KEY`. The server refuses to start without one, and refuses
 a database whose schema is not the one it ships — there are no migrations; wipe
 the volume (`make clean`) instead.
 
 ## Deployment
 
 Docker Swarm, driven by Terraform — see [`infra/terraform/README.md`](infra/terraform/README.md).
-`make deploy-platform` brings up Traefik, Keycloak and Postgres; `make deploy-realm`
-applies the realm and one server + web stack per tenant declared in
-`realm/terraform.tfvars`. Images are published to GHCR by `.github/workflows/images.yml`
-on `v*` tags, after the server and web CI pass.
-
-`make prod` builds and runs the release Dockerfiles locally, with the dev identity.
-It is not a deployment.
+`make deploy-platform` brings up Traefik, Keycloak (on its own host) and Postgres;
+`make deploy-realm` applies the realm and one server + web + Valkey stack per tenant
+declared in `realm/terraform.tfvars`. Images are published to GHCR by
+`.github/workflows/images.yml` on `v*` tags, after the server and web CI pass.
 
 ## Development
 
@@ -105,28 +112,35 @@ It is not a deployment.
 | `make logs` / `make logs-<svc>` | Tail logs |
 | `make restart` / `make restart-<svc>` | Restart without rebuilding |
 | `make shell-<svc>` | Shell in a container |
-| `make prod` / `make build` | Run / build the release images |
 
-Compose is a base file plus an overlay: `docker-compose.dev.yml` (hot reload,
-MinIO, seed) or `docker-compose.prod.yml` (release images). Every setting has its
-default in compose as `${VAR:-default}`; export a variable to override it.
+`docker-compose.yml` is the dev stack and nothing else. Dev applies the same
+`infra/terraform/realm` module as prod, with `dev.tfvars`.
+The Rust toolchain is pinned once, in `server/rust-toolchain.toml`.
 
-## OpenAPI
+## API contract
 
-The server's `#[utoipa]` annotations are the schema; the web generates its types
-from the committed `openapi.json`.
+The wire types live next to what they describe in `server/src`; each route
+module's `router()` is both its routes and their spec. `api/` (`@keasy/api`) holds
+the committed `openapi.json`, the types generated from it and the client the web
+uses. `server/tests/api/openapi.rs` is a golden test of `openapi.json`, so
+`cargo test` (and CI) fails when it is stale.
 
 ```bash
-cd server && cargo run --quiet --bin openapi   # writes ../openapi.json
-cd web && pnpm run openapi                     # writes src/lib/api/schema.d.ts
+make api   # UPDATE_EXPECT=1 cargo test --test api openapi, then pnpm generate
 ```
 
 ## Layout
 
 ```
-infra/caddy/        the local edge (/auth → Keycloak, everything else → web)
-infra/dev/          MinIO seed and the draft job, dev-only
+api/                @keasy/api: the committed spec, its generated types and the client
+infra/dev/          MinIO seed and an example program, dev-only
 infra/terraform/    platform/ and realm/ — the Swarm deployment, and dev's realm
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)
+  src/main.rs       subcommands: none serves, `rekey` reseals the credentials
+  src/startup.rs    Application, AppState, the router and the spec it publishes
+  src/routes/       one file per resource: handlers with their bodies
+  src/domain/       the records and parse-don't-validate types
+  src/{credentials,connections,jobs}/  persistence and shared behaviour
+  tests/api/        black-box HTTP tests through spawn_app, and the spec golden
 web/                Next.js app and BFF (Dockerfile = release, Dockerfile.dev = HMR)
 ```

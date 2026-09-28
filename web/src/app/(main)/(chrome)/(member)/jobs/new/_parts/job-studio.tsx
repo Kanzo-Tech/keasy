@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Badge,
   Button,
@@ -39,16 +39,16 @@ import {
   toast,
 } from "@kanzo-tech/ui";
 import { ChevronDown, Pencil, PlugZap, Save, X } from "lucide-react";
-import { api } from "@/lib/api";
-import { queryKeys } from "@/lib/query-keys";
-import { toastError } from "@/lib/toast-error";
+import { $api, http, invalidate } from "@/lib/api/client";
+import { storageConnections } from "@/lib/connections";
+import { toastError } from "@/lib/errors";
 import * as checker from "@/lib/fossil/checker";
 import { AssistantWizard } from "./assistant-wizard";
 import { ModePicker } from "./mode-picker";
 import { StudioConfigure, type ConfigValues } from "./studio-configure";
 import { StudioEditor } from "./studio-editor";
 import { StudioSummary } from "./studio-summary";
-import { useBeforeUnload } from "@/hooks/use-before-unload";
+import { useBeforeUnload } from "@/lib/ui/use-before-unload";
 import { useJobEditorStore } from "./job-editor-store";
 
 const STEPS = ["Editor", "Configure", "Summary"] as const;
@@ -73,7 +73,6 @@ const AUTOSAVE_MS = 1500;
  */
 export function JobStudio() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
 
   const store = useJobEditorStore();
@@ -87,39 +86,23 @@ export function JobStudio() {
   // creating a second draft per keystroke pause.
   const [draftId, setDraftId] = useState<string | null>(searchParams.get("draft"));
 
-  const { data: orgIdentity } = useQuery({
-    queryKey: queryKeys.org.identity,
-    queryFn: api.org.identity,
-  });
-  const { data: connections = [] } = useQuery({
-    queryKey: queryKeys.connections.all(),
-    queryFn: () => api.connections.list(),
-  });
-  const { data: providers = [] } = useQuery({
-    queryKey: queryKeys.settings.providers,
-    queryFn: checker.providers,
-  });
+  const { data: allConnections = [] } = $api.useQuery("get", "/v1/connections");
+  const connections = useMemo(() => storageConnections(allConnections), [allConnections]);
+  const { data: providers = [] } = useQuery(checker.providersQuery);
 
-  const orgConfigured = orgIdentity != null && !!orgIdentity.legal_name;
-
-  useEffect(() => {
-    if (orgConfigured) store.setDcatEnabled(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgConfigured]);
-
-  const { data: draftJob } = useQuery({
-    queryKey: queryKeys.jobs.detail(draftId!),
-    queryFn: () => api.jobs.get(draftId!),
-    enabled: !!searchParams.get("draft"),
-  });
+  const { data: draftJob } = $api.useQuery(
+    "get",
+    "/v1/jobs/{id}",
+    { params: { path: { id: draftId! } } },
+    { enabled: !!searchParams.get("draft") },
+  );
 
   useEffect(() => {
     if (!draftJob || draftJob.status !== "draft") return;
     store.restoreDraft(
       draftJob.script ?? "",
       draftJob.name ?? "",
-      draftJob.mode,
-      draftJob.sink_connection_id,
+      draftJob.sink_connection,
     );
     setSaved(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -131,8 +114,7 @@ export function JobStudio() {
   // A job's connections are its program's `@conn` references, read out of
   // fossil's typed lineage — the same parse `fossil refs` runs natively, so the
   // browser and the CLI never disagree about what a job reads. One computation
-  // feeds the rail's "in use" marks, the status strip's count, Summary's list
-  // and the `connection_ids` the create request carries.
+  // feeds the rail's "in use" marks, the status strip's count and Summary's list.
   useEffect(() => {
     let alive = true;
     const id = setTimeout(() => {
@@ -151,17 +133,13 @@ export function JobStudio() {
     () => new Set(refs.map((r) => r.connection).filter((c): c is string => !!c)),
     [refs],
   );
-  const connectionIds = useMemo(
-    () => connections.filter((c) => usedNames.has(c.name)).map((c) => c.id),
-    [connections, usedNames],
-  );
 
   // Every job lands in a sink. With one in the workspace there is nothing to
   // choose, so it is chosen.
   const sinks = useMemo(() => connections.filter((c) => c.direction === "sink"), [connections]);
   useEffect(() => {
     if (sinks.length === 1 && !useJobEditorStore.getState().sinkConnectionId) {
-      store.setSinkConnectionId(sinks[0].id);
+      store.setSinkConnectionId(sinks[0].name);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sinks]);
@@ -176,24 +154,22 @@ export function JobStudio() {
     mutationFn: async () => {
       const name = store.name.trim() || undefined;
       if (draftId) {
-        await api.jobs.update(draftId, { script: store.script, name });
+        await http.PUT("/v1/jobs/{id}", {
+          params: { path: { id: draftId } },
+          body: { script: store.script, name },
+        });
         return draftId;
       }
       if (!destination) throw new Error("Pick a destination before saving");
-      const created = await api.jobs.create({
-        script: store.script,
-        name,
-        mode: store.mode,
-        draft: true,
-        connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
-        sink_connection_id: destination,
+      const { data: created } = await http.POST("/v1/jobs", {
+        body: { script: store.script, name, draft: true, sink_connection: destination },
       });
-      return created.id;
+      return created!.id;
     },
     onSuccess: async (id) => {
       setDraftId(id);
       setSaved(true);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
+      await invalidate("/v1/jobs");
     },
     onError: (err) => toastError(err, "Failed to save draft"),
   });
@@ -217,18 +193,20 @@ export function JobStudio() {
       // The draft becomes the job: keasy has no promote endpoint, so the draft
       // is dropped and the real job created in its place.
       if (!destination) throw new Error("Pick a destination before launching");
-      if (draftId) await api.jobs.remove(draftId).catch(() => {});
-      return api.jobs.create({
-        script: store.script,
-        name: store.name.trim() || undefined,
-        mode: store.mode,
-        dcat_enabled: store.dcatEnabled || undefined,
-        connection_ids: connectionIds.length > 0 ? connectionIds : undefined,
-        sink_connection_id: destination,
+      if (draftId) {
+        await http.DELETE("/v1/jobs/{id}", { params: { path: { id: draftId } } }).catch(() => {});
+      }
+      const { data: job } = await http.POST("/v1/jobs", {
+        body: {
+          script: store.script,
+          name: store.name.trim() || undefined,
+          sink_connection: destination,
+        },
       });
+      return job!;
     },
     onSuccess: async (job) => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
+      await invalidate("/v1/jobs");
       router.push(`/jobs/${job.id}`);
     },
     onError: (err) => toastError(err, "Failed to create job"),
@@ -238,15 +216,11 @@ export function JobStudio() {
   useBeforeUnload(!saved && !submitting);
 
   const config: ConfigValues = {
-    mode: store.mode,
     sinkConnectionId: store.sinkConnectionId,
-    dcatEnabled: store.dcatEnabled,
   };
   const onConfigChange = useCallback((patch: Partial<ConfigValues>) => {
     const s = useJobEditorStore.getState();
-    if (patch.mode !== undefined) s.setMode(patch.mode);
     if (patch.sinkConnectionId !== undefined) s.setSinkConnectionId(patch.sinkConnectionId);
-    if (patch.dcatEnabled !== undefined) s.setDcatEnabled(patch.dcatEnabled);
   }, []);
 
   // ── Before the studio opens ─────────────────────────────────────────────
@@ -389,8 +363,6 @@ export function JobStudio() {
             connections={connections}
             jobName={store.name}
             onChange={onConfigChange}
-            orgConfigured={orgConfigured}
-            orgName={orgIdentity?.legal_name ?? null}
             values={config}
           />
         </StepsContent>

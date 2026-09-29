@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Keasy API",
-    "description": "Keasy host: identity, connections, signed URLs and the job record",
+    "description": "Keasy host: identity, connections, vended credentials and the job record",
     "license": {
       "name": ""
     },
@@ -1563,152 +1563,6 @@
         }
       }
     },
-    "/v1/jobs/{id}/objects": {
-      "get": {
-        "tags": [
-          "Discovery"
-        ],
-        "summary": "Read one object of the dataset: the URL a reader holds for as long as it\nreads, which redirects to the store. GET and HEAD alike — a range reader\nprobes with HEAD, and S3 refuses one sent to a URL signed for GET.",
-        "operationId": "read_output_object",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "path",
-            "in": "query",
-            "description": "A path relative to the dataset (`vertex/Person/tiles.parquet`).",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "307": {
-            "description": "To the object, signed for this request's method"
-          },
-          "400": {
-            "description": "The destination connection is gone, or a path outside the dataset",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Job not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/output/urls": {
-      "post": {
-        "tags": [
-          "Discovery"
-        ],
-        "summary": "Sign PUT URLs so the browser uploads the output it just produced straight to\nthe job's sink.",
-        "operationId": "resolve_output_urls",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DatasetUrlsRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Signed PUT URLs for the output keys",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResolveResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The destination connection is gone, or a path outside the dataset",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Job not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
     "/v1/jobs/{id}/relations": {
       "put": {
         "tags": [
@@ -1767,66 +1621,6 @@
           },
           "404": {
             "description": "Job not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
-    "/v1/objects": {
-      "get": {
-        "tags": [
-          "Connections"
-        ],
-        "summary": "Read what a storage locator names, with the credential of the source that\nholds it: the URL a reader holds for as long as it reads, which redirects\nto the store signed for this request's method. A member reads what every\nsource holds, and the sink only through the job that wrote it.",
-        "operationId": "read_source_object",
-        "parameters": [
-          {
-            "name": "locator",
-            "in": "query",
-            "description": "A locator fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`).",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "307": {
-            "description": "To the object, signed for this request's method"
-          },
-          "400": {
-            "description": "Not a storage locator, or held by several connections",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "No source connection holds the locator",
             "content": {
               "application/json": {
                 "schema": {
@@ -1926,7 +1720,7 @@
       },
       "CompleteJobRequest": {
         "type": "object",
-        "description": "The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running\nthe mapping in the browser (`@fossil-lang/executor`) and uploading the output\nby signed PUT, the client reports the run's outcome. `manifest` is the\nexecutor's run report, stored verbatim and never read.",
+        "description": "The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running\nthe mapping in the browser (`@fossil-lang/executor`) and writing the output\nwith the credential vended for the job, the client reports the run's outcome. `manifest` is the\nexecutor's run report, stored verbatim and never read.",
         "required": [
           "status"
         ],
@@ -2275,21 +2069,6 @@
           }
         }
       },
-      "DatasetUrlsRequest": {
-        "type": "object",
-        "required": [
-          "paths"
-        ],
-        "properties": {
-          "paths": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Paths relative to the dataset: the executor's output, which keasy signs\nas it is handed."
-          }
-        }
-      },
       "Direction": {
         "type": "string",
         "description": "A source is read through `@name/…`; the one sink is where job output lands.",
@@ -2332,7 +2111,6 @@
           "rate_limited",
           "validation_failed",
           "invalid_format",
-          "invalid_path",
           "not_found",
           "forbidden",
           "internal_error",
@@ -2348,7 +2126,6 @@
           "probe_failed",
           "list_files_failed",
           "store_error",
-          "sign_error",
           "ai_not_configured",
           "ai_connection_required",
           "insufficient_credits",
@@ -2660,24 +2437,6 @@
           },
           "name": {
             "type": "string"
-          }
-        }
-      },
-      "ResolveResponse": {
-        "type": "object",
-        "required": [
-          "files"
-        ],
-        "properties": {
-          "files": {
-            "type": "object",
-            "description": "Dataset-relative path → signed URL.",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
           }
         }
       },

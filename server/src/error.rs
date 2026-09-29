@@ -21,7 +21,6 @@ pub enum ErrorCode {
     RateLimited,
     ValidationFailed,
     InvalidFormat,
-    InvalidPath,
     NotFound,
     Forbidden,
     InternalError,
@@ -46,7 +45,6 @@ pub enum ErrorCode {
     ProbeFailed,
     ListFilesFailed,
     StoreError,
-    SignError,
     AiNotConfigured,
     /// Several model connections exist and the call named none.
     AiConnectionRequired,

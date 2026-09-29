@@ -2,23 +2,19 @@ import { useEffect, useRef } from "react";
 import type { Job } from "@fossil-lang/executor";
 import { http, type Schemas } from "@/lib/api/client";
 import { openJobCorpus } from "@/lib/fossil/corpus";
-import { sourceHost } from "@/lib/fossil/source-host";
+import { host } from "@/lib/fossil/host";
 
 /**
- * A job as `runJob` takes it: reads go through keasy's one {@link sourceHost};
+ * A job as `runJob` takes it: every byte goes through keasy's one {@link host};
  * the run report crosses untouched, since `CompleteJobRequest.manifest` is
  * opaque JSON on the server.
  */
 function makeJob(id: string): Job {
-  const path = { path: { id } };
   return {
-    host: sourceHost,
-    output: {
-      signOutputUrls: async (paths) =>
-        (await http.POST("/v1/jobs/{id}/output/urls", { params: path, body: { paths } })).data!.files,
-      complete: async ({ status, manifest, error }) => {
-        await http.PATCH("/v1/jobs/{id}", { params: path, body: { status, manifest, error } });
-      },
+    id,
+    host,
+    complete: async ({ status, manifest, error }) => {
+      await http.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body: { status, manifest, error } });
     },
   };
 }
@@ -33,8 +29,8 @@ const started = new Set<string>();
  * Browser-driven execution (client-compute): when a job is `Pending`, the
  * browser is its worker. Reads the program from the job record, marks it
  * `Running` (reusing the completion PATCH), then runs the mapping on
- * DataFusion-WASM end-to-end via `runJob` — sources through keasy's redirect,
- * GraphAr output by signed PUT, outcome by `PATCH /v1/jobs/{id}`. The server never runs
+ * DataFusion-WASM end-to-end via `runJob` — sources and GraphAr output through
+ * credentials keasy vends, outcome by `PATCH /v1/jobs/{id}`. The server never runs
  * the mapping. The detail view's existing poll surfaces the terminal status.
  */
 export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
@@ -75,9 +71,9 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         try {
           const corpus = await openJobCorpus(jobId);
           try {
-            // A lent corpus names its files as it lent them, under its own name; keasy stores
-            // them relative to the dataset.
-            const lent = `${corpus.url}/`;
+            // The corpus names its files under its own base; keasy stores them relative to
+            // the dataset.
+            const lent = corpus.url.endsWith("/") ? corpus.url : `${corpus.url}/`;
             const relations = (await corpus.relations()).map((r) => ({
               name: r.name,
               rows: r.rows,

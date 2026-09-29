@@ -1,6 +1,5 @@
 //! Connections: a credential put to use — a storage prefix or a model.
 
-pub mod locator;
 pub mod persistence;
 
 use crate::database::Database;

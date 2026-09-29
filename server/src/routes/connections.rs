@@ -1,6 +1,6 @@
 use axum::Json;
 use axum::extract::{Path, Query, State};
-use axum::http::{Method, StatusCode};
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use object_store::ObjectMeta;
 use serde::{Deserialize, Serialize};
@@ -10,13 +10,11 @@ use utoipa_axum::routes;
 
 use super::credentials::PurposeQuery;
 use crate::authentication::role::{AnyRole, Member};
-use crate::connections::locator;
 use crate::connections::{named, persistence};
-use crate::domain::{ConnectionTarget, ConnectionView, StorageLocation, ValidationReport};
+use crate::domain::{ConnectionTarget, ConnectionView, ValidationReport};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
-use crate::routes::signed_redirect;
 use crate::startup::AppState;
-use crate::storage_client::{self, SIGNED_URL_EXPIRES};
+use crate::storage_client;
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateConnectionRequest {
@@ -43,12 +41,6 @@ pub struct FileEntry {
     pub path: String,
     pub size: u64,
     pub last_modified: Option<String>,
-}
-
-#[derive(Debug, Deserialize, utoipa::IntoParams)]
-pub struct LocatorQuery {
-    /// A locator fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`).
-    pub locator: String,
 }
 
 impl From<ObjectMeta> for FileEntry {
@@ -248,42 +240,6 @@ pub async fn list_connection_files(
         .map_err(|e| Refusal::new(StatusCode::BAD_GATEWAY, ErrorCode::ListFilesFailed, e))
 }
 
-#[utoipa::path(get, path = "/v1/objects", tag = "Connections",
-    params(LocatorQuery),
-    responses(
-        (status = 307, description = "To the object, signed for this request's method"),
-        (status = 400, description = "Not a storage locator, or held by several connections", body = ErrorBody),
-        (status = 404, description = "No source connection holds the locator", body = ErrorBody),
-    )
-)]
-/// Read what a storage locator names, with the credential of the source that
-/// holds it: the URL a reader holds for as long as it reads, which redirects
-/// to the store signed for this request's method. A member reads what every
-/// source holds, and the sink only through the job that wrote it.
-pub async fn read_source_object(
-    _: Member,
-    method: Method,
-    State(state): State<AppState>,
-    Query(query): Query<LocatorQuery>,
-) -> Result<Response, Refusal> {
-    let locator = StorageLocation::parse(&query.locator).map_err(Refusal::invalid)?;
-    let (_, object, credential) = locator::holder(&state.db, &locator).await?.ok_or_else(|| {
-        Refusal::new(
-            StatusCode::NOT_FOUND,
-            ErrorCode::NotFound,
-            format!("No source connection holds {locator}"),
-        )
-    })?;
-    let sign_failed =
-        |e: String| Refusal::new(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::SignError, e);
-    let store = storage_client::store(&credential, &object).map_err(sign_failed)?;
-    let signed = store
-        .sign_url(method, object.path(), SIGNED_URL_EXPIRES)
-        .await
-        .map_err(|e| sign_failed(e.to_string()))?;
-    Ok(signed_redirect(signed))
-}
-
 #[utoipa::path(post, path = "/v1/connections/{name}/credentials", tag = "Connections",
     params(("name" = String, Path, description = "Connection name")),
     request_body = super::jobs::output::CredentialsRequest,
@@ -331,6 +287,5 @@ pub fn router() -> OpenApiRouter<AppState> {
         ))
         .routes(routes!(validate_connection))
         .routes(routes!(list_connection_files))
-        .routes(routes!(read_source_object))
         .routes(routes!(vend_source_credentials))
 }

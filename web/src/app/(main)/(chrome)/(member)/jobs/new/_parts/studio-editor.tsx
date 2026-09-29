@@ -89,7 +89,8 @@ export function StudioEditor({
   );
 
   // Schema-aware completion: each `@conn/path` binding is described in the
-  // browser over a signed URL and pushed at the compiler before the next check.
+  // browser with a credential vended for its connection and pushed at the
+  // compiler before the next check.
   const descriptors = useSourceDescriptors(program);
   useEffect(() => {
     if (!opened || descriptors.length === 0) return;

@@ -313,47 +313,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/objects": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Read one object of the dataset: the URL a reader holds for as long as it
-         *     reads, which redirects to the store. GET and HEAD alike — a range reader
-         *     probes with HEAD, and S3 refuses one sent to a URL signed for GET.
-         */
-        get: operations["read_output_object"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/output/urls": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sign PUT URLs so the browser uploads the output it just produced straight to
-         *     the job's sink.
-         */
-        post: operations["resolve_output_urls"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/jobs/{id}/relations": {
         parameters: {
             query?: never;
@@ -372,28 +331,6 @@ export interface paths {
          *     the owner's datasets view lists.
          */
         put: operations["publish_relations"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/objects": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Read what a storage locator names, with the credential of the source that
-         *     holds it: the URL a reader holds for as long as it reads, which redirects
-         *     to the store signed for this request's method. A member reads what every
-         *     source holds, and the sink only through the job that wrote it.
-         */
-        get: operations["read_source_object"];
-        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -439,8 +376,8 @@ export interface components {
         };
         /**
          * @description The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
-         *     the mapping in the browser (`@fossil-lang/executor`) and uploading the output
-         *     by signed PUT, the client reports the run's outcome. `manifest` is the
+         *     the mapping in the browser (`@fossil-lang/executor`) and writing the output
+         *     with the credential vended for the job, the client reports the run's outcome. `manifest` is the
          *     executor's run report, stored verbatim and never read.
          */
         CompleteJobRequest: {
@@ -545,13 +482,6 @@ export interface components {
             name?: string | null;
             relations: components["schemas"]["OutputRelation"][];
         };
-        DatasetUrlsRequest: {
-            /**
-             * @description Paths relative to the dataset: the executor's output, which keasy signs
-             *     as it is handed.
-             */
-            paths: string[];
-        };
         /**
          * @description A source is read through `@name/…`; the one sink is where job output lands.
          * @enum {string}
@@ -572,7 +502,7 @@ export interface components {
          *     declare here cannot be sent, and the web keys its copy by this enum.
          * @enum {string}
          */
-        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "not_running" | "still_running" | "invalid_destination" | "no_destination" | "already_exists" | "in_use" | "overlaps" | "probe_failed" | "list_files_failed" | "store_error" | "sign_error" | "ai_not_configured" | "ai_connection_required" | "insufficient_credits" | "llm_failed";
+        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "not_running" | "still_running" | "invalid_destination" | "no_destination" | "already_exists" | "in_use" | "overlaps" | "probe_failed" | "list_files_failed" | "store_error" | "ai_not_configured" | "ai_connection_required" | "insufficient_credits" | "llm_failed";
         /** @description One object under a connection's prefix. */
         FileEntry: {
             last_modified?: string | null;
@@ -697,12 +627,6 @@ export interface components {
             /** @description The engine's spelling of the Parquet type (`VARCHAR`, `BIGINT`, …). */
             data_type: string;
             name: string;
-        };
-        ResolveResponse: {
-            /** @description Dataset-relative path → signed URL. */
-            files: {
-                [key: string]: string;
-            };
         };
         StorageCredentialInput: {
             access_key_id: string;
@@ -1997,103 +1921,6 @@ export interface operations {
             503: components["responses"]["KeysUnavailable"];
         };
     };
-    read_output_object: {
-        parameters: {
-            query: {
-                /** @description A path relative to the dataset (`vertex/Person/tiles.parquet`). */
-                path: string;
-            };
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description To the object, signed for this request's method */
-            307: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description The destination connection is gone, or a path outside the dataset */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    resolve_output_urls: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DatasetUrlsRequest"];
-            };
-        };
-        responses: {
-            /** @description Signed PUT URLs for the output keys */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResolveResponse"];
-                };
-            };
-            /** @description The destination connection is gone, or a path outside the dataset */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
     publish_relations: {
         parameters: {
             query?: never;
@@ -2131,50 +1958,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    read_source_object: {
-        parameters: {
-            query: {
-                /** @description A locator fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`). */
-                locator: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description To the object, signed for this request's method */
-            307: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not a storage locator, or held by several connections */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description No source connection holds the locator */
             404: {
                 headers: {
                     [name: string]: unknown;

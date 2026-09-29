@@ -5,6 +5,6 @@ mod credentials;
 mod health_check;
 mod helpers;
 mod jobs;
-mod objects;
+mod vending;
 mod openapi;
 mod telemetry;

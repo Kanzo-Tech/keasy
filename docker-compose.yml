@@ -1,8 +1,8 @@
 # The dev stack. Every value is a dev literal; prod is infra/terraform.
 #
 # `*.localhost` is loopback on the host and a network alias here, so one URL
-# works from the browser and from a container: Keycloak's issuer and MinIO's
-# presigned URLs are both addressed that way.
+# works from the browser and from a container: Keycloak's issuer and the MinIO
+# endpoint a vended credential names are both addressed that way.
 
 services:
   keycloak-postgres:

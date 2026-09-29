@@ -62,9 +62,7 @@ pub async fn spawn_app() -> TestApp {
 
     TestApp {
         address,
-        // A 307 is an answer the caller reads, as the browser's own reader does.
         client: reqwest::Client::builder()
-            .redirect(reqwest::redirect::Policy::none())
             .build()
             .unwrap(),
         db: Database::open(&db_path, secret_key()).unwrap(),
@@ -133,18 +131,6 @@ impl TestApp {
             .ok()
             .and_then(|v| v["error"].as_str().map(str::to_owned));
         (status, code)
-    }
-
-    /// A read through keasy: the status and the headers, the redirect unfollowed.
-    pub async fn read(&self, method: Method, path: &str, token: &str) -> (StatusCode, HeaderMap) {
-        let response = self
-            .client
-            .request(method, format!("{}{path}", self.address))
-            .bearer_auth(token)
-            .send()
-            .await
-            .unwrap();
-        (response.status(), response.headers().clone())
     }
 
     /// A stored S3 credential on `endpoint`, unprobed, created by `by`.

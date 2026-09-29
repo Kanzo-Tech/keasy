@@ -1,24 +1,19 @@
 //! A storage credential turned into an object store client, and the few
-//! operations keasy performs with one: sign, list, and the sink's write probe.
+//! operations keasy performs with one: vend, list, and the sink's write probe.
 
 pub mod vend;
 
 use std::time::Duration;
 
-use axum::http::Method;
 use futures::StreamExt;
 use futures::stream::BoxStream;
 use object_store::aws::{AmazonS3, AmazonS3Builder};
 use object_store::azure::{MicrosoftAzure, MicrosoftAzureBuilder};
 use object_store::path::Path as ObjectPath;
-use object_store::signer::Signer;
 use object_store::{ClientOptions, ObjectMeta, ObjectStore, PutPayload, RetryConfig};
 use secrecy::ExposeSecret;
-use url::Url;
 
 use crate::domain::{StorageCredentialInput, StorageLocation, StoreKind};
-
-pub const SIGNED_URL_EXPIRES: Duration = Duration::from_secs(300);
 
 fn client_options() -> ClientOptions {
     ClientOptions::new()
@@ -110,40 +105,6 @@ fn azure(container: &str, account: &str) -> MicrosoftAzureBuilder {
 }
 
 impl CloudStore {
-    /// A URL `method` may be sent to. S3 binds a signature to its method, so
-    /// a HEAD needs its own; an Azure SAS grants a permission instead, and `r`
-    /// covers HEAD, which object_store would sign with no permission at all.
-    pub async fn sign_url(
-        &self,
-        method: Method,
-        path: &ObjectPath,
-        expires_in: Duration,
-    ) -> object_store::Result<Url> {
-        match self {
-            Self::Azure(s) => {
-                let method = if method == Method::HEAD {
-                    Method::GET
-                } else {
-                    method
-                };
-                s.signed_url(method, path, expires_in).await
-            }
-            Self::S3(s) => s.signed_url(method, path, expires_in).await,
-        }
-    }
-
-    pub async fn sign_urls(
-        &self,
-        method: Method,
-        paths: &[ObjectPath],
-        expires_in: Duration,
-    ) -> object_store::Result<Vec<Url>> {
-        match self {
-            Self::Azure(s) => s.signed_urls(method, paths, expires_in).await,
-            Self::S3(s) => s.signed_urls(method, paths, expires_in).await,
-        }
-    }
-
     pub async fn put(&self, path: &ObjectPath, payload: PutPayload) -> object_store::Result<()> {
         match self {
             Self::Azure(s) => s.put(path, payload).await.map(drop),

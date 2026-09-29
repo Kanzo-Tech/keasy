@@ -26,6 +26,7 @@ tenants = {
   dev = {
     display_name  = "Dev Workspace"
     owners        = ["dev@keasy.local"]
+    members       = ["member@keasy.local"]
     client_secret = "keasy-dev-secret" # fixed so the compose server can use it directly
   }
 }

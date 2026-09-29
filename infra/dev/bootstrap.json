@@ -17,7 +17,7 @@
     {
       "name": "MinIO dev bucket",
       "credential": "MinIO dev",
-      "target": { "storage": { "url": "s3://keasy-dev/", "kind": "data", "direction": "source" } }
+      "target": { "storage": { "url": "s3://keasy-dev/data/", "kind": "data", "direction": "source" } }
     },
     {
       "name": "MinIO dev shapes",

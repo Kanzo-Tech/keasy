@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Keasy API",
-    "description": "Keasy host: identity, connections, signed URLs and the job record",
+    "description": "Keasy host: identity, connections, vended credentials and the job record",
     "license": {
       "name": ""
     },
@@ -463,6 +463,93 @@
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/connections/{name}/credentials": {
+      "post": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Vend a read credential over a source connection's prefix — Unity Catalog's\ntemporary path credentials over an external location. Sources are read,\nnever written; the sink is reached only through its jobs.",
+        "operationId": "vend_source_credentials",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Connection name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredentialsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A credential that opens the source's prefix, and only it, for an hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendedCredentials"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a storage source, or an access a source does not give",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "502": {
+            "description": "The store refused to vend",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           },
           "503": {
             "$ref": "#/components/responses/KeysUnavailable"
@@ -1389,82 +1476,13 @@
         }
       }
     },
-    "/v1/jobs/{id}/objects": {
-      "get": {
-        "tags": [
-          "Discovery"
-        ],
-        "summary": "Read one object of the dataset: the URL a reader holds for as long as it\nreads, which redirects to the store. GET and HEAD alike — a range reader\nprobes with HEAD, and S3 refuses one sent to a URL signed for GET.",
-        "operationId": "read_output_object",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "path",
-            "in": "query",
-            "description": "A path relative to the dataset (`vertex/Person/tiles.parquet`).",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "307": {
-            "description": "To the object, signed for this request's method"
-          },
-          "400": {
-            "description": "The destination connection is gone, or a path outside the dataset",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Job not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/output/urls": {
+    "/v1/jobs/{id}/credentials": {
       "post": {
         "tags": [
           "Discovery"
         ],
-        "summary": "Sign PUT URLs so the browser uploads the output it just produced straight to\nthe job's sink.",
-        "operationId": "resolve_output_urls",
+        "summary": "Vend a credential over the job's dataset, `{sink}/{job_id}/`: to read it\nonce the job has completed, or to write it while the job runs. The store\nholds the boundary, so the credential opens nothing else.",
+        "operationId": "vend_job_credentials",
         "parameters": [
           {
             "name": "id",
@@ -1480,7 +1498,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DatasetUrlsRequest"
+                "$ref": "#/components/schemas/CredentialsRequest"
               }
             }
           },
@@ -1488,21 +1506,11 @@
         },
         "responses": {
           "200": {
-            "description": "Signed PUT URLs for the output keys",
+            "description": "A credential that opens the job's dataset, and only it, for an hour",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ResolveResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The destination connection is gone, or a path outside the dataset",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/VendedCredentials"
                 }
               }
             }
@@ -1523,11 +1531,31 @@
               }
             }
           },
+          "409": {
+            "description": "Read before the job completed, or write while it is not running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
+          },
+          "502": {
+            "description": "The store refused to vend",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           },
           "503": {
             "$ref": "#/components/responses/KeysUnavailable"
@@ -1613,56 +1641,6 @@
         }
       }
     },
-    "/v1/objects": {
-      "get": {
-        "tags": [
-          "Connections"
-        ],
-        "summary": "Read what a locator names, with the credential of the source it lies under:\nthe URL a reader holds for as long as it reads, which redirects to the store\nsigned for this request's method. A member reads what every source holds,\nand the sink only through the job that wrote it. A public HTTP locator\nredirects to itself.",
-        "operationId": "read_source_object",
-        "parameters": [
-          {
-            "name": "locator",
-            "in": "query",
-            "description": "A locator fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`).",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "307": {
-            "description": "To the object, signed for this request's method"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "No source connection holds the locator",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
     "/version": {
       "get": {
         "tags": [
@@ -1689,6 +1667,14 @@
   },
   "components": {
     "schemas": {
+      "Access": {
+        "type": "string",
+        "description": "What a vended credential lets its holder do under its prefix.",
+        "enum": [
+          "read",
+          "write"
+        ]
+      },
       "ChatMessage": {
         "type": "object",
         "required": [
@@ -1734,7 +1720,7 @@
       },
       "CompleteJobRequest": {
         "type": "object",
-        "description": "The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running\nthe mapping in the browser (`@fossil-lang/executor`) and uploading the output\nby signed PUT, the client reports the run's outcome. `manifest` is the\nexecutor's run report, stored verbatim and never read.",
+        "description": "The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running\nthe mapping in the browser (`@fossil-lang/executor`) and writing the output\nwith the credential vended for the job, the client reports the run's outcome. `manifest` is the\nexecutor's run report, stored verbatim and never read.",
         "required": [
           "status"
         ],
@@ -2041,6 +2027,17 @@
           }
         }
       },
+      "CredentialsRequest": {
+        "type": "object",
+        "required": [
+          "access"
+        ],
+        "properties": {
+          "access": {
+            "$ref": "#/components/schemas/Access"
+          }
+        }
+      },
       "Dataset": {
         "type": "object",
         "description": "A completed job's output, as the owner's datasets view lists it.",
@@ -2069,21 +2066,6 @@
             "items": {
               "$ref": "#/components/schemas/OutputRelation"
             }
-          }
-        }
-      },
-      "DatasetUrlsRequest": {
-        "type": "object",
-        "required": [
-          "paths"
-        ],
-        "properties": {
-          "paths": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Paths relative to the dataset: the executor's output, which keasy signs\nas it is handed."
           }
         }
       },
@@ -2129,21 +2111,21 @@
           "rate_limited",
           "validation_failed",
           "invalid_format",
-          "invalid_path",
           "not_found",
           "forbidden",
           "internal_error",
           "not_draft",
           "not_completed",
+          "not_running",
           "still_running",
           "invalid_destination",
           "no_destination",
           "already_exists",
           "in_use",
+          "overlaps",
           "probe_failed",
           "list_files_failed",
           "store_error",
-          "sign_error",
           "ai_not_configured",
           "ai_connection_required",
           "insufficient_credits",
@@ -2458,24 +2440,6 @@
           }
         }
       },
-      "ResolveResponse": {
-        "type": "object",
-        "required": [
-          "files"
-        ],
-        "properties": {
-          "files": {
-            "type": "object",
-            "description": "Dataset-relative path → signed URL.",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          }
-        }
-      },
       "StorageCredentialInput": {
         "oneOf": [
           {
@@ -2498,6 +2462,13 @@
                 "format": "uri",
                 "description": "MinIO, R2 or a gateway. An `http://` endpoint opts into plain HTTP."
               },
+              "external_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "AWS's guard against the confused deputy, when the role's trust\npolicy asks for one."
+              },
               "kind": {
                 "type": "string",
                 "enum": [
@@ -2507,6 +2478,13 @@
               "region": {
                 "type": "string",
                 "default": "us-east-1"
+              },
+              "role_arn": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The role keasy assumes to vend a credential scoped to one prefix.\nAWS needs it; S3-compatible stores (MinIO, Ceph) ignore it."
               },
               "secret_access_key": {
                 "type": "string",
@@ -2537,31 +2515,6 @@
                 "enum": [
                   "azure_account_key"
                 ]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "title": "Azure Blob — SAS token",
-            "required": [
-              "account",
-              "sas_token",
-              "kind"
-            ],
-            "properties": {
-              "account": {
-                "type": "string"
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "azure_sas"
-                ]
-              },
-              "sas_token": {
-                "type": "string",
-                "format": "password",
-                "writeOnly": true
               }
             }
           },
@@ -2620,6 +2573,12 @@
                   "null"
                 ]
               },
+              "external_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "kind": {
                 "type": "string",
                 "enum": [
@@ -2628,6 +2587,12 @@
               },
               "region": {
                 "type": "string"
+              },
+              "role_arn": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             }
           },
@@ -2646,25 +2611,6 @@
                 "type": "string",
                 "enum": [
                   "azure_account_key"
-                ]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "title": "Azure Blob — SAS token",
-            "required": [
-              "account",
-              "kind"
-            ],
-            "properties": {
-              "account": {
-                "type": "string"
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "azure_sas"
                 ]
               }
             }
@@ -2812,6 +2758,44 @@
             "items": {
               "$ref": "#/components/schemas/Check"
             }
+          }
+        }
+      },
+      "VendedCredential": {
+        "type": "object",
+        "description": "A credential scoped to one prefix, for a lifetime — Iceberg REST's\n`StorageCredential`, keys and all (`s3.access-key-id`, `s3.session-token`,\n`s3.session-token-expires-at-ms`, `adls.sas-token.<host>`, …), so any\nreader of vended credentials reads it. Handing it out is the point, so\nthis is the one response type that carries a secret: its values stay\n[`SecretString`] until the moment they are written into the response.",
+        "required": [
+          "prefix",
+          "config"
+        ],
+        "properties": {
+          "config": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "prefix": {
+            "type": "string",
+            "description": "The canonical prefix it opens, ending in `/`."
+          }
+        }
+      },
+      "VendedCredentials": {
+        "type": "object",
+        "required": [
+          "storage_credentials"
+        ],
+        "properties": {
+          "storage_credentials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VendedCredential"
+            },
+            "description": "One per prefix; a reader picks the longest prefix that holds a path."
           }
         }
       },

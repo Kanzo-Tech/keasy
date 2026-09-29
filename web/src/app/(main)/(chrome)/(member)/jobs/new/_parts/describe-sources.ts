@@ -3,8 +3,9 @@
  *
  * Fossil says which sources those are and where each lives; `@fossil-lang/introspect`
  * owns the DESCRIBE each reader needs and the DuckDB→fossil type table. keasy
- * lends it the data plane: its {@link sourceHost} hands over a URL per locator,
- * and the page's engine reads through it, by range, from the store. The server never reads the file.
+ * lends it the data plane: its {@link host} vends a read credential per source
+ * connection, and the page's engine reads through it, by range, from the store.
+ * The server never reads the file.
  */
 
 import { introspect, type InferredDescriptor } from "@fossil-lang/introspect";
@@ -12,7 +13,7 @@ import type { ProgramSource } from "@fossil-lang/types";
 
 import { engine } from "@kanzo-tech/ui/analytics";
 
-import { sourceHost } from "@/lib/fossil/source-host";
+import { host } from "@/lib/fossil/host";
 import type { StorageConnection } from "@/lib/connections";
 
 /**
@@ -28,5 +29,5 @@ export const sourceDescriptorsKey = (sources: readonly string[]) =>
   ["source-descriptors", sources] as const;
 
 export async function describeSources(sources: readonly ProgramSource[]): Promise<InferredDescriptor[]> {
-  return introspect(sources, { host: sourceHost, engine: await engine() });
+  return introspect(sources, { host, engine: await engine() });
 }

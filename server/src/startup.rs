@@ -239,7 +239,7 @@ fn over_rate(error: GovernorError) -> Response {
     info(
         title = "Keasy API",
         version = "1.0.0",
-        description = "Keasy host: identity, connections, signed URLs and the job record",
+        description = "Keasy host: identity, connections, vended credentials and the job record",
     ),
     components(schemas(ErrorBody, ErrorCode, Purpose)),
     modifiers(&Bearer, &Unattributed),

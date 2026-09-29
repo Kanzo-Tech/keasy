@@ -78,7 +78,7 @@ realm's JWKS (`iss`, `aud`, `exp`, `azp`, signature) and holds no client secret,
 no session and no cookie. It is reached only through the web's `/api/v1`.
 
 Mappings run in the browser (DuckDB-WASM + `@fossil-lang/*`), and so does source
-introspection; the server hosts connections, signed URLs, jobs and the catalog,
+introspection; the server hosts connections, vends credentials scoped to one prefix, jobs and the catalog,
 and never reads a data file. Every job names a sink as its destination and is
 visible only to the member who created it.
 

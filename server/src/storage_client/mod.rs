@@ -1,36 +1,20 @@
 //! A storage credential turned into an object store client, and the few
-//! operations keasy performs with one: sign, list, and the sink's write probe.
+//! operations keasy performs with one: vend, list, and the sink's write probe.
+
+pub mod vend;
 
 use std::time::Duration;
 
-use axum::http::Method;
 use futures::StreamExt;
 use futures::stream::BoxStream;
 use object_store::aws::{AmazonS3, AmazonS3Builder};
-use object_store::azure::{AzureConfigKey, MicrosoftAzure, MicrosoftAzureBuilder};
+use object_store::azure::{MicrosoftAzure, MicrosoftAzureBuilder};
 use object_store::path::Path as ObjectPath;
-use object_store::signer::Signer;
 use object_store::{ClientOptions, ObjectMeta, ObjectStore, PutPayload, RetryConfig};
 use secrecy::ExposeSecret;
-use url::Url;
 
-use crate::domain::{StorageCredentialInput, StorageScheme, StorageUrl};
+use crate::domain::{StorageCredentialInput, StorageLocation, StoreKind};
 
-pub const SIGNED_URL_EXPIRES: Duration = Duration::from_secs(300);
-
-/// The store a credential reaches.
-fn reaches(credential: &StorageCredentialInput) -> StorageScheme {
-    match credential {
-        StorageCredentialInput::S3 { .. } => StorageScheme::S3,
-        StorageCredentialInput::AzureAccountKey { .. }
-        | StorageCredentialInput::AzureSas { .. }
-        | StorageCredentialInput::AzureServicePrincipal { .. } => StorageScheme::Azure,
-    }
-}
-
-/// A probe or a listing is a question a person is waiting on: a store that
-/// does not answer is a failed check in seconds, not after object_store's
-/// default three minutes of retries.
 fn client_options() -> ClientOptions {
     ClientOptions::new()
         .with_connect_timeout(Duration::from_secs(5))
@@ -51,16 +35,19 @@ pub enum CloudStore {
     S3(AmazonS3),
 }
 
-/// The client `credential` opens on the bucket or container `url` names.
-pub fn store(credential: &StorageCredentialInput, url: &StorageUrl) -> Result<CloudStore, String> {
-    if reaches(credential) != url.scheme() {
+/// The client `credential` opens on the bucket or container `location` names.
+pub fn store(
+    credential: &StorageCredentialInput,
+    location: &StorageLocation,
+) -> Result<CloudStore, String> {
+    if StoreKind::of(credential) != location.kind() {
         return Err(format!(
             "this credential reaches {} URLs, not {}",
-            reaches(credential).spellings(),
-            url.scheme().spellings()
+            StoreKind::of(credential).spellings(),
+            location.kind().spellings()
         ));
     }
-    let bucket = url.bucket();
+    let bucket = location.bucket();
 
     let store = match credential {
         StorageCredentialInput::S3 {
@@ -68,6 +55,7 @@ pub fn store(credential: &StorageCredentialInput, url: &StorageUrl) -> Result<Cl
             secret_access_key,
             region,
             endpoint,
+            ..
         } => {
             let mut builder = AmazonS3Builder::new()
                 .with_bucket_name(bucket)
@@ -88,12 +76,6 @@ pub fn store(credential: &StorageCredentialInput, url: &StorageUrl) -> Result<Cl
         StorageCredentialInput::AzureAccountKey { account, key } => CloudStore::Azure(
             azure(bucket, account)
                 .with_access_key(key.expose_secret())
-                .build()
-                .map_err(|e| e.to_string())?,
-        ),
-        StorageCredentialInput::AzureSas { account, sas_token } => CloudStore::Azure(
-            azure(bucket, account)
-                .with_config(AzureConfigKey::SasKey, sas_token.expose_secret())
                 .build()
                 .map_err(|e| e.to_string())?,
         ),
@@ -123,40 +105,6 @@ fn azure(container: &str, account: &str) -> MicrosoftAzureBuilder {
 }
 
 impl CloudStore {
-    /// A URL `method` may be sent to. S3 binds a signature to its method, so
-    /// a HEAD needs its own; an Azure SAS grants a permission instead, and `r`
-    /// covers HEAD, which object_store would sign with no permission at all.
-    pub async fn sign_url(
-        &self,
-        method: Method,
-        path: &ObjectPath,
-        expires_in: Duration,
-    ) -> object_store::Result<Url> {
-        match self {
-            Self::Azure(s) => {
-                let method = if method == Method::HEAD {
-                    Method::GET
-                } else {
-                    method
-                };
-                s.signed_url(method, path, expires_in).await
-            }
-            Self::S3(s) => s.signed_url(method, path, expires_in).await,
-        }
-    }
-
-    pub async fn sign_urls(
-        &self,
-        method: Method,
-        paths: &[ObjectPath],
-        expires_in: Duration,
-    ) -> object_store::Result<Vec<Url>> {
-        match self {
-            Self::Azure(s) => s.signed_urls(method, paths, expires_in).await,
-            Self::S3(s) => s.signed_urls(method, paths, expires_in).await,
-        }
-    }
-
     pub async fn put(&self, path: &ObjectPath, payload: PutPayload) -> object_store::Result<()> {
         match self {
             Self::Azure(s) => s.put(path, payload).await.map(drop),
@@ -181,14 +129,14 @@ impl CloudStore {
     }
 }
 
-/// Every object under the connection `url` is.
+/// Every object under `location`.
 pub async fn list_files(
     credential: &StorageCredentialInput,
-    url: &StorageUrl,
+    location: &StorageLocation,
 ) -> Result<Vec<ObjectMeta>, String> {
-    let store = store(credential, url)?;
+    let store = store(credential, location)?;
     let mut entries = Vec::new();
-    let mut listing = store.list(url.path());
+    let mut listing = store.list(location.path());
     while let Some(meta) = listing.next().await {
         entries.push(meta.map_err(|e| format!("listing failed: {e}"))?);
     }
@@ -206,12 +154,14 @@ mod tests {
             secret_access_key: SecretString::from("SK"),
             region: "us-east-1".into(),
             endpoint: None,
+            role_arn: None,
+            external_id: None,
         }
     }
 
     #[test]
     fn a_credential_opens_only_its_own_stores() {
-        let url = |s: &str| StorageUrl::parse(s).unwrap();
+        let url = |s: &str| StorageLocation::parse(s).unwrap();
         assert!(store(&s3(), &url("s3://bucket/data/x.csv")).is_ok());
         assert!(store(&s3(), &url("az://container/x.csv")).is_err());
     }

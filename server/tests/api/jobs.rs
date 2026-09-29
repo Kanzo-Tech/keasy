@@ -67,13 +67,8 @@ async fn a_job_is_its_creators_alone() {
         (Method::DELETE, path.clone(), json!(null)),
         (
             Method::POST,
-            format!("{path}/output/urls"),
-            json!({ "paths": ["a.parquet"] }),
-        ),
-        (
-            Method::GET,
-            format!("{path}/objects?path=a.parquet"),
-            json!(null),
+            format!("{path}/credentials"),
+            json!({ "access": "read" }),
         ),
         (
             Method::PUT,

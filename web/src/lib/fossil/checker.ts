@@ -9,7 +9,7 @@ import {
   type SourceRefInfo,
 } from "@fossil-lang/wasm";
 
-import { sourceHost } from "./source-host";
+import { host } from "./host";
 
 export type { CheckRow, ProviderInfo, SourceRefInfo } from "@fossil-lang/wasm";
 
@@ -17,7 +17,7 @@ let opened: Promise<FossilProgram> | undefined;
 
 /** The job's program, open once per tab: the editor, its introspection and the assistant share it. */
 export function jobProgram(): Promise<FossilProgram> {
-  opened ??= openProgram("job.fossil", { host: sourceHost });
+  opened ??= openProgram("job.fossil", { host });
   return opened;
 }
 

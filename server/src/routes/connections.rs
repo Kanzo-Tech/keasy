@@ -1,25 +1,20 @@
 use axum::Json;
 use axum::extract::{Path, Query, State};
-use axum::http::{Method, StatusCode};
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use object_store::ObjectMeta;
 use serde::{Deserialize, Serialize};
-use url::Url;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::credentials::PurposeQuery;
 use crate::authentication::role::{AnyRole, Member};
-use crate::connections::locator::{is_public_http, signer};
 use crate::connections::{named, persistence};
-use crate::domain::{
-    ConnectionTarget, ConnectionView, CredentialSpecInput, StorageUrl, ValidationReport,
-};
+use crate::domain::{ConnectionTarget, ConnectionView, ValidationReport};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
-use crate::routes::signed_redirect;
 use crate::startup::AppState;
-use crate::storage_client::{self, SIGNED_URL_EXPIRES};
+use crate::storage_client;
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateConnectionRequest {
@@ -46,12 +41,6 @@ pub struct FileEntry {
     pub path: String,
     pub size: u64,
     pub last_modified: Option<String>,
-}
-
-#[derive(Debug, Deserialize, utoipa::IntoParams)]
-pub struct LocatorQuery {
-    /// A locator fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`).
-    pub locator: String,
 }
 
 impl From<ObjectMeta> for FileEntry {
@@ -251,55 +240,40 @@ pub async fn list_connection_files(
         .map_err(|e| Refusal::new(StatusCode::BAD_GATEWAY, ErrorCode::ListFilesFailed, e))
 }
 
-#[utoipa::path(get, path = "/v1/objects", tag = "Connections",
-    params(LocatorQuery),
+#[utoipa::path(post, path = "/v1/connections/{name}/credentials", tag = "Connections",
+    params(("name" = String, Path, description = "Connection name")),
+    request_body = super::jobs::output::CredentialsRequest,
     responses(
-        (status = 307, description = "To the object, signed for this request's method"),
-        (status = 404, description = "No source connection holds the locator", body = ErrorBody),
+        (status = 200, description = "A credential that opens the source's prefix, and only it, for an hour", body = crate::domain::VendedCredentials),
+        (status = 400, description = "Not a storage source, or an access a source does not give", body = ErrorBody),
+        (status = 404, description = "No such connection", body = ErrorBody),
+        (status = 502, description = "The store refused to vend", body = ErrorBody),
     )
 )]
-/// Read what a locator names, with the credential of the source it lies under:
-/// the URL a reader holds for as long as it reads, which redirects to the store
-/// signed for this request's method. A member reads what every source holds,
-/// and the sink only through the job that wrote it. A public HTTP locator
-/// redirects to itself.
-pub async fn read_source_object(
+/// Vend a read credential over a source connection's prefix — Unity Catalog's
+/// temporary path credentials over an external location. Sources are read,
+/// never written; the sink is reached only through its jobs.
+pub async fn vend_source_credentials(
     _: Member,
-    method: Method,
     State(state): State<AppState>,
-    Query(query): Query<LocatorQuery>,
+    Path(name): Path<String>,
+    Json(req): Json<super::jobs::output::CredentialsRequest>,
 ) -> Result<Response, Refusal> {
-    let sign_failed =
-        |e: String| Refusal::new(StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::SignError, e);
-    let locator = query.locator;
-    let connections = persistence::list(&*state.db.read().await, None)?;
-    let Some(conn) = signer(&locator, &connections) else {
-        return match Url::parse(&locator) {
-            Ok(url) if is_public_http(&locator) => Ok(signed_redirect(url)),
-            _ => Err(Refusal::new(
-                StatusCode::NOT_FOUND,
-                ErrorCode::NotFound,
-                format!("No source connection holds {locator}"),
-            )),
-        };
-    };
-    let CredentialSpecInput::Storage(credential) =
-        crate::credentials::named(&state.db, &conn.credential)
-            .await?
-            .spec
-    else {
-        return Err(sign_failed(format!(
-            "{} is not a storage credential",
-            conn.credential
+    let connection = named(&state.db, &name).await?;
+    let is_source = connection
+        .target
+        .storage()
+        .is_some_and(|s| s.direction == crate::domain::Direction::Source);
+    if !is_source {
+        return Err(Refusal::invalid(format!(
+            "{name:?} is not a storage source"
         )));
-    };
-    let url = StorageUrl::parse(&locator).map_err(sign_failed)?;
-    let store = storage_client::store(&credential, &url).map_err(sign_failed)?;
-    let signed = store
-        .sign_url(method, url.path(), SIGNED_URL_EXPIRES)
-        .await
-        .map_err(|e| sign_failed(e.to_string()))?;
-    Ok(signed_redirect(signed))
+    }
+    if req.access != crate::domain::Access::Read {
+        return Err(Refusal::invalid("a source is read, never written"));
+    }
+    let (location, credential) = crate::connections::storage(&state.db, &connection).await?;
+    super::jobs::output::vended(&credential, &location, req.access).await
 }
 
 /// The routes this module serves.
@@ -313,5 +287,5 @@ pub fn router() -> OpenApiRouter<AppState> {
         ))
         .routes(routes!(validate_connection))
         .routes(routes!(list_connection_files))
-        .routes(routes!(read_source_object))
+        .routes(routes!(vend_source_credentials))
 }

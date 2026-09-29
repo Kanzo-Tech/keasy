@@ -1,12 +1,11 @@
 //! Connections: a credential put to use — a storage prefix or a model.
 
-pub mod locator;
 pub mod persistence;
 
 use crate::database::Database;
 use crate::domain::{
     ConnectionTarget, ConnectionView, Credential, CredentialSpecInput, ModelCredentialInput,
-    ResourceName, StorageCredentialInput, StorageUrl,
+    ResourceName, StorageCredentialInput, StorageLocation,
 };
 use crate::error::Refusal;
 
@@ -16,10 +15,11 @@ pub async fn named(db: &Database, name: &str) -> Result<ConnectionView, Refusal>
 }
 
 /// The credential `connection` points at, checked for its purpose and — for a
-/// storage connection — for reaching the URL's store.
+/// storage connection — for reaching the URL's store. The storage URL is
+/// rewritten in its canonical form, which is the form every reader expands.
 fn fits(
     credential: Option<Credential>,
-    connection: &ConnectionView,
+    connection: &mut ConnectionView,
 ) -> Result<Credential, Refusal> {
     let credential = credential.ok_or_else(|| {
         Refusal::invalid(format!(
@@ -37,12 +37,62 @@ fn fits(
         )));
     }
     if let (ConnectionTarget::Storage(target), CredentialSpecInput::Storage(spec)) =
-        (&connection.target, &credential.spec)
+        (&mut connection.target, &credential.spec)
     {
-        let url = StorageUrl::parse(&target.url).map_err(Refusal::invalid)?;
-        crate::storage_client::store(spec, &url).map_err(Refusal::invalid)?;
+        let location = StorageLocation::parse(&target.url)
+            .and_then(|l| l.within(spec))
+            .map_err(Refusal::invalid)?;
+        crate::storage_client::store(spec, &location).map_err(Refusal::invalid)?;
+        target.url = location.to_string();
     }
     Ok(credential)
+}
+
+/// Refuse a storage location that shares a prefix with another connection's,
+/// the sink's included — Unity Catalog's rule that external locations never
+/// overlap. With it, every object has at most one connection over it, and a
+/// source can never reach into the sink.
+async fn disjoint(
+    db: &Database,
+    connection: &ConnectionView,
+    name: Option<&str>,
+) -> Result<(), Refusal> {
+    let Some(location) = located(db, connection).await? else {
+        return Ok(());
+    };
+    let others = persistence::list(&*db.read().await, None)?;
+    let mut overlapping = Vec::new();
+    for other in others.iter().filter(|o| Some(o.name.as_str()) != name) {
+        if let Some(theirs) = located(db, other).await?
+            && theirs.overlaps(&location)
+        {
+            overlapping.push(other.name.clone());
+        }
+    }
+    if overlapping.is_empty() {
+        return Ok(());
+    }
+    Err(Refusal::overlaps(
+        format!(
+            "{location} overlaps the location of {}: a prefix belongs to one connection",
+            overlapping.join(", ")
+        ),
+        overlapping,
+    ))
+}
+
+/// A storage connection's location as its credential reaches it; `None` for
+/// a model connection.
+async fn located(
+    db: &Database,
+    connection: &ConnectionView,
+) -> Result<Option<StorageLocation>, Refusal> {
+    if connection.target.storage().is_none() {
+        return Ok(None);
+    }
+    storage(db, connection)
+        .await
+        .map(|(location, _)| Some(location))
 }
 
 /// Check, probe and store `connection` as `name`'s new state (a new one when
@@ -59,7 +109,8 @@ pub async fn save(
         db.secret_key(),
         &connection.credential,
     )?;
-    let credential = fits(credential, &connection)?;
+    let credential = fits(credential, &mut connection)?;
+    disjoint(db, &connection, name).await?;
     let report = crate::credentials::probe::connection(&credential.spec, &connection.target).await;
     if !report.passed() {
         return Err(Refusal::probe_failed(report.failures(), Vec::new()));
@@ -94,20 +145,23 @@ pub async fn create(
     save(db, None, connection, by).await
 }
 
-/// A storage connection's URL and the credential it signs with.
+/// A storage connection's location, as its credential reaches it, and that credential.
 pub async fn storage(
     db: &Database,
     connection: &ConnectionView,
-) -> Result<(StorageUrl, StorageCredentialInput), Refusal> {
+) -> Result<(StorageLocation, StorageCredentialInput), Refusal> {
     let target = connection.target.storage().ok_or_else(|| {
         Refusal::invalid(format!("{:?} is not a storage connection", connection.name))
     })?;
-    let url = StorageUrl::parse(&target.url).map_err(Refusal::invalid)?;
+    let location = StorageLocation::parse(&target.url).map_err(Refusal::invalid)?;
     match crate::credentials::named(db, &connection.credential)
         .await?
         .spec
     {
-        CredentialSpecInput::Storage(spec) => Ok((url, spec)),
+        CredentialSpecInput::Storage(spec) => {
+            let location = location.within(&spec).map_err(Refusal::invalid)?;
+            Ok((location, spec))
+        }
         CredentialSpecInput::Model(_) => Err(Refusal::invalid("not a storage credential")),
     }
 }

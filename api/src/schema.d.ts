@@ -128,6 +128,27 @@ export interface paths {
         patch: operations["update_connection"];
         trace?: never;
     };
+    "/v1/connections/{name}/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Vend a read credential over a source connection's prefix — Unity Catalog's
+         *     temporary path credentials over an external location. Sources are read,
+         *     never written; the sink is reached only through its jobs.
+         */
+        post: operations["vend_source_credentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/connections/{name}/files": {
         parameters: {
             query?: never;
@@ -271,28 +292,7 @@ export interface paths {
         patch: operations["complete_job"];
         trace?: never;
     };
-    "/v1/jobs/{id}/objects": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Read one object of the dataset: the URL a reader holds for as long as it
-         *     reads, which redirects to the store. GET and HEAD alike — a range reader
-         *     probes with HEAD, and S3 refuses one sent to a URL signed for GET.
-         */
-        get: operations["read_output_object"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/output/urls": {
+    "/v1/jobs/{id}/credentials": {
         parameters: {
             query?: never;
             header?: never;
@@ -302,10 +302,11 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Sign PUT URLs so the browser uploads the output it just produced straight to
-         *     the job's sink.
+         * Vend a credential over the job's dataset, `{sink}/{job_id}/`: to read it
+         *     once the job has completed, or to write it while the job runs. The store
+         *     holds the boundary, so the credential opens nothing else.
          */
-        post: operations["resolve_output_urls"];
+        post: operations["vend_job_credentials"];
         delete?: never;
         options?: never;
         head?: never;
@@ -337,29 +338,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/objects": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Read what a locator names, with the credential of the source it lies under:
-         *     the URL a reader holds for as long as it reads, which redirects to the store
-         *     signed for this request's method. A member reads what every source holds,
-         *     and the sink only through the job that wrote it. A public HTTP locator
-         *     redirects to itself.
-         */
-        get: operations["read_source_object"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/version": {
         parameters: {
             query?: never;
@@ -380,6 +358,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description What a vended credential lets its holder do under its prefix.
+         * @enum {string}
+         */
+        Access: "read" | "write";
         ChatMessage: {
             content: string;
             role: components["schemas"]["ChatRole"];
@@ -393,8 +376,8 @@ export interface components {
         };
         /**
          * @description The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
-         *     the mapping in the browser (`@fossil-lang/executor`) and uploading the output
-         *     by signed PUT, the client reports the run's outcome. `manifest` is the
+         *     the mapping in the browser (`@fossil-lang/executor`) and writing the output
+         *     with the credential vended for the job, the client reports the run's outcome. `manifest` is the
          *     executor's run report, stored verbatim and never read.
          */
         CompleteJobRequest: {
@@ -489,19 +472,15 @@ export interface components {
             used_by: string[];
             validation?: null | components["schemas"]["ValidationReport"];
         };
+        CredentialsRequest: {
+            access: components["schemas"]["Access"];
+        };
         /** @description A completed job's output, as the owner's datasets view lists it. */
         Dataset: {
             completed_at?: string | null;
             job_id: string;
             name?: string | null;
             relations: components["schemas"]["OutputRelation"][];
-        };
-        DatasetUrlsRequest: {
-            /**
-             * @description Paths relative to the dataset: the executor's output, which keasy signs
-             *     as it is handed.
-             */
-            paths: string[];
         };
         /**
          * @description A source is read through `@name/…`; the one sink is where job output lands.
@@ -523,7 +502,7 @@ export interface components {
          *     declare here cannot be sent, and the web keys its copy by this enum.
          * @enum {string}
          */
-        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "invalid_path" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "still_running" | "invalid_destination" | "no_destination" | "already_exists" | "in_use" | "probe_failed" | "list_files_failed" | "store_error" | "sign_error" | "ai_not_configured" | "ai_connection_required" | "insufficient_credits" | "llm_failed";
+        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "not_running" | "still_running" | "invalid_destination" | "no_destination" | "already_exists" | "in_use" | "overlaps" | "probe_failed" | "list_files_failed" | "store_error" | "ai_not_configured" | "ai_connection_required" | "insufficient_credits" | "llm_failed";
         /** @description One object under a connection's prefix. */
         FileEntry: {
             last_modified?: string | null;
@@ -649,12 +628,6 @@ export interface components {
             data_type: string;
             name: string;
         };
-        ResolveResponse: {
-            /** @description Dataset-relative path → signed URL. */
-            files: {
-                [key: string]: string;
-            };
-        };
         StorageCredentialInput: {
             access_key_id: string;
             /**
@@ -662,10 +635,20 @@ export interface components {
              * @description MinIO, R2 or a gateway. An `http://` endpoint opts into plain HTTP.
              */
             endpoint?: string | null;
+            /**
+             * @description AWS's guard against the confused deputy, when the role's trust
+             *     policy asks for one.
+             */
+            external_id?: string | null;
             /** @enum {string} */
             kind: "s3";
             /** @default us-east-1 */
             region?: string;
+            /**
+             * @description The role keasy assumes to vend a credential scoped to one prefix.
+             *     AWS needs it; S3-compatible stores (MinIO, Ceph) ignore it.
+             */
+            role_arn?: string | null;
             /** Format: password */
             secret_access_key: $Write<string>;
         } | {
@@ -674,12 +657,6 @@ export interface components {
             key: $Write<string>;
             /** @enum {string} */
             kind: "azure_account_key";
-        } | {
-            account: string;
-            /** @enum {string} */
-            kind: "azure_sas";
-            /** Format: password */
-            sas_token: $Write<string>;
         } | {
             account: string;
             client_id: string;
@@ -692,17 +669,15 @@ export interface components {
         StorageCredentialView: {
             access_key_id: string;
             endpoint?: string | null;
+            external_id?: string | null;
             /** @enum {string} */
             kind: "s3";
             region: string;
+            role_arn?: string | null;
         } | {
             account: string;
             /** @enum {string} */
             kind: "azure_account_key";
-        } | {
-            account: string;
-            /** @enum {string} */
-            kind: "azure_sas";
         } | {
             account: string;
             client_id: string;
@@ -748,6 +723,25 @@ export interface components {
         ValidationReport: {
             at: string;
             results: components["schemas"]["Check"][];
+        };
+        /**
+         * @description A credential scoped to one prefix, for a lifetime — Iceberg REST's
+         *     `StorageCredential`, keys and all (`s3.access-key-id`, `s3.session-token`,
+         *     `s3.session-token-expires-at-ms`, `adls.sas-token.<host>`, …), so any
+         *     reader of vended credentials reads it. Handing it out is the point, so
+         *     this is the one response type that carries a secret: its values stay
+         *     [`SecretString`] until the moment they are written into the response.
+         */
+        VendedCredential: {
+            config: {
+                [key: string]: string;
+            };
+            /** @description The canonical prefix it opens, ending in `/`. */
+            prefix: string;
+        };
+        VendedCredentials: {
+            /** @description One per prefix; a reader picks the longest prefix that holds a path. */
+            storage_credentials: components["schemas"]["VendedCredential"][];
         };
         /**
          * @description The running build's version, so an operator can see which image a tenant is
@@ -1173,6 +1167,65 @@ export interface operations {
             };
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    vend_source_credentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Connection name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CredentialsRequest"];
+            };
+        };
+        responses: {
+            /** @description A credential that opens the source's prefix, and only it, for an hour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendedCredentials"];
+                };
+            };
+            /** @description Not a storage source, or an access a source does not give */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description No such connection */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            /** @description The store refused to vend */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             503: components["responses"]["KeysUnavailable"];
         };
     };
@@ -1809,54 +1862,7 @@ export interface operations {
             503: components["responses"]["KeysUnavailable"];
         };
     };
-    read_output_object: {
-        parameters: {
-            query: {
-                /** @description A path relative to the dataset (`vertex/Person/tiles.parquet`). */
-                path: string;
-            };
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description To the object, signed for this request's method */
-            307: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description The destination connection is gone, or a path outside the dataset */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    resolve_output_urls: {
+    vend_job_credentials: {
         parameters: {
             query?: never;
             header?: never;
@@ -1868,26 +1874,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["DatasetUrlsRequest"];
+                "application/json": components["schemas"]["CredentialsRequest"];
             };
         };
         responses: {
-            /** @description Signed PUT URLs for the output keys */
+            /** @description A credential that opens the job's dataset, and only it, for an hour */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ResolveResponse"];
-                };
-            };
-            /** @description The destination connection is gone, or a path outside the dataset */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/json": components["schemas"]["VendedCredentials"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -1901,8 +1898,26 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description Read before the job completed, or write while it is not running */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
+            /** @description The store refused to vend */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             503: components["responses"]["KeysUnavailable"];
         };
     };
@@ -1943,41 +1958,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    read_source_object: {
-        parameters: {
-            query: {
-                /** @description A locator fossil expanded from `@name/path` (`s3://bucket/prefix/users.csv`). */
-                locator: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description To the object, signed for this request's method */
-            307: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description No source connection holds the locator */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -20,30 +20,23 @@ const dev = process.env.NODE_ENV === "development";
  * hole in it: no script from a foreign origin, no `eval`, no plugins, no
  * `<base>` rewrite, no form posting somewhere else, and no framing at all.
  *
+ * No script, worker or `.wasm` comes from another origin: DuckDB, its httpfs
+ * extension and fossil's compiler are this app's own assets.
+ *
  * The permissive parts are the product, not laziness:
  *
- *  - `cdn.jsdelivr.net` — `@uwdata/mosaic-core`'s `wasmConnector` loads DuckDB
- *    from jsDelivr's bundles, so the worker `importScripts` from there and the
- *    `.wasm` is fetched from there.
- *  - `blob:` in `worker-src` and `script-src` — that same connector builds its
- *    worker from a Blob.
  *  - `'wasm-unsafe-eval'` — compiling WebAssembly at all. Fossil's compiler and
  *    DuckDB both run in this browser; that is the architecture.
- *  - `connect-src https:` — Discovery reads Parquet by signed URL straight from
- *    the workspace's own cloud account. The hosts are the customer's, so they
- *    cannot be enumerated here; narrowing this to `'self'` would turn the whole
- *    data plane off.
+ *  - `connect-src https:` — the browser reads and writes the workspace's own
+ *    cloud account with a credential keasy vends for one prefix. The hosts are
+ *    the customer's, and this policy is fixed when the image is built, so they
+ *    cannot be enumerated here; narrowing it means a policy rendered per request
+ *    from the workspace's credentials, which is the nonce work above.
  */
 function contentSecurityPolicy(): string {
   const directives: Record<string, string[]> = {
     "default-src": ["'self'"],
-    "script-src": [
-      "'self'",
-      "'unsafe-inline'",
-      "'wasm-unsafe-eval'",
-      "blob:",
-      "https://cdn.jsdelivr.net",
-    ],
+    "script-src": ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'"],
     // Tailwind ships a stylesheet, but Ark UI and the theme set positions and
     // custom properties inline as they measure, which no nonce reaches.
     "style-src": ["'self'", "'unsafe-inline'"],
@@ -52,7 +45,7 @@ function contentSecurityPolicy(): string {
     "font-src": ["'self'", "data:"],
     "img-src": ["'self'", "data:", "blob:"],
     "connect-src": ["'self'", "https:", "blob:", "data:"],
-    "worker-src": ["'self'", "blob:"],
+    "worker-src": ["'self'"],
     "frame-src": ["'self'"],
     "object-src": ["'none'"],
     "base-uri": ["'self'"],

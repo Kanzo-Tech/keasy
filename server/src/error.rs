@@ -21,12 +21,14 @@ pub enum ErrorCode {
     RateLimited,
     ValidationFailed,
     InvalidFormat,
-    InvalidPath,
     NotFound,
     Forbidden,
     InternalError,
     NotDraft,
+    /// A job's output is read once the job has completed.
     NotCompleted,
+    /// A job's output is written only while the job runs.
+    NotRunning,
     StillRunning,
     InvalidDestination,
     NoDestination,
@@ -34,12 +36,15 @@ pub enum ErrorCode {
     AlreadyExists,
     /// Still used: `dependents` names what uses it.
     InUse,
+    /// A storage connection's location lies within another's, or holds one:
+    /// `dependents` names them. Locations never overlap, so a prefix has one
+    /// owner.
+    Overlaps,
     /// A credential or connection did not validate against its store or
     /// provider; `dependents` names the connections that failed.
     ProbeFailed,
     ListFilesFailed,
     StoreError,
-    SignError,
     AiNotConfigured,
     /// Several model connections exist and the call named none.
     AiConnectionRequired,
@@ -104,6 +109,16 @@ impl Refusal {
             ErrorCode::ValidationFailed,
             message,
         )
+    }
+
+    /// A storage location that would share a prefix with `dependents`.
+    pub fn overlaps(message: impl Into<String>, dependents: Vec<String>) -> Self {
+        Self::Status {
+            status: StatusCode::CONFLICT,
+            error: ErrorCode::Overlaps,
+            message: message.into(),
+            dependents,
+        }
     }
 
     /// A probe failed: the store or provider did not accept what it was shown.

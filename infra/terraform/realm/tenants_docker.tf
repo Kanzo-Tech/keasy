@@ -109,15 +109,17 @@ resource "docker_service" "server" {
     }
   }
 
+  # stop-first: the server owns a SQLite file, which takes one writer. A
+  # start-first rollout has the old and the new task open it at once.
   update_config {
-    order             = "start-first"
+    order             = "stop-first"
     failure_action    = "rollback"
     monitor           = "30s"
     max_failure_ratio = "0.0"
     parallelism       = 1
   }
   rollback_config {
-    order = "start-first"
+    order = "stop-first"
   }
 
   # No Traefik router, and that is the BFF: the API is reachable only from the

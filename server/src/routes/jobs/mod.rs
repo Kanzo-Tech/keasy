@@ -33,8 +33,8 @@ pub struct UpdateJobRequest {
 }
 
 /// The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
-/// the mapping in the browser (`@fossil-lang/executor`) and uploading the output
-/// by signed PUT, the client reports the run's outcome. `manifest` is the
+/// the mapping in the browser (`@fossil-lang/executor`) and writing the output
+/// with the credential vended for the job, the client reports the run's outcome. `manifest` is the
 /// executor's run report, stored verbatim and never read.
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CompleteJobRequest {
@@ -98,8 +98,8 @@ pub async fn create_job(
         ));
     }
 
-    // A `Pending` job is run by the browser: sources by signed GET, output by
-    // signed PUT, outcome by `PATCH /v1/jobs/{id}`.
+    // A `Pending` job is run by the browser: sources and output through
+    // credentials vended per prefix, outcome by `PATCH /v1/jobs/{id}`.
     let (status, code) = if payload.draft {
         (JobStatus::Draft, StatusCode::CREATED)
     } else {

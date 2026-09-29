@@ -68,3 +68,79 @@ pub async fn download(
     let bytes = result.bytes().await.map_err(|e| e.to_string())?;
     Ok(bytes.to_vec())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cloud::{CloudStore, build_store};
+    use object_store::ObjectStore;
+
+    /// Connectivity test: write, list, read back and delete one object
+    /// against a live S3-compatible endpoint — the local MinIO from
+    /// `make dev-minio` — through the same `reader` functions the connection
+    /// routes use.
+    ///
+    /// `#[ignore]` because it needs a live S3 endpoint + creds. Run it inside
+    /// the server container while `make dev-minio` is up:
+    ///
+    /// ```sh
+    /// export AWS_ACCESS_KEY_ID=… AWS_SECRET_ACCESS_KEY=… \
+    ///        AWS_DEFAULT_REGION=… AWS_ENDPOINT_URL=…           # the MinIO creds
+    /// export KEASY_MINIO_TEST_URL=s3://connector-test/
+    /// cargo test --lib cloud::reader::tests::round_trips_an_object_through_minio \
+    ///   -- --ignored --nocapture
+    /// ```
+    ///
+    /// Limitations:
+    /// - If a step fails midway, the test stops before the cleanup and leaves
+    ///   one small object under `keasy-connectivity-test/` in the bucket
+    ///   (delete it from the MinIO console at http://localhost:9001).
+    /// - It covers the server-side storage layer (`reader` + object_store)
+    ///   only: not the HTTP API/auth, nor the browser path that jobs use
+    ///   (presigned URLs fetched by the browser).
+    #[tokio::test]
+    #[ignore = "needs live S3 endpoint + creds (make dev-minio)"]
+    async fn round_trips_an_object_through_minio() {
+        let base = std::env::var("KEASY_MINIO_TEST_URL")
+            .expect("set KEASY_MINIO_TEST_URL to a bucket URL, e.g. s3://connector-test/");
+        let creds: HashMap<String, String> = [
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+            "AWS_DEFAULT_REGION",
+            "AWS_ENDPOINT_URL",
+        ]
+        .into_iter()
+        .filter_map(|k| std::env::var(k).ok().map(|v| (k.to_string(), v)))
+        .collect();
+
+        // Unique name per run, under its own prefix, so runs never collide
+        // with each other or with real data in the bucket.
+        let dir = format!("{}/keasy-connectivity-test", base.trim_end_matches('/'));
+        let name = format!("{}.csv", uuid::Uuid::new_v4());
+        let url = format!("{dir}/{name}");
+        let content = b"id,name\n1,keasy\n".to_vec();
+
+        upload(&url, content.clone(), &creds)
+            .await
+            .expect("write the object");
+
+        let listed = list_files(&dir, &creds).await.expect("list the prefix");
+        assert!(
+            listed.iter().any(|f| f.path.ends_with(&name)),
+            "written object is listed: {name}"
+        );
+
+        let read = download(&url, &creds).await.expect("read the object back");
+        assert_eq!(read, content, "read back exactly what was written");
+
+        // Clean up: keasy has no delete, so go through object_store directly.
+        let (store, path) = build_store(&url, &creds).expect("store for cleanup");
+        match store {
+            CloudStore::S3(s) => s.delete(&path).await,
+            CloudStore::Azure(s) => s.delete(&path).await,
+        }
+        .expect("delete the test object");
+
+        eprintln!("✓ MinIO round trip: {url} written, listed, read back and deleted");
+    }
+}

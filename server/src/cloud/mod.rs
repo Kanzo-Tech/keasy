@@ -151,12 +151,117 @@ pub fn build_store(
             MicrosoftAzureBuilder::new().with_container_name(&bucket),
             AzureConfigKey, &fields, creds
         ).build()?),
-        "s3" => CloudStore::S3(apply_creds!(
-            AmazonS3Builder::new().with_bucket_name(&bucket),
-            AmazonS3ConfigKey, &fields, creds
-        ).build()?),
+        "s3" => {
+            let mut builder = AmazonS3Builder::new().with_bucket_name(&bucket);
+
+            // S3-compatible stores used in local development (for example
+            // MinIO) commonly expose an HTTP endpoint. object_store rejects
+            // clear-text endpoints unless they are explicitly enabled on the
+            // builder. This is intentionally scoped to a configured http://
+            // endpoint; AWS S3 and HTTPS-compatible endpoints stay unchanged.
+            //
+            // Debug builds only (same dev/prod split as CORS and rate limiting
+            // in `routes`): release builds keep object_store's default and
+            // refuse clear-text endpoints, so production always talks TLS.
+            if cfg!(debug_assertions)
+                && creds
+                    .get("AWS_ENDPOINT_URL")
+                    .is_some_and(|endpoint| endpoint.starts_with("http://"))
+            {
+                builder = builder.with_allow_http(true);
+            }
+
+            CloudStore::S3(apply_creds!(builder, AmazonS3ConfigKey, &fields, creds).build()?)
+        }
         _ => return Err(format!("no builder for provider: {}", provider.id).into()),
     };
 
     Ok((store, path))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn builds_s3_compatible_store_with_http_endpoint() {
+        let creds = HashMap::from([
+            (
+                "AWS_ACCESS_KEY_ID".to_string(),
+                "test-access-key".to_string(),
+            ),
+            (
+                "AWS_SECRET_ACCESS_KEY".to_string(),
+                "test-secret-key".to_string(),
+            ),
+            ("AWS_DEFAULT_REGION".to_string(), "us-east-1".to_string()),
+            (
+                "AWS_ENDPOINT_URL".to_string(),
+                "http://minio:9000".to_string(),
+            ),
+        ]);
+
+        if let Err(error) = build_store("s3://connector-test/", &creds) {
+            panic!("HTTP S3-compatible endpoints must be explicitly allowed: {error}");
+        }
+    }
+
+    /// `http://` endpoints reach the network only in debug builds.
+    ///
+    /// `build()` succeeds either way: object_store refuses a clear-text
+    /// endpoint only when it is about to send a request. So this test starts a
+    /// tiny local HTTP server that answers 404 and sends it one request:
+    /// - debug build (`make dev`, `make test-minio`, CI): the request reaches
+    ///   the server, which answers 404 (`NotFound`);
+    /// - release build (production): object_store refuses it before sending.
+    ///
+    /// Check the release side without a full release build:
+    /// `cargo test --lib cloud::tests --config 'profile.dev.package.keasy-server.debug-assertions=false'`
+    #[tokio::test]
+    async fn http_endpoints_are_debug_only() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        use tokio::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut buf = [0u8; 1024];
+            let n = socket.read(&mut buf).await.unwrap();
+            assert!(n > 0, "the request reached the fake server");
+            socket
+                .write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n")
+                .await
+                .unwrap();
+        });
+
+        let endpoint = format!("http://{addr}");
+        let creds: HashMap<String, String> = [
+            ("AWS_ACCESS_KEY_ID", "test-access-key"),
+            ("AWS_SECRET_ACCESS_KEY", "test-secret-key"),
+            ("AWS_DEFAULT_REGION", "us-east-1"),
+            ("AWS_ENDPOINT_URL", endpoint.as_str()),
+        ]
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), v.to_string()))
+        .collect();
+
+        let url = "s3://connector-test/probe.txt";
+        let (store, path) = build_store(url, &creds).expect("store builds");
+        let err = store.head(&path).await.expect_err("no 200 here");
+
+        if cfg!(debug_assertions) {
+            assert!(
+                matches!(err, object_store::Error::NotFound { .. }),
+                "debug build: the request must reach the endpoint, got {err}"
+            );
+            server.await.expect("the fake server received the request");
+        } else {
+            assert!(
+                !matches!(err, object_store::Error::NotFound { .. }),
+                "release build: clear-text endpoints must be refused, got {err}"
+            );
+            server.abort();
+        }
+    }
 }

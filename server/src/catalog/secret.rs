@@ -59,6 +59,12 @@ fn s3(name: &str, scope: &str, config: &HashMap<String, String>) -> Option<Strin
         // (DuckDB wants host[:port]), force path-style addressing, and match TLS
         // to the endpoint scheme.
         let use_ssl = !endpoint.starts_with("http://");
+        // Clear-text endpoints are for local development only (MinIO). Release
+        // builds refuse them, same dev/prod split as `cloud::build_store`: no
+        // secret → the catalog treats the dataset as a registration miss.
+        if !use_ssl && !cfg!(debug_assertions) {
+            return None;
+        }
         let host = endpoint.trim_start_matches("https://").trim_start_matches("http://");
         p.push(("ENDPOINT", q(host)));
         p.push(("URL_STYLE", q("path")));
@@ -156,8 +162,12 @@ mod tests {
         let http = sql("s3://b", &[
             ("AWS_ACCESS_KEY_ID", "k"), ("AWS_SECRET_ACCESS_KEY", "s"),
             ("AWS_ENDPOINT_URL", "http://localhost:9000"),
-        ]).unwrap();
-        assert!(http.contains("USE_SSL false"));
+        ]);
+        if cfg!(debug_assertions) {
+            assert!(http.expect("dev accepts http").contains("USE_SSL false"));
+        } else {
+            assert!(http.is_none(), "release builds refuse clear-text endpoints");
+        }
     }
 
     #[test]

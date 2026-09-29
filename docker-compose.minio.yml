@@ -1,0 +1,59 @@
+# Optional managed MinIO overlay.
+# Usage: make setup-minio or make dev-minio
+
+services:
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-keasytest}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-KeasyTest2026Local}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      default:
+        aliases:
+          # Jobs execute in the BROWSER (DuckDB-WASM), so the S3 endpoint string
+          # must work on BOTH sides: the server signs the URLs (and reads Parquet
+          # footers itself), the browser then fetches them. `minio` only resolves
+          # inside the compose network, `localhost` only on the host — and SigV4
+          # signs the Host header, so the two sides cannot use different names or
+          # MinIO answers 403.
+          #
+          # `*.localtest.me` resolves to 127.0.0.1 in public DNS, so the browser
+          # reaches the published port; this alias makes the SAME name resolve to
+          # the container inside the network. Point the cloud account's endpoint
+          # at http://minio.localtest.me:9000 and both sides agree.
+          #
+          # Without this, a browser job fails with `TypeError: Failed to fetch`
+          # while the connection itself validates fine from the server.
+          - minio.localtest.me
+
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+    restart: "no"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        until mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"; do
+          sleep 2
+        done
+        mc mb --ignore-existing "local/$$MINIO_DEFAULT_BUCKET"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-keasytest}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-KeasyTest2026Local}
+      MINIO_DEFAULT_BUCKET: ${MINIO_DEFAULT_BUCKET:-connector-test}
+    depends_on:
+      minio:
+        condition: service_healthy
+
+volumes:
+  minio-data:

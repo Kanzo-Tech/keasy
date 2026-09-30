@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { Database, FileText, GalleryVerticalEnd, KeyRound, type LucideIcon } from "lucide-react";
 import {
-  Card,
+  FormatNumber,
   SectionHeader,
   SectionTitle,
   SectionTitleGroup,
-  Skeleton,
-  StatTile,
+  StatDescription,
+  StatIndicator,
+  StatLabel,
+  StatRoot,
+  StatValue,
 } from "@kanzo-tech/ui";
 import { $api, type Schemas } from "@/lib/api/client";
 import { storageOf } from "@/lib/connections";
@@ -102,21 +105,20 @@ export function MemberDashboard() {
             { label: "Completed", value: count(["completed"]) },
             { label: "Failed", value: count(["failed"]) },
             { label: "Running", value: count(["pending", "running"]) },
-          ].map((stat) =>
-            loading ? (
-              <Skeleton className="h-24" key={stat.label} />
-            ) : (
-              <StatTile key={stat.label} label={stat.label} value={stat.value} />
-            ),
-          )}
+          ].map((stat) => (
+            <StatRoot key={stat.label}>
+              <StatLabel>{stat.label}</StatLabel>
+              <StatValue loading={loading}>
+                <FormatNumber value={stat.value} />
+              </StatValue>
+            </StatRoot>
+          ))}
         </div>
       </section>
     </>
   );
 }
 
-// The kanzo-ui `metric-card` showcase's arrangement: a Card that is the link, its status
-// tinting the icon disc.
 function Tiles({ heading, tiles }: { heading: string; tiles: Tile[] }) {
   return (
     <section className="space-y-3">
@@ -127,29 +129,20 @@ function Tiles({ heading, tiles }: { heading: string; tiles: Tile[] }) {
       </SectionHeader>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tiles.map((tile) => (
-          <Card
+          <StatRoot
             asChild
-            className="group/tile flex h-full min-h-32 flex-col gap-0 rounded-lg px-5 py-4 shadow-none transition-colors hover:border-primary/40"
-            data-status={tile.ok === undefined ? "neutral" : tile.ok ? "ok" : "warn"}
             key={tile.href}
+            variant={tile.ok === undefined ? "default" : tile.ok ? "success" : "warning"}
           >
             <Link href={tile.href}>
-              <div className="flex min-w-0 items-center gap-2">
-                <div className="shrink-0 rounded-full bg-muted p-1.5 text-muted-foreground group-data-[status=ok]/tile:bg-success/10 group-data-[status=warn]/tile:bg-warning/10 group-data-[status=ok]/tile:text-success group-data-[status=warn]/tile:text-warning [&_svg]:size-3.5">
-                  <tile.icon />
-                </div>
-                <span className="truncate font-medium text-muted-foreground text-sm">{tile.title}</span>
-              </div>
-              <div className="flex flex-1 items-end pt-3">
-                {tile.value === undefined ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  <p className="font-semibold text-2xl tracking-tight">{tile.value}</p>
-                )}
-              </div>
-              <p className="pt-1 text-muted-foreground text-sm">{tile.description}</p>
+              <StatIndicator>
+                <tile.icon />
+              </StatIndicator>
+              <StatLabel>{tile.title}</StatLabel>
+              <StatValue loading={tile.value === undefined}>{tile.value}</StatValue>
+              <StatDescription>{tile.description}</StatDescription>
             </Link>
-          </Card>
+          </StatRoot>
         ))}
       </div>
     </section>

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Database, FileText, GalleryVerticalEnd, KeyRound, type LucideIcon } from "lucide-react";
 import {
   FormatNumber,
@@ -15,6 +14,7 @@ import {
   StatRoot,
   StatValue,
 } from "@kanzo-tech/ui";
+import { Link } from "@kanzo-tech/navigation/next";
 import { $api, type Schemas } from "@/lib/api/client";
 import { storageOf } from "@/lib/connections";
 import { hasRunningJobs } from "@/lib/jobs";

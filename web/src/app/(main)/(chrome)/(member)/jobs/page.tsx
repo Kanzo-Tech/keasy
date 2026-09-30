@@ -1,8 +1,6 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Briefcase, Plus } from "lucide-react";
 import {
   Badge,
@@ -31,6 +29,7 @@ import {
   sortableHeader,
   useDataTable,
 } from "@kanzo-tech/ui/table";
+import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { $api, invalidate, type Schemas } from "@/lib/api/client";
 import { formatDate, formatJobDuration } from "@/lib/ui/format";
 import { hasRunningJobs, isTerminalStatus } from "@/lib/jobs";

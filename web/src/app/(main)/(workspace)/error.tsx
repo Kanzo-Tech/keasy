@@ -4,7 +4,7 @@ import {
   Button,
   ShellMain,
 } from "@kanzo-tech/ui";
-import Link from "next/link";
+import { Link } from "@kanzo-tech/navigation/next";
 
 export default function WorkspaceError({
   error,

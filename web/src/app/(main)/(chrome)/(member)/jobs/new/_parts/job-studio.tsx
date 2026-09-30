@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Badge,
@@ -39,6 +39,7 @@ import {
   toast,
 } from "@kanzo-tech/ui";
 import { ChevronDown, Pencil, PlugZap, Save, X } from "lucide-react";
+import { useRouter } from "@kanzo-tech/navigation/next";
 import { $api, http, invalidate } from "@/lib/api/client";
 import { storageConnections } from "@/lib/connections";
 import { toastError } from "@/lib/errors";
@@ -48,7 +49,7 @@ import { ModePicker } from "./mode-picker";
 import { StudioConfigure, type ConfigValues } from "./studio-configure";
 import { StudioEditor } from "./studio-editor";
 import { StudioSummary } from "./studio-summary";
-import { useBeforeUnload } from "@/lib/ui/use-before-unload";
+import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { useJobEditorStore } from "./job-editor-store";
 
 const STEPS = ["Editor", "Configure", "Summary"] as const;
@@ -213,7 +214,7 @@ export function JobStudio() {
   });
 
   const submitting = confirmMutation.isPending || confirmMutation.isSuccess;
-  useBeforeUnload(!saved && !submitting);
+  const dirty = !saved && !submitting;
 
   const config: ConfigValues = {
     sinkConnectionId: store.sinkConnectionId,
@@ -409,6 +410,7 @@ export function JobStudio() {
           </ToggleGroup>
         </Show>
       </div>
+      <UnsavedChangesGuard dirty={dirty} />
     </Steps>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import Link from "next/link";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { AlertCircle, ArrowLeft, ArrowRight, Database, Plus, Wand2 } from "lucide-react";
 import { type AiStatus, type RunState, Task, TaskList, TaskStatus, TaskTitle, useAiStream } from "@kanzo-tech/ai";
@@ -48,6 +47,7 @@ import {
   selectColumn,
   useDataTable,
 } from "@kanzo-tech/ui/table";
+import { Link } from "@kanzo-tech/navigation/next";
 import { $api } from "@/lib/api/client";
 import { type CompletionRequest, streamText } from "@/lib/ai/stream";
 import {

@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { AlertCircle, Sparkles } from "lucide-react";
 import type { ExecuteSqlResult, SqlCorpus } from "@fossil-lang/corpus";
 import {
@@ -53,6 +52,7 @@ import {
   useAiStream,
 } from "@kanzo-tech/ai";
 import { MessageMarkdown } from "@kanzo-tech/ai/markdown";
+import { Link } from "@kanzo-tech/navigation/next";
 import { $api, ApiError } from "@/lib/api/client";
 import { type ChatMessage, completeText, streamText } from "@/lib/ai/stream";
 import { explainRequest, parsePlan, queryRequest } from "./query-prompts";

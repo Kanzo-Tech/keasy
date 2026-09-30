@@ -1,7 +1,6 @@
 "use client";
 
 import { use } from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertCircle, Compass } from "lucide-react";
 import {
@@ -19,6 +18,7 @@ import {
   SectionRoot,
   Skeleton,
 } from "@kanzo-tech/ui";
+import { Link } from "@kanzo-tech/navigation/next";
 import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api } from "@/lib/api/client";
 import { storageConnections } from "@/lib/connections";

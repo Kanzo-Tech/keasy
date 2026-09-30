@@ -1,8 +1,6 @@
 "use client";
 
 import { use, useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Button,
   createListCollection,
@@ -21,9 +19,10 @@ import {
   SelectValue,
   toast,
 } from "@kanzo-tech/ui";
+import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { initialValues, SpecForm, toBody } from "@/components/spec-form";
 import { schemaOf } from "@/lib/api/spec";
-import { useBeforeUnload } from "@/lib/ui/use-before-unload";
+import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { $api, type Inputs, invalidate } from "@/lib/api/client";
 import { specOf } from "@/lib/connections";
 import { getProviderIcon } from "@/lib/ui/provider-icons";
@@ -66,7 +65,7 @@ export default function NewConnectionPage({ searchParams }: { searchParams: Prom
     onError: (err) => toastError(err, "The connection was not created"),
   });
   const creating = create.isPending || create.isSuccess;
-  useBeforeUnload(!!(name || credential) && !creating);
+  const dirty = !!(name || credential) && !creating;
 
   const submit = () => {
     if (!inner) return;
@@ -140,6 +139,7 @@ export default function NewConnectionPage({ searchParams }: { searchParams: Prom
           Validate and create
         </Button>
       </SectionFooter>
+      <UnsavedChangesGuard dirty={dirty} />
     </SectionRoot>
   );
 }

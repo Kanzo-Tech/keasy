@@ -1,8 +1,6 @@
 "use client";
 
 import { use, useMemo } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { BookOpen, Database, Plus, Sparkles } from "lucide-react";
 import {
   Badge,
@@ -34,6 +32,7 @@ import {
   sortableHeader,
   useDataTable,
 } from "@kanzo-tech/ui/table";
+import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
 import { type Connection, modelOf, storageOf } from "@/lib/connections";

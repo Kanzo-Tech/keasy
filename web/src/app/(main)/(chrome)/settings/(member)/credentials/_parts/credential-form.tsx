@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { notFound, useRouter } from "next/navigation";
+import { notFound } from "next/navigation";
 import {
   Badge,
   Button,
@@ -16,9 +16,10 @@ import {
   Skeleton,
   toast,
 } from "@kanzo-tech/ui";
+import { useRouter } from "@kanzo-tech/navigation/next";
 import { initialValues, SpecForm, toBody } from "@/components/spec-form";
 import { schemaOf } from "@/lib/api/spec";
-import { useBeforeUnload } from "@/lib/ui/use-before-unload";
+import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api, type Inputs, invalidate } from "@/lib/api/client";
 import { type Credential, type Purpose, specOf } from "@/lib/connections";
@@ -77,7 +78,7 @@ function Form({ credential, purpose }: { credential?: Credential; purpose: Purpo
   });
   const saving = create.isPending || update.isPending || create.isSuccess || update.isSuccess;
 
-  useBeforeUnload(!!(name || probeUrl) && !credential && !saving);
+  const dirty = !!(name || probeUrl) && !credential && !saving;
 
   const save = () => {
     if (!spec) return;
@@ -135,6 +136,7 @@ function Form({ credential, purpose }: { credential?: Credential; purpose: Purpo
           {credential ? "Validate and rotate" : "Validate and save"}
         </Button>
       </SectionFooter>
+      <UnsavedChangesGuard dirty={dirty} />
     </SectionRoot>
   );
 }

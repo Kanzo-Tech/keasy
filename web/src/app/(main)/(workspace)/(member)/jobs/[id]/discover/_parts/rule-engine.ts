@@ -1,4 +1,4 @@
-import { Query, asc, count, desc, sql } from "@kanzo-tech/ui/analytics";
+import { Query, asc, count, sql } from "@kanzo-tech/ui/analytics";
 import {
   and,
   column,
@@ -45,9 +45,8 @@ export interface Rule {
 export interface RuleResult {
   rule: Rule;
   passed: boolean;
+  /** Vertices that break the rule; `-1` when the rule is incomplete or its query failed. */
   violationCount: number;
-  violations: Record<string, unknown>[];
-  totalRows: number;
 }
 
 // ── Operator metadata ────────────────────────────────────────────────────
@@ -75,8 +74,14 @@ export const OPERATOR_META: Record<RuleOperator, OperatorMeta> = {
 
 // ── Violation expression builder ─────────────────────────────────────────
 
+/**
+ * The builders read FROM a relation as the corpus names it — `"jobs/7"."Person"`, catalog and all —
+ * which mosaic-sql would quote again as one identifier, so it rides `verbatim`.
+ */
+const from = (relation: string) => Query.from(verbatim(relation));
+
 /** Build a mosaic-sql expression that matches VIOLATING rows for a rule. */
-function violationExpr(rule: Rule): ExprNode | null {
+function violationExpr(rule: Rule, relation: string): ExprNode | null {
   const col = column(rule.fieldKey);
   const meta = OPERATOR_META[rule.operator];
 
@@ -109,51 +114,28 @@ function violationExpr(rule: Rule): ExprNode | null {
         isNotNull(col),
         isNull(sql`TRY_CAST(${col} AS ${String(rule.value).toUpperCase()})`),
       );
-    case "unique":
-      return null; // unique uses a different query shape
+    case "unique": {
+      // A row breaks uniqueness when its value is one another row also holds.
+      const repeated = from(relation).select({ v: col }).groupby(col).having(gt(count(), literal(1)));
+      return sql`${col} IN (${repeated})`;
+    }
   }
 }
 
 // ── Query builders (return mosaic-sql Query objects) ─────────────────────
 
-/**
- * The builders read FROM a relation as the corpus names it — `"jobs/7"."Person"`, catalog and all —
- * which mosaic-sql would quote again as one identifier, so it rides `verbatim`.
- */
-const from = (relation: string) => Query.from(verbatim(relation));
-
-/** Query that returns sample violation rows (up to limit). */
-export function ruleViolationQuery(rule: Rule, relation: string, limit = 100): Query | null {
-  if (rule.operator === "unique") {
-    return from(relation)
-      .select({ [rule.fieldKey]: column(rule.fieldKey), duplicate_count: count() })
-      .groupby(column(rule.fieldKey))
-      .having(gt(count(), literal(1)))
-      .orderby(desc("duplicate_count"))
-      .limit(limit);
-  }
-  const expr = violationExpr(rule);
+/** Query that returns the key of every vertex that breaks the rule — what the canvas selects. */
+export function ruleIdsQuery(rule: Rule, relation: string, key: string): Query | null {
+  const expr = violationExpr(rule, relation);
   if (!expr) return null;
-  return from(relation).select("*").where(expr).limit(limit);
+  return from(relation).select({ id: column(key) }).where(expr);
 }
 
-/** Query that returns the count of violations. */
+/** Query that returns the count of vertices that break the rule. */
 export function ruleCountQuery(rule: Rule, relation: string): Query | null {
-  if (rule.operator === "unique") {
-    const sub = from(relation)
-      .select({ one: literal(1) })
-      .groupby(column(rule.fieldKey))
-      .having(gt(count(), literal(1)));
-    return Query.select({ cnt: count() }).from(sub);
-  }
-  const expr = violationExpr(rule);
+  const expr = violationExpr(rule, relation);
   if (!expr) return null;
   return from(relation).select({ cnt: count() }).where(expr);
-}
-
-/** Query that returns total row count for a given type. */
-export function totalRowCountQuery(relation: string): Query {
-  return from(relation).select({ cnt: count() });
 }
 
 /** Query for distinct values of a field (autocomplete). */
@@ -182,42 +164,17 @@ export async function runRules(
   execQuery: QueryFn,
   relation: (typeName: string) => string,
 ): Promise<RuleResult[]> {
-  // Fetch total row counts per unique type in parallel
-  const uniqueTypes = [...new Set(rules.map((r) => r.typeName ?? ""))];
-  const typeCounts = new Map<string, number>();
-  await Promise.all(
-    uniqueTypes.map(async (t) => {
-      const [row] = await execQuery(totalRowCountQuery(relation(t)));
-      typeCounts.set(t, Number(row.cnt));
-    }),
-  );
-
-  // Execute all rules in parallel
-  const results = await Promise.all(
+  return Promise.all(
     rules.map(async (rule): Promise<RuleResult> => {
-      const totalRows = typeCounts.get(rule.typeName ?? "") ?? 0;
-      if (!isRuleComplete(rule)) {
-        return { rule, passed: false, violationCount: -1, violations: [], totalRows };
-      }
+      const query = isRuleComplete(rule) ? ruleCountQuery(rule, relation(rule.typeName ?? "")) : null;
+      if (!query) return { rule, passed: false, violationCount: -1 };
       try {
-        const countQ = ruleCountQuery(rule, relation(rule.typeName ?? ""));
-        if (!countQ) {
-          return { rule, passed: false, violationCount: -1, violations: [], totalRows };
-        }
-        const [countRow] = await execQuery(countQ);
-        const violationCount = Number(countRow.cnt);
-
-        const violationQ = ruleViolationQuery(rule, relation(rule.typeName ?? ""));
-        const violations = violationCount > 0 && violationQ
-          ? await execQuery(violationQ)
-          : [];
-
-        return { rule, passed: violationCount === 0, violationCount, violations, totalRows };
+        const [row] = await execQuery(query);
+        const violationCount = Number(row.cnt);
+        return { rule, passed: violationCount === 0, violationCount };
       } catch {
-        return { rule, passed: false, violationCount: -1, violations: [], totalRows };
+        return { rule, passed: false, violationCount: -1 };
       }
     }),
   );
-
-  return results;
 }

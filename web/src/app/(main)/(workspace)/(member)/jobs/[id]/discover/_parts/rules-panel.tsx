@@ -1,147 +1,134 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { CheckCircle2, Play, Plus, ShieldCheck, X, XCircle } from "lucide-react";
-import {
-  Badge,
-  Button,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyIndicator,
-  EmptyRoot,
-  EmptyTitle,
-  ScrollArea,
-  Spinner,
-} from "@kanzo-tech/ui";
-import { useCorpus } from "./corpus";
-import type { SchemaResult } from "@fossil-lang/corpus";
-import { type Rule, type RuleResult, runRules } from "./rule-engine";
-import { EntitySelect, FieldSelect, OperatorSelect, ValueInput } from "./rule-fields";
+import { XIcon } from "lucide-react";
+import { Button, cn, ScrollArea, Show, Skeleton } from "@kanzo-tech/ui";
+import { numbers } from "@kanzo-tech/ui/analytics";
+import { useGraphContext } from "@kanzo-tech/graph";
+import { corpusKey } from "@/lib/fossil/corpus";
+import { useCorpus, useFieldStats } from "./corpus";
+import { Finding } from "./finding";
+import { OPERATOR_META, type Rule, ruleIdsQuery, runRules } from "./rule-engine";
+import { RuleBuilder } from "./rule-fields";
 
-interface RulesState {
-  rules: Rule[];
-  results: RuleResult[];
-  running: boolean;
-}
-
-/** Rules live in this browser only, per job; results and the run flag are not persisted. */
+/** Rules live in this browser only, per job. */
 function createRulesStore(jobId: string) {
-  return create<RulesState>()(
-    persist((): RulesState => ({ rules: [], results: [], running: false }), {
-      name: `keasy:rules:${jobId}`,
-      partialize: (s) => ({ rules: s.rules }),
-    }),
-  );
+  return create<{ rules: Rule[] }>()(persist(() => ({ rules: [] as Rule[] }), { name: `keasy:rules:${jobId}` }));
 }
 
-export function RulesPanel({ jobId, schema }: { jobId: string; schema: SchemaResult }) {
-  const { coordinator, relation } = useCorpus();
+const sentence = (rule: Rule) => {
+  const meta = OPERATOR_META[rule.operator];
+  const value = meta.needsValues ? (rule.values ?? []).join(", ") : meta.needsValue ? String(rule.value ?? "") : "";
+  return `${rule.fieldKey} · ${meta.label.toLowerCase()}${value ? ` ${value}` : ""}`;
+};
+
+/**
+ * The Rules panel — the data-quality rules, compiled to SQL, with the graph as the report. Each
+ * rule's count is one query against its vertex table, re-run as the rules change; pressing a rule
+ * selects the vertices that break it, so the canvas lights exactly those, the legend retallies and
+ * the inspector reads them. The counts are read against the whole corpus, not the current view: a
+ * report that changed as you browsed would be a different question every time you looked.
+ */
+export function RulesPanel() {
+  const { jobId, coordinator, manifest, relation } = useCorpus();
+  const { tables } = useFieldStats();
+  const { select } = useGraphContext();
   const [useRules] = useState(() => createRulesStore(jobId));
-  const { rules, results, running } = useRules();
+  const { rules } = useRules();
 
-  const add = () => {
-    const t = schema.vertices[0];
-    if (!t?.fields[0]) return;
-    const rule: Rule = { id: crypto.randomUUID(), fieldKey: t.fields[0], operator: "not_null", typeName: t.name };
-    useRules.setState((s) => ({ rules: [...s.rules, rule] }));
-  };
-  const update = (id: string, updated: Rule) =>
-    useRules.setState((s) => ({ rules: s.rules.map((r) => (r.id === id ? updated : r)) }));
-  const remove = (id: string) =>
-    useRules.setState((s) => ({
-      rules: s.rules.filter((r) => r.id !== id),
-      results: s.results.filter((r) => r.rule.id !== id),
-    }));
-
-  const runAll = async () => {
-    useRules.setState({ running: true });
-    try {
-      const results = await runRules(rules, async (q) =>
-        (await coordinator.query(q, { type: "json" })) as unknown as Record<string, unknown>[],
+  const results = useQuery({
+    queryKey: [...corpusKey(jobId), "rules", rules],
+    queryFn: () =>
+      runRules(
+        rules,
+        async (q) => (await coordinator.query(q, { type: "json" })) as unknown as Record<string, unknown>[],
         relation,
-      );
-      useRules.setState({ results });
-    } finally {
-      useRules.setState({ running: false });
-    }
+      ),
+    staleTime: Infinity,
+  });
+  const pending = results.data === undefined;
+  const countOf = (i: number) => results.data?.[i]?.violationCount ?? -1;
+  const violations = (results.data ?? []).reduce((n, r) => n + Math.max(r.violationCount, 0), 0);
+
+  const keyOf = (type: string | undefined) => manifest.vertex_tables.find((t) => t.name === type)?.key ?? "dense_id";
+  const failingIds = async (rule: Rule) => {
+    const query = ruleIdsQuery(rule, relation(rule.typeName ?? ""), keyOf(rule.typeName));
+    return query ? numbers(await coordinator.query(query), "id") : [];
   };
 
-  const resultOf = useMemo(() => new Map(results.map((r) => [r.rule.id, r])), [results]);
-  const passed = results.filter((r) => r.passed).length;
-
-  if (rules.length === 0) {
-    return (
-      <EmptyRoot>
-        <EmptyHeader>
-          <EmptyIndicator variant="icon">
-            <ShieldCheck />
-          </EmptyIndicator>
-          <EmptyTitle asChild>
-            <h3>No rules</h3>
-          </EmptyTitle>
-          <EmptyDescription>Add data quality rules to validate your dataset.</EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          <Button disabled={schema.vertices.length === 0} onClick={add} size="sm" variant="outline">
-            <Plus /> Add rule
-          </Button>
-        </EmptyContent>
-      </EmptyRoot>
-    );
-  }
+  /** A rule that no longer exists must not keep lighting up vertices. */
+  const unfocus = () => select(null);
+  const add = (draft: Omit<Rule, "id">) => {
+    unfocus();
+    useRules.setState((s) => ({ rules: [...s.rules, { id: crypto.randomUUID(), ...draft }] }));
+  };
+  const remove = (id: string) => {
+    unfocus();
+    useRules.setState((s) => ({ rules: s.rules.filter((r) => r.id !== id) }));
+  };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex h-8 shrink-0 items-center justify-end gap-1 border-b px-2">
-        {results.length > 0 && (
-          <Badge variant={passed === results.length ? "success" : "destructive"}>
-            {passed}/{results.length}
-          </Badge>
+    <ScrollArea className="h-full p-3">
+      <div className="space-y-3">
+        {rules.length === 0 ? (
+          <p className="text-muted-foreground text-xs">No rules yet. Add one below to check the data.</p>
+        ) : pending ? (
+          <Skeleton className="h-4 w-32" />
+        ) : violations === 0 ? (
+          <p className="text-success text-xs">In order — nothing in breach.</p>
+        ) : (
+          <p className="text-destructive text-xs">{violations.toLocaleString()} violations</p>
         )}
-        <Button disabled={running} onClick={runAll} size="sm" variant="ghost">
-          {running ? <Spinner /> : <Play />}
-          Run
-        </Button>
-      </div>
-      <ScrollArea className="flex-1">
-        <div className="space-y-1 p-1.5">
-          {rules.map((rule, index) => {
-            const result = resultOf.get(rule.id);
+
+        <ul className="space-y-1">
+          {rules.map((rule, i) => {
+            const n = countOf(i);
+            const broken = n < 0;
+            const clean = !pending && n === 0;
             return (
-              <div className="group flex h-7 items-center gap-1" key={rule.id}>
-                <span className="w-11 shrink-0 ps-1 text-muted-foreground text-xs">{index === 0 ? "Where" : "And"}</span>
-                <EntitySelect onChange={(u) => update(rule.id, u)} rule={rule} schema={schema} />
-                <FieldSelect onChange={(u) => update(rule.id, u)} rule={rule} schema={schema} />
-                <OperatorSelect onChange={(u) => update(rule.id, u)} rule={rule} />
-                <div className="min-w-0 flex-1">
-                  <ValueInput onChange={(u) => update(rule.id, u)} rule={rule} />
-                </div>
-                {result &&
-                  (result.passed ? (
-                    <CheckCircle2 aria-label="Passed" className="size-3 shrink-0 text-success" />
-                  ) : (
-                    <XCircle aria-label="Failed" className="size-3 shrink-0 text-destructive" />
-                  ))}
+              <li className="flex items-stretch gap-1" key={rule.id}>
+                <Finding
+                  disabled={pending || clean || broken}
+                  label={`${rule.typeName} ${sentence(rule)}`}
+                  load={() => failingIds(rule)}
+                  source="order"
+                >
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "size-1.5 shrink-0 rounded-full",
+                        pending && "bg-muted-foreground",
+                        !pending && (clean ? "bg-success" : broken ? "bg-warning" : "bg-destructive"),
+                      )}
+                    />
+                    <code className="font-mono text-[10px] text-muted-foreground">{rule.typeName}</code>
+                    <span className={cn("ms-auto text-xs tabular-nums", pending && "text-muted-foreground")}>
+                      {pending ? "…" : clean ? "✓" : broken ? "?" : n.toLocaleString()}
+                    </span>
+                  </span>
+                  <span className="mt-0.5 block truncate font-mono text-[11px]">{sentence(rule)}</span>
+                </Finding>
                 <Button
-                  aria-label="Remove rule"
-                  className="opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
+                  aria-label={`Remove ${sentence(rule)}`}
+                  className="h-auto shrink-0 self-stretch text-muted-foreground"
                   onClick={() => remove(rule.id)}
                   size="icon-sm"
                   variant="ghost"
                 >
-                  <X />
+                  <XIcon className="size-3.5" />
                 </Button>
-              </div>
+              </li>
             );
           })}
-          <Button className="ms-11" onClick={add} size="sm" variant="ghost">
-            <Plus /> Add filter
-          </Button>
-        </div>
-      </ScrollArea>
-    </div>
+        </ul>
+
+        <Show fallback={<Skeleton className="h-40 w-full" />} when={tables.length > 0}>
+          <RuleBuilder onAdd={add} rules={rules} tables={tables} />
+        </Show>
+      </div>
+    </ScrollArea>
   );
 }

@@ -3,18 +3,21 @@ import type { Job } from "@fossil-lang/executor";
 import { http, type Schemas } from "@/lib/api/client";
 import { openJobCorpus } from "@/lib/fossil/corpus";
 import { host } from "@/lib/fossil/host";
+import { runFailure } from "@/lib/jobs";
 
 /**
  * A job as `runJob` takes it: every byte goes through keasy's one {@link host};
  * the run report crosses untouched, since `CompleteJobRequest.manifest` is
- * opaque JSON on the server.
+ * opaque JSON on the server. A failure is reported by the runner instead, which
+ * holds the thrown error and not only its message.
  */
 function makeJob(id: string): Job {
   return {
     id,
     host,
-    complete: async ({ status, manifest, error }) => {
-      await http.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body: { status, manifest, error } });
+    complete: async ({ status, manifest }) => {
+      if (status === "failed") return;
+      await http.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body: { status, manifest } });
     },
   };
 }
@@ -57,7 +60,7 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         const mod = await import("@fossil-lang/executor");
         await mod.initFossilExecutor();
         // runJob reads every document and source the program names through the
-        // host, and reports the terminal `completed`/`failed` PATCH itself.
+        // host, and reports `completed` itself; a failure is PATCHed below.
         await mod.runJob(program, makeJob(jobId));
 
         // Tell the host what it is now storing. The run report says what was
@@ -71,15 +74,21 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         try {
           const corpus = await openJobCorpus(jobId);
           try {
-            // The corpus names its files under its own base; keasy stores them relative to
-            // the dataset.
-            const lent = corpus.url.endsWith("/") ? corpus.url : `${corpus.url}/`;
-            const relations = (await corpus.relations()).map((r) => ({
-              name: r.name,
-              rows: r.rows,
-              files: r.files.map((f) => (f.startsWith(lent) ? f.slice(lent.length) : f)),
-              columns: r.kind === "vertex" ? r.columns.map((c) => ({ name: c.name, data_type: c.type })) : undefined,
-            }));
+            // The manifest names each table's file relative to the corpus root, which is
+            // how keasy stores it.
+            const relation = (t: { name: string; record_count: number; path: string }) => ({
+              name: t.name,
+              rows: t.record_count,
+              files: [t.path],
+            });
+            const { vertex_tables, edge_tables } = corpus.manifest;
+            const relations = [
+              ...vertex_tables.map((t) => ({
+                ...relation(t),
+                columns: t.properties.map((p) => ({ name: p.name, data_type: p.type })),
+              })),
+              ...edge_tables.map(relation),
+            ];
             await http.PUT("/v1/jobs/{id}/relations", { params: { path: { id: jobId } }, body: { relations } });
           } finally {
             await corpus.close();
@@ -88,8 +97,10 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
           console.error(`publishing the corpus relations failed (${jobId})`, err);
         }
       } catch (err) {
-        // runJob already best-effort PATCHes `failed`; nothing else to do but log.
         console.error(`browser job run failed (${jobId})`, err);
+        await http
+          .PATCH("/v1/jobs/{id}", { params: { path: { id: jobId } }, body: { status: "failed", error: runFailure(err) } })
+          .catch(() => {});
       }
     })();
     // Key off the stable fields, not the `job` object — the 3s poll allocates a

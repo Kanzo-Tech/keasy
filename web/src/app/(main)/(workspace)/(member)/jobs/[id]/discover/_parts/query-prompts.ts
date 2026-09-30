@@ -24,15 +24,17 @@ those tables and those columns, and invent no others.
 ${schema}
 
 ## Joining
-A table whose columns are \`"source"\` and \`"target"\` is an edge table,
-and its comment names the two vertex tables it connects. Both columns
-hold \`"_id"\` values of those tables:
+A table whose comment names two key columns is an edge table: each of those
+columns holds the key of the vertex table the comment names beside it.
 \`\`\`
 SELECT t.*
 FROM "SourceTable" s
-JOIN "EdgeTable" e ON s."_id" = e."source"
-JOIN "TargetTable" t ON t."_id" = e."target"
+JOIN "EdgeTable" e ON s."dense_id" = e."src"
+JOIN "TargetTable" t ON t."dense_id" = e."dst"
 \`\`\`
+Every vertex table's \`"dense_id"\` is unique across the whole graph, so
+include it in a SELECT over vertices: the answer can then be shown on the
+graph.
 
 ## DuckDB SQL rules
 - Name every table exactly as its CREATE TABLE above does, catalog included

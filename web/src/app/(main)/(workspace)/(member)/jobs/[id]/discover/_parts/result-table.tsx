@@ -8,23 +8,23 @@ import {
   DataTableRoot,
   useDataTable,
 } from "@kanzo-tech/ui/table";
-import type { ExecuteSqlResult } from "@fossil-lang/corpus";
+import type { SqlResult } from "@fossil-lang/corpus";
 
-type Row = Record<string, unknown>;
+type Row = readonly unknown[];
 
 /** A statement's answer, whoever wrote the statement: the columns come out of the result itself. */
-export function ResultTable({ result, pageSize }: { result: ExecuteSqlResult; pageSize: number }) {
+export function ResultTable({ result, pageSize }: { result: SqlResult; pageSize: number }) {
   const defs = useMemo<ColumnDef<Row>[]>(
     () =>
-      // Not `accessorKey`: a column named with a dot would read as a deep path.
-      result.columns.map(({ name: key }) => ({
+      result.columns.map((key, index) => ({
         id: key,
-        accessorFn: (row: Row) => row[key],
+        header: key,
+        accessorFn: (row: Row) => row[index],
         cell: ({ row }) =>
-          row.original[key] == null ? (
+          row.original[index] == null ? (
             <span className="text-muted-foreground">null</span>
           ) : (
-            <span className="font-mono">{String(row.original[key])}</span>
+            <span className="font-mono">{String(row.original[index])}</span>
           ),
       })),
     [result],

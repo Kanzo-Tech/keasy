@@ -2,10 +2,11 @@
 
 import { createContext, use, type ReactNode } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import type { SchemaResult, SqlCorpus } from "@fossil-lang/corpus";
+import type { Manifest, SqlCorpus, SqlResult } from "@fossil-lang/corpus";
 import { MosaicProvider, engine, type Coordinator } from "@kanzo-tech/ui/analytics";
 import { queryClient } from "@/lib/api/query-client";
 import { corpusKey, openJobCorpus } from "@/lib/fossil/corpus";
+import { summarize, type TableStats } from "./field-stats";
 
 /** Everything read off a corpus is read once, and dropped with the page. */
 export const ONCE = { staleTime: Infinity, gcTime: 0, retry: false } as const;
@@ -14,25 +15,25 @@ export interface Corpus {
   jobId: string;
   coordinator: Coordinator;
   corpus: SqlCorpus;
-  /** What the schema verb answered at boot. */
-  schema: SchemaResult;
+  manifest: Manifest;
   /** A relation's name as SQL reads it: `"jobs/7"."Person"`, in the corpus's own catalog. */
   relation: (name: string) => string;
 }
+
+const quote = (name: string) => `"${name.replaceAll('"', '""')}"`;
 
 export function corpusQuery(jobId: string) {
   return queryOptions({
     queryKey: corpusKey(jobId),
     queryFn: async (): Promise<Corpus> => {
       const [{ coordinator }, corpus] = await Promise.all([engine(), openJobCorpus(jobId)]);
-      const [schema, relations] = await Promise.all([corpus.schema(), corpus.relations()]);
-      const sql = new Map(relations.map((r) => [r.name, r.sql]));
+      const { manifest } = corpus;
+      const names = new Set([...manifest.vertex_tables, ...manifest.edge_tables].map((t) => t.name));
       const relation = (name: string) => {
-        const found = sql.get(name);
-        if (found === undefined) throw new Error(`The corpus has no relation ${name}`);
-        return found;
+        if (!names.has(name)) throw new Error(`The corpus has no relation ${name}`);
+        return `${quote(corpus.url)}.${quote(name)}`;
       };
-      return { jobId, coordinator, corpus, schema, relation };
+      return { jobId, coordinator, corpus, manifest, relation };
     },
     ...ONCE,
   });
@@ -63,17 +64,23 @@ export function useCorpus(): Corpus {
   return corpus;
 }
 
-/** The boot schema with every type's field statistics (`stats`) once they land; empty until then. */
-export function useGraphSchema(): { schema: SchemaResult; error: Error | null } {
-  const { jobId, corpus, schema } = useCorpus();
+/** Every vertex table's column statistics, one `SUMMARIZE` each; empty until they land. */
+export function useFieldStats(): { tables: TableStats[]; error: Error | null } {
+  const { jobId, corpus, manifest, relation } = useCorpus();
   const stats = useQuery({
     queryKey: [...corpusKey(jobId), "stats"],
-    queryFn: () => corpus.schema({ stats: true }),
+    queryFn: () =>
+      Promise.all(
+        manifest.vertex_tables.map(async (table) =>
+          summarize(table, await corpus.sql(`SUMMARIZE ${relation(table.name)}`)),
+        ),
+      ),
     ...ONCE,
   });
-  return { schema: stats.data ?? schema, error: stats.error };
+  return { tables: stats.data ?? [], error: stats.error };
 }
 
-/** One vertex type's field statistics. */
-export const fieldsOf = (schema: SchemaResult, type: string) =>
-  schema.vertices.find((v) => v.name === type)?.stats ?? [];
+/** A `sql` answer's rows as objects keyed by column, the shape a table and a model read. */
+export function recordsOf(result: SqlResult): Record<string, unknown>[] {
+  return result.rows.map((row) => Object.fromEntries(result.columns.map((name, i) => [name, row[i]])));
+}

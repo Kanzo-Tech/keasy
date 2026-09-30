@@ -1,42 +1,84 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { use, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, Info, MessageCircle, ShieldCheck, Terminal, X } from "lucide-react";
 import {
-  GraphCanvas,
-  GraphInspector,
-  GraphLegend,
-  GraphRoot,
-  GraphToolbar,
-  scaleOf,
-  useGraphPrefs,
-} from "@kanzo-tech/graph";
+  BarChart3Icon,
+  InfoIcon,
+  MessageCircleIcon,
+  NetworkIcon,
+  Settings2Icon,
+  ShieldCheckIcon,
+  XIcon,
+} from "lucide-react";
+import { GraphCanvas, GraphLegend, GraphRoot, GraphToolbar, useGraphPrefs, useGraphState } from "@kanzo-tech/graph";
 import { useCrossfilter } from "@kanzo-tech/ui/analytics";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
+  Badge,
   Button,
   Resizable,
   ResizablePanel,
   ResizableResizeTrigger,
-  ScrollArea,
   ShellAside,
   ShellBody,
   ShellFooter,
   ShellMain,
+  Show,
+  Skeleton,
   Spinner,
+  Status,
   ToggleGroup,
   ToggleGroupItem,
+  toast,
 } from "@kanzo-tech/ui";
 import { $api } from "@/lib/api/client";
-import { AnalysisPanel } from "./_parts/analysis-panel";
+import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import { AskPanel } from "./_parts/ask-panel";
-import { ClassLegend } from "./_parts/class-legend";
-import { CorpusProvider, corpusQuery, useCorpus, useGraphSchema } from "./_parts/corpus";
+import { CorpusProvider, corpusQuery, useCorpus } from "./_parts/corpus";
+import { GraphInfo } from "./_parts/graph-info";
+import { GraphSettings } from "./_parts/graph-settings";
 import { RulesPanel } from "./_parts/rules-panel";
-import { SqlPanel } from "./_parts/sql-panel";
+
+/**
+ * Discovery, composed as kanzo-ui's `workspace` showcase: the header picks what `ShellMain` shows
+ * (Graph · Dashboard), the footer strip picks which panel the dock holds (Info · Ask · Rules ·
+ * Settings) and collapses it when the active icon is pressed again. Both views and every panel read
+ * one graph and one crossfilter, so a lasso on the canvas filters the dashboard and a rule pressed in
+ * the dock lights the canvas.
+ */
+
+// vgplot evaluated during the prerender is a TDZ, so the dashboard loads client-only.
+const DashboardView = dynamic(() => import("./_parts/dashboard-view"), {
+  ssr: false,
+  loading: () => <Skeleton className="h-full w-full" />,
+});
+
+const PANELS = [
+  { id: "info", label: "Info", icon: InfoIcon },
+  { id: "ask", label: "Ask", icon: MessageCircleIcon },
+  { id: "rules", label: "Rules", icon: ShieldCheckIcon },
+  { id: "settings", label: "Settings", icon: Settings2Icon },
+] as const;
+
+type PanelId = (typeof PANELS)[number]["id"];
+
+const PANEL_BODY: Record<PanelId, React.ComponentType> = {
+  info: GraphInfo,
+  ask: AskPanel,
+  rules: RulesPanel,
+  settings: GraphSettings,
+};
+
+const VIEWS = [
+  { id: "graph", label: "Graph", icon: NetworkIcon },
+  { id: "dashboard", label: "Dashboard", icon: BarChart3Icon },
+] as const;
+
+type ViewId = (typeof VIEWS)[number]["id"];
 
 export default function DiscoverPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -62,72 +104,106 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
   }
   return (
     <CorpusProvider value={corpus.data}>
-      <Workspace jobId={id} />
+      <Workspace />
     </CorpusProvider>
   );
 }
 
-function Workspace({ jobId }: { jobId: string }) {
-  const { corpus } = useCorpus();
-  const { schema, error: schemaError } = useGraphSchema();
-  const [chosenType, setChosenType] = useState<string | null>(null);
-  // Derived, not synced: the first class the corpus names is drawn until a reader picks another.
-  const vertexType = chosenType ?? schema.vertices[0]?.name ?? null;
-  const [failure, setFailure] = useState<string | null>(null);
-  const { look, sim } = useGraphPrefs();
-  const crossfilter = useCrossfilter();
-  // One class at a time, so the class's own colour is the constant every point wears.
-  const typeIndex = schema.vertices.findIndex((t) => t.name === vertexType);
-  const identity = corpus.types.vertices.find((t) => t.type === vertexType)?.identity ?? undefined;
+/** A failure, as a toast — once per message, and after the commit that reported it. */
+function announce(title: string): void {
+  queueMicrotask(() => {
+    if (!toast.isVisible(title)) toast.create({ id: title, title, type: "error" });
+  });
+}
 
-  const [activePanel, setActivePanel] = useState<string | null>("info");
-  const panels = [
-    {
-      id: "info",
-      icon: Info,
-      label: "Info",
-      content: (
-        <ScrollArea className="h-full">
-          <GraphInspector className="p-3" />
-        </ScrollArea>
-      ),
-    },
-    { id: "ask", icon: MessageCircle, label: "Ask AI", content: <AskPanel graphSchema={schema} /> },
-    { id: "rules", icon: ShieldCheck, label: "Rules", content: <RulesPanel jobId={jobId} schema={schema} /> },
-    { id: "sql", icon: Terminal, label: "SQL", content: <SqlPanel /> },
-    { id: "analysis", icon: BarChart3, label: "Analysis", content: <AnalysisPanel schema={schema} /> },
-  ];
-  const panel = panels.find((p) => p.id === activePanel);
-  const problem = failure ?? schemaError?.message;
-
-  const canvas = (
-    <ShellMain className="relative size-full overflow-hidden">
-      <GraphCanvas className="flex-1">
-        <ClassLegend
-          className="absolute start-2 top-2 z-10 max-w-52"
-          onChange={setChosenType}
-          schema={schema}
-          value={vertexType}
-        />
-        <GraphToolbar className="absolute end-2 bottom-2 z-10" orientation="vertical" />
+function GraphRegion() {
+  const failed = useGraphState((s) => s.status === "failed");
+  return (
+    <ShellMain className="relative size-full bg-background">
+      <GraphCanvas className="absolute inset-0">
+        <GraphToolbar className="absolute end-2 top-2 z-10" />
         <GraphLegend className="absolute start-2 bottom-2 z-10" />
+        <Show when={failed}>
+          <p className="absolute inset-0 grid place-items-center p-6 text-center text-muted-foreground text-sm">
+            The graph could not be drawn here — the corpus would not open, or this browser offers no WebGL
+            context.
+          </p>
+        </Show>
       </GraphCanvas>
     </ShellMain>
   );
+}
+
+function DashboardRegion() {
+  return (
+    <ShellMain className="min-h-0 bg-background">
+      <DashboardView />
+    </ShellMain>
+  );
+}
+
+/** The footer: what the corpus holds, and whether all of it has been drawn. */
+function CorpusCounts() {
+  const { manifest } = useCorpus();
+  const status = useGraphState((s) => s.status);
+  const count = (tables: readonly { record_count: number }[]) =>
+    tables.reduce((sum, table) => sum + table.record_count, 0);
+  return (
+    <span className="flex items-center gap-2 px-1 text-muted-foreground text-xs tabular-nums">
+      {count(manifest.vertex_tables).toLocaleString()} nodes · {count(manifest.edge_tables).toLocaleString()} edges
+      <Badge className="gap-1.5" size="xs" variant="outline">
+        <Status
+          className="ring-0"
+          size="sm"
+          variant={status === "idle" ? "success" : status === "failed" ? "destructive" : "info"}
+        />
+        {status}
+      </Badge>
+    </span>
+  );
+}
+
+function Workspace() {
+  const { corpus } = useCorpus();
+  const { look } = useGraphPrefs();
+  const crossfilter = useCrossfilter();
+  const [active, setActive] = useState<PanelId>("info");
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [view, setView] = useState<ViewId>("graph");
+
+  const ActiveBody = PANEL_BODY[active];
+  const activeLabel = PANELS.find((p) => p.id === active)?.label ?? "";
+  const MainRegion = view === "graph" ? GraphRegion : DashboardRegion;
 
   return (
-    <GraphRoot
-      corpus={corpus}
-      fill={typeIndex >= 0 ? scaleOf({}).color(typeIndex) : undefined}
-      filterBy={crossfilter}
-      look={look}
-      onFailure={setFailure}
-      sim={sim}
-      title={identity}
-      type={vertexType ?? undefined}
-    >
+    <GraphRoot corpus={corpus} filterBy={crossfilter} look={look} onFailure={announce}>
+      <HeaderEnd>
+        {/* Switching to the dashboard closes the dock: a dashboard is judged at full width. Reopen it
+            from the footer strip. */}
+        <ToggleGroup
+          aria-label="View"
+          multiple={false}
+          onValueChange={(d) => {
+            const next = d.value[0] as ViewId | undefined;
+            if (!next) return;
+            setView(next);
+            if (next === "dashboard") setPanelOpen(false);
+          }}
+          size="sm"
+          spacing={2}
+          value={[view]}
+        >
+          {VIEWS.map((v) => (
+            <ToggleGroupItem key={v.id} value={v.id}>
+              <v.icon />
+              {v.label}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      </HeaderEnd>
+
       <ShellBody className="min-w-0">
-        {panel ? (
+        <Show fallback={<MainRegion />} when={panelOpen}>
           <Resizable
             className="min-h-0"
             defaultSize={[72, 28]}
@@ -137,50 +213,58 @@ function Workspace({ jobId }: { jobId: string }) {
             ]}
           >
             <ResizablePanel className="relative min-w-0 overflow-hidden" id="canvas">
-              {canvas}
+              <MainRegion />
             </ResizablePanel>
             <ResizableResizeTrigger id="canvas:dock" withHandle />
             <ResizablePanel className="flex min-h-0 min-w-0 flex-col" id="dock">
-              <ShellAside aria-label={`${panel.label} panel`} className="size-full min-h-0 border-s-0 bg-card" side="end">
+              <ShellAside
+                aria-label={`${activeLabel} panel`}
+                className="size-full min-h-0 border-s-0 bg-card"
+                side="end"
+              >
                 <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3">
-                  <span className="font-medium text-sm">{panel.label}</span>
-                  <Button
-                    aria-label="Close panel"
-                    className="-me-1 ms-auto"
-                    onClick={() => setActivePanel(null)}
-                    size="icon-sm"
-                    variant="ghost"
-                  >
-                    <X />
-                  </Button>
+                  <span className="font-medium text-sm">{activeLabel}</span>
+                  <div className="ms-auto flex items-center gap-1">
+                    <Button
+                      aria-label="Close panel"
+                      className="-me-1"
+                      onClick={() => setPanelOpen(false)}
+                      size="icon-sm"
+                      variant="ghost"
+                    >
+                      <XIcon />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex min-h-0 flex-1 flex-col">{panel.content}</div>
+                <div className="min-h-0 flex-1">
+                  <ActiveBody />
+                </div>
               </ShellAside>
             </ResizablePanel>
           </Resizable>
-        ) : (
-          canvas
-        )}
+        </Show>
       </ShellBody>
 
-      <ShellFooter className="h-8 flex-row items-center justify-between gap-3 px-2 text-muted-foreground text-xs">
-        <div className="flex min-w-0 items-center gap-3 truncate">
-          <span className="tabular-nums">
-            {schema.vertices.reduce((sum, t) => sum + t.count, 0).toLocaleString()} nodes
-            {" · "}
-            {schema.edges.reduce((sum, e) => sum + e.count, 0).toLocaleString()} edges
-          </span>
-          {problem && <span className="max-w-60 truncate text-destructive">{problem}</span>}
-        </div>
+      <ShellFooter className="h-8 flex-row items-center justify-between px-2">
+        <CorpusCounts />
+        {/* Single-select and deselectable: clicking the active icon again collapses the dock. */}
         <ToggleGroup
           aria-label="Panels"
           multiple={false}
-          onValueChange={(d) => setActivePanel(d.value[0] ?? null)}
+          onValueChange={(d) => {
+            const next = d.value[0] as PanelId | undefined;
+            if (next) {
+              setActive(next);
+              setPanelOpen(true);
+            } else {
+              setPanelOpen(false);
+            }
+          }}
           size="sm"
           spacing={2}
-          value={activePanel ? [activePanel] : []}
+          value={panelOpen ? [active] : []}
         >
-          {panels.map((p) => (
+          {PANELS.map((p) => (
             <ToggleGroupItem aria-label={p.label} key={p.id} value={p.id}>
               <p.icon />
             </ToggleGroupItem>

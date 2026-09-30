@@ -4,7 +4,6 @@ import {
   PreferencesFont,
   PreferencesMonoFont,
   PreferencesRadius,
-  PreferencesSections,
   SectionBody,
   SectionDescription,
   SectionHeader,
@@ -13,7 +12,8 @@ import {
   SectionTitleGroup,
 } from "@kanzo-tech/ui";
 
-// Each control is wired straight to `KanzoThemeProvider`: no keasy state, no round trip.
+// Each control is wired straight to `KanzoThemeProvider`: no keasy state, no round trip. The graph's
+// own settings are not here: they are in Discovery's Settings panel, beside the canvas they change.
 const SECTIONS = [
   {
     title: "Appearance",
@@ -39,12 +39,6 @@ const SECTIONS = [
         <PreferencesMonoFont />
       </>
     ),
-  },
-  {
-    // What the installed packages contribute — today `GRAPH_SECTION`.
-    title: "Graph",
-    description: "How the discovery canvas draws, and how hard its simulation pulls.",
-    body: <PreferencesSections />,
   },
 ];
 

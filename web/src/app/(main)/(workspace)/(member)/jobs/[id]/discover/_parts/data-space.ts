@@ -1,4 +1,4 @@
-import type { EdgeTypeSummary } from "@fossil-lang/corpus";
+import type { Manifest } from "@fossil-lang/corpus";
 
 interface ColumnRow {
   table_name: string;
@@ -19,14 +19,15 @@ interface ColumnRow {
  * write it — `executeSql` runs the SQL it is given, unqualified names included.
  *
  * The one fact the catalog cannot carry is which vertex tables an edge table
- * joins: the views have no foreign keys. That comes from the graph schema,
- * which fossil produced, and rides along as a comment on the edge table.
+ * joins: the views have no foreign keys. That comes from the corpus's manifest
+ * and rides along as a comment on the edge table: which column holds which
+ * vertex table's key.
  */
 export async function describeDataSpace(
   query: (sql: string) => Promise<unknown>,
   catalog: string,
   relation: (name: string) => string,
-  edges: EdgeTypeSummary[],
+  manifest: Manifest,
 ): Promise<string> {
   const rows = (await query(
     `SELECT table_name, column_name, data_type
@@ -42,8 +43,13 @@ export async function describeDataSpace(
     byTable.set(r.table_name, cols);
   }
 
+  const keys = new Map(manifest.vertex_tables.map((t) => [t.name, t.key] as const));
+  const end = (e: { key: string; references: string }) =>
+    `"${e.key}" -> ${relation(e.references)}."${keys.get(e.references) ?? "dense_id"}"`;
   const endpoints = new Map(
-    edges.map((e) => [e.table_name, `${e.source_type} --[${e.name}]--> ${e.target_type}`] as const),
+    manifest.edge_tables.map(
+      (e) => [e.name, `${e.label}: ${end(e.source)}, ${end(e.destination)}`] as const,
+    ),
   );
 
   return [...byTable]

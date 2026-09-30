@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, Sparkles } from "lucide-react";
-import type { ExecuteSqlResult, SqlCorpus } from "@fossil-lang/corpus";
+import type { SqlCorpus, SqlResult } from "@fossil-lang/corpus";
 import {
   Alert,
   AlertDescription,
@@ -57,9 +57,9 @@ import { type ChatMessage, completeText, streamText } from "@/lib/ai/stream";
 import { explainRequest, parsePlan, queryRequest } from "./query-prompts";
 import { generateSuggestions } from "./schema-suggestions";
 import { getErrorInfo } from "@/lib/errors";
-import type { SchemaResult } from "@fossil-lang/corpus";
 import { describeDataSpace } from "./data-space";
-import { useCorpus } from "./corpus";
+import { recordsOf, useCorpus, useFieldStats } from "./corpus";
+import { Finding } from "./finding";
 import { ResultTable } from "./result-table";
 
 // ── The turn ─────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ const STEPS = [
 type TurnEvent =
   | { kind: "phase"; phase: Phase }
   | { kind: "plan"; sql: string | null; answer: string; reasoning: string }
-  | { kind: "rows"; result: ExecuteSqlResult }
+  | { kind: "rows"; result: SqlResult }
   | { kind: "explain"; text: string }
   | { kind: "failed"; code: string };
 
@@ -88,7 +88,7 @@ interface Turn {
   reasoning: string;
   sql: string | null;
   answer: string;
-  result: ExecuteSqlResult | null;
+  result: SqlResult | null;
   explanation: string;
   failure: string | null;
   /** The phase the run stopped in, which is the step that wears the failure. */
@@ -157,8 +157,11 @@ interface AskOptions {
   signal: AbortSignal;
 }
 
-function sample(result: ExecuteSqlResult): string {
-  const json = JSON.stringify(result.rows.slice(0, SAMPLE_ROWS));
+/** A 64-bit integer comes back as a `bigint`, which JSON cannot carry. */
+const plain = (_: string, value: unknown) => (typeof value === "bigint" ? Number(value) : value);
+
+function sample(result: SqlResult): string {
+  const json = JSON.stringify(recordsOf({ ...result, rows: result.rows.slice(0, SAMPLE_ROWS) }), plain);
   return json.length > SAMPLE_CHARS ? `${json.slice(0, SAMPLE_CHARS)}...` : json;
 }
 
@@ -181,9 +184,9 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     }
 
     yield { kind: "phase", phase: "executing" };
-    let result: ExecuteSqlResult;
+    let result: SqlResult;
     try {
-      result = await corpus.executeSql({ sql: plan.sql });
+      result = await corpus.sql(plan.sql);
     } catch {
       yield { kind: "failed", code: "query_failed" };
       return;
@@ -304,6 +307,27 @@ function ToolCall({ turn, sql }: { turn: Turn; sql: string }) {
   );
 }
 
+/** The graph's key column, when the answer carries it: then the answer can be shown on the canvas. */
+const KEY = "dense_id";
+
+/** The answer's vertices as something to press — the showcase's `Finding`, as the Rules panel offers. */
+function ShowOnGraph({ turn, result }: { turn: Turn; result: SqlResult }) {
+  const at = result.columns.indexOf(KEY);
+  if (at < 0) return null;
+  const ids = [...new Set(result.rows.map((row) => Number(row[at])).filter(Number.isFinite))];
+  return (
+    <Finding disabled={ids.length === 0} label={turn.question} load={async () => ids} source="ask">
+      <span className="flex items-baseline gap-2">
+        <span className="flex-1 text-xs leading-relaxed">Show these on the graph</span>
+        <span className="shrink-0 font-medium text-xs tabular-nums">
+          {ids.length.toLocaleString()}
+          {result.truncated ? "+" : ""}
+        </span>
+      </span>
+    </Finding>
+  );
+}
+
 function Answer({ turn }: { turn: Turn }) {
   return (
     <>
@@ -324,6 +348,7 @@ function Answer({ turn }: { turn: Turn }) {
       </Show>
 
       {turn.sql && <ToolCall sql={turn.sql} turn={turn} />}
+      {turn.result && turn.phase === "done" && <ShowOnGraph result={turn.result} turn={turn} />}
 
       {/* No query at all, so there is no call to fold the answer into. */}
       {turn.sql === null && turn.failure && <Failure code={turn.failure} />}
@@ -336,8 +361,9 @@ function Answer({ turn }: { turn: Turn }) {
 
 // ── The panel ────────────────────────────────────────────────────────────
 
-export function AskPanel({ graphSchema }: { graphSchema: SchemaResult }) {
-  const { coordinator, corpus, relation } = useCorpus();
+export function AskPanel() {
+  const { coordinator, corpus, manifest, relation } = useCorpus();
+  const { tables } = useFieldStats();
   const engine = useAiStream<TurnEvent>();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [question, setQuestion] = useState("");
@@ -360,7 +386,7 @@ export function AskPanel({ graphSchema }: { graphSchema: SchemaResult }) {
       (sql) => coordinator.query(sql, { type: "json" }),
       corpus.url,
       relation,
-      graphSchema.edges,
+      manifest,
     )
       .then((ddl) => {
         if (!cancelled) setDuckSchema(ddl);
@@ -371,9 +397,9 @@ export function AskPanel({ graphSchema }: { graphSchema: SchemaResult }) {
     return () => {
       cancelled = true;
     };
-  }, [coordinator, corpus, relation, graphSchema]);
+  }, [coordinator, corpus, relation, manifest]);
 
-  const starters = useMemo(() => generateSuggestions(graphSchema), [graphSchema]);
+  const starters = useMemo(() => generateSuggestions(tables, manifest), [tables, manifest]);
   // Derived from the schema the reader already has, so asking costs nothing and
   // the strip can fill on focus rather than behind a press.
   const suggest = useCallback(
@@ -452,15 +478,15 @@ export function AskPanel({ graphSchema }: { graphSchema: SchemaResult }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <Conversation>
-        <ConversationContent className="px-2 py-3">
+        <ConversationContent className="p-3">
           <Show when={turns.length === 0}>
             <EmptyRoot>
               <EmptyHeader>
                 <EmptyIndicator>
                   <Sparkles />
                 </EmptyIndicator>
-                <EmptyDescription>
-                  Ask about your data. The ✨ lists a few questions this graph can answer.
+                <EmptyDescription className="text-xs">
+                  Ask about the graph. Every answer is a query over it — the ✨ lists a few it can answer.
                 </EmptyDescription>
               </EmptyHeader>
             </EmptyRoot>
@@ -470,7 +496,7 @@ export function AskPanel({ graphSchema }: { graphSchema: SchemaResult }) {
             {turns.map((turn) => (
               <Fragment key={turn.id}>
                 <Message role="user">
-                  <MessageContent>{turn.question}</MessageContent>
+                  <MessageContent className="text-xs">{turn.question}</MessageContent>
                 </Message>
                 <Message role="assistant">
                   <MessageContent>
@@ -487,7 +513,7 @@ export function AskPanel({ graphSchema }: { graphSchema: SchemaResult }) {
       {/* `SuggestRoot` wraps the composer: the strip belongs under the whole of
           it, and `PromptInput` IS the `InputGroup` whose recipe selects its own
           direct children. */}
-      <div className="shrink-0 px-2 py-1.5">
+      <div className="shrink-0 border-t border-border p-2">
         <SuggestRoot onPick={submit} suggest={suggest} trigger="focus">
           <PromptInput
             onSubmit={(event) => {
@@ -500,7 +526,7 @@ export function AskPanel({ graphSchema }: { graphSchema: SchemaResult }) {
             }}
           >
             <PromptInputTextarea
-              className="resize-none"
+              className="resize-none text-sm"
               onChange={(event) => setQuestion(event.target.value)}
               placeholder={duckSchema === null ? "Reading the schema…" : "Ask about your data…"}
               value={question}

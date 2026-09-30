@@ -54,6 +54,7 @@ import { Link } from "@kanzo-tech/navigation/next";
 import { $api } from "@/lib/api/client";
 import { ROLE_LABEL, workspaceRole } from "@/lib/auth/roles";
 import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";
+import { HeaderEndContext } from "@/app/(main)/_parts/header-end";
 
 const titleCase = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
@@ -89,6 +90,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [switching, setSwitching] = useState<string | null>(null);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [headerEnd, setHeaderEnd] = useState<HTMLElement | null>(null);
 
   const { data: workspacesData } = $api.useQuery("get", "/v1/auth/workspaces");
 
@@ -289,8 +291,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
               ))}
             </BreadcrumbList>
           </Breadcrumb>
+          <div className="ms-auto flex items-center gap-2 empty:hidden" ref={setHeaderEnd} />
         </ShellHeader>
-        {children}
+        <HeaderEndContext value={headerEnd}>{children}</HeaderEndContext>
       </SidebarInset>
     </>
   );

@@ -1,15 +1,16 @@
-import type { SchemaResult } from "@fossil-lang/corpus";
+import type { Manifest } from "@fossil-lang/corpus";
+import type { TableStats } from "./field-stats";
 
 /**
- * Generate starter question suggestions programmatically from graph schema.
+ * Generate starter question suggestions programmatically from the corpus's tables.
  * Inspired by ThoughtSpot / Tableau Ask Data — instant, no LLM cost.
  */
-export function generateSuggestions(schema: SchemaResult): string[] {
+export function generateSuggestions(tables: TableStats[], manifest: Manifest): string[] {
   const suggestions: string[] = [];
 
-  for (const t of schema.vertices) {
-    const dims = t.stats.filter((f) => f.role === "dimension");
-    const measures = t.stats.filter((f) => f.role === "measure");
+  for (const t of tables) {
+    const dims = t.fields.filter((f) => f.role === "dimension");
+    const measures = t.fields.filter((f) => f.role === "measure");
 
     if (dims.length > 0) {
       suggestions.push(`What are the most common ${dims[0].name} in ${t.name}?`);
@@ -25,8 +26,8 @@ export function generateSuggestions(schema: SchemaResult): string[] {
     }
   }
 
-  for (const e of schema.edges) {
-    suggestions.push(`How are ${e.source_type} connected to ${e.target_type}?`);
+  for (const e of manifest.edge_tables) {
+    suggestions.push(`How are ${e.source.references} connected to ${e.destination.references}?`);
   }
 
   return [...new Set(suggestions)].slice(0, 4);

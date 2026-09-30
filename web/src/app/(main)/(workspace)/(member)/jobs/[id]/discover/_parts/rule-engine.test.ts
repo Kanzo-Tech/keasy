@@ -1,8 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
-  ruleViolationQuery,
+  ruleIdsQuery,
   ruleCountQuery,
-  totalRowCountQuery,
   distinctValuesQuery,
   isRuleComplete,
   type Rule,
@@ -45,10 +44,9 @@ describe("rule-engine", () => {
   });
 
   describe("query builders produce valid SQL", () => {
-    it("totalRowCountQuery reads the relation as the corpus names it, unquoted again", () => {
-      const sql = totalRowCountQuery(REL).toString();
-      expect(sql).toMatch(/COUNT\(\*\)/i);
-      expect(sql).toContain(`FROM ${REL}`);
+    it("ruleCountQuery reads the relation as the corpus names it, unquoted again", () => {
+      const rule: Rule = { id: "1", fieldKey: "name", operator: "not_null" };
+      expect(ruleCountQuery(rule, REL)!.toString()).toContain(`FROM ${REL}`);
     });
 
     it("distinctValuesQuery generates DISTINCT + ORDER BY + LIMIT", () => {
@@ -60,19 +58,19 @@ describe("rule-engine", () => {
       expect(sql).toContain(`FROM ${REL}`);
     });
 
-    it("ruleViolationQuery for not_null finds IS NULL rows", () => {
+    it("ruleIdsQuery for not_null selects the key of every IS NULL row", () => {
       const rule: Rule = { id: "1", fieldKey: "name", operator: "not_null" };
-      const q = ruleViolationQuery(rule, REL);
+      const q = ruleIdsQuery(rule, REL, "dense_id");
       expect(q).not.toBeNull();
       const sql = q!.toString();
+      expect(sql).toMatch(/"dense_id"/);
       expect(sql).toMatch(/IS NULL/i);
       expect(sql).toMatch(/"name"/);
-      expect(sql).toMatch(/LIMIT\s+100/i);
     });
 
-    it("ruleViolationQuery for unique uses GROUP BY + HAVING", () => {
+    it("ruleIdsQuery for unique selects the rows whose value repeats", () => {
       const rule: Rule = { id: "1", fieldKey: "email", operator: "unique" };
-      const q = ruleViolationQuery(rule, REL);
+      const q = ruleIdsQuery(rule, REL, "dense_id");
       expect(q).not.toBeNull();
       const sql = q!.toString();
       expect(sql).toMatch(/GROUP BY/i);
@@ -80,16 +78,16 @@ describe("rule-engine", () => {
       expect(sql).toMatch(/COUNT\(\*\)\s*>\s*1/i);
     });
 
-    it("ruleViolationQuery for min finds values below threshold", () => {
+    it("ruleIdsQuery for min finds values below threshold", () => {
       const rule: Rule = { id: "1", fieldKey: "price", operator: "min", value: "5" };
-      const q = ruleViolationQuery(rule, REL);
+      const q = ruleIdsQuery(rule, REL, "dense_id");
       const sql = q!.toString();
       expect(sql).toMatch(/"price"\s*<\s*5/);
     });
 
-    it("ruleViolationQuery for in_set finds values NOT IN set", () => {
+    it("ruleIdsQuery for in_set finds values NOT IN set", () => {
       const rule: Rule = { id: "1", fieldKey: "status", operator: "in_set", values: ["active", "pending"] };
-      const q = ruleViolationQuery(rule, REL);
+      const q = ruleIdsQuery(rule, REL, "dense_id");
       const sql = q!.toString();
       expect(sql).toMatch(/NOT/i);
       expect(sql).toMatch(/IN/i);
@@ -97,9 +95,9 @@ describe("rule-engine", () => {
       expect(sql).toMatch(/'pending'/);
     });
 
-    it("ruleViolationQuery for pattern finds non-matching rows", () => {
+    it("ruleIdsQuery for pattern finds non-matching rows", () => {
       const rule: Rule = { id: "1", fieldKey: "email", operator: "pattern", value: "^.+@.+$" };
-      const q = ruleViolationQuery(rule, REL);
+      const q = ruleIdsQuery(rule, REL, "dense_id");
       const sql = q!.toString();
       expect(sql).toMatch(/REGEXP_MATCHES/i);
       expect(sql).toMatch(/NOT/i);
@@ -125,7 +123,7 @@ describe("rule-engine", () => {
 
     it("returns null for incomplete rules", () => {
       const rule: Rule = { id: "1", fieldKey: "price", operator: "min" };
-      expect(ruleViolationQuery(rule, REL)).toBeNull();
+      expect(ruleIdsQuery(rule, REL, "dense_id")).toBeNull();
       expect(ruleCountQuery(rule, REL)).toBeNull();
     });
   });

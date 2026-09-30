@@ -117,7 +117,10 @@ function Form({ credential, purpose }: { credential?: Credential; purpose: Purpo
 
         {purpose === "storage" && !credential && (
           <Field>
-            <FieldLabel>Test URL</FieldLabel>
+            <FieldLabel>
+              Test URL
+              <FieldRequiredIndicator fallback="(optional)" />
+            </FieldLabel>
             <FieldDescription>
               A location to list before saving (e.g. s3://my-bucket/). Without one the credential is
               first tested by the connections that use it.

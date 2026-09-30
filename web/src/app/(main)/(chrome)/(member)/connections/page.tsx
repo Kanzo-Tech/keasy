@@ -3,19 +3,17 @@
 import { use, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, Database, MoreHorizontal, Plus, Sparkles } from "lucide-react";
+import { BookOpen, Database, Plus, Sparkles } from "lucide-react";
 import {
   Badge,
   Button,
-  Item,
-  ItemActions,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-  Menu,
-  MenuContent,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyIndicator,
+  EmptyRoot,
+  EmptyTitle,
   MenuItem,
-  MenuTrigger,
   SectionBody,
   SectionRoot,
   Tabs,
@@ -24,6 +22,7 @@ import {
   toast,
 } from "@kanzo-tech/ui";
 import {
+  actionsColumn,
   type ColumnDef,
   DataTableContent,
   DataTablePagination,
@@ -107,43 +106,23 @@ export default function ConnectionsPage({
         header: "Status",
         cell: ({ row }) => <ValidationBadge report={row.original.validation} />,
       },
-      {
-        id: "actions",
-        enableSorting: false,
-        enableHiding: false,
-        size: 48,
-        cell: ({ row }) => (
-          <div className="text-end">
-            <Menu>
-              <MenuTrigger asChild>
-                <Button
-                  aria-label={`Actions for ${row.original.name}`}
-                  onClick={(event) => event.stopPropagation()}
-                  size="icon-sm"
-                  variant="ghost"
-                >
-                  <MoreHorizontal />
-                </Button>
-              </MenuTrigger>
-              <MenuContent>
-                <MenuItem
-                  onSelect={() => validate({ params: { path: { name: row.original.name } } })}
-                  value="validate"
-                >
-                  Test
-                </MenuItem>
-                <MenuItem
-                  onSelect={() => remove({ params: { path: { name: row.original.name } } })}
-                  value="delete"
-                  variant="destructive"
-                >
-                  Delete
-                </MenuItem>
-              </MenuContent>
-            </Menu>
-          </div>
+      actionsColumn<Connection>({
+        label: (row) => `Actions for ${row.original.name}`,
+        menu: (row) => (
+          <>
+            <MenuItem onSelect={() => validate({ params: { path: { name: row.original.name } } })} value="validate">
+              Test
+            </MenuItem>
+            <MenuItem
+              onSelect={() => remove({ params: { path: { name: row.original.name } } })}
+              value="delete"
+              variant="destructive"
+            >
+              Delete
+            </MenuItem>
+          </>
         ),
-      },
+      }),
     ],
     [remove, tab, validate],
   );
@@ -169,21 +148,22 @@ export default function ConnectionsPage({
           </TabsList>
 
           {connections.length === 0 ? (
-            <Item className="mx-auto my-auto max-w-md flex-col gap-2 py-10 text-center">
-              <ItemMedia
-                className="group-has-data-[slot=item-description]/item:self-center text-muted-foreground [&_svg:not([class*='size-'])]:size-8"
-                variant="icon"
-              >
-                {{ data: <Database />, vocab: <BookOpen />, model: <Sparkles /> }[tab]}
-              </ItemMedia>
-              <ItemTitle className="text-base">No {noun} connections</ItemTitle>
-              <ItemDescription>Create a {noun} connection to get started.</ItemDescription>
-              <ItemActions>
+            <EmptyRoot>
+              <EmptyHeader>
+                <EmptyIndicator variant="icon">
+                  {{ data: <Database />, vocab: <BookOpen />, model: <Sparkles /> }[tab]}
+                </EmptyIndicator>
+                <EmptyTitle asChild>
+                  <h2>No {noun} connections</h2>
+                </EmptyTitle>
+                <EmptyDescription>Create a {noun} connection to get started.</EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
                 <Button asChild size="sm" variant="outline">
                   <Link href={`/connections/new?type=${tab}`}>Create connection</Link>
                 </Button>
-              </ItemActions>
-            </Item>
+              </EmptyContent>
+            </EmptyRoot>
           ) : (
             <DataTableRoot table={table}>
               <DataTableToolbar>

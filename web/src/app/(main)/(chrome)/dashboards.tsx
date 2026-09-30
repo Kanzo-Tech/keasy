@@ -4,7 +4,9 @@ import Link from "next/link";
 import { Database, FileText, GalleryVerticalEnd, KeyRound, type LucideIcon } from "lucide-react";
 import {
   FormatNumber,
+  SectionBody,
   SectionHeader,
+  SectionRoot,
   SectionTitle,
   SectionTitleGroup,
   StatDescription,
@@ -93,13 +95,13 @@ export function MemberDashboard() {
         ]}
       />
 
-      <section className="space-y-3">
+      <SectionRoot className="gap-3" fill={false}>
         <SectionHeader>
           <SectionTitleGroup>
             <SectionTitle>Recent activity</SectionTitle>
           </SectionTitleGroup>
         </SectionHeader>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <SectionBody className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: "Total jobs", value: all.length },
             { label: "Completed", value: count(["completed"]) },
@@ -113,21 +115,21 @@ export function MemberDashboard() {
               </StatValue>
             </StatRoot>
           ))}
-        </div>
-      </section>
+        </SectionBody>
+      </SectionRoot>
     </>
   );
 }
 
 function Tiles({ heading, tiles }: { heading: string; tiles: Tile[] }) {
   return (
-    <section className="space-y-3">
+    <SectionRoot className="gap-3" fill={false}>
       <SectionHeader>
         <SectionTitleGroup>
           <SectionTitle>{heading}</SectionTitle>
         </SectionTitleGroup>
       </SectionHeader>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <SectionBody className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tiles.map((tile) => (
           <StatRoot
             asChild
@@ -144,7 +146,7 @@ function Tiles({ heading, tiles }: { heading: string; tiles: Tile[] }) {
             </Link>
           </StatRoot>
         ))}
-      </div>
-    </section>
+      </SectionBody>
+    </SectionRoot>
   );
 }

@@ -162,7 +162,7 @@ export function SpecForm({
         <Field key={f.name} required={f.required || (f.secret && editing)}>
           <FieldLabel>
             {f.label}
-            <FieldRequiredIndicator />
+            <FieldRequiredIndicator fallback="(optional)" />
           </FieldLabel>
           {f.help && <FieldDescription>{f.help}</FieldDescription>}
           <FieldInput field={f} editing={editing} onChange={(v) => set(f.name, v)} value={value.fields[f.name] ?? ""} />

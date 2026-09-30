@@ -11,11 +11,12 @@ import {
   Button,
   Clipboard,
   ClipboardTrigger,
-  Item,
-  ItemActions,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyIndicator,
+  EmptyRoot,
+  EmptyTitle,
   Show,
   Skeleton,
   ToggleGroup,
@@ -430,18 +431,22 @@ export function AskPanel({ graphSchema }: { graphSchema: SchemaResult }) {
 
   if (!loadingAiProviders && !connection) {
     return (
-      <Item className="mx-auto my-auto max-w-md flex-col gap-2 py-10 text-center">
-        <ItemMedia className="text-muted-foreground" variant="icon">
-          <AlertCircle />
-        </ItemMedia>
-        <ItemTitle>AI not configured</ItemTitle>
-        <ItemDescription>An API key is required.</ItemDescription>
-        <ItemActions>
+      <EmptyRoot>
+        <EmptyHeader>
+          <EmptyIndicator variant="icon">
+            <AlertCircle />
+          </EmptyIndicator>
+          <EmptyTitle asChild>
+            <h3>AI not configured</h3>
+          </EmptyTitle>
+          <EmptyDescription>An API key is required.</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
           <Button asChild size="sm" variant="outline">
             <Link href="/connections?type=model">Configure</Link>
           </Button>
-        </ItemActions>
-      </Item>
+        </EmptyContent>
+      </EmptyRoot>
     );
   }
 

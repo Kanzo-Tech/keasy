@@ -5,6 +5,12 @@ import {
   Badge,
   Clipboard,
   ClipboardTrigger,
+  cn,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyIndicator,
+  EmptyRoot,
+  EmptyTitle,
   Item,
   ItemActions,
   ItemContent,
@@ -17,7 +23,6 @@ import {
   ResizableResizeTrigger,
   ShellAside,
   Show,
-  cn,
 } from "@kanzo-tech/ui";
 import { CodeEditor } from "@kanzo-tech/ui/editor";
 import { fossil } from "@fossil-lang/codemirror-fossil";
@@ -167,19 +172,20 @@ export function StudioEditor({
               </p>
               <Show
                 fallback={
-                  <Item className="mx-auto max-w-[420px] flex-col gap-2 py-8 text-center">
-                    <ItemMedia
-                      className="group-has-data-[slot=item-description]/item:self-center text-muted-foreground [&_svg:not([class*='size-'])]:size-8"
-                      variant="icon"
-                    >
-                      <PlugZap />
-                    </ItemMedia>
-                    <ItemTitle className="text-base">No connections yet</ItemTitle>
-                    <ItemDescription>
-                      A job reads through a connection. Wire one under Connections and it becomes
-                      referenceable as @name.
-                    </ItemDescription>
-                  </Item>
+                  <EmptyRoot>
+                    <EmptyHeader>
+                      <EmptyIndicator variant="icon">
+                        <PlugZap />
+                      </EmptyIndicator>
+                      <EmptyTitle asChild>
+                        <h3>No connections yet</h3>
+                      </EmptyTitle>
+                      <EmptyDescription>
+                        A job reads through a connection. Wire one under Connections and it becomes
+                        referenceable as @name.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </EmptyRoot>
                 }
                 when={connections.length > 0}
               >

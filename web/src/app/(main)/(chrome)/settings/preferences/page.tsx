@@ -53,15 +53,15 @@ export default function PreferencesPage() {
     <SectionRoot>
       <SectionBody className="gap-8" scale="page">
         {SECTIONS.map((section) => (
-          <section className="space-y-4" key={section.title}>
+          <SectionRoot className="gap-4" fill={false} key={section.title}>
             <SectionHeader>
               <SectionTitleGroup>
                 <SectionTitle>{section.title}</SectionTitle>
                 <SectionDescription>{section.description}</SectionDescription>
               </SectionTitleGroup>
             </SectionHeader>
-            {section.body}
-          </section>
+            <SectionBody>{section.body}</SectionBody>
+          </SectionRoot>
         ))}
       </SectionBody>
     </SectionRoot>

@@ -8,6 +8,9 @@ import {
   AlertDescription,
   AlertTitle,
   Button,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
   DataList,
   DataListItem,
   DataListItemLabel,
@@ -24,7 +27,7 @@ import { $api } from "@/lib/api/client";
 import { storageConnections } from "@/lib/connections";
 import { useBrowserJobRunner } from "@/app/(main)/(chrome)/(member)/jobs/[id]/_parts/use-browser-job-runner";
 import { formatDate, formatJobDuration } from "@/lib/ui/format";
-import { isTerminalStatus } from "@/lib/jobs";
+import { isTerminalStatus, overBudget } from "@/lib/jobs";
 
 export default function JobPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -58,6 +61,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
   if (!job) notFound();
 
   const sink = storageConnections(connections).find((c) => c.name === job.sink_connection);
+  const tooLarge = overBudget(job.error);
 
   return (
     <SectionRoot>
@@ -100,7 +104,25 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
           )}
         </DataList>
 
-        {job.error && (
+        {tooLarge !== null ? (
+          <Alert variant="destructive">
+            <AlertCircle />
+            <AlertTitle>Too large for the browser</AlertTitle>
+            <AlertDescription>
+              <p>This job needs more memory than the browser can give it (2 GB). Nothing was written — try it with less data.</p>
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button className="h-auto px-0" size="sm" variant="link">
+                    Details
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <pre className="whitespace-pre-wrap font-mono text-xs">{tooLarge}</pre>
+                </CollapsibleContent>
+              </Collapsible>
+            </AlertDescription>
+          </Alert>
+        ) : job.error && (
           <Alert variant="destructive">
             <AlertCircle />
             <AlertTitle>The run failed</AlertTitle>

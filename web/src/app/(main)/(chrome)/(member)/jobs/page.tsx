@@ -32,7 +32,7 @@ import {
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { $api, invalidate, type Schemas } from "@/lib/api/client";
 import { formatDate, formatJobDuration } from "@/lib/ui/format";
-import { hasRunningJobs, isTerminalStatus } from "@/lib/jobs";
+import { hasRunningJobs, isTerminalStatus, overBudget } from "@/lib/jobs";
 
 type Job = Schemas["Job"];
 type JobStatus = Schemas["JobStatus"];
@@ -78,8 +78,11 @@ export default function JobsPage() {
       {
         accessorKey: "status",
         header: "Status",
-        cell: ({ getValue }) => {
+        cell: ({ getValue, row }) => {
           const { label, variant } = STATUS[getValue<JobStatus>()];
+          if (overBudget(row.original.error) !== null) {
+            return <Badge variant="destructive">Too large for the browser</Badge>;
+          }
           return <Badge variant={variant}>{label}</Badge>;
         },
         filterFn: (row, id, value: string[]) => value.includes(row.getValue(id)),

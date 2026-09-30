@@ -28,7 +28,7 @@ export function ClassLegend({
   const undrawn = { "other-space": 0, "not-declared": 0 };
   const counted = new Set<string>();
   for (const gap of declined) {
-    if (gap.reason === "not-requested" || counted.has(gap.edgeType)) continue;
+    if (counted.has(gap.edgeType)) continue;
     counted.add(gap.edgeType);
     undrawn[gap.reason] += schema.edges
       .filter((e) => e.name === gap.edgeType && (e.source_type === value || e.target_type === value))

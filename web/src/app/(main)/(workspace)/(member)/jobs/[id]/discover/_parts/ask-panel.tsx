@@ -24,7 +24,6 @@ import {
 import {
   Conversation,
   ConversationContent,
-  ConversationEmpty,
   ConversationScrollButton,
   Message,
   MessageContent,
@@ -455,10 +454,16 @@ export function AskPanel({ graphSchema }: { graphSchema: SchemaResult }) {
       <Conversation>
         <ConversationContent className="px-2 py-3">
           <Show when={turns.length === 0}>
-            <ConversationEmpty>
-              <Sparkles />
-              <p>Ask about your data. The ✨ lists a few questions this graph can answer.</p>
-            </ConversationEmpty>
+            <EmptyRoot>
+              <EmptyHeader>
+                <EmptyIndicator>
+                  <Sparkles />
+                </EmptyIndicator>
+                <EmptyDescription>
+                  Ask about your data. The ✨ lists a few questions this graph can answer.
+                </EmptyDescription>
+              </EmptyHeader>
+            </EmptyRoot>
           </Show>
 
           <MessageList>

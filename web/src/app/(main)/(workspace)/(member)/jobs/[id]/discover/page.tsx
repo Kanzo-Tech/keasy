@@ -123,7 +123,6 @@ function Workspace({ jobId }: { jobId: string }) {
       look={look}
       onFailure={setFailure}
       sim={sim}
-      simulate
       title={identity}
       type={vertexType ?? undefined}
     >

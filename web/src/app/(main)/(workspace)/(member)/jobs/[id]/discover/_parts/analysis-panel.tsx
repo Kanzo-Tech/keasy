@@ -40,13 +40,16 @@ import {
   min,
   sum,
 } from "@kanzo-tech/ui/analytics";
+import { verbatim } from "@uwdata/mosaic-sql";
 import type { FieldKind, FieldStat, SchemaResult } from "@fossil-lang/corpus";
+import { useCorpus } from "./corpus";
 
 const AGGREGATIONS = ["count", "sum", "avg", "min", "max"] as const;
 type Aggregation = (typeof AGGREGATIONS)[number];
 
 interface ChartSpec {
   id: string;
+  /** The vertex type; the chart reads the relation the corpus names it by. */
   table: string;
   x: string;
   xKind: FieldKind;
@@ -64,7 +67,11 @@ const ACCENT = "var(--chart-1)";
 
 function Chart({ spec }: { spec: ChartSpec }) {
   const y = spec.agg === "count" || !spec.y ? count() : AGGREGATE[spec.agg](spec.y);
-  const frame = { height: 120, margin: { top: 4, right: 4, bottom: 20, left: 30 }, table: spec.table };
+  const { relation } = useCorpus();
+  // The corpus's relation is `"<catalog>"."Person"`, already quoted; a bare string would be read as
+  // one identifier, so it rides `verbatim` as the rule engine's queries do.
+  const table = verbatim(relation(spec.table));
+  const frame = { height: 120, margin: { top: 4, right: 4, bottom: 20, left: 30 }, table };
   const axes = [<ChartAxisX key="x" label={null} />, <ChartAxisY anchor={null} key="y" />];
 
   if (spec.y && spec.agg !== "count" && spec.xKind !== "categorical") {

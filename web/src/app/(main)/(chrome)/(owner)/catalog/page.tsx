@@ -5,15 +5,16 @@ import { KeyRound } from "lucide-react";
 import {
   Button,
   createListCollection,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyIndicator,
+  EmptyRoot,
+  EmptyTitle,
   Field,
   FieldDescription,
   FieldLabel,
   FieldRequiredIndicator,
   Input,
-  Item,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
   SectionBody,
   SectionFooter,
   SectionRoot,
@@ -53,19 +54,20 @@ export default function CatalogStoragePage() {
     return (
       <SectionRoot>
         <SectionBody scale="page">
-          <Item className="mx-auto my-auto max-w-md flex-col gap-2 py-10 text-center">
-            <ItemMedia
-              className="group-has-data-[slot=item-description]/item:self-center text-muted-foreground [&_svg:not([class*='size-'])]:size-8"
-              variant="icon"
-            >
-              <KeyRound />
-            </ItemMedia>
-            <ItemTitle className="text-base">No storage credentials</ItemTitle>
-            <ItemDescription>
-              A member must add a storage credential (Settings → Credentials) before you can choose
-              where job output is stored.
-            </ItemDescription>
-          </Item>
+          <EmptyRoot>
+            <EmptyHeader>
+              <EmptyIndicator variant="icon">
+                <KeyRound />
+              </EmptyIndicator>
+              <EmptyTitle asChild>
+                <h2>No storage credentials</h2>
+              </EmptyTitle>
+              <EmptyDescription>
+                A member must add a storage credential (Settings → Credentials) before you can choose
+                where job output is stored.
+              </EmptyDescription>
+            </EmptyHeader>
+          </EmptyRoot>
         </SectionBody>
       </SectionRoot>
     );

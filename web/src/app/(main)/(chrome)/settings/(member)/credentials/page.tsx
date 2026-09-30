@@ -1,21 +1,17 @@
 "use client";
 
 import { use, useMemo } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { KeyRound, MoreHorizontal, Plus, Sparkles } from "lucide-react";
+import { KeyRound, Plus, Sparkles } from "lucide-react";
 import {
   Badge,
   Button,
-  Item,
-  ItemActions,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-  Menu,
-  MenuContent,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyIndicator,
+  EmptyRoot,
+  EmptyTitle,
   MenuItem,
-  MenuTrigger,
   SectionBody,
   SectionRoot,
   Tabs,
@@ -24,6 +20,7 @@ import {
   toast,
 } from "@kanzo-tech/ui";
 import {
+  actionsColumn,
   type ColumnDef,
   DataTableContent,
   DataTablePagination,
@@ -34,6 +31,7 @@ import {
   sortableHeader,
   useDataTable,
 } from "@kanzo-tech/ui/table";
+import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
 import { type Credential, kindTitle, type Purpose, specOf } from "@/lib/connections";
@@ -109,39 +107,22 @@ export default function CredentialsPage({
         header: "Status",
         cell: ({ row }) => <ValidationBadge report={row.original.validation} />,
       },
-      {
-        id: "actions",
-        enableSorting: false,
-        enableHiding: false,
-        size: 48,
-        cell: ({ row }) => {
+      actionsColumn<Credential>({
+        label: (row) => `Actions for ${row.original.name}`,
+        menu: (row) => {
           const path = { params: { path: { name: row.original.name } } };
           return (
-            <div className="text-end">
-              <Menu>
-                <MenuTrigger asChild>
-                  <Button
-                    aria-label={`Actions for ${row.original.name}`}
-                    onClick={(event) => event.stopPropagation()}
-                    size="icon-sm"
-                    variant="ghost"
-                  >
-                    <MoreHorizontal />
-                  </Button>
-                </MenuTrigger>
-                <MenuContent>
-                  <MenuItem onSelect={() => validate.mutate({ ...path, body: {} })} value="validate">
-                    Test
-                  </MenuItem>
-                  <MenuItem onSelect={() => remove.mutate(path)} value="delete" variant="destructive">
-                    Delete
-                  </MenuItem>
-                </MenuContent>
-              </Menu>
-            </div>
+            <>
+              <MenuItem onSelect={() => validate.mutate({ ...path, body: {} })} value="validate">
+                Test
+              </MenuItem>
+              <MenuItem onSelect={() => remove.mutate(path)} value="delete" variant="destructive">
+                Delete
+              </MenuItem>
+            </>
           );
         },
-      },
+      }),
     ],
     [remove, validate],
   );
@@ -165,23 +146,24 @@ export default function CredentialsPage({
           </TabsList>
 
           {credentials.length === 0 ? (
-            <Item className="mx-auto my-auto max-w-md flex-col gap-2 py-10 text-center">
-              <ItemMedia
-                className="group-has-data-[slot=item-description]/item:self-center text-muted-foreground [&_svg:not([class*='size-'])]:size-8"
-                variant="icon"
-              >
-                {purpose === "storage" ? <KeyRound /> : <Sparkles />}
-              </ItemMedia>
-              <ItemTitle className="text-base">No {noun} credentials</ItemTitle>
-              <ItemDescription>
-                A credential is who keasy is when it reaches a store or a model; connections use it.
-              </ItemDescription>
-              <ItemActions>
+            <EmptyRoot>
+              <EmptyHeader>
+                <EmptyIndicator variant="icon">
+                  {purpose === "storage" ? <KeyRound /> : <Sparkles />}
+                </EmptyIndicator>
+                <EmptyTitle asChild>
+                  <h2>No {noun} credentials</h2>
+                </EmptyTitle>
+                <EmptyDescription>
+                  A credential is who keasy is when it reaches a store or a model; connections use it.
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
                 <Button asChild size="sm" variant="outline">
                   <Link href={newHref}>Add credential</Link>
                 </Button>
-              </ItemActions>
-            </Item>
+              </EmptyContent>
+            </EmptyRoot>
           ) : (
             <DataTableRoot table={table}>
               <DataTableToolbar>

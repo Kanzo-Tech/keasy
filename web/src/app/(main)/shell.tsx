@@ -4,7 +4,6 @@ import { Fragment, useState } from "react";
 import { useSession } from "@kanzo-tech/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2, LogOut, Settings } from "lucide-react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   AlertDialog,
@@ -51,6 +50,7 @@ import {
   useSidebar,
 } from "@kanzo-tech/ui";
 
+import { Link } from "@kanzo-tech/navigation/next";
 import { $api } from "@/lib/api/client";
 import { ROLE_LABEL, workspaceRole } from "@/lib/auth/roles";
 import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";

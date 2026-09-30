@@ -1,26 +1,23 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Briefcase, MoreHorizontal, Plus } from "lucide-react";
+import { Briefcase, Plus } from "lucide-react";
 import {
   Badge,
   Button,
-  Item,
-  ItemActions,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-  Menu,
-  MenuContent,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyIndicator,
+  EmptyRoot,
+  EmptyTitle,
   MenuItem,
-  MenuTrigger,
   SectionBody,
   SectionRoot,
   toast,
 } from "@kanzo-tech/ui";
 import {
+  actionsColumn,
   type ColumnDef,
   DataTableContent,
   DataTablePagination,
@@ -32,6 +29,7 @@ import {
   sortableHeader,
   useDataTable,
 } from "@kanzo-tech/ui/table";
+import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { $api, invalidate, type Schemas } from "@/lib/api/client";
 import { formatDate, formatJobDuration } from "@/lib/ui/format";
 import { hasRunningJobs, isTerminalStatus } from "@/lib/jobs";
@@ -100,34 +98,15 @@ export default function JobsPage() {
           <span className="text-muted-foreground">{formatJobDuration(row.original)}</span>
         ),
       },
-      {
-        id: "actions",
-        enableSorting: false,
-        enableHiding: false,
-        size: 48,
-        cell: ({ row }) =>
-          (row.original.status === "draft" || isTerminalStatus(row.original.status)) && (
-            <div className="text-end">
-              <Menu>
-                <MenuTrigger asChild>
-                  <Button
-                    aria-label={`Actions for ${row.original.name ?? row.original.id}`}
-                    onClick={(event) => event.stopPropagation()}
-                    size="icon-sm"
-                    variant="ghost"
-                  >
-                    <MoreHorizontal />
-                  </Button>
-                </MenuTrigger>
-                <MenuContent>
-                  <MenuItem onSelect={() => remove(row.original.id)} value="delete" variant="destructive">
-                    Delete
-                  </MenuItem>
-                </MenuContent>
-              </Menu>
-            </div>
-          ),
-      },
+      actionsColumn<Job>({
+        label: (row) => `Actions for ${row.original.name ?? row.original.id}`,
+        menu: (row) =>
+          row.original.status === "draft" || isTerminalStatus(row.original.status) ? (
+            <MenuItem onSelect={() => remove(row.original.id)} value="delete" variant="destructive">
+              Delete
+            </MenuItem>
+          ) : null,
+      }),
     ],
     [remove],
   );
@@ -137,21 +116,22 @@ export default function JobsPage() {
     <SectionRoot>
       <SectionBody className="overflow-hidden" scale="page">
         {jobs.length === 0 ? (
-          <Item className="mx-auto my-auto max-w-md flex-col gap-2 py-10 text-center">
-            <ItemMedia
-              className="group-has-data-[slot=item-description]/item:self-center text-muted-foreground [&_svg:not([class*='size-'])]:size-8"
-              variant="icon"
-            >
-              <Briefcase />
-            </ItemMedia>
-            <ItemTitle className="text-base">No jobs yet</ItemTitle>
-            <ItemDescription>Create a job to process and transform your data assets.</ItemDescription>
-            <ItemActions>
+          <EmptyRoot>
+            <EmptyHeader>
+              <EmptyIndicator variant="icon">
+                <Briefcase />
+              </EmptyIndicator>
+              <EmptyTitle asChild>
+                <h2>No jobs yet</h2>
+              </EmptyTitle>
+              <EmptyDescription>Create a job to process and transform your data assets.</EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
               <Button asChild size="sm" variant="outline">
                 <Link href="/jobs/new">Create job</Link>
               </Button>
-            </ItemActions>
-          </Item>
+            </EmptyContent>
+          </EmptyRoot>
         ) : (
           <DataTableRoot table={table}>
             <DataTableToolbar>

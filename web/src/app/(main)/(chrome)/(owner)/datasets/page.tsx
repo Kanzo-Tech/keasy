@@ -8,10 +8,11 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  Item,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyIndicator,
+  EmptyRoot,
+  EmptyTitle,
   SectionBody,
   SectionDescription,
   SectionHeader,
@@ -55,18 +56,19 @@ export default function DatasetsPage() {
             </>
           )
         ) : !datasets?.length ? (
-          <Item className="mx-auto my-auto max-w-md flex-col gap-2 py-10 text-center">
-            <ItemMedia
-              className="group-has-data-[slot=item-description]/item:self-center text-muted-foreground [&_svg:not([class*='size-'])]:size-8"
-              variant="icon"
-            >
-              <Boxes />
-            </ItemMedia>
-            <ItemTitle className="text-base">No datasets yet</ItemTitle>
-            <ItemDescription>
-              When a job completes, its output is listed here automatically.
-            </ItemDescription>
-          </Item>
+          <EmptyRoot>
+            <EmptyHeader>
+              <EmptyIndicator variant="icon">
+                <Boxes />
+              </EmptyIndicator>
+              <EmptyTitle asChild>
+                <h2>No datasets yet</h2>
+              </EmptyTitle>
+              <EmptyDescription>
+                When a job completes, its output is listed here automatically.
+              </EmptyDescription>
+            </EmptyHeader>
+          </EmptyRoot>
         ) : (
           datasets.map((dataset) => <DatasetCard dataset={dataset} key={dataset.job_id} />)
         )}

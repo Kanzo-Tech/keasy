@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import Link from "next/link";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft, ArrowRight, Database, MoreHorizontal, Plus, Wand2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Database, Plus, Wand2 } from "lucide-react";
 import { type AiStatus, type RunState, Task, TaskList, TaskStatus, TaskTitle, useAiStream } from "@kanzo-tech/ai";
 import {
   Alert,
@@ -11,20 +10,19 @@ import {
   AlertDescription,
   AlertTitle,
   Button,
-  FormatByte,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyIndicator,
+  EmptyRoot,
+  EmptyTitle,
   Field,
   FieldDescription,
   FieldLabel,
+  FieldRequiredIndicator,
+  FormatByte,
   Input,
-  Item,
-  ItemActions,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-  Menu,
-  MenuContent,
   MenuItem,
-  MenuTrigger,
   SectionBody,
   SectionFooter,
   Show,
@@ -41,6 +39,7 @@ import {
   toast,
 } from "@kanzo-tech/ui";
 import {
+  actionsColumn,
   type ColumnDef,
   DataTableContent,
   DataTablePagination,
@@ -48,6 +47,7 @@ import {
   selectColumn,
   useDataTable,
 } from "@kanzo-tech/ui/table";
+import { Link } from "@kanzo-tech/navigation/next";
 import { $api } from "@/lib/api/client";
 import { type CompletionRequest, streamText } from "@/lib/ai/stream";
 import {
@@ -248,35 +248,18 @@ export function AssistantWizard({
           </div>
         ),
       },
-      {
-        id: "actions",
-        size: 48,
-        cell: ({ row }) => (
-          <div className="text-end">
-            <Menu positioning={{ placement: "bottom-end" }}>
-              <MenuTrigger asChild>
-                <Button
-                  aria-label="Requirement actions"
-                  onClick={(e) => e.stopPropagation()}
-                  size="icon-sm"
-                  variant="ghost"
-                >
-                  <MoreHorizontal />
-                </Button>
-              </MenuTrigger>
-              <MenuContent>
-                <MenuItem
-                  onSelect={() => setReqs((prev) => prev.filter((r) => r.id !== row.original.id))}
-                  value="remove"
-                  variant="destructive"
-                >
-                  Remove
-                </MenuItem>
-              </MenuContent>
-            </Menu>
-          </div>
+      actionsColumn<CompetencyQuestion>({
+        label: (row) => `Actions for requirement ${row.index + 1}`,
+        menu: (row) => (
+          <MenuItem
+            onSelect={() => setReqs((prev) => prev.filter((r) => r.id !== row.original.id))}
+            value="remove"
+            variant="destructive"
+          >
+            Remove
+          </MenuItem>
         ),
-      },
+      }),
     ],
     [],
   );
@@ -341,21 +324,22 @@ export function AssistantWizard({
         <StepsContent className="flex flex-col gap-4" index={0}>
           <Show
             fallback={
-              <Item className="mx-auto my-auto max-w-md flex-col gap-2 py-10 text-center">
-                <ItemMedia
-                  className="group-has-data-[slot=item-description]/item:self-center text-muted-foreground [&_svg:not([class*='size-'])]:size-8"
-                  variant="icon"
-                >
-                  <Database />
-                </ItemMedia>
-                <ItemTitle className="text-base">No data connections</ItemTitle>
-                <ItemDescription>The assistant drafts a program from the data you connect.</ItemDescription>
-                <ItemActions>
+              <EmptyRoot>
+                <EmptyHeader>
+                  <EmptyIndicator variant="icon">
+                    <Database />
+                  </EmptyIndicator>
+                  <EmptyTitle asChild>
+                    <h3>No data connections</h3>
+                  </EmptyTitle>
+                  <EmptyDescription>The assistant drafts a program from the data you connect.</EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent>
                   <Button asChild size="sm" variant="outline">
                     <Link href="/connections/new?type=data">Create a data connection</Link>
                   </Button>
-                </ItemActions>
-              </Item>
+                </EmptyContent>
+              </EmptyRoot>
             }
             when={dataConnections.length > 0}
           >
@@ -381,14 +365,17 @@ export function AssistantWizard({
 
         <StepsContent className="flex flex-col gap-4" index={1}>
           <Field>
-            <FieldLabel>Domain</FieldLabel>
+            <FieldLabel>
+              Domain
+              <FieldRequiredIndicator fallback="(optional)" />
+            </FieldLabel>
             <Textarea
               onChange={(e) => setDomain(e.target.value)}
               placeholder="e.g. daily weather observations from Spanish stations"
               rows={6}
               value={domain}
             />
-            <FieldDescription>Optional. What the knowledge graph is about, or what it is for.</FieldDescription>
+            <FieldDescription>What the knowledge graph is about, or what it is for.</FieldDescription>
           </Field>
           <Show when={!schemasReady}>
             <TaskList>

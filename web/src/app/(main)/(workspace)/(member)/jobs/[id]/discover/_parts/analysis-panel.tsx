@@ -5,12 +5,13 @@ import { BarChart3, Pencil, Plus, Trash2 } from "lucide-react";
 import {
   Button,
   createListCollection,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyIndicator,
+  EmptyRoot,
+  EmptyTitle,
   FieldLabel,
-  Item,
-  ItemActions,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -235,18 +236,22 @@ export function AnalysisPanel({ schema }: { schema: SchemaResult }) {
 
   if (charts.length === 0) {
     return (
-      <Item className="mx-auto my-auto max-w-md flex-col gap-2 py-10 text-center">
-        <ItemMedia className="text-muted-foreground" variant="icon">
-          <BarChart3 />
-        </ItemMedia>
-        <ItemTitle>No charts</ItemTitle>
-        <ItemDescription>Add a chart to analyze your data.</ItemDescription>
-        <ItemActions>
+      <EmptyRoot>
+        <EmptyHeader>
+          <EmptyIndicator variant="icon">
+            <BarChart3 />
+          </EmptyIndicator>
+          <EmptyTitle asChild>
+            <h3>No charts</h3>
+          </EmptyTitle>
+          <EmptyDescription>Add a chart to analyze your data.</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
           <Button disabled={!fields[0]} onClick={add} size="sm" variant="outline">
             <Plus /> Add chart
           </Button>
-        </ItemActions>
-      </Item>
+        </EmptyContent>
+      </EmptyRoot>
     );
   }
 

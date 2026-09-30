@@ -2,7 +2,6 @@
 
 import { KeyRound, Paintbrush, ShieldCheck } from "lucide-react";
 import { useSession } from "@kanzo-tech/auth";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   isActivePath,
@@ -14,6 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@kanzo-tech/ui";
+import { Link } from "@kanzo-tech/navigation/next";
 import { workspaceRole } from "@/lib/auth/roles";
 
 const GENERAL = [

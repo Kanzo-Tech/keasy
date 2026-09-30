@@ -7,11 +7,12 @@ import { CheckCircle2, Play, Plus, ShieldCheck, X, XCircle } from "lucide-react"
 import {
   Badge,
   Button,
-  Item,
-  ItemActions,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyIndicator,
+  EmptyRoot,
+  EmptyTitle,
   ScrollArea,
   Spinner,
 } from "@kanzo-tech/ui";
@@ -73,18 +74,22 @@ export function RulesPanel({ jobId, schema }: { jobId: string; schema: SchemaRes
 
   if (rules.length === 0) {
     return (
-      <Item className="mx-auto my-auto max-w-md flex-col gap-2 py-10 text-center">
-        <ItemMedia className="text-muted-foreground" variant="icon">
-          <ShieldCheck />
-        </ItemMedia>
-        <ItemTitle>No rules</ItemTitle>
-        <ItemDescription>Add data quality rules to validate your dataset.</ItemDescription>
-        <ItemActions>
+      <EmptyRoot>
+        <EmptyHeader>
+          <EmptyIndicator variant="icon">
+            <ShieldCheck />
+          </EmptyIndicator>
+          <EmptyTitle asChild>
+            <h3>No rules</h3>
+          </EmptyTitle>
+          <EmptyDescription>Add data quality rules to validate your dataset.</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
           <Button disabled={schema.vertices.length === 0} onClick={add} size="sm" variant="outline">
             <Plus /> Add rule
           </Button>
-        </ItemActions>
-      </Item>
+        </EmptyContent>
+      </EmptyRoot>
     );
   }
 

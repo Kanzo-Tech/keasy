@@ -107,60 +107,62 @@ export default function ConnectionPage({ params }: { params: Promise<{ name: str
         </DataList>
 
         {storage && (
-          <section className="space-y-2">
+          <SectionRoot className="gap-2" fill={false}>
             <SectionHeader>
               <SectionTitleGroup>
                 <SectionTitle>Files</SectionTitle>
               </SectionTitleGroup>
             </SectionHeader>
-            {files.isError ? (
-              <Alert variant="destructive">
-                <AlertCircle />
-                <AlertTitle>Failed to list files</AlertTitle>
-                <AlertDescription>{files.error.message}</AlertDescription>
-              </Alert>
-            ) : files.isLoading ? (
-              showSkeleton && <Skeleton className="h-40 w-full" />
-            ) : readable.length === 0 ? (
-              <p className="text-muted-foreground text-xs">
-                {listed.length === 0 ? "No files found." : "No supported files found."}
-              </p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Path</TableHead>
-                    <TableHead className="w-24 text-end">Size</TableHead>
-                    <TableHead className="w-12" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {readable.map((f) => (
-                    <TableRow key={f.path}>
-                      <TableCell className="font-mono text-xs">{f.path}</TableCell>
-                      <TableCell className="text-end text-muted-foreground text-xs">
-                        <FormatByte unitSystem="binary" value={f.size} />
-                      </TableCell>
-                      <TableCell>
-                        <Menu positioning={{ placement: "bottom-end" }}>
-                          <MenuTrigger asChild>
-                            <Button aria-label={`Actions for ${f.path}`} size="icon-sm" variant="ghost">
-                              <MoreHorizontal />
-                            </Button>
-                          </MenuTrigger>
-                          <MenuContent>
-                            <MenuItem onSelect={() => copyReference(f.path)} value="copy-reference">
-                              Copy reference
-                            </MenuItem>
-                          </MenuContent>
-                        </Menu>
-                      </TableCell>
+            <SectionBody>
+              {files.isError ? (
+                <Alert variant="destructive">
+                  <AlertCircle />
+                  <AlertTitle>Failed to list files</AlertTitle>
+                  <AlertDescription>{files.error.message}</AlertDescription>
+                </Alert>
+              ) : files.isLoading ? (
+                showSkeleton && <Skeleton className="h-40 w-full" />
+              ) : readable.length === 0 ? (
+                <p className="text-muted-foreground text-xs">
+                  {listed.length === 0 ? "No files found." : "No supported files found."}
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Path</TableHead>
+                      <TableHead className="w-24 text-end">Size</TableHead>
+                      <TableHead className="w-12" />
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </section>
+                  </TableHeader>
+                  <TableBody>
+                    {readable.map((f) => (
+                      <TableRow key={f.path}>
+                        <TableCell className="font-mono text-xs">{f.path}</TableCell>
+                        <TableCell className="text-end text-muted-foreground text-xs">
+                          <FormatByte unitSystem="binary" value={f.size} />
+                        </TableCell>
+                        <TableCell>
+                          <Menu positioning={{ placement: "bottom-end" }}>
+                            <MenuTrigger asChild>
+                              <Button aria-label={`Actions for ${f.path}`} size="icon-sm" variant="ghost">
+                                <MoreHorizontal />
+                              </Button>
+                            </MenuTrigger>
+                            <MenuContent>
+                              <MenuItem onSelect={() => copyReference(f.path)} value="copy-reference">
+                                Copy reference
+                              </MenuItem>
+                            </MenuContent>
+                          </Menu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </SectionBody>
+          </SectionRoot>
         )}
       </SectionBody>
     </SectionRoot>

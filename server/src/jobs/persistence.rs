@@ -119,6 +119,14 @@ fn select(conn: &Connection, filter: &str, param: Option<&str>) -> DbResult<Vec<
     Ok(jobs)
 }
 
+/// Hand every job `from` holds to `to`; how many moved.
+pub fn reassign(conn: &Connection, from: &str, to: &str) -> DbResult<usize> {
+    Ok(conn.execute(
+        "UPDATE jobs SET created_by = ?1 WHERE created_by = ?2",
+        [to, from],
+    )?)
+}
+
 pub fn delete(conn: &Connection, id: &str) -> DbResult<()> {
     conn.execute("DELETE FROM jobs WHERE id = ?1", [id])?;
     Ok(())

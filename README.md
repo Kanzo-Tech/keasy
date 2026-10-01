@@ -66,7 +66,8 @@ At boot the instance declares, over that bucket, the **LDBC SNB** source connect
 (`ldbc/`), the **MinIO dev shapes** vocabulary connection (`vocab/`, holding
 `snb.shex`) and the sink (`output/`). Access is proved before each connection row is
 written, and an existing sink is never overwritten. It also declares the job **LDBC
-SNB SF0.1** for `dev@keasy.local`, running `infra/dev/snb.fossil`: it is in that
+SNB SF0.1** for `dev@keasy.local`, running `infra/dev/snb.fossil` into
+`output/ldbc-snb/`: it is in that
 member's job list on first sign-in, and opening it runs it in the browser.
 
 `minio.localhost` and `keycloak.localhost` are load-bearing: Docker's DNS answers

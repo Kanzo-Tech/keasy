@@ -32,7 +32,6 @@ import {
   ToggleGroupItem,
   toast,
 } from "@kanzo-tech/ui";
-import { $api } from "@/lib/api/client";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import { AskPanel } from "./_parts/ask-panel";
 import { CorpusProvider, corpusQuery, useCorpus } from "./_parts/corpus";
@@ -81,8 +80,9 @@ type ViewId = (typeof VIEWS)[number]["id"];
 
 export default function DiscoverPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const job = $api.useQuery("get", "/v1/jobs/{id}", { params: { path: { id } } });
-  const corpus = useQuery({ ...corpusQuery(id), enabled: Boolean(job.data?.manifest) });
+  // Opening the corpus is the one door: a missing job (404), one that has not completed (409) and an
+  // unreadable output all fail it, so its error is the only one the page renders.
+  const corpus = useQuery(corpusQuery(id));
 
   if (corpus.error) {
     return (

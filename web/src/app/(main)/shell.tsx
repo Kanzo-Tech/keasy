@@ -45,6 +45,7 @@ import {
 } from "@kanzo-tech/ui";
 
 import { Link } from "@kanzo-tech/navigation/next";
+import { useBranding } from "@/lib/branding-context";
 import { $api } from "@/lib/api/client";
 import { ROLE_LABEL, workspaceRole } from "@/lib/auth/roles";
 import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";
@@ -97,7 +98,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   const workspaces = workspacesData?.workspaces ?? [];
   const current = workspacesData?.current ?? "";
-  const workspaceName = workspacesData?.current_name || titleCase(current) || "Keasy";
+  const branding = useBranding();
+  const workspaceName = workspacesData?.current_name || branding.name || titleCase(current);
   const userName = session?.user.name ?? session?.user.email ?? "";
   const userEmail = session?.user.email ?? "";
 
@@ -124,7 +126,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   >
                     <SidebarIdentity collapsed={collapsed} responsive>
                       <SidebarIdentityIcon>
-                        {switching ? <Loader2 className="animate-spin" /> : <GalleryVerticalEnd />}
+                        {switching ? (
+                          <Loader2 className="animate-spin" />
+                        ) : branding.logo ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- an operator-declared URL, not a bundled asset
+                          <img alt="" className="size-full object-contain" src={branding.logo} />
+                        ) : (
+                          <GalleryVerticalEnd />
+                        )}
                       </SidebarIdentityIcon>
                       <SidebarIdentityText>
                         <SidebarIdentityLabel>

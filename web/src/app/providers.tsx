@@ -7,8 +7,11 @@ import { KanzoThemeProvider, cookieStorageAdapter, themeScript } from "@kanzo-te
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useServerInsertedHTML } from "next/navigation";
+import { useMemo } from "react";
 import { queryClient } from "@/lib/api/query-client";
 import { auth } from "@/lib/api/session";
+import type { Branding } from "@/lib/branding";
+import { BrandingProvider } from "@/lib/branding-context";
 
 /**
  * Cookie-backed rather than localStorage: `themeScript()` reads the same source before hydration,
@@ -16,28 +19,51 @@ import { auth } from "@/lib/api/session";
  * server paints the defaults and the client re-skins on hydration.
  */
 const storage = cookieStorageAdapter();
-const themes = themeIndex.map((entry) => ({ value: entry.name, label: entry.name }));
 // Hoisted so the provider's resolution memo sees one identity.
 const sections: SectionManifest[] = [GRAPH_SECTION];
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  branding,
+  children,
+}: {
+  branding: Branding;
+  children: React.ReactNode;
+}) {
+  // The instance offers the themes its operator allowed; an empty list allows every theme.
+  const themes = useMemo(
+    () =>
+      themeIndex
+        .filter((entry) => branding.themes.length === 0 || branding.themes.includes(entry.name))
+        .map((entry) => ({ value: entry.name, label: entry.name })),
+    [branding.themes],
+  );
+  const defaultTheme = useMemo(
+    () => ({
+      light: branding.default.light ?? "kanzo",
+      dark: branding.default.dark ?? "kanzo-dark",
+    }),
+    [branding.default.light, branding.default.dark],
+  );
+
   useServerInsertedHTML(() => (
     <script dangerouslySetInnerHTML={{ __html: themeScript() }} key="kanzo-theme-script" />
   ));
 
   return (
     <KanzoThemeProvider
-      defaultTheme={{ dark: "kanzo-dark", light: "kanzo" }}
+      defaultTheme={defaultTheme}
       sections={sections}
       storage={storage}
       themes={themes}
     >
-      <AuthProvider auth={auth}>
-        <QueryClientProvider client={queryClient}>
-          {children}
-          <ReactQueryDevtools initialIsOpen={false} />
-        </QueryClientProvider>
-      </AuthProvider>
+      <BrandingProvider value={branding}>
+        <AuthProvider auth={auth}>
+          <QueryClientProvider client={queryClient}>
+            {children}
+            <ReactQueryDevtools initialIsOpen={false} />
+          </QueryClientProvider>
+        </AuthProvider>
+      </BrandingProvider>
     </KanzoThemeProvider>
   );
 }

@@ -31,3 +31,6 @@ data/
 
 # Local experiments.
 scratch/
+
+# The archive `make seed` downloads. Never committed.
+infra/dev/.cache/

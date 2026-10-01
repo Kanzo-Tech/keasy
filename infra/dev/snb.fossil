@@ -1,0 +1,112 @@
+// LDBC Social Network Benchmark, SF0.1 — the Interactive v1 CsvCompositeMergeForeign
+// files as LDBC publishes them (`make seed`), mapped onto snb.shex.
+//
+// Every entity file carries its one-to-many relationships as foreign-key columns
+// (merge-foreign), so each of those edges is a property of the entity's mapping.
+//
+// Not mapped yet: the ten many-to-many files (person_knows_person, *_hasTag_tag,
+// forum_hasMember_person, person_likes_*, person_hasInterest_tag,
+// person_studyAt/workAt_organisation) and post.csv's `Forum.id` column. Their
+// headers are `Person.id|Tag.id`, `Person.id|Person.id`, … — names that are not
+// identifiers, so `Row.<field>` cannot spell them, and fossil has no way yet to
+// rename or reference a column whose header is not one.
+
+type { Place, Organisation, TagClass, Tag, Person, Forum, Post, Comment } := io.shex("@MinIO dev shapes/snb.shex")
+
+PlaceRow        := io.csv("@LDBC SNB/static/place_0_0.csv", delimiter = "|")
+OrganisationRow := io.csv("@LDBC SNB/static/organisation_0_0.csv", delimiter = "|")
+TagClassRow     := io.csv("@LDBC SNB/static/tagclass_0_0.csv", delimiter = "|")
+TagRow          := io.csv("@LDBC SNB/static/tag_0_0.csv", delimiter = "|")
+PersonRow       := io.csv("@LDBC SNB/dynamic/person_0_0.csv", delimiter = "|")
+ForumRow        := io.csv("@LDBC SNB/dynamic/forum_0_0.csv", delimiter = "|")
+PostRow         := io.csv("@LDBC SNB/dynamic/post_0_0.csv", delimiter = "|")
+CommentRow      := io.csv("@LDBC SNB/dynamic/comment_0_0.csv", delimiter = "|")
+
+// The roots of the two hierarchies (continents, `Thing`) have no parent, and a
+// mapping writes an edge for every row it reads: the roots are their own
+// population, as the comments below are.
+Continents : Place from PlaceRow.where(PlaceRow.isPartOf == null)
+    @subject = "http://www.ldbc.eu/ldbc_socialnet/1.0/data/place/{PlaceRow.id}"
+    name     = PlaceRow.name
+    url      = PlaceRow.url
+    type     = PlaceRow.type
+
+Places : Place from PlaceRow.where(PlaceRow.isPartOf != null)
+    @subject = "http://www.ldbc.eu/ldbc_socialnet/1.0/data/place/{PlaceRow.id}"
+    name     = PlaceRow.name
+    url      = PlaceRow.url
+    type     = PlaceRow.type
+    isPartOf = Place(PlaceRow.isPartOf)
+
+Organisations : Organisation from OrganisationRow
+    @subject    = "http://www.ldbc.eu/ldbc_socialnet/1.0/data/organisation/{OrganisationRow.id}"
+    name        = OrganisationRow.name
+    url         = OrganisationRow.url
+    type        = OrganisationRow.type
+    isLocatedIn = Place(OrganisationRow.place)
+
+RootTagClass : TagClass from TagClassRow.where(TagClassRow.isSubclassOf == null)
+    @subject = "http://www.ldbc.eu/ldbc_socialnet/1.0/data/tagclass/{TagClassRow.id}"
+    name     = TagClassRow.name
+    url      = TagClassRow.url
+
+TagClasses : TagClass from TagClassRow.where(TagClassRow.isSubclassOf != null)
+    @subject     = "http://www.ldbc.eu/ldbc_socialnet/1.0/data/tagclass/{TagClassRow.id}"
+    name         = TagClassRow.name
+    url          = TagClassRow.url
+    isSubclassOf = TagClass(TagClassRow.isSubclassOf)
+
+Tags : Tag from TagRow
+    @subject = "http://www.ldbc.eu/ldbc_socialnet/1.0/data/tag/{TagRow.id}"
+    name     = TagRow.name
+    url      = TagRow.url
+    hasType  = TagClass(TagRow.hasType)
+
+People : Person from PersonRow
+    @subject     = "http://www.ldbc.eu/ldbc_socialnet/1.0/data/person/{PersonRow.id}"
+    firstName    = PersonRow.firstName
+    lastName     = PersonRow.lastName
+    gender       = PersonRow.gender
+    birthday     = PersonRow.birthday
+    creationDate = PersonRow.creationDate
+    locationIP   = PersonRow.locationIP
+    browserUsed  = PersonRow.browserUsed
+    language     = PersonRow.language
+    email        = PersonRow.email
+    isLocatedIn  = Place(PersonRow.place)
+
+Forums : Forum from ForumRow
+    @subject     = "http://www.ldbc.eu/ldbc_socialnet/1.0/data/forum/{ForumRow.id}"
+    title        = ForumRow.title
+    creationDate = ForumRow.creationDate
+    hasModerator = Person(ForumRow.moderator)
+
+Posts : Post from PostRow
+    @subject     = "http://www.ldbc.eu/ldbc_socialnet/1.0/data/post/{PostRow.id}"
+    creationDate = PostRow.creationDate
+    locationIP   = PostRow.locationIP
+    browserUsed  = PostRow.browserUsed
+    language     = PostRow.language
+    content      = PostRow.content
+    imageFile    = PostRow.imageFile
+    length       = PostRow.length
+    hasCreator   = Person(PostRow.creator)
+    isLocatedIn  = Place(PostRow.place)
+
+// A comment replies to a post or to a comment, never both, so one of the two
+// reply edges names no vertex on every row and the run counts it as dropped.
+// Splitting the rows into two mappings, as the roots above are, is the shape
+// this wants; but two mappings of one type that write the same edge
+// (`hasCreator`) each write the whole edge file, and the second replaces the
+// first.
+Comments : Comment from CommentRow
+    @subject       = "http://www.ldbc.eu/ldbc_socialnet/1.0/data/comment/{CommentRow.id}"
+    creationDate   = CommentRow.creationDate
+    locationIP     = CommentRow.locationIP
+    browserUsed    = CommentRow.browserUsed
+    content        = CommentRow.content
+    length         = CommentRow.length
+    hasCreator     = Person(CommentRow.creator)
+    isLocatedIn    = Place(CommentRow.place)
+    replyOfPost    = Post(CommentRow.replyOfPost)
+    replyOfComment = Comment(CommentRow.replyOfComment)

@@ -1,0 +1,93 @@
+# The LDBC Social Network Benchmark schema (Interactive v1), as shapes.
+#
+# Predicate names follow the LDBC SNB specification's own vocabulary
+# (http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/), so a corpus written from
+# these shapes speaks the benchmark's terms. Where the spec names one edge with
+# two possible targets (`likes`, `replyOf` → Post or Comment), there are two
+# predicates, one per target.
+#
+# `email` and `language` on a Person are the CsvComposite columns: every value
+# of the multi-valued attribute in one field, `;`-separated.
+
+PREFIX snb: <http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+snb:Place {
+  snb:name     xsd:string ;
+  snb:url      xsd:string ;
+  snb:type     xsd:string ;
+  snb:isPartOf @snb:Place ?
+}
+
+snb:Organisation {
+  snb:name        xsd:string ;
+  snb:url         xsd:string ;
+  snb:type        xsd:string ;
+  snb:isLocatedIn @snb:Place
+}
+
+snb:TagClass {
+  snb:name         xsd:string ;
+  snb:url          xsd:string ;
+  snb:isSubclassOf @snb:TagClass ?
+}
+
+snb:Tag {
+  snb:name    xsd:string ;
+  snb:url     xsd:string ;
+  snb:hasType @snb:TagClass
+}
+
+snb:Person {
+  snb:firstName    xsd:string ;
+  snb:lastName     xsd:string ;
+  snb:gender       xsd:string ;
+  snb:birthday     xsd:date ;
+  snb:creationDate xsd:dateTime ;
+  snb:locationIP   xsd:string ;
+  snb:browserUsed  xsd:string ;
+  snb:language     xsd:string ? ;
+  snb:email        xsd:string ? ;
+  snb:isLocatedIn  @snb:Place ;
+  snb:knows        @snb:Person * ;
+  snb:hasInterest  @snb:Tag * ;
+  snb:studyAt      @snb:Organisation * ;
+  snb:workAt       @snb:Organisation * ;
+  snb:likesPost    @snb:Post * ;
+  snb:likesComment @snb:Comment *
+}
+
+snb:Forum {
+  snb:title        xsd:string ;
+  snb:creationDate xsd:dateTime ;
+  snb:hasModerator @snb:Person ;
+  snb:hasMember    @snb:Person * ;
+  snb:hasTag       @snb:Tag * ;
+  snb:containerOf  @snb:Post *
+}
+
+snb:Post {
+  snb:creationDate xsd:dateTime ;
+  snb:locationIP   xsd:string ;
+  snb:browserUsed  xsd:string ;
+  snb:language     xsd:string ? ;
+  snb:content      xsd:string ? ;
+  snb:imageFile    xsd:string ? ;
+  snb:length       xsd:integer ;
+  snb:hasCreator   @snb:Person ;
+  snb:isLocatedIn  @snb:Place ;
+  snb:hasTag       @snb:Tag *
+}
+
+snb:Comment {
+  snb:creationDate   xsd:dateTime ;
+  snb:locationIP     xsd:string ;
+  snb:browserUsed    xsd:string ;
+  snb:content        xsd:string ;
+  snb:length         xsd:integer ;
+  snb:hasCreator     @snb:Person ;
+  snb:isLocatedIn    @snb:Place ;
+  snb:replyOfPost    @snb:Post ? ;
+  snb:replyOfComment @snb:Comment ? ;
+  snb:hasTag         @snb:Tag *
+}

@@ -14,6 +14,10 @@ release_version = "unused-in-dev"
 # No IdP: the declared users log in to Keycloak directly.
 dev_user_password = "password"
 
+# The compose gateway (infra/ai/litellm.dev.yaml) and its dev master key.
+ai_url        = "http://litellm:4000"
+ai_master_key = "sk-dev-master-key"
+
 # One dev workspace, two people, because the planes are disjoint: an owner administers
 # members, identity and the catalog and has NO data plane; a member runs jobs, holds the
 # connections and opens Discovery, and administers nothing. A single account cannot stand
@@ -28,5 +32,6 @@ tenants = {
     owners        = ["owner@keasy.local"]
     members       = ["dev@keasy.local"]
     client_secret = "keasy-dev-secret" # fixed so compose can hand it to the web
+    ai_key        = "sk-keasy-dev"     # fixed so compose can hand it to the server
   }
 }

@@ -15,6 +15,10 @@ terraform {
       source  = "kreuzwerker/docker"
       version = "~> 3.0"
     }
+    litellm = {
+      source  = "ncecere/litellm"
+      version = "~> 2.1"
+    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.6"

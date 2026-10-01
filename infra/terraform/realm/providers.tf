@@ -9,3 +9,9 @@ provider "keycloak" {
 
 # Docker: the local manager's Engine (override with DOCKER_HOST for a remote manager).
 provider "docker" {}
+
+# The AI gateway's management API: each tenant gets a team (its budget) and a key.
+provider "litellm" {
+  api_base = var.ai_url
+  api_key  = var.ai_master_key
+}

@@ -11,7 +11,7 @@
 # Crates compile at runtime into the persistent `server-target` + `cargo-registry`
 # volumes, so only the first `up` (or one after `make clean`) pays a cold compile.
 
-.PHONY: help dev down logs restart clean ps api deploy-platform deploy-realm
+.PHONY: help dev down logs restart clean ps api ai deploy-platform deploy-realm
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -43,6 +43,12 @@ shell-%: ## Open shell in container (e.g., make shell-server)
 ps: ## Show running services
 	docker compose ps
 
+# ── Local models ───────────────────────────────────────────────────────────
+# The dev gateway answers both aliases from Ollama on the host (Docker on macOS has
+# no GPU). Once per machine; after that the stack runs offline.
+ai: ## Install/start Ollama and pull the dev models (infra/ai/litellm.dev.yaml)
+	./scripts/setup-dev-ai.sh
+
 # ── The API contract ───────────────────────────────────────────────────────
 # The server's routes publish the spec; `api/` (@keasy/api) holds it and the
 # types generated from it. CI fails when a committed copy is stale.
@@ -51,7 +57,7 @@ api: ## Regenerate api/openapi.json and api/src/schema.d.ts from the server's ro
 	pnpm --filter @keasy/api generate
 
 # ── Prod / Swarm deploy — Terraform owns everything (see infra/terraform/README.md) ──
-# Two phases: platform (Traefik+Keycloak+Postgres) then realm (SSO + tenants). Adding a
+# Two phases: platform (Traefik+Keycloak+Postgres+AI gateway) then realm (SSO + tenants). Adding a
 # tenant = edit infra/terraform/realm/terraform.tfvars + `make deploy-realm`. No shell, no CLI.
 deploy-platform: ## Phase 1 — apply the platform (needs -var kc_hostname=… acme_email=…)
 	terraform -chdir=infra/terraform/platform init -input=false
@@ -60,4 +66,5 @@ deploy-platform: ## Phase 1 — apply the platform (needs -var kc_hostname=… a
 deploy-realm: ## Phase 2 — apply the realm + tenants (reads realm/terraform.tfvars; feeds the platform admin pw)
 	terraform -chdir=infra/terraform/realm init -input=false
 	terraform -chdir=infra/terraform/realm apply \
-	  -var kc_admin_password="$$(terraform -chdir=infra/terraform/platform output -raw kc_admin_password)"
+	  -var kc_admin_password="$$(terraform -chdir=infra/terraform/platform output -raw kc_admin_password)" \
+	  -var ai_master_key="$$(terraform -chdir=infra/terraform/platform output -raw ai_master_key)"

@@ -8,6 +8,11 @@ base_domain       = "keasy.example.com"
 
 release_version = "0.0.3"
 
+# The AI gateway's admin host (platform `ai_admin_hostname`; this machine must be in
+# `ai_admin_allow`). Its master key comes from the platform output, as kc_admin_password does.
+ai_url        = "https://ai.internal.keasy.example.com"
+ai_master_key = "from-platform-output"
+
 # SSO IdP — users log in here; Keycloak links to the declared user by email.
 # Google example shown; swap endpoints for any OIDC IdP.
 idp = {
@@ -27,5 +32,6 @@ tenants = {
     display_name = "Acme"
     owners       = ["angel.iglesias@kanzo.tech"]
     members      = []
+    ai_budget    = 50 # USD per 30 days
   }
 }

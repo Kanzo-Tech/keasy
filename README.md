@@ -19,6 +19,10 @@ No `.env`: every dev value is a literal in `docker-compose.yml`.
 | App (web BFF, `/api/v1`) | [http://localhost:3000](http://localhost:3000) |
 | Keycloak | [http://keycloak.localhost:8180](http://keycloak.localhost:8180) (admin `admin` / `admin`) |
 | API, for curl | `http://localhost:8080` |
+| AI gateway console | [http://localhost:4000/ui](http://localhost:4000/ui) (`admin` / `sk-dev-master-key`) |
+
+AI runs on local models: `make ai` once per machine installs Ollama on the host and
+pulls them. Without it everything but AI works.
 
 ## Dev accounts
 
@@ -66,6 +70,8 @@ graph TD
     Web -->|"session records"| Valkey[("Valkey")]
     Server -->|"JWKS"| Keycloak
     Server --> SQLite[("SQLite")]
+    Server -->|"tenant key"| Gateway["AI gateway (LiteLLM)"]
+    Gateway --> Models["Ollama (dev) / providers (prod)"]
     Keycloak --> PostgreSQL[("PostgreSQL")]
 ```
 
@@ -82,9 +88,14 @@ introspection; the server hosts connections, vends credentials scoped to one pre
 and never reads a data file. Every job names a sink as its destination and is
 visible only to the member who created it.
 
-A **credential** (storage: S3 or Azure; model: Anthropic or OpenAI) is who keasy is
-when it reaches a store or a provider; a **connection** puts one to use (a storage
-prefix — a source or the one sink — or a model). Both are validated on every write,
+Models are not a credential. Every call goes to the platform's **AI gateway**
+under an alias (`kanzo-chat`, `kanzo-complete`) with the workspace's own key, which
+only the server holds (`KEASY_AI_URL`, `KEASY_AI_KEY[_FILE]`). Budgets, upstreams and
+the dev/prod switch live in the gateway — see [`infra/ai/README.md`](infra/ai/README.md).
+
+A **credential** (S3 or Azure) is who keasy is when it reaches a store; a
+**connection** puts one to use (a storage prefix — a source or the one sink). Both
+are validated on every write,
 and a credential in use cannot be deleted. `KEASY_BOOTSTRAP_FILE` declares them at
 boot in the API's own request format (dev: `infra/dev/bootstrap.json`).
 
@@ -97,7 +108,7 @@ the volume (`make clean`) instead.
 ## Deployment
 
 Docker Swarm, driven by Terraform — see [`infra/terraform/README.md`](infra/terraform/README.md).
-`make deploy-platform` brings up Traefik, Keycloak (on its own host) and Postgres;
+`make deploy-platform` brings up Traefik, Keycloak (on its own host), Postgres and the AI gateway;
 `make deploy-realm` applies the realm and one server + web + Valkey stack per tenant
 declared in `realm/terraform.tfvars`. Images are published to GHCR by
 `.github/workflows/images.yml` on `v*` tags, after the server and web CI pass.
@@ -107,6 +118,7 @@ declared in `realm/terraform.tfvars`. Images are published to GHCR by
 | Target | What it does |
 |--------|--------------|
 | `make dev` | Start dev; rebuild only after dep or Dockerfile changes (code hot-reloads) |
+| `make ai` | Once per machine: Ollama on the host + the dev models |
 | `make down` | Stop everything |
 | `make clean` | Remove containers, volumes (Keycloak, dev realm state, data) and images |
 | `make logs` / `make logs-<svc>` | Tail logs |

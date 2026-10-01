@@ -21,7 +21,7 @@ pub const MAX_SPEC_BYTES: usize = 256 * 1024;
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct PutDashboardRequest {
     /// The dashboard, as the web serialises it: any JSON object.
-    #[schema(value_type = Object)]
+    #[schema(value_type = std::collections::HashMap<String, serde_json::Value>)]
     pub spec: serde_json::Value,
 }
 

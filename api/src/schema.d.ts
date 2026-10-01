@@ -526,7 +526,9 @@ export interface components {
          *     reads a field of it.
          */
         Dashboard: {
-            spec: Record<string, never>;
+            spec: {
+                [key: string]: unknown;
+            };
             updated_at: string;
             /** @description Keycloak `sub` of the member who saved it last. */
             updated_by: string;
@@ -658,7 +660,9 @@ export interface components {
         };
         PutDashboardRequest: {
             /** @description The dashboard, as the web serialises it: any JSON object. */
-            spec: Record<string, never>;
+            spec: {
+                [key: string]: unknown;
+            };
         };
         RelationColumn: {
             /** @description The engine's spelling of the Parquet type (`VARCHAR`, `BIGINT`, …). */

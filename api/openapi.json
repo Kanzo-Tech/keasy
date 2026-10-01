@@ -2176,7 +2176,11 @@
         ],
         "properties": {
           "spec": {
-            "type": "object"
+            "type": "object",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "updated_at": {
             "type": "string"
@@ -2472,7 +2476,11 @@
         "properties": {
           "spec": {
             "type": "object",
-            "description": "The dashboard, as the web serialises it: any JSON object."
+            "description": "The dashboard, as the web serialises it: any JSON object.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           }
         }
       },

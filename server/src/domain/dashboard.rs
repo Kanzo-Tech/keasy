@@ -5,7 +5,7 @@ use serde::Serialize;
 /// reads a field of it.
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct Dashboard {
-    #[schema(value_type = Object)]
+    #[schema(value_type = std::collections::HashMap<String, serde_json::Value>)]
     pub spec: serde_json::Map<String, serde_json::Value>,
     pub updated_at: String,
     /// Keycloak `sub` of the member who saved it last.

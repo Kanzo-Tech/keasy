@@ -38,3 +38,18 @@ describe("a failure, shown", () => {
     expect(toProblem(new Error("boom"), "query/failed")).toMatchObject({ code: "query/failed", detail: "boom" });
   });
 });
+
+describe("a failure's cause", () => {
+  it("is kept one level down, coded when it can be", () => {
+    const store = new ApiError({ code: "store/silent", title: "The store did not answer in time", detail: "STS", data: { after: 10_000 } }, 504);
+    const shown = toProblem(new Error("could not open the corpus", { cause: store }));
+    expect(shown).toMatchObject({ code: "web/unknown", cause: { code: "store/silent", data: { after: 10_000 } } });
+  });
+
+  it("is a foreign error's own words when it has no code", () => {
+    expect(toProblem(new ApiError({ code: "llm/failed", title: "t", detail: "d", data: {} }, 502, { cause: new TypeError("Failed to fetch") })).cause).toEqual({
+      name: "TypeError",
+      detail: "Failed to fetch",
+    });
+  });
+});

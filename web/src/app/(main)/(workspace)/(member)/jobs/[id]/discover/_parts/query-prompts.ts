@@ -1,3 +1,4 @@
+import { ClientError } from "@/lib/errors";
 import { type ChatMessage, type CompletionRequest, stripFences } from "@/lib/ai/stream";
 
 /** How many earlier messages of the conversation reach the model. */
@@ -81,22 +82,25 @@ export function queryRequest(
   };
 }
 
-/** The model's plan; its raw text as the answer when that is not the JSON asked for. */
+/**
+ * The model's plan. An answer that is not the JSON asked for throws `llm/unparseable` with the
+ * answer as its detail, rather than passing broken output off as a valid answer with no SQL.
+ */
 export function parsePlan(text: string): Plan {
+  let parsed: { sql?: string; explanation?: string; reasoning?: string } | null;
   try {
-    const parsed = JSON.parse(stripFences(text)) as {
-      sql?: string;
-      explanation?: string;
-      reasoning?: string;
-    };
-    return {
-      sql: parsed.sql ?? null,
-      answer: parsed.explanation || "Here is a query for your data.",
-      reasoning: parsed.reasoning ?? "",
-    };
-  } catch {
-    return { sql: null, answer: text.trim(), reasoning: "" };
+    parsed = JSON.parse(stripFences(text)) as typeof parsed;
+  } catch (cause) {
+    throw new ClientError("llm/unparseable", "The model's answer could not be read", text.trim(), { cause });
   }
+  if (typeof parsed !== "object" || parsed === null) {
+    throw new ClientError("llm/unparseable", "The model's answer could not be read", text.trim());
+  }
+  return {
+    sql: parsed.sql ?? null,
+    answer: parsed.explanation || "Here is a query for your data.",
+    reasoning: parsed.reasoning ?? "",
+  };
 }
 
 export function explainRequest(

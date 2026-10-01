@@ -27,30 +27,41 @@ import {
   toast,
 } from "@kanzo-tech/ui";
 import { ValidationBadge } from "@/components/validation-badge";
-import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
+import { Boundary, Loading } from "@/components/boundary";
+import { settled } from "@/lib/api/settled";
 import { $api, invalidate } from "@/lib/api/client";
 import { type Connection, type Credential, storageOf } from "@/lib/connections";
 import { toastError } from "@/lib/errors";
 
 /** The workspace sink: the one storage connection where job output lands, the owner's alone. */
 export default function CatalogStoragePage() {
-  const credentials = $api.useQuery("get", "/v1/credentials", { params: { query: { purpose: "storage" } } });
-  const connections = $api.useQuery("get", "/v1/connections", { params: { query: { purpose: "storage" } } });
-  const isLoading = credentials.isLoading || connections.isLoading;
-  const showSkeleton = useDelayedLoading(isLoading);
+  return (
+    <Boundary
+      fallback={
+        <Loading>
+          <SectionRoot>
+            <SectionBody scale="page">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-40 w-full" />
+            </SectionBody>
+          </SectionRoot>
+        </Loading>
+      }
+    >
+      <CatalogStorage />
+    </Boundary>
+  );
+}
 
-  if (isLoading) {
-    return showSkeleton ? (
-      <SectionRoot>
-        <SectionBody scale="page">
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-40 w-full" />
-        </SectionBody>
-      </SectionRoot>
-    ) : null;
-  }
+function CatalogStorage() {
+  const credentials = settled(
+    $api.useSuspenseQuery("get", "/v1/credentials", { params: { query: { purpose: "storage" } } }),
+  );
+  const connections = settled(
+    $api.useSuspenseQuery("get", "/v1/connections", { params: { query: { purpose: "storage" } } }),
+  );
 
-  if (!credentials.data?.length) {
+  if (credentials.length === 0) {
     return (
       <SectionRoot>
         <SectionBody scale="page">
@@ -73,8 +84,8 @@ export default function CatalogStoragePage() {
     );
   }
 
-  const sink = connections.data?.find((c) => storageOf(c)?.direction === "sink");
-  return <Form credentials={credentials.data} key={sink?.name ?? "new"} sink={sink} />;
+  const sink = connections.find((c) => storageOf(c)?.direction === "sink");
+  return <Form credentials={credentials} key={sink?.name ?? "new"} sink={sink} />;
 }
 
 function Form({ credentials, sink }: { credentials: Credential[]; sink?: Connection }) {

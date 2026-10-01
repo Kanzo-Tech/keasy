@@ -14,6 +14,7 @@ import {
   MenuItem,
   SectionBody,
   SectionRoot,
+  Skeleton,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -37,6 +38,8 @@ import { $api, invalidate } from "@/lib/api/client";
 import { type Credential, kindTitle, type Purpose, specOf } from "@/lib/connections";
 import { getProviderIcon } from "@/lib/ui/provider-icons";
 import { toastError } from "@/lib/errors";
+import { Boundary, Loading } from "@/components/boundary";
+import { settled } from "@/lib/api/settled";
 
 export default function CredentialsPage({
   searchParams,
@@ -45,9 +48,39 @@ export default function CredentialsPage({
 }) {
   const router = useRouter();
   const { purpose = "storage" } = use(searchParams);
-  const { data: credentials = [] } = $api.useQuery("get", "/v1/credentials", {
-    params: { query: { purpose } },
-  });
+
+  return (
+    <SectionRoot>
+      <SectionBody className="overflow-hidden" scale="page">
+        <Tabs onValueChange={(details) => router.push(`/settings/credentials?purpose=${details.value}`)} value={purpose}>
+          <TabsList>
+            <TabsTrigger value="storage">
+              <KeyRound />
+              Storage
+            </TabsTrigger>
+            <TabsTrigger value="model">
+              <Sparkles />
+              AI
+            </TabsTrigger>
+          </TabsList>
+          <Boundary
+            fallback={
+              <Loading>
+                <Skeleton className="h-40 w-full" />
+              </Loading>
+            }
+          >
+            <Credentials purpose={purpose} />
+          </Boundary>
+        </Tabs>
+      </SectionBody>
+    </SectionRoot>
+  );
+}
+
+function Credentials({ purpose }: { purpose: Purpose }) {
+  const router = useRouter();
+  const credentials = settled($api.useSuspenseQuery("get", "/v1/credentials", { params: { query: { purpose } } }));
 
   const refresh = () => invalidate("/v1/credentials", "/v1/connections");
   const remove = $api.useMutation("delete", "/v1/credentials/{name}", {
@@ -130,62 +163,43 @@ export default function CredentialsPage({
   const noun = purpose === "storage" ? "storage" : "AI";
   const newHref = `/settings/credentials/new?purpose=${purpose}`;
 
-  return (
-    <SectionRoot>
-      <SectionBody className="overflow-hidden" scale="page">
-        <Tabs onValueChange={(details) => router.push(`/settings/credentials?purpose=${details.value}`)} value={purpose}>
-          <TabsList>
-            <TabsTrigger value="storage">
-              <KeyRound />
-              Storage
-            </TabsTrigger>
-            <TabsTrigger value="model">
-              <Sparkles />
-              AI
-            </TabsTrigger>
-          </TabsList>
-
-          {credentials.length === 0 ? (
-            <EmptyRoot>
-              <EmptyHeader>
-                <EmptyIndicator variant="icon">
-                  {purpose === "storage" ? <KeyRound /> : <Sparkles />}
-                </EmptyIndicator>
-                <EmptyTitle asChild>
-                  <h2>No {noun} credentials</h2>
-                </EmptyTitle>
-                <EmptyDescription>
-                  A credential is who keasy is when it reaches a store or a model; connections use it.
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <Button asChild size="sm" variant="outline">
-                  <Link href={newHref}>Add credential</Link>
-                </Button>
-              </EmptyContent>
-            </EmptyRoot>
-          ) : (
-            <DataTableRoot table={table}>
-              <DataTableToolbar>
-                <DataTableSearch column="name" placeholder="Search credentials..." />
-                <div className="ms-auto flex items-center gap-2">
-                  <Button asChild size="sm">
-                    <Link href={newHref}>
-                      <Plus />
-                      Add credential
-                    </Link>
-                  </Button>
-                </div>
-              </DataTableToolbar>
-              <DataTableContent<Credential>
-                empty="No credentials match this filter."
-                onRowClick={(c) => router.push(`/settings/credentials/${encodeURIComponent(c.name)}`)}
-              />
-              <DataTablePagination />
-            </DataTableRoot>
-          )}
-        </Tabs>
-      </SectionBody>
-    </SectionRoot>
+  return credentials.length === 0 ? (
+    <EmptyRoot>
+      <EmptyHeader>
+        <EmptyIndicator variant="icon">
+          {purpose === "storage" ? <KeyRound /> : <Sparkles />}
+        </EmptyIndicator>
+        <EmptyTitle asChild>
+          <h2>No {noun} credentials</h2>
+        </EmptyTitle>
+        <EmptyDescription>
+          A credential is who keasy is when it reaches a store or a model; connections use it.
+        </EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <Button asChild size="sm" variant="outline">
+          <Link href={newHref}>Add credential</Link>
+        </Button>
+      </EmptyContent>
+    </EmptyRoot>
+  ) : (
+    <DataTableRoot table={table}>
+      <DataTableToolbar>
+        <DataTableSearch column="name" placeholder="Search credentials..." />
+        <div className="ms-auto flex items-center gap-2">
+          <Button asChild size="sm">
+            <Link href={newHref}>
+              <Plus />
+              Add credential
+            </Link>
+          </Button>
+        </div>
+      </DataTableToolbar>
+      <DataTableContent<Credential>
+        empty="No credentials match this filter."
+        onRowClick={(c) => router.push(`/settings/credentials/${encodeURIComponent(c.name)}`)}
+      />
+      <DataTablePagination />
+    </DataTableRoot>
   );
 }

@@ -34,6 +34,19 @@ export interface Shown {
  */
 export type ClientCode = "ask/stopped" | "query/failed" | "llm/unparseable" | "web/unknown";
 
+/** A failure the browser raises itself, coded so it reaches the screen by the same path as the others. */
+export class ClientError extends Error {
+  constructor(
+    readonly code: ClientCode,
+    readonly title: string,
+    detail: string,
+    options?: ErrorOptions,
+  ) {
+    super(detail, options);
+    this.name = "ClientError";
+  }
+}
+
 /** keasy's words for a code, where its audience differs from the one the code was written for. */
 interface Copy {
   title?: string;
@@ -109,18 +122,10 @@ export function pageOf(code: string): string | undefined {
   return (CODES as readonly string[]).includes(code) ? helpUrl(code as Code) : undefined;
 }
 
-/** The not-found codes a page answers with Next's `notFound()`; every other failure is a problem shown. */
-const NOT_FOUND = new Set<string>(["job/not-found", "connection/not-found", "credential/not-found"]);
-
-/** Whether `err` says the resource a page is about does not exist. */
-export function isNotFound(err: unknown): boolean {
-  return err instanceof ApiError && NOT_FOUND.has(err.code);
-}
-
 /** A cause, as the tree under a problem shows it: coded when it can be, its own words when not. */
 function causeOf(cause: unknown): Shown | Foreign | undefined {
   if (cause === undefined || cause === null) return undefined;
-  if (isFossilError(cause) || cause instanceof ApiError) return toProblem(cause);
+  if (isFossilError(cause) || cause instanceof ApiError || cause instanceof ClientError) return toProblem(cause);
   if (cause instanceof Error) return { name: cause.name, detail: cause.message };
   return { name: typeof cause, detail: String(cause) };
 }
@@ -136,7 +141,9 @@ export function toProblem(err: unknown, code: ClientCode = "web/unknown"): Shown
   const shown: Shown =
     err instanceof ApiError
       ? { code: err.code, title: err.title, detail: err.message, data: err.data }
-      : { code, title: "Something went wrong.", detail: err instanceof Error ? err.message : String(err) };
+      : err instanceof ClientError
+        ? { code: err.code, title: err.title, detail: err.message }
+        : { code, title: "Something went wrong.", detail: err instanceof Error ? err.message : String(err) };
   return cause === undefined ? shown : { ...shown, cause };
 }
 

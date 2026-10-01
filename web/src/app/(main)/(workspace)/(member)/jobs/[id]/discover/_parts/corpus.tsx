@@ -1,10 +1,11 @@
 "use client";
 
 import { createContext, use, type ReactNode } from "react";
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import type { Manifest, SqlCorpus, SqlResult } from "@fossil-lang/corpus";
 import { MosaicProvider, engine, type Coordinator } from "@kanzo-tech/ui/analytics";
 import { queryClient } from "@/lib/api/query-client";
+import { settled } from "@/lib/api/settled";
 import { corpusKey, openJobCorpus } from "@/lib/fossil/corpus";
 import { summarize, type TableStats } from "./field-stats";
 
@@ -64,10 +65,10 @@ export function useCorpus(): Corpus {
   return corpus;
 }
 
-/** Every vertex table's column statistics, one `SUMMARIZE` each; empty until they land. */
-export function useFieldStats(): { tables: TableStats[]; error: Error | null } {
+/** Every vertex table's column statistics, one `SUMMARIZE` each. Suspends until they land; a failure throws to the boundary. */
+export function useFieldStats(): TableStats[] {
   const { jobId, corpus, manifest, relation } = useCorpus();
-  const stats = useQuery({
+  const stats = useSuspenseQuery({
     queryKey: [...corpusKey(jobId), "stats"],
     queryFn: () =>
       Promise.all(
@@ -77,7 +78,7 @@ export function useFieldStats(): { tables: TableStats[]; error: Error | null } {
       ),
     ...ONCE,
   });
-  return { tables: stats.data ?? [], error: stats.error };
+  return settled(stats);
 }
 
 /** A `sql` answer's rows as objects keyed by column, the shape a table and a model read. */

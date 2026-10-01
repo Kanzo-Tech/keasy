@@ -52,7 +52,9 @@ import {
 
 import { Link } from "@kanzo-tech/navigation/next";
 import { $api } from "@/lib/api/client";
-import { ROLE_LABEL, workspaceRole } from "@/lib/auth/roles";
+import { ROLE_LABEL, workspaceRole, type WorkspaceRole } from "@/lib/auth/roles";
+import { Boundary } from "@/components/boundary";
+import { settled } from "@/lib/api/settled";
 import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";
 import { HeaderEndContext } from "@/app/(main)/_parts/header-end";
 
@@ -84,15 +86,11 @@ function workspaceUrl(slug: string, current: string) {
  */
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const queryClient = useQueryClient();
   const { session, signOut } = useSession();
   const { isMobile, setOpenMobile, state } = useSidebar();
-  const [switching, setSwitching] = useState<string | null>(null);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [headerEnd, setHeaderEnd] = useState<HTMLElement | null>(null);
-
-  const { data: workspacesData } = $api.useQuery("get", "/v1/auth/workspaces");
 
   const role = workspaceRole(session) ?? "member";
   const routes = getSidebarRoutes(role);
@@ -100,19 +98,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const collapsed = state === "collapsed" && !isMobile;
   const closeMobile = () => setOpenMobile(false);
 
-  const workspaces = workspacesData?.workspaces ?? [];
-  const current = workspacesData?.current ?? "";
-  const workspaceName = workspacesData?.current_name || titleCase(current) || "Keasy";
   const userName = session?.user.name ?? session?.user.email ?? "";
   const userEmail = session?.user.email ?? "";
-
-  async function switchTo(slug: string) {
-    if (slug === current) return;
-    setSwitching(titleCase(slug));
-    await queryClient.resetQueries();
-    // The other instance has its own BFF; its sign-in route is the switch.
-    window.location.assign(`${workspaceUrl(slug, current)}/api/auth/signin`);
-  }
 
   return (
     <>
@@ -120,49 +107,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <Menu positioning={{ placement: isMobile ? "bottom-start" : "right-start", gutter: 4 }}>
-                <MenuTrigger asChild disabled={workspaces.length <= 1 || !!switching}>
-                  <SidebarMenuButton
-                    aria-label={workspaceName}
-                    className="group-data-[collapsible=icon]:justify-center data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                    size="lg"
-                  >
-                    <SidebarIdentity collapsed={collapsed} responsive>
-                      <SidebarIdentityIcon>
-                        {switching ? <Loader2 className="animate-spin" /> : <GalleryVerticalEnd />}
-                      </SidebarIdentityIcon>
-                      <SidebarIdentityText>
-                        <SidebarIdentityLabel>
-                          {switching ? `Switching to ${switching}…` : workspaceName}
-                        </SidebarIdentityLabel>
-                        <SidebarIdentityDescription>{ROLE_LABEL[role]}</SidebarIdentityDescription>
-                      </SidebarIdentityText>
-                    </SidebarIdentity>
-                    <Show when={workspaces.length > 1}>
-                      <ChevronsUpDown className="ms-auto group-data-[collapsible=icon]:hidden" />
-                    </Show>
-                  </SidebarMenuButton>
-                </MenuTrigger>
-                <MenuContent className="w-(--reference-width) min-w-56">
-                  <MenuGroup heading="Workspaces">
-                    {workspaces.map((slug) => (
-                      <MenuItem key={slug} onSelect={() => switchTo(slug)} value={slug}>
-                        <SidebarIdentity>
-                          <SidebarIdentityIcon>
-                            <GalleryVerticalEnd />
-                          </SidebarIdentityIcon>
-                          <SidebarIdentityText>
-                            <SidebarIdentityLabel>{titleCase(slug)}</SidebarIdentityLabel>
-                          </SidebarIdentityText>
-                        </SidebarIdentity>
-                        <Show when={slug === current}>
-                          <Check className="ms-auto" />
-                        </Show>
-                      </MenuItem>
-                    ))}
-                  </MenuGroup>
-                </MenuContent>
-              </Menu>
+              <Boundary fallback={<WorkspaceButton collapsed={collapsed} name="Keasy" role={role} />}>
+                <WorkspaceSwitcher collapsed={collapsed} isMobile={isMobile} role={role} />
+              </Boundary>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
@@ -254,7 +201,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
                       disabled={loggingOut}
                       onClick={async () => {
                         setLoggingOut(true);
-                        await signOut({ returnTo: "/" });
+                        try {
+                          await signOut({ returnTo: "/" });
+                        } finally {
+                          // Signing out navigates away; if it fails instead, the button comes back.
+                          setLoggingOut(false);
+                        }
                       }}
                       variant="destructive"
                     >
@@ -296,5 +248,93 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <HeaderEndContext value={headerEnd}>{children}</HeaderEndContext>
       </SidebarInset>
     </>
+  );
+}
+
+/**
+ * The rail's workspace identity: this workspace's name and the caller's role here. The rest of the
+ * props reach the button, so a `MenuTrigger asChild` can make it the trigger.
+ */
+function WorkspaceButton({
+  name,
+  role,
+  collapsed,
+  switching,
+  many = false,
+  ...trigger
+}: {
+  name: string;
+  role: WorkspaceRole;
+  collapsed: boolean;
+  switching?: string | null;
+  many?: boolean;
+} & Omit<React.ComponentProps<typeof SidebarMenuButton>, "children">) {
+  return (
+    <SidebarMenuButton
+      {...trigger}
+      aria-label={name}
+      className="group-data-[collapsible=icon]:justify-center data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+      size="lg"
+    >
+      <SidebarIdentity collapsed={collapsed} responsive>
+        <SidebarIdentityIcon>{switching ? <Loader2 className="animate-spin" /> : <GalleryVerticalEnd />}</SidebarIdentityIcon>
+        <SidebarIdentityText>
+          <SidebarIdentityLabel>{switching ? `Switching to ${switching}…` : name}</SidebarIdentityLabel>
+          <SidebarIdentityDescription>{ROLE_LABEL[role]}</SidebarIdentityDescription>
+        </SidebarIdentityText>
+      </SidebarIdentity>
+      <Show when={many}>
+        <ChevronsUpDown className="ms-auto group-data-[collapsible=icon]:hidden" />
+      </Show>
+    </SidebarMenuButton>
+  );
+}
+
+/** The workspaces the caller belongs to, as a menu that switches instance. Fails on its own, in the rail. */
+function WorkspaceSwitcher({ role, collapsed, isMobile }: { role: WorkspaceRole; collapsed: boolean; isMobile: boolean }) {
+  const queryClient = useQueryClient();
+  const [switching, setSwitching] = useState<string | null>(null);
+  const { workspaces, current, current_name } = settled($api.useSuspenseQuery("get", "/v1/auth/workspaces"));
+  const workspaceName = current_name || titleCase(current ?? "") || "Keasy";
+
+  async function switchTo(slug: string) {
+    if (slug === current) return;
+    setSwitching(titleCase(slug));
+    await queryClient.resetQueries();
+    // The other instance has its own BFF; its sign-in route is the switch.
+    window.location.assign(`${workspaceUrl(slug, current ?? "")}/api/auth/signin`);
+  }
+
+  return (
+    <Menu positioning={{ placement: isMobile ? "bottom-start" : "right-start", gutter: 4 }}>
+      <MenuTrigger asChild disabled={workspaces.length <= 1 || !!switching}>
+        <WorkspaceButton
+          collapsed={collapsed}
+          many={workspaces.length > 1}
+          name={workspaceName}
+          role={role}
+          switching={switching}
+        />
+      </MenuTrigger>
+      <MenuContent className="w-(--reference-width) min-w-56">
+        <MenuGroup heading="Workspaces">
+          {workspaces.map((slug) => (
+            <MenuItem key={slug} onSelect={() => switchTo(slug)} value={slug}>
+              <SidebarIdentity>
+                <SidebarIdentityIcon>
+                  <GalleryVerticalEnd />
+                </SidebarIdentityIcon>
+                <SidebarIdentityText>
+                  <SidebarIdentityLabel>{titleCase(slug)}</SidebarIdentityLabel>
+                </SidebarIdentityText>
+              </SidebarIdentity>
+              <Show when={slug === current}>
+                <Check className="ms-auto" />
+              </Show>
+            </MenuItem>
+          ))}
+        </MenuGroup>
+      </MenuContent>
+    </Menu>
   );
 }

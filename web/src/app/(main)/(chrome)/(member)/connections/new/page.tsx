@@ -17,6 +17,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Skeleton,
   toast,
 } from "@kanzo-tech/ui";
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
@@ -27,6 +28,8 @@ import { $api, type Inputs, invalidate } from "@/lib/api/client";
 import { specOf } from "@/lib/connections";
 import { getProviderIcon } from "@/lib/ui/provider-icons";
 import { toastError } from "@/lib/errors";
+import { Boundary, Loading } from "@/components/boundary";
+import { settled } from "@/lib/api/settled";
 
 type Tab = "data" | "vocab" | "model";
 
@@ -37,17 +40,6 @@ export default function NewConnectionPage({ searchParams }: { searchParams: Prom
   const purpose = type === "model" ? "model" : "storage";
   const schema = schemaOf(purpose === "storage" ? "StorageTarget" : "ModelTarget");
   const omit = purpose === "storage" ? ["direction"] : [];
-
-  const { data: credentials = [] } = $api.useQuery("get", "/v1/credentials", {
-    params: { query: { purpose } },
-  });
-  const collection = useMemo(
-    () =>
-      createListCollection({
-        items: credentials.map((c) => ({ label: c.name, value: c.name, kind: String(specOf(c).spec.kind) })),
-      }),
-    [credentials],
-  );
 
   const [name, setName] = useState("");
   const [credential, setCredential] = useState("");
@@ -96,39 +88,15 @@ export default function NewConnectionPage({ searchParams }: { searchParams: Prom
             Credential
             <FieldRequiredIndicator />
           </FieldLabel>
-          {credentials.length === 0 ? (
-            <p className="text-muted-foreground text-xs">
-              No {purpose === "storage" ? "storage" : "AI"} credentials yet.{" "}
-              <Link
-                className="text-primary hover:underline"
-                href={`/settings/credentials/new?purpose=${purpose}`}
-              >
-                Add one first
-              </Link>
-              .
-            </p>
-          ) : (
-            <Select
-              collection={collection}
-              onValueChange={(details) => setCredential(details.value[0] ?? "")}
-              value={credential ? [credential] : []}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a credential" />
-              </SelectTrigger>
-              <SelectContent>
-                {collection.items.map((item) => {
-                  const Icon = getProviderIcon(item.kind);
-                  return (
-                    <SelectItem item={item} key={item.value}>
-                      <Icon className="size-3.5 opacity-60" />
-                      {item.label}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          )}
+          <Boundary
+            fallback={
+              <Loading>
+                <Skeleton className="h-9 w-full" />
+              </Loading>
+            }
+          >
+            <CredentialPicker onChange={setCredential} purpose={purpose} value={credential} />
+          </Boundary>
         </Field>
 
         <SpecForm omit={omit} onChange={setValues} schema={schema} value={values} />
@@ -141,5 +109,59 @@ export default function NewConnectionPage({ searchParams }: { searchParams: Prom
       </SectionFooter>
       <UnsavedChangesGuard dirty={dirty} />
     </SectionRoot>
+  );
+}
+
+/** The credentials a connection of `purpose` can use, as a select; a link to add one when there is none. */
+function CredentialPicker({
+  purpose,
+  value,
+  onChange,
+}: {
+  purpose: "storage" | "model";
+  value: string;
+  onChange: (credential: string) => void;
+}) {
+  const credentials = settled($api.useSuspenseQuery("get", "/v1/credentials", { params: { query: { purpose } } }));
+  const collection = useMemo(
+    () =>
+      createListCollection({
+        items: credentials.map((c) => ({ label: c.name, value: c.name, kind: String(specOf(c).spec.kind) })),
+      }),
+    [credentials],
+  );
+
+  if (credentials.length === 0) {
+    return (
+      <p className="text-muted-foreground text-xs">
+        No {purpose === "storage" ? "storage" : "AI"} credentials yet.{" "}
+        <Link className="text-primary hover:underline" href={`/settings/credentials/new?purpose=${purpose}`}>
+          Add one first
+        </Link>
+        .
+      </p>
+    );
+  }
+  return (
+    <Select
+      collection={collection}
+      onValueChange={(details) => onChange(details.value[0] ?? "")}
+      value={value ? [value] : []}
+    >
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="Select a credential" />
+      </SelectTrigger>
+      <SelectContent>
+        {collection.items.map((item) => {
+          const Icon = getProviderIcon(item.kind);
+          return (
+            <SelectItem item={item} key={item.value}>
+              <Icon className="size-3.5 opacity-60" />
+              {item.label}
+            </SelectItem>
+          );
+        })}
+      </SelectContent>
+    </Select>
   );
 }

@@ -1,3 +1,4 @@
+import { ClientError } from "@/lib/errors";
 import type { InferredDescriptor } from "@fossil-lang/introspect";
 import { FOSSIL_PROMPT } from "@fossil-lang/prompt";
 
@@ -60,14 +61,21 @@ export function suggestRequest(domain: string, schemas: readonly InferredDescrip
   return asked(SUGGEST_PROMPT, `Domain: ${domain}\n\n${describeFiles(schemas)}`);
 }
 
-/** The questions the model suggested; none when its answer does not parse. */
+/**
+ * The questions the model suggested. An answer that is not the JSON asked for throws
+ * `llm/unparseable` with the answer as its detail: it is a failure, never "no suggestions".
+ */
 export function parseSuggestions(text: string): CompetencyQuestion[] {
+  let parsed: { competency_questions?: unknown };
   try {
-    const parsed = JSON.parse(stripFences(text)) as { competency_questions?: CompetencyQuestion[] };
-    return parsed.competency_questions ?? [];
-  } catch {
-    return [];
+    parsed = JSON.parse(stripFences(text)) as { competency_questions?: unknown };
+  } catch (cause) {
+    throw new ClientError("llm/unparseable", "The model's suggestions could not be read", text.trim(), { cause });
   }
+  if (!Array.isArray(parsed?.competency_questions)) {
+    throw new ClientError("llm/unparseable", "The model's suggestions could not be read", text.trim());
+  }
+  return parsed.competency_questions as CompetencyQuestion[];
 }
 
 export function generateRequest(

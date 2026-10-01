@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { notFound } from "next/navigation";
 import {
   Badge,
   Button,
@@ -20,36 +19,38 @@ import { useRouter } from "@kanzo-tech/navigation/next";
 import { initialValues, SpecForm, toBody } from "@/components/spec-form";
 import { schemaOf } from "@/lib/api/spec";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
-import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api, type Inputs, invalidate } from "@/lib/api/client";
 import { type Credential, type Purpose, specOf } from "@/lib/connections";
 import { toastError } from "@/lib/errors";
+import { Boundary, Loading } from "@/components/boundary";
+import { settled } from "@/lib/api/settled";
 
 type Spec = Inputs["CredentialSpecInput"];
 
 /** Adds a credential of `purpose`, or renames and rotates `name`. */
 export function CredentialForm({ purpose, name }: { purpose?: Purpose; name?: string }) {
-  const { data: credential, isLoading } = $api.useQuery(
-    "get",
-    "/v1/credentials/{name}",
-    { params: { path: { name: name ?? "" } } },
-    { enabled: !!name },
+  if (!name) return <Form purpose={purpose ?? "storage"} />;
+  return (
+    <Boundary
+      fallback={
+        <Loading>
+          <SectionRoot>
+            <SectionBody scale="page">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-40 w-full" />
+            </SectionBody>
+          </SectionRoot>
+        </Loading>
+      }
+    >
+      <Stored name={name} />
+    </Boundary>
   );
-  const showSkeleton = useDelayedLoading(isLoading);
+}
 
-  if (name && isLoading) {
-    return showSkeleton ? (
-      <SectionRoot>
-        <SectionBody scale="page">
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-40 w-full" />
-        </SectionBody>
-      </SectionRoot>
-    ) : null;
-  }
-  if (name && !credential) notFound();
-
-  return <Form credential={credential} purpose={credential ? specOf(credential).purpose : (purpose ?? "storage")} />;
+function Stored({ name }: { name: string }) {
+  const credential = settled($api.useSuspenseQuery("get", "/v1/credentials/{name}", { params: { path: { name } } }));
+  return <Form credential={credential} purpose={specOf(credential).purpose} />;
 }
 
 function Form({ credential, purpose }: { credential?: Credential; purpose: Purpose }) {

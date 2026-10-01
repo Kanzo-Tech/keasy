@@ -1,5 +1,4 @@
-import { ProblemView } from "@/components/problem-view";
-import { authProblem } from "@/lib/errors";
+import { AuthProblem } from "./auth-problem";
 
 /**
  * Where a sign-in that failed lands: the auth callback redirects here with the `AuthError`'s code
@@ -15,7 +14,7 @@ export default async function AuthErrorPage({
   const named = (Array.isArray(code) ? code[0] : code) ?? "auth/unknown";
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
-      <ProblemView className="w-full max-w-xl" problem={authProblem(named)} />
+      <AuthProblem code={named} />
     </main>
   );
 }

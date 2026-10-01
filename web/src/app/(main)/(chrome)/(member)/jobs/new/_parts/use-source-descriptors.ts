@@ -26,16 +26,22 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
   return debounced;
 }
 
-export function useSourceDescriptors(script: string): InferredDescriptor[] {
+/**
+ * The descriptors, and why they could not be read. The named exception to "useSuspenseQuery only"
+ * (fossil docs/design/failure, G2.4): it follows every pause in typing, the editor stays useful
+ * without it, and suspending the editor on a keystroke would be the wrong answer — so the failure is
+ * returned to be shown beside the program instead of thrown.
+ */
+export function useSourceDescriptors(script: string): { descriptors: InferredDescriptor[]; error: unknown } {
   const program = useDebouncedValue(script, 400);
 
-  const { data: sources } = useQuery({
+  const { data: sources, error: sourcesError } = useQuery({
     queryKey: ["program-sources", program],
     queryFn: async () => (await checker.jobProgram()).sources(program),
     staleTime: Infinity,
   });
 
-  const { data } = useQuery({
+  const { data, error } = useQuery({
     queryKey: sourceDescriptorsKey(
       (sources ?? []).map((s) => `${s.format}:${s.locator}:${s.option ?? ""}`).sort(),
     ),
@@ -46,5 +52,5 @@ export function useSourceDescriptors(script: string): InferredDescriptor[] {
     staleTime: 4 * 60_000,
   });
 
-  return data ?? NONE;
+  return { descriptors: data ?? NONE, error: sourcesError ?? error };
 }

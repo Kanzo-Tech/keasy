@@ -1,7 +1,8 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useMemo, useRef, useState } from "react";
 import { AlertCircle, Sparkles } from "lucide-react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import type { SqlCorpus, SqlResult } from "@fossil-lang/corpus";
 import {
   Button,
@@ -53,10 +54,12 @@ import { $api, ApiError } from "@/lib/api/client";
 import { type ChatMessage, completeText, streamText } from "@/lib/ai/stream";
 import { explainRequest, parsePlan, queryRequest } from "./query-prompts";
 import { generateSuggestions } from "./schema-suggestions";
-import { type Shown, toProblem } from "@/lib/errors";
+import { ClientError, type Shown, toProblem } from "@/lib/errors";
 import { ProblemView } from "@/components/problem-view";
 import { describeDataSpace } from "./data-space";
-import { recordsOf, useCorpus, useFieldStats } from "./corpus";
+import { ONCE, recordsOf, useCorpus, useFieldStats } from "./corpus";
+import { corpusKey } from "@/lib/fossil/corpus";
+import { settled } from "@/lib/api/settled";
 import { Finding } from "./finding";
 import { ResultTable } from "./result-table";
 
@@ -184,7 +187,7 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     yield { kind: "phase", phase: "executing" };
     let result: SqlResult;
     try {
-      result = await corpus.sql(plan.sql);
+      result = await corpus.sql(plan.sql, { signal });
     } catch (err) {
       yield { kind: "failed", problem: toProblem(err, "query/failed") };
       return;
@@ -201,7 +204,7 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     yield { kind: "phase", phase: "done" };
   } catch (err) {
     if (signal.aborted) return;
-    yield { kind: "failed", problem: err instanceof ApiError ? toProblem(err) : { ...toProblem(err), code: "llm/failed" } };
+    yield { kind: "failed", problem: err instanceof ApiError || err instanceof ClientError ? toProblem(err) : { ...toProblem(err), code: "llm/failed" } };
   }
 }
 
@@ -343,8 +346,8 @@ function Answer({ turn }: { turn: Turn }) {
 // ── The panel ────────────────────────────────────────────────────────────
 
 export function AskPanel() {
-  const { coordinator, corpus, manifest, relation } = useCorpus();
-  const { tables } = useFieldStats();
+  const { jobId, coordinator, corpus, manifest, relation } = useCorpus();
+  const tables = useFieldStats();
   const engine = useAiStream<TurnEvent>();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [question, setQuestion] = useState("");
@@ -352,34 +355,22 @@ export function AskPanel() {
   const live = useRef<number | null>(null);
 
   // The model connection the panel asks through: the first there is.
-  const { data: models, isLoading: loadingAiProviders } = $api.useQuery("get", "/v1/connections", {
-    params: { query: { purpose: "model" } },
-  });
-  const connection = models?.[0]?.name;
+  const models = settled(
+    $api.useSuspenseQuery("get", "/v1/connections", { params: { query: { purpose: "model" } } }),
+  );
+  const connection = models[0]?.name;
 
   // The schema the assistant reasons over: DuckDB's own catalog, read back from
   // the views the corpus mounted. Names, columns and TYPES are the ones a query
   // will actually meet, and the server holds no copy — an ask without it is a 400.
-  const [duckSchema, setDuckSchema] = useState<string | null>(null);
-  const [schemaProblem, setSchemaProblem] = useState<Shown | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    describeDataSpace(
-      (sql) => coordinator.query(sql, { type: "json" }),
-      corpus.url,
-      relation,
-      manifest,
-    )
-      .then((ddl) => {
-        if (!cancelled) setDuckSchema(ddl);
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setSchemaProblem(toProblem(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [coordinator, corpus, relation, manifest]);
+  // Read before the panel opens, so a question is never sent into a schema still loading.
+  const duckSchema = settled(
+    useSuspenseQuery({
+      queryKey: [...corpusKey(jobId), "data-space"],
+      queryFn: () => describeDataSpace((sql) => coordinator.query(sql, { type: "json" }), corpus.url, relation, manifest),
+      ...ONCE,
+    }),
+  );
 
   const starters = useMemo(() => generateSuggestions(tables, manifest), [tables, manifest]);
   // Derived from the schema the reader already has, so asking costs nothing and
@@ -396,7 +387,7 @@ export function AskPanel() {
 
   const submit = (asked: string) => {
     const text = asked.trim();
-    if (text.length === 0 || duckSchema === null) return;
+    if (text.length === 0) return;
     const id = nextTurn.current++;
     live.current = id;
     setQuestion("");
@@ -436,7 +427,7 @@ export function AskPanel() {
     if (id !== null) patch(id, { kind: "failed", problem: { code: "ask/stopped", title: "Stopped.", detail: "" } });
   };
 
-  if (!loadingAiProviders && !connection) {
+  if (!connection) {
     return (
       <EmptyRoot>
         <EmptyHeader>
@@ -461,7 +452,6 @@ export function AskPanel() {
     <div className="flex h-full min-h-0 flex-col">
       <Conversation>
         <ConversationContent className="p-3">
-          {schemaProblem && <ProblemView problem={schemaProblem} />}
           <Show when={turns.length === 0}>
             <EmptyRoot>
               <EmptyHeader>
@@ -511,16 +501,13 @@ export function AskPanel() {
             <PromptInputTextarea
               className="resize-none text-sm"
               onChange={(event) => setQuestion(event.target.value)}
-              placeholder={duckSchema === null ? "Reading the schema…" : "Ask about your data…"}
+              placeholder="Ask about your data…"
               value={question}
             />
             <PromptInputToolbar>
               <SuggestMark label="Suggest a question" />
               <PromptInputSubmit
-                disabled={
-                  engine.status !== "loading" &&
-                  (question.trim().length === 0 || duckSchema === null)
-                }
+                disabled={engine.status !== "loading" && question.trim().length === 0}
                 status={engine.status}
               />
             </PromptInputToolbar>

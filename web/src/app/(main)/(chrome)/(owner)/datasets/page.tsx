@@ -27,13 +27,11 @@ import {
   TableHeader,
   TableRow,
 } from "@kanzo-tech/ui";
-import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
+import { Boundary, Loading } from "@/components/boundary";
+import { settled } from "@/lib/api/settled";
 import { $api, type Schemas } from "@/lib/api/client";
 
 export default function DatasetsPage() {
-  const { data: datasets, isLoading } = $api.useQuery("get", "/v1/datasets");
-  const showSkeleton = useDelayedLoading(isLoading);
-
   return (
     <SectionRoot>
       <SectionHeader scale="page">
@@ -48,32 +46,39 @@ export default function DatasetsPage() {
         </SectionTitleGroup>
       </SectionHeader>
       <SectionBody scale="page">
-        {isLoading ? (
-          showSkeleton && (
-            <>
+        <Boundary
+          fallback={
+            <Loading>
               <Skeleton className="h-40 w-full" />
               <Skeleton className="h-40 w-full" />
-            </>
-          )
-        ) : !datasets?.length ? (
-          <EmptyRoot>
-            <EmptyHeader>
-              <EmptyIndicator variant="icon">
-                <Boxes />
-              </EmptyIndicator>
-              <EmptyTitle asChild>
-                <h2>No datasets yet</h2>
-              </EmptyTitle>
-              <EmptyDescription>
-                When a job completes, its output is listed here automatically.
-              </EmptyDescription>
-            </EmptyHeader>
-          </EmptyRoot>
-        ) : (
-          datasets.map((dataset) => <DatasetCard dataset={dataset} key={dataset.job_id} />)
-        )}
+            </Loading>
+          }
+        >
+          <Datasets />
+        </Boundary>
       </SectionBody>
     </SectionRoot>
+  );
+}
+
+function Datasets() {
+  const datasets = settled($api.useSuspenseQuery("get", "/v1/datasets"));
+  return datasets.length === 0 ? (
+    <EmptyRoot>
+      <EmptyHeader>
+        <EmptyIndicator variant="icon">
+          <Boxes />
+        </EmptyIndicator>
+        <EmptyTitle asChild>
+          <h2>No datasets yet</h2>
+        </EmptyTitle>
+        <EmptyDescription>
+          When a job completes, its output is listed here automatically.
+        </EmptyDescription>
+      </EmptyHeader>
+    </EmptyRoot>
+  ) : (
+    datasets.map((dataset) => <DatasetCard dataset={dataset} key={dataset.job_id} />)
   );
 }
 

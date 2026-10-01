@@ -15,9 +15,20 @@ export type { CheckRow, ProviderInfo, SourceRefInfo } from "@fossil-lang/wasm";
 
 let opened: Promise<FossilProgram> | undefined;
 
-/** The job's program, open once per tab: the editor, its introspection and the assistant share it. */
+/**
+ * The job's program, open once per tab: the editor, its introspection and the assistant share it.
+ * A failed open is forgotten, so the next call tries again rather than every caller inheriting one
+ * transient failure until the tab reloads.
+ */
 export function jobProgram(): Promise<FossilProgram> {
-  opened ??= openProgram("job.fossil", { host });
+  if (opened === undefined) {
+    const opening = openProgram("job.fossil", { host });
+    opened = opening;
+    opening.catch(() => {
+      // The caller that awaited it sees the failure; this only clears the cache for the next one.
+      if (opened === opening) opened = undefined;
+    });
+  }
   return opened;
 }
 

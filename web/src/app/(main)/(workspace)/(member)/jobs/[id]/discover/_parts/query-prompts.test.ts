@@ -7,8 +7,8 @@ describe("the query prompts", () => {
     expect(plan).toEqual({ sql: "SELECT 1", answer: "One.", reasoning: "r" });
   });
 
-  it("keeps an answer that is not the JSON asked for as prose", () => {
-    expect(parsePlan(" just words ")).toEqual({ sql: null, answer: "just words", reasoning: "" });
+  it("fails as llm/unparseable when the answer is not the JSON asked for", () => {
+    expect(() => parsePlan(" just words ")).toThrow(expect.objectContaining({ code: "llm/unparseable" }));
   });
 
   it("sends only the latest window of history, then the question", () => {

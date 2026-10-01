@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { use, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   BarChart3Icon,
   InfoIcon,
@@ -38,8 +38,8 @@ import { CorpusProvider, corpusQuery, useCorpus } from "./_parts/corpus";
 import { GraphInfo } from "./_parts/graph-info";
 import { GraphSettings } from "./_parts/graph-settings";
 import { RulesPanel } from "./_parts/rules-panel";
-import { toProblem } from "@/lib/errors";
-import { ProblemView } from "@/components/problem-view";
+import { Boundary } from "@/components/boundary";
+import { settled } from "@/lib/api/settled";
 
 /**
  * Discovery, composed as kanzo-ui's `workspace` showcase: the header picks what `ShellMain` shows
@@ -81,25 +81,25 @@ type ViewId = (typeof VIEWS)[number]["id"];
 export default function DiscoverPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   // Opening the corpus is the one door: a missing job (404), one that has not completed (409) and an
-  // unreadable output all fail it, so its error is the only one the page renders.
-  const corpus = useQuery(corpusQuery(id));
-
-  if (corpus.error) {
-    return (
-      <ShellMain className="p-4">
-        <ProblemView onRetry={() => void corpus.refetch()} problem={toProblem(corpus.error)} />
-      </ShellMain>
-    );
-  }
-  if (!corpus.data) {
-    return (
-      <ShellMain className="items-center justify-center">
-        <Spinner className="text-muted-foreground" />
-      </ShellMain>
-    );
-  }
+  // unreadable output all fail it, and the boundary shows that failure in place of the workspace.
   return (
-    <CorpusProvider value={corpus.data}>
+    <Boundary
+      fallback={
+        <ShellMain className="items-center justify-center">
+          <Spinner className="text-muted-foreground" />
+        </ShellMain>
+      }
+      frame={(failure) => <ShellMain className="p-4">{failure}</ShellMain>}
+    >
+      <Opened id={id} />
+    </Boundary>
+  );
+}
+
+function Opened({ id }: { id: string }) {
+  const corpus = settled(useSuspenseQuery(corpusQuery(id)));
+  return (
+    <CorpusProvider value={corpus}>
       <Workspace />
     </CorpusProvider>
   );
@@ -233,7 +233,14 @@ function Workspace() {
                   </div>
                 </div>
                 <div className="min-h-0 flex-1">
-                  <ActiveBody />
+                  {/* Keyed by panel, so a failed panel does not stay failed under the next one. */}
+                  <Boundary
+                    className="p-3"
+                    fallback={<Skeleton className="m-3 h-40" />}
+                    key={active}
+                  >
+                    <ActiveBody />
+                  </Boundary>
                 </div>
               </ShellAside>
             </ResizablePanel>

@@ -1,9 +1,8 @@
 "use client";
 
 import { use } from "react";
-import { notFound } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   Button,
   DataList,
@@ -30,50 +29,43 @@ import {
   toast,
 } from "@kanzo-tech/ui";
 import { ValidationBadge } from "@/components/validation-badge";
-import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api, invalidate } from "@/lib/api/client";
 import { modelOf, storageOf } from "@/lib/connections";
 import { providersQuery } from "@/lib/fossil/checker";
 import { providerFor } from "@/lib/fossil/providers";
-import { toastError, toProblem } from "@/lib/errors";
-import { ProblemView } from "@/components/problem-view";
+import { toastError } from "@/lib/errors";
+import { Boundary, Loading } from "@/components/boundary";
+import { settled } from "@/lib/api/settled";
 
 export default function ConnectionPage({ params }: { params: Promise<{ name: string }> }) {
-  const path = { params: { path: { name: decodeURIComponent(use(params).name) } } };
+  const name = decodeURIComponent(use(params).name);
+  return (
+    <Boundary
+      fallback={
+        <Loading>
+          <SectionRoot>
+            <SectionBody scale="page">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-40 w-full" />
+            </SectionBody>
+          </SectionRoot>
+        </Loading>
+      }
+    >
+      <ConnectionView name={name} />
+    </Boundary>
+  );
+}
 
-  const { data: connection, isLoading: connLoading } = $api.useQuery("get", "/v1/connections/{name}", path);
-  const { data: providers = [], isLoading: providersLoading } = useQuery(providersQuery);
-  const storage = connection && storageOf(connection);
-  const files = $api.useQuery("get", "/v1/connections/{name}/files", path, { enabled: !!storage });
+function ConnectionView({ name }: { name: string }) {
+  const path = { params: { path: { name } } };
+  const connection = settled($api.useSuspenseQuery("get", "/v1/connections/{name}", path));
+  const storage = storageOf(connection);
   const validate = $api.useMutation("post", "/v1/connections/{name}/validate", {
     onSuccess: () => invalidate("/v1/connections"),
     onError: (err) => toastError(err, "Failed to validate"),
   });
-
-  const isLoading = connLoading || providersLoading;
-  const showSkeleton = useDelayedLoading(isLoading || files.isLoading);
-
-  if (isLoading) {
-    return showSkeleton ? (
-      <SectionRoot>
-        <SectionBody scale="page">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-40 w-full" />
-        </SectionBody>
-      </SectionRoot>
-    ) : null;
-  }
-  if (!connection) notFound();
-
   const model = modelOf(connection);
-  const listed = files.data ?? [];
-  const readable = listed.filter((f) => providerFor(f.path, storage?.kind === "data" ? "data" : "schema", providers));
-
-  const { name } = connection;
-  function copyReference(path: string) {
-    navigator.clipboard.writeText(`@${name}/${path}`);
-    toast.create({ title: "Reference copied", type: "success" });
-  }
 
   return (
     <SectionRoot>
@@ -112,53 +104,74 @@ export default function ConnectionPage({ params }: { params: Promise<{ name: str
               </SectionTitleGroup>
             </SectionHeader>
             <SectionBody>
-              {files.isError ? (
-                <ProblemView onRetry={() => void files.refetch()} problem={toProblem(files.error)} />
-              ) : files.isLoading ? (
-                showSkeleton && <Skeleton className="h-40 w-full" />
-              ) : readable.length === 0 ? (
-                <p className="text-muted-foreground text-xs">
-                  {listed.length === 0 ? "No files found." : "No supported files found."}
-                </p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Path</TableHead>
-                      <TableHead className="w-24 text-end">Size</TableHead>
-                      <TableHead className="w-12" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {readable.map((f) => (
-                      <TableRow key={f.path}>
-                        <TableCell className="font-mono text-xs">{f.path}</TableCell>
-                        <TableCell className="text-end text-muted-foreground text-xs">
-                          <FormatByte unitSystem="binary" value={f.size} />
-                        </TableCell>
-                        <TableCell>
-                          <Menu positioning={{ placement: "bottom-end" }}>
-                            <MenuTrigger asChild>
-                              <Button aria-label={`Actions for ${f.path}`} size="icon-sm" variant="ghost">
-                                <MoreHorizontal />
-                              </Button>
-                            </MenuTrigger>
-                            <MenuContent>
-                              <MenuItem onSelect={() => copyReference(f.path)} value="copy-reference">
-                                Copy reference
-                              </MenuItem>
-                            </MenuContent>
-                          </Menu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+              <Boundary
+                fallback={
+                  <Loading>
+                    <Skeleton className="h-40 w-full" />
+                  </Loading>
+                }
+              >
+                <Files kind={storage.kind === "data" ? "data" : "schema"} name={name} />
+              </Boundary>
             </SectionBody>
           </SectionRoot>
         )}
       </SectionBody>
     </SectionRoot>
+  );
+}
+
+/** What a storage connection's prefix holds that a provider can read. Fails on its own, beside the connection. */
+function Files({ name, kind }: { name: string; kind: "data" | "schema" }) {
+  const listed = settled($api.useSuspenseQuery("get", "/v1/connections/{name}/files", { params: { path: { name } } }));
+  const providers = settled(useSuspenseQuery(providersQuery));
+  const readable = listed.filter((f) => providerFor(f.path, kind, providers));
+
+  function copyReference(path: string) {
+    navigator.clipboard.writeText(`@${name}/${path}`);
+    toast.create({ title: "Reference copied", type: "success" });
+  }
+
+  if (readable.length === 0) {
+    return (
+      <p className="text-muted-foreground text-xs">
+        {listed.length === 0 ? "No files found." : "No supported files found."}
+      </p>
+    );
+  }
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Path</TableHead>
+          <TableHead className="w-24 text-end">Size</TableHead>
+          <TableHead className="w-12" />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {readable.map((f) => (
+          <TableRow key={f.path}>
+            <TableCell className="font-mono text-xs">{f.path}</TableCell>
+            <TableCell className="text-end text-muted-foreground text-xs">
+              <FormatByte unitSystem="binary" value={f.size} />
+            </TableCell>
+            <TableCell>
+              <Menu positioning={{ placement: "bottom-end" }}>
+                <MenuTrigger asChild>
+                  <Button aria-label={`Actions for ${f.path}`} size="icon-sm" variant="ghost">
+                    <MoreHorizontal />
+                  </Button>
+                </MenuTrigger>
+                <MenuContent>
+                  <MenuItem onSelect={() => copyReference(f.path)} value="copy-reference">
+                    Copy reference
+                  </MenuItem>
+                </MenuContent>
+              </Menu>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

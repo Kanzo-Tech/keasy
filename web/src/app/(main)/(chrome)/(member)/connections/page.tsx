@@ -14,6 +14,7 @@ import {
   MenuItem,
   SectionBody,
   SectionRoot,
+  Skeleton,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -37,6 +38,8 @@ import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
 import { type Connection, modelOf, storageOf } from "@/lib/connections";
 import { toastError } from "@/lib/errors";
+import { Boundary, Loading } from "@/components/boundary";
+import { settled } from "@/lib/api/settled";
 
 /** A tab: a storage connection's kind, or the model connections. */
 type Tab = "data" | "vocab" | "model";
@@ -48,9 +51,44 @@ export default function ConnectionsPage({
 }) {
   const router = useRouter();
   const { type: tab = "data" } = use(searchParams);
-  const noun = { data: "data", vocab: "vocabulary", model: "model" }[tab];
 
-  const { data: all = [] } = $api.useQuery("get", "/v1/connections");
+  return (
+    <SectionRoot>
+      <SectionBody className="overflow-hidden" scale="page">
+        <Tabs onValueChange={(details) => router.push(`/connections?type=${details.value}`)} value={tab}>
+          <TabsList>
+            <TabsTrigger value="data">
+              <Database />
+              Data
+            </TabsTrigger>
+            <TabsTrigger value="vocab">
+              <BookOpen />
+              Vocabulary
+            </TabsTrigger>
+            <TabsTrigger value="model">
+              <Sparkles />
+              Models
+            </TabsTrigger>
+          </TabsList>
+          <Boundary
+            fallback={
+              <Loading>
+                <Skeleton className="h-40 w-full" />
+              </Loading>
+            }
+          >
+            <Connections tab={tab} />
+          </Boundary>
+        </Tabs>
+      </SectionBody>
+    </SectionRoot>
+  );
+}
+
+function Connections({ tab }: { tab: Tab }) {
+  const router = useRouter();
+  const noun = { data: "data", vocab: "vocabulary", model: "model" }[tab];
+  const all = settled($api.useSuspenseQuery("get", "/v1/connections"));
   // The sink is the owner's, on Catalog Storage.
   const connections = useMemo(
     () =>
@@ -127,65 +165,42 @@ export default function ConnectionsPage({
   );
   const table = useDataTable({ columns, data: connections });
 
-  return (
-    <SectionRoot>
-      <SectionBody className="overflow-hidden" scale="page">
-        <Tabs onValueChange={(details) => router.push(`/connections?type=${details.value}`)} value={tab}>
-          <TabsList>
-            <TabsTrigger value="data">
-              <Database />
-              Data
-            </TabsTrigger>
-            <TabsTrigger value="vocab">
-              <BookOpen />
-              Vocabulary
-            </TabsTrigger>
-            <TabsTrigger value="model">
-              <Sparkles />
-              Models
-            </TabsTrigger>
-          </TabsList>
-
-          {connections.length === 0 ? (
-            <EmptyRoot>
-              <EmptyHeader>
-                <EmptyIndicator variant="icon">
-                  {{ data: <Database />, vocab: <BookOpen />, model: <Sparkles /> }[tab]}
-                </EmptyIndicator>
-                <EmptyTitle asChild>
-                  <h2>No {noun} connections</h2>
-                </EmptyTitle>
-                <EmptyDescription>Create a {noun} connection to get started.</EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <Button asChild size="sm" variant="outline">
-                  <Link href={`/connections/new?type=${tab}`}>Create connection</Link>
-                </Button>
-              </EmptyContent>
-            </EmptyRoot>
-          ) : (
-            <DataTableRoot table={table}>
-              <DataTableToolbar>
-                <DataTableSearch column="name" placeholder="Search connections..." />
-                <div className="ms-auto flex items-center gap-2">
-                  <DataTableViewOptions />
-                  <Button asChild size="sm">
-                    <Link href={`/connections/new?type=${tab}`}>
-                      <Plus />
-                      Create connection
-                    </Link>
-                  </Button>
-                </div>
-              </DataTableToolbar>
-              <DataTableContent<Connection>
-                empty="No connections match this filter."
-                onRowClick={(conn) => router.push(`/connections/${encodeURIComponent(conn.name)}`)}
-              />
-              <DataTablePagination />
-            </DataTableRoot>
-          )}
-        </Tabs>
-      </SectionBody>
-    </SectionRoot>
+  return connections.length === 0 ? (
+    <EmptyRoot>
+      <EmptyHeader>
+        <EmptyIndicator variant="icon">
+          {{ data: <Database />, vocab: <BookOpen />, model: <Sparkles /> }[tab]}
+        </EmptyIndicator>
+        <EmptyTitle asChild>
+          <h2>No {noun} connections</h2>
+        </EmptyTitle>
+        <EmptyDescription>Create a {noun} connection to get started.</EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <Button asChild size="sm" variant="outline">
+          <Link href={`/connections/new?type=${tab}`}>Create connection</Link>
+        </Button>
+      </EmptyContent>
+    </EmptyRoot>
+  ) : (
+    <DataTableRoot table={table}>
+      <DataTableToolbar>
+        <DataTableSearch column="name" placeholder="Search connections..." />
+        <div className="ms-auto flex items-center gap-2">
+          <DataTableViewOptions />
+          <Button asChild size="sm">
+            <Link href={`/connections/new?type=${tab}`}>
+              <Plus />
+              Create connection
+            </Link>
+          </Button>
+        </div>
+      </DataTableToolbar>
+      <DataTableContent<Connection>
+        empty="No connections match this filter."
+        onRowClick={(conn) => router.push(`/connections/${encodeURIComponent(conn.name)}`)}
+      />
+      <DataTablePagination />
+    </DataTableRoot>
   );
 }

@@ -101,7 +101,7 @@ export function StudioEditor({
   // Schema-aware completion: each `@conn/path` binding is described in the
   // browser with a credential vended for its connection and pushed at the
   // compiler before the next check.
-  const descriptors = useSourceDescriptors(program);
+  const { descriptors, error: describeError } = useSourceDescriptors(program);
   useEffect(() => {
     if (!opened || descriptors.length === 0) return;
     for (const descriptor of descriptors) opened.registerDescriptor(descriptor);
@@ -132,9 +132,9 @@ export function StudioEditor({
         value={program}
       />
 
-      {loadProblem && (
+      {(loadProblem || describeError) && (
         <div className="absolute inset-x-3 bottom-3 z-10">
-          <ProblemView problem={loadProblem} />
+          <ProblemView problem={loadProblem ?? toProblem(describeError)} />
         </div>
       )}
 

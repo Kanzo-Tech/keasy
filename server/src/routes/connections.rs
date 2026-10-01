@@ -1,5 +1,5 @@
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use object_store::ObjectMeta;
@@ -8,10 +8,9 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::credentials::PurposeQuery;
 use crate::authentication::role::{AnyRole, Member};
 use crate::connections::{named, persistence};
-use crate::domain::{ConnectionTarget, ConnectionView, ValidationReport};
+use crate::domain::{ConnectionView, StorageTarget, ValidationReport};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::startup::AppState;
 use crate::storage_client;
@@ -20,9 +19,9 @@ use crate::storage_client;
 pub struct CreateConnectionRequest {
     /// What programs write after `@`, and the connection's key.
     pub name: String,
-    /// The credential it signs or calls with; of the same purpose.
+    /// The credential it signs with.
     pub credential: String,
-    pub target: ConnectionTarget,
+    pub target: StorageTarget,
 }
 
 #[derive(Debug, Default, Deserialize, ToSchema)]
@@ -32,7 +31,7 @@ pub struct UpdateConnectionRequest {
     #[serde(default)]
     pub credential: Option<String>,
     #[serde(default)]
-    pub target: Option<ConnectionTarget>,
+    pub target: Option<StorageTarget>,
 }
 
 /// One object under a connection's prefix.
@@ -82,18 +81,13 @@ fn may_change(
 }
 
 #[utoipa::path(get, path = "/v1/connections", tag = "Connections",
-    params(PurposeQuery),
     responses((status = 200, description = "The connections", body = Vec<ConnectionView>))
 )]
 pub async fn list_connections(
     _: AnyRole,
     State(state): State<AppState>,
-    Query(query): Query<PurposeQuery>,
 ) -> Result<impl IntoResponse, Refusal> {
-    Ok(Json(persistence::list(
-        &*state.db.read().await,
-        query.purpose,
-    )?))
+    Ok(Json(persistence::list(&*state.db.read().await)?))
 }
 
 #[utoipa::path(post, path = "/v1/connections", tag = "Connections",
@@ -164,9 +158,6 @@ pub async fn update_connection(
     }
     if let Some(target) = request.target {
         updated.target = target;
-    }
-    if updated.target.purpose() != current.target.purpose() {
-        return Err(Refusal::invalid("a connection's purpose cannot change"));
     }
     may_change(
         &caller,
@@ -260,11 +251,7 @@ pub async fn vend_source_credentials(
     Json(req): Json<super::jobs::output::CredentialsRequest>,
 ) -> Result<Response, Refusal> {
     let connection = named(&state.db, &name).await?;
-    let is_source = connection
-        .target
-        .storage()
-        .is_some_and(|s| s.direction == crate::domain::Direction::Source);
-    if !is_source {
+    if connection.target.direction != crate::domain::Direction::Source {
         return Err(Refusal::invalid(format!(
             "{name:?} is not a storage source"
         )));

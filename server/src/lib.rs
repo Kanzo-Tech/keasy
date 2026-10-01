@@ -7,7 +7,6 @@ pub mod database;
 pub mod domain;
 pub mod error;
 pub mod jobs;
-pub mod llm_client;
 pub mod routes;
 pub mod startup;
 pub mod storage_client;

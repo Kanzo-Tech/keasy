@@ -1,0 +1,41 @@
+# The gateway's prod profile. Same aliases as dev, real upstreams. Each upstream's key
+# is an env var the platform module sets from `ai_upstream_keys`. Adding a provider is
+# an entry here; no app changes. See infra/ai/README.md.
+
+model_list:
+  - model_name: chat
+    litellm_params:
+      model: anthropic/claude-sonnet-5-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+  - model_name: complete
+    litellm_params:
+      model: anthropic/claude-haiku-4-5-20251001
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  # Optional upstreams, one entry each. Uncomment and add the key to ai_upstream_keys.
+  # - model_name: chat-fallback
+  #   litellm_params:
+  #     model: openai/gpt-5
+  #     api_key: os.environ/OPENAI_API_KEY
+  # - model_name: hermes
+  #   litellm_params:
+  #     model: openai/hermes-4-70b
+  #     api_base: https://inference-api.nousresearch.com/v1
+  #     api_key: os.environ/NOUS_API_KEY
+
+router_settings:
+  num_retries: 2
+  timeout: 120
+  # fallbacks: [{ "chat": ["chat-fallback"] }]
+
+litellm_settings:
+  drop_params: true
+  cache: true
+  cache_params:
+    type: redis
+    mode: default_off
+    ttl: 3600
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL

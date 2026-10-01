@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { AlertCircle, ArrowLeft, ArrowRight, Database, Plus, Wand2 } from "lucide-react";
-import { type AiStatus, type RunState, Task, TaskList, TaskStatus, TaskTitle, useAiStream } from "@kanzo-tech/ai";
+import { Assist, AssistProvider } from "@kanzo-tech/ai";
 import {
   Alert,
   AlertAction,
@@ -17,7 +17,7 @@ import {
   EmptyRoot,
   EmptyTitle,
   Field,
-  FieldDescription,
+  FieldHelper,
   FieldLabel,
   FieldRequiredIndicator,
   FormatByte,
@@ -49,14 +49,8 @@ import {
 } from "@kanzo-tech/ui/table";
 import { Link } from "@kanzo-tech/navigation/next";
 import { $api } from "@/lib/api/client";
-import { type CompletionRequest, streamText } from "@/lib/ai/stream";
-import {
-  type CompetencyQuestion,
-  generateRequest,
-  parseScript,
-  parseSuggestions,
-  suggestRequest,
-} from "./assistant-prompts";
+import { gateway } from "@/lib/ai";
+import { type CompetencyQuestion, describeFiles, suggestQuestions, writeProgram } from "./assistant-prompts";
 import * as checker from "@/lib/fossil/checker";
 import { connectionPath, describeSources, sourceDescriptorsKey } from "./describe-sources";
 import { providerFor } from "@/lib/fossil/providers";
@@ -68,12 +62,8 @@ type ConnectionFile = { path: string; size: number };
 
 const STEPS = ["Connections", "Describe", "Requirements", "Generate"] as const;
 
-const RUN_STATE: Record<AiStatus, RunState> = {
-  idle: "pending",
-  loading: "running",
-  ready: "done",
-  error: "failed",
-};
+/** The model the Domain field is assisted by. */
+const COMPLETE = gateway("complete");
 
 const CONNECTION_COLUMNS: ColumnDef<Connection>[] = [
   selectColumn<Connection>({ rowLabel: (row) => `Select ${row.original.name}` }),
@@ -105,30 +95,35 @@ const FILE_COLUMNS: ColumnDef<ConnectionFile>[] = [
   },
 ];
 
-/** One model call through the library's stream: deltas accumulate, and the whole text is the result. */
-function useModelStream() {
-  const stream = useAiStream<string>();
-  const [text, setText] = useState("");
-  const { run } = stream;
+/** One model call at a time: started, stopped when superseded or left, and how it ended. */
+function useCall() {
+  const [status, setStatus] = useState<"idle" | "running" | "done" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const ctrl = useRef<AbortController>(undefined);
+  useEffect(() => () => ctrl.current?.abort(), []);
 
-  const start = useCallback(
-    (request: CompletionRequest, onComplete: (text: string) => void) => {
-      setText("");
-      let full = "";
-      void run(
-        (signal) => streamText(request, signal),
-        (delta) => {
-          full += delta;
-          setText((prev) => prev + delta);
-        },
-      ).then((status) => {
-        if (status === "ready") onComplete(full);
-      });
-    },
-    [run],
-  );
+  const run = useCallback(async (work: (signal: AbortSignal) => Promise<void>) => {
+    ctrl.current?.abort();
+    const mine = new AbortController();
+    ctrl.current = mine;
+    setStatus("running");
+    setError(null);
+    try {
+      await work(mine.signal);
+      if (!mine.signal.aborted) setStatus("done");
+    } catch (e) {
+      if (mine.signal.aborted) return;
+      setStatus("error");
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }, []);
 
-  return { ...stream, start, text };
+  const cancel = useCallback(() => {
+    ctrl.current?.abort();
+    setStatus("idle");
+  }, []);
+
+  return { status, error, run, cancel };
 }
 
 function ConnectionFiles({
@@ -269,19 +264,30 @@ export function AssistantWizard({
     .rows.map((row) => row.original.question.trim())
     .filter(Boolean);
 
-  const suggest = useModelStream();
-  const generate = useModelStream();
+  const suggest = useCall();
+  const generate = useCall();
+  const [draft, setDraft] = useState("");
 
+  // Each question lands in the table as soon as the model has written it whole.
   const askForRequirements = () =>
-    suggest.start(suggestRequest(domain, schemas), (text) => {
-      const suggested = parseSuggestions(text);
-      setReqs(suggested);
-      reqTable.setRowSelection(Object.fromEntries(suggested.map((q) => [q.id, true])));
+    void suggest.run(async (signal) => {
+      setReqs([]);
+      let n = 0;
+      for await (const q of suggestQuestions(domain, schemas, signal)) {
+        const id = `cq${++n}`;
+        setReqs((prev) => [...prev, { id, ...q }]);
+        reqTable.setRowSelection((prev) => ({ ...prev, [id]: true }));
+      }
     });
 
   const generateProgram = () =>
-    generate.start(generateRequest(domain, questions, schemas), (text) => {
-      onComplete(parseScript(text));
+    void generate.run(async (signal) => {
+      let program = "";
+      for await (const partial of writeProgram(domain, questions, schemas, signal)) {
+        program = partial.program ?? program;
+        setDraft(program);
+      }
+      onComplete(program);
       toast.create({ title: "Script generated — review before submitting", type: "success" });
     });
 
@@ -364,26 +370,24 @@ export function AssistantWizard({
         </StepsContent>
 
         <StepsContent className="flex flex-col gap-4" index={1}>
-          <Field>
-            <FieldLabel>
-              Domain
-              <FieldRequiredIndicator fallback="(optional)" />
-            </FieldLabel>
-            <Textarea
-              onChange={(e) => setDomain(e.target.value)}
-              placeholder="e.g. daily weather observations from Spanish stations"
-              rows={6}
-              value={domain}
-            />
-            <FieldDescription>What the knowledge graph is about, or what it is for.</FieldDescription>
-          </Field>
+          {/* The model that helps write the domain reads the files it will be about. */}
+          <AssistProvider context={() => describeFiles(schemas)} model={COMPLETE}>
+            <Field>
+              <FieldLabel>
+                Domain
+                <FieldRequiredIndicator fallback="(optional)" />
+              </FieldLabel>
+              <Assist onValueChange={setDomain} value={domain}>
+                <Textarea placeholder="e.g. daily weather observations from Spanish stations" rows={6} />
+              </Assist>
+              <FieldHelper>What the knowledge graph is about, or what it is for.</FieldHelper>
+            </Field>
+          </AssistProvider>
           <Show when={!schemasReady}>
-            <TaskList>
-              <Task state="running">
-                <TaskStatus />
-                <TaskTitle>Reading the schemas of the selected files</TaskTitle>
-              </Task>
-            </TaskList>
+            <p className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Spinner aria-hidden />
+              Reading the schemas of the selected files
+            </p>
           </Show>
         </StepsContent>
 
@@ -421,27 +425,22 @@ export function AssistantWizard({
                 </DataTableRoot>
               </>
             }
-            when={suggest.status === "loading"}
+            when={suggest.status === "running" && reqs.length === 0}
           >
-            <TaskList>
-              <Task state="running">
-                <TaskStatus />
-                <TaskTitle>Suggesting requirements</TaskTitle>
-              </Task>
-            </TaskList>
-            <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 font-mono text-muted-foreground text-xs">
-              {suggest.text}
-            </pre>
+            <p className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Spinner aria-hidden />
+              Suggesting requirements
+            </p>
           </Show>
         </StepsContent>
 
         <StepsContent className="flex flex-col gap-4" index={3}>
-          <TaskList>
-            <Task state={RUN_STATE[generate.status]}>
-              <TaskStatus />
-              <TaskTitle>Generating the Fossil program</TaskTitle>
-            </Task>
-          </TaskList>
+          <Show when={generate.status === "running"}>
+            <p className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Spinner aria-hidden />
+              Writing the Fossil program
+            </p>
+          </Show>
           <Show when={generate.status === "error"}>
             <Alert variant="destructive">
               <AlertCircle />
@@ -454,9 +453,9 @@ export function AssistantWizard({
               </AlertAction>
             </Alert>
           </Show>
-          <Show when={generate.text.length > 0}>
+          <Show when={draft.length > 0}>
             <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 font-mono text-muted-foreground text-xs">
-              {generate.text}
+              {draft}
             </pre>
           </Show>
         </StepsContent>

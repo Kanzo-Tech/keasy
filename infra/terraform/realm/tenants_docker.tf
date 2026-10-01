@@ -64,12 +64,20 @@ resource "docker_service" "server" {
         # The ORIGIN this process reaches Keycloak at; the issuer's path is its own.
         KEASY_OIDC_INTERNAL_BASE_URL = "http://keycloak:8080"
         KEASY_SECRET_KEY_FILE        = "/run/secrets/secret-key"
+        # The AI gateway on the overlay, and this workspace's key to it.
+        KEASY_AI_URL      = "http://ai-gateway:4000"
+        KEASY_AI_KEY_FILE = "/run/secrets/ai-key"
       }
 
       secrets {
         secret_id   = docker_secret.secret_key[each.key].id
         secret_name = docker_secret.secret_key[each.key].name
         file_name   = "/run/secrets/secret-key"
+      }
+      secrets {
+        secret_id   = docker_secret.ai_key[each.key].id
+        secret_name = docker_secret.ai_key[each.key].name
+        file_name   = "/run/secrets/ai-key"
       }
 
       mounts {

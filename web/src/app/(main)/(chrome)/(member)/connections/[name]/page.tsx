@@ -32,7 +32,6 @@ import {
 import { ValidationBadge } from "@/components/validation-badge";
 import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api, invalidate } from "@/lib/api/client";
-import { modelOf, storageOf } from "@/lib/connections";
 import { providersQuery } from "@/lib/fossil/checker";
 import { providerFor } from "@/lib/fossil/providers";
 import { toastError, toProblem } from "@/lib/errors";
@@ -43,8 +42,7 @@ export default function ConnectionPage({ params }: { params: Promise<{ name: str
 
   const { data: connection, isLoading: connLoading } = $api.useQuery("get", "/v1/connections/{name}", path);
   const { data: providers = [], isLoading: providersLoading } = useQuery(providersQuery);
-  const storage = connection && storageOf(connection);
-  const files = $api.useQuery("get", "/v1/connections/{name}/files", path, { enabled: !!storage });
+  const files = $api.useQuery("get", "/v1/connections/{name}/files", path);
   const validate = $api.useMutation("post", "/v1/connections/{name}/validate", {
     onSuccess: () => invalidate("/v1/connections"),
     onError: (err) => toastError(err, "Failed to validate"),
@@ -65,9 +63,9 @@ export default function ConnectionPage({ params }: { params: Promise<{ name: str
   }
   if (!connection) notFound();
 
-  const model = modelOf(connection);
+  const storage = connection.target;
   const listed = files.data ?? [];
-  const readable = listed.filter((f) => providerFor(f.path, storage?.kind === "data" ? "data" : "schema", providers));
+  const readable = listed.filter((f) => providerFor(f.path, storage.kind === "data" ? "data" : "schema", providers));
 
   const { name } = connection;
   function copyReference(path: string) {
@@ -84,14 +82,14 @@ export default function ConnectionPage({ params }: { params: Promise<{ name: str
             <DataListItemValue className="font-medium">{connection.credential}</DataListItemValue>
           </DataListItem>
           <DataListItem>
-            <DataListItemLabel>{storage ? "URL" : "Model"}</DataListItemLabel>
+            <DataListItemLabel>URL</DataListItemLabel>
             <DataListItemValue className="break-all font-mono">
-              {storage?.url ?? model?.model ?? "provider default"}
+              {storage.url}
             </DataListItemValue>
           </DataListItem>
           <DataListItem>
-            <DataListItemLabel>{storage ? "Kind" : "Max tokens"}</DataListItemLabel>
-            <DataListItemValue>{storage ? storage.kind : (model?.max_tokens ?? "—")}</DataListItemValue>
+            <DataListItemLabel>Kind</DataListItemLabel>
+            <DataListItemValue>{storage.kind}</DataListItemValue>
           </DataListItem>
           <DataListItem>
             <DataListItemLabel>Status</DataListItemLabel>
@@ -104,7 +102,7 @@ export default function ConnectionPage({ params }: { params: Promise<{ name: str
           </DataListItem>
         </DataList>
 
-        {storage && (
+        {(
           <SectionRoot className="gap-2" fill={false}>
             <SectionHeader>
               <SectionTitleGroup>

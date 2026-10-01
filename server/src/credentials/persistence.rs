@@ -6,7 +6,7 @@ use rusqlite::{Connection, OptionalExtension, params};
 use super::sealing::{self, SecretKey};
 use crate::database::{DbError, DbResult, constraint, json_column_opt};
 use crate::domain::{
-    Credential, CredentialSpecInput, CredentialView, Purpose, ResourceName, ValidationReport,
+    Credential, CredentialView, ResourceName, StorageCredentialInput, ValidationReport,
 };
 
 const COLUMNS: &str = "name, spec, created_by, created_at, updated_by, updated_at, validation";
@@ -65,17 +65,14 @@ pub fn insert(
     conn: &Connection,
     key: &SecretKey,
     name: &ResourceName,
-    spec: &CredentialSpecInput,
+    spec: &StorageCredentialInput,
     by: &str,
     validation: &ValidationReport,
 ) -> DbResult<()> {
     let sealed = sealing::seal_spec(name.as_ref(), spec, key).map_err(DbError::Secret)?;
     conn.execute(
-        &format!(
-            "INSERT INTO credentials (purpose, {COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?4, ?5, ?6)"
-        ),
+        &format!("INSERT INTO credentials ({COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?3, ?4, ?5)"),
         params![
-            spec.purpose().as_ref(),
             name.as_ref(),
             sealed,
             by,
@@ -98,18 +95,11 @@ pub fn get(conn: &Connection, key: &SecretKey, name: &str) -> DbResult<Option<Cr
     .transpose()
 }
 
-/// Every credential of `purpose` (all without one), each with the connections
-/// that use it.
-pub fn list(
-    conn: &Connection,
-    key: &SecretKey,
-    purpose: Option<Purpose>,
-) -> DbResult<Vec<CredentialView>> {
+/// Every credential, each with the connections that use it.
+pub fn list(conn: &Connection, key: &SecretKey) -> DbResult<Vec<CredentialView>> {
     let rows = conn
-        .prepare(&format!(
-            "SELECT {COLUMNS} FROM credentials WHERE ?1 IS NULL OR purpose = ?1 ORDER BY name"
-        ))?
-        .query_map([purpose.as_ref().map(AsRef::as_ref)], row)?
+        .prepare(&format!("SELECT {COLUMNS} FROM credentials ORDER BY name"))?
+        .query_map([], row)?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     rows.into_iter()
         .map(|r| {
@@ -137,7 +127,7 @@ pub fn update(
     key: &SecretKey,
     name: &str,
     new_name: &ResourceName,
-    spec: &CredentialSpecInput,
+    spec: &StorageCredentialInput,
     by: &str,
     validation: Option<&ValidationReport>,
 ) -> DbResult<()> {
@@ -246,22 +236,22 @@ mod tests {
         ResourceName::parse(s).unwrap()
     }
 
-    fn s3(secret: &str) -> CredentialSpecInput {
-        CredentialSpecInput::Storage(StorageCredentialInput::S3 {
+    fn s3(secret: &str) -> StorageCredentialInput {
+        StorageCredentialInput::S3 {
             access_key_id: "AKIA".into(),
             secret_access_key: SecretString::from(secret),
             region: "eu-west-1".into(),
             endpoint: None,
             role_arn: None,
             external_id: None,
-        })
+        }
     }
 
-    fn secret_of(spec: &CredentialSpecInput) -> String {
+    fn secret_of(spec: &StorageCredentialInput) -> String {
         match spec {
-            CredentialSpecInput::Storage(StorageCredentialInput::S3 {
+            StorageCredentialInput::S3 {
                 secret_access_key, ..
-            }) => secret_access_key.expose_secret().to_string(),
+            } => secret_access_key.expose_secret().to_string(),
             _ => panic!("not s3"),
         }
     }

@@ -74,6 +74,11 @@ variable "tenants" {
     # Fixed OIDC client secret — leave null in prod (Keycloak generates it); dev sets a
     # known value so the compose server can use it without a state handoff.
     client_secret = optional(string)
+    # The tenant's AI spend cap in USD per `ai_budget_duration`; null = uncapped.
+    ai_budget = optional(number)
+    # Fixed gateway key (`sk-…`) — leave null in prod (LiteLLM generates it); dev sets
+    # a known value so the compose server can use it, as with `client_secret`.
+    ai_key = optional(string)
   }))
   default = {}
 
@@ -110,4 +115,19 @@ variable "deploy_stacks" {
 variable "network_name" {
   type    = string
   default = "keasy-edge"
+}
+
+# ── AI gateway (the platform module's LiteLLM) ───────────────────────────────
+# Where this module reaches its management API: the admin host in prod, the compose
+# service in dev.
+variable "ai_url" {
+  type = string
+}
+variable "ai_master_key" {
+  type      = string
+  sensitive = true
+}
+variable "ai_budget_duration" {
+  type    = string
+  default = "30d"
 }

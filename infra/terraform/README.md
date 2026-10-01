@@ -1,11 +1,12 @@
 # infra/terraform — the keasy fleet as code
 
-Terraform owns the whole deployment on Docker Swarm: the platform (ingress + identity)
-and every tenant (Keycloak client/roles/users + the server/web Swarm stack).
+Terraform owns the whole deployment on Docker Swarm: the platform (ingress + identity +
+the AI gateway) and every tenant (Keycloak client/roles/users, its AI team and key, and
+the server/web Swarm stack).
 
 ```
-platform/   phase 1 — keasy-edge overlay, base secrets, Traefik + Keycloak + Postgres
-realm/      phase 2 — the keasy realm, SSO IdP, and per-tenant clients/roles/users/stacks
+platform/   phase 1 — keasy-edge overlay, base secrets, Traefik + Keycloak + Postgres + AI gateway
+realm/      phase 2 — the keasy realm, SSO IdP, and per-tenant clients/roles/users/AI keys/stacks
 ```
 
 ## Two-phase apply (the keycloak provider can't create Keycloak and configure it at once)
@@ -15,16 +16,19 @@ On a Swarm manager, once (`docker swarm init` if not already a manager):
 ```sh
 # Phase 1 — platform. Brings Keycloak up empty; mints the DB + admin passwords.
 terraform -chdir=platform init
-terraform -chdir=platform apply -var kc_hostname=auth.keasy.example.com -var acme_email=ops@kanzo.tech
+terraform -chdir=platform apply -var kc_hostname=auth.keasy.example.com -var acme_email=ops@kanzo.tech \
+  -var ai_admin_hostname=ai.internal.keasy.example.com -var 'ai_admin_allow=["203.0.113.7/32"]' \
+  -var 'ai_upstream_keys={ANTHROPIC_API_KEY="sk-ant-…"}'   # see ../ai/README.md
 
 # Wait for Keycloak health (it has no realm yet, but the admin API must answer):
 until curl -fsS https://auth.keasy.example.com/health/ready >/dev/null; do sleep 3; done
 
-# Phase 2 — realm + tenants. Feed it phase 1's admin password.
+# Phase 2 — realm + tenants. Feed it phase 1's admin password and AI master key.
 cp realm/terraform.tfvars.example realm/terraform.tfvars   # then edit: IdP creds + tenants
 terraform -chdir=realm init
 terraform -chdir=realm apply \
-  -var kc_admin_password="$(terraform -chdir=platform output -raw kc_admin_password)"
+  -var kc_admin_password="$(terraform -chdir=platform output -raw kc_admin_password)" \
+  -var ai_master_key="$(terraform -chdir=platform output -raw ai_master_key)"
 ```
 
 - **`realm/terraform.tfvars`** is the tenant **registry** — operator-local, gitignored

@@ -51,7 +51,7 @@ api: ## Regenerate api/openapi.json and api/src/schema.d.ts from the server's ro
 	pnpm --filter @keasy/api generate
 
 # ── Prod / Swarm deploy — Terraform owns everything (see infra/terraform/README.md) ──
-# Two phases: platform (Traefik+Keycloak+Postgres) then realm (SSO + tenants). Adding a
+# Two phases: platform (Traefik+Keycloak+Postgres+AI gateway) then realm (SSO + tenants). Adding a
 # tenant = edit infra/terraform/realm/terraform.tfvars + `make deploy-realm`. No shell, no CLI.
 deploy-platform: ## Phase 1 — apply the platform (needs -var kc_hostname=… acme_email=…)
 	terraform -chdir=infra/terraform/platform init -input=false
@@ -60,4 +60,5 @@ deploy-platform: ## Phase 1 — apply the platform (needs -var kc_hostname=… a
 deploy-realm: ## Phase 2 — apply the realm + tenants (reads realm/terraform.tfvars; feeds the platform admin pw)
 	terraform -chdir=infra/terraform/realm init -input=false
 	terraform -chdir=infra/terraform/realm apply \
-	  -var kc_admin_password="$$(terraform -chdir=infra/terraform/platform output -raw kc_admin_password)"
+	  -var kc_admin_password="$$(terraform -chdir=infra/terraform/platform output -raw kc_admin_password)" \
+	  -var ai_master_key="$$(terraform -chdir=infra/terraform/platform output -raw ai_master_key)"

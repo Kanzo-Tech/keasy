@@ -41,18 +41,18 @@
         ]
       }
     },
-    "/v1/ai/stream": {
+    "/v1/ai/chat/completions": {
       "post": {
         "tags": [
           "AI"
         ],
-        "summary": "The one model call: the browser sends the prompt, the server adds the key\nof the model connection and relays the answer as it streams.",
-        "operationId": "complete_stream",
+        "summary": "Relay one chat completion to the gateway. The answer is streamed back as\nthe gateway sends it, byte for byte; a reader who leaves drops the stream,\nand with it the upstream request. A refusal of the gateway's own — a spent\nbudget, an upstream failure — arrives in the protocol's error format, with\nits status.",
+        "operationId": "chat_completions",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CompletionRequest"
+                "$ref": "#/components/schemas/ChatCompletionRequest"
               }
             }
           },
@@ -60,13 +60,10 @@
         },
         "responses": {
           "200": {
-            "description": "SSE stream: `delta` frames carry text; an `error` frame carries an ErrorBody; the stream ends when the model does",
-            "content": {
-              "text/event-stream": {}
-            }
+            "description": "The gateway's answer as it streams: OpenAI chat completion chunks (`text/event-stream`) or one completion (`application/json`)"
           },
           "400": {
-            "description": "No model connection, or several and none named",
+            "description": "Not an alias, or a malformed request",
             "content": {
               "application/json": {
                 "schema": {
@@ -81,8 +78,14 @@
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
-          "404": {
-            "description": "No such connection",
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "502": {
+            "description": "The AI gateway did not answer",
             "content": {
               "application/json": {
                 "schema": {
@@ -91,14 +94,15 @@
               }
             }
           },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
           "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
+            "description": "This workspace has no AI gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -146,17 +150,6 @@
           "Connections"
         ],
         "operationId": "list_connections",
-        "parameters": [
-          {
-            "name": "purpose",
-            "in": "query",
-            "description": "Only those of this purpose.",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/Purpose"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "The connections",
@@ -699,17 +692,6 @@
           "Credentials"
         ],
         "operationId": "list_credentials",
-        "parameters": [
-          {
-            "name": "purpose",
-            "in": "query",
-            "description": "Only those of this purpose.",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/Purpose"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "The credentials, with the connections using each; never a secret",
@@ -1675,27 +1657,49 @@
           "write"
         ]
       },
-      "ChatMessage": {
+      "Alias": {
+        "type": "string",
+        "description": "A model, by what it is for. Which upstream answers is the gateway's\nconfiguration (`infra/ai/`), so nothing here names a provider.",
+        "enum": [
+          "chat",
+          "complete"
+        ]
+      },
+      "ChatCompletionRequest": {
         "type": "object",
+        "description": "An OpenAI chat completion request. `model` must be an alias; everything\nelse the protocol carries — `stream`, `tools`, `response_format`,\n`temperature` — goes to the gateway untouched.",
         "required": [
-          "role",
-          "content"
+          "model",
+          "messages"
         ],
         "properties": {
-          "content": {
-            "type": "string"
+          "max_completion_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
           },
-          "role": {
-            "$ref": "#/components/schemas/ChatRole"
+          "max_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "The conversation, in the OpenAI message format."
+          },
+          "model": {
+            "$ref": "#/components/schemas/Alias"
           }
         }
-      },
-      "ChatRole": {
-        "type": "string",
-        "enum": [
-          "user",
-          "assistant"
-        ]
       },
       "Check": {
         "type": "object",
@@ -1737,73 +1741,11 @@
           }
         }
       },
-      "CompletionRequest": {
-        "type": "object",
-        "description": "One model call. The browser writes the prompt and keeps the conversation;\nthe server holds the key and relays the answer.",
-        "required": [
-          "system",
-          "messages"
-        ],
-        "properties": {
-          "connection": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The model connection to call. May be left out while the workspace has\nexactly one."
-          },
-          "max_tokens": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "Fewer tokens than the connection allows.",
-            "minimum": 0
-          },
-          "messages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChatMessage"
-            },
-            "description": "The conversation, oldest first, ending with the user's turn."
-          },
-          "system": {
-            "type": "string"
-          }
-        }
-      },
       "ConnectionKind": {
         "type": "string",
         "enum": [
           "data",
           "vocab"
-        ]
-      },
-      "ConnectionTarget": {
-        "oneOf": [
-          {
-            "type": "object",
-            "required": [
-              "storage"
-            ],
-            "properties": {
-              "storage": {
-                "$ref": "#/components/schemas/StorageTarget"
-              }
-            }
-          },
-          {
-            "type": "object",
-            "required": [
-              "model"
-            ],
-            "properties": {
-              "model": {
-                "$ref": "#/components/schemas/ModelTarget"
-              }
-            }
-          }
         ]
       },
       "ConnectionView": {
@@ -1831,7 +1773,7 @@
             "type": "string"
           },
           "target": {
-            "$ref": "#/components/schemas/ConnectionTarget"
+            "$ref": "#/components/schemas/StorageTarget"
           },
           "updated_at": {
             "type": "string"
@@ -1861,14 +1803,14 @@
         "properties": {
           "credential": {
             "type": "string",
-            "description": "The credential it signs or calls with; of the same purpose."
+            "description": "The credential it signs with."
           },
           "name": {
             "type": "string",
             "description": "What programs write after `@`, and the connection's key."
           },
           "target": {
-            "$ref": "#/components/schemas/ConnectionTarget"
+            "$ref": "#/components/schemas/StorageTarget"
           }
         }
       },
@@ -1888,10 +1830,10 @@
               "null"
             ],
             "format": "uri",
-            "description": "A storage URL to LIST before the credential is stored. A storage\ncredential has no location of its own, so without one it is only\nchecked to build a client."
+            "description": "A storage URL to LIST before the credential is stored. A credential has\nno location of its own, so without one it is only checked to build a\nclient."
           },
           "spec": {
-            "$ref": "#/components/schemas/CredentialSpecInput"
+            "$ref": "#/components/schemas/StorageCredentialInput"
           }
         }
       },
@@ -1920,60 +1862,6 @@
           }
         }
       },
-      "CredentialSpecInput": {
-        "oneOf": [
-          {
-            "type": "object",
-            "required": [
-              "storage"
-            ],
-            "properties": {
-              "storage": {
-                "$ref": "#/components/schemas/StorageCredentialInput"
-              }
-            }
-          },
-          {
-            "type": "object",
-            "required": [
-              "model"
-            ],
-            "properties": {
-              "model": {
-                "$ref": "#/components/schemas/ModelCredentialInput"
-              }
-            }
-          }
-        ],
-        "description": "A credential as a request states it, secrets included."
-      },
-      "CredentialSpecView": {
-        "oneOf": [
-          {
-            "type": "object",
-            "required": [
-              "storage"
-            ],
-            "properties": {
-              "storage": {
-                "$ref": "#/components/schemas/StorageCredentialView"
-              }
-            }
-          },
-          {
-            "type": "object",
-            "required": [
-              "model"
-            ],
-            "properties": {
-              "model": {
-                "$ref": "#/components/schemas/ModelCredentialView"
-              }
-            }
-          }
-        ],
-        "description": "A credential as a response shows it: no secret field exists here."
-      },
       "CredentialView": {
         "type": "object",
         "required": [
@@ -1996,7 +1884,7 @@
             "type": "string"
           },
           "spec": {
-            "$ref": "#/components/schemas/CredentialSpecView"
+            "$ref": "#/components/schemas/StorageCredentialView"
           },
           "updated_at": {
             "type": "string"
@@ -2124,9 +2012,7 @@
           "list_files_failed",
           "store_error",
           "ai_not_configured",
-          "ai_connection_required",
-          "insufficient_credits",
-          "llm_failed"
+          "ai_unreachable"
         ]
       },
       "ErrorData": {
@@ -2243,129 +2129,13 @@
           "cancelled"
         ]
       },
-      "ModelCredentialInput": {
-        "oneOf": [
-          {
-            "type": "object",
-            "title": "Anthropic",
-            "required": [
-              "api_key",
-              "kind"
-            ],
-            "properties": {
-              "api_key": {
-                "type": "string",
-                "format": "password",
-                "writeOnly": true
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "anthropic"
-                ]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "title": "OpenAI",
-            "required": [
-              "api_key",
-              "kind"
-            ],
-            "properties": {
-              "api_key": {
-                "type": "string",
-                "format": "password",
-                "writeOnly": true
-              },
-              "base_url": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "format": "uri",
-                "description": "An OpenAI-compatible API root. Empty is `https://api.openai.com/v1`."
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "openai"
-                ]
-              }
-            }
-          }
-        ]
-      },
-      "ModelCredentialView": {
-        "oneOf": [
-          {
-            "type": "object",
-            "title": "Anthropic",
-            "required": [
-              "kind"
-            ],
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "anthropic"
-                ]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "title": "OpenAI",
-            "required": [
-              "kind"
-            ],
-            "properties": {
-              "base_url": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "openai"
-                ]
-              }
-            }
-          }
-        ]
-      },
-      "ModelTarget": {
-        "type": "object",
-        "properties": {
-          "max_tokens": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "The most tokens an answer may take, unless the call asks for fewer.",
-            "minimum": 0
-          },
-          "model": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The provider's model id. Empty runs the provider's default\n(Anthropic: claude-sonnet-4-20250514, OpenAI: gpt-4o)."
-          }
-        }
-      },
       "Operation": {
         "type": "string",
         "description": "What a probe tried.",
         "enum": [
           "list",
           "write",
-          "delete",
-          "models"
+          "delete"
         ]
       },
       "Outcome": {
@@ -2421,14 +2191,6 @@
             }
           }
         }
-      },
-      "Purpose": {
-        "type": "string",
-        "description": "What a credential, and every connection that uses it, is for.",
-        "enum": [
-          "storage",
-          "model"
-        ]
       },
       "RelationColumn": {
         "type": "object",
@@ -2557,7 +2319,8 @@
               }
             }
           }
-        ]
+        ],
+        "description": "A credential as a request states it, secrets included."
       },
       "StorageCredentialView": {
         "oneOf": [
@@ -2648,7 +2411,8 @@
               }
             }
           }
-        ]
+        ],
+        "description": "A credential as a response shows it: what names it, never what signs with it."
       },
       "StorageTarget": {
         "type": "object",
@@ -2690,7 +2454,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/ConnectionTarget"
+                "$ref": "#/components/schemas/StorageTarget"
               }
             ]
           }
@@ -2712,7 +2476,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/CredentialSpecInput"
+                "$ref": "#/components/schemas/StorageCredentialInput"
               }
             ]
           }

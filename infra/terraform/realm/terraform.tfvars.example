@@ -33,5 +33,13 @@ tenants = {
     owners       = ["angel.iglesias@kanzo.tech"]
     members      = []
     ai_budget    = 50 # USD per 30 days
+    # Optional: the workspace's look. theme_css is the theme generator's export.
+    # branding = {
+    #   theme_css = file("themes/acme.css")
+    #   themes    = ["kanzo-light", "kanzo-dark"]
+    #   default   = { light = "kanzo-light", dark = "kanzo-dark" }
+    #   lock      = true
+    #   logo      = "https://acme.example/logo.svg"
+    # }
   }
 }

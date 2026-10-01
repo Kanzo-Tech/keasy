@@ -40,6 +40,18 @@ resource "docker_secret" "secret_key" {
   data     = base64encode(random_bytes.secret_key[each.key].base64)
 }
 
+# The tenant's theme stylesheet, mounted as a file: CSS outgrows an env var.
+# Swarm configs are immutable, so the name carries the content's hash and a
+# change rolls a new config in before the old one goes.
+resource "docker_config" "theme" {
+  for_each = { for slug, t in local.stack_tenants : slug => t.branding.theme_css if t.branding.theme_css != null }
+  name     = "keasy-ws-${each.key}-theme-${substr(sha256(each.value), 0, 12)}"
+  data     = base64encode(each.value)
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 resource "docker_volume" "data" {
   for_each = local.stack_tenants
   name     = "keasy-ws-${each.key}-data"
@@ -52,7 +64,7 @@ resource "docker_service" "server" {
   task_spec {
     container_spec {
       image = local.server_image
-      env = {
+      env = merge({
         KEASY_DATA_DIR       = "/var/lib/keasy"
         KEASY_WORKSPACE_NAME = each.value.display_name
         KEASY_ORG_ALIAS      = each.key
@@ -65,8 +77,24 @@ resource "docker_service" "server" {
         KEASY_OIDC_INTERNAL_BASE_URL = "http://keycloak:8080"
         KEASY_SECRET_KEY_FILE        = "/run/secrets/secret-key"
         # The AI gateway on the overlay, and this workspace's key to it.
-        KEASY_AI_URL      = "http://ai-gateway:4000"
-        KEASY_AI_KEY_FILE = "/run/secrets/ai-key"
+        KEASY_AI_URL          = "http://ai-gateway:4000"
+        KEASY_AI_KEY_FILE     = "/run/secrets/ai-key"
+        KEASY_BRANDING_THEMES = join(",", each.value.branding.themes)
+        KEASY_BRANDING_LOCK   = tostring(each.value.branding.lock)
+        }, { for k, v in {
+          KEASY_BRANDING_LOGO           = each.value.branding.logo
+          KEASY_BRANDING_DEFAULT_LIGHT  = each.value.branding.default.light
+          KEASY_BRANDING_DEFAULT_DARK   = each.value.branding.default.dark
+          KEASY_BRANDING_THEME_CSS_FILE = each.value.branding.theme_css != null ? "/etc/keasy/theme.css" : null
+      } : k => v if v != null })
+
+      dynamic "configs" {
+        for_each = contains(keys(docker_config.theme), each.key) ? [docker_config.theme[each.key]] : []
+        content {
+          config_id   = configs.value.id
+          config_name = configs.value.name
+          file_name   = "/etc/keasy/theme.css"
+        }
       }
 
       secrets {

@@ -89,7 +89,7 @@ variable "tenants" {
 
   validation {
     condition = alltrue([
-      for t in values(var.tenants) : t.branding_file == null || fileexists(t.branding_file)
+      for t in values(var.tenants) : t.branding_file == null ? true : fileexists(t.branding_file)
     ])
     error_message = "A tenant's branding_file must name an existing file (the theme generator's YAML)."
   }

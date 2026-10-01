@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { Job } from "@fossil-lang/executor";
-import { http, type Schemas } from "@/lib/api/client";
+import { ApiError, http, type Schemas } from "@/lib/api/client";
 import { openJobCorpus } from "@/lib/fossil/corpus";
 import { host } from "@/lib/fossil/host";
 import { toastError, toProblem } from "@/lib/errors";
@@ -11,13 +11,75 @@ import { toastError, toProblem } from "@/lib/errors";
  * opaque JSON on the server. A failure is reported by the runner instead, which
  * holds every failure — the executor's and its own — in one `catch`.
  */
-function makeJob(id: string): Job {
+function makeJob(id: string, lease: Lease): Job {
   return {
     id,
     host,
     complete: async ({ status, manifest }) => {
       if (status === "failed") return;
-      await http.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body: { status, manifest } });
+      await lease.report(() => http.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body: { status, manifest } }));
+    },
+  };
+}
+
+/** How often a running job says it is still being run, and how long the server waits before it sweeps. */
+export const HEARTBEAT_MS = 15_000;
+export const LEASE_MS = 60_000;
+
+/** A failure worth asking again: no answer, a server failure or a rate limit — never a refusal. */
+function transient(err: unknown): boolean {
+  if (!(err instanceof ApiError)) return true;
+  return err.status === undefined || err.status >= 500 || err.status === 429;
+}
+
+export interface Lease {
+  /** Start renewing the lease every {@link HEARTBEAT_MS}. */
+  hold(): void;
+  release(): void;
+  /**
+   * `send`, asked again on a transient failure until the lease would have expired; past that the
+   * server's sweep owns the job, and the last failure is thrown.
+   */
+  report<T>(send: () => Promise<T>): Promise<T>;
+}
+
+export function lease(
+  id: string,
+  {
+    beat = () => http.POST("/v1/jobs/{id}/heartbeat", { params: { path: { id } } }),
+    now = Date.now,
+    wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
+  } = {},
+): Lease {
+  let renewed = now();
+  let timer: ReturnType<typeof setInterval> | undefined;
+  return {
+    hold() {
+      renewed = now();
+      timer = setInterval(() => {
+        beat().then(
+          () => {
+            renewed = now();
+          },
+          (err: unknown) => {
+            // The job ended without us (the sweep, or another tab): nothing left to hold.
+            if (!transient(err)) clearInterval(timer);
+          },
+        );
+      }, HEARTBEAT_MS);
+    },
+    release() {
+      clearInterval(timer);
+    },
+    async report(send) {
+      for (let delay = 1_000; ; delay = Math.min(delay * 2, 8_000)) {
+        try {
+          return await send();
+        } catch (err) {
+          if (!transient(err) || now() + delay - renewed >= LEASE_MS) throw err;
+          await wait(delay);
+        }
+      }
     },
   };
 }
@@ -47,6 +109,7 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
 
     const program = job.script;
     const jobId = job.id;
+    const held = lease(jobId);
 
     void (async () => {
       try {
@@ -56,12 +119,16 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
           params: { path: { id: jobId } },
           body: { status: "running" },
         });
+        // While this tab runs the job it says so; a closed tab stops saying it,
+        // and the server ends the job as `job/abandoned`.
+        held.hold();
 
         const mod = await import("@fossil-lang/executor");
         await mod.initFossilExecutor();
         // runJob reads every document and source the program names through the
         // host, and reports `completed` itself; a failure is PATCHed below.
-        await mod.runJob(program, makeJob(jobId));
+        await mod.runJob(program, makeJob(jobId, held));
+        held.release();
 
         // Tell the host what it is now storing. The run report says what was
         // written; it does not say what the relations are CALLED, which is a
@@ -90,7 +157,9 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
               })),
               ...edge_tables.map(relation),
             ];
-            await http.PUT("/v1/jobs/{id}/relations", { params: { path: { id: jobId } }, body: { relations } });
+            await held.report(() =>
+              http.PUT("/v1/jobs/{id}/relations", { params: { path: { id: jobId } }, body: { relations } }),
+            );
           } finally {
             await corpus.close();
           }
@@ -100,12 +169,18 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
       } catch (err) {
         // The run's `FossilError`, or a failure before it: the executor never
         // loaded, or the job could not be marked running.
-        await http
-          .PATCH("/v1/jobs/{id}", {
-            params: { path: { id: jobId } },
-            body: { status: "failed", problem: toProblem(err) },
-          })
+        // Asked again until the lease would lapse; after that the sweep ends the job anyway, as
+        // `job/abandoned`, and the run's own problem is said here rather than lost.
+        await held
+          .report(() =>
+            http.PATCH("/v1/jobs/{id}", {
+              params: { path: { id: jobId } },
+              body: { status: "failed", problem: toProblem(err) },
+            }),
+          )
           .catch((patchErr: unknown) => toastError(patchErr, "The run failed, and the job could not be marked failed"));
+      } finally {
+        held.release();
       }
     })();
     // Key off the stable fields, not the `job` object — the 3s poll allocates a

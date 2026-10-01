@@ -59,7 +59,7 @@ const aiLink = { label: "Go to AI credentials", href: "/settings/credentials?pur
 const signIn = { label: "Sign in again", href: "/api/auth/signin" };
 
 /** What the web's own server side raises: the session store not answering. */
-export type SessionCode = "session/store-silent";
+export type SessionCode = "session/store-unavailable";
 
 const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | AuthErrorCode | SessionCode, Copy>> = {
   "callback.state-mismatch": {
@@ -74,9 +74,9 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Auth
   "organization.not-a-member": { title: "You are not a member of this workspace." },
   "organization.invalid": { title: "No such workspace." },
   "claims.no-subject": { title: "The identity provider sent an incomplete identity." },
-  "session/store-silent": {
+  "session/store-unavailable": {
     title: "Your session could not be read.",
-    detail: "The session store did not answer. Try again in a moment.",
+    detail: "The session store is not answering. Try again in a moment.",
     link: signIn,
   },
   "llm/not-configured": {

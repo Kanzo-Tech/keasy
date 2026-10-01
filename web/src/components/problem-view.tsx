@@ -65,7 +65,7 @@ function Item({ row, open, actions }: { row: Row; open?: boolean; actions?: Reac
   const page = row.code ? pageOf(row.code) : undefined;
   const more = Boolean(row.detail || row.help || row.children.length > 0);
   return (
-    <Diagnostic defaultOpen={open} variant={VARIANT[row.severity]}>
+    <Diagnostic data-code={row.code} defaultOpen={open} variant={VARIANT[row.severity]}>
       <DiagnosticHeader>
         <DiagnosticSeverity>{WORD[row.severity]}</DiagnosticSeverity>
         <DiagnosticTitle>{row.title}</DiagnosticTitle>
@@ -118,7 +118,7 @@ export interface ProblemViewProps {
  * The one way keasy shows a failure: a {@link Shown} — fossil's problem, the server's refusal, or
  * the browser's own — as kanzo-ui's `Diagnostic`, open at rest, with its causes and related
  * diagnostics nested below it and its code linked to the page that explains it. `data-code` carries
- * the code, the one thing an end-to-end test asserts on.
+ * the code on the view and on every coded row of its tree, the one thing an end-to-end test asserts on.
  */
 export function ProblemView({ problem, onRetry, retryLabel = "Try again", className }: ProblemViewProps) {
   const row = worded(problem);

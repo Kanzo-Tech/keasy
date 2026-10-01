@@ -1,6 +1,6 @@
 import { forbidden, redirect } from "next/navigation";
 import { SidebarProvider } from "@kanzo-tech/ui";
-import { getSession, SessionStoreSilent } from "@/lib/auth/server";
+import { getSession, SessionStoreDown } from "@/lib/auth/server";
 import { workspaceRole } from "@/lib/auth/roles";
 import { Shell } from "./shell";
 
@@ -36,7 +36,7 @@ async function readSession() {
   try {
     return await getSession();
   } catch (err) {
-    if (err instanceof SessionStoreSilent) redirect(`/auth/error?code=${err.code}`);
+    if (err instanceof SessionStoreDown) redirect(`/auth/error?code=${err.code}`);
     throw err;
   }
 }

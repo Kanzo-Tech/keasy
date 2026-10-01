@@ -59,12 +59,15 @@ const MAX_AGE = 8 * 60 * 60;
 /** How long the session store may take to connect, or to answer one command. */
 const STORE_DEADLINE_MS = 5_000;
 
-/** The session store did not answer: what every page's session read fails with when Valkey is down. */
-export class SessionStoreSilent extends Error {
-  readonly code = "session/store-silent";
-  constructor(readonly after: number) {
-    super(`The session store did not answer within ${after / 1000} s`);
-    this.name = "SessionStoreSilent";
+/**
+ * The session store failed: it did not answer within its deadline, or refused at once because it is
+ * down (no offline queue). What every page's session read fails with when Valkey is.
+ */
+export class SessionStoreDown extends Error {
+  readonly code = "session/store-unavailable";
+  constructor(detail: string, options?: ErrorOptions) {
+    super(detail, options);
+    this.name = "SessionStoreDown";
   }
 }
 
@@ -96,8 +99,12 @@ function redisAdapter(url: string): TicketAdapter {
     race(
       ready.then((c) => work(c)),
       STORE_DEADLINE_MS,
-      () => new SessionStoreSilent(STORE_DEADLINE_MS),
-    );
+      () => new SessionStoreDown(`The session store did not answer within ${STORE_DEADLINE_MS / 1000} s`),
+    ).catch((cause: unknown) => {
+      throw cause instanceof SessionStoreDown
+        ? cause
+        : new SessionStoreDown("The session store refused the command", { cause });
+    });
 
   return {
     read: (key) => bounded((c) => c.get(key)),

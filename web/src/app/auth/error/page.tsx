@@ -2,7 +2,7 @@ import { AuthProblem } from "./auth-problem";
 
 /**
  * Where a sign-in that failed lands: the auth callback redirects here with the `AuthError`'s code
- * in `?code=`, and `(main)/layout.tsx` does with `session/store-silent`. Outside `(main)`, so it
+ * in `?code=`, and `(main)/layout.tsx` does with `session/store-unavailable`. Outside `(main)`, so it
  * needs no session, and public in `proxy.ts`, so an anonymous browser is not sent round again.
  */
 export default async function AuthErrorPage({

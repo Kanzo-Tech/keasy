@@ -1,19 +1,16 @@
 "use client";
 
 import { Fragment, useCallback, useMemo, useRef, useState } from "react";
-import { AlertCircle, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import type { SqlCorpus, SqlResult } from "@fossil-lang/corpus";
 import {
-  Button,
   Clipboard,
   ClipboardTrigger,
-  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyIndicator,
   EmptyRoot,
-  EmptyTitle,
   Show,
   Skeleton,
   ToggleGroup,
@@ -49,7 +46,6 @@ import {
   useAiStream,
 } from "@kanzo-tech/ai";
 import { MessageMarkdown } from "@kanzo-tech/ai/markdown";
-import { Link } from "@kanzo-tech/navigation/next";
 import { $api, ApiError } from "@/lib/api/client";
 import { type ChatMessage, completeText, streamText } from "@/lib/ai/stream";
 import { explainRequest, parsePlan, queryRequest } from "./query-prompts";
@@ -427,24 +423,17 @@ export function AskPanel() {
     if (id !== null) patch(id, { kind: "failed", problem: { code: "ask/stopped", title: "Stopped.", detail: "" } });
   };
 
+  // Said by its code, with the registry's link to add one, as the server would say it.
   if (!connection) {
     return (
-      <EmptyRoot>
-        <EmptyHeader>
-          <EmptyIndicator variant="icon">
-            <AlertCircle />
-          </EmptyIndicator>
-          <EmptyTitle asChild>
-            <h3>AI not configured</h3>
-          </EmptyTitle>
-          <EmptyDescription>An API key is required.</EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/connections?type=model">Configure</Link>
-          </Button>
-        </EmptyContent>
-      </EmptyRoot>
+      <ProblemView
+        className="p-3"
+        problem={{
+          code: "llm/not-configured",
+          title: "No model connection",
+          detail: "Ask writes its queries with a model: add a model credential and a connection on it.",
+        }}
+      />
     );
   }
 

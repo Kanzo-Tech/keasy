@@ -1,23 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Badge,
   Clipboard,
   ClipboardTrigger,
   cn,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyIndicator,
-  EmptyRoot,
-  EmptyTitle,
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
   Resizable,
   ResizablePanel,
   ResizableResizeTrigger,
@@ -27,41 +14,40 @@ import {
 import { CodeEditor } from "@kanzo-tech/ui/editor";
 import { fossil } from "@fossil-lang/codemirror-fossil";
 import { forceLinting } from "@codemirror/lint";
-import type { EditorView } from "@codemirror/view";
-import { BookMarked, Database, PlugZap } from "lucide-react";
+import { EditorView } from "@codemirror/view";
 import type { FossilProgram } from "@fossil-lang/wasm";
 import * as checker from "@/lib/fossil/checker";
 import { useSourceDescriptors } from "./use-source-descriptors";
-import type { StorageConnection } from "@/lib/connections";
 import { type Shown, toProblem } from "@/lib/errors";
 import { ProblemView } from "@/components/problem-view";
 
 /** The chrome a floating cluster wears — the same utilities the canvas controls use. */
 const FLOATING = "rounded-lg border bg-card shadow-sm";
 
-const KIND_ICON = { data: Database, vocab: BookMarked } as const;
-const KIND_LABEL = { data: "data source", vocab: "RDF vocabulary" } as const;
+/** What the inspector may do to the program. */
+export interface EditorApi {
+  /** Writes `text` over the selection and leaves the caret after it. */
+  insert: (text: string) => void;
+  /** Puts the caret at a zero-based line and character and scrolls it into view. */
+  reveal: (line: number, character: number) => void;
+}
 
-const reference = (c: StorageConnection) => (c.kind === "vocab" ? `@${c.name}` : `@${c.name}/`);
-
-/** The program, and the connections it can reference; the language layer is `fossil()` over the job's program. */
+/** The program, with an inspector beside it; the language layer is `fossil()` over the job's program. */
 export function StudioEditor({
   program,
   onProgramChange,
-  connections,
-  used,
   railOpen,
   onDiagnostics,
+  inspector,
 }: {
   program: string;
   onProgramChange: (program: string) => void;
-  connections: StorageConnection[];
-  /** Connection names the program references — fossil's `refs()`, not a regex. */
-  used: Set<string>;
   railOpen: boolean;
   onDiagnostics: (rows: readonly checker.CheckRow[]) => void;
+  /** The rail's content, handed the function that writes at the caret. */
+  inspector: (editor: EditorApi) => React.ReactNode;
 }) {
-  const view = useRef<EditorView | null>(null);
+  const [view, setView] = useState<EditorView | null>(null);
   const [opened, setOpened] = useState<FossilProgram | null>(null);
   const [definition, setDefinition] = useState<string | null>(null);
   const [loadProblem, setLoadProblem] = useState<Shown | null>(null);
@@ -107,17 +93,35 @@ export function StudioEditor({
   useEffect(() => {
     if (!opened || descriptors.length === 0) return;
     for (const descriptor of descriptors) opened.registerDescriptor(descriptor);
-    if (view.current) forceLinting(view.current);
-  }, [opened, descriptors]);
+    if (view) forceLinting(view);
+  }, [opened, descriptors, view]);
 
-  const insert = (connection: StorageConnection) => {
-    const v = view.current;
-    if (!v) return;
-    const text = reference(connection);
-    const { from, to } = v.state.selection.main;
-    v.dispatch({ changes: { from, to, insert: text }, selection: { anchor: from + text.length } });
-    v.focus();
-  };
+  const editor = useMemo<EditorApi>(
+    () => ({
+      insert: (text) => {
+        const v = view;
+        if (!v) return;
+        const { from, to } = v.state.selection.main;
+        v.dispatch({
+          changes: { from, to, insert: text },
+          selection: { anchor: from + text.length },
+        });
+        v.focus();
+      },
+      reveal: (line, character) => {
+        const v = view;
+        if (!v) return;
+        const row = v.state.doc.line(Math.min(line + 1, v.state.doc.lines));
+        const anchor = Math.min(row.from + character, row.to);
+        v.dispatch({
+          selection: { anchor },
+          effects: EditorView.scrollIntoView(anchor, { y: "center" }),
+        });
+        v.focus();
+      },
+    }),
+    [view],
+  );
 
   const pane = (
     <>
@@ -128,9 +132,7 @@ export function StudioEditor({
         extensions={extensions}
         lineNumbers
         onChange={onProgramChange}
-        onView={(v) => {
-          view.current = v;
-        }}
+        onView={setView}
         value={program}
       />
 
@@ -172,82 +174,8 @@ export function StudioEditor({
         </ResizablePanel>
         <ResizableResizeTrigger id="editor:rail" withHandle />
         <ResizablePanel className="flex min-h-0 min-w-0 flex-col" id="rail">
-          <ShellAside aria-label="Connections" className="size-full min-h-0 border-s-0" side="end">
-            <div className="flex h-9 shrink-0 items-center gap-2 border-b px-3">
-              <span className="font-medium text-sm">Connections</span>
-              <Badge className="ms-auto" size="xs" variant="secondary">
-                {connections.length}
-              </Badge>
-            </div>
-            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-3">
-              <p className="text-muted-foreground text-xs">
-                Drag one into the program, click it to write it at the caret, or press @ in the
-                editor.
-              </p>
-              <Show
-                fallback={
-                  <EmptyRoot>
-                    <EmptyHeader>
-                      <EmptyIndicator variant="icon">
-                        <PlugZap />
-                      </EmptyIndicator>
-                      <EmptyTitle asChild>
-                        <h3>No connections yet</h3>
-                      </EmptyTitle>
-                      <EmptyDescription>
-                        A job reads through a connection. Wire one under Connections and it becomes
-                        referenceable as @name.
-                      </EmptyDescription>
-                    </EmptyHeader>
-                  </EmptyRoot>
-                }
-                when={connections.length > 0}
-              >
-                <ItemGroup className="gap-2">
-                  {connections.map((c) => {
-                    const Icon = KIND_ICON[c.kind];
-                    return (
-                      // The button sits inside the `Item`: `asChild` would put
-                      // `role="listitem"` on it and it would stop being announced as one.
-                      <Item className="p-0" key={c.name} variant="outline">
-                        <button
-                          className="flex w-full cursor-grab flex-wrap items-center gap-(--space) rounded-xl p-(--space) text-start transition-colors hover:border-primary/40 active:cursor-grabbing"
-                          draggable
-                          onClick={() => insert(c)}
-                          // CodeMirror's own drop handling inserts `text/plain` at the drop cursor.
-                          onDragStart={(e) => {
-                            e.dataTransfer.effectAllowed = "copy";
-                            e.dataTransfer.setData("text/plain", reference(c));
-                          }}
-                          type="button"
-                        >
-                          <ItemMedia variant="icon">
-                            <Icon />
-                          </ItemMedia>
-                          <ItemContent>
-                            <ItemTitle className="font-mono">
-                              @{c.name}
-                              <Show when={used.has(c.name)}>
-                                <Badge size="xs" variant="secondary">
-                                  in use
-                                </Badge>
-                              </Show>
-                            </ItemTitle>
-                            <ItemDescription className="line-clamp-1 text-xs">{c.url}</ItemDescription>
-                            <span className="text-faint text-xs">{KIND_LABEL[c.kind]}</span>
-                          </ItemContent>
-                          <ItemActions>
-                            <Badge size="xs" variant="outline">
-                              {c.direction === "sink" ? "sink" : "source"}
-                            </Badge>
-                          </ItemActions>
-                        </button>
-                      </Item>
-                    );
-                  })}
-                </ItemGroup>
-              </Show>
-            </div>
+          <ShellAside aria-label="Inspector" className="size-full min-h-0 border-s-0" side="end">
+            {inspector(editor)}
           </ShellAside>
         </ResizablePanel>
       </Resizable>

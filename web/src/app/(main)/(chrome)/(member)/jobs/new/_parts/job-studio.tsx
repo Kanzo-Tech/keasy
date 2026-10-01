@@ -15,30 +15,22 @@ import {
   EditableEditTrigger,
   EditableInput,
   EditablePreview,
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
   Input,
   Menu,
   MenuContent,
   MenuItem,
   MenuTrigger,
-  ScrollArea,
   Show,
   Spinner,
-  Steps,
-  StepsContent,
-  StepsIndicator,
-  StepsItem,
-  StepsList,
-  StepsSeparator,
-  StepsTitle,
-  StepsTrigger,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
   ToggleGroup,
   ToggleGroupItem,
   toast,
 } from "@kanzo-tech/ui";
-import { ChevronDown, Pencil, PlugZap, Save, X } from "lucide-react";
+import { Check, ChevronDown, PanelRight, Pencil, Save, X } from "lucide-react";
 import { useRouter } from "@kanzo-tech/navigation/next";
 import { $api, ApiError, http, invalidate } from "@/lib/api/client";
 import { storageConnections } from "@/lib/connections";
@@ -47,31 +39,28 @@ import * as checker from "@/lib/fossil/checker";
 import { AssistantWizard } from "./assistant-wizard";
 import { ModePicker } from "./mode-picker";
 import { folderProblem, folderSlug } from "./folder";
-import { StudioConfigure, type ConfigValues } from "./studio-configure";
+import { CreateJobDialog } from "./create-job-dialog";
+import { FindingsList } from "./findings-list";
+import { StudioConnections } from "./studio-connections";
 import { StudioEditor } from "./studio-editor";
-import { StudioSummary } from "./studio-summary";
+import { StudioOutput, type OutputValues } from "./studio-output";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { useJobEditorStore } from "./job-editor-store";
 
-const STEPS = ["Editor", "Configure", "Summary"] as const;
+type InspectorTab = "connections" | "output" | "problems";
 
 /** Quiet before the draft writes itself. Long enough that a pause in typing is
  *  a pause, short enough that leaving the tab does not lose a paragraph. */
 const AUTOSAVE_MS = 1500;
 
 /**
- * The job studio — three pages of one job.
+ * The job studio: one screen, the program and an inspector beside it.
  *
- * `Steps` is honest about them because each one IS a page, and `StepsContent`
- * hides the inactive ones with the `hidden` attribute rather than unmounting
- * them: the editor keeps its undo history, its scroll position and its wasm
- * workspace while you are two pages away. What this replaces returned a
- * different tree per step, so the program — the thing you come back to — was
- * rebuilt every time.
- *
- * The name lives in the header, editable in place, because it labels all three
- * pages rather than being Configure's first field. The draft saves itself, so
- * the strip at the bottom reports rather than commands.
+ * Where the output lands and what the compiler found are not pages to walk
+ * through but properties of the program you are writing, so they sit in the
+ * inspector next to it (Hex, Observable). Create is the one commit point and
+ * opens a review of what the job reads and writes, the way a commit dialog does.
+ * The draft saves itself, so the strip at the bottom reports rather than commands.
  */
 export function JobStudio() {
   const router = useRouter();
@@ -79,6 +68,8 @@ export function JobStudio() {
 
   const store = useJobEditorStore();
   const [railOpen, setRailOpen] = useState(true);
+  const [tab, setTab] = useState<InspectorTab>("connections");
+  const [reviewing, setReviewing] = useState(false);
   const [diagnostics, setDiagnostics] = useState<readonly checker.CheckRow[]>([]);
   const [refs, setRefs] = useState<checker.SourceRefInfo[]>([]);
   const [refsProblem, setRefsProblem] = useState<Shown | null>(null);
@@ -174,7 +165,11 @@ export function JobStudio() {
       if (draftId) {
         await http.PUT("/v1/jobs/{id}", {
           params: { path: { id: draftId } },
-          body: { script: store.script, name, folder: folderValid ? folder : undefined },
+          body: {
+            script: store.script,
+            name,
+            folder: folderValid ? folder : undefined,
+          },
         });
         return draftId;
       }
@@ -243,11 +238,12 @@ export function JobStudio() {
   const submitting = confirmMutation.isPending || confirmMutation.isSuccess;
   const dirty = !saved && !submitting;
 
-  const config: ConfigValues = {
+  const output: OutputValues = {
     sinkConnectionId: store.sinkConnectionId,
     folder,
   };
-  const onConfigChange = useCallback((patch: Partial<ConfigValues>) => {
+  const outputIncomplete = !destination || !folderValid || folder === takenFolder;
+  const onOutputChange = useCallback((patch: Partial<OutputValues>) => {
     const s = useJobEditorStore.getState();
     if (patch.sinkConnectionId !== undefined) s.setSinkConnectionId(patch.sinkConnectionId);
     if (patch.folder !== undefined) s.setFolder(patch.folder);
@@ -270,74 +266,43 @@ export function JobStudio() {
   }
 
   return (
-    <Steps
-      className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden"
-      count={STEPS.length}
-      onStepChange={(d) => store.setStep(Math.min(d.step, STEPS.length - 1))}
-      step={store.step}
-    >
-      {/* A three-column grid, so the steps sit on the band's true centre no
-          matter how long the job's name is — a flex row with `ms-auto` only
-          pushes them off the left group's width, which moves every time the name
-          is edited. `@container`, and every threshold below is a CONTAINER
-          query: what gets narrow here is the page minus the sidebar, and `md:`
-          cannot see the sidebar. */}
-      <div className="@container grid h-14 min-w-0 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b px-3">
-        <div className="flex min-w-0 items-center gap-1 overflow-hidden">
-          <Editable
-            activationMode="dblclick"
-            className="w-auto shrink-0"
-            onValueChange={(d) => store.setName(d.value)}
-            placeholder="Unnamed job"
-            value={store.name}
-          >
-            <EditableArea className="w-auto">
-              <EditableInput asChild>
-                <Input className="h-8 w-56" />
-              </EditableInput>
-              {/* `block` is what makes `truncate` work: `EditablePreview` bakes
-                  in `whitespace-pre-wrap` and inherits `inline-flex`, and
-                  ellipsis does nothing on a flex container. `whitespace-nowrap`
-                  is spelled out beside `truncate` because tailwind-merge files
-                  them under different groups. */}
-              <EditablePreview
-                className="block w-auto max-w-[8rem] truncate whitespace-nowrap px-2 py-1 font-medium @3xl:max-w-[16rem]"
-                size="sm"
-                variant="ghost"
-              />
-            </EditableArea>
-            <EditableControl>
-              <EditableEditTrigger asChild>
-                <Button aria-label="Rename job" size="icon-sm" variant="ghost">
-                  <Pencil />
-                </Button>
-              </EditableEditTrigger>
-              <EditableCancelTrigger asChild>
-                <Button aria-label="Discard the new name" size="icon-sm" variant="ghost">
-                  <X />
-                </Button>
-              </EditableCancelTrigger>
-            </EditableControl>
-          </Editable>
-        </div>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="@container flex h-14 min-w-0 shrink-0 items-center gap-2 border-b px-3">
+        <Editable
+          activationMode="dblclick"
+          className="w-auto max-w-[10rem] @3xl:max-w-[20rem]"
+          onValueChange={(d) => store.setName(d.value)}
+          placeholder="Unnamed job"
+          value={store.name}
+        >
+          <EditableArea className="w-auto">
+            <EditableInput asChild>
+              <Input className="h-8 w-56" />
+            </EditableInput>
+            <EditablePreview className="font-medium" size="sm" variant="ghost" />
+          </EditableArea>
+          <EditableControl>
+            <EditableEditTrigger asChild>
+              <Button aria-label="Rename job" size="icon-sm" variant="ghost">
+                <Pencil />
+              </Button>
+            </EditableEditTrigger>
+            <EditableCancelTrigger asChild>
+              <Button aria-label="Discard the new name" size="icon-sm" variant="ghost">
+                <X />
+              </Button>
+            </EditableCancelTrigger>
+          </EditableControl>
+        </Editable>
 
-        {/* The middle column is sized, not `auto`: `StepsSeparator` is the
-            connector and it GROWS to fill, so on an `auto` column every
-            connector measures 0px and the steps read as three loose chips. */}
-        <StepsList className="w-auto min-w-0 @4xl:w-[24rem]">
-          {STEPS.map((title, index) => (
-            <StepsItem index={index} key={title}>
-              <StepsTrigger>
-                <StepsIndicator>{index + 1}</StepsIndicator>
-                <StepsTitle className="hidden @4xl:inline">{title}</StepsTitle>
-              </StepsTrigger>
-              <StepsSeparator />
-            </StepsItem>
-          ))}
-        </StepsList>
-
-        <div className="flex items-center gap-1.5 overflow-hidden justify-self-end">
-          <ValidationBadge diagnostics={diagnostics} />
+        <div className="ms-auto flex items-center gap-1.5">
+          <ValidationBadge
+            diagnostics={diagnostics}
+            onOpen={() => {
+              setRailOpen(true);
+              setTab("problems");
+            }}
+          />
           <ButtonGroup aria-label="Save">
             <Button
               disabled={!savable || draftMutation.isPending || submitting}
@@ -373,124 +338,147 @@ export function JobStudio() {
               </MenuContent>
             </Menu>
           </ButtonGroup>
+          <Button
+            disabled={submitting || !store.script.trim()}
+            onClick={() => {
+              // An incomplete output is fixed where it is set, not in the review.
+              if (outputIncomplete) {
+                setRailOpen(true);
+                setTab("output");
+                return;
+              }
+              setReviewing(true);
+            }}
+            size="sm"
+          >
+            <Check />
+            Create
+          </Button>
         </div>
       </div>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <StepsContent className="flex min-h-0 flex-1" index={0}>
-          <StudioEditor
-            connections={connections}
-            onDiagnostics={setDiagnostics}
-            onProgramChange={store.setScript}
-            program={store.script}
-            railOpen={railOpen}
-            used={usedNames}
-          />
-        </StepsContent>
+      <StudioEditor
+        inspector={(editor) => (
+          <Tabs
+            className="flex min-h-0 flex-1 flex-col gap-0"
+            onValueChange={(d) => setTab(d.value as InspectorTab)}
+            value={tab}
+          >
+            <TabsList className="mx-3 mt-2 w-auto">
+              <TabsTrigger value="connections">Connections</TabsTrigger>
+              <TabsTrigger value="output">
+                Output
+                <Show when={outputIncomplete}>
+                  <span aria-label="incomplete" className="size-1.5 rounded-full bg-destructive" />
+                </Show>
+              </TabsTrigger>
+              <TabsTrigger value="problems">
+                Problems
+                <Show when={diagnostics.length > 0}>
+                  <Badge size="xs" variant={errors ? "destructive" : "warning"}>
+                    {diagnostics.length}
+                  </Badge>
+                </Show>
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent className="min-h-0 flex-1 overflow-auto" value="connections">
+              <StudioConnections
+                connections={connections}
+                onInsert={editor.insert}
+                used={usedNames}
+              />
+            </TabsContent>
+            <TabsContent className="min-h-0 flex-1 overflow-auto" value="output">
+              <StudioOutput
+                connections={connections}
+                folderTaken={folder === takenFolder}
+                onChange={onOutputChange}
+                values={output}
+              />
+            </TabsContent>
+            <TabsContent className="min-h-0 flex-1 overflow-auto p-3" value="problems">
+              <Show
+                fallback={
+                  <p className="text-muted-foreground text-sm">
+                    Every reference resolves and every mapping type-checks.
+                  </p>
+                }
+                when={diagnostics.length > 0}
+              >
+                <FindingsList
+                  findings={diagnostics}
+                  onSelect={(f) => editor.reveal(f.range.start.line, f.range.start.character)}
+                />
+              </Show>
+            </TabsContent>
+          </Tabs>
+        )}
+        onDiagnostics={setDiagnostics}
+        onProgramChange={store.setScript}
+        program={store.script}
+        railOpen={railOpen}
+      />
 
-        <StepsContent className="flex min-h-0 flex-1 overflow-auto" index={1}>
-          <StudioConfigure
-            connections={connections}
-            folderTaken={folder === takenFolder}
-            onChange={onConfigChange}
-            values={config}
-          />
-        </StepsContent>
-
-        <StepsContent className="flex min-h-0 flex-1 overflow-auto" index={2}>
-          <StudioSummary
-            blocked={blocked}
-            connections={connections}
-            creating={submitting}
-            findings={diagnostics}
-            name={store.name}
-            onCreate={() => {
-              if (!draftMutation.isPending) confirmMutation.mutate();
-            }}
-            refs={refs}
-            refsProblem={refsProblem}
-            values={config}
-          />
-        </StepsContent>
-      </div>
-
-      {/* A STATUS strip: it reports what nothing else does, and keeps the dock
-          switcher at its trailing edge. Only the Editor page has a dock, so only
-          the Editor page shows the toggle. */}
       <div className="flex h-8 shrink-0 flex-row items-center gap-2 border-t px-3 text-muted-foreground text-xs">
         <span className="truncate">
           {refs.length} reference{refs.length === 1 ? "" : "s"}
           {" · "}
           {draftMutation.isPending ? "saving…" : saved ? "draft saved" : "unsaved changes"}
         </span>
-
-        <Show when={store.step === 0}>
-          <ToggleGroup
-            aria-label="Panels"
-            className="ms-auto"
-            multiple={false}
-            onValueChange={(d) => setRailOpen(d.value.length > 0)}
-            size="sm"
-            spacing={2}
-            value={railOpen ? ["connections"] : []}
-          >
-            <ToggleGroupItem aria-label="Connections" value="connections">
-              <PlugZap />
-            </ToggleGroupItem>
-          </ToggleGroup>
-        </Show>
+        <ToggleGroup
+          aria-label="Panels"
+          className="ms-auto"
+          multiple={false}
+          onValueChange={(d) => setRailOpen(d.value.length > 0)}
+          size="sm"
+          spacing={2}
+          value={railOpen ? ["inspector"] : []}
+        >
+          <ToggleGroupItem aria-label="Inspector" value="inspector">
+            <PanelRight />
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
+
+      <CreateJobDialog
+        blocked={blocked}
+        connections={connections}
+        creating={submitting}
+        findings={diagnostics}
+        name={store.name}
+        onCreate={() => {
+          if (!draftMutation.isPending) confirmMutation.mutate();
+        }}
+        onOpenChange={setReviewing}
+        open={reviewing}
+        output={output}
+        refs={refs}
+        refsProblem={refsProblem}
+      />
       <UnsavedChangesGuard dirty={dirty} />
-    </Steps>
+    </div>
   );
 }
 
-/**
- * The tally and what it is made of — the compiler's findings, not a second
- * analysis. One check feeds the squiggles in the gutter, this badge and the gate
- * on Create; the flow this replaces had the LSP's diagnostics trapped inside the
- * editor, so Review advanced with a red program and `validating` was dead state.
- */
-function ValidationBadge({ diagnostics }: { diagnostics: readonly checker.CheckRow[] }) {
+/** The compiler's tally; it opens the Problems tab, where each finding jumps to its line. */
+function ValidationBadge({
+  diagnostics,
+  onOpen,
+}: {
+  diagnostics: readonly checker.CheckRow[];
+  onOpen: () => void;
+}) {
   const errors = diagnostics.filter((d) => d.severity === 1).length;
   const warnings = diagnostics.length - errors;
   return (
-    <HoverCard openDelay={80}>
-      <HoverCardTrigger asChild>
-        <Badge
-          size="lg"
-          variant={errors ? "destructive" : warnings ? "warning" : "success"}
-        >
-          {errors
-            ? `${errors} error${errors === 1 ? "" : "s"}`
-            : warnings
-              ? `${warnings} warning${warnings === 1 ? "" : "s"}`
-              : "Valid"}
-        </Badge>
-      </HoverCardTrigger>
-      <HoverCardContent className="w-80 p-0">
-        <div className="border-b px-3 py-2">
-          <p className="font-medium text-sm">Program</p>
-          <p className="text-muted-foreground text-xs">The same analysis the gutter shows.</p>
-        </div>
-        <Show
-          fallback={<p className="px-3 py-3 text-sm">Every reference resolves and every mapping type-checks.</p>}
-          when={diagnostics.length > 0}
-        >
-          <ScrollArea className="max-h-64">
-            <ul className="divide-y">
-              {diagnostics.map((d, i) => (
-                <li className="flex items-start justify-between gap-3 px-3 py-1.5" key={i}>
-                  <span className="shrink-0 font-medium text-xs">
-                    Line {d.range.start.line + 1}
-                  </span>
-                  <span className="text-end text-muted-foreground text-xs">{d.message}</span>
-                </li>
-              ))}
-            </ul>
-          </ScrollArea>
-        </Show>
-      </HoverCardContent>
-    </HoverCard>
+    <Badge asChild size="lg" variant={errors ? "destructive" : warnings ? "warning" : "success"}>
+      <button onClick={onOpen} type="button">
+        {errors
+          ? `${errors} error${errors === 1 ? "" : "s"}`
+          : warnings
+            ? `${warnings} warning${warnings === 1 ? "" : "s"}`
+            : "Valid"}
+      </button>
+    </Badge>
   );
 }

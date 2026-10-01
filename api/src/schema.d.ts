@@ -371,7 +371,7 @@ export interface components {
          *     configuration (`infra/ai/`), so nothing here names a provider.
          * @enum {string}
          */
-        Alias: "kanzo-chat" | "kanzo-complete";
+        Alias: "chat" | "complete";
         /**
          * @description An OpenAI chat completion request. `model` must be an alias; everything
          *     else the protocol carries — `stream`, `tools`, `response_format`,

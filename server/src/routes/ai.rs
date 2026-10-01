@@ -48,17 +48,17 @@ impl Gateway {
 #[serde(rename_all = "kebab-case")]
 pub enum Alias {
     /// Conversations and generation: the Ask panel, the job assistant.
-    KanzoChat,
+    Chat,
     /// Assisted fields: short, fast, often the same question twice.
-    KanzoComplete,
+    Complete,
 }
 
 impl Alias {
     /// The most tokens one answer may take — the ceiling a page cannot raise.
     fn cap(self) -> u32 {
         match self {
-            Self::KanzoChat => 4096,
-            Self::KanzoComplete => 512,
+            Self::Chat => 4096,
+            Self::Complete => 512,
         }
     }
 }
@@ -116,7 +116,7 @@ pub async fn chat_completions(
     request.rest.remove("cache");
     let mut body = serde_json::to_value(&request).map_err(|e| Refusal::invalid(e.to_string()))?;
     body["user"] = json!(member.user_id);
-    if request.model == Alias::KanzoComplete {
+    if request.model == Alias::Complete {
         // The gateway caches nothing unless asked; a field asks the same
         // question often, and a conversation never twice on purpose.
         body["cache"] = json!({ "use-cache": true });

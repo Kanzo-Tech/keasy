@@ -7,7 +7,7 @@ resource "litellm_team" "tenant" {
   for_each        = var.tenants
   team_id         = "keasy-ws-${each.key}"
   team_alias      = each.value.display_name
-  models          = ["kanzo-chat", "kanzo-complete"]
+  models          = ["chat", "complete"]
   max_budget      = each.value.ai_budget
   budget_duration = each.value.ai_budget == null ? null : var.ai_budget_duration
 }

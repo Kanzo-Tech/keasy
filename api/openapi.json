@@ -1661,8 +1661,8 @@
         "type": "string",
         "description": "A model, by what it is for. Which upstream answers is the gateway's\nconfiguration (`infra/ai/`), so nothing here names a provider.",
         "enum": [
-          "kanzo-chat",
-          "kanzo-complete"
+          "chat",
+          "complete"
         ]
       },
       "ChatCompletionRequest": {

@@ -1,6 +1,6 @@
 import type { SqlCorpus, SqlResult } from "@fossil-lang/corpus";
 import { jsonSchema, stepCountIs, tool, ToolLoopAgent } from "@kanzo-tech/llm";
-import { kanzo } from "@/lib/ai";
+import { gateway } from "@/lib/ai";
 import { recordsOf } from "./corpus";
 
 /** How much of a result set the model reads; the panel shows all of it. */
@@ -73,7 +73,7 @@ export type QueryOutput = SqlResult & { readonly sql: string };
  */
 export function askAgent(schema: string, corpus: SqlCorpus) {
   return new ToolLoopAgent({
-    model: kanzo("kanzo-chat"),
+    model: gateway("chat"),
     instructions: askInstructions(schema),
     stopWhen: stepCountIs(5),
     tools: {

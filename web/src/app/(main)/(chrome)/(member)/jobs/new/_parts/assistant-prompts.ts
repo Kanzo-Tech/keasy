@@ -2,7 +2,7 @@ import type { InferredDescriptor } from "@fossil-lang/introspect";
 import { FOSSIL_PROMPT } from "@fossil-lang/prompt";
 
 import { jsonSchema, Output, streamText } from "@kanzo-tech/llm";
-import { kanzo } from "@/lib/ai";
+import { gateway } from "@/lib/ai";
 
 export interface CompetencyQuestion {
   id: string;
@@ -54,7 +54,7 @@ const QUESTION = jsonSchema<{ question: string; rationale: string }>({
 /** Competency questions for the data, each arriving as soon as it is whole. */
 export function suggestQuestions(domain: string, schemas: readonly InferredDescriptor[], signal: AbortSignal) {
   return streamText({
-    model: kanzo("kanzo-chat"),
+    model: gateway("chat"),
     system: SUGGEST_PROMPT,
     prompt: `Domain: ${domain}\n\n${describeFiles(schemas)}`,
     output: Output.array({ element: QUESTION }),
@@ -78,7 +78,7 @@ export function writeProgram(
 ) {
   const listed = questions.map((q, i) => `${i + 1}. ${q}\n`).join("");
   return streamText({
-    model: kanzo("kanzo-chat"),
+    model: gateway("chat"),
     system: PROGRAM_PROMPT,
     prompt: `Domain: ${domain}\n\nCompetency Questions:\n${listed}\nData Schemas:\n${describeFiles(schemas)}`,
     output: Output.object({ schema: PROGRAM }),

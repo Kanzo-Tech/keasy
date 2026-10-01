@@ -49,7 +49,7 @@ import {
 } from "@kanzo-tech/ui/table";
 import { Link } from "@kanzo-tech/navigation/next";
 import { $api } from "@/lib/api/client";
-import { kanzo } from "@/lib/ai";
+import { gateway } from "@/lib/ai";
 import { type CompetencyQuestion, describeFiles, suggestQuestions, writeProgram } from "./assistant-prompts";
 import * as checker from "@/lib/fossil/checker";
 import { connectionPath, describeSources, sourceDescriptorsKey } from "./describe-sources";
@@ -63,7 +63,7 @@ type ConnectionFile = { path: string; size: number };
 const STEPS = ["Connections", "Describe", "Requirements", "Generate"] as const;
 
 /** The model the Domain field is assisted by. */
-const COMPLETE = kanzo("kanzo-complete");
+const COMPLETE = gateway("complete");
 
 const CONNECTION_COLUMNS: ColumnDef<Connection>[] = [
   selectColumn<Connection>({ rowLabel: (row) => `Select ${row.original.name}` }),

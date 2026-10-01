@@ -91,7 +91,7 @@ and never reads a data file. Every job names a sink as its destination and is
 visible only to the member who created it.
 
 Models are not a credential. Every call goes to the platform's **AI gateway**
-under an alias (`kanzo-chat`, `kanzo-complete`) with the workspace's own key, which
+under an alias (`chat`, `complete`) with the workspace's own key, which
 only the server holds (`KEASY_AI_URL`, `KEASY_AI_KEY[_FILE]`). Budgets, upstreams and
 the dev/prod switch live in the gateway — see [`infra/ai/README.md`](infra/ai/README.md).
 

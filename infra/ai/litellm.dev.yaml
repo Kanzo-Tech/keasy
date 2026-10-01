@@ -3,18 +3,18 @@
 # is this file's business. See infra/ai/README.md.
 
 model_list:
-  - model_name: kanzo-chat
+  - model_name: chat
     litellm_params:
       model: ollama_chat/hermes3:8b
       api_base: os.environ/OLLAMA_API_BASE
-  - model_name: kanzo-complete
+  - model_name: complete
     litellm_params:
       model: ollama_chat/hermes3:3b
       api_base: os.environ/OLLAMA_API_BASE
 
 litellm_settings:
   drop_params: true
-  # Off unless a request opts in: keasy's BFF opts `kanzo-complete` in, where the same
+  # Off unless a request opts in: keasy's BFF opts `complete` in, where the same
   # field value asked twice is common. A cached chat turn would make Retry a no-op.
   cache: true
   cache_params:

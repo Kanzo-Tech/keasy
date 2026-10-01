@@ -71,7 +71,7 @@ async fn a_call_is_relayed_with_the_workspace_key_and_streamed_back() {
     let (status, content_type, body) = relay(
         &app,
         json!({
-            "model": "kanzo-chat",
+            "model": "chat",
             "stream": true,
             "messages": [{ "role": "user", "content": "hello" }],
             "max_tokens": 100000,
@@ -115,7 +115,7 @@ async fn a_field_completion_asks_for_the_cache() {
     .await;
     let (status, _, _) = relay(
         &app,
-        json!({ "model": "kanzo-complete", "messages": [], "cache": { "no-cache": true } }),
+        json!({ "model": "complete", "messages": [], "cache": { "no-cache": true } }),
     )
     .await;
     assert_eq!(status, StatusCode::OK);
@@ -149,7 +149,7 @@ async fn a_workspace_without_a_gateway_says_so() {
             Method::POST,
             "/v1/ai/chat/completions",
             &app.token(&["member"]),
-            json!({ "model": "kanzo-chat", "messages": [] }),
+            json!({ "model": "chat", "messages": [] }),
         )
         .await;
     assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE, "{body}");

@@ -176,7 +176,7 @@ export async function runRules(
         const violationCount = Number(row.cnt);
         return { rule, passed: violationCount === 0, violationCount };
       } catch (err) {
-        return { rule, passed: false, violationCount: -1, problem: toProblem(err, "query_failed") };
+        return { rule, passed: false, violationCount: -1, problem: toProblem(err, "query/failed") };
       }
     }),
   );

@@ -186,7 +186,7 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     try {
       result = await corpus.sql(plan.sql);
     } catch (err) {
-      yield { kind: "failed", problem: toProblem(err, "query_failed") };
+      yield { kind: "failed", problem: toProblem(err, "query/failed") };
       return;
     }
     yield { kind: "rows", result };
@@ -201,7 +201,7 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     yield { kind: "phase", phase: "done" };
   } catch (err) {
     if (signal.aborted) return;
-    yield { kind: "failed", problem: err instanceof ApiError ? toProblem(err) : { ...toProblem(err), code: "llm_failed" } };
+    yield { kind: "failed", problem: err instanceof ApiError ? toProblem(err) : { ...toProblem(err), code: "llm/failed" } };
   }
 }
 
@@ -433,7 +433,7 @@ export function AskPanel() {
   const stop = () => {
     engine.cancel();
     const id = live.current;
-    if (id !== null) patch(id, { kind: "failed", problem: { code: "stopped", title: "Stopped.", detail: "" } });
+    if (id !== null) patch(id, { kind: "failed", problem: { code: "ask/stopped", title: "Stopped.", detail: "" } });
   };
 
   if (!loadingAiProviders && !connection) {

@@ -242,6 +242,9 @@ CREATE TABLE jobs (
     created_at      TEXT NOT NULL,
     started_at      TEXT,
     completed_at    TEXT,
+    -- The runner's lease: refreshed while the job runs, and a running job
+    -- whose heartbeat is older than the lease is swept to failed.
+    heartbeat_at    TEXT,
     problem         TEXT CHECK (problem IS NULL OR json_valid(problem)),
     created_by      TEXT NOT NULL,
     sink_connection TEXT NOT NULL REFERENCES connections (name)

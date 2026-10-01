@@ -94,16 +94,16 @@ impl Claims {
 #[derive(Debug, thiserror::Error)]
 pub enum TokenError {
     /// No `Authorization: Bearer` at all.
-    #[error("auth/token_missing")]
+    #[error("auth/token-missing")]
     Missing,
     /// Present, but it does not verify: signature, `iss`, `aud`, `exp`, or shape.
-    #[error("auth/token_invalid")]
+    #[error("auth/token-invalid")]
     Invalid,
     /// Verified, but issued to another workspace's client.
-    #[error("auth/token_foreign")]
+    #[error("auth/token-foreign")]
     Foreign,
     /// The realm's keys could not be reached. Not the caller's fault — say 503.
-    #[error("auth/keys_unavailable")]
+    #[error("auth/keys-unavailable")]
     KeysUnavailable,
 }
 

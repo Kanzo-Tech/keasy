@@ -28,7 +28,7 @@ function handleAuthError(error: unknown) {
   if (error.status === 401) {
     redirected = true;
     void auth.signIn();
-  } else if (error.code === "rbac/no_membership") {
+  } else if (error.code === "rbac/no-membership") {
     redirected = true;
     window.location.href = "/";
   }

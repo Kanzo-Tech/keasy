@@ -313,6 +313,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/jobs/{id}/heartbeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The runner is still there. Sent every 15 s while the job runs; a running
+         *     job with no heartbeat for the lease (60 s) is swept as `job/abandoned`.
+         */
+        post: operations["heartbeat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/jobs/{id}/relations": {
         parameters: {
             query?: never;
@@ -504,11 +524,21 @@ export interface components {
         /**
          * @description Every error the server answers with. Closed: a code the server does not
          *     declare here cannot be sent, and the web keys its copy by this enum.
+         *
+         *     One grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry
+         *     in the web keys all three. The areas are keasy's own and never one of
+         *     fossil's (`storage`, `engine`, `run`, …): a code means one thing.
          * @enum {string}
          */
-        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "not_running" | "still_running" | "invalid_destination" | "no_destination" | "already_exists" | "in_use" | "overlaps" | "probe_failed" | "list_files_failed" | "store_error" | "ai_not_configured" | "ai_connection_required" | "insufficient_credits" | "llm_failed";
+        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/still-running" | "job/abandoned" | "job/invalid-destination" | "job/no-destination" | "credential/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/list-failed" | "store/refused" | "store/silent" | "llm/not-configured" | "llm/connection-required" | "llm/insufficient-credits" | "llm/failed" | "llm/silent";
         /** @description What a refusal carries beside its words. */
         ErrorData: {
+            /**
+             * Format: int64
+             * @description How long a deadline waited before it fired, in milliseconds: set on
+             *     the `*\/silent` codes, and only on them.
+             */
+            after?: number | null;
             /**
              * @description What the refusal is about: what still uses a credential or connection,
              *     or the connections a rotation would break.
@@ -530,6 +560,8 @@ export interface components {
              *     may see, change, run or read it. Taken from the token, never the body.
              */
             created_by: string;
+            /** @description The runner's last heartbeat while the job runs: its lease. */
+            heartbeat_at?: string | null;
             id: string;
             /**
              * @description What the run reported, verbatim and **opaque**: fossil's own run report,
@@ -1243,6 +1275,15 @@ export interface operations {
                 };
             };
             503: components["responses"]["KeysUnavailable"];
+            /** @description The store, or the identity service before it, did not answer in time */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     list_connection_files: {
@@ -1873,6 +1914,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            /** @description The job has already ended, or was never submitted */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
@@ -1934,6 +1984,59 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            503: components["responses"]["KeysUnavailable"];
+            /** @description The store, or the identity service before it, did not answer in time */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    heartbeat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The lease is renewed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The job is not running: it ended, or the sweep ended it */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
         };
     };

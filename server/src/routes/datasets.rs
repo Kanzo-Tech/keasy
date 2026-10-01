@@ -33,6 +33,7 @@ pub async fn list_datasets(
     _: Owner,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Dataset>>, Refusal> {
+    crate::jobs::sweep(&state.db).await?;
     let datasets = persistence::list(&*state.db.read().await)?
         .into_iter()
         .filter(|job| job.status == JobStatus::Completed && !job.relations.is_empty())

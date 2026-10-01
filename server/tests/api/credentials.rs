@@ -77,7 +77,7 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
         .await;
     assert_eq!(
         (refused.0, refused.1["code"].clone()),
-        (StatusCode::FORBIDDEN, json!("forbidden"))
+        (StatusCode::FORBIDDEN, json!("rbac/forbidden"))
     );
     assert_eq!(
         app.send(Method::DELETE, "/v1/credentials/spare", &other, json!(null))
@@ -171,7 +171,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
         .await;
     assert_eq!(
         (status, body["code"].clone()),
-        (StatusCode::UNPROCESSABLE_ENTITY, json!("probe_failed")),
+        (StatusCode::UNPROCESSABLE_ENTITY, json!("probe/failed")),
         "{body}"
     );
 

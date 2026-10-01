@@ -7,11 +7,12 @@ use crate::domain::{
     ConnectionTarget, ConnectionView, Credential, CredentialSpecInput, ModelCredentialInput,
     ResourceName, StorageCredentialInput, StorageLocation,
 };
-use crate::error::Refusal;
+use crate::error::{ErrorCode, Refusal};
 
 /// The connection `name`, or 404.
 pub async fn named(db: &Database, name: &str) -> Result<ConnectionView, Refusal> {
-    persistence::get(&*db.read().await, name)?.ok_or_else(|| Refusal::not_found("Connection"))
+    persistence::get(&*db.read().await, name)?
+        .ok_or_else(|| Refusal::not_found(ErrorCode::ConnectionNotFound, "No such connection"))
 }
 
 /// The credential `connection` points at, checked for its purpose and — for a
@@ -122,7 +123,8 @@ pub async fn save(
         None => persistence::insert(&conn, &connection, by)?,
         Some(name) => persistence::update(&conn, name, &connection, by)?,
     }
-    persistence::get(&conn, &connection.name)?.ok_or_else(|| Refusal::not_found("Connection"))
+    persistence::get(&conn, &connection.name)?
+        .ok_or_else(|| Refusal::not_found(ErrorCode::ConnectionNotFound, "No such connection"))
 }
 
 pub async fn create(

@@ -5,7 +5,7 @@ import { queryClient } from "./query-client";
 import { auth } from "./session";
 
 export { ApiError } from "@keasy/api";
-export type { ErrorCode, Inputs, Schemas, paths } from "@keasy/api";
+export type { ErrorCode, Inputs, NoBodyCode, Schemas, paths } from "@keasy/api";
 
 /**
  * The one runtime client. `paths` is the interface: every call names a spec

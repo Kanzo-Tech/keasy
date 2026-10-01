@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
 import { toProblem } from "@/lib/errors";
 
-const notFound = new ApiError({ code: "not_found", title: "Not found", detail: "No such job", data: {} }, 404);
+const notFound = new ApiError({ code: "job/not-found", title: "Not found", detail: "No such job", data: {} }, 404);
 
 vi.mock("@kanzo-tech/ui/analytics", () => ({ engine: async () => ({ coordinator: {} }), MosaicProvider: () => null }));
 vi.mock("@/lib/api/query-client", async () => {
@@ -33,6 +33,6 @@ describe("corpusQuery", () => {
     });
     const result = await settled;
     expect(result.status).toBe("error");
-    expect(toProblem(result.error).code).toBe("not_found");
+    expect(toProblem(result.error).code).toBe("job/not-found");
   });
 });

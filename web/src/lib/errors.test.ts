@@ -29,12 +29,12 @@ describe("a failure, shown", () => {
   });
 
   it("is the server's body for a refusal, and has no page", () => {
-    const err = new ApiError({ code: "in_use", title: "Still in use", detail: "used by sink", data: { dependents: ["sink"] } }, 409);
-    expect(toProblem(err)).toEqual({ code: "in_use", title: "Still in use", detail: "used by sink", data: { dependents: ["sink"] } });
-    expect(pageOf("in_use")).toBeUndefined();
+    const err = new ApiError({ code: "resource/in-use", title: "Still in use", detail: "used by sink", data: { dependents: ["sink"] } }, 409);
+    expect(toProblem(err)).toEqual({ code: "resource/in-use", title: "Still in use", detail: "used by sink", data: { dependents: ["sink"] } });
+    expect(pageOf("resource/in-use")).toBeUndefined();
   });
 
   it("names anything else by the code it is given", () => {
-    expect(toProblem(new Error("boom"), "query_failed")).toMatchObject({ code: "query_failed", detail: "boom" });
+    expect(toProblem(new Error("boom"), "query/failed")).toMatchObject({ code: "query/failed", detail: "boom" });
   });
 });

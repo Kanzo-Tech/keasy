@@ -29,13 +29,13 @@ import {
 import { ValidationBadge } from "@/components/validation-badge";
 import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api, invalidate } from "@/lib/api/client";
-import { type Connection, type Credential, storageOf } from "@/lib/connections";
+import type { Connection, Credential } from "@/lib/connections";
 import { toastError } from "@/lib/errors";
 
 /** The workspace sink: the one storage connection where job output lands, the owner's alone. */
 export default function CatalogStoragePage() {
-  const credentials = $api.useQuery("get", "/v1/credentials", { params: { query: { purpose: "storage" } } });
-  const connections = $api.useQuery("get", "/v1/connections", { params: { query: { purpose: "storage" } } });
+  const credentials = $api.useQuery("get", "/v1/credentials");
+  const connections = $api.useQuery("get", "/v1/connections");
   const isLoading = credentials.isLoading || connections.isLoading;
   const showSkeleton = useDelayedLoading(isLoading);
 
@@ -73,13 +73,13 @@ export default function CatalogStoragePage() {
     );
   }
 
-  const sink = connections.data?.find((c) => storageOf(c)?.direction === "sink");
+  const sink = connections.data?.find((c) => c.target.direction === "sink");
   return <Form credentials={credentials.data} key={sink?.name ?? "new"} sink={sink} />;
 }
 
 function Form({ credentials, sink }: { credentials: Credential[]; sink?: Connection }) {
   const [credential, setCredential] = useState(sink?.credential ?? "");
-  const [url, setUrl] = useState((sink && storageOf(sink)?.url) ?? "");
+  const [url, setUrl] = useState(sink?.target.url ?? "");
   const collection = useMemo(
     () => createListCollection({ items: credentials.map((c) => ({ label: c.name, value: c.name })) }),
     [credentials],
@@ -92,7 +92,7 @@ function Form({ credentials, sink }: { credentials: Credential[]; sink?: Connect
   const onError = (err: unknown) => toastError(err, "Catalog storage was not saved");
   const create = $api.useMutation("post", "/v1/connections", { onSuccess, onError });
   const update = $api.useMutation("patch", "/v1/connections/{name}", { onSuccess, onError });
-  const target = { storage: { url: url.trim(), kind: "data" as const, direction: "sink" as const } };
+  const target = { url: url.trim(), kind: "data" as const, direction: "sink" as const };
 
   const save = () =>
     sink

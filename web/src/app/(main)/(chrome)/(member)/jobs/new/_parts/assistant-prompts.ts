@@ -1,7 +1,8 @@
 import type { InferredDescriptor } from "@fossil-lang/introspect";
 import { FOSSIL_PROMPT } from "@fossil-lang/prompt";
 
-import { type CompletionRequest, stripFences } from "@/lib/ai/stream";
+import { jsonSchema, Output, streamText } from "@kanzo-tech/llm";
+import { kanzo } from "@/lib/ai";
 
 export interface CompetencyQuestion {
   id: string;
@@ -19,16 +20,7 @@ Competency questions define the scope of the ontology. They should:
 - Range from simple lookups to cross-entity relationships
 - Use natural language (not technical jargon)
 
-Return ONLY valid JSON (no markdown fences) with this structure:
-{
-  "competency_questions": [
-    {
-      "id": "cq1",
-      "question": "What is the full name and email of each person?",
-      "rationale": "Maps basic person attributes from the people.csv columns"
-    }
-  ]
-}`;
+Each comes with a one-sentence rationale naming the columns it rests on.`;
 
 /** Fossil's surface, plus how keasy's connections are named and what the answer must be. */
 const PROGRAM_PROMPT = `${FOSSIL_PROMPT}
@@ -40,10 +32,10 @@ const PROGRAM_PROMPT = `${FOSSIL_PROMPT}
 3. Model distinct entities as distinct shapes and distinct mappings, not one mega-shape.
 4. Relate entities with an edge — a call of the destination shape, \`Shape(<key expression>)\` — where the key expression builds the same identity that shape's own mapping declares.
 5. Give every mapping an \`@subject\` whose template incorporates a row value that is unique.
-6. Map all the source columns the competency questions need, and no columns that do not exist in the schemas given.
-7. Return ONLY the Fossil program: no JSON, no markdown fences, no commentary.`;
+6. Map all the source columns the competency questions need, and no columns that do not exist in the schemas given.`;
 
-function describeFiles(sources: readonly InferredDescriptor[]): string {
+/** The files the program will read, as the model is shown them — also the context of the Domain field. */
+export function describeFiles(sources: readonly InferredDescriptor[]): string {
   return sources
     .map((s) => {
       const columns = s.columns.map((c) => `  - ${c.name} (${c.primitive})\n`).join("");
@@ -52,35 +44,44 @@ function describeFiles(sources: readonly InferredDescriptor[]): string {
     .join("");
 }
 
-function asked(system: string, content: string, max_tokens?: number): CompletionRequest {
-  return { system, messages: [{ role: "user", content }], max_tokens };
+const QUESTION = jsonSchema<{ question: string; rationale: string }>({
+  type: "object",
+  properties: { question: { type: "string" }, rationale: { type: "string" } },
+  required: ["question", "rationale"],
+  additionalProperties: false,
+});
+
+/** Competency questions for the data, each arriving as soon as it is whole. */
+export function suggestQuestions(domain: string, schemas: readonly InferredDescriptor[], signal: AbortSignal) {
+  return streamText({
+    model: kanzo("kanzo-chat"),
+    system: SUGGEST_PROMPT,
+    prompt: `Domain: ${domain}\n\n${describeFiles(schemas)}`,
+    output: Output.array({ element: QUESTION }),
+    abortSignal: signal,
+  }).elementStream;
 }
 
-export function suggestRequest(domain: string, schemas: readonly InferredDescriptor[]): CompletionRequest {
-  return asked(SUGGEST_PROMPT, `Domain: ${domain}\n\n${describeFiles(schemas)}`);
-}
+const PROGRAM = jsonSchema<{ program: string }>({
+  type: "object",
+  properties: { program: { type: "string", description: "The whole Fossil program." } },
+  required: ["program"],
+  additionalProperties: false,
+});
 
-/** The questions the model suggested; none when its answer does not parse. */
-export function parseSuggestions(text: string): CompetencyQuestion[] {
-  try {
-    const parsed = JSON.parse(stripFences(text)) as { competency_questions?: CompetencyQuestion[] };
-    return parsed.competency_questions ?? [];
-  } catch {
-    return [];
-  }
-}
-
-export function generateRequest(
+/** The program, as it is written: each partial object carries the text so far. */
+export function writeProgram(
   domain: string,
   questions: string[],
   schemas: readonly InferredDescriptor[],
-): CompletionRequest {
+  signal: AbortSignal,
+) {
   const listed = questions.map((q, i) => `${i + 1}. ${q}\n`).join("");
-  return asked(
-    PROGRAM_PROMPT,
-    `Domain: ${domain}\n\nCompetency Questions:\n${listed}\nData Schemas:\n${describeFiles(schemas)}`,
-  );
+  return streamText({
+    model: kanzo("kanzo-chat"),
+    system: PROGRAM_PROMPT,
+    prompt: `Domain: ${domain}\n\nCompetency Questions:\n${listed}\nData Schemas:\n${describeFiles(schemas)}`,
+    output: Output.object({ schema: PROGRAM }),
+    abortSignal: signal,
+  }).partialOutputStream;
 }
-
-/** The program the model wrote, out of any fence it put it in. */
-export const parseScript = stripFences;

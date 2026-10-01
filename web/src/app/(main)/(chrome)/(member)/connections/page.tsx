@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useMemo } from "react";
-import { BookOpen, Database, Plus, Sparkles } from "lucide-react";
+import { BookOpen, Database, Plus } from "lucide-react";
 import {
   Badge,
   Button,
@@ -35,11 +35,11 @@ import {
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
-import { type Connection, modelOf, storageOf } from "@/lib/connections";
+import type { Connection } from "@/lib/connections";
 import { toastError } from "@/lib/errors";
 
-/** A tab: a storage connection's kind, or the model connections. */
-type Tab = "data" | "vocab" | "model";
+/** A tab: a storage connection's kind. */
+type Tab = "data" | "vocab";
 
 export default function ConnectionsPage({
   searchParams,
@@ -48,16 +48,13 @@ export default function ConnectionsPage({
 }) {
   const router = useRouter();
   const { type: tab = "data" } = use(searchParams);
-  const noun = { data: "data", vocab: "vocabulary", model: "model" }[tab];
+  const noun = { data: "data", vocab: "vocabulary" }[tab];
 
   const { data: all = [] } = $api.useQuery("get", "/v1/connections");
   // The sink is the owner's, on Catalog Storage.
   const connections = useMemo(
     () =>
-      all.filter((c) => {
-        const storage = storageOf(c);
-        return tab === "model" ? !!modelOf(c) : storage?.kind === tab && storage.direction === "source";
-      }),
+      all.filter((c) => c.target.kind === tab && c.target.direction === "source"),
     [all, tab],
   );
 
@@ -93,12 +90,8 @@ export default function ConnectionsPage({
       },
       {
         id: "target",
-        header: tab === "model" ? "Model" : "URL",
-        cell: ({ row }) => (
-          <span className="font-mono text-muted-foreground text-xs">
-            {storageOf(row.original)?.url ?? modelOf(row.original)?.model ?? "provider default"}
-          </span>
-        ),
+        header: "URL",
+        cell: ({ row }) => <span className="font-mono text-muted-foreground text-xs">{row.original.target.url}</span>,
       },
       {
         id: "status",
@@ -123,7 +116,7 @@ export default function ConnectionsPage({
         ),
       }),
     ],
-    [remove, tab, validate],
+    [remove, validate],
   );
   const table = useDataTable({ columns, data: connections });
 
@@ -140,17 +133,13 @@ export default function ConnectionsPage({
               <BookOpen />
               Vocabulary
             </TabsTrigger>
-            <TabsTrigger value="model">
-              <Sparkles />
-              Models
-            </TabsTrigger>
           </TabsList>
 
           {connections.length === 0 ? (
             <EmptyRoot>
               <EmptyHeader>
                 <EmptyIndicator variant="icon">
-                  {{ data: <Database />, vocab: <BookOpen />, model: <Sparkles /> }[tab]}
+                  {{ data: <Database />, vocab: <BookOpen /> }[tab]}
                 </EmptyIndicator>
                 <EmptyTitle asChild>
                   <h2>No {noun} connections</h2>

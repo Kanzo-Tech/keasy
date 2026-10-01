@@ -3,7 +3,6 @@ import "client-only";
 import type { Access, Host, Scope, StorageCredential } from "@fossil-lang/types";
 
 import { http } from "@/lib/api/client";
-import { storageOf } from "@/lib/connections";
 import { queryClient } from "@/lib/api/query-client";
 
 /**
@@ -25,10 +24,7 @@ export const host: Host = {
       staleTime: 60_000,
     });
     return Object.fromEntries(
-      connections.flatMap((c) => {
-        const storage = storageOf(c);
-        return storage?.direction === "source" ? [[c.name, storage.url]] : [];
-      }),
+      connections.flatMap((c) => (c.target.direction === "source" ? [[c.name, c.target.url]] : [])),
     );
   },
   credentials: async (scope: Scope, access: Access): Promise<StorageCredential[]> => {

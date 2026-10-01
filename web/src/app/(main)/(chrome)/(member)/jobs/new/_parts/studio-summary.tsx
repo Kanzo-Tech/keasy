@@ -74,7 +74,9 @@ export function StudioSummary({
             fallback={<span className="text-destructive">no destination</span>}
             when={!!destination}
           >
-            <span className="font-mono">@{destination?.name}</span>
+            <span className="font-mono">
+              @{destination?.name}/{values.folder}/
+            </span>
           </Show>
         </p>
       </div>

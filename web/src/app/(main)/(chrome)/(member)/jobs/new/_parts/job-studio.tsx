@@ -40,12 +40,13 @@ import {
 } from "@kanzo-tech/ui";
 import { ChevronDown, Pencil, PlugZap, Save, X } from "lucide-react";
 import { useRouter } from "@kanzo-tech/navigation/next";
-import { $api, http, invalidate } from "@/lib/api/client";
+import { $api, ApiError, http, invalidate } from "@/lib/api/client";
 import { storageConnections } from "@/lib/connections";
 import { type Shown, toastError, toProblem } from "@/lib/errors";
 import * as checker from "@/lib/fossil/checker";
 import { AssistantWizard } from "./assistant-wizard";
 import { ModePicker } from "./mode-picker";
+import { folderProblem, folderSlug } from "./folder";
 import { StudioConfigure, type ConfigValues } from "./studio-configure";
 import { StudioEditor } from "./studio-editor";
 import { StudioSummary } from "./studio-summary";
@@ -105,6 +106,7 @@ export function JobStudio() {
       draftJob.script ?? "",
       draftJob.name ?? "",
       draftJob.sink_connection,
+      draftJob.folder ?? null,
     );
     setSaved(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -154,9 +156,15 @@ export function JobStudio() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sinks]);
   const destination = store.sinkConnectionId;
+  const folder = store.folder ?? folderSlug(store.name);
+  const folderValid = folderProblem(folder) === null;
+  // The folder the server last said another job holds, so the field can say so
+  // until the member picks another.
+  const [takenFolder, setTakenFolder] = useState<string | null>(null);
 
   const errors = diagnostics.filter((d) => d.severity === 1).length;
-  const blocked = errors > 0 || !store.script.trim() || !destination;
+  const blocked =
+    errors > 0 || !store.script.trim() || !destination || !folderValid || folder === takenFolder;
 
   // ── Saving ──────────────────────────────────────────────────────────────
 
@@ -166,13 +174,19 @@ export function JobStudio() {
       if (draftId) {
         await http.PUT("/v1/jobs/{id}", {
           params: { path: { id: draftId } },
-          body: { script: store.script, name },
+          body: { script: store.script, name, folder: folderValid ? folder : undefined },
         });
         return draftId;
       }
       if (!destination) throw new Error("Pick a destination before saving");
       const { data: created } = await http.POST("/v1/jobs", {
-        body: { script: store.script, name, draft: true, sink_connection: destination },
+        body: {
+          script: store.script,
+          name,
+          draft: true,
+          sink_connection: destination,
+          folder: folderValid ? folder : undefined,
+        },
       });
       return created!.id;
     },
@@ -196,7 +210,7 @@ export function JobStudio() {
     const id = setTimeout(() => save(), AUTOSAVE_MS);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.script, store.name]);
+  }, [store.script, store.name, store.folder]);
 
   const confirmMutation = useMutation({
     mutationFn: async () => {
@@ -211,6 +225,7 @@ export function JobStudio() {
           script: store.script,
           name: store.name.trim() || undefined,
           sink_connection: destination,
+          folder,
         },
       });
       return job!;
@@ -219,7 +234,10 @@ export function JobStudio() {
       await invalidate("/v1/jobs");
       router.push(`/jobs/${job.id}`);
     },
-    onError: (err) => toastError(err, "Failed to create job"),
+    onError: (err) => {
+      if (err instanceof ApiError && err.code === "already_exists") setTakenFolder(folder);
+      toastError(err, "Failed to create job");
+    },
   });
 
   const submitting = confirmMutation.isPending || confirmMutation.isSuccess;
@@ -227,10 +245,12 @@ export function JobStudio() {
 
   const config: ConfigValues = {
     sinkConnectionId: store.sinkConnectionId,
+    folder,
   };
   const onConfigChange = useCallback((patch: Partial<ConfigValues>) => {
     const s = useJobEditorStore.getState();
     if (patch.sinkConnectionId !== undefined) s.setSinkConnectionId(patch.sinkConnectionId);
+    if (patch.folder !== undefined) s.setFolder(patch.folder);
   }, []);
 
   // ── Before the studio opens ─────────────────────────────────────────────
@@ -371,7 +391,7 @@ export function JobStudio() {
         <StepsContent className="flex min-h-0 flex-1 overflow-auto" index={1}>
           <StudioConfigure
             connections={connections}
-            jobName={store.name}
+            folderTaken={folder === takenFolder}
             onChange={onConfigChange}
             values={config}
           />

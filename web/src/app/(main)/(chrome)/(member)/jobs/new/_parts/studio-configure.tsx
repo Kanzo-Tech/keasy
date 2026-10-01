@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import {
   Field,
   FieldDescription,
+  FieldError,
+  Input,
   Select,
   SelectContent,
   SelectItem,
@@ -14,9 +16,12 @@ import {
   createListCollection,
 } from "@kanzo-tech/ui";
 import type { StorageConnection } from "@/lib/connections";
+import { folderProblem } from "./folder";
 
 export interface ConfigValues {
   sinkConnectionId: string | null;
+  /** The output's folder under the sink, as the server will receive it. */
+  folder: string;
 }
 
 /** One setting, said the way a settings page says it: what it is on the left, the
@@ -54,17 +59,18 @@ function Setting({
  *
  * The job's NAME is not here any more. It is in the studio's header, editable in
  * place, because it labels all three pages rather than being one page's field.
+ * The folder follows the name's slug until the member types one.
  */
 export function StudioConfigure({
   values,
   onChange,
-  jobName,
+  folderTaken,
   connections,
 }: {
   values: ConfigValues;
   onChange: (patch: Partial<ConfigValues>) => void;
-  /** Only to show the path the output will actually land on. */
-  jobName: string;
+  /** The server answered that another job writes to this folder already. */
+  folderTaken: boolean;
   connections: StorageConnection[];
 }) {
   const set = <K extends keyof ConfigValues>(key: K, value: ConfigValues[K]) =>
@@ -82,7 +88,10 @@ export function StudioConfigure({
   );
 
   const destination = sinks.find((c) => c.name === values.sinkConnectionId);
-  const slug = (jobName || "unnamed-job").trim().toLowerCase().replace(/\s+/g, "-");
+  const folderError =
+    folderProblem(values.folder) ??
+    (folderTaken ? "Another job writes to this folder already. Pick another." : null);
+  const base = destination?.url.replace(/\/+$/, "");
 
   return (
     <div className="@container mx-auto flex w-full max-w-4xl flex-col gap-8 px-6 py-8">
@@ -96,7 +105,7 @@ export function StudioConfigure({
       <Separator />
 
       <Setting
-        description="Only a connection the workspace can write to can hold output. The job gets its own folder under the one you pick."
+        description="Only a connection the workspace can write to can hold output."
         title="Destination"
       >
         <Field>
@@ -131,12 +140,39 @@ export function StudioConfigure({
               }
               when={!!destination}
             >
-              Writes to{" "}
-              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
-                {destination?.url}/{slug}
-              </code>
+              The workspace&apos;s sink, at{" "}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">{base}/</code>
             </Show>
           </FieldDescription>
+        </Field>
+      </Setting>
+
+      <Separator />
+
+      <Setting
+        description="The folder under the destination this job writes to, and no other job does."
+        title="Folder"
+      >
+        <Field invalid={!!folderError}>
+          <Input
+            aria-label="Output folder"
+            className="w-full max-w-md font-mono"
+            onChange={(e) => onChange({ folder: e.target.value })}
+            spellCheck={false}
+            value={values.folder}
+          />
+          <FieldError>{folderError}</FieldError>
+          {/* The resolved path, not a description of it. A settings page that
+              tells you the rule and leaves you to apply it is making you do
+              arithmetic. */}
+          <Show when={!!destination && !folderError}>
+            <FieldDescription>
+              Writes to{" "}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
+                {base}/{values.folder}/
+              </code>
+            </FieldDescription>
+          </Show>
         </Field>
       </Setting>
     </div>

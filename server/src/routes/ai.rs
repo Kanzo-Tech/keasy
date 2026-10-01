@@ -87,6 +87,7 @@ pub async fn complete_stream(
         };
         if let Err(e) = result {
             warn!("LLM stream failed: {e}");
+            // A reader already gone cannot be told; the failure is in the log above.
             let _ = tx.send(Ok(e.event())).await;
         }
     });

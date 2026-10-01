@@ -1,7 +1,7 @@
 "use client";
 
 import { AuthProvider } from "@kanzo-tech/auth";
-import { themeIndex, type SectionManifest } from "@kanzo-tech/theme";
+import { defaultThemePair, themeIndex, type SectionManifest, type ThemeOption } from "@kanzo-tech/theme";
 import { GRAPH_SECTION } from "@kanzo-tech/graph/section";
 import { KanzoThemeProvider, cookieStorageAdapter, themeScript } from "@kanzo-tech/ui";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -22,6 +22,26 @@ const storage = cookieStorageAdapter();
 // Hoisted so the provider's resolution memo sees one identity.
 const sections: SectionManifest[] = [GRAPH_SECTION];
 
+/**
+ * The instance's branding as the theme provider takes it: the families its operator declared (every
+ * shipped theme when none are), the default family's pair, and `lock`, which withdraws the choice.
+ */
+function themeLook(branding: Branding) {
+  const themes: ThemeOption[] =
+    branding.families.length === 0
+      ? themeIndex
+      : branding.families.flatMap(({ family, light, dark }) => [
+          { ...light, dark: false, family },
+          { ...dark, dark: true, family },
+        ]);
+  const chosen = branding.families.find((f) => f.family === branding.default);
+  const defaultTheme = chosen
+    ? { light: chosen.light.value, dark: chosen.dark.value }
+    : defaultThemePair(themes);
+  const policy = branding.lock ? { theme: { themeByAppearance: { hidden: true } } } : undefined;
+  return { themes, defaultTheme, policy };
+}
+
 export function Providers({
   branding,
   children,
@@ -29,32 +49,24 @@ export function Providers({
   branding: Branding;
   children: React.ReactNode;
 }) {
-  // The instance offers the themes its operator allowed; an empty list allows every theme.
-  const themes = useMemo(
-    () =>
-      themeIndex
-        .filter((entry) => branding.themes.length === 0 || branding.themes.includes(entry.name))
-        .map((entry) => ({ value: entry.name, label: entry.name })),
-    [branding.themes],
-  );
-  const defaultTheme = useMemo(
-    () => ({
-      light: branding.default.light ?? "kanzo",
-      dark: branding.default.dark ?? "kanzo-dark",
-    }),
-    [branding.default.light, branding.default.dark],
-  );
+  const look = useMemo(() => themeLook(branding), [branding]);
 
   useServerInsertedHTML(() => (
-    <script dangerouslySetInnerHTML={{ __html: themeScript() }} key="kanzo-theme-script" />
+    <script
+      dangerouslySetInnerHTML={{
+        __html: themeScript({ defaultTheme: look.defaultTheme, policy: look.policy }),
+      }}
+      key="kanzo-theme-script"
+    />
   ));
 
   return (
     <KanzoThemeProvider
-      defaultTheme={defaultTheme}
+      defaultTheme={look.defaultTheme}
+      policy={look.policy}
       sections={sections}
       storage={storage}
-      themes={themes}
+      themes={look.themes}
     >
       <BrandingProvider value={branding}>
         <AuthProvider auth={auth}>

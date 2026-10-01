@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { use, useState } from "react";
+import { use, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3Icon,
@@ -12,7 +12,15 @@ import {
   ShieldCheckIcon,
   XIcon,
 } from "lucide-react";
-import { GraphCanvas, GraphLegend, GraphRoot, GraphToolbar, useGraphPrefs, useGraphState } from "@kanzo-tech/graph";
+import {
+  GraphCanvas,
+  GraphCounts,
+  GraphLegend,
+  GraphRoot,
+  GraphToolbar,
+  useGraphPrefs,
+  useGraphState,
+} from "@kanzo-tech/graph";
 import { useCrossfilter } from "@kanzo-tech/ui/analytics";
 import {
   Badge,
@@ -138,15 +146,11 @@ function DashboardRegion() {
   );
 }
 
-/** The footer: what the corpus holds, and whether all of it has been drawn. */
-function CorpusCounts() {
-  const { manifest } = useCorpus();
+/** The footer: how much of the corpus is drawn, and where the graph is in its life. */
+function CorpusStatus() {
   const status = useGraphState((s) => s.status);
-  const count = (tables: readonly { record_count: number }[]) =>
-    tables.reduce((sum, table) => sum + table.record_count, 0);
   return (
-    <span className="flex items-center gap-2 px-1 text-muted-foreground text-xs tabular-nums">
-      {count(manifest.vertex_tables).toLocaleString()} nodes · {count(manifest.edge_tables).toLocaleString()} edges
+    <span className="flex min-w-0 items-center gap-2 px-1 text-muted-foreground text-xs">
       <Badge className="gap-1.5" size="xs" variant="outline">
         <Status
           className="ring-0"
@@ -155,13 +159,19 @@ function CorpusCounts() {
         />
         {status}
       </Badge>
+      <GraphCounts className="truncate" />
     </span>
   );
 }
 
 function Workspace() {
-  const { corpus } = useCorpus();
+  const { corpus, manifest } = useCorpus();
   const { look } = useGraphPrefs();
+  // Colour by type, ranked in the manifest's order so a type keeps its colour as rows arrive.
+  const categories = useMemo(
+    () => Object.fromEntries(manifest.vertex_tables.map((t) => [t.name, t.name])),
+    [manifest],
+  );
   const crossfilter = useCrossfilter();
   const [active, setActive] = useState<PanelId>("info");
   const [panelOpen, setPanelOpen] = useState(true);
@@ -172,7 +182,13 @@ function Workspace() {
   const MainRegion = view === "graph" ? GraphRegion : DashboardRegion;
 
   return (
-    <GraphRoot corpus={corpus} filterBy={crossfilter} look={look} onFailure={announce}>
+    <GraphRoot
+      categories={categories}
+      corpus={corpus}
+      filterBy={crossfilter}
+      look={look}
+      onFailure={announce}
+    >
       <HeaderEnd>
         {/* Switching to the dashboard closes the dock: a dashboard is judged at full width. Reopen it
             from the footer strip. */}
@@ -242,7 +258,7 @@ function Workspace() {
       </ShellBody>
 
       <ShellFooter className="h-8 flex-row items-center justify-between px-2">
-        <CorpusCounts />
+        <CorpusStatus />
         {/* Single-select and deselectable: clicking the active icon again collapses the dock. */}
         <ToggleGroup
           aria-label="Panels"

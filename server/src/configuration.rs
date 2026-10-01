@@ -28,6 +28,85 @@ pub struct ApplicationSettings {
     /// The credentials and connections to ensure at boot, in the API's own
     /// request format. Read from `KEASY_BOOTSTRAP_FILE`.
     pub bootstrap_file: Option<String>,
+    /// How this instance looks: declared by the operator, the same for every
+    /// visitor, public.
+    pub branding: BrandingSettings,
+}
+
+/// An instance's look, declared in its deployment the way Grafana reads its
+/// white-label settings from config and Keycloak deploys a theme per realm:
+/// nothing a member edits in the app.
+#[derive(Debug, Clone, Default)]
+pub struct BrandingSettings {
+    /// What the shell shows in place of the default mark: a URL, or a path the
+    /// web serves. Read from `KEASY_BRANDING_LOGO`.
+    pub logo: Option<String>,
+    /// A theme stylesheet the web inlines on every page — the generator's
+    /// export. Read from `KEASY_BRANDING_THEME_CSS`, or from the file
+    /// `KEASY_BRANDING_THEME_CSS_FILE` names.
+    pub theme_css: Option<String>,
+    /// The theme names members may choose among; empty allows every theme.
+    /// Read from `KEASY_BRANDING_THEMES`, comma-separated.
+    pub themes: Vec<String>,
+    /// The day theme. Read from `KEASY_BRANDING_DEFAULT_LIGHT`.
+    pub default_light: Option<String>,
+    /// The night theme. Read from `KEASY_BRANDING_DEFAULT_DARK`.
+    pub default_dark: Option<String>,
+    /// Members wear the defaults and choose nothing. Read from
+    /// `KEASY_BRANDING_LOCK` (`true`/`false`, default `false`).
+    pub lock: bool,
+}
+
+impl BrandingSettings {
+    pub fn from_env() -> Result<Self, String> {
+        let themes: Vec<String> = nonblank("KEASY_BRANDING_THEMES")
+            .map(|list| {
+                list.split(',')
+                    .map(|t| t.trim().to_string())
+                    .filter(|t| !t.is_empty())
+                    .collect()
+            })
+            .unwrap_or_default();
+        let lock = match nonblank("KEASY_BRANDING_LOCK").as_deref() {
+            None | Some("false") => false,
+            Some("true") => true,
+            Some(other) => {
+                return Err(format!(
+                    "KEASY_BRANDING_LOCK is `true` or `false`, not {other:?}"
+                ));
+            }
+        };
+        let branding = Self {
+            logo: nonblank("KEASY_BRANDING_LOGO"),
+            theme_css: from_file_or_env("KEASY_BRANDING_THEME_CSS")?,
+            themes,
+            default_light: nonblank("KEASY_BRANDING_DEFAULT_LIGHT"),
+            default_dark: nonblank("KEASY_BRANDING_DEFAULT_DARK"),
+            lock,
+        };
+        branding.check()?;
+        Ok(branding)
+    }
+
+    /// A default outside the allowed list would be a theme nobody may choose.
+    pub fn check(&self) -> Result<(), String> {
+        if self.themes.is_empty() {
+            return Ok(());
+        }
+        for (var, theme) in [
+            ("KEASY_BRANDING_DEFAULT_LIGHT", &self.default_light),
+            ("KEASY_BRANDING_DEFAULT_DARK", &self.default_dark),
+        ] {
+            if let Some(theme) = theme
+                && !self.themes.contains(theme)
+            {
+                return Err(format!(
+                    "{var} is {theme:?}, which KEASY_BRANDING_THEMES does not allow"
+                ));
+            }
+        }
+        Ok(())
+    }
 }
 
 pub struct DatabaseSettings {
@@ -91,6 +170,7 @@ pub fn get_configuration() -> Result<Settings, String> {
                 .unwrap_or_else(|| "Workspace".to_string()),
             workspace_slug: nonblank("KEASY_ORG_ALIAS"),
             bootstrap_file: nonblank("KEASY_BOOTSTRAP_FILE"),
+            branding: BrandingSettings::from_env()?,
         },
         database: DatabaseSettings::from_env()?,
         oidc: OidcSettings {
@@ -125,12 +205,38 @@ fn nonblank(name: &str) -> Option<String> {
 
 /// `NAME_FILE` (a mounted secret) if set, else `NAME`.
 fn resolve_secret(name: &str) -> Result<Option<SecretString>, String> {
+    Ok(from_file_or_env(name)?.map(SecretString::from))
+}
+
+/// The contents of the file `NAME_FILE` names if it is set, else `NAME`;
+/// `None` when blank.
+fn from_file_or_env(name: &str) -> Result<Option<String>, String> {
     let file_var = format!("{name}_FILE");
     if let Ok(path) = std::env::var(&file_var) {
         let contents = std::fs::read_to_string(&path)
             .map_err(|e| format!("{file_var} points to {path} but could not read it: {e}"))?;
-        return Ok(Some(SecretString::from(contents.trim().to_string()))
-            .filter(|s| !s.expose_secret().is_empty()));
+        return Ok(Some(contents.trim().to_string()).filter(|s| !s.is_empty()));
     }
-    Ok(nonblank(name).map(SecretString::from))
+    Ok(nonblank(name))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::BrandingSettings;
+
+    #[test]
+    fn a_default_theme_must_be_one_members_may_choose() {
+        let mut branding = BrandingSettings {
+            themes: vec!["kanzo-light".into(), "kanzo-dark".into()],
+            default_light: Some("kanzo-light".into()),
+            ..Default::default()
+        };
+        assert!(branding.check().is_ok());
+        branding.default_dark = Some("nord-dark".into());
+        let err = branding.check().unwrap_err();
+        assert!(err.contains("KEASY_BRANDING_DEFAULT_DARK"), "{err}");
+
+        branding.themes.clear();
+        assert!(branding.check().is_ok(), "no list allows every theme");
+    }
 }

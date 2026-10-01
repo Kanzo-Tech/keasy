@@ -47,6 +47,7 @@ pub async fn spawn_app() -> TestApp {
             workspace_name: "Dev".into(),
             workspace_slug: Some("dev".into()),
             bootstrap_file: None,
+            branding: Default::default(),
         },
         database,
         oidc: OidcSettings {

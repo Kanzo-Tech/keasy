@@ -99,7 +99,7 @@ async fn a_failed_run_keeps_its_problem_whole() {
             Method::POST,
             "/v1/jobs",
             &member,
-            json!({ "script": "x", "sink_connection": "sink" }),
+            json!({ "script": "x", "sink_connection": "sink", "folder": "out" }),
         )
         .await;
     let path = format!("/v1/jobs/{}", job["id"].as_str().unwrap());
@@ -123,4 +123,122 @@ async fn a_failed_run_keeps_its_problem_whole() {
     assert_eq!(failed["problem"], problem);
     let (_, read) = app.send(Method::GET, &path, &member, json!(null)).await;
     assert_eq!(read["problem"], problem);
+}
+
+/// A job to run names a folder no other job in the sink writes to; a draft
+/// may go without, and is never run.
+#[tokio::test]
+async fn a_job_writes_to_a_folder_of_its_own() {
+    let app = spawn_app().await;
+    let member = app.token(&["member"]);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+
+    let create = |body: serde_json::Value| app.send(Method::POST, "/v1/jobs", &member, body);
+    let job = |folder: Option<&str>, draft: bool| {
+        let mut body = json!({ "script": "x", "sink_connection": "sink", "draft": draft });
+        if let Some(folder) = folder {
+            body["folder"] = json!(folder);
+        }
+        body
+    };
+
+    let (status, body) = create(job(None, false)).await;
+    assert_eq!(
+        (status, body["code"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("validation_failed"))
+    );
+    let (status, _) = create(job(Some("Not A Slug"), false)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    let (status, first) = create(job(Some("people"), false)).await;
+    assert_eq!(status, StatusCode::ACCEPTED);
+    assert_eq!(first["folder"], "people");
+
+    let (status, body) = create(job(Some("people"), false)).await;
+    assert_eq!(
+        (status, body["code"].as_str()),
+        (StatusCode::CONFLICT, Some("already_exists"))
+    );
+
+    let (status, draft) = create(job(None, true)).await;
+    assert_eq!(status, StatusCode::CREATED);
+    assert!(draft.get("folder").is_none());
+    let path = format!("/v1/jobs/{}", draft["id"].as_str().unwrap());
+    let (status, updated) = app
+        .send(Method::PUT, &path, &member, json!({ "folder": "people" }))
+        .await;
+    assert_eq!(
+        (status, updated["folder"].as_str()),
+        (StatusCode::OK, Some("people"))
+    );
+    let (status, _) = app
+        .send(Method::PUT, &path, &member, json!({ "folder": "-bad" }))
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _) = app
+        .send(
+            Method::PATCH,
+            &path,
+            &member,
+            json!({ "status": "running" }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "a draft is never run");
+}
+
+/// A job's dashboard: none until saved, an object no larger than the cap, and
+/// its owner's alone.
+#[tokio::test]
+async fn a_job_keeps_one_dashboard() {
+    let app = spawn_app().await;
+    let mine = app.token_for("u-1", &["member"]);
+    let theirs = app.token_for("u-2", &["member"]);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    let (_, job) = app
+        .send(
+            Method::POST,
+            "/v1/jobs",
+            &mine,
+            json!({ "script": "x", "draft": true, "sink_connection": "sink" }),
+        )
+        .await;
+    let path = format!("/v1/jobs/{}/dashboard", job["id"].as_str().unwrap());
+
+    let (status, body) = app.send(Method::GET, &path, &mine, json!(null)).await;
+    assert_eq!((status, body), (StatusCode::OK, json!(null)));
+
+    for spec in [json!([1]), json!("x"), json!(null)] {
+        let (status, _) = app
+            .send(Method::PUT, &path, &mine, json!({ "spec": spec }))
+            .await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{spec}");
+    }
+    let huge = "x".repeat(keasy_server::routes::jobs::dashboard::MAX_SPEC_BYTES);
+    let (status, _) = app
+        .send(
+            Method::PUT,
+            &path,
+            &mine,
+            json!({ "spec": { "big": huge } }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
+
+    let spec = json!({ "cards": [{ "type": "bar", "x": "age" }] });
+    let (status, saved) = app
+        .send(Method::PUT, &path, &mine, json!({ "spec": spec }))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(saved["updated_by"], "u-1");
+    let (_, read) = app.send(Method::GET, &path, &mine, json!(null)).await;
+    assert_eq!(read["spec"], spec);
+
+    let (status, _) = app.send(Method::GET, &path, &theirs, json!(null)).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (status, _) = app
+        .send(Method::PUT, &path, &theirs, json!({ "spec": {} }))
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
 }

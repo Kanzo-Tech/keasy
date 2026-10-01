@@ -96,6 +96,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_branding"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/connections": {
         parameters: {
             query?: never;
@@ -302,11 +318,27 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Vend a credential over the job's dataset, `{sink}/{job_id}/`: to read it
+         * Vend a credential over the job's dataset, `{sink}/{folder}/`: to read it
          *     once the job has completed, or to write it while the job runs. The store
          *     holds the boundary, so the credential opens nothing else.
          */
         post: operations["vend_job_credentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{id}/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_dashboard"];
+        put: operations["put_dashboard"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -363,6 +395,24 @@ export interface components {
          * @enum {string}
          */
         Access: "read" | "write";
+        /**
+         * @description How this instance looks, as its deployment declares it. Public: the web
+         *     reads it to render the login page and the first paint, before anyone has
+         *     signed in.
+         */
+        Branding: {
+            default: components["schemas"]["ThemeDefaults"];
+            /** @description Members wear the defaults and choose nothing. */
+            lock: boolean;
+            /** @description The mark the shell shows: a URL or a path the web serves. */
+            logo?: string | null;
+            /** @description This instance's display name (`KEASY_WORKSPACE_NAME`). */
+            name: string;
+            /** @description A theme stylesheet to inline on every page. */
+            theme_css?: string | null;
+            /** @description The theme names members may choose among; empty allows every theme. */
+            themes: string[];
+        };
         ChatMessage: {
             content: string;
             role: components["schemas"]["ChatRole"];
@@ -447,6 +497,13 @@ export interface components {
         };
         CreateJobRequest: {
             draft?: boolean;
+            /**
+             * @description The folder under the sink the output lands in: lowercase letters,
+             *     digits and `-`, at most 63 characters, starting with a letter or digit.
+             *     A draft may leave it out; a job to run needs one no other job in the
+             *     sink holds.
+             */
+            folder?: string | null;
             name?: string | null;
             script: string;
             /** @description Where the output lands: the sink connection's name. */
@@ -477,6 +534,17 @@ export interface components {
         };
         CredentialsRequest: {
             access: components["schemas"]["Access"];
+        };
+        /**
+         * @description A job's saved dashboard. `spec` is the dashboard the web's BI kit
+         *     serialises (`DashboardSpec`): keasy stores it and hands it back, and never
+         *     reads a field of it.
+         */
+        Dashboard: {
+            spec: Record<string, never>;
+            updated_at: string;
+            /** @description Keycloak `sub` of the member who saved it last. */
+            updated_by: string;
         };
         /** @description A completed job's output, as the owner's datasets view lists it. */
         Dataset: {
@@ -530,6 +598,11 @@ export interface components {
              *     may see, change, run or read it. Taken from the token, never the body.
              */
             created_by: string;
+            /**
+             * @description The folder under the sink the output lands in. A draft may not have one
+             *     yet; every other job does, and no two of them share one in a sink.
+             */
+            folder?: string | null;
             id: string;
             /**
              * @description What the run reported, verbatim and **opaque**: fossil's own run report,
@@ -556,7 +629,7 @@ export interface components {
             relations?: components["schemas"]["OutputRelation"][];
             script?: string | null;
             /**
-             * @description The sink connection the output lands in, under `{sink.url}/{job_id}`,
+             * @description The sink connection the output lands in, under `{sink.url}/{folder}`,
              *     signed with that connection's credential.
              */
             sink_connection: string;
@@ -639,6 +712,10 @@ export interface components {
          * @enum {string}
          */
         Purpose: "storage" | "model";
+        PutDashboardRequest: {
+            /** @description The dashboard, as the web serialises it: any JSON object. */
+            spec: Record<string, never>;
+        };
         RelationColumn: {
             /** @description The engine's spelling of the Parquet type (`VARCHAR`, `BIGINT`, …). */
             data_type: string;
@@ -710,6 +787,11 @@ export interface components {
              */
             url: string;
         };
+        /** @description The day and night themes a visitor starts with; absent leaves the web's own. */
+        ThemeDefaults: {
+            dark?: string | null;
+            light?: string | null;
+        };
         UpdateConnectionRequest: {
             credential?: string | null;
             name?: string | null;
@@ -725,6 +807,8 @@ export interface components {
             spec?: null | components["schemas"]["CredentialSpecInput"];
         };
         UpdateJobRequest: {
+            /** @description The draft's folder under the sink, spelled as on create. */
+            folder?: string | null;
             name?: string | null;
             script?: string | null;
         };
@@ -945,6 +1029,26 @@ export interface operations {
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    get_branding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description This instance's declared look */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Branding"];
+                };
+            };
         };
     };
     list_connections: {
@@ -1690,7 +1794,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description The destination is not a sink */
+            /** @description The destination is not a sink, or the folder is missing or misspelled */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1701,6 +1805,15 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            /** @description Another job writes to that folder already */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
@@ -1768,7 +1881,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description Job is not a draft */
+            /** @description Job is not a draft, or the folder is misspelled */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1862,6 +1975,15 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
+            /** @description The job is a draft, which is never run */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             /** @description Job not found */
@@ -1934,6 +2056,102 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    get_dashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The job's saved dashboard, or null when none is saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["Dashboard"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    put_dashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutDashboardRequest"];
+            };
+        };
+        responses: {
+            /** @description Dashboard saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dashboard"];
+                };
+            };
+            /** @description The spec is not a JSON object */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The spec is larger than a dashboard may be */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
         };
     };

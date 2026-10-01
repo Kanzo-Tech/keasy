@@ -32,7 +32,8 @@ pub enum ErrorCode {
     StillRunning,
     InvalidDestination,
     NoDestination,
-    /// A credential or connection of that name exists already, or a second sink.
+    /// A credential or connection of that name exists already, a second sink,
+    /// or a second job writing to one folder.
     AlreadyExists,
     /// Still used: `dependents` names what uses it.
     InUse,

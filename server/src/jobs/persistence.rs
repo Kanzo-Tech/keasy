@@ -2,17 +2,32 @@
 
 use rusqlite::{Connection, OptionalExtension, params};
 
-use crate::database::{DbResult, enum_column, json_column_opt};
+use crate::database::{DbError, DbResult, constraint, enum_column, json_column_opt};
 use crate::domain::{Job, JobStatus};
 
 const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, problem, \
-                       created_by, sink_connection, script, manifest, relations";
+                       created_by, sink_connection, folder, script, manifest, relations";
+
+/// What the schema refused about `job`, said in its terms.
+fn refused(job: &Job, e: rusqlite::Error) -> DbError {
+    use rusqlite::ffi;
+    match constraint(&e) {
+        Some(ffi::SQLITE_CONSTRAINT_UNIQUE) => DbError::AlreadyExists(format!(
+            "another job writes to the folder {:?} already",
+            job.folder.as_deref().unwrap_or_default()
+        )),
+        Some(ffi::SQLITE_CONSTRAINT_CHECK) => {
+            DbError::Invalid("a job that is not a draft needs a folder".into())
+        }
+        _ => e.into(),
+    }
+}
 
 pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
     conn.execute(
         &format!(
             "INSERT INTO jobs ({COLUMNS})
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)"
         ),
         params![
             job.id,
@@ -27,6 +42,7 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
                 .transpose()?,
             job.created_by,
             job.sink_connection,
+            job.folder,
             job.script,
             job.manifest
                 .as_ref()
@@ -34,7 +50,8 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
                 .transpose()?,
             serde_json::to_string(&job.relations)?,
         ],
-    )?;
+    )
+    .map_err(|e| refused(job, e))?;
     Ok(())
 }
 
@@ -57,8 +74,8 @@ pub fn update(conn: &Connection, id: &str, f: impl FnOnce(&mut Job)) -> DbResult
 
     conn.execute(
         "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, problem = ?5,
-                         script = ?6, manifest = ?7, relations = ?8
-         WHERE id = ?9",
+                         script = ?6, manifest = ?7, relations = ?8, folder = ?9
+         WHERE id = ?10",
         params![
             job.name,
             job.status.as_ref(),
@@ -74,9 +91,11 @@ pub fn update(conn: &Connection, id: &str, f: impl FnOnce(&mut Job)) -> DbResult
                 .map(serde_json::to_string)
                 .transpose()?,
             serde_json::to_string(&job.relations)?,
+            job.folder,
             id,
         ],
-    )?;
+    )
+    .map_err(|e| refused(&job, e))?;
     Ok(Some(job))
 }
 
@@ -123,6 +142,7 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
         problem: json_column_opt(row, "problem")?,
         created_by: row.get("created_by")?,
         sink_connection: row.get("sink_connection")?,
+        folder: row.get("folder")?,
         script,
         manifest: json_column_opt(row, "manifest")?,
         relations: json_column_opt(row, "relations")?.unwrap_or_default(),
@@ -132,6 +152,7 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::JobFolder;
 
     fn conn() -> Connection {
         let conn = Connection::open_in_memory().unwrap();
@@ -146,16 +167,63 @@ mod tests {
             JobStatus::Draft,
             None,
             "sink".into(),
+            None,
             "x".into(),
             owner.into(),
         )
+    }
+
+    fn filed(status: JobStatus, folder: &str) -> Job {
+        Job::new(
+            status,
+            None,
+            "sink".into(),
+            Some(JobFolder::parse(folder).unwrap()),
+            "x".into(),
+            "u-1".into(),
+        )
+    }
+
+    /// One folder, one job's output: drafts may share it, and the folder is
+    /// free again once its job is gone.
+    #[test]
+    fn a_folder_holds_one_jobs_output() {
+        let conn = conn();
+        insert(&conn, &filed(JobStatus::Draft, "people")).unwrap();
+        insert(&conn, &filed(JobStatus::Draft, "people")).unwrap();
+        let first = filed(JobStatus::Pending, "people");
+        insert(&conn, &first).unwrap();
+
+        let second = filed(JobStatus::Pending, "people");
+        assert!(matches!(
+            insert(&conn, &second),
+            Err(DbError::AlreadyExists(_))
+        ));
+        insert(&conn, &filed(JobStatus::Pending, "orders")).unwrap();
+
+        delete(&conn, &first.id).unwrap();
+        insert(&conn, &second).unwrap();
+    }
+
+    /// Only a draft goes without a folder, and it cannot leave draft without one.
+    #[test]
+    fn only_a_draft_goes_without_a_folder() {
+        let conn = conn();
+        let mut pending = job("u-1");
+        pending.status = JobStatus::Pending;
+        assert!(matches!(insert(&conn, &pending), Err(DbError::Invalid(_))));
+
+        let draft = job("u-1");
+        insert(&conn, &draft).unwrap();
+        let promoted = update(&conn, &draft.id, |j| j.status = JobStatus::Running);
+        assert!(matches!(promoted, Err(DbError::Invalid(_))));
     }
 
     /// A row that does not decode is an error, not a job with defaults filled in.
     #[test]
     fn a_corrupt_row_is_an_error_not_a_default() {
         let conn = conn();
-        let stored = job("u-1");
+        let stored = filed(JobStatus::Draft, "people");
         insert(&conn, &stored).unwrap();
         conn.execute("UPDATE jobs SET status = 'exploded'", [])
             .unwrap();

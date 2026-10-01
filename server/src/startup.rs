@@ -18,7 +18,7 @@ use utoipa_axum::router::OpenApiRouter;
 
 use crate::authentication::middleware::{AuthenticatedUser, bearer_required};
 use crate::authentication::token::{SharedValidator, Validator};
-use crate::configuration::{DatabaseSettings, Settings};
+use crate::configuration::{BrandingSettings, DatabaseSettings, Settings};
 use crate::database::Database;
 use crate::domain::Purpose;
 use crate::error::{ErrorBody, ErrorCode, ErrorData, fail};
@@ -32,6 +32,8 @@ pub struct AppState {
     pub workspace_slug: Option<String>,
     /// This instance's display name (`KEASY_WORKSPACE_NAME`).
     pub workspace_name: String,
+    /// This instance's declared look (`KEASY_BRANDING_*`).
+    pub branding: Arc<BrandingSettings>,
     /// Verifies the bearer token every protected request carries.
     pub auth: SharedValidator,
 }
@@ -78,6 +80,7 @@ impl Application {
             db,
             workspace_slug: application.workspace_slug,
             workspace_name: application.workspace_name,
+            branding: Arc::new(application.branding),
             auth,
         };
 
@@ -142,13 +145,15 @@ pub async fn get_database(settings: &DatabaseSettings) -> Result<Database, Strin
 /// verified caller with no role here, who still needs to be told where they do
 /// belong.
 fn routes() -> (OpenApiRouter<AppState>, OpenApiRouter<AppState>) {
-    let public =
-        OpenApiRouter::with_openapi(ApiDoc::openapi()).merge(routes::health_check::router());
+    let public = OpenApiRouter::with_openapi(ApiDoc::openapi())
+        .merge(routes::health_check::router())
+        .merge(routes::branding::router());
     let protected = OpenApiRouter::new()
         .merge(routes::workspaces::router())
         .merge(routes::jobs::router())
         .merge(routes::datasets::router())
         .merge(routes::jobs::output::router())
+        .merge(routes::jobs::dashboard::router())
         .merge(routes::credentials::router())
         .merge(routes::connections::router())
         .merge(routes::ai::router());

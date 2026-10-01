@@ -1,3 +1,4 @@
+pub mod dashboards;
 pub mod persistence;
 
 use crate::database::Database;

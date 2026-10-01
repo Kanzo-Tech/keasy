@@ -246,9 +246,20 @@ CREATE TABLE jobs (
     created_by      TEXT NOT NULL,
     sink_connection TEXT NOT NULL REFERENCES connections (name)
         ON UPDATE CASCADE ON DELETE RESTRICT,
+    folder          TEXT CHECK (status = 'draft' OR folder IS NOT NULL),
     script          TEXT,
     manifest        TEXT,
     relations       TEXT
+);
+-- A folder holds one job's output: drafts may share one, nothing else does.
+CREATE UNIQUE INDEX jobs_one_folder ON jobs(sink_connection, folder) WHERE status <> 'draft';
+
+-- A job's saved dashboard: opaque to keasy, gone with the job.
+CREATE TABLE dashboards (
+    job_id      TEXT PRIMARY KEY REFERENCES jobs (id) ON DELETE CASCADE,
+    spec        TEXT NOT NULL CHECK (json_type(spec) = 'object'),
+    updated_at  TEXT NOT NULL,
+    updated_by  TEXT NOT NULL
 );
 ";
 
@@ -302,12 +313,12 @@ mod tests {
         let tables: i64 = conn
             .query_row(
                 "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN \
-                 ('credentials','connections','jobs')",
+                 ('credentials','connections','jobs','dashboards')",
                 [],
                 |r| r.get(0),
             )
             .unwrap();
-        assert_eq!(tables, 3);
+        assert_eq!(tables, 4);
     }
 
     #[test]

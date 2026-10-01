@@ -1,3 +1,4 @@
+pub mod dashboard;
 pub mod output;
 
 use axum::{
@@ -11,7 +12,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use crate::authentication::role::Member;
-use crate::domain::{Job, JobStatus, OutputRelation, RelativePath, now_iso8601};
+use crate::domain::{Job, JobFolder, JobStatus, OutputRelation, RelativePath, now_iso8601};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::jobs::{owned, persistence};
 use crate::startup::AppState;
@@ -22,6 +23,11 @@ pub struct CreateJobRequest {
     pub name: Option<String>,
     /// Where the output lands: the sink connection's name.
     pub sink_connection: String,
+    /// The folder under the sink the output lands in: lowercase letters,
+    /// digits and `-`, at most 63 characters, starting with a letter or digit.
+    /// A draft may leave it out; a job to run needs one no other job in the
+    /// sink holds.
+    pub folder: Option<String>,
     #[serde(default)]
     pub draft: bool,
 }
@@ -30,6 +36,16 @@ pub struct CreateJobRequest {
 pub struct UpdateJobRequest {
     pub script: Option<String>,
     pub name: Option<String>,
+    /// The draft's folder under the sink, spelled as on create.
+    pub folder: Option<String>,
+}
+
+/// The folder a request names, parsed.
+fn folder(folder: Option<&str>) -> Result<Option<JobFolder>, Refusal> {
+    folder
+        .map(JobFolder::parse)
+        .transpose()
+        .map_err(Refusal::invalid)
 }
 
 /// The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
@@ -81,7 +97,8 @@ pub async fn list_jobs(
     responses(
         (status = 201, description = "Draft job created", body = Job),
         (status = 202, description = "Job submitted for execution", body = Job),
-        (status = 400, description = "The destination is not a sink", body = ErrorBody),
+        (status = 400, description = "The destination is not a sink, or the folder is missing or misspelled", body = ErrorBody),
+        (status = 409, description = "Another job writes to that folder already", body = ErrorBody),
     )
 )]
 pub async fn create_job(
@@ -100,6 +117,13 @@ pub async fn create_job(
         ));
     }
 
+    let folder = folder(payload.folder.as_deref())?;
+    if !payload.draft && folder.is_none() {
+        return Err(Refusal::invalid(
+            "A job to run needs a folder for its output",
+        ));
+    }
+
     // A `Pending` job is run by the browser: sources and output through
     // credentials vended per prefix, outcome by `PATCH /v1/jobs/{id}`.
     let (status, code) = if payload.draft {
@@ -111,6 +135,7 @@ pub async fn create_job(
         status,
         payload.name,
         payload.sink_connection,
+        folder,
         payload.script,
         member.user_id,
     );
@@ -139,7 +164,7 @@ pub async fn get_job(
     request_body = UpdateJobRequest,
     responses(
         (status = 200, description = "Job updated", body = Job),
-        (status = 400, description = "Job is not a draft", body = ErrorBody),
+        (status = 400, description = "Job is not a draft, or the folder is misspelled", body = ErrorBody),
         (status = 404, description = "Job not found", body = ErrorBody),
     )
 )]
@@ -156,12 +181,16 @@ pub async fn update_job(
             "Only draft jobs can be updated",
         ));
     }
+    let folder = folder(payload.folder.as_deref())?;
     persistence::update(&*state.db.write().await, &id, |job| {
         if let Some(script) = payload.script {
             job.script = Some(script);
         }
         if let Some(name) = payload.name {
             job.name = Some(name);
+        }
+        if let Some(folder) = folder {
+            job.folder = Some(folder.into_inner());
         }
     })?
     .map(Json)
@@ -173,6 +202,7 @@ pub async fn update_job(
     request_body = CompleteJobRequest,
     responses(
         (status = 200, description = "Job status updated from the browser run", body = Job),
+        (status = 400, description = "The job is a draft, which is never run", body = ErrorBody),
         (status = 404, description = "Job not found", body = ErrorBody),
     )
 )]
@@ -184,7 +214,11 @@ pub async fn complete_job(
     Path(id): Path<String>,
     Json(payload): Json<CompleteJobRequest>,
 ) -> Result<impl IntoResponse, Refusal> {
-    owned(&state.db, &member.user_id, &id).await?;
+    if owned(&state.db, &member.user_id, &id).await?.status == JobStatus::Draft {
+        return Err(Refusal::invalid(
+            "A draft is never run: create the job from it",
+        ));
+    }
     let now = now_iso8601();
     let CompleteJobRequest {
         status,

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{StorageLocation, now_iso8601};
+use super::{JobFolder, StorageLocation, now_iso8601};
 
 #[derive(
     Debug,
@@ -44,9 +44,13 @@ pub struct Job {
     /// Keycloak `sub` of the member who created the job, and the only one who
     /// may see, change, run or read it. Taken from the token, never the body.
     pub created_by: String,
-    /// The sink connection the output lands in, under `{sink.url}/{job_id}`,
+    /// The sink connection the output lands in, under `{sink.url}/{folder}`,
     /// signed with that connection's credential.
     pub sink_connection: String,
+    /// The folder under the sink the output lands in. A draft may not have one
+    /// yet; every other job does, and no two of them share one in a sink.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub folder: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,
     /// What the run reported, verbatim and **opaque**: fossil's own run report,
@@ -72,6 +76,7 @@ impl Job {
         status: JobStatus,
         name: Option<String>,
         sink_connection: String,
+        folder: Option<JobFolder>,
         script: String,
         created_by: String,
     ) -> Self {
@@ -85,6 +90,7 @@ impl Job {
             problem: None,
             created_by,
             sink_connection,
+            folder: folder.map(JobFolder::into_inner),
             script: Some(script),
             manifest: None,
             relations: Vec::new(),
@@ -92,13 +98,14 @@ impl Job {
         }
     }
 
-    /// Where the output lives: the sink the member chose, plus the job's own
-    /// id. **This is the one place keasy composes an output path**, and it is
-    /// keasy's to compose — a job's home is the host's decision, not the
-    /// language's. Everything below it (relation names, file names, tile names)
-    /// belongs to fossil and travels from fossil.
-    pub fn output_under(&self, sink: &StorageLocation) -> StorageLocation {
-        sink.child(&self.id)
+    /// Where the output lives: the sink, plus the folder the member chose;
+    /// `None` for a draft that has none yet. **This is the one place keasy
+    /// composes an output path**, and it is keasy's to compose — a job's home
+    /// is the host's decision, not the language's. Everything below it
+    /// (relation names, file names, tile names) belongs to fossil and travels
+    /// from fossil.
+    pub fn output_under(&self, sink: &StorageLocation) -> Option<StorageLocation> {
+        self.folder.as_deref().map(|folder| sink.child(folder))
     }
 }
 
@@ -125,4 +132,31 @@ pub struct RelationColumn {
     pub name: String,
     /// The engine's spelling of the Parquet type (`VARCHAR`, `BIGINT`, …).
     pub data_type: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_output_lands_in_the_folder_under_the_sink() {
+        let sink = StorageLocation::parse("s3://b/output/").unwrap();
+        let folder = |f: Option<&str>| {
+            Job::new(
+                JobStatus::Pending,
+                None,
+                "sink".into(),
+                f.map(|f| JobFolder::parse(f).unwrap()),
+                "x".into(),
+                "u-1".into(),
+            )
+        };
+
+        let job = folder(Some("people"));
+        assert_eq!(
+            job.output_under(&sink).unwrap().to_string(),
+            "s3://b/output/people/"
+        );
+        assert_eq!(folder(None).output_under(&sink), None);
+    }
 }

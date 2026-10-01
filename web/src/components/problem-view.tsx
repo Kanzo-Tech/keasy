@@ -117,12 +117,13 @@ export interface ProblemViewProps {
 /**
  * The one way keasy shows a failure: a {@link Shown} — fossil's problem, the server's refusal, or
  * the browser's own — as kanzo-ui's `Diagnostic`, open at rest, with its causes and related
- * diagnostics nested below it and its code linked to the page that explains it.
+ * diagnostics nested below it and its code linked to the page that explains it. `data-code` carries
+ * the code, the one thing an end-to-end test asserts on.
  */
 export function ProblemView({ problem, onRetry, retryLabel = "Try again", className }: ProblemViewProps) {
   const row = worded(problem);
   return (
-    <DiagnosticList className={className}>
+    <DiagnosticList className={className} data-code={problem.code} data-problem="">
       <Item
         actions={
           <>

@@ -7,6 +7,7 @@ import {
   type Related,
   type Severity,
 } from "@fossil-lang/types";
+import type { AuthErrorCode } from "@kanzo-tech/auth";
 import { toast } from "@kanzo-tech/ui";
 
 import { ApiError, type ErrorCode, type NoBodyCode } from "@/lib/api/client";
@@ -42,7 +43,29 @@ interface Copy {
 
 const aiLink = { label: "Go to AI credentials", href: "/settings/credentials?purpose=model" };
 
-const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code, Copy>> = {
+const signIn = { label: "Sign in again", href: "/api/auth/signin" };
+
+/** What the web's own server side raises: the session store not answering. */
+export type SessionCode = "session/store-silent";
+
+const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | AuthErrorCode | SessionCode, Copy>> = {
+  "callback.state-mismatch": {
+    title: "This sign-in could not be completed.",
+    detail:
+      "The sign-in was started in another tab, took too long, or was opened from the browser's history. Start it again.",
+    link: signIn,
+  },
+  "callback.nonce-mismatch": { title: "This sign-in could not be completed.", link: signIn },
+  "token.exchange-failed": { title: "The identity provider refused the sign-in.", link: signIn },
+  "session.absent": { title: "You are signed out.", link: signIn },
+  "organization.not-a-member": { title: "You are not a member of this workspace." },
+  "organization.invalid": { title: "No such workspace." },
+  "claims.no-subject": { title: "The identity provider sent an incomplete identity." },
+  "session/store-silent": {
+    title: "Your session could not be read.",
+    detail: "The session store did not answer. Try again in a moment.",
+    link: signIn,
+  },
   "llm/not-configured": {
     title: "No model connection exists yet.",
     link: { label: "Add a model connection", href: "/connections?type=model" },
@@ -121,4 +144,14 @@ export function toProblem(err: unknown, code: ClientCode = "web/unknown"): Shown
 export function toastError(error: unknown, title: string): void {
   const shown = toProblem(error);
   toast.create({ title, description: copyOf(shown.code)?.title ?? shown.detail, type: "error" });
+}
+
+/** A failure the sign-in flow reported by its code alone, as the auth error page shows it. */
+export function authProblem(code: string): Shown {
+  const copy = copyOf(code);
+  return {
+    code,
+    title: copy?.title ?? "Signing in failed.",
+    detail: copy?.detail ?? "The sign-in could not be completed. Start it again.",
+  };
 }

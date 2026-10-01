@@ -14,6 +14,8 @@ import { ticketStore, type RelyingPartyConfig, type TicketAdapter } from "@kanzo
 import { redirect } from "next/navigation";
 import { createClient } from "redis";
 
+import { race } from "@/lib/deadline";
+
 import { workspaceRole, type WorkspaceRole } from "./roles";
 
 /**
@@ -54,24 +56,56 @@ function required(name: string): string {
 /** Eight hours: a working day, and the lifetime of both the cookie and its ticket. */
 const MAX_AGE = 8 * 60 * 60;
 
+/** How long the session store may take to connect, or to answer one command. */
+const STORE_DEADLINE_MS = 5_000;
+
+/** The session store did not answer: what every page's session read fails with when Valkey is down. */
+export class SessionStoreSilent extends Error {
+  readonly code = "session/store-silent";
+  constructor(readonly after: number) {
+    super(`The session store did not answer within ${after / 1000} s`);
+    this.name = "SessionStoreSilent";
+  }
+}
+
 /**
  * Session records live in Valkey/Redis under the opaque ticket the cookie
  * carries: with the access token in it a record no longer fits in a cookie, and
  * a ticket is what lets a sign-out end every copy of that cookie.
+ *
+ * Every wait on it is bounded. The client reconnects on its own after a drop;
+ * while it is down, a command fails at once instead of queueing (no offline
+ * queue), and the first connection is raced like any command — so a Valkey that
+ * is down makes a page fail in seconds rather than hang.
  */
 function redisAdapter(url: string): TicketAdapter {
-  const client = createClient({ url }).on("error", (error) => {
+  const client = createClient({
+    url,
+    disableOfflineQueue: true,
+    socket: {
+      connectTimeout: STORE_DEADLINE_MS,
+      reconnectStrategy: (retries) => Math.min(250 * 2 ** retries, 5_000),
+    },
+  }).on("error", (error) => {
     console.error("session store:", error);
   });
+  // Started once; it settles when the store first answers, and the client's own reconnects keep it
+  // answering. Not a memoized rejection: with a reconnect strategy it never rejects.
   const ready = client.connect();
+  const bounded = <T>(work: (c: typeof client) => Promise<T>) =>
+    race(
+      ready.then((c) => work(c)),
+      STORE_DEADLINE_MS,
+      () => new SessionStoreSilent(STORE_DEADLINE_MS),
+    );
 
   return {
-    read: async (key) => (await ready).get(key),
+    read: (key) => bounded((c) => c.get(key)),
     write: async (key, value, ttl) => {
-      await (await ready).set(key, value, { expiration: { type: "EX", value: ttl } });
+      await bounded((c) => c.set(key, value, { expiration: { type: "EX", value: ttl } }));
     },
     delete: async (key) => {
-      await (await ready).del(key);
+      await bounded((c) => c.del(key));
     },
   };
 }

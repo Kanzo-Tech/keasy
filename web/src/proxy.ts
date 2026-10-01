@@ -11,9 +11,10 @@ import { authMiddleware } from "@kanzo-tech/auth/next";
  * `/api/v1` is exempt because it is the API proxy, not a page: an expired
  * session there must come back as the 401 the API client knows how to route on,
  * not as a 302 to a sign-in screen it would try to parse as JSON. `/api/auth`
- * is exempt by the package itself.
+ * is exempt by the package itself. `/auth/error` is where a failed sign-in
+ * lands, so sending its visitor to sign in again would loop.
  */
-export const proxy = authMiddleware({ public: ["/api/v1"] });
+export const proxy = authMiddleware({ public: ["/api/v1", "/auth/error"] });
 
 export const config = {
   // Skip Next internals and any static file (any path with an extension).

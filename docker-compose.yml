@@ -183,6 +183,40 @@ services:
       minio:
         condition: service_healthy
 
+  # ── The `faults` profile: what the end-to-end suite breaks things with (e2e/) ──
+  # Neither starts with `make dev`; `make e2e` brings up fake-llm, and the suite
+  # starts and stops minio-silent around the one scenario that needs it.
+
+  # A store that accepts every connection and never answers. Shares MinIO's
+  # aliases, so with `minio` stopped every vend and read the server makes to
+  # `minio.localhost:9000` meets silence instead (scenario 3). Never up beside
+  # `minio`: Docker's DNS would answer the alias with both.
+  minio-silent:
+    profiles: [faults]
+    image: python:3.12-alpine
+    command: ["python", "-u", "/faults/silent.py", "9000"]
+    volumes:
+      - ./e2e/faults:/faults:ro
+    networks:
+      default:
+        aliases:
+          - minio.localhost
+
+  # An OpenAI-compatible provider that misbehaves as the model a connection
+  # names: goes quiet mid-answer, errors mid-stream, has no credit, answers
+  # prose, writes bad SQL. Reached as http://fake-llm:8000/v1.
+  fake-llm:
+    profiles: [faults]
+    image: python:3.12-alpine
+    command: ["python", "-u", "/faults/fake_llm.py"]
+    volumes:
+      - ./e2e/faults:/faults:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/v1/models')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   keasy-data:
   keycloak-postgres-data:

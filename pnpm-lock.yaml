@@ -48,47 +48,47 @@ importers:
         specifier: ^3.4.0
         version: 3.4.2
       '@fossil-lang/codemirror-fossil':
-        specifier: 0.3.0-alpha.17
-        version: 0.3.0-alpha.17(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@fossil-lang/wasm@0.3.0-alpha.17)
+        specifier: 0.3.0-alpha.18
+        version: 0.3.0-alpha.18(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@fossil-lang/wasm@0.3.0-alpha.18)
       '@fossil-lang/corpus':
-        specifier: 0.3.0-alpha.17
-        version: 0.3.0-alpha.17
+        specifier: 0.3.0-alpha.18
+        version: 0.3.0-alpha.18
       '@fossil-lang/executor':
-        specifier: 0.3.0-alpha.17
-        version: 0.3.0-alpha.17
+        specifier: 0.3.0-alpha.18
+        version: 0.3.0-alpha.18
       '@fossil-lang/introspect':
-        specifier: 0.3.0-alpha.17
-        version: 0.3.0-alpha.17
+        specifier: 0.3.0-alpha.18
+        version: 0.3.0-alpha.18
       '@fossil-lang/prompt':
-        specifier: 0.3.0-alpha.17
-        version: 0.3.0-alpha.17
+        specifier: 0.3.0-alpha.18
+        version: 0.3.0-alpha.18
       '@fossil-lang/types':
-        specifier: 0.3.0-alpha.17
-        version: 0.3.0-alpha.17
+        specifier: 0.3.0-alpha.18
+        version: 0.3.0-alpha.18
       '@fossil-lang/wasm':
-        specifier: 0.3.0-alpha.17
-        version: 0.3.0-alpha.17
+        specifier: 0.3.0-alpha.18
+        version: 0.3.0-alpha.18
       '@kanzo-tech/ai':
-        specifier: ^0.15.1
-        version: 0.15.1(@ark-ui/react@5.39.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@kanzo-tech/ui@0.15.1(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(streamdown@2.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(tailwind-merge@3.7.0)(tailwindcss@4.2.2)
+        specifier: ^0.16.0
+        version: 0.16.0(@ark-ui/react@5.39.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@kanzo-tech/ui@0.16.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(streamdown@2.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(tailwind-merge@3.7.0)(tailwindcss@4.2.2)
       '@kanzo-tech/auth':
-        specifier: ^0.15.1
-        version: 0.15.1(jose@6.2.12)(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(openid-client@6.8.8)(react@19.2.3)
+        specifier: ^0.16.0
+        version: 0.16.0(jose@6.2.12)(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(openid-client@6.8.8)(react@19.2.3)
       '@kanzo-tech/graph':
-        specifier: ^0.15.1
-        version: 0.15.1(@cosmos.gl/graph@3.4.2)(@fossil-lang/corpus@0.3.0-alpha.17)(@kanzo-tech/mosaic@0.15.1(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0))(@kanzo-tech/ui@0.15.1(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(lucide-react@1.47.0(react@19.2.3))(react@19.2.3)
+        specifier: ^0.16.0
+        version: 0.16.0(@cosmos.gl/graph@3.4.2)(@fossil-lang/corpus@0.3.0-alpha.18)(@kanzo-tech/mosaic@0.16.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0))(@kanzo-tech/ui@0.16.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(lucide-react@1.47.0(react@19.2.3))(react@19.2.3)
       '@kanzo-tech/mosaic':
-        specifier: ^0.15.1
-        version: 0.15.1(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)
+        specifier: ^0.16.0
+        version: 0.16.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)
       '@kanzo-tech/navigation':
-        specifier: ^0.15.1
-        version: 0.15.1(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
+        specifier: ^0.16.0
+        version: 0.16.0(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
       '@kanzo-tech/theme':
-        specifier: ^0.15.1
-        version: 0.15.1
+        specifier: ^0.16.0
+        version: 0.16.0
       '@kanzo-tech/ui':
-        specifier: ^0.15.1
-        version: 0.15.1(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)
+        specifier: ^0.16.0
+        version: 0.16.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)
       '@keasy/api':
         specifier: workspace:*
         version: link:../api
@@ -517,36 +517,36 @@ packages:
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
 
-  '@fossil-lang/codemirror-fossil@0.3.0-alpha.17':
-    resolution: {integrity: sha512-NwwEuE0Qx05EsAisVNYvaA25y9Q2ZfilG+aIzex8wx5PenuclBFB3ANig5xfReI3FDgc3ynaYoe2JFe1VWqlkg==}
+  '@fossil-lang/codemirror-fossil@0.3.0-alpha.18':
+    resolution: {integrity: sha512-uexmUoQnBLTopqvXMS+y3rViqhCCl39i8XnKkZqUOuaSM4Oaz4WtJnksS+NEuA0Thk6DrKCyfCOcYqRyu5lIAQ==}
     peerDependencies:
       '@codemirror/autocomplete': '>=6'
       '@codemirror/language': '>=6'
       '@codemirror/lint': '>=6'
       '@codemirror/state': '>=6'
       '@codemirror/view': '>=6'
-      '@fossil-lang/wasm': 0.3.0-alpha.17
+      '@fossil-lang/wasm': 0.3.0-alpha.18
 
-  '@fossil-lang/corpus@0.3.0-alpha.17':
-    resolution: {integrity: sha512-oDlFDkA2ghVN8yOxHYOGCcT1rvq2mLHFj60EBB/H3XrUkc+64Q+417V0OJyimKc1WD+d3eVTLiA/LvJ9ujh9ig==}
+  '@fossil-lang/corpus@0.3.0-alpha.18':
+    resolution: {integrity: sha512-Zw73iBsuLYt08KxwnfFTRyAcJWCcaNrEizuBrFBaqC6y4IUBpWXHUMPs8oAwpCsxDUC6rPcl8Bb3wDtD1TurtA==}
 
-  '@fossil-lang/executor@0.3.0-alpha.17':
-    resolution: {integrity: sha512-R69822F9t2upFVIFPca31y5+oqaI2l3lTBtKwxTVns2aZy3lYM0jWeKyc1cp9AmPw+e/NKC3phTptrR3uG79WQ==}
+  '@fossil-lang/executor@0.3.0-alpha.18':
+    resolution: {integrity: sha512-XQgZQ/Vybu819KLyxRCo+/6X0eIaCEfsr+ovB+LuZHNeJDf1jc1sMb7afBYove0NI3Q14JkcjgiCNNtKVe0yOA==}
 
-  '@fossil-lang/introspect@0.3.0-alpha.17':
-    resolution: {integrity: sha512-X+Ie8n3nfxzfV1czzufka1R913VyDMjT9ZGDpCVdaDrmto2hzehVAN206rryHWYpZZY/nNLwt1/z2f0eykhoDg==}
+  '@fossil-lang/introspect@0.3.0-alpha.18':
+    resolution: {integrity: sha512-f/rIFNWd32Cy8ND1SJNOg6qKL7K+ZaHVhkSOEI0oGdMuDhCiI+hWqbaFAmdsmD4VDtEkqKMram0pmo29zxx+BQ==}
 
-  '@fossil-lang/prompt@0.3.0-alpha.17':
-    resolution: {integrity: sha512-UMRM3e3gPyK3Gs3vz4rghL2gjw5ExIvtZKJNpeZCKtWXBZIF/2KFO1isUtce2cAk8W5u4NruW6HoHVGy+7Ehlw==}
+  '@fossil-lang/prompt@0.3.0-alpha.18':
+    resolution: {integrity: sha512-YzrMGAgSCx/BaPgwpBFEfjdBLF28ZK6rjGhqiAaQFFYXsnQYf19yMrNsXVVHbr8uqONWdfnpTnRC2FP1XUZ0XQ==}
 
-  '@fossil-lang/storage@0.3.0-alpha.17':
-    resolution: {integrity: sha512-V8evdJ9ll1ljq82Uin8QX7GfvvlI1ZHNBIQ6gI1qQEK5dc1mwKh35480Dudzdne95SI9RAf/36Y2ZfS2EnChJw==}
+  '@fossil-lang/storage@0.3.0-alpha.18':
+    resolution: {integrity: sha512-1MD7G7Uq/NcxoFfwgKGHu6tzu/xUc7JqGo02tM412h6kk2OepDWdKl/QAYwj4RYJgao29CH0QZk0vAoRNUXV5g==}
 
-  '@fossil-lang/types@0.3.0-alpha.17':
-    resolution: {integrity: sha512-2t8qPg3Qxp1VHT2Hh0UtLSbAnJSTTZaIncgvwFRndHFj0iwkRaK9kWoPn7vms/YEzdSeaJ5Pfr5ALarEy+UWWA==}
+  '@fossil-lang/types@0.3.0-alpha.18':
+    resolution: {integrity: sha512-+L456uz1y+utDKgPuhVTYxYshuNbEvFvZKQPvkLcBneMKd9GCcS4eAgNVyKLv9ka0EI610dPbJd1ps/38ujeWg==}
 
-  '@fossil-lang/wasm@0.3.0-alpha.17':
-    resolution: {integrity: sha512-jrVQgrMxm/NDm/eKlBj/CUXViAlzPIGh/ZRbaQ+jVuph8d8/FTx/26SnqPGJ3vPtI4z8AAZOKleio4Wfa/+Ozw==}
+  '@fossil-lang/wasm@0.3.0-alpha.18':
+    resolution: {integrity: sha512-iVKEWH9tw5Y1Z46WD2uN3hJludobPm2EXWsmE9zK5qH2IjBNLVqRy0GbkUMbILQLe1Lcg/bR5vYJiG8tDiyNdw==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -766,11 +766,11 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@kanzo-tech/ai@0.15.1':
-    resolution: {integrity: sha512-LyIVFY8qUmpLPB0kfenWx8U9QpZSpjiXRX8PLt25DVpvc2r71YxTh+4i7vso9/u5xXrw96EZH63hmQvLP4H9oQ==}
+  '@kanzo-tech/ai@0.16.0':
+    resolution: {integrity: sha512-UfYLBLX12PsOTZ/cC0HwKVupCdCrx1RDfSEjYeLHUMRX4bL4Bhenr5D10cSxoTaEQAgm3978DrhxIBfhOEpKbg==}
     peerDependencies:
       '@ark-ui/react': ^5.37.2
-      '@kanzo-tech/ui': 0.15.1
+      '@kanzo-tech/ui': 0.16.0
       lucide-react: '>=1'
       react: '>=19'
       react-dom: '>=19'
@@ -779,8 +779,8 @@ packages:
       streamdown:
         optional: true
 
-  '@kanzo-tech/auth@0.15.1':
-    resolution: {integrity: sha512-pJ6WT6Bg/qUjSi1Rae3YP4jCOsAaLxszepR9MA21oMI9fpzz4Y65xOMiWDUTxtI0jy3qU1XirRmIcrFXrXZJ8Q==}
+  '@kanzo-tech/auth@0.16.0':
+    resolution: {integrity: sha512-D+fDxKTLU494LWobq6aIcbdZvbgY6pQ3Y6ROt4z0km+Wvovhbgc2jZnDO7G63DkIB5z9j/3KqmRNZC/a/kYV0w==}
     peerDependencies:
       jose: ^6
       next: '>=15'
@@ -797,24 +797,24 @@ packages:
       openid-client:
         optional: true
 
-  '@kanzo-tech/graph@0.15.1':
-    resolution: {integrity: sha512-Tp6E65v7Ww0PfBCjv8tBo6OOFwWT61y5pyqpYh0RHOEhFb0lVPWvKwSXda6N65NIHf/bCbhPgkpavD6kZbIBFQ==}
+  '@kanzo-tech/graph@0.16.0':
+    resolution: {integrity: sha512-FrJmv+M/RqsqnWq4Yoh/jIBYYFuPw0urTSuank+rZDxLyfpby2XBXR2+4y5PESfgipV+vCw9236a/UE31FZK2Q==}
     peerDependencies:
       '@cosmos.gl/graph': ^3.4.0
       '@fossil-lang/corpus': ^0.3.0-alpha.15
-      '@kanzo-tech/mosaic': 0.15.1
-      '@kanzo-tech/ui': 0.15.1
+      '@kanzo-tech/mosaic': 0.16.0
+      '@kanzo-tech/ui': 0.16.0
       lucide-react: '>=1'
       react: ^19.0.0
 
-  '@kanzo-tech/mosaic@0.15.1':
-    resolution: {integrity: sha512-C/RwiyW0fhvseSnDTtqWEpqKMn8gA2EAiS68lKAJSfESUywFo0/RYS5BBOaeBPUVlWd2kB+bz00wAO1UH5wjXA==}
+  '@kanzo-tech/mosaic@0.16.0':
+    resolution: {integrity: sha512-6Fkmykx0NZuK139U4JngtlH5tP4iVd0impYiMzZwHcmQjkNeh9WPlJAecbn59Q9vO8J4MHM+IkJoAjnS7O9ZLw==}
     peerDependencies:
       '@uwdata/mosaic-core': ^0.29.2
       '@uwdata/mosaic-sql': ^0.29.0
 
-  '@kanzo-tech/navigation@0.15.1':
-    resolution: {integrity: sha512-WvQjNedNMp3K+dqosuLf9/RlmgaQJMnCJD1LPj312X21D37P0KS0rMQmALYO7azsJ6RCPSmQu8xHZwn4MiqJpA==}
+  '@kanzo-tech/navigation@0.16.0':
+    resolution: {integrity: sha512-v+J13f8XcbReTzoiJiGuMmkuI+ToWEOb9gtzl0xeatcgq9OJnGio4J1W+M8yc+lwi3PQvqVzwokJprOXE5pT0g==}
     peerDependencies:
       next: '>=15.3'
       react: '>=19'
@@ -822,11 +822,11 @@ packages:
       next:
         optional: true
 
-  '@kanzo-tech/theme@0.15.1':
-    resolution: {integrity: sha512-yzkhVwBwH18+iZ0ZVAZRNIZeU2Wh3Wl5pYy2IzP/1brWndqGo6XL/nesxCwOagtSQRA18br9w1d4WaIzCHdnDw==}
+  '@kanzo-tech/theme@0.16.0':
+    resolution: {integrity: sha512-2hU37s7j6H0/d62Zt0QJNAhi/7Gvrx7bnp74WCQ63RyD6XaiTzvVpSQzYjMr/Cei4F+O+NOty8qG9XmRSYQtGA==}
 
-  '@kanzo-tech/ui@0.15.1':
-    resolution: {integrity: sha512-iph8xDyzGuRfJLV/ygh51Gt9MZMNsaxkMA+O5U/rFfV7TxhRIdbICv32pP16uGc4UhrmcZwSml87JgrYXZtpPw==}
+  '@kanzo-tech/ui@0.16.0':
+    resolution: {integrity: sha512-OVi40YoRarErkhQM3IXGn3ol3Ptg1C+4NZYCOq/OT1uaEIpwPKBoVk+ClqPiEn9AuuBo+B/QEuOYEKmBYBDFYw==}
     peerDependencies:
       '@codemirror/autocomplete': '>=6'
       '@codemirror/commands': '>=6'
@@ -4623,44 +4623,44 @@ snapshots:
 
   '@floating-ui/utils@0.2.11': {}
 
-  '@fossil-lang/codemirror-fossil@0.3.0-alpha.17(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@fossil-lang/wasm@0.3.0-alpha.17)':
+  '@fossil-lang/codemirror-fossil@0.3.0-alpha.18(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@fossil-lang/wasm@0.3.0-alpha.18)':
     dependencies:
       '@codemirror/autocomplete': 6.20.1
       '@codemirror/language': 6.12.3
       '@codemirror/lint': 6.9.5
       '@codemirror/state': 6.7.6
       '@codemirror/view': 6.40.0
-      '@fossil-lang/types': 0.3.0-alpha.17
-      '@fossil-lang/wasm': 0.3.0-alpha.17
+      '@fossil-lang/types': 0.3.0-alpha.18
+      '@fossil-lang/wasm': 0.3.0-alpha.18
       '@lezer/highlight': 1.2.3
 
-  '@fossil-lang/corpus@0.3.0-alpha.17':
+  '@fossil-lang/corpus@0.3.0-alpha.18':
     dependencies:
-      '@fossil-lang/storage': 0.3.0-alpha.17
-      '@fossil-lang/types': 0.3.0-alpha.17
+      '@fossil-lang/storage': 0.3.0-alpha.18
+      '@fossil-lang/types': 0.3.0-alpha.18
 
-  '@fossil-lang/executor@0.3.0-alpha.17':
+  '@fossil-lang/executor@0.3.0-alpha.18':
     dependencies:
-      '@fossil-lang/storage': 0.3.0-alpha.17
-      '@fossil-lang/types': 0.3.0-alpha.17
+      '@fossil-lang/storage': 0.3.0-alpha.18
+      '@fossil-lang/types': 0.3.0-alpha.18
 
-  '@fossil-lang/introspect@0.3.0-alpha.17':
+  '@fossil-lang/introspect@0.3.0-alpha.18':
     dependencies:
-      '@fossil-lang/storage': 0.3.0-alpha.17
-      '@fossil-lang/types': 0.3.0-alpha.17
+      '@fossil-lang/storage': 0.3.0-alpha.18
+      '@fossil-lang/types': 0.3.0-alpha.18
 
-  '@fossil-lang/prompt@0.3.0-alpha.17': {}
+  '@fossil-lang/prompt@0.3.0-alpha.18': {}
 
-  '@fossil-lang/storage@0.3.0-alpha.17':
+  '@fossil-lang/storage@0.3.0-alpha.18':
     dependencies:
-      '@fossil-lang/types': 0.3.0-alpha.17
+      '@fossil-lang/types': 0.3.0-alpha.18
 
-  '@fossil-lang/types@0.3.0-alpha.17': {}
+  '@fossil-lang/types@0.3.0-alpha.18': {}
 
-  '@fossil-lang/wasm@0.3.0-alpha.17':
+  '@fossil-lang/wasm@0.3.0-alpha.18':
     dependencies:
-      '@fossil-lang/storage': 0.3.0-alpha.17
-      '@fossil-lang/types': 0.3.0-alpha.17
+      '@fossil-lang/storage': 0.3.0-alpha.18
+      '@fossil-lang/types': 0.3.0-alpha.18
 
   '@humanfs/core@0.19.1': {}
 
@@ -4841,10 +4841,10 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@kanzo-tech/ai@0.15.1(@ark-ui/react@5.39.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@kanzo-tech/ui@0.15.1(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(streamdown@2.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(tailwind-merge@3.7.0)(tailwindcss@4.2.2)':
+  '@kanzo-tech/ai@0.16.0(@ark-ui/react@5.39.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@kanzo-tech/ui@0.16.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(streamdown@2.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(tailwind-merge@3.7.0)(tailwindcss@4.2.2)':
     dependencies:
       '@ark-ui/react': 5.39.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@kanzo-tech/ui': 0.15.1(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)
+      '@kanzo-tech/ui': 0.16.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)
       lucide-react: 1.47.0(react@19.2.3)
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
@@ -4855,7 +4855,7 @@ snapshots:
       - tailwind-merge
       - tailwindcss
 
-  '@kanzo-tech/auth@0.15.1(jose@6.2.12)(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(openid-client@6.8.8)(react@19.2.3)':
+  '@kanzo-tech/auth@0.16.0(jose@6.2.12)(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(openid-client@6.8.8)(react@19.2.3)':
     dependencies:
       react: 19.2.3
     optionalDependencies:
@@ -4863,35 +4863,35 @@ snapshots:
       next: 16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       openid-client: 6.8.8
 
-  '@kanzo-tech/graph@0.15.1(@cosmos.gl/graph@3.4.2)(@fossil-lang/corpus@0.3.0-alpha.17)(@kanzo-tech/mosaic@0.15.1(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0))(@kanzo-tech/ui@0.15.1(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(lucide-react@1.47.0(react@19.2.3))(react@19.2.3)':
+  '@kanzo-tech/graph@0.16.0(@cosmos.gl/graph@3.4.2)(@fossil-lang/corpus@0.3.0-alpha.18)(@kanzo-tech/mosaic@0.16.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0))(@kanzo-tech/ui@0.16.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2))(lucide-react@1.47.0(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@cosmos.gl/graph': 3.4.2
-      '@fossil-lang/corpus': 0.3.0-alpha.17
-      '@kanzo-tech/mosaic': 0.15.1(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)
-      '@kanzo-tech/ui': 0.15.1(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)
+      '@fossil-lang/corpus': 0.3.0-alpha.18
+      '@kanzo-tech/mosaic': 0.16.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)
+      '@kanzo-tech/ui': 0.16.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)
       lucide-react: 1.47.0(react@19.2.3)
       react: 19.2.3
 
-  '@kanzo-tech/mosaic@0.15.1(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)':
+  '@kanzo-tech/mosaic@0.16.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)':
     dependencies:
       '@duckdb/duckdb-wasm': 1.33.1-dev57.0
       '@uwdata/mosaic-core': 0.29.2
       '@uwdata/mosaic-sql': 0.29.0
 
-  '@kanzo-tech/navigation@0.15.1(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)':
+  '@kanzo-tech/navigation@0.16.0(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)':
     dependencies:
       react: 19.2.3
     optionalDependencies:
       next: 16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
 
-  '@kanzo-tech/theme@0.15.1': {}
+  '@kanzo-tech/theme@0.16.0': {}
 
-  '@kanzo-tech/ui@0.15.1(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)':
+  '@kanzo-tech/ui@0.16.0(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)(@uwdata/vgplot@0.29.2)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.2.2)':
     dependencies:
       '@ark-ui/react': 5.39.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@internationalized/date': 3.12.4
-      '@kanzo-tech/mosaic': 0.15.1(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)
-      '@kanzo-tech/theme': 0.15.1
+      '@kanzo-tech/mosaic': 0.16.0(@uwdata/mosaic-core@0.29.2)(@uwdata/mosaic-sql@0.29.0)
+      '@kanzo-tech/theme': 0.16.0
       '@tailwindcss/typography': 0.5.20(tailwindcss@4.2.2)
       clsx: 2.1.1
       lucide-react: 1.47.0(react@19.2.3)

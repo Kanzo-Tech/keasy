@@ -1,7 +1,7 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{DEAD, spawn_app};
+use crate::helpers::{DEAD, good, mint, spawn_app};
 use keasy_server::domain::Direction;
 
 /// A job needs a destination, and it must be the sink.
@@ -241,4 +241,66 @@ async fn a_job_keeps_one_dashboard() {
         .send(Method::PUT, &path, &theirs, json!({ "spec": {} }))
         .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+/// A job the bootstrap file declares for an email is held until the member
+/// whose verified address it is lists their jobs; then it is theirs, ready to
+/// run, and no later boot declares it again.
+#[tokio::test]
+async fn a_declared_job_goes_to_the_member_the_realm_vouches_for() {
+    let app = spawn_app().await;
+    app.credential("key", DEAD, "bootstrap").await;
+    app.connection("sink", "key", Direction::Sink, "bootstrap")
+        .await;
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("graph.fossil"), "program").unwrap();
+    let file = dir.path().join("bootstrap.json");
+    std::fs::write(
+        &file,
+        json!({ "jobs": [{
+            "name": "Seeded",
+            "owner": "dev@keasy.local",
+            "sink_connection": "sink",
+            "folder": "seeded",
+            "script_file": "graph.fossil",
+        }] })
+        .to_string(),
+    )
+    .unwrap();
+    let boot = || keasy_server::bootstrap::ensure_declared(&app.db, file.to_str().unwrap());
+    boot().await;
+    boot().await;
+
+    let token = |sub: &str, email: &str, verified: bool| {
+        let mut claims = good(&app.realm);
+        claims["sub"] = json!(sub);
+        claims["email"] = json!(email);
+        claims["email_verified"] = json!(verified);
+        claims["resource_access"] = json!({ "keasy-ws-dev": { "roles": ["member"] } });
+        mint(&app.realm, claims)
+    };
+    let app = &app;
+    let list = |token: String| async move {
+        app.send(Method::GET, "/v1/jobs", &token, json!(null)).await.1
+    };
+
+    assert_eq!(
+        list(token("u-9", "dev@keasy.local", false)).await,
+        json!([]),
+        "an address the realm has not verified claims nothing"
+    );
+
+    let listed = list(token("u-1", "dev@keasy.local", true)).await;
+    let listed = listed.as_array().unwrap();
+    assert_eq!(listed.len(), 1, "declared once across two boots");
+    assert_eq!(listed[0]["name"], "Seeded");
+    assert_eq!(listed[0]["status"], "pending");
+    assert_eq!(listed[0]["folder"], "seeded");
+    assert_eq!(listed[0]["script"], "program");
+    assert_eq!(listed[0]["created_by"], "u-1");
+
+    boot().await;
+    let listed = list(token("u-1", "dev@keasy.local", true)).await;
+    assert_eq!(listed.as_array().unwrap().len(), 1, "a claimed job is not declared again");
+    assert_eq!(list(token("u-2", "other@keasy.local", true)).await, json!([]));
 }

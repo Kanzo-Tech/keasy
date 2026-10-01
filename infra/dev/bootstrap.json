@@ -15,9 +15,9 @@
   ],
   "connections": [
     {
-      "name": "MinIO dev bucket",
+      "name": "LDBC SNB",
       "credential": "MinIO dev",
-      "target": { "storage": { "url": "s3://keasy-dev/data/", "kind": "data", "direction": "source" } }
+      "target": { "storage": { "url": "s3://keasy-dev/ldbc/", "kind": "data", "direction": "source" } }
     },
     {
       "name": "MinIO dev shapes",
@@ -28,6 +28,15 @@
       "name": "Workspace output",
       "credential": "MinIO dev",
       "target": { "storage": { "url": "s3://keasy-dev/output/", "kind": "data", "direction": "sink" } }
+    }
+  ],
+  "jobs": [
+    {
+      "name": "LDBC SNB SF0.1",
+      "owner": "dev@keasy.local",
+      "sink_connection": "Workspace output",
+      "folder": "ldbc-snb",
+      "script_file": "snb.fossil"
     }
   ]
 }

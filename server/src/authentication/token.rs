@@ -66,6 +66,13 @@ pub struct Claims {
     /// per-user Keycloak attribute mapper emits it.
     #[serde(default)]
     pub workspaces: Vec<String>,
+    /// The address the realm declared this person by. Never an identity — only
+    /// how something declared for a person before they ever signed in (a
+    /// bootstrap job) finds them, and only when the realm vouches for it.
+    #[serde(default)]
+    pub email: Option<String>,
+    #[serde(default)]
+    pub email_verified: bool,
     /// Keycloak's own client-role claim. `resource_access.<client_id>.roles` is
     /// what the realm publishes for free; renaming it into something like
     /// `keasy:role` was this codebase's own invention and is gone.
@@ -80,6 +87,12 @@ pub struct RoleSet {
 }
 
 impl Claims {
+    /// The email, when the realm has verified it.
+    pub fn verified_email(&self) -> Option<&str> {
+        self.email.as_deref().filter(|_| self.email_verified)
+    }
+
+
     /// The roles this person holds **in this application**, and nowhere else. A
     /// role granted on another client authorizes nothing here.
     pub fn roles_for(&self, client_id: &str) -> &[String] {

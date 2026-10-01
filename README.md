@@ -51,11 +51,24 @@ Both are declared in `infra/terraform/realm/dev.tfvars` (`tenants`,
 | Credentials | `minioadmin` / `minioadmin` |
 | Bucket | `keasy-dev`, seeded from `infra/dev/seed/` on every `up` |
 
-At boot the instance declares, over that bucket, the **MinIO dev bucket** source
-connection, the **MinIO dev shapes** vocabulary connection (`vocab/`), the sink
-(`output/`). Access is proved before each connection row is written, and an
-existing sink is never overwritten. `infra/dev/shop.fossil` is a program over
-those two connections, ready to paste into a new job.
+The dev graph is the [LDBC Social Network Benchmark](https://ldbcouncil.org/benchmarks/snb/)
+at scale factor 0.1 — the official Interactive v1 `CsvCompositeMergeForeign` archive
+(about 17 MB compressed, 59 MB of CSV: 1.5k people, 136k posts, 151k comments). It is
+not in git; fetch it once, before `make dev`:
+
+```bash
+make seed   # downloads, checks the SHA-256, unpacks into infra/dev/seed/ldbc/
+```
+
+Without it the bucket holds the shapes alone and `minio-init` says to run `make seed`.
+
+At boot the instance declares, over that bucket, the **LDBC SNB** source connection
+(`ldbc/`), the **MinIO dev shapes** vocabulary connection (`vocab/`, holding
+`snb.shex`) and the sink (`output/`). Access is proved before each connection row is
+written, and an existing sink is never overwritten. It also declares the job **LDBC
+SNB SF0.1** for `dev@keasy.local`, running `infra/dev/snb.fossil` into
+`output/ldbc-snb/`: it is in that
+member's job list on first sign-in, and opening it runs it in the browser.
 
 `minio.localhost` and `keycloak.localhost` are load-bearing: Docker's DNS answers
 them inside the compose network and `*.localhost` is loopback on the host, so a

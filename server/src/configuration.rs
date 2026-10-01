@@ -6,6 +6,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use secrecy::{ExposeSecret, SecretString};
+use serde::{Deserialize, Serialize};
 
 use crate::credentials::sealing::SecretKey;
 
@@ -48,74 +49,102 @@ pub struct ApplicationSettings {
 /// An instance's look, declared in its deployment the way Grafana reads its
 /// white-label settings from config and Keycloak deploys a theme per realm:
 /// nothing a member edits in the app.
-#[derive(Debug, Clone, Default)]
+///
+/// Read from the YAML file `KEASY_BRANDING_FILE` names: exactly the snippet
+/// kanzo-ui's theme generator emits, under a top-level `branding:` key, plus an
+/// optional `logo`. No file, no branding: every shipped theme, the web's own
+/// defaults, nothing locked.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct BrandingSettings {
     /// What the shell shows in place of the default mark: a URL, or a path the
-    /// web serves. Read from `KEASY_BRANDING_LOGO`.
+    /// web serves.
     pub logo: Option<String>,
-    /// A theme stylesheet the web inlines on every page — the generator's
-    /// export. Read from `KEASY_BRANDING_THEME_CSS`, or from the file
-    /// `KEASY_BRANDING_THEME_CSS_FILE` names.
+    /// The generator's theme stylesheet, inlined on every page.
     pub theme_css: Option<String>,
-    /// The theme names members may choose among; empty allows every theme.
-    /// Read from `KEASY_BRANDING_THEMES`, comma-separated.
-    pub themes: Vec<String>,
-    /// The day theme. Read from `KEASY_BRANDING_DEFAULT_LIGHT`.
-    pub default_light: Option<String>,
-    /// The night theme. Read from `KEASY_BRANDING_DEFAULT_DARK`.
-    pub default_dark: Option<String>,
-    /// Members wear the defaults and choose nothing. Read from
-    /// `KEASY_BRANDING_LOCK` (`true`/`false`, default `false`).
+    /// The theme families members may choose among; empty allows every
+    /// shipped theme.
+    #[serde(default)]
+    pub families: Vec<ThemeFamily>,
+    /// The family a visitor starts with; absent leaves the web's own.
+    pub default: Option<String>,
+    /// Members wear the default and choose nothing.
+    #[serde(default)]
     pub lock: bool,
+}
+
+/// A theme as a pair: what it is called by day and by night.
+#[derive(Debug, Clone, Deserialize, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ThemeFamily {
+    pub family: String,
+    pub light: ThemeChoice,
+    pub dark: ThemeChoice,
+}
+
+/// One theme: the `data-theme` value it is selected by, and its display name.
+#[derive(Debug, Clone, Deserialize, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ThemeChoice {
+    pub value: String,
+    pub label: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BrandingFile {
+    branding: BrandingSettings,
 }
 
 impl BrandingSettings {
     pub fn from_env() -> Result<Self, String> {
-        let themes: Vec<String> = nonblank("KEASY_BRANDING_THEMES")
-            .map(|list| {
-                list.split(',')
-                    .map(|t| t.trim().to_string())
-                    .filter(|t| !t.is_empty())
-                    .collect()
-            })
-            .unwrap_or_default();
-        let lock = match nonblank("KEASY_BRANDING_LOCK").as_deref() {
-            None | Some("false") => false,
-            Some("true") => true,
-            Some(other) => {
-                return Err(format!(
-                    "KEASY_BRANDING_LOCK is `true` or `false`, not {other:?}"
-                ));
-            }
+        let Some(path) = nonblank("KEASY_BRANDING_FILE") else {
+            return Ok(Self::default());
         };
-        let branding = Self {
-            logo: nonblank("KEASY_BRANDING_LOGO"),
-            theme_css: from_file_or_env("KEASY_BRANDING_THEME_CSS")?,
-            themes,
-            default_light: nonblank("KEASY_BRANDING_DEFAULT_LIGHT"),
-            default_dark: nonblank("KEASY_BRANDING_DEFAULT_DARK"),
-            lock,
-        };
+        let yaml = std::fs::read_to_string(&path).map_err(|e| {
+            format!("KEASY_BRANDING_FILE points to {path} but could not read it: {e}")
+        })?;
+        Self::from_yaml(&yaml).map_err(|e| format!("KEASY_BRANDING_FILE ({path}): {e}"))
+    }
+
+    /// The generator's snippet, checked.
+    pub fn from_yaml(yaml: &str) -> Result<Self, String> {
+        let BrandingFile { mut branding } =
+            serde_yaml::from_str(yaml).map_err(|e| e.to_string())?;
+        let blank = |s: &Option<String>| s.as_deref().is_none_or(|s| s.trim().is_empty());
+        if blank(&branding.logo) {
+            branding.logo = None;
+        }
+        if blank(&branding.theme_css) {
+            branding.theme_css = None;
+        }
         branding.check()?;
         Ok(branding)
     }
 
-    /// A default outside the allowed list would be a theme nobody may choose.
-    pub fn check(&self) -> Result<(), String> {
-        if self.themes.is_empty() {
-            return Ok(());
-        }
-        for (var, theme) in [
-            ("KEASY_BRANDING_DEFAULT_LIGHT", &self.default_light),
-            ("KEASY_BRANDING_DEFAULT_DARK", &self.default_dark),
-        ] {
-            if let Some(theme) = theme
-                && !self.themes.contains(theme)
-            {
-                return Err(format!(
-                    "{var} is {theme:?}, which KEASY_BRANDING_THEMES does not allow"
-                ));
+    /// Every family names both its themes, and a default is one members may
+    /// choose.
+    fn check(&self) -> Result<(), String> {
+        for f in &self.families {
+            if f.family.trim().is_empty() {
+                return Err("a family in branding.families has no name".into());
             }
+            for (side, choice) in [("light", &f.light), ("dark", &f.dark)] {
+                if choice.value.trim().is_empty() || choice.label.trim().is_empty() {
+                    return Err(format!(
+                        "branding.families {:?}: {side} needs a value and a label",
+                        f.family
+                    ));
+                }
+            }
+        }
+        if let Some(default) = &self.default
+            && !self.families.is_empty()
+            && !self.families.iter().any(|f| &f.family == default)
+        {
+            return Err(format!(
+                "branding.default is {default:?}, which is not among branding.families"
+            ));
         }
         Ok(())
     }
@@ -250,19 +279,81 @@ fn from_file_or_env(name: &str) -> Result<Option<String>, String> {
 mod tests {
     use super::BrandingSettings;
 
-    #[test]
-    fn a_default_theme_must_be_one_members_may_choose() {
-        let mut branding = BrandingSettings {
-            themes: vec!["kanzo-light".into(), "kanzo-dark".into()],
-            default_light: Some("kanzo-light".into()),
-            ..Default::default()
-        };
-        assert!(branding.check().is_ok());
-        branding.default_dark = Some("nord-dark".into());
-        let err = branding.check().unwrap_err();
-        assert!(err.contains("KEASY_BRANDING_DEFAULT_DARK"), "{err}");
+    const GENERATED: &str = r#"
+branding:
+  theme_css: |
+    /* @family acme */
+    [data-theme="acme"] { --primary: oklch(0.6 0.2 30); }
+    [data-theme="acme-dark"] { --primary: oklch(0.7 0.2 30); }
+  families:
+    - family: acme
+      light: { value: acme, label: Acme }
+      dark: { value: acme-dark, label: Acme Dark }
+  default: acme
+  lock: false
+"#;
 
-        branding.themes.clear();
-        assert!(branding.check().is_ok(), "no list allows every theme");
+    #[test]
+    fn the_generators_snippet_is_read_as_is() {
+        let b = BrandingSettings::from_yaml(GENERATED).unwrap();
+        assert!(b.theme_css.unwrap().contains(r#"[data-theme="acme-dark"]"#));
+        assert_eq!(b.families.len(), 1);
+        assert_eq!(b.families[0].dark.value, "acme-dark");
+        assert_eq!(b.families[0].dark.label, "Acme Dark");
+        assert_eq!(b.default.as_deref(), Some("acme"));
+        assert!(!b.lock);
+        assert!(b.logo.is_none());
+    }
+
+    #[test]
+    fn the_dev_example_is_valid() {
+        let b = BrandingSettings::from_yaml(include_str!("../../infra/dev/branding.example.yml"))
+            .unwrap();
+        assert_eq!(b.default.as_deref(), Some("acme"));
+    }
+
+    #[test]
+    fn a_logo_rides_along_and_everything_else_is_optional() {
+        let b = BrandingSettings::from_yaml("branding:\n  logo: /acme.svg\n").unwrap();
+        assert_eq!(b.logo.as_deref(), Some("/acme.svg"));
+        assert!(b.families.is_empty() && b.default.is_none() && !b.lock);
+    }
+
+    #[test]
+    fn the_default_must_be_a_family_members_may_choose() {
+        let err = BrandingSettings::from_yaml(&GENERATED.replace("default: acme", "default: nord"))
+            .unwrap_err();
+        assert!(err.contains("branding.default"), "{err}");
+
+        let free = "branding:\n  default: nord\n";
+        assert!(
+            BrandingSettings::from_yaml(free).is_ok(),
+            "no list allows every theme"
+        );
+    }
+
+    #[test]
+    fn a_family_names_both_its_themes() {
+        let err =
+            BrandingSettings::from_yaml(&GENERATED.replace("label: Acme Dark", "label: \"\""))
+                .unwrap_err();
+        assert!(err.contains("dark needs a value and a label"), "{err}");
+
+        let missing = GENERATED.replace("      dark: { value: acme-dark, label: Acme Dark }\n", "");
+        assert!(BrandingSettings::from_yaml(&missing).is_err());
+    }
+
+    #[test]
+    fn lock_is_a_bool_and_typos_are_refused() {
+        assert!(
+            BrandingSettings::from_yaml(&GENERATED.replace("lock: false", "lock: maybe")).is_err()
+        );
+        assert!(
+            BrandingSettings::from_yaml(&GENERATED.replace("lock: false", "lok: true")).is_err()
+        );
+        assert!(
+            BrandingSettings::from_yaml("theme_css: x\n").is_err(),
+            "the branding: key is required"
+        );
     }
 }

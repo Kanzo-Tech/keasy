@@ -405,13 +405,19 @@ export interface components {
          */
         Alias: "chat" | "complete";
         /**
-         * @description How this instance looks, as its deployment declares it. Public: the web
-         *     reads it to render the login page and the first paint, before anyone has
-         *     signed in.
+         * @description How this instance looks, as its deployment declares it (`KEASY_BRANDING_FILE`).
+         *     Public: the web reads it to render the login page and the first paint,
+         *     before anyone has signed in.
          */
         Branding: {
-            default: components["schemas"]["ThemeDefaults"];
-            /** @description Members wear the defaults and choose nothing. */
+            /** @description The family a visitor starts with; absent leaves the web's own. */
+            default?: string | null;
+            /**
+             * @description The theme families members may choose among; empty allows every
+             *     shipped theme.
+             */
+            families: components["schemas"]["ThemeFamily"][];
+            /** @description Members wear the default and choose nothing. */
             lock: boolean;
             /** @description The mark the shell shows: a URL or a path the web serves. */
             logo?: string | null;
@@ -419,8 +425,6 @@ export interface components {
             name: string;
             /** @description A theme stylesheet to inline on every page. */
             theme_css?: string | null;
-            /** @description The theme names members may choose among; empty allows every theme. */
-            themes: string[];
         };
         /**
          * @description An OpenAI chat completion request. `model` must be an alias; everything
@@ -729,10 +733,16 @@ export interface components {
              */
             url: string;
         };
-        /** @description The day and night themes a visitor starts with; absent leaves the web's own. */
-        ThemeDefaults: {
-            dark?: string | null;
-            light?: string | null;
+        /** @description One theme: the `data-theme` value it is selected by, and its display name. */
+        ThemeChoice: {
+            label: string;
+            value: string;
+        };
+        /** @description A theme as a pair: what it is called by day and by night. */
+        ThemeFamily: {
+            dark: components["schemas"]["ThemeChoice"];
+            family: string;
+            light: components["schemas"]["ThemeChoice"];
         };
         UpdateConnectionRequest: {
             credential?: string | null;

@@ -31,7 +31,7 @@ pub struct AppState {
     pub workspace_slug: Option<String>,
     /// This instance's display name (`KEASY_WORKSPACE_NAME`).
     pub workspace_name: String,
-    /// This instance's declared look (`KEASY_BRANDING_*`).
+    /// This instance's declared look (`KEASY_BRANDING_FILE`).
     pub branding: Arc<BrandingSettings>,
     /// Verifies the bearer token every protected request carries.
     pub auth: SharedValidator,

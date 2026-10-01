@@ -4,11 +4,12 @@ use serde::Serialize;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use crate::configuration::ThemeFamily;
 use crate::startup::AppState;
 
-/// How this instance looks, as its deployment declares it. Public: the web
-/// reads it to render the login page and the first paint, before anyone has
-/// signed in.
+/// How this instance looks, as its deployment declares it (`KEASY_BRANDING_FILE`).
+/// Public: the web reads it to render the login page and the first paint,
+/// before anyone has signed in.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct Branding {
     /// This instance's display name (`KEASY_WORKSPACE_NAME`).
@@ -19,20 +20,14 @@ pub struct Branding {
     /// A theme stylesheet to inline on every page.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub theme_css: Option<String>,
-    /// The theme names members may choose among; empty allows every theme.
-    pub themes: Vec<String>,
-    pub default: ThemeDefaults,
-    /// Members wear the defaults and choose nothing.
+    /// The theme families members may choose among; empty allows every
+    /// shipped theme.
+    pub families: Vec<ThemeFamily>,
+    /// The family a visitor starts with; absent leaves the web's own.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default: Option<String>,
+    /// Members wear the default and choose nothing.
     pub lock: bool,
-}
-
-/// The day and night themes a visitor starts with; absent leaves the web's own.
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-pub struct ThemeDefaults {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub light: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub dark: Option<String>,
 }
 
 #[utoipa::path(get, path = "/v1/branding", tag = "Branding", security(()),
@@ -44,11 +39,8 @@ pub async fn get_branding(State(state): State<AppState>) -> Json<Branding> {
         name: state.workspace_name.clone(),
         logo: b.logo.clone(),
         theme_css: b.theme_css.clone(),
-        themes: b.themes.clone(),
-        default: ThemeDefaults {
-            light: b.default_light.clone(),
-            dark: b.default_dark.clone(),
-        },
+        families: b.families.clone(),
+        default: b.default.clone(),
         lock: b.lock,
     })
 }

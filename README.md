@@ -113,6 +113,12 @@ are validated on every write,
 and a credential in use cannot be deleted. `KEASY_BOOTSTRAP_FILE` declares them at
 boot in the API's own request format (dev: `infra/dev/bootstrap.json`).
 
+An instance's look is declared, not edited: `KEASY_BRANDING_FILE` names a YAML
+file holding exactly what kanzo-ui's theme generator exports (`branding:` with
+`theme_css`, `families`, `default`, `lock`, and optionally `logo`), validated at
+boot and served publicly at `GET /v1/branding`. Without it every shipped theme is
+offered. Example: `infra/dev/branding.example.yml`; in prod, a tenant's `branding_file`.
+
 Stored credentials are sealed with `KEASY_SECRET_KEY`: 32 random bytes in base64
 (`openssl rand -base64 32`); `keasy-server rekey` seals them again under
 `KEASY_NEW_SECRET_KEY`. The server refuses to start without one, and refuses

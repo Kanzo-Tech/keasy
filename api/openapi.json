@@ -1857,20 +1857,30 @@
       },
       "Branding": {
         "type": "object",
-        "description": "How this instance looks, as its deployment declares it. Public: the web\nreads it to render the login page and the first paint, before anyone has\nsigned in.",
+        "description": "How this instance looks, as its deployment declares it (`KEASY_BRANDING_FILE`).\nPublic: the web reads it to render the login page and the first paint,\nbefore anyone has signed in.",
         "required": [
           "name",
-          "themes",
-          "default",
+          "families",
           "lock"
         ],
         "properties": {
           "default": {
-            "$ref": "#/components/schemas/ThemeDefaults"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The family a visitor starts with; absent leaves the web's own."
+          },
+          "families": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ThemeFamily"
+            },
+            "description": "The theme families members may choose among; empty allows every\nshipped theme."
           },
           "lock": {
             "type": "boolean",
-            "description": "Members wear the defaults and choose nothing."
+            "description": "Members wear the default and choose nothing."
           },
           "logo": {
             "type": [
@@ -1889,13 +1899,6 @@
               "null"
             ],
             "description": "A theme stylesheet to inline on every page."
-          },
-          "themes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The theme names members may choose among; empty allows every theme."
           }
         }
       },
@@ -2714,23 +2717,43 @@
           }
         }
       },
-      "ThemeDefaults": {
+      "ThemeChoice": {
         "type": "object",
-        "description": "The day and night themes a visitor starts with; absent leaves the web's own.",
+        "description": "One theme: the `data-theme` value it is selected by, and its display name.",
+        "required": [
+          "value",
+          "label"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemeFamily": {
+        "type": "object",
+        "description": "A theme as a pair: what it is called by day and by night.",
+        "required": [
+          "family",
+          "light",
+          "dark"
+        ],
         "properties": {
           "dark": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "$ref": "#/components/schemas/ThemeChoice"
+          },
+          "family": {
+            "type": "string"
           },
           "light": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "$ref": "#/components/schemas/ThemeChoice"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "UpdateConnectionRequest": {
         "type": "object",

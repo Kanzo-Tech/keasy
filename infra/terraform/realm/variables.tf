@@ -79,30 +79,19 @@ variable "tenants" {
     # Fixed gateway key (`sk-…`) — leave null in prod (LiteLLM generates it); dev sets
     # a known value so the compose server can use it, as with `client_secret`.
     ai_key = optional(string)
-    # How the workspace looks — declared here, the way Grafana white-labels from
-    # config and Keycloak deploys a theme per realm. The server reads it at boot
-    # (KEASY_BRANDING_*) and serves it at GET /v1/branding.
-    branding = optional(object({
-      theme_css = optional(string)           # the generator's export, inlined on every page
-      themes    = optional(list(string), []) # names members may choose among; [] = all
-      default = optional(object({
-        light = optional(string)
-        dark  = optional(string)
-      }), {})
-      lock = optional(bool, false) # members wear the defaults and choose nothing
-      logo = optional(string)      # URL or web-served path shown instead of the default mark
-    }), {})
+    # How the workspace looks: the path to a YAML file holding exactly what the
+    # theme generator emits (`branding:` with theme_css, families, default, lock;
+    # optionally logo). Mounted into the server as-is and read at boot
+    # (KEASY_BRANDING_FILE), which refuses an invalid one; served at GET /v1/branding.
+    branding_file = optional(string)
   }))
   default = {}
 
   validation {
     condition = alltrue([
-      for t in values(var.tenants) : length(t.branding.themes) == 0 || alltrue([
-        for d in [t.branding.default.light, t.branding.default.dark] :
-        d == null || contains(t.branding.themes, d)
-      ])
+      for t in values(var.tenants) : t.branding_file == null || fileexists(t.branding_file)
     ])
-    error_message = "A tenant's branding.default themes must be among its branding.themes (or leave themes empty to allow all)."
+    error_message = "A tenant's branding_file must name an existing file (the theme generator's YAML)."
   }
 
   # The planes are disjoint, so `owners` and `members` are disjoint too. An email

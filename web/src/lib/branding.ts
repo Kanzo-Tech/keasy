@@ -5,7 +5,7 @@ import type { Schemas } from "@keasy/api";
 export type Branding = Schemas["Branding"];
 
 /**
- * The instance's look, as its operator declared it (`KEASY_BRANDING_*`).
+ * The instance's look, as its operator declared it (`KEASY_BRANDING_FILE`).
  *
  * Public and fixed for the life of the server process, so it is read once per
  * process rather than per request. An unreachable API is a deploy fault, not a

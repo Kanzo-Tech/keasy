@@ -179,7 +179,11 @@ export function AssistantWizard({
   const [domain, setDomain] = useState("");
   const [reqs, setReqs] = useState<CompetencyQuestion[]>([]);
 
-  const dataConnections = useMemo(() => connections.filter((c) => c.kind === "data"), [connections]);
+  // The sink is a data connection too, but one the program writes to, not reads from.
+  const dataConnections = useMemo(
+    () => connections.filter((c) => c.kind === "data" && c.direction !== "sink"),
+    [connections],
+  );
   const connectionTable = useDataTable({
     columns: CONNECTION_COLUMNS,
     data: dataConnections,

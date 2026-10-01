@@ -22,13 +22,13 @@ import { schemaOf } from "@/lib/api/spec";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 import { $api, type Inputs, invalidate } from "@/lib/api/client";
-import { type Credential, type Purpose, specOf } from "@/lib/connections";
+import type { Credential } from "@/lib/connections";
 import { toastError } from "@/lib/errors";
 
-type Spec = Inputs["CredentialSpecInput"];
+type Spec = Inputs["StorageCredentialInput"];
 
-/** Adds a credential of `purpose`, or renames and rotates `name`. */
-export function CredentialForm({ purpose, name }: { purpose?: Purpose; name?: string }) {
+/** Adds a credential, or renames and rotates `name`. */
+export function CredentialForm({ name }: { name?: string }) {
   const { data: credential, isLoading } = $api.useQuery(
     "get",
     "/v1/credentials/{name}",
@@ -49,24 +49,24 @@ export function CredentialForm({ purpose, name }: { purpose?: Purpose; name?: st
   }
   if (name && !credential) notFound();
 
-  return <Form credential={credential} purpose={credential ? specOf(credential).purpose : (purpose ?? "storage")} />;
+  return <Form credential={credential} />;
 }
 
-function Form({ credential, purpose }: { credential?: Credential; purpose: Purpose }) {
+function Form({ credential }: { credential?: Credential }) {
   const router = useRouter();
-  const schema = schemaOf(purpose === "storage" ? "StorageCredentialInput" : "ModelCredentialInput");
+  const schema = schemaOf("StorageCredentialInput");
   const [name, setName] = useState(credential?.name ?? "");
   const [probeUrl, setProbeUrl] = useState("");
   const [values, setValues] = useState(() =>
-    initialValues(schema, credential ? specOf(credential).spec : undefined),
+    initialValues(schema, credential?.spec),
   );
   const inner = toBody(schema, values);
-  const spec = inner && ({ [purpose]: inner } as unknown as Spec);
+  const spec = inner as Spec | undefined;
 
   const done = async (title: string) => {
     toast.create({ title, type: "success" });
     await invalidate("/v1/credentials", "/v1/connections");
-    router.push(`/settings/credentials?purpose=${purpose}`);
+    router.push("/settings/credentials");
   };
   const create = $api.useMutation("post", "/v1/credentials", {
     onSuccess: () => done("Credential validated and saved"),
@@ -109,14 +109,14 @@ function Form({ credential, purpose }: { credential?: Credential; purpose: Purpo
           </FieldLabel>
           <Input
             onChange={(e) => setName(e.target.value)}
-            placeholder={purpose === "storage" ? "e.g. production-s3" : "e.g. anthropic-team"}
+            placeholder="e.g. production-s3"
             value={name}
           />
         </Field>
 
         <SpecForm editing={!!credential} onChange={setValues} schema={schema} value={values} />
 
-        {purpose === "storage" && !credential && (
+        {!credential && (
           <Field>
             <FieldLabel>
               Test URL

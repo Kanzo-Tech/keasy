@@ -81,7 +81,7 @@ resource "docker_service" "ai_postgres" {
   }
 }
 
-# Exact-match cache for `kanzo-complete` (opted in per request). Losing it costs
+# Exact-match cache for `complete` (opted in per request). Losing it costs
 # tokens, nothing else, so no volume.
 resource "docker_service" "ai_cache" {
   name = "keasy-base-ai-cache"

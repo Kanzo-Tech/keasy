@@ -10,12 +10,14 @@ use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
 use secrecy::SecretString;
 use serde_json::json;
 
-use keasy_server::configuration::{ApplicationSettings, DatabaseSettings, OidcSettings, Settings};
+use keasy_server::configuration::{
+    AiSettings, ApplicationSettings, DatabaseSettings, OidcSettings, Settings,
+};
 use keasy_server::credentials::sealing::SecretKey;
 use keasy_server::database::Database;
 use keasy_server::domain::{
-    ConnectionTarget, ConnectionView, CredentialSpecInput, Direction, ResourceName,
-    StorageCredentialInput, StorageTarget, ValidationReport,
+    ConnectionView, Direction, ResourceName, StorageCredentialInput, StorageTarget,
+    ValidationReport,
 };
 use keasy_server::startup::Application;
 
@@ -34,6 +36,11 @@ pub fn secret_key() -> SecretKey {
 }
 
 pub async fn spawn_app() -> TestApp {
+    spawn_app_with(None).await
+}
+
+/// The server, relaying model calls to the gateway `ai` names.
+pub async fn spawn_app_with(ai: Option<AiSettings>) -> TestApp {
     let realm = realm("k1").await;
     let dir = tempfile::tempdir().unwrap();
     let database = DatabaseSettings {
@@ -56,6 +63,7 @@ pub async fn spawn_app() -> TestApp {
             audience: "keasy-api".into(),
             internal_base_url: None,
         },
+        ai,
     };
     let application = Application::build(settings).await.unwrap();
     let address = format!("http://127.0.0.1:{}", application.port());
@@ -147,11 +155,11 @@ impl TestApp {
 
     /// A stored storage connection on `credential`, unprobed.
     pub async fn connection(&self, name: &str, credential: &str, direction: Direction, by: &str) {
-        let target = ConnectionTarget::Storage(StorageTarget {
+        let target = StorageTarget {
             url: format!("s3://b/{name}/"),
             kind: Default::default(),
             direction,
-        });
+        };
         let view = ConnectionView {
             name: name.into(),
             credential: credential.into(),
@@ -173,15 +181,15 @@ pub fn unprobed() -> ValidationReport {
     }
 }
 
-pub fn s3(endpoint: &str, secret: &str) -> CredentialSpecInput {
-    CredentialSpecInput::Storage(StorageCredentialInput::S3 {
+pub fn s3(endpoint: &str, secret: &str) -> StorageCredentialInput {
+    StorageCredentialInput::S3 {
         access_key_id: "AK".into(),
         secret_access_key: SecretString::from(secret),
         region: "us-east-1".into(),
         endpoint: Some(endpoint.into()),
         role_arn: None,
         external_id: None,
-    })
+    }
 }
 
 /// Nothing listens here: a probe through it fails at once.

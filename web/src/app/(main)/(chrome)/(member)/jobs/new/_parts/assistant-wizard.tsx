@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { AlertCircle, ArrowLeft, ArrowRight, Database, Plus, Wand2 } from "lucide-react";
-import { type AiStatus, type RunState, Task, TaskList, TaskStatus, TaskTitle, useAiStream } from "@kanzo-tech/ai";
+import { Assist, AssistProvider } from "@kanzo-tech/ai";
 import {
   Alert,
   AlertAction,
@@ -17,7 +17,7 @@ import {
   EmptyRoot,
   EmptyTitle,
   Field,
-  FieldDescription,
+  FieldHelper,
   FieldLabel,
   FieldRequiredIndicator,
   FormatByte,
@@ -27,14 +27,6 @@ import {
   SectionFooter,
   Show,
   Spinner,
-  Steps,
-  StepsContent,
-  StepsIndicator,
-  StepsItem,
-  StepsList,
-  StepsSeparator,
-  StepsTitle,
-  StepsTrigger,
   Textarea,
   toast,
 } from "@kanzo-tech/ui";
@@ -49,14 +41,8 @@ import {
 } from "@kanzo-tech/ui/table";
 import { Link } from "@kanzo-tech/navigation/next";
 import { $api } from "@/lib/api/client";
-import { type CompletionRequest, streamText } from "@/lib/ai/stream";
-import {
-  type CompetencyQuestion,
-  generateRequest,
-  parseScript,
-  parseSuggestions,
-  suggestRequest,
-} from "./assistant-prompts";
+import { gateway } from "@/lib/ai";
+import { type CompetencyQuestion, describeFiles, suggestQuestions, writeProgram } from "./assistant-prompts";
 import * as checker from "@/lib/fossil/checker";
 import { connectionPath, describeSources, sourceDescriptorsKey } from "./describe-sources";
 import { providerFor } from "@/lib/fossil/providers";
@@ -66,14 +52,10 @@ type Connection = StorageConnection;
 type Selection = Record<string, boolean>;
 type ConnectionFile = { path: string; size: number };
 
-const STEPS = ["Connections", "Describe", "Requirements", "Generate"] as const;
+const SCREENS = ["Sources", "Requirements"] as const;
 
-const RUN_STATE: Record<AiStatus, RunState> = {
-  idle: "pending",
-  loading: "running",
-  ready: "done",
-  error: "failed",
-};
+/** The model the Domain field is assisted by. */
+const COMPLETE = gateway("complete");
 
 const CONNECTION_COLUMNS: ColumnDef<Connection>[] = [
   selectColumn<Connection>({ rowLabel: (row) => `Select ${row.original.name}` }),
@@ -105,30 +87,35 @@ const FILE_COLUMNS: ColumnDef<ConnectionFile>[] = [
   },
 ];
 
-/** One model call through the library's stream: deltas accumulate, and the whole text is the result. */
-function useModelStream() {
-  const stream = useAiStream<string>();
-  const [text, setText] = useState("");
-  const { run } = stream;
+/** One model call at a time: started, stopped when superseded or left, and how it ended. */
+function useCall() {
+  const [status, setStatus] = useState<"idle" | "running" | "done" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const ctrl = useRef<AbortController>(undefined);
+  useEffect(() => () => ctrl.current?.abort(), []);
 
-  const start = useCallback(
-    (request: CompletionRequest, onComplete: (text: string) => void) => {
-      setText("");
-      let full = "";
-      void run(
-        (signal) => streamText(request, signal),
-        (delta) => {
-          full += delta;
-          setText((prev) => prev + delta);
-        },
-      ).then((status) => {
-        if (status === "ready") onComplete(full);
-      });
-    },
-    [run],
-  );
+  const run = useCallback(async (work: (signal: AbortSignal) => Promise<void>) => {
+    ctrl.current?.abort();
+    const mine = new AbortController();
+    ctrl.current = mine;
+    setStatus("running");
+    setError(null);
+    try {
+      await work(mine.signal);
+      if (!mine.signal.aborted) setStatus("done");
+    } catch (e) {
+      if (mine.signal.aborted) return;
+      setStatus("error");
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }, []);
 
-  return { ...stream, start, text };
+  const cancel = useCallback(() => {
+    ctrl.current?.abort();
+    setStatus("idle");
+  }, []);
+
+  return { status, error, run, cancel };
 }
 
 function ConnectionFiles({
@@ -178,27 +165,30 @@ export function AssistantWizard({
   connections: Connection[];
   providers: checker.ProviderInfo[];
 }) {
-  const [step, setStep] = useState(0);
+  const [screen, setScreen] = useState(0);
   // Per connection, once the member has touched it; untouched means every readable file.
   const [fileSelection, setFileSelection] = useState<Record<string, Selection>>({});
   const [domain, setDomain] = useState("");
   const [reqs, setReqs] = useState<CompetencyQuestion[]>([]);
 
-  const dataConnections = useMemo(() => connections.filter((c) => c.kind === "data"), [connections]);
+  // The sink is a data connection too, but one the program writes to, not reads from.
+  const dataConnections = useMemo(
+    () => connections.filter((c) => c.kind === "data" && c.direction !== "sink"),
+    [connections],
+  );
   const connectionTable = useDataTable({
     columns: CONNECTION_COLUMNS,
     data: dataConnections,
     getRowId: (c) => c.name,
   });
   const selected = connectionTable.getSelectedRowModel().rows.map((row) => row.original);
-  const cloud = selected;
 
   const listings = useQueries({
-    queries: cloud.map((c) =>
+    queries: selected.map((c) =>
       $api.queryOptions("get", "/v1/connections/{name}/files", { params: { path: { name: c.name } } }),
     ),
   });
-  const readable = cloud.map((connection, i) => {
+  const readable = selected.map((connection, i) => {
     const files = (listings[i]?.data ?? []).filter((f) => providerFor(f.path, "data", providers));
     const selection =
       fileSelection[connection.name] ?? Object.fromEntries(files.map((f) => [f.path, true]));
@@ -209,7 +199,8 @@ export function AssistantWizard({
   );
 
   // The picked files, written as the source bindings the generated program will
-  // hold and described the way the editor describes a program's sources.
+  // hold and described the way the editor describes a program's sources — while
+  // the member is still writing the domain.
   const bindings = picked.flatMap(({ connection, path }) => {
     const provider = providerFor(path, "data", providers);
     return provider
@@ -220,7 +211,7 @@ export function AssistantWizard({
   const described = useQuery({
     queryKey: sourceDescriptorsKey(bindings.map((b) => b.uri)),
     queryFn: async () => describeSources(await (await checker.jobProgram()).sources(program)),
-    enabled: step > 0 && bindings.length > 0,
+    enabled: bindings.length > 0,
   });
   const schemasReady =
     readable.every((r) => !r.loading) && (bindings.length === 0 || !described.isPending);
@@ -269,19 +260,30 @@ export function AssistantWizard({
     .rows.map((row) => row.original.question.trim())
     .filter(Boolean);
 
-  const suggest = useModelStream();
-  const generate = useModelStream();
+  const suggest = useCall();
+  const generate = useCall();
+  const [draft, setDraft] = useState("");
 
+  // Each question lands in the table as soon as the model has written it whole.
   const askForRequirements = () =>
-    suggest.start(suggestRequest(domain, schemas), (text) => {
-      const suggested = parseSuggestions(text);
-      setReqs(suggested);
-      reqTable.setRowSelection(Object.fromEntries(suggested.map((q) => [q.id, true])));
+    void suggest.run(async (signal) => {
+      setReqs([]);
+      let n = 0;
+      for await (const q of suggestQuestions(domain, schemas, signal)) {
+        const id = `cq${++n}`;
+        setReqs((prev) => [...prev, { id, ...q }]);
+        reqTable.setRowSelection((prev) => ({ ...prev, [id]: true }));
+      }
     });
 
   const generateProgram = () =>
-    generate.start(generateRequest(domain, questions, schemas), (text) => {
-      onComplete(parseScript(text));
+    void generate.run(async (signal) => {
+      let program = "";
+      for await (const partial of writeProgram(domain, questions, schemas, signal)) {
+        program = partial.program ?? program;
+        setDraft(program);
+      }
+      onComplete(program);
       toast.create({ title: "Script generated — review before submitting", type: "success" });
     });
 
@@ -291,199 +293,187 @@ export function AssistantWizard({
     reqTable.setRowSelection((prev) => ({ ...prev, [id]: true }));
   };
 
-  const next = () => {
-    if (step === 1 && reqs.length === 0) askForRequirements();
-    if (step === 2) generateProgram();
-    setStep(step + 1);
+  const proceed = () => {
+    if (reqs.length === 0) askForRequirements();
+    setScreen(1);
   };
   const back = () => {
-    if (step === 2) suggest.cancel();
-    if (step === 3) generate.cancel();
-    setStep(step - 1);
+    suggest.cancel();
+    generate.cancel();
+    setScreen(0);
   };
 
-  const canNext = [selected.length > 0, schemasReady, questions.length > 0][step] ?? false;
+  const canProceed = selected.length > 0 && schemasReady;
+  const generating = generate.status === "running";
 
   return (
-    <Steps className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden" count={STEPS.length} step={step}>
-      <div className="flex h-14 shrink-0 items-center justify-center border-b px-3">
-        <StepsList className="w-full max-w-xl">
-          {STEPS.map((title, index) => (
-            <StepsItem index={index} key={title}>
-              <StepsTrigger disabled>
-                <StepsIndicator>{index + 1}</StepsIndicator>
-                <StepsTitle className="hidden sm:inline">{title}</StepsTitle>
-              </StepsTrigger>
-              <StepsSeparator />
-            </StepsItem>
-          ))}
-        </StepsList>
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <ol className="flex h-14 shrink-0 items-center justify-center gap-2 border-b px-3 text-sm">
+        {SCREENS.map((title, index) => (
+          <li
+            aria-current={index === screen ? "step" : undefined}
+            className={index === screen ? "font-medium" : "text-muted-foreground"}
+            key={title}
+          >
+            {index > 0 && <span className="me-2 text-muted-foreground">·</span>}
+            {index + 1} {title}
+          </li>
+        ))}
+      </ol>
 
       <SectionBody scale="page">
-        <StepsContent className="flex flex-col gap-4" index={0}>
-          <Show
-            fallback={
-              <EmptyRoot>
-                <EmptyHeader>
-                  <EmptyIndicator variant="icon">
-                    <Database />
-                  </EmptyIndicator>
-                  <EmptyTitle asChild>
-                    <h3>No data connections</h3>
-                  </EmptyTitle>
-                  <EmptyDescription>The assistant drafts a program from the data you connect.</EmptyDescription>
-                </EmptyHeader>
-                <EmptyContent>
-                  <Button asChild size="sm" variant="outline">
-                    <Link href="/connections/new?type=data">Create a data connection</Link>
-                  </Button>
-                </EmptyContent>
-              </EmptyRoot>
-            }
-            when={dataConnections.length > 0}
-          >
-            <p className="text-muted-foreground text-sm">Select the data connections to include.</p>
-            <DataTableRoot table={connectionTable}>
-              <DataTableContent<Connection>
-                onRowClick={(c) => connectionTable.getRow(c.name).toggleSelected()}
-              />
-              <DataTablePagination />
-            </DataTableRoot>
-            {readable.map(({ connection, files, selection, loading }) => (
-              <ConnectionFiles
-                connection={connection}
-                files={files}
-                key={connection.name}
-                loading={loading}
-                onSelectionChange={(next) => setFileSelection((prev) => ({ ...prev, [connection.name]: next }))}
-                selection={selection}
-              />
-            ))}
-          </Show>
-        </StepsContent>
+        <Show when={screen === 0}>
+          <div className="flex flex-col gap-4">
+            <Show
+              fallback={
+                <EmptyRoot>
+                  <EmptyHeader>
+                    <EmptyIndicator variant="icon">
+                      <Database />
+                    </EmptyIndicator>
+                    <EmptyTitle asChild>
+                      <h3>No data connections</h3>
+                    </EmptyTitle>
+                    <EmptyDescription>The assistant drafts a program from the data you connect.</EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent>
+                    <Button asChild size="sm" variant="outline">
+                      <Link href="/connections/new?type=data">Create a data connection</Link>
+                    </Button>
+                  </EmptyContent>
+                </EmptyRoot>
+              }
+              when={dataConnections.length > 0}
+            >
+              <p className="text-muted-foreground text-sm">Select the data connections to include.</p>
+              <DataTableRoot table={connectionTable}>
+                <DataTableContent<Connection>
+                  onRowClick={(c) => connectionTable.getRow(c.name).toggleSelected()}
+                />
+                <DataTablePagination />
+              </DataTableRoot>
+              {readable.map(({ connection, files, selection, loading }) => (
+                <ConnectionFiles
+                  connection={connection}
+                  files={files}
+                  key={connection.name}
+                  loading={loading}
+                  onSelectionChange={(next) => setFileSelection((prev) => ({ ...prev, [connection.name]: next }))}
+                  selection={selection}
+                />
+              ))}
+              {/* The model that helps write the domain reads the files it will be about. */}
+              <AssistProvider context={() => describeFiles(schemas)} model={COMPLETE}>
+                <Field>
+                  <FieldLabel>
+                    Domain
+                    <FieldRequiredIndicator fallback="(optional)" />
+                  </FieldLabel>
+                  <Assist onValueChange={setDomain} value={domain}>
+                    <Textarea placeholder="e.g. daily weather observations from Spanish stations" rows={6} />
+                  </Assist>
+                  <FieldHelper>What the knowledge graph is about, or what it is for.</FieldHelper>
+                </Field>
+              </AssistProvider>
+              <Show when={!schemasReady}>
+                <p className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <Spinner aria-hidden />
+                  Reading the schemas of the selected files
+                </p>
+              </Show>
+            </Show>
+          </div>
+        </Show>
 
-        <StepsContent className="flex flex-col gap-4" index={1}>
-          <Field>
-            <FieldLabel>
-              Domain
-              <FieldRequiredIndicator fallback="(optional)" />
-            </FieldLabel>
-            <Textarea
-              onChange={(e) => setDomain(e.target.value)}
-              placeholder="e.g. daily weather observations from Spanish stations"
-              rows={6}
-              value={domain}
-            />
-            <FieldDescription>What the knowledge graph is about, or what it is for.</FieldDescription>
-          </Field>
-          <Show when={!schemasReady}>
-            <TaskList>
-              <Task state="running">
-                <TaskStatus />
-                <TaskTitle>Reading the schemas of the selected files</TaskTitle>
-              </Task>
-            </TaskList>
-          </Show>
-        </StepsContent>
-
-        <StepsContent className="flex flex-col gap-4" index={2}>
-          <Show
-            fallback={
-              <>
-                <div className="flex items-center justify-between gap-4">
-                  <p className="text-muted-foreground text-sm">
-                    What the knowledge graph should be able to answer.
-                  </p>
-                  <Button onClick={addRequirement} size="sm" variant="outline">
-                    <Plus />
-                    Add requirement
-                  </Button>
-                </div>
-                <Show when={suggest.status === "error"}>
-                  <Alert variant="destructive">
-                    <AlertCircle />
-                    <AlertTitle>Suggesting requirements failed</AlertTitle>
-                    <AlertDescription>{suggest.error}</AlertDescription>
-                    <AlertAction>
-                      <Button onClick={askForRequirements} size="sm" variant="outline">
-                        Try again
-                      </Button>
-                    </AlertAction>
-                  </Alert>
-                </Show>
-                <DataTableRoot table={reqTable}>
-                  <DataTableContent<CompetencyQuestion>
-                    empty="No requirements yet."
-                    onRowClick={(r) => reqTable.getRow(r.id).toggleSelected()}
-                  />
-                  <DataTablePagination />
-                </DataTableRoot>
-              </>
-            }
-            when={suggest.status === "loading"}
-          >
-            <TaskList>
-              <Task state="running">
-                <TaskStatus />
-                <TaskTitle>Suggesting requirements</TaskTitle>
-              </Task>
-            </TaskList>
-            <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 font-mono text-muted-foreground text-xs">
-              {suggest.text}
-            </pre>
-          </Show>
-        </StepsContent>
-
-        <StepsContent className="flex flex-col gap-4" index={3}>
-          <TaskList>
-            <Task state={RUN_STATE[generate.status]}>
-              <TaskStatus />
-              <TaskTitle>Generating the Fossil program</TaskTitle>
-            </Task>
-          </TaskList>
-          <Show when={generate.status === "error"}>
-            <Alert variant="destructive">
-              <AlertCircle />
-              <AlertTitle>Generation failed</AlertTitle>
-              <AlertDescription>{generate.error}</AlertDescription>
-              <AlertAction>
-                <Button onClick={generateProgram} size="sm" variant="outline">
-                  Try again
-                </Button>
-              </AlertAction>
-            </Alert>
-          </Show>
-          <Show when={generate.text.length > 0}>
-            <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 font-mono text-muted-foreground text-xs">
-              {generate.text}
-            </pre>
-          </Show>
-        </StepsContent>
-      </SectionBody>
-
-      <SectionFooter>
-        <Button disabled={step === 0} onClick={back} size="sm" variant="ghost">
-          <ArrowLeft />
-          Back
-        </Button>
-        <Show when={step < 3}>
-          <Button disabled={!canNext} onClick={next} size="sm">
+        <Show when={screen === 1}>
+          <div className="flex flex-col gap-4">
             <Show
               fallback={
                 <>
-                  Next
-                  <ArrowRight />
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-muted-foreground text-sm">
+                      What the knowledge graph should be able to answer.
+                    </p>
+                    <Button onClick={addRequirement} size="sm" variant="outline">
+                      <Plus />
+                      Add requirement
+                    </Button>
+                  </div>
+                  <Show when={suggest.status === "error"}>
+                    <Alert variant="destructive">
+                      <AlertCircle />
+                      <AlertTitle>Suggesting requirements failed</AlertTitle>
+                      <AlertDescription>{suggest.error}</AlertDescription>
+                      <AlertAction>
+                        <Button onClick={askForRequirements} size="sm" variant="outline">
+                          Try again
+                        </Button>
+                      </AlertAction>
+                    </Alert>
+                  </Show>
+                  <DataTableRoot table={reqTable}>
+                    <DataTableContent<CompetencyQuestion>
+                      empty="No requirements yet."
+                      onRowClick={(r) => reqTable.getRow(r.id).toggleSelected()}
+                    />
+                    <DataTablePagination />
+                  </DataTableRoot>
                 </>
               }
-              when={step === 2}
+              when={suggest.status === "running" && reqs.length === 0}
             >
+              <p className="flex items-center gap-2 text-muted-foreground text-sm">
+                <Spinner aria-hidden />
+                Suggesting requirements
+              </p>
+            </Show>
+            <Show when={generating}>
+              <p className="flex items-center gap-2 text-muted-foreground text-sm">
+                <Spinner aria-hidden />
+                Writing the Fossil program
+              </p>
+            </Show>
+            <Show when={generate.status === "error"}>
+              <Alert variant="destructive">
+                <AlertCircle />
+                <AlertTitle>Generation failed</AlertTitle>
+                <AlertDescription>{generate.error}</AlertDescription>
+                <AlertAction>
+                  <Button onClick={generateProgram} size="sm" variant="outline">
+                    Try again
+                  </Button>
+                </AlertAction>
+              </Alert>
+            </Show>
+            <Show when={draft.length > 0}>
+              <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 font-mono text-muted-foreground text-xs">
+                {draft}
+              </pre>
+            </Show>
+          </div>
+        </Show>
+      </SectionBody>
+
+      <SectionFooter>
+        <Button disabled={screen === 0} onClick={back} size="sm" variant="ghost">
+          <ArrowLeft />
+          Back
+        </Button>
+        <Show
+          fallback={
+            <Button disabled={questions.length === 0 || generating} onClick={generateProgram} size="sm">
               <Wand2 />
               Generate
-            </Show>
+            </Button>
+          }
+          when={screen === 0}
+        >
+          <Button disabled={!canProceed} onClick={proceed} size="sm">
+            Continue
+            <ArrowRight />
           </Button>
         </Show>
       </SectionFooter>
-    </Steps>
+    </div>
   );
 }

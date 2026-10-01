@@ -16,7 +16,6 @@ import {
 } from "@kanzo-tech/ui";
 import { Link } from "@kanzo-tech/navigation/next";
 import { $api, type Schemas } from "@/lib/api/client";
-import { storageOf } from "@/lib/connections";
 import { hasRunningJobs } from "@/lib/jobs";
 
 interface Tile {
@@ -31,8 +30,8 @@ interface Tile {
 }
 
 export function OwnerDashboard() {
-  const catalog = $api.useQuery("get", "/v1/connections", { params: { query: { purpose: "storage" } } });
-  const sink = catalog.data?.find((c) => storageOf(c)?.direction === "sink");
+  const catalog = $api.useQuery("get", "/v1/connections");
+  const sink = catalog.data?.find((c) => c.target.direction === "sink");
 
   return (
     <Tiles

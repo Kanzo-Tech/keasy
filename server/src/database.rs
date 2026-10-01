@@ -25,7 +25,7 @@ const READ_POOL_SIZE: usize = 4;
 #[derive(Debug, thiserror::Error)]
 pub enum DbError {
     /// The caller asked for something the data does not allow (a credential
-    /// that does not exist, or of the other purpose).
+    /// that does not exist).
     #[error("{0}")]
     Invalid(String),
     /// A second row of that name, or a second sink.
@@ -206,30 +206,26 @@ const SCHEMA: &str = "
 -- The spec is sealed whole (AES-256-GCM, AAD = 'credential:' || name).
 CREATE TABLE credentials (
     name        TEXT PRIMARY KEY,
-    purpose     TEXT NOT NULL CHECK (purpose IN ('storage', 'model')),
     spec        BLOB NOT NULL,
     created_by  TEXT NOT NULL,
     created_at  TEXT NOT NULL,
     updated_by  TEXT NOT NULL,
     updated_at  TEXT NOT NULL,
-    validation  TEXT,
-    UNIQUE (name, purpose)
+    validation  TEXT
 );
 
--- The composite key keeps a storage connection off a model credential, and
 -- RESTRICT keeps a credential in use from being deleted.
 CREATE TABLE connections (
     name        TEXT PRIMARY KEY,
-    purpose     TEXT NOT NULL CHECK (purpose IN ('storage', 'model')),
     credential  TEXT NOT NULL,
-    target      TEXT NOT NULL CHECK (json_type(target, '$.' || purpose) = 'object'),
-    direction   TEXT GENERATED ALWAYS AS (json_extract(target, '$.storage.direction')) VIRTUAL,
+    target      TEXT NOT NULL CHECK (json_type(target) = 'object'),
+    direction   TEXT GENERATED ALWAYS AS (json_extract(target, '$.direction')) VIRTUAL,
     created_by  TEXT NOT NULL,
     created_at  TEXT NOT NULL,
     updated_by  TEXT NOT NULL,
     updated_at  TEXT NOT NULL,
     validation  TEXT,
-    FOREIGN KEY (credential, purpose) REFERENCES credentials (name, purpose)
+    FOREIGN KEY (credential) REFERENCES credentials (name)
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
 -- Exactly one write sink per workspace.

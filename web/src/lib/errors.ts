@@ -37,22 +37,14 @@ interface Copy {
   link?: { label: string; href: string };
 }
 
-const aiLink = { label: "Go to AI credentials", href: "/settings/credentials?purpose=model" };
-
 const registry: Partial<Record<ErrorCode | ClientCode | Code, Copy>> = {
-  ai_not_configured: {
-    title: "No model connection exists yet.",
-    link: { label: "Add a model connection", href: "/connections?type=model" },
-  },
-  ai_connection_required: { title: "Several model connections exist; pick one." },
-  insufficient_credits: { title: "Your AI provider account has insufficient credits.", link: aiLink },
-  llm_failed: { title: "Something went wrong generating the query. Please try again." },
+  ai_not_configured: { title: "AI is not set up for this workspace." },
   stopped: { title: "Stopped." },
   query_failed: {
     title: "Query execution failed. The AI may have generated invalid SQL. Try rephrasing your question.",
   },
   probe_failed: {
-    title: "The store or provider did not accept the credential.",
+    title: "The store did not accept the credential.",
     link: { label: "Go to Credentials", href: "/settings/credentials" },
   },
   in_use: { title: "It is still in use." },

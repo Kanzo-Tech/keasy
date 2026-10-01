@@ -1,7 +1,7 @@
 "use client";
 
-import { use, useMemo } from "react";
-import { KeyRound, Plus, Sparkles } from "lucide-react";
+import { useMemo } from "react";
+import { KeyRound, Plus } from "lucide-react";
 import {
   Badge,
   Button,
@@ -14,9 +14,6 @@ import {
   MenuItem,
   SectionBody,
   SectionRoot,
-  Tabs,
-  TabsList,
-  TabsTrigger,
   toast,
 } from "@kanzo-tech/ui";
 import {
@@ -34,20 +31,13 @@ import {
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
-import { type Credential, kindTitle, type Purpose, specOf } from "@/lib/connections";
+import { type Credential, kindTitle } from "@/lib/connections";
 import { getProviderIcon } from "@/lib/ui/provider-icons";
 import { toastError } from "@/lib/errors";
 
-export default function CredentialsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ purpose?: Purpose }>;
-}) {
+export default function CredentialsPage() {
   const router = useRouter();
-  const { purpose = "storage" } = use(searchParams);
-  const { data: credentials = [] } = $api.useQuery("get", "/v1/credentials", {
-    params: { query: { purpose } },
-  });
+  const { data: credentials = [] } = $api.useQuery("get", "/v1/credentials");
 
   const refresh = () => invalidate("/v1/credentials", "/v1/connections");
   const remove = $api.useMutation("delete", "/v1/credentials/{name}", {
@@ -78,13 +68,12 @@ export default function CredentialsPage({
         id: "kind",
         header: "Kind",
         cell: ({ row }) => {
-          const { purpose, spec } = specOf(row.original);
-          const kind = String(spec.kind);
+          const { kind } = row.original.spec;
           const Icon = getProviderIcon(kind);
           return (
             <span className="inline-flex items-center gap-2 text-muted-foreground">
               <Icon className="size-4" />
-              {kindTitle(purpose, kind)}
+              {kindTitle(kind)}
             </span>
           );
         },
@@ -127,35 +116,22 @@ export default function CredentialsPage({
     [remove, validate],
   );
   const table = useDataTable({ columns, data: credentials });
-  const noun = purpose === "storage" ? "storage" : "AI";
-  const newHref = `/settings/credentials/new?purpose=${purpose}`;
+  const newHref = "/settings/credentials/new";
 
   return (
     <SectionRoot>
       <SectionBody className="overflow-hidden" scale="page">
-        <Tabs onValueChange={(details) => router.push(`/settings/credentials?purpose=${details.value}`)} value={purpose}>
-          <TabsList>
-            <TabsTrigger value="storage">
-              <KeyRound />
-              Storage
-            </TabsTrigger>
-            <TabsTrigger value="model">
-              <Sparkles />
-              AI
-            </TabsTrigger>
-          </TabsList>
-
           {credentials.length === 0 ? (
             <EmptyRoot>
               <EmptyHeader>
                 <EmptyIndicator variant="icon">
-                  {purpose === "storage" ? <KeyRound /> : <Sparkles />}
+                  <KeyRound />
                 </EmptyIndicator>
                 <EmptyTitle asChild>
-                  <h2>No {noun} credentials</h2>
+                  <h2>No credentials</h2>
                 </EmptyTitle>
                 <EmptyDescription>
-                  A credential is who keasy is when it reaches a store or a model; connections use it.
+                  A credential is who keasy is when it reaches a store; connections use it.
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
@@ -184,7 +160,6 @@ export default function CredentialsPage({
               <DataTablePagination />
             </DataTableRoot>
           )}
-        </Tabs>
       </SectionBody>
     </SectionRoot>
   );

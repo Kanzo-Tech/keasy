@@ -20,7 +20,6 @@ use crate::authentication::middleware::{AuthenticatedUser, bearer_required};
 use crate::authentication::token::{SharedValidator, Validator};
 use crate::configuration::{BrandingSettings, DatabaseSettings, Settings};
 use crate::database::Database;
-use crate::domain::Purpose;
 use crate::error::{ErrorBody, ErrorCode, ErrorData, fail};
 use crate::routes;
 
@@ -36,6 +35,8 @@ pub struct AppState {
     pub branding: Arc<BrandingSettings>,
     /// Verifies the bearer token every protected request carries.
     pub auth: SharedValidator,
+    /// The AI gateway every model call is relayed to, if this workspace has one.
+    pub ai: Option<Arc<crate::routes::ai::Gateway>>,
 }
 
 /// The server, bound and ready to serve.
@@ -53,6 +54,7 @@ impl Application {
             application,
             database,
             oidc,
+            ai,
         } = settings;
         let db = get_database(&database).await?;
 
@@ -82,6 +84,7 @@ impl Application {
             workspace_name: application.workspace_name,
             branding: Arc::new(application.branding),
             auth,
+            ai: ai.map(|ai| Arc::new(crate::routes::ai::Gateway::new(ai))),
         };
 
         let listener = TcpListener::bind(application.bind_addr)
@@ -246,7 +249,7 @@ fn over_rate(error: GovernorError) -> Response {
         version = "1.0.0",
         description = "Keasy host: identity, connections, vended credentials and the job record",
     ),
-    components(schemas(ErrorBody, ErrorCode, ErrorData, Purpose)),
+    components(schemas(ErrorBody, ErrorCode, ErrorData)),
     modifiers(&Bearer, &Unattributed),
     security(("bearer" = [])),
 )]

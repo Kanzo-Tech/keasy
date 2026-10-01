@@ -7,8 +7,8 @@ an **alias**, never a provider or a model.
 
 | Alias | Used for | Dev (`litellm.dev.yaml`) | Prod (`litellm.prod.yaml`) |
 |-------|----------|--------------------------|----------------------------|
-| `chat` | Discovery's Ask, the job assistant | `hermes3:8b` on Ollama (compose) | Claude Sonnet |
-| `complete` | Assisted fields (ghost text, chips) | `hermes3:3b` on Ollama (compose) | Claude Haiku |
+| `chat` | Discovery's Ask, the job assistant | Hermes 3 8B on Docker Model Runner | Claude Sonnet |
+| `complete` | Assisted fields (ghost text, chips) | Hermes 3 3B on Docker Model Runner | Claude Haiku |
 
 ```
 browser ──/api/v1/ai──▶ web (BFF) ──▶ server ──Bearer <tenant key>──▶ LiteLLM ──▶ upstream
@@ -28,21 +28,14 @@ the admin console.
 
 ## Dev
 
-`make dev` brings the whole thing up: Ollama, the gateway and its database. The
-first `up` pulls both models into the `ollama-models` volume (`make logs-ollama-init`);
-after that the loop is offline and free, and identical on every machine.
-
-Under Docker on macOS the models run on CPU. For the Mac's GPU, run Ollama natively
-(`brew install ollama && ollama serve`, then `ollama pull` the two models) and point
-the gateway at it — the only thing that changes:
-
-```bash
-OLLAMA_API_BASE=http://host.docker.internal:11434 make dev
-```
- The admin console is at
-[http://localhost:4000/ui](http://localhost:4000/ui) (user `admin`, password
-`sk-dev-master-key`). The dev tenant's key is fixed (`sk-keasy-dev-workspace`, `dev.tfvars`) so
-compose can hand it to the server.
+`make dev` brings the whole thing up. The models are declared in `docker-compose.yml`
+(`models:`) and served by **Docker Model Runner**, natively on the host — so on a Mac they
+run on the GPU (a sentence in about a second) — and compose hands the gateway each one's
+endpoint and name. The first `up` pulls them (~6.5 GB); after that the loop is offline and
+free. Needs Docker Desktop 4.40+ with Model Runner on (`docker desktop enable model-runner`).
+The admin console is at [http://localhost:4000/ui](http://localhost:4000/ui) (user `admin`,
+password `sk-dev-master-key`). The dev tenant's key is fixed (`sk-keasy-dev-workspace`,
+`dev.tfvars`) so compose can hand it to the server.
 
 ```bash
 curl -N http://localhost:4000/v1/chat/completions \

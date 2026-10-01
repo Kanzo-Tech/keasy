@@ -21,10 +21,9 @@ No `.env`: every dev value is a literal in `docker-compose.yml`.
 | API, for curl | `http://localhost:8080` |
 | AI gateway console | [http://localhost:4000/ui](http://localhost:4000/ui) (`admin` / `sk-dev-master-key`) |
 
-AI runs on local models, in compose: the first `up` pulls them into a volume
-(`make logs-ollama-init`, a few GB), and until then everything but AI works. On a Mac
-they run on CPU; for the GPU, run Ollama natively and start with
-`OLLAMA_API_BASE=http://host.docker.internal:11434 make dev`.
+AI runs on local models served by Docker Model Runner (Docker Desktop 4.40+,
+`docker desktop enable model-runner`): native on the host, on the Mac's GPU. The first `up`
+pulls them; until then everything but AI works.
 
 ## Dev accounts
 
@@ -73,7 +72,7 @@ graph TD
     Server -->|"JWKS"| Keycloak
     Server --> SQLite[("SQLite")]
     Server -->|"tenant key"| Gateway["AI gateway (LiteLLM)"]
-    Gateway --> Models["Ollama (dev) / providers (prod)"]
+    Gateway --> Models["Docker Model Runner (dev) / providers (prod)"]
     Keycloak --> PostgreSQL[("PostgreSQL")]
 ```
 

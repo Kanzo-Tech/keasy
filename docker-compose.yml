@@ -88,33 +88,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # The dev gateway's upstream. CPU-only under Docker on macOS; to use the Mac's GPU,
-  # run Ollama natively and `OLLAMA_API_BASE=http://host.docker.internal:11434 make dev`.
-  ollama:
-    image: ollama/ollama:0.35.0@sha256:2a6e883b917fc543389599dae79918f5cac9e1438890506982f44aa4f5625d01
-    volumes:
-      - ollama-models:/root/.ollama
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-
-  # Pulls what infra/ai/litellm.dev.yaml names into the volume, once; a re-`up` only
-  # checks. Nothing waits on it: until it finishes, AI answers "model not found" and
-  # everything else works. `make logs-ollama-init` to watch the first pull.
-  ollama-init:
-    image: ollama/ollama:0.35.0@sha256:2a6e883b917fc543389599dae79918f5cac9e1438890506982f44aa4f5625d01
-    restart: "no"
-    entrypoint: ["/bin/sh", "-ec"]
-    command:
-      - ollama pull hermes3:8b && ollama pull hermes3:3b
-    environment:
-      OLLAMA_HOST: http://ollama:11434
-    depends_on:
-      ollama:
-        condition: service_healthy
-
   # The AI gateway prod runs (platform module), on the dev profile. keycloak-realm
   # mints the dev tenant's team and key here, as it does in prod. Admin console:
   # http://localhost:4000/ui (admin / the master key).
@@ -130,17 +103,21 @@ services:
       DATABASE_URL: postgresql://litellm:litellm@litellm-postgres:5432/litellm
       REDIS_HOST: valkey
       REDIS_PORT: "6379"
-      OLLAMA_API_BASE: ${OLLAMA_API_BASE:-http://ollama:11434}
       STORE_MODEL_IN_DB: "False"
       # Docker Desktop's VM on Apple silicon advertises SVE2 the CPU lacks, and
       # cryptography ≥ 49 dies on it with SIGILL (same fault: Parallels KB 131179).
       # This only turns off OpenSSL's ARM capability probing.
       OPENSSL_armcap: "0"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    # The dev models, served by Docker Model Runner on the host's GPU. Compose
+    # pulls them on `up` and hands the gateway each one's endpoint and name.
+    models:
+      chat:
+        endpoint_var: CHAT_URL
+        model_var: CHAT_MODEL
+      complete:
+        endpoint_var: COMPLETE_URL
+        model_var: COMPLETE_MODEL
     depends_on:
-      ollama:
-        condition: service_healthy
       litellm-postgres:
         condition: service_healthy
       valkey:
@@ -274,4 +251,11 @@ volumes:
   cargo-registry:
   minio-data:
   litellm-postgres-data:
-  ollama-models:
+
+# What answers the gateway's aliases in dev: Hermes 3, quantized, on Docker
+# Model Runner — native on the host, so a Mac's GPU, and nothing to install.
+models:
+  chat:
+    model: hf.co/NousResearch/Hermes-3-Llama-3.1-8B-GGUF:Q4_K_M
+  complete:
+    model: hf.co/NousResearch/Hermes-3-Llama-3.2-3B-GGUF:Q4_K_M

@@ -94,7 +94,9 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
           {sink && (
             <DataListItem>
               <DataListItemLabel>Destination</DataListItemLabel>
-              <DataListItemValue className="font-mono">@{sink.name}</DataListItemValue>
+              <DataListItemValue className="font-mono">
+                @{sink.name}/{job.folder}/
+              </DataListItemValue>
             </DataListItem>
           )}
         </DataList>

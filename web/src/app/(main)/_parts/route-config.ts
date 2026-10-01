@@ -21,6 +21,11 @@ type RouteDef = {
 
 type RouteEntry = RouteDef & { path: string };
 
+/** What a dynamic segment's crumb names, looked up when it renders. */
+export type CrumbLabel = { kind: "job"; id: string };
+
+export type Crumb = RouteEntry & { label?: CrumbLabel };
+
 // ── Data ─────────────────────────────────────────────────────────────────────
 
 /**
@@ -33,6 +38,7 @@ const ROUTES: Record<string, RouteDef> = {
   // Member plane (data)
   "/connections":                 { name: "Connections", icon: Database, sidebar: ["member"] },
   "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: ["member"] },
+  "/jobs/new":                    { name: "New Job" },
   // Owner plane (metadata)
   "/datasets":                    { name: "Data Catalog", icon: Boxes, sidebar: ["owner"] },
   "/catalog":                     { name: "Catalog Storage", icon: GalleryVerticalEnd, sidebar: ["owner"] },
@@ -44,15 +50,28 @@ const ROUTES: Record<string, RouteDef> = {
   "/settings/credentials/new":    { name: "New Credential" },
 };
 
+/**
+ * Routes with a dynamic segment: the name shown until the label resolves, and
+ * what to resolve it from. Static routes win, so `/jobs/new` is not a job.
+ */
+const DYNAMIC: { pattern: RegExp; name: string; label: (id: string) => CrumbLabel }[] = [
+  { pattern: /^\/jobs\/([^/]+)$/, name: "Job", label: (id) => ({ kind: "job", id }) },
+];
+
 // ── Derived ──────────────────────────────────────────────────────────────────
 
-function findRoute(path: string): RouteEntry | undefined {
+function findRoute(path: string): Crumb | undefined {
   const def = ROUTES[path];
-  return def ? { ...def, path } : undefined;
+  if (def) return { ...def, path };
+  for (const { pattern, name, label } of DYNAMIC) {
+    const match = pattern.exec(path);
+    if (match) return { path, name, label: label(decodeURIComponent(match[1])) };
+  }
+  return undefined;
 }
 
-export function generateBreadcrumbs(path: string): RouteEntry[] {
-  const crumbs: RouteEntry[] = [{ path: "/", name: "Dashboard" }];
+export function generateBreadcrumbs(path: string): Crumb[] {
+  const crumbs: Crumb[] = [{ path: "/", name: "Dashboard" }];
 
   if (path !== "/") {
     const segments = path.split("/").filter(Boolean);

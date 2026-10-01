@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { useSession } from "@kanzo-tech/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2, LogOut, Settings } from "lucide-react";
@@ -13,12 +13,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AvatarFallback,
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
   isActivePath,
   Menu,
   MenuContent,
@@ -55,6 +49,7 @@ import { $api } from "@/lib/api/client";
 import { ROLE_LABEL, workspaceRole } from "@/lib/auth/roles";
 import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";
 import { HeaderEndContext } from "@/app/(main)/_parts/header-end";
+import { Trail } from "@/app/(main)/_parts/trail";
 
 const titleCase = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
@@ -273,24 +268,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <ShellHeader className="h-12 min-w-0 flex-row items-center gap-2 px-3">
           <SidebarTrigger />
           <Separator className="h-4" orientation="vertical" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              {crumbs.map((crumb, index) => (
-                <Fragment key={crumb.path}>
-                  <BreadcrumbItem>
-                    {index === crumbs.length - 1 ? (
-                      <BreadcrumbPage className="max-w-50 truncate">{crumb.name}</BreadcrumbPage>
-                    ) : (
-                      <BreadcrumbLink asChild className="max-w-38 truncate">
-                        <Link href={crumb.path}>{crumb.name}</Link>
-                      </BreadcrumbLink>
-                    )}
-                  </BreadcrumbItem>
-                  {index < crumbs.length - 1 && <BreadcrumbSeparator />}
-                </Fragment>
-              ))}
-            </BreadcrumbList>
-          </Breadcrumb>
+          <Trail crumbs={crumbs} />
           <div className="ms-auto flex items-center gap-2 empty:hidden" ref={setHeaderEnd} />
         </ShellHeader>
         <HeaderEndContext value={headerEnd}>{children}</HeaderEndContext>

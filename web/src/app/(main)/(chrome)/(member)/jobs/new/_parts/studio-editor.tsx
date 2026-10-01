@@ -42,6 +42,8 @@ const FLOATING = "rounded-lg border bg-card shadow-sm";
 const KIND_ICON = { data: Database, vocab: BookMarked } as const;
 const KIND_LABEL = { data: "data source", vocab: "RDF vocabulary" } as const;
 
+const reference = (c: StorageConnection) => (c.kind === "vocab" ? `@${c.name}` : `@${c.name}/`);
+
 /** The program, and the connections it can reference; the language layer is `fossil()` over the job's program. */
 export function StudioEditor({
   program,
@@ -111,7 +113,7 @@ export function StudioEditor({
   const insert = (connection: StorageConnection) => {
     const v = view.current;
     if (!v) return;
-    const text = connection.kind === "vocab" ? `@${connection.name}` : `@${connection.name}/`;
+    const text = reference(connection);
     const { from, to } = v.state.selection.main;
     v.dispatch({ changes: { from, to, insert: text }, selection: { anchor: from + text.length } });
     v.focus();
@@ -179,7 +181,8 @@ export function StudioEditor({
             </div>
             <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-3">
               <p className="text-muted-foreground text-xs">
-                Click one to write it at the caret, or press @ in the editor.
+                Drag one into the program, click it to write it at the caret, or press @ in the
+                editor.
               </p>
               <Show
                 fallback={
@@ -208,8 +211,14 @@ export function StudioEditor({
                       // `role="listitem"` on it and it would stop being announced as one.
                       <Item className="p-0" key={c.name} variant="outline">
                         <button
-                          className="flex w-full flex-wrap items-center gap-(--space) rounded-xl p-(--space) text-start transition-colors hover:border-primary/40"
+                          className="flex w-full cursor-grab flex-wrap items-center gap-(--space) rounded-xl p-(--space) text-start transition-colors hover:border-primary/40 active:cursor-grabbing"
+                          draggable
                           onClick={() => insert(c)}
+                          // CodeMirror's own drop handling inserts `text/plain` at the drop cursor.
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = "copy";
+                            e.dataTransfer.setData("text/plain", reference(c));
+                          }}
                           type="button"
                         >
                           <ItemMedia variant="icon">

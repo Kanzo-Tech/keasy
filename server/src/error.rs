@@ -52,20 +52,75 @@ pub enum ErrorCode {
     LlmFailed,
 }
 
-/// The body of every 4xx/5xx, and the payload of an SSE `error` frame.
+impl ErrorCode {
+    /// What the code means, fixed per code: the same words for every refusal
+    /// that carries it. What this refusal is about goes in `detail`.
+    pub fn title(self) -> &'static str {
+        match self {
+            Self::SessionRequired => "Sign in required",
+            Self::KeysUnavailable => "The identity provider is unreachable",
+            Self::NoMembership => "Not a member of this workspace",
+            Self::InsufficientRole => "Your role does not allow this",
+            Self::RateLimited => "Too many requests",
+            Self::ValidationFailed => "The request is not valid",
+            Self::InvalidFormat => "The request is malformed",
+            Self::NotFound => "Not found",
+            Self::Forbidden => "Not allowed",
+            Self::InternalError => "The server failed",
+            Self::NotDraft => "Not a draft",
+            Self::NotCompleted => "The job has not completed",
+            Self::NotRunning => "The job is not running",
+            Self::StillRunning => "The job is still running",
+            Self::InvalidDestination => "Not a valid destination",
+            Self::NoDestination => "No destination",
+            Self::AlreadyExists => "It exists already",
+            Self::InUse => "Still in use",
+            Self::Overlaps => "The location overlaps another",
+            Self::ProbeFailed => "Validation failed",
+            Self::ListFilesFailed => "The files could not be listed",
+            Self::StoreError => "The store failed",
+            Self::AiNotConfigured => "No model connection",
+            Self::AiConnectionRequired => "Pick a model connection",
+            Self::InsufficientCredits => "Insufficient credits",
+            Self::LlmFailed => "The model call failed",
+        }
+    }
+}
+
+/// The body of every 4xx/5xx, and the payload of an SSE `error` frame — the
+/// shape fossil's problems have: a code, its fixed title, a detail for a
+/// person that nothing parses, and the data the code carries.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ErrorBody {
-    pub error: ErrorCode,
-    pub message: String,
+    pub code: ErrorCode,
+    pub title: String,
+    pub detail: String,
+    pub data: ErrorData,
+}
+
+/// What a refusal carries beside its words.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, ToSchema)]
+pub struct ErrorData {
     /// What the refusal is about: what still uses a credential or connection,
     /// or the connections a rotation would break.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub dependents: Vec<String>,
 }
 
+impl ErrorBody {
+    pub fn new(code: ErrorCode, detail: impl Into<String>, dependents: Vec<String>) -> Self {
+        Self {
+            code,
+            title: code.title().to_string(),
+            detail: detail.into(),
+            data: ErrorData { dependents },
+        }
+    }
+}
+
 /// The one way the server refuses: a status and an [`ErrorBody`].
-pub fn fail(status: StatusCode, error: ErrorCode, message: impl Into<String>) -> Response {
-    fail_about(status, error, message, Vec::new())
+pub fn fail(status: StatusCode, code: ErrorCode, detail: impl Into<String>) -> Response {
+    fail_about(status, code, detail, Vec::new())
 }
 
 /// Why a request was refused: a status, a code and a message, or a store
@@ -74,19 +129,19 @@ pub fn fail(status: StatusCode, error: ErrorCode, message: impl Into<String>) ->
 pub enum Refusal {
     Status {
         status: StatusCode,
-        error: ErrorCode,
-        message: String,
+        code: ErrorCode,
+        detail: String,
         dependents: Vec<String>,
     },
     Db(crate::database::DbError),
 }
 
 impl Refusal {
-    pub fn new(status: StatusCode, error: ErrorCode, message: impl Into<String>) -> Self {
+    pub fn new(status: StatusCode, code: ErrorCode, detail: impl Into<String>) -> Self {
         Self::Status {
             status,
-            error,
-            message: message.into(),
+            code,
+            detail: detail.into(),
             dependents: Vec::new(),
         }
     }
@@ -115,8 +170,8 @@ impl Refusal {
     pub fn overlaps(message: impl Into<String>, dependents: Vec<String>) -> Self {
         Self::Status {
             status: StatusCode::CONFLICT,
-            error: ErrorCode::Overlaps,
-            message: message.into(),
+            code: ErrorCode::Overlaps,
+            detail: message.into(),
             dependents,
         }
     }
@@ -125,8 +180,8 @@ impl Refusal {
     pub fn probe_failed(message: impl Into<String>, dependents: Vec<String>) -> Self {
         Self::Status {
             status: StatusCode::UNPROCESSABLE_ENTITY,
-            error: ErrorCode::ProbeFailed,
-            message: message.into(),
+            code: ErrorCode::ProbeFailed,
+            detail: message.into(),
             dependents,
         }
     }
@@ -143,10 +198,10 @@ impl IntoResponse for Refusal {
         match self {
             Self::Status {
                 status,
-                error,
-                message,
+                code,
+                detail,
                 dependents,
-            } => fail_about(status, error, message, dependents),
+            } => fail_about(status, code, detail, dependents),
             Self::Db(e) => e.into_response(),
         }
     }
@@ -155,19 +210,11 @@ impl IntoResponse for Refusal {
 /// A refusal that names the resources it is about.
 pub fn fail_about(
     status: StatusCode,
-    error: ErrorCode,
-    message: impl Into<String>,
+    code: ErrorCode,
+    detail: impl Into<String>,
     dependents: Vec<String>,
 ) -> Response {
-    (
-        status,
-        Json(ErrorBody {
-            error,
-            message: message.into(),
-            dependents,
-        }),
-    )
-        .into_response()
+    (status, Json(ErrorBody::new(code, detail, dependents))).into_response()
 }
 
 /// Every route behind the bearer scheme can be refused before its handler runs:

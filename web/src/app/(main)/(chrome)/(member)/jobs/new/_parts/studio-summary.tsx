@@ -19,6 +19,8 @@ import { Check, Shapes } from "lucide-react";
 import type { CheckRow, SourceRefInfo } from "@/lib/fossil/checker";
 import type { ConfigValues } from "./studio-configure";
 import type { StorageConnection } from "@/lib/connections";
+import { type Shown } from "@/lib/errors";
+import { ProblemView } from "@/components/problem-view";
 
 /** LSP severity: 1 error, 2 warning, 3 information, 4 hint. */
 const SEVERITY_LABEL = ["error", "error", "warning", "info", "hint"] as const;
@@ -42,6 +44,7 @@ export function StudioSummary({
   values,
   connections,
   refs,
+  refsProblem,
   findings,
   blocked,
   creating,
@@ -51,6 +54,8 @@ export function StudioSummary({
   values: ConfigValues;
   connections: StorageConnection[];
   refs: SourceRefInfo[];
+  /** Why the references could not be read, when they could not. */
+  refsProblem: Shown | null;
   findings: readonly CheckRow[];
   blocked: boolean;
   creating: boolean;
@@ -73,6 +78,8 @@ export function StudioSummary({
           </Show>
         </p>
       </div>
+
+      {refsProblem && <ProblemView problem={refsProblem} />}
 
       <Show
         fallback={

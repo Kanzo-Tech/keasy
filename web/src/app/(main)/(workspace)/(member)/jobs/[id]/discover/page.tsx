@@ -15,9 +15,6 @@ import {
 import { GraphCanvas, GraphLegend, GraphRoot, GraphToolbar, useGraphPrefs, useGraphState } from "@kanzo-tech/graph";
 import { useCrossfilter } from "@kanzo-tech/ui/analytics";
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Badge,
   Button,
   Resizable,
@@ -42,6 +39,8 @@ import { CorpusProvider, corpusQuery, useCorpus } from "./_parts/corpus";
 import { GraphInfo } from "./_parts/graph-info";
 import { GraphSettings } from "./_parts/graph-settings";
 import { RulesPanel } from "./_parts/rules-panel";
+import { toProblem } from "@/lib/errors";
+import { ProblemView } from "@/components/problem-view";
 
 /**
  * Discovery, composed as kanzo-ui's `workspace` showcase: the header picks what `ShellMain` shows
@@ -88,10 +87,7 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
   if (corpus.error) {
     return (
       <ShellMain className="p-4">
-        <Alert variant="destructive">
-          <AlertTitle>Failed to open the dataset</AlertTitle>
-          <AlertDescription>{corpus.error.message}</AlertDescription>
-        </Alert>
+        <ProblemView onRetry={() => void corpus.refetch()} problem={toProblem(corpus.error)} />
       </ShellMain>
     );
   }

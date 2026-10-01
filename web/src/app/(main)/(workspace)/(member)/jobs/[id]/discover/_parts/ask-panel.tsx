@@ -4,9 +4,6 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { AlertCircle, Sparkles } from "lucide-react";
 import type { SqlCorpus, SqlResult } from "@fossil-lang/corpus";
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Button,
   Clipboard,
   ClipboardTrigger,
@@ -56,7 +53,8 @@ import { $api, ApiError } from "@/lib/api/client";
 import { type ChatMessage, completeText, streamText } from "@/lib/ai/stream";
 import { explainRequest, parsePlan, queryRequest } from "./query-prompts";
 import { generateSuggestions } from "./schema-suggestions";
-import { getErrorInfo } from "@/lib/errors";
+import { type Shown, toProblem } from "@/lib/errors";
+import { ProblemView } from "@/components/problem-view";
 import { describeDataSpace } from "./data-space";
 import { recordsOf, useCorpus, useFieldStats } from "./corpus";
 import { Finding } from "./finding";
@@ -79,7 +77,7 @@ type TurnEvent =
   | { kind: "plan"; sql: string | null; answer: string; reasoning: string }
   | { kind: "rows"; result: SqlResult }
   | { kind: "explain"; text: string }
-  | { kind: "failed"; code: string };
+  | { kind: "failed"; problem: Shown };
 
 interface Turn {
   id: number;
@@ -90,7 +88,7 @@ interface Turn {
   answer: string;
   result: SqlResult | null;
   explanation: string;
-  failure: string | null;
+  failure: Shown | null;
   /** The phase the run stopped in, which is the step that wears the failure. */
   failedAt: Phase | null;
 }
@@ -106,7 +104,7 @@ function apply(turn: Turn, event: TurnEvent): Turn {
     case "explain":
       return { ...turn, explanation: turn.explanation + event.text };
     case "failed":
-      return { ...turn, failure: event.code, failedAt: turn.phase };
+      return { ...turn, failure: event.problem, failedAt: turn.phase };
   }
 }
 
@@ -187,8 +185,8 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     let result: SqlResult;
     try {
       result = await corpus.sql(plan.sql);
-    } catch {
-      yield { kind: "failed", code: "query_failed" };
+    } catch (err) {
+      yield { kind: "failed", problem: toProblem(err, "query_failed") };
       return;
     }
     yield { kind: "rows", result };
@@ -203,28 +201,11 @@ async function* askTurn(options: AskOptions): AsyncIterable<TurnEvent> {
     yield { kind: "phase", phase: "done" };
   } catch (err) {
     if (signal.aborted) return;
-    yield { kind: "failed", code: err instanceof ApiError ? err.code : "llm_failed" };
+    yield { kind: "failed", problem: err instanceof ApiError ? toProblem(err) : { ...toProblem(err), code: "llm_failed" } };
   }
 }
 
 // ── The call, and the one answer read three ways ─────────────────────────
-
-function Failure({ code }: { code: string }) {
-  const { message, link } = getErrorInfo(code);
-  return (
-    <Alert variant="destructive">
-      <AlertCircle />
-      <AlertTitle>{message}</AlertTitle>
-      {link && (
-        <AlertDescription>
-          <Button asChild className="w-fit" size="sm" variant="outline">
-            <Link href={link.href}>{link.label}</Link>
-          </Button>
-        </AlertDescription>
-      )}
-    </Alert>
-  );
-}
 
 type View = "explanation" | "results" | "query";
 
@@ -251,7 +232,7 @@ function ToolCall({ turn, sql }: { turn: Turn; sql: string }) {
         </ToolInput>
 
         <ToolOutput>
-          {turn.failure && <Failure code={turn.failure} />}
+          {turn.failure && <ProblemView problem={turn.failure} />}
 
           <Show when={turn.failure === null}>
             <div className="flex flex-col gap-2">
@@ -351,7 +332,7 @@ function Answer({ turn }: { turn: Turn }) {
       {turn.result && turn.phase === "done" && <ShowOnGraph result={turn.result} turn={turn} />}
 
       {/* No query at all, so there is no call to fold the answer into. */}
-      {turn.sql === null && turn.failure && <Failure code={turn.failure} />}
+      {turn.sql === null && turn.failure && <ProblemView problem={turn.failure} />}
       {turn.sql === null && turn.failure === null && turn.answer.length > 0 && (
         <MessageMarkdown streaming={turn.phase !== "done"}>{turn.answer}</MessageMarkdown>
       )}
@@ -380,6 +361,7 @@ export function AskPanel() {
   // the views the corpus mounted. Names, columns and TYPES are the ones a query
   // will actually meet, and the server holds no copy — an ask without it is a 400.
   const [duckSchema, setDuckSchema] = useState<string | null>(null);
+  const [schemaProblem, setSchemaProblem] = useState<Shown | null>(null);
   useEffect(() => {
     let cancelled = false;
     describeDataSpace(
@@ -392,7 +374,7 @@ export function AskPanel() {
         if (!cancelled) setDuckSchema(ddl);
       })
       .catch((err: unknown) => {
-        console.error("Failed to read the DuckDB schema", err);
+        if (!cancelled) setSchemaProblem(toProblem(err));
       });
     return () => {
       cancelled = true;
@@ -451,7 +433,7 @@ export function AskPanel() {
   const stop = () => {
     engine.cancel();
     const id = live.current;
-    if (id !== null) patch(id, { kind: "failed", code: "stopped" });
+    if (id !== null) patch(id, { kind: "failed", problem: { code: "stopped", title: "Stopped.", detail: "" } });
   };
 
   if (!loadingAiProviders && !connection) {
@@ -479,6 +461,7 @@ export function AskPanel() {
     <div className="flex h-full min-h-0 flex-col">
       <Conversation>
         <ConversationContent className="p-3">
+          {schemaProblem && <ProblemView problem={schemaProblem} />}
           <Show when={turns.length === 0}>
             <EmptyRoot>
               <EmptyHeader>

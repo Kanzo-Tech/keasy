@@ -44,9 +44,11 @@ pub struct CompleteJobRequest {
     #[serde(default)]
     #[schema(value_type = Option<Value>)]
     pub manifest: Option<serde_json::Value>,
-    /// Failure message (on `Failed`), stored verbatim.
+    /// Why the run failed (on `Failed`): the run's problem, stored verbatim
+    /// and opaque.
     #[serde(default)]
-    pub error: Option<String>,
+    #[schema(value_type = Option<Value>)]
+    pub problem: Option<serde_json::Value>,
 }
 
 /// What the corpus reader enumerated for a finished job (PUT
@@ -187,7 +189,7 @@ pub async fn complete_job(
     let CompleteJobRequest {
         status,
         manifest,
-        error,
+        problem,
     } = payload;
 
     persistence::update(&*state.db.write().await, &id, move |job| {
@@ -196,12 +198,12 @@ pub async fn complete_job(
                 job.started_at.get_or_insert_with(|| now.clone());
                 job.completed_at = Some(now);
                 job.manifest = manifest;
-                job.error = None;
+                job.problem = None;
             }
             JobStatus::Failed => {
                 job.started_at.get_or_insert_with(|| now.clone());
                 job.completed_at = Some(now);
-                job.error = Some(error.unwrap_or_else(|| "execution failed".into()));
+                job.problem = problem;
             }
             JobStatus::Running => {
                 job.started_at.get_or_insert(now);

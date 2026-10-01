@@ -76,7 +76,7 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
         .send(Method::PATCH, "/v1/credentials/key", &other, rename.clone())
         .await;
     assert_eq!(
-        (refused.0, refused.1["error"].clone()),
+        (refused.0, refused.1["code"].clone()),
         (StatusCode::FORBIDDEN, json!("forbidden"))
     );
     assert_eq!(
@@ -170,7 +170,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
         )
         .await;
     assert_eq!(
-        (status, body["error"].clone()),
+        (status, body["code"].clone()),
         (StatusCode::UNPROCESSABLE_ENTITY, json!("probe_failed")),
         "{body}"
     );
@@ -229,7 +229,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
         )
         .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
-    assert_eq!(body["dependents"], json!(["data", "out"]));
+    assert_eq!(body["data"]["dependents"], json!(["data", "out"]));
     let kept = keasy_server::credentials::named(&app.db, "minio")
         .await
         .unwrap();

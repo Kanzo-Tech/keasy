@@ -5,7 +5,7 @@ use rusqlite::{Connection, OptionalExtension, params};
 use crate::database::{DbResult, enum_column, json_column_opt};
 use crate::domain::{Job, JobStatus};
 
-const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, error, \
+const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, problem, \
                        created_by, sink_connection, script, manifest, relations";
 
 pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
@@ -21,7 +21,10 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
             job.created_at,
             job.started_at,
             job.completed_at,
-            job.error,
+            job.problem
+                .as_ref()
+                .map(serde_json::to_string)
+                .transpose()?,
             job.created_by,
             job.sink_connection,
             job.script,
@@ -53,7 +56,7 @@ pub fn update(conn: &Connection, id: &str, f: impl FnOnce(&mut Job)) -> DbResult
     f(&mut job);
 
     conn.execute(
-        "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, error = ?5,
+        "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, problem = ?5,
                          script = ?6, manifest = ?7, relations = ?8
          WHERE id = ?9",
         params![
@@ -61,7 +64,10 @@ pub fn update(conn: &Connection, id: &str, f: impl FnOnce(&mut Job)) -> DbResult
             job.status.as_ref(),
             job.started_at,
             job.completed_at,
-            job.error,
+            job.problem
+                .as_ref()
+                .map(serde_json::to_string)
+                .transpose()?,
             job.script,
             job.manifest
                 .as_ref()
@@ -114,7 +120,7 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
         created_at: row.get("created_at")?,
         started_at: row.get("started_at")?,
         completed_at: row.get("completed_at")?,
-        error: row.get("error")?,
+        problem: json_column_opt(row, "problem")?,
         created_by: row.get("created_by")?,
         sink_connection: row.get("sink_connection")?,
         script,

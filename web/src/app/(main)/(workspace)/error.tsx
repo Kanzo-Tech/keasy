@@ -1,10 +1,9 @@
 "use client";
 
-import {
-  Button,
-  ShellMain,
-} from "@kanzo-tech/ui";
+import { Button, ShellMain } from "@kanzo-tech/ui";
 import { Link } from "@kanzo-tech/navigation/next";
+import { ProblemView } from "@/components/problem-view";
+import { toProblem } from "@/lib/errors";
 
 export default function WorkspaceError({
   error,
@@ -14,16 +13,12 @@ export default function WorkspaceError({
   reset: () => void;
 }) {
   return (
-    <ShellMain className="items-center justify-center">
-      <div className="text-center space-y-3">
-        <p className="text-sm font-medium text-destructive">Something went wrong</p>
-        <p className="text-xs text-muted-foreground max-w-sm">{error.message}</p>
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" onClick={reset}>Retry</Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/">Go to Dashboard</Link>
-          </Button>
-        </div>
+    <ShellMain className="items-center justify-center p-4">
+      <div className="flex w-full max-w-xl flex-col gap-3">
+        <ProblemView onRetry={reset} problem={toProblem(error)} retryLabel="Retry" />
+        <Button asChild className="self-center" size="sm" variant="ghost">
+          <Link href="/">Go to Dashboard</Link>
+        </Button>
       </div>
     </ShellMain>
   );

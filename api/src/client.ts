@@ -11,15 +11,18 @@ export type Inputs = { [K in keyof Components]: Writable<Components[K]> };
 export type ErrorCode = Schemas["ErrorCode"];
 export type ErrorBody = Schemas["ErrorBody"];
 
-/** A refusal, as the server's `ErrorBody` states it. */
+/** A refusal, as the server's `ErrorBody` states it: `message` is its `detail`. */
 export class ApiError extends Error {
-  constructor(
-    readonly code: ErrorCode | "unknown",
-    message: string,
-    readonly status?: number,
-  ) {
-    super(message);
+  readonly code: ErrorCode | "unknown";
+  readonly title: string;
+  readonly data: ErrorBody["data"];
+
+  constructor(body: Pick<ErrorBody, "title" | "detail" | "data"> & { code: ErrorCode | "unknown" }, readonly status?: number) {
+    super(body.detail);
     this.name = "ApiError";
+    this.code = body.code;
+    this.title = body.title;
+    this.data = body.data;
   }
 }
 
@@ -30,8 +33,12 @@ export async function apiError(response: Response): Promise<ApiError> {
     .json()
     .catch(() => null)) as ErrorBody | null;
   return new ApiError(
-    body?.error ?? "unknown",
-    body?.message ?? `Request failed (${response.status})`,
+    body ?? {
+      code: "unknown",
+      title: "The request failed",
+      detail: `Request failed (${response.status})`,
+      data: {},
+    },
     response.status,
   );
 }

@@ -32,7 +32,8 @@ import {
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { $api, invalidate, type Schemas } from "@/lib/api/client";
 import { formatDate, formatJobDuration } from "@/lib/ui/format";
-import { hasRunningJobs, isTerminalStatus, overBudget } from "@/lib/jobs";
+import { hasRunningJobs, isTerminalStatus, runProblem } from "@/lib/jobs";
+import { copyOf } from "@/lib/errors";
 
 type Job = Schemas["Job"];
 type JobStatus = Schemas["JobStatus"];
@@ -80,9 +81,9 @@ export default function JobsPage() {
         header: "Status",
         cell: ({ getValue, row }) => {
           const { label, variant } = STATUS[getValue<JobStatus>()];
-          if (overBudget(row.original.error) !== null) {
-            return <Badge variant="destructive">Too large for the browser</Badge>;
-          }
+          // A failure keasy has its own words for says them; any other says "Failed".
+          const worded = copyOf(runProblem(row.original)?.code ?? "")?.title;
+          if (worded) return <Badge variant="destructive">{worded}</Badge>;
           return <Badge variant={variant}>{label}</Badge>;
         },
         filterFn: (row, id, value: string[]) => value.includes(row.getValue(id)),

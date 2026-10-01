@@ -2,12 +2,9 @@
 
 import { use } from "react";
 import { notFound } from "next/navigation";
-import { AlertCircle, MoreHorizontal } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Button,
   DataList,
   FormatByte,
@@ -38,7 +35,8 @@ import { $api, invalidate } from "@/lib/api/client";
 import { modelOf, storageOf } from "@/lib/connections";
 import { providersQuery } from "@/lib/fossil/checker";
 import { providerFor } from "@/lib/fossil/providers";
-import { toastError } from "@/lib/errors";
+import { toastError, toProblem } from "@/lib/errors";
+import { ProblemView } from "@/components/problem-view";
 
 export default function ConnectionPage({ params }: { params: Promise<{ name: string }> }) {
   const path = { params: { path: { name: decodeURIComponent(use(params).name) } } };
@@ -115,11 +113,7 @@ export default function ConnectionPage({ params }: { params: Promise<{ name: str
             </SectionHeader>
             <SectionBody>
               {files.isError ? (
-                <Alert variant="destructive">
-                  <AlertCircle />
-                  <AlertTitle>Failed to list files</AlertTitle>
-                  <AlertDescription>{files.error.message}</AlertDescription>
-                </Alert>
+                <ProblemView onRetry={() => void files.refetch()} problem={toProblem(files.error)} />
               ) : files.isLoading ? (
                 showSkeleton && <Skeleton className="h-40 w-full" />
               ) : readable.length === 0 ? (

@@ -13,6 +13,8 @@ import { useCorpus, useFieldStats } from "./corpus";
 import { Finding } from "./finding";
 import { OPERATOR_META, type Rule, ruleIdsQuery, runRules } from "./rule-engine";
 import { RuleBuilder } from "./rule-fields";
+import { toProblem } from "@/lib/errors";
+import { ProblemView } from "@/components/problem-view";
 
 /** Rules live in this browser only, per job. */
 function createRulesStore(jobId: string) {
@@ -73,6 +75,7 @@ export function RulesPanel() {
   return (
     <ScrollArea className="h-full p-3">
       <div className="space-y-3">
+        {results.error && <ProblemView problem={toProblem(results.error)} />}
         {rules.length === 0 ? (
           <p className="text-muted-foreground text-xs">No rules yet. Add one below to check the data.</p>
         ) : pending ? (
@@ -89,37 +92,40 @@ export function RulesPanel() {
             const broken = n < 0;
             const clean = !pending && n === 0;
             return (
-              <li className="flex items-stretch gap-1" key={rule.id}>
-                <Finding
-                  disabled={pending || clean || broken}
-                  label={`${rule.typeName} ${sentence(rule)}`}
-                  load={() => failingIds(rule)}
-                  source="order"
-                >
-                  <span className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "size-1.5 shrink-0 rounded-full",
-                        pending && "bg-muted-foreground",
-                        !pending && (clean ? "bg-success" : broken ? "bg-warning" : "bg-destructive"),
-                      )}
-                    />
-                    <code className="font-mono text-[10px] text-muted-foreground">{rule.typeName}</code>
-                    <span className={cn("ms-auto text-xs tabular-nums", pending && "text-muted-foreground")}>
-                      {pending ? "…" : clean ? "✓" : broken ? "?" : n.toLocaleString()}
+              <li className="flex flex-col gap-1" key={rule.id}>
+                <div className="flex items-stretch gap-1">
+                  <Finding
+                    disabled={pending || clean || broken}
+                    label={`${rule.typeName} ${sentence(rule)}`}
+                    load={() => failingIds(rule)}
+                    source="order"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "size-1.5 shrink-0 rounded-full",
+                          pending && "bg-muted-foreground",
+                          !pending && (clean ? "bg-success" : broken ? "bg-warning" : "bg-destructive"),
+                        )}
+                      />
+                      <code className="font-mono text-[10px] text-muted-foreground">{rule.typeName}</code>
+                      <span className={cn("ms-auto text-xs tabular-nums", pending && "text-muted-foreground")}>
+                        {pending ? "…" : clean ? "✓" : broken ? "?" : n.toLocaleString()}
+                      </span>
                     </span>
-                  </span>
-                  <span className="mt-0.5 block truncate font-mono text-[11px]">{sentence(rule)}</span>
-                </Finding>
-                <Button
-                  aria-label={`Remove ${sentence(rule)}`}
-                  className="h-auto shrink-0 self-stretch text-muted-foreground"
-                  onClick={() => remove(rule.id)}
-                  size="icon-sm"
-                  variant="ghost"
-                >
-                  <XIcon className="size-3.5" />
-                </Button>
+                    <span className="mt-0.5 block truncate font-mono text-[11px]">{sentence(rule)}</span>
+                  </Finding>
+                  <Button
+                    aria-label={`Remove ${sentence(rule)}`}
+                    className="h-auto shrink-0 self-stretch text-muted-foreground"
+                    onClick={() => remove(rule.id)}
+                    size="icon-sm"
+                    variant="ghost"
+                  >
+                    <XIcon className="size-3.5" />
+                  </Button>
+                </div>
+                {results.data?.[i]?.problem && <ProblemView problem={results.data[i].problem} />}
               </li>
             );
           })}

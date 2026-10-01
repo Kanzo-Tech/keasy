@@ -21,8 +21,8 @@ async fn what_is_in_use_is_not_deleted() {
         .send(Method::DELETE, "/v1/credentials/key", &member, json!(null))
         .await;
     assert_eq!(status, StatusCode::CONFLICT);
-    assert_eq!(body["error"], "in_use");
-    assert_eq!(body["dependents"], json!(["data", "sink"]));
+    assert_eq!(body["code"], "in_use");
+    assert_eq!(body["data"]["dependents"], json!(["data", "sink"]));
 
     let (_, job) = app
         .send(
@@ -36,7 +36,7 @@ async fn what_is_in_use_is_not_deleted() {
         .send(Method::DELETE, "/v1/connections/sink", &owner, json!(null))
         .await;
     assert_eq!(status, StatusCode::CONFLICT);
-    assert_eq!(body["dependents"], json!([job["id"]]));
+    assert_eq!(body["data"]["dependents"], json!([job["id"]]));
 
     assert_eq!(
         app.send(Method::DELETE, "/v1/connections/data", &member, json!(null))
@@ -73,7 +73,7 @@ async fn a_connection_names_a_credential_of_its_own_purpose() {
         .await;
     assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
     assert!(
-        body["message"]
+        body["detail"]
             .as_str()
             .unwrap()
             .contains("model credential"),
@@ -110,8 +110,8 @@ async fn a_storage_location_never_overlaps_another() {
             )
             .await;
         assert_eq!(status, StatusCode::CONFLICT, "{url}: {body}");
-        assert_eq!(body["error"], "overlaps", "{url}");
-        assert_eq!(body["dependents"], json!(collides), "{url}");
+        assert_eq!(body["code"], "overlaps", "{url}");
+        assert_eq!(body["data"]["dependents"], json!(collides), "{url}");
     }
 
     let (status, body) = app

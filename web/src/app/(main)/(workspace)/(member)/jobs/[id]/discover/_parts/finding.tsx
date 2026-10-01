@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { cn } from "@kanzo-tech/ui";
 import { useGraphContext, useGraphState, type SelectionSource } from "@kanzo-tech/graph";
+import { toastError } from "@/lib/errors";
 
 /**
  * A finding you can point the canvas at — kanzo-ui's `workspace` showcase's, as it is there. The
@@ -33,6 +34,8 @@ export function Finding({ children, disabled, label, load, source }: FindingProp
     setBusy(true);
     try {
       select(await load(), source, label);
+    } catch (err) {
+      toastError(err, "The vertices could not be selected");
     } finally {
       setBusy(false);
     }

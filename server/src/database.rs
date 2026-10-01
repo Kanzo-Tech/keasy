@@ -242,7 +242,7 @@ CREATE TABLE jobs (
     created_at      TEXT NOT NULL,
     started_at      TEXT,
     completed_at    TEXT,
-    error           TEXT,
+    problem         TEXT CHECK (problem IS NULL OR json_valid(problem)),
     created_by      TEXT NOT NULL,
     sink_connection TEXT NOT NULL REFERENCES connections (name)
         ON UPDATE CASCADE ON DELETE RESTRICT,

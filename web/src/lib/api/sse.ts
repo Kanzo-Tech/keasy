@@ -25,7 +25,7 @@ export async function* failOnError(
 ): AsyncGenerator<SseFrame> {
   for await (const frame of frames) {
     const failure = sseFailure(frame);
-    if (failure) throw new ApiError(failure.error, failure.message);
+    if (failure) throw new ApiError(failure);
     yield frame;
   }
 }

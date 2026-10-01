@@ -3,13 +3,13 @@ import type { Job } from "@fossil-lang/executor";
 import { http, type Schemas } from "@/lib/api/client";
 import { openJobCorpus } from "@/lib/fossil/corpus";
 import { host } from "@/lib/fossil/host";
-import { runFailure } from "@/lib/jobs";
+import { toastError, toProblem } from "@/lib/errors";
 
 /**
  * A job as `runJob` takes it: every byte goes through keasy's one {@link host};
  * the run report crosses untouched, since `CompleteJobRequest.manifest` is
  * opaque JSON on the server. A failure is reported by the runner instead, which
- * holds the thrown error and not only its message.
+ * holds every failure — the executor's and its own — in one `catch`.
  */
 function makeJob(id: string): Job {
   return {
@@ -70,7 +70,8 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         //
         // Its own `catch`: the job IS done and its data IS at the sink. A
         // failure here loses the datasets entry, not the run, and reporting it as
-        // a failed run would be a lie about durable data.
+        // a failed run would be a lie about durable data — so it is said, not
+        // stored.
         try {
           const corpus = await openJobCorpus(jobId);
           try {
@@ -94,13 +95,17 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
             await corpus.close();
           }
         } catch (err) {
-          console.error(`publishing the corpus relations failed (${jobId})`, err);
+          toastError(err, "The datasets entry was not published");
         }
       } catch (err) {
-        console.error(`browser job run failed (${jobId})`, err);
+        // The run's `FossilError`, or a failure before it: the executor never
+        // loaded, or the job could not be marked running.
         await http
-          .PATCH("/v1/jobs/{id}", { params: { path: { id: jobId } }, body: { status: "failed", error: runFailure(err) } })
-          .catch(() => {});
+          .PATCH("/v1/jobs/{id}", {
+            params: { path: { id: jobId } },
+            body: { status: "failed", problem: toProblem(err) },
+          })
+          .catch((patchErr: unknown) => toastError(patchErr, "The run failed, and the job could not be marked failed"));
       }
     })();
     // Key off the stable fields, not the `job` object — the 3s poll allocates a

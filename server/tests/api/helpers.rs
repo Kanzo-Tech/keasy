@@ -62,9 +62,7 @@ pub async fn spawn_app() -> TestApp {
 
     TestApp {
         address,
-        client: reqwest::Client::builder()
-            .build()
-            .unwrap(),
+        client: reqwest::Client::builder().build().unwrap(),
         db: Database::open(&db_path, secret_key()).unwrap(),
         realm,
         _dir: dir,
@@ -109,7 +107,7 @@ impl TestApp {
         self.answer(method, path, token).await.0
     }
 
-    /// A request with no body; the status and the `error` code of the answer,
+    /// A request with no body; the status and the `code` of the answer,
     /// when there is one.
     pub async fn answer(
         &self,
@@ -129,7 +127,7 @@ impl TestApp {
             .json::<serde_json::Value>()
             .await
             .ok()
-            .and_then(|v| v["error"].as_str().map(str::to_owned));
+            .and_then(|v| v["code"].as_str().map(str::to_owned));
         (status, code)
     }
 

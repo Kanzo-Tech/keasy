@@ -40,12 +40,12 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
 
     let (status, body) = vend(format!("/v1/jobs/{id}/credentials"), "read").await;
     assert_eq!(
-        (status, body["error"].as_str()),
+        (status, body["code"].as_str()),
         (StatusCode::CONFLICT, Some("not_completed"))
     );
     let (status, body) = vend(format!("/v1/jobs/{id}/credentials"), "write").await;
     assert_eq!(
-        (status, body["error"].as_str()),
+        (status, body["code"].as_str()),
         (StatusCode::CONFLICT, Some("not_running"))
     );
 

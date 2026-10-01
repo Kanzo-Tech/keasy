@@ -33,6 +33,8 @@ import type { FossilProgram } from "@fossil-lang/wasm";
 import * as checker from "@/lib/fossil/checker";
 import { useSourceDescriptors } from "./use-source-descriptors";
 import type { StorageConnection } from "@/lib/connections";
+import { type Shown, toProblem } from "@/lib/errors";
+import { ProblemView } from "@/components/problem-view";
 
 /** The chrome a floating cluster wears — the same utilities the canvas controls use. */
 const FLOATING = "rounded-lg border bg-card shadow-sm";
@@ -60,6 +62,7 @@ export function StudioEditor({
   const view = useRef<EditorView | null>(null);
   const [opened, setOpened] = useState<FossilProgram | null>(null);
   const [definition, setDefinition] = useState<string | null>(null);
+  const [loadProblem, setLoadProblem] = useState<Shown | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -68,7 +71,9 @@ export function StudioEditor({
       .then((p) => {
         if (alive) setOpened(p);
       })
-      .catch((cause) => console.error("fossil checker failed to load", cause));
+      .catch((cause: unknown) => {
+        if (alive) setLoadProblem(toProblem(cause));
+      });
     return () => {
       alive = false;
     };
@@ -126,6 +131,12 @@ export function StudioEditor({
         }}
         value={program}
       />
+
+      {loadProblem && (
+        <div className="absolute inset-x-3 bottom-3 z-10">
+          <ProblemView problem={loadProblem} />
+        </div>
+      )}
 
       <div className="absolute end-3 top-3 z-10">
         <Clipboard className={cn(FLOATING, "w-auto")} timeout={1200} value={program}>

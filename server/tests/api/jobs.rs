@@ -25,7 +25,7 @@ async fn a_job_goes_to_the_sink_or_is_refused() {
     assert_eq!(create(None).await.0, StatusCode::UNPROCESSABLE_ENTITY);
     let (status, body) = create(Some("source")).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(body["error"], "invalid_destination");
+    assert_eq!(body["code"], "invalid_destination");
     assert_eq!(create(Some("gone")).await.0, StatusCode::BAD_REQUEST);
     let (status, job) = create(Some("sink")).await;
     assert_eq!(status, StatusCode::CREATED);
@@ -83,4 +83,44 @@ async fn a_job_is_its_creators_alone() {
     let (status, job) = app.send(Method::GET, &path, &mine, json!(null)).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(job["id"], json!(id));
+}
+
+/// A failed run keeps the problem the browser reported, whole: the web
+/// branches on its `code` and reads its `data`, so a string would lose both.
+#[tokio::test]
+async fn a_failed_run_keeps_its_problem_whole() {
+    let app = spawn_app().await;
+    let member = app.token(&["member"]);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+
+    let (_, job) = app
+        .send(
+            Method::POST,
+            "/v1/jobs",
+            &member,
+            json!({ "script": "x", "sink_connection": "sink" }),
+        )
+        .await;
+    let path = format!("/v1/jobs/{}", job["id"].as_str().unwrap());
+    let problem = json!({
+        "code": "run/over-budget",
+        "title": "Over budget",
+        "detail": "the join asked for 3 GB",
+        "severity": "error",
+        "data": { "budget": 2, "consumer": "join", "requested": 3, "reserved": 0 },
+    });
+
+    let (status, failed) = app
+        .send(
+            Method::PATCH,
+            &path,
+            &member,
+            json!({ "status": "failed", "problem": problem }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(failed["problem"], problem);
+    let (_, read) = app.send(Method::GET, &path, &member, json!(null)).await;
+    assert_eq!(read["problem"], problem);
 }

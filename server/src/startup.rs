@@ -21,7 +21,7 @@ use crate::authentication::token::{SharedValidator, Validator};
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::database::Database;
 use crate::domain::Purpose;
-use crate::error::{ErrorBody, ErrorCode, fail};
+use crate::error::{ErrorBody, ErrorCode, ErrorData, fail};
 use crate::routes;
 
 #[derive(Clone)]
@@ -241,7 +241,7 @@ fn over_rate(error: GovernorError) -> Response {
         version = "1.0.0",
         description = "Keasy host: identity, connections, vended credentials and the job record",
     ),
-    components(schemas(ErrorBody, ErrorCode, Purpose)),
+    components(schemas(ErrorBody, ErrorCode, ErrorData, Purpose)),
     modifiers(&Bearer, &Unattributed),
     security(("bearer" = [])),
 )]

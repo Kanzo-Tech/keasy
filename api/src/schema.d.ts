@@ -381,10 +381,13 @@ export interface components {
          *     executor's run report, stored verbatim and never read.
          */
         CompleteJobRequest: {
-            /** @description Failure message (on `Failed`), stored verbatim. */
-            error?: string | null;
             /** @description The run report for the uploaded output (on `Completed`) — opaque JSON. */
             manifest?: unknown;
+            /**
+             * @description Why the run failed (on `Failed`): the run's problem, stored verbatim
+             *     and opaque.
+             */
+            problem?: unknown;
             /** @description The terminal (or `Running`) status the client is transitioning the job to. */
             status: components["schemas"]["JobStatus"];
         };
@@ -487,15 +490,16 @@ export interface components {
          * @enum {string}
          */
         Direction: "source" | "sink";
-        /** @description The body of every 4xx/5xx, and the payload of an SSE `error` frame. */
+        /**
+         * @description The body of every 4xx/5xx, and the payload of an SSE `error` frame — the
+         *     shape fossil's problems have: a code, its fixed title, a detail for a
+         *     person that nothing parses, and the data the code carries.
+         */
         ErrorBody: {
-            /**
-             * @description What the refusal is about: what still uses a credential or connection,
-             *     or the connections a rotation would break.
-             */
-            dependents?: string[];
-            error: components["schemas"]["ErrorCode"];
-            message: string;
+            code: components["schemas"]["ErrorCode"];
+            data: components["schemas"]["ErrorData"];
+            detail: string;
+            title: string;
         };
         /**
          * @description Every error the server answers with. Closed: a code the server does not
@@ -503,6 +507,14 @@ export interface components {
          * @enum {string}
          */
         ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "not_running" | "still_running" | "invalid_destination" | "no_destination" | "already_exists" | "in_use" | "overlaps" | "probe_failed" | "list_files_failed" | "store_error" | "ai_not_configured" | "ai_connection_required" | "insufficient_credits" | "llm_failed";
+        /** @description What a refusal carries beside its words. */
+        ErrorData: {
+            /**
+             * @description What the refusal is about: what still uses a credential or connection,
+             *     or the connections a rotation would break.
+             */
+            dependents?: string[];
+        };
         /** @description One object under a connection's prefix. */
         FileEntry: {
             last_modified?: string | null;
@@ -518,8 +530,6 @@ export interface components {
              *     may see, change, run or read it. Taken from the token, never the body.
              */
             created_by: string;
-            /** @description Why a `Failed` run failed, as the browser that ran it reported it. */
-            error?: string | null;
             id: string;
             /**
              * @description What the run reported, verbatim and **opaque**: fossil's own run report,
@@ -531,6 +541,12 @@ export interface components {
              */
             manifest?: unknown;
             name?: string | null;
+            /**
+             * @description Why a `Failed` run failed, as the browser that ran it reported it: a
+             *     problem (`{ code, title, detail, data, … }`), stored verbatim and
+             *     **opaque** — the web branches on its `code`, the server never does.
+             */
+            problem?: unknown;
             /**
              * @description What the corpus holds and what it is called, as the corpus reader
              *     enumerated it (`@fossil-lang/corpus`). fossil names every relation and

@@ -35,9 +35,12 @@ pub struct Job {
     pub started_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub completed_at: Option<String>,
-    /// Why a `Failed` run failed, as the browser that ran it reported it.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
+    /// Why a `Failed` run failed, as the browser that ran it reported it: a
+    /// problem (`{ code, title, detail, data, … }`), stored verbatim and
+    /// **opaque** — the web branches on its `code`, the server never does.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<Value>)]
+    pub problem: Option<serde_json::Value>,
     /// Keycloak `sub` of the member who created the job, and the only one who
     /// may see, change, run or read it. Taken from the token, never the body.
     pub created_by: String,
@@ -79,7 +82,7 @@ impl Job {
             created_at: now_iso8601(),
             started_at: None,
             completed_at: None,
-            error: None,
+            problem: None,
             created_by,
             sink_connection,
             script: Some(script),

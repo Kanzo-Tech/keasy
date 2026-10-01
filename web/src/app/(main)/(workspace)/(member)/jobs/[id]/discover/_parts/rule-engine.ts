@@ -16,6 +16,7 @@ import {
   verbatim,
   type ExprNode,
 } from "@uwdata/mosaic-sql";
+import { type Shown, toProblem } from "@/lib/errors";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -47,6 +48,8 @@ export interface RuleResult {
   passed: boolean;
   /** Vertices that break the rule; `-1` when the rule is incomplete or its query failed. */
   violationCount: number;
+  /** Why its query failed, when it did. */
+  problem?: Shown;
 }
 
 // ── Operator metadata ────────────────────────────────────────────────────
@@ -172,8 +175,8 @@ export async function runRules(
         const [row] = await execQuery(query);
         const violationCount = Number(row.cnt);
         return { rule, passed: violationCount === 0, violationCount };
-      } catch {
-        return { rule, passed: false, violationCount: -1 };
+      } catch (err) {
+        return { rule, passed: false, violationCount: -1, problem: toProblem(err, "query_failed") };
       }
     }),
   );

@@ -42,7 +42,7 @@ import { ChevronDown, Pencil, PlugZap, Save, X } from "lucide-react";
 import { useRouter } from "@kanzo-tech/navigation/next";
 import { $api, http, invalidate } from "@/lib/api/client";
 import { storageConnections } from "@/lib/connections";
-import { toastError } from "@/lib/errors";
+import { type Shown, toastError, toProblem } from "@/lib/errors";
 import * as checker from "@/lib/fossil/checker";
 import { AssistantWizard } from "./assistant-wizard";
 import { ModePicker } from "./mode-picker";
@@ -80,6 +80,7 @@ export function JobStudio() {
   const [railOpen, setRailOpen] = useState(true);
   const [diagnostics, setDiagnostics] = useState<readonly checker.CheckRow[]>([]);
   const [refs, setRefs] = useState<checker.SourceRefInfo[]>([]);
+  const [refsProblem, setRefsProblem] = useState<Shown | null>(null);
   const [saved, setSaved] = useState(true);
 
   // The draft's server id: the `?draft=` the member arrived with, or the one the
@@ -121,8 +122,16 @@ export function JobStudio() {
     const id = setTimeout(() => {
       void checker
         .refs(store.script)
-        .then((rows) => alive && setRefs(rows))
-        .catch(() => alive && setRefs([]));
+        .then((rows) => {
+          if (!alive) return;
+          setRefs(rows);
+          setRefsProblem(null);
+        })
+        .catch((err: unknown) => {
+          if (!alive) return;
+          setRefs([]);
+          setRefsProblem(toProblem(err));
+        });
     }, 300);
     return () => {
       alive = false;
@@ -379,6 +388,7 @@ export function JobStudio() {
               if (!draftMutation.isPending) confirmMutation.mutate();
             }}
             refs={refs}
+            refsProblem={refsProblem}
             values={config}
           />
         </StepsContent>

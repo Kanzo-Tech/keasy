@@ -45,6 +45,8 @@ import { verbatim } from "@uwdata/mosaic-sql";
 import { useCorpus, useFieldStats } from "./corpus";
 import { ChartCard, DashboardGrid, FilterChips, useClauses } from "./dashboard-frames";
 import type { FieldKind, FieldStat, TableStats } from "./field-stats";
+import { toProblem } from "@/lib/errors";
+import { ProblemView } from "@/components/problem-view";
 
 /**
  * The Dashboard view — kanzo-ui's `workspace` showcase's Sightings region, over the corpus: one
@@ -300,7 +302,8 @@ function BootSkeleton() {
 }
 
 export default function DashboardView() {
-  const { tables } = useFieldStats();
+  const { tables, error } = useFieldStats();
+  if (error) return <ProblemView className="p-4" problem={toProblem(error)} />;
   if (tables.length === 0) return <BootSkeleton />;
   return <Dashboard tables={tables} />;
 }

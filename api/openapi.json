@@ -1725,15 +1725,11 @@
           "status"
         ],
         "properties": {
-          "error": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Failure message (on `Failed`), stored verbatim."
-          },
           "manifest": {
             "description": "The run report for the uploaded output (on `Completed`) — opaque JSON."
+          },
+          "problem": {
+            "description": "Why the run failed (on `Failed`): the run's problem, stored verbatim\nand opaque."
           },
           "status": {
             "$ref": "#/components/schemas/JobStatus",
@@ -2079,23 +2075,24 @@
       },
       "ErrorBody": {
         "type": "object",
-        "description": "The body of every 4xx/5xx, and the payload of an SSE `error` frame.",
+        "description": "The body of every 4xx/5xx, and the payload of an SSE `error` frame — the\nshape fossil's problems have: a code, its fixed title, a detail for a\nperson that nothing parses, and the data the code carries.",
         "required": [
-          "error",
-          "message"
+          "code",
+          "title",
+          "detail",
+          "data"
         ],
         "properties": {
-          "dependents": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "What the refusal is about: what still uses a credential or connection,\nor the connections a rotation would break."
-          },
-          "error": {
+          "code": {
             "$ref": "#/components/schemas/ErrorCode"
           },
-          "message": {
+          "data": {
+            "$ref": "#/components/schemas/ErrorData"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "title": {
             "type": "string"
           }
         }
@@ -2131,6 +2128,19 @@
           "insufficient_credits",
           "llm_failed"
         ]
+      },
+      "ErrorData": {
+        "type": "object",
+        "description": "What a refusal carries beside its words.",
+        "properties": {
+          "dependents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What the refusal is about: what still uses a credential or connection,\nor the connections a rotation would break."
+          }
+        }
       },
       "FileEntry": {
         "type": "object",
@@ -2179,13 +2189,6 @@
             "type": "string",
             "description": "Keycloak `sub` of the member who created the job, and the only one who\nmay see, change, run or read it. Taken from the token, never the body."
           },
-          "error": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Why a `Failed` run failed, as the browser that ran it reported it."
-          },
           "id": {
             "type": "string"
           },
@@ -2197,6 +2200,9 @@
               "string",
               "null"
             ]
+          },
+          "problem": {
+            "description": "Why a `Failed` run failed, as the browser that ran it reported it: a\nproblem (`{ code, title, detail, data, … }`), stored verbatim and\n**opaque** — the web branches on its `code`, the server never does."
           },
           "relations": {
             "type": "array",

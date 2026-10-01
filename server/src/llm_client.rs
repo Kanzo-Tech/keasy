@@ -42,15 +42,11 @@ impl fmt::Display for AiError {
 impl AiError {
     /// The `error` frame: an [`ErrorBody`], the same shape a refused request gets.
     pub fn event(&self) -> Event {
-        let error = match self {
+        let code = match self {
             AiError::InsufficientCredits(_) => ErrorCode::InsufficientCredits,
             AiError::Failed(_) => ErrorCode::LlmFailed,
         };
-        let body = ErrorBody {
-            error,
-            message: self.to_string(),
-            dependents: Vec::new(),
-        };
+        let body = ErrorBody::new(code, self.to_string(), Vec::new());
         Event::default()
             .event("error")
             .data(serde_json::to_string(&body).expect("an ErrorBody serializes"))

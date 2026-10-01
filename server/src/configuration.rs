@@ -13,6 +13,18 @@ pub struct Settings {
     pub application: ApplicationSettings,
     pub database: DatabaseSettings,
     pub oidc: OidcSettings,
+    /// The AI gateway; `None` serves no AI, and says so.
+    pub ai: Option<AiSettings>,
+}
+
+/// The platform's AI gateway (LiteLLM, OpenAI-compatible) and this workspace's
+/// key to it. The key is the workspace's budget: it never reaches a browser,
+/// which reaches models only through this server.
+pub struct AiSettings {
+    /// Read from `KEASY_AI_URL`, e.g. `http://ai-gateway:4000`.
+    pub url: String,
+    /// Read from `KEASY_AI_KEY` or the file `KEASY_AI_KEY_FILE` names.
+    pub key: SecretString,
 }
 
 pub struct ApplicationSettings {
@@ -99,7 +111,21 @@ pub fn get_configuration() -> Result<Settings, String> {
             audience: nonblank("KEASY_OIDC_AUDIENCE").unwrap_or_else(|| "keasy-api".to_string()),
             internal_base_url: nonblank("KEASY_OIDC_INTERNAL_BASE_URL"),
         },
+        ai: ai_settings()?,
     })
+}
+
+/// A URL without a key, or a key without a URL, is a deployment mistake.
+fn ai_settings() -> Result<Option<AiSettings>, String> {
+    match (nonblank("KEASY_AI_URL"), resolve_secret("KEASY_AI_KEY")?) {
+        (Some(url), Some(key)) => Ok(Some(AiSettings {
+            url: url.trim_end_matches('/').to_string(),
+            key,
+        })),
+        (None, None) => Ok(None),
+        (Some(_), None) => Err("KEASY_AI_URL is set but KEASY_AI_KEY[_FILE] is not".into()),
+        (None, Some(_)) => Err("KEASY_AI_KEY[_FILE] is set but KEASY_AI_URL is not".into()),
+    }
 }
 
 /// The sealing key in `name` (or the file `name_FILE` points to).

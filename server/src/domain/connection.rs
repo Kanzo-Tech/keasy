@@ -1,10 +1,10 @@
-//! Connections: where or what a credential is used for — a storage location
-//! or a model. None of these types can hold a secret.
+//! Connections: where a credential is used — a storage location. None of these
+//! types can hold a secret.
 
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use super::{Purpose, ValidationReport};
+use super::ValidationReport;
 
 #[derive(
     Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq, ToSchema, strum::AsRefStr,
@@ -42,42 +42,9 @@ pub struct StorageTarget {
     pub direction: Direction,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-pub struct ModelTarget {
-    /// The provider's model id. Empty runs the provider's default
-    /// (Anthropic: claude-sonnet-4-20250514, OpenAI: gpt-4o).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub model: Option<String>,
-    /// The most tokens an answer may take, unless the call asks for fewer.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub max_tokens: Option<u32>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum ConnectionTarget {
-    Storage(StorageTarget),
-    Model(ModelTarget),
-}
-
-impl ConnectionTarget {
-    pub fn purpose(&self) -> Purpose {
-        match self {
-            Self::Storage(_) => Purpose::Storage,
-            Self::Model(_) => Purpose::Model,
-        }
-    }
-
-    pub fn storage(&self) -> Option<&StorageTarget> {
-        match self {
-            Self::Storage(s) => Some(s),
-            Self::Model(_) => None,
-        }
-    }
-
+impl StorageTarget {
     pub fn is_sink(&self) -> bool {
-        self.storage()
-            .is_some_and(|s| s.direction == Direction::Sink)
+        self.direction == Direction::Sink
     }
 }
 
@@ -85,7 +52,7 @@ impl ConnectionTarget {
 pub struct ConnectionView {
     pub name: String,
     pub credential: String,
-    pub target: ConnectionTarget,
+    pub target: StorageTarget,
     pub created_by: String,
     pub created_at: String,
     pub updated_by: String,

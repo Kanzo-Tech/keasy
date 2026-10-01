@@ -1,4 +1,6 @@
-//! Credentials: who keasy is when it reaches a store or a model provider.
+//! Credentials: who keasy is when it reaches a store. Models are not here:
+//! every model call goes through the platform's AI gateway with the workspace's
+//! own key (`KEASY_AI_URL`), which is configuration, not a stored credential.
 //!
 //! Each family comes twice. `…Input` is what a request carries: the secrets
 //! included, as [`SecretString`], and it only deserializes. `…View` is what a
@@ -11,38 +13,11 @@ use utoipa::ToSchema;
 
 use super::ValidationReport;
 
-/// What a credential, and every connection that uses it, is for.
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Serialize,
-    Deserialize,
-    ToSchema,
-    strum::AsRefStr,
-    strum::EnumString,
-)]
-#[serde(rename_all = "snake_case")]
-#[strum(serialize_all = "snake_case")]
-pub enum Purpose {
-    Storage,
-    Model,
-}
-
 fn us_east_1() -> String {
     "us-east-1".into()
 }
 
 /// A credential as a request states it, secrets included.
-#[derive(Debug, Deserialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum CredentialSpecInput {
-    Storage(StorageCredentialInput),
-    Model(ModelCredentialInput),
-}
-
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum StorageCredentialInput {
@@ -83,33 +58,7 @@ pub enum StorageCredentialInput {
     },
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
-pub enum ModelCredentialInput {
-    #[schema(title = "Anthropic")]
-    Anthropic {
-        #[schema(value_type = String, format = Password, write_only)]
-        api_key: SecretString,
-    },
-    #[schema(title = "OpenAI")]
-    Openai {
-        #[schema(value_type = String, format = Password, write_only)]
-        api_key: SecretString,
-        /// An OpenAI-compatible API root. Empty is `https://api.openai.com/v1`.
-        #[serde(default)]
-        #[schema(format = "uri")]
-        base_url: Option<String>,
-    },
-}
-
-/// A credential as a response shows it: no secret field exists here.
-#[derive(Debug, Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum CredentialSpecView {
-    Storage(StorageCredentialView),
-    Model(ModelCredentialView),
-}
-
+/// A credential as a response shows it: what names it, never what signs with it.
 #[derive(Debug, Serialize, ToSchema)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum StorageCredentialView {
@@ -132,34 +81,6 @@ pub enum StorageCredentialView {
         tenant_id: String,
         client_id: String,
     },
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-#[serde(tag = "kind", rename_all = "snake_case")]
-pub enum ModelCredentialView {
-    #[schema(title = "Anthropic")]
-    Anthropic {},
-    #[schema(title = "OpenAI")]
-    Openai {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        base_url: Option<String>,
-    },
-}
-
-impl CredentialSpecInput {
-    pub fn purpose(&self) -> Purpose {
-        match self {
-            Self::Storage(_) => Purpose::Storage,
-            Self::Model(_) => Purpose::Model,
-        }
-    }
-
-    pub fn view(&self) -> CredentialSpecView {
-        match self {
-            Self::Storage(s) => CredentialSpecView::Storage(s.view()),
-            Self::Model(m) => CredentialSpecView::Model(m.view()),
-        }
-    }
 }
 
 impl StorageCredentialInput {
@@ -196,29 +117,10 @@ impl StorageCredentialInput {
     }
 }
 
-impl ModelCredentialInput {
-    pub fn view(&self) -> ModelCredentialView {
-        match self {
-            Self::Anthropic { .. } => ModelCredentialView::Anthropic {},
-            Self::Openai { base_url, .. } => ModelCredentialView::Openai {
-                base_url: base_url.clone(),
-            },
-        }
-    }
-
-    /// The model a connection that names none runs.
-    pub fn default_model(&self) -> &'static str {
-        match self {
-            Self::Anthropic { .. } => "claude-sonnet-4-20250514",
-            Self::Openai { .. } => "gpt-4o",
-        }
-    }
-}
-
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CredentialView {
     pub name: String,
-    pub spec: CredentialSpecView,
+    pub spec: StorageCredentialView,
     /// The connections that use this credential.
     pub used_by: Vec<String>,
     pub created_by: String,
@@ -232,7 +134,7 @@ pub struct CredentialView {
 /// A stored credential, unsealed.
 pub struct Credential {
     pub name: String,
-    pub spec: CredentialSpecInput,
+    pub spec: StorageCredentialInput,
     pub created_by: String,
     pub created_at: String,
     pub updated_by: String,

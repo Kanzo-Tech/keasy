@@ -45,11 +45,10 @@ pub enum ErrorCode {
     ProbeFailed,
     ListFilesFailed,
     StoreError,
+    /// This workspace has no AI gateway.
     AiNotConfigured,
-    /// Several model connections exist and the call named none.
-    AiConnectionRequired,
-    InsufficientCredits,
-    LlmFailed,
+    /// The AI gateway did not answer.
+    AiUnreachable,
 }
 
 impl ErrorCode {
@@ -79,10 +78,8 @@ impl ErrorCode {
             Self::ProbeFailed => "Validation failed",
             Self::ListFilesFailed => "The files could not be listed",
             Self::StoreError => "The store failed",
-            Self::AiNotConfigured => "No model connection",
-            Self::AiConnectionRequired => "Pick a model connection",
-            Self::InsufficientCredits => "Insufficient credits",
-            Self::LlmFailed => "The model call failed",
+            Self::AiNotConfigured => "AI is not set up for this workspace",
+            Self::AiUnreachable => "The AI gateway is unreachable",
         }
     }
 }

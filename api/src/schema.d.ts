@@ -50,7 +50,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/ai/stream": {
+    "/v1/ai/chat/completions": {
         parameters: {
             query?: never;
             header?: never;
@@ -60,10 +60,13 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * The one model call: the browser sends the prompt, the server adds the key
-         *     of the model connection and relays the answer as it streams.
+         * Relay one chat completion to the gateway. The answer is streamed back as
+         *     the gateway sends it, byte for byte; a reader who leaves drops the stream,
+         *     and with it the upstream request. A refusal of the gateway's own — a spent
+         *     budget, an upstream failure — arrives in the protocol's error format, with
+         *     its status.
          */
-        post: operations["complete_stream"];
+        post: operations["chat_completions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -363,12 +366,26 @@ export interface components {
          * @enum {string}
          */
         Access: "read" | "write";
-        ChatMessage: {
-            content: string;
-            role: components["schemas"]["ChatRole"];
+        /**
+         * @description A model, by what it is for. Which upstream answers is the gateway's
+         *     configuration (`infra/ai/`), so nothing here names a provider.
+         * @enum {string}
+         */
+        Alias: "kanzo-chat" | "kanzo-complete";
+        /**
+         * @description An OpenAI chat completion request. `model` must be an alias; everything
+         *     else the protocol carries — `stream`, `tools`, `response_format`,
+         *     `temperature` — goes to the gateway untouched.
+         */
+        ChatCompletionRequest: {
+            /** Format: int32 */
+            max_completion_tokens?: number | null;
+            /** Format: int32 */
+            max_tokens?: number | null;
+            /** @description The conversation, in the OpenAI message format. */
+            messages: Record<string, never>[];
+            model: components["schemas"]["Alias"];
         };
-        /** @enum {string} */
-        ChatRole: "user" | "assistant";
         Check: {
             message?: string | null;
             operation: components["schemas"]["Operation"];
@@ -391,59 +408,35 @@ export interface components {
             /** @description The terminal (or `Running`) status the client is transitioning the job to. */
             status: components["schemas"]["JobStatus"];
         };
-        /**
-         * @description One model call. The browser writes the prompt and keeps the conversation;
-         *     the server holds the key and relays the answer.
-         */
-        CompletionRequest: {
-            /**
-             * @description The model connection to call. May be left out while the workspace has
-             *     exactly one.
-             */
-            connection?: string | null;
-            /**
-             * Format: int32
-             * @description Fewer tokens than the connection allows.
-             */
-            max_tokens?: number | null;
-            /** @description The conversation, oldest first, ending with the user's turn. */
-            messages: components["schemas"]["ChatMessage"][];
-            system: string;
-        };
         /** @enum {string} */
         ConnectionKind: "data" | "vocab";
-        ConnectionTarget: {
-            storage: components["schemas"]["StorageTarget"];
-        } | {
-            model: components["schemas"]["ModelTarget"];
-        };
         ConnectionView: {
             created_at: string;
             created_by: string;
             credential: string;
             name: string;
-            target: components["schemas"]["ConnectionTarget"];
+            target: components["schemas"]["StorageTarget"];
             updated_at: string;
             updated_by: string;
             validation?: null | components["schemas"]["ValidationReport"];
         };
         CreateConnectionRequest: {
-            /** @description The credential it signs or calls with; of the same purpose. */
+            /** @description The credential it signs with. */
             credential: string;
             /** @description What programs write after `@`, and the connection's key. */
             name: string;
-            target: components["schemas"]["ConnectionTarget"];
+            target: components["schemas"]["StorageTarget"];
         };
         CreateCredentialRequest: {
             name: string;
             /**
              * Format: uri
-             * @description A storage URL to LIST before the credential is stored. A storage
-             *     credential has no location of its own, so without one it is only
-             *     checked to build a client.
+             * @description A storage URL to LIST before the credential is stored. A credential has
+             *     no location of its own, so without one it is only checked to build a
+             *     client.
              */
             probe_url?: string | null;
-            spec: components["schemas"]["CredentialSpecInput"];
+            spec: components["schemas"]["StorageCredentialInput"];
         };
         CreateJobRequest: {
             draft?: boolean;
@@ -452,23 +445,11 @@ export interface components {
             /** @description Where the output lands: the sink connection's name. */
             sink_connection: string;
         };
-        /** @description A credential as a request states it, secrets included. */
-        CredentialSpecInput: {
-            storage: components["schemas"]["StorageCredentialInput"];
-        } | {
-            model: components["schemas"]["ModelCredentialInput"];
-        };
-        /** @description A credential as a response shows it: no secret field exists here. */
-        CredentialSpecView: {
-            storage: components["schemas"]["StorageCredentialView"];
-        } | {
-            model: components["schemas"]["ModelCredentialView"];
-        };
         CredentialView: {
             created_at: string;
             created_by: string;
             name: string;
-            spec: components["schemas"]["CredentialSpecView"];
+            spec: components["schemas"]["StorageCredentialView"];
             updated_at: string;
             updated_by: string;
             /** @description The connections that use this credential. */
@@ -506,7 +487,7 @@ export interface components {
          *     declare here cannot be sent, and the web keys its copy by this enum.
          * @enum {string}
          */
-        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "not_running" | "still_running" | "invalid_destination" | "no_destination" | "already_exists" | "in_use" | "overlaps" | "probe_failed" | "list_files_failed" | "store_error" | "ai_not_configured" | "ai_connection_required" | "insufficient_credits" | "llm_failed";
+        ErrorCode: "auth/session_required" | "auth/keys_unavailable" | "rbac/no_membership" | "rbac/insufficient_role" | "rate_limited" | "validation_failed" | "invalid_format" | "not_found" | "forbidden" | "internal_error" | "not_draft" | "not_completed" | "not_running" | "still_running" | "invalid_destination" | "no_destination" | "already_exists" | "in_use" | "overlaps" | "probe_failed" | "list_files_failed" | "store_error" | "ai_not_configured" | "ai_unreachable";
         /** @description What a refusal carries beside its words. */
         ErrorData: {
             /**
@@ -565,47 +546,11 @@ export interface components {
         };
         /** @enum {string} */
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
-        ModelCredentialInput: {
-            /** Format: password */
-            api_key: $Write<string>;
-            /** @enum {string} */
-            kind: "anthropic";
-        } | {
-            /** Format: password */
-            api_key: $Write<string>;
-            /**
-             * Format: uri
-             * @description An OpenAI-compatible API root. Empty is `https://api.openai.com/v1`.
-             */
-            base_url?: string | null;
-            /** @enum {string} */
-            kind: "openai";
-        };
-        ModelCredentialView: {
-            /** @enum {string} */
-            kind: "anthropic";
-        } | {
-            base_url?: string | null;
-            /** @enum {string} */
-            kind: "openai";
-        };
-        ModelTarget: {
-            /**
-             * Format: int32
-             * @description The most tokens an answer may take, unless the call asks for fewer.
-             */
-            max_tokens?: number | null;
-            /**
-             * @description The provider's model id. Empty runs the provider's default
-             *     (Anthropic: claude-sonnet-4-20250514, OpenAI: gpt-4o).
-             */
-            model?: string | null;
-        };
         /**
          * @description What a probe tried.
          * @enum {string}
          */
-        Operation: "list" | "write" | "delete" | "models";
+        Operation: "list" | "write" | "delete";
         /** @enum {string} */
         Outcome: "pass" | "fail" | "skip";
         /**
@@ -634,16 +579,12 @@ export interface components {
         PublishRelationsRequest: {
             relations: components["schemas"]["OutputRelation"][];
         };
-        /**
-         * @description What a credential, and every connection that uses it, is for.
-         * @enum {string}
-         */
-        Purpose: "storage" | "model";
         RelationColumn: {
             /** @description The engine's spelling of the Parquet type (`VARCHAR`, `BIGINT`, …). */
             data_type: string;
             name: string;
         };
+        /** @description A credential as a request states it, secrets included. */
         StorageCredentialInput: {
             access_key_id: string;
             /**
@@ -682,6 +623,7 @@ export interface components {
             kind: "azure_service_principal";
             tenant_id: string;
         };
+        /** @description A credential as a response shows it: what names it, never what signs with it. */
         StorageCredentialView: {
             access_key_id: string;
             endpoint?: string | null;
@@ -713,7 +655,7 @@ export interface components {
         UpdateConnectionRequest: {
             credential?: string | null;
             name?: string | null;
-            target?: null | components["schemas"]["ConnectionTarget"];
+            target?: null | components["schemas"]["StorageTarget"];
         };
         /**
          * @description A rename, a rotation or both. `spec` replaces the whole spec, secrets
@@ -722,7 +664,7 @@ export interface components {
          */
         UpdateCredentialRequest: {
             name?: string | null;
-            spec?: null | components["schemas"]["CredentialSpecInput"];
+            spec?: null | components["schemas"]["StorageCredentialInput"];
         };
         UpdateJobRequest: {
             name?: string | null;
@@ -875,7 +817,7 @@ export interface operations {
             };
         };
     };
-    complete_stream: {
+    chat_completions: {
         parameters: {
             query?: never;
             header?: never;
@@ -884,20 +826,18 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CompletionRequest"];
+                "application/json": components["schemas"]["ChatCompletionRequest"];
             };
         };
         responses: {
-            /** @description SSE stream: `delta` frames carry text; an `error` frame carries an ErrorBody; the stream ends when the model does */
+            /** @description The gateway's answer as it streams: OpenAI chat completion chunks (`text/event-stream`) or one completion (`application/json`) */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "text/event-stream": unknown;
-                };
+                content?: never;
             };
-            /** @description No model connection, or several and none named */
+            /** @description Not an alias, or a malformed request */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -908,8 +848,10 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            /** @description No such connection */
-            404: {
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            /** @description The AI gateway did not answer */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -917,9 +859,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
+            /** @description This workspace has no AI gateway */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     list_workspaces: {
@@ -949,10 +897,7 @@ export interface operations {
     };
     list_connections: {
         parameters: {
-            query?: {
-                /** @description Only those of this purpose. */
-                purpose?: components["schemas"]["Purpose"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -1339,10 +1284,7 @@ export interface operations {
     };
     list_credentials: {
         parameters: {
-            query?: {
-                /** @description Only those of this purpose. */
-                purpose?: components["schemas"]["Purpose"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;

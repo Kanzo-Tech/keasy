@@ -1,13 +1,12 @@
 //! Validation: prove a credential does what its connections need of it — LIST
-//! a source, WRITE and DELETE under the sink, list a provider's models.
+//! a source, WRITE and DELETE under the sink.
 
 use futures::StreamExt;
 use object_store::PutPayload;
 
 use crate::domain::{
-    Check, ConnectionTarget, ConnectionView, CredentialSpecInput, Direction, ModelCredentialInput,
-    ModelTarget, Operation, Outcome, StorageCredentialInput, StorageLocation, StorageTarget,
-    ValidationReport,
+    Check, ConnectionView, Direction, Operation, Outcome, StorageCredentialInput, StorageLocation,
+    StorageTarget, ValidationReport,
 };
 use crate::storage_client;
 
@@ -89,46 +88,16 @@ async fn storage(credential: &StorageCredentialInput, target: &StorageTarget) ->
     }
 }
 
-/// Whether the model the target runs is among those the key may call.
-fn offers(
-    credential: &ModelCredentialInput,
-    target: &ModelTarget,
-    listed: &Result<Vec<String>, String>,
-) -> Check {
-    let model = target
-        .model
-        .as_deref()
-        .unwrap_or(credential.default_model());
-    check(
-        Operation::Models,
-        match listed {
-            Err(e) => Err(e.clone()),
-            Ok(ids) if ids.iter().any(|id| id == model) => Ok(Some(model.to_string())),
-            Ok(_) => Err(format!("{model} is not a model this key may call")),
-        },
-    )
-}
-
 /// What `target` needs of `spec`, probed.
-pub async fn connection(spec: &CredentialSpecInput, target: &ConnectionTarget) -> ValidationReport {
-    report(match (spec, target) {
-        (CredentialSpecInput::Storage(s), ConnectionTarget::Storage(t)) => storage(s, t).await,
-        (CredentialSpecInput::Model(m), ConnectionTarget::Model(t)) => {
-            vec![offers(m, t, &crate::llm_client::models(m).await)]
-        }
-        _ => vec![check(
-            Operation::List,
-            Err("the credential is of another purpose".into()),
-        )],
-    })
+pub async fn connection(spec: &StorageCredentialInput, target: &StorageTarget) -> ValidationReport {
+    report(storage(spec, target).await)
 }
 
 /// A credential, probed through every connection that uses it and at `url`
-/// when given, and the dependents that failed. A model credential lists its
-/// models whatever else it does; a storage credential with nothing to reach
-/// says so.
+/// when given, and the dependents that failed. A credential with nothing to
+/// reach says so.
 pub async fn credential(
-    spec: &CredentialSpecInput,
+    spec: &StorageCredentialInput,
     url: Option<&str>,
     dependents: &[ConnectionView],
 ) -> (ValidationReport, Vec<String>) {
@@ -140,39 +109,18 @@ pub async fn credential(
         }
         checks.extend(through(name, found));
     };
-    match spec {
-        CredentialSpecInput::Model(m) => {
-            let listed = crate::llm_client::models(m).await;
-            checks.push(check(
-                Operation::Models,
-                listed
-                    .as_ref()
-                    .map(|ids| Some(format!("{} models", ids.len())))
-                    .map_err(Clone::clone),
-            ));
-            for d in dependents {
-                if let ConnectionTarget::Model(t) = &d.target {
-                    add(&d.name, vec![offers(m, t, &listed)], &mut checks);
-                }
-            }
-        }
-        CredentialSpecInput::Storage(s) => {
-            for d in dependents {
-                if let ConnectionTarget::Storage(t) = &d.target {
-                    add(&d.name, storage(s, t).await, &mut checks);
-                }
-            }
-            if let Some(url) = url {
-                checks.push(list(s, url).await);
-            }
-            if checks.is_empty() {
-                checks.push(Check {
-                    operation: Operation::List,
-                    result: Outcome::Skip,
-                    message: Some("no connection uses it and no URL was given to list".into()),
-                });
-            }
-        }
+    for d in dependents {
+        add(&d.name, storage(spec, &d.target).await, &mut checks);
+    }
+    if let Some(url) = url {
+        checks.push(list(spec, url).await);
+    }
+    if checks.is_empty() {
+        checks.push(Check {
+            operation: Operation::List,
+            result: Outcome::Skip,
+            message: Some("no connection uses it and no URL was given to list".into()),
+        });
     }
     (report(checks), failing)
 }

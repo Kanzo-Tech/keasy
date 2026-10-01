@@ -1,3 +1,4 @@
+mod ai;
 mod authentication;
 mod authorization;
 mod connections;
@@ -5,6 +6,6 @@ mod credentials;
 mod health_check;
 mod helpers;
 mod jobs;
-mod vending;
 mod openapi;
 mod telemetry;
+mod vending;

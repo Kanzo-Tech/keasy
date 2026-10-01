@@ -1,5 +1,4 @@
 # The dev stack. Every value is a dev literal; prod is infra/terraform.
-# AI needs Ollama on the host once: `make ai`.
 #
 # `*.localhost` is loopback on the host and a network alias here, so one URL
 # works from the browser and from a container: Keycloak's issuer and the MinIO
@@ -89,10 +88,36 @@ services:
       timeout: 5s
       retries: 5
 
-  # The AI gateway prod runs (platform module), on the dev profile: both aliases on
-  # the host's Ollama (`make ai`). keycloak-realm mints the dev tenant's team and key
-  # here, as it does in prod. Admin console: http://localhost:4000/ui (admin / the
-  # master key).
+  # The dev gateway's upstream. CPU-only under Docker on macOS; to use the Mac's GPU,
+  # run Ollama natively and `OLLAMA_API_BASE=http://host.docker.internal:11434 make dev`.
+  ollama:
+    image: ollama/ollama:0.35.0@sha256:2a6e883b917fc543389599dae79918f5cac9e1438890506982f44aa4f5625d01
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Pulls what infra/ai/litellm.dev.yaml names into the volume, once; a re-`up` only
+  # checks. Nothing waits on it: until it finishes, AI answers "model not found" and
+  # everything else works. `make logs-ollama-init` to watch the first pull.
+  ollama-init:
+    image: ollama/ollama:0.35.0@sha256:2a6e883b917fc543389599dae79918f5cac9e1438890506982f44aa4f5625d01
+    restart: "no"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - ollama pull hermes3:8b && ollama pull hermes3:3b
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  # The AI gateway prod runs (platform module), on the dev profile. keycloak-realm
+  # mints the dev tenant's team and key here, as it does in prod. Admin console:
+  # http://localhost:4000/ui (admin / the master key).
   litellm:
     image: ghcr.io/berriai/litellm-database:v1.103.0@sha256:f4f114b1996c5923c4d62a7bbdcecb2ccf9df17bdebce76050f609be97f75f5c
     command: ["--config", "/app/config.yaml", "--port", "4000"]
@@ -105,11 +130,17 @@ services:
       DATABASE_URL: postgresql://litellm:litellm@litellm-postgres:5432/litellm
       REDIS_HOST: valkey
       REDIS_PORT: "6379"
-      OLLAMA_API_BASE: http://host.docker.internal:11434
+      OLLAMA_API_BASE: ${OLLAMA_API_BASE:-http://ollama:11434}
       STORE_MODEL_IN_DB: "False"
+      # Docker Desktop's VM on Apple silicon advertises SVE2 the CPU lacks, and
+      # cryptography ≥ 49 dies on it with SIGILL (same fault: Parallels KB 131179).
+      # This only turns off OpenSSL's ARM capability probing.
+      OPENSSL_armcap: "0"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
+      ollama:
+        condition: service_healthy
       litellm-postgres:
         condition: service_healthy
       valkey:
@@ -148,7 +179,7 @@ services:
       KEASY_BOOTSTRAP_FILE: /etc/keasy/bootstrap.json
       # dev.tfvars fixes the dev tenant's gateway key.
       KEASY_AI_URL: http://litellm:4000
-      KEASY_AI_KEY: sk-keasy-dev
+      KEASY_AI_KEY: sk-keasy-dev-workspace
     depends_on:
       keycloak-realm:
         condition: service_completed_successfully
@@ -243,3 +274,4 @@ volumes:
   cargo-registry:
   minio-data:
   litellm-postgres-data:
+  ollama-models:

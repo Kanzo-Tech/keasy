@@ -31,7 +31,7 @@ tenants = {
     display_name  = "Dev Workspace"
     owners        = ["owner@keasy.local"]
     members       = ["dev@keasy.local"]
-    client_secret = "keasy-dev-secret" # fixed so compose can hand it to the web
-    ai_key        = "sk-keasy-dev"     # fixed so compose can hand it to the server
+    client_secret = "keasy-dev-secret"       # fixed so compose can hand it to the web
+    ai_key        = "sk-keasy-dev-workspace" # fixed so compose can hand it to the server
   }
 }

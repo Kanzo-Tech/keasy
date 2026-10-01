@@ -21,8 +21,10 @@ No `.env`: every dev value is a literal in `docker-compose.yml`.
 | API, for curl | `http://localhost:8080` |
 | AI gateway console | [http://localhost:4000/ui](http://localhost:4000/ui) (`admin` / `sk-dev-master-key`) |
 
-AI runs on local models: `make ai` once per machine installs Ollama on the host and
-pulls them. Without it everything but AI works.
+AI runs on local models, in compose: the first `up` pulls them into a volume
+(`make logs-ollama-init`, a few GB), and until then everything but AI works. On a Mac
+they run on CPU; for the GPU, run Ollama natively and start with
+`OLLAMA_API_BASE=http://host.docker.internal:11434 make dev`.
 
 ## Dev accounts
 
@@ -118,7 +120,6 @@ declared in `realm/terraform.tfvars`. Images are published to GHCR by
 | Target | What it does |
 |--------|--------------|
 | `make dev` | Start dev; rebuild only after dep or Dockerfile changes (code hot-reloads) |
-| `make ai` | Once per machine: Ollama on the host + the dev models |
 | `make down` | Stop everything |
 | `make clean` | Remove containers, volumes (Keycloak, dev realm state, data) and images |
 | `make logs` / `make logs-<svc>` | Tail logs |

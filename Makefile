@@ -11,7 +11,7 @@
 # Crates compile at runtime into the persistent `server-target` + `cargo-registry`
 # volumes, so only the first `up` (or one after `make clean`) pays a cold compile.
 
-.PHONY: help dev down logs restart clean ps api ai deploy-platform deploy-realm
+.PHONY: help dev down logs restart clean ps api deploy-platform deploy-realm
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -42,12 +42,6 @@ shell-%: ## Open shell in container (e.g., make shell-server)
 
 ps: ## Show running services
 	docker compose ps
-
-# ── Local models ───────────────────────────────────────────────────────────
-# The dev gateway answers both aliases from Ollama on the host (Docker on macOS has
-# no GPU). Once per machine; after that the stack runs offline.
-ai: ## Install/start Ollama and pull the dev models (infra/ai/litellm.dev.yaml)
-	./scripts/setup-dev-ai.sh
 
 # ── The API contract ───────────────────────────────────────────────────────
 # The server's routes publish the spec; `api/` (@keasy/api) holds it and the

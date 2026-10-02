@@ -862,7 +862,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description The gateway's answer as it streams: OpenAI chat completion chunks (`text/event-stream`) or one completion (`application/json`) */
+            /** @description The gateway's answer as it streams: OpenAI chat completion chunks (`text/event-stream`), ended by an error event carrying `gateway/silent` if the gateway goes quiet mid-answer, or one completion (`application/json`) */
             200: {
                 headers: {
                     [name: string]: unknown;

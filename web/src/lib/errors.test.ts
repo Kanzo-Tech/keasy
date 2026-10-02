@@ -69,6 +69,22 @@ describe("a library's coded failure", () => {
     expect(toProblem(refused, "llm/failed")).toMatchObject({ code: "gateway/silent" });
     expect(toProblem(Object.assign(new Error("x"), { responseBody: "<html>" }), "llm/failed").code).toBe("llm/failed");
   });
+
+  it("keeps the relay's code from the error event that ended a streamed answer", () => {
+    // What the openai-compatible parser hands over for `data: {"error": {…}}`: the protocol's four
+    // fields, keasy's `title` and `data` already dropped.
+    const event = { message: "the AI gateway went silent mid-answer", code: "gateway/silent" };
+    expect(toProblem(event, "llm/failed")).toEqual({
+      code: "gateway/silent",
+      title: "The AI gateway did not answer in time.",
+      detail: "the AI gateway went silent mid-answer",
+    });
+  });
+
+  it("leaves a provider's error event to the fallback, in its own words", () => {
+    const event = { message: "The server is overloaded", type: "server_error", code: "overloaded" };
+    expect(toProblem(event, "llm/failed")).toMatchObject({ code: "llm/failed", detail: "The server is overloaded" });
+  });
 });
 
 describe("a host failure fossil wrapped", () => {

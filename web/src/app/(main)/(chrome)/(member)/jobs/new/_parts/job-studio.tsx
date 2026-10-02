@@ -30,7 +30,17 @@ import {
   ToggleGroupItem,
   toast,
 } from "@kanzo-tech/ui";
-import { Check, ChevronDown, PanelRight, Pencil, Save, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  FolderOutput,
+  PanelRight,
+  Pencil,
+  PlugZap,
+  Save,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import { useRouter } from "@kanzo-tech/navigation/next";
 import { $api, ApiError, http, invalidate, type Schemas } from "@/lib/api/client";
 import { Boundary, Loading } from "@/components/boundary";
@@ -373,20 +383,26 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
       <StudioEditor
         inspector={(editor) => (
           <Tabs
-            className="flex min-h-0 flex-1 flex-col gap-0"
+            className="@container flex min-h-0 flex-1 flex-col gap-0"
             onValueChange={(d) => setTab(d.value as InspectorTab)}
             value={tab}
           >
-            <TabsList className="mx-3 mt-2 w-auto">
-              <TabsTrigger value="connections">Connections</TabsTrigger>
-              <TabsTrigger value="output">
-                Output
+            {/* A narrow rail keeps the icons and drops the words; the names stay as labels. */}
+            <TabsList className="mx-3 mt-2 grid grid-cols-3">
+              <TabsTrigger aria-label="Connections" value="connections">
+                <PlugZap />
+                <span className="hidden @[18rem]:inline">Connections</span>
+              </TabsTrigger>
+              <TabsTrigger aria-label="Output" value="output">
+                <FolderOutput />
+                <span className="hidden @[18rem]:inline">Output</span>
                 <Show when={outputIncomplete}>
                   <span aria-label="incomplete" className="size-1.5 rounded-full bg-destructive" />
                 </Show>
               </TabsTrigger>
-              <TabsTrigger value="problems">
-                Problems
+              <TabsTrigger aria-label="Problems" value="problems">
+                <TriangleAlert />
+                <span className="hidden @[18rem]:inline">Problems</span>
                 <Show when={diagnostics.length > 0}>
                   <Badge size="xs" variant={errors ? "destructive" : "warning"}>
                     {diagnostics.length}

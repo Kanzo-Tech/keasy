@@ -24,7 +24,7 @@ import {
 import { useChartQuery } from "@kanzo-tech/ui/analytics";
 import { distinctValuesQuery, isRuleComplete, OPERATOR_META, type Rule, type RuleOperator } from "./rule-engine";
 import { useCorpus } from "./corpus";
-import { fieldsOf, type TableStats } from "./field-stats";
+import { columnsOf, type TableStats } from "./field-stats";
 
 type Items = ListCollection<{ label: string; value: string }>;
 
@@ -160,17 +160,17 @@ export function RuleBuilder({
   const first = tables[0];
   const [draft, setDraft] = useState<Omit<Rule, "id">>(() => ({
     typeName: first?.name,
-    fieldKey: first?.fields[0]?.name ?? "",
+    fieldKey: first?.columns[0] ?? "",
     operator: "not_null",
   }));
   const entities = useMemo(
     () => createListCollection({ items: tables.map((t) => ({ label: t.name, value: t.name })) }),
     [tables],
   );
-  const fields = fieldsOf(tables, draft.typeName ?? "");
+  const columns = columnsOf(tables, draft.typeName ?? "");
   const fieldItems = useMemo(
-    () => createListCollection({ items: fields.map((f) => ({ label: f.name, value: f.name })) }),
-    [fields],
+    () => createListCollection({ items: columns.map((name) => ({ label: name, value: name })) }),
+    [columns],
   );
 
   const duplicate = rules.some(
@@ -188,7 +188,7 @@ export function RuleBuilder({
           collection={entities}
           label="Every"
           onChange={(typeName) =>
-            setDraft({ ...draft, typeName, fieldKey: fieldsOf(tables, typeName)[0]?.name ?? "", value: undefined, values: undefined })
+            setDraft({ ...draft, typeName, fieldKey: columnsOf(tables, typeName)[0] ?? "", value: undefined, values: undefined })
           }
           value={draft.typeName ?? ""}
         />

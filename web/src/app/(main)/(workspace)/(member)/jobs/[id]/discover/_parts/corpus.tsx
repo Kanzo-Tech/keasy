@@ -74,7 +74,7 @@ export function useFieldStats(): TableStats[] {
     queryFn: ({ signal }) =>
       Promise.all(
         manifest.vertex_tables.map(async (table) =>
-          summarize(table, await corpus.sql(`SUMMARIZE ${corpus.relation(table.name)}`, { signal })),
+          summarize(table, recordsOf(await corpus.sql(`SUMMARIZE ${corpus.relation(table.name)}`, { signal }))),
         ),
       ),
     ...ONCE,

@@ -3,6 +3,7 @@ import { jsonSchema, stepCountIs, tool, ToolLoopAgent } from "@kanzo-tech/llm";
 import { gateway } from "@/lib/ai";
 import { type Shown, toProblem } from "@/lib/errors";
 import { recordsOf } from "./corpus";
+import { graphKey } from "./field-stats";
 
 /** How much of a result set the model reads; the panel shows all of it. */
 const SAMPLE_ROWS = 30;
@@ -24,7 +25,7 @@ export function sample(result: SqlResult): string {
  * one thing DDL cannot carry is that a join exists at all — the views have no
  * foreign keys — so the instructions keep the traversal idiom and nothing else.
  */
-export function askInstructions(schema: string): string {
+export function askInstructions(schema: string, key: string): string {
   return `You answer questions about a property graph loaded into DuckDB as views, by querying it
 with the \`query\` tool and then explaining what the rows say. The schema below is the whole of
 it: use those tables and those columns, and invent no others.
@@ -39,10 +40,10 @@ columns holds the key of the vertex table the comment names beside it.
 \`\`\`
 SELECT t.*
 FROM "SourceTable" s
-JOIN "EdgeTable" e ON s."dense_id" = e."src"
-JOIN "TargetTable" t ON t."dense_id" = e."dst"
+JOIN "EdgeTable" e ON s."${key}" = e."<its source column>"
+JOIN "TargetTable" t ON t."${key}" = e."<its destination column>"
 \`\`\`
-Every vertex table's \`"dense_id"\` is unique across the whole graph, so
+Every vertex table's \`"${key}"\` is unique across the whole graph, so
 include it in a SELECT over vertices: the answer can then be shown on the
 graph.
 
@@ -78,7 +79,7 @@ export type QueryAnswer = QueryOutput | { readonly sql: string; readonly refused
 export function askAgent(schema: string, corpus: SqlCorpus) {
   return new ToolLoopAgent({
     model: gateway("chat"),
-    instructions: askInstructions(schema),
+    instructions: askInstructions(schema, graphKey(corpus.manifest)),
     stopWhen: stepCountIs(5),
     // Not retried here: the gateway retries its upstreams, and a silent gateway asked three times
     // is three deadlines where the person waits for one.

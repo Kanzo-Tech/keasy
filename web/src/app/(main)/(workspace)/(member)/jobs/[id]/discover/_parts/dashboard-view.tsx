@@ -9,6 +9,7 @@ import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { Boundary } from "@/components/boundary";
 import { useCorpus } from "./corpus";
+import { bookkeeping } from "./field-stats";
 
 /**
  * The Dashboard view: kanzo-ui's `Dashboard` over one vertex type at a time, on the crossfilter the
@@ -65,13 +66,7 @@ function SavedDashboard() {
   };
   useEffect(() => () => void (pending.current && clearTimeout(pending.current)), []);
 
-  const exclude = useMemo(
-    () =>
-      table
-        ? [table.key, table.identity, ...(table.position ? [table.position.x, table.position.y] : [])]
-        : [],
-    [table],
-  );
+  const exclude = useMemo(() => (table ? bookkeeping(table) : []), [table]);
 
   if (!table) return <Skeleton className="h-full w-full" />;
 

@@ -59,7 +59,11 @@ export function RulesPanel() {
   const countOf = (i: number) => counted[i]?.violationCount ?? -1;
   const violations = counted.reduce((n, r) => n + Math.max(r.violationCount, 0), 0);
 
-  const keyOf = (type: string | undefined) => manifest.vertex_tables.find((t) => t.name === type)?.key ?? "dense_id";
+  const keyOf = (type: string | undefined) => {
+    const table = manifest.vertex_tables.find((t) => t.name === type);
+    if (!table) throw new Error(`The corpus declares no vertex table ${type ?? ""}`);
+    return table.key;
+  };
   const failingIds = async (rule: Rule) => {
     const query = ruleIdsQuery(rule, corpus.relation(rule.typeName ?? ""), keyOf(rule.typeName));
     return query ? numbers(await coordinator.query(query), "id") : [];

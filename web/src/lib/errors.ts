@@ -160,10 +160,11 @@ export function toProblem(err: unknown, code: ClientCode = "web/unknown"): Shown
       : err instanceof ClientError
         ? { code: err.code, title: err.title, detail: err.message }
         : (coded(err) ??
-          answered(err) ?? {
+          answered(err) ??
+          streamed(err) ?? {
             code,
             title: "Something went wrong.",
-            detail: err instanceof Error ? err.message : String(err),
+            detail: err instanceof Error ? err.message : (messageOf(err) ?? String(err)),
           });
   return cause === undefined ? shown : { ...shown, cause };
 }
@@ -215,6 +216,26 @@ function answered(err: unknown): Shown | undefined {
     // Not an ErrorBody: the gateway's own words, which the caller's fallback shows.
     return undefined;
   }
+}
+
+/**
+ * An error event in a streamed answer, as the AI SDK hands it over: not an `Error` but the
+ * protocol's `{ message, type, param, code }`, every other field dropped. keasy's relay writes one
+ * when the gateway goes quiet mid-answer, coded `gateway/silent`, with its detail as `message`; a
+ * provider's own (`server_error`, `429`) is not in the grammar, and stays the caller's fallback.
+ */
+function streamed(err: unknown): Shown | undefined {
+  if (err instanceof Error || typeof err !== "object" || err === null) return undefined;
+  const { code } = err as { code?: unknown };
+  if (typeof code !== "string" || !GRAMMAR.test(code)) return undefined;
+  const detail = messageOf(err) ?? "";
+  return { code, title: copyOf(code)?.title ?? detail, detail };
+}
+
+/** The `message` a thrown non-`Error` carries, as the protocol's error objects do. */
+function messageOf(err: unknown): string | undefined {
+  const message = (err as { message?: unknown } | null)?.message;
+  return typeof message === "string" ? message : undefined;
 }
 
 /** Toast a failed action: `title` names the action, the description is the code's copy or the failure's own words. */

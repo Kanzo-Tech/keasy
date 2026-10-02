@@ -102,15 +102,14 @@ export function StudioEditor({
     [opened, onDiagnostics],
   );
 
-  // Schema-aware completion: each `@conn/path` binding is described in the
-  // browser with a credential vended for its connection and pushed at the
-  // compiler before the next check.
-  const descriptors = useSourceDescriptors(program);
+  // Each `@conn/path` binding is described in the browser with a credential vended for its
+  // connection; fossil types the program with it and warns at each source it could not describe.
+  const introspection = useSourceDescriptors(program);
   useEffect(() => {
-    if (!opened || descriptors.length === 0) return;
-    for (const descriptor of descriptors) opened.registerDescriptor(descriptor);
+    if (!opened || !introspection) return;
+    opened.registerIntrospection(introspection);
     if (view) forceLinting(view);
-  }, [opened, descriptors, view]);
+  }, [opened, introspection, view]);
 
   const editor = useMemo<EditorApi>(
     () => ({

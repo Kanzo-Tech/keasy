@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { InferredDescriptor, UndescribedSource } from "@fossil-lang/introspect";
+import type { InferredDescriptor } from "@fossil-lang/introspect";
 
 import * as checker from "@/lib/fossil/checker";
 import { describeSources, sourceDescriptorsKey } from "./describe-sources";
@@ -37,25 +37,22 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 /**
- * The descriptors, and why they could not be read. The named exception to "useSuspenseQuery only"
- * (fossil docs/design/failure, G2.4): it follows every pause in typing, the editor stays useful
- * without it, and suspending the editor on a keystroke would be the wrong answer — so the failure is
- * returned to be shown beside the program instead of thrown.
+ * The descriptors that could be read. A source that could not be described is left out and its
+ * failure is not shown: fossil's check is the one place the editor reports a problem, and it does
+ * not yet say that a source's columns are unknown — so completion simply lacks that source. Not
+ * suspending (fossil docs/design/failure, G2.4): it follows every pause in typing, and the editor
+ * stays useful without it.
  */
-export function useSourceDescriptors(script: string): {
-  descriptors: InferredDescriptor[];
-  undescribed: UndescribedSource[];
-  error: unknown;
-} {
+export function useSourceDescriptors(script: string): InferredDescriptor[] {
   const program = useDebouncedValue(script, TYPING_PAUSE_MS);
 
-  const { data: sources, error: sourcesError } = useQuery({
+  const { data: sources } = useQuery({
     queryKey: ["program-sources", program],
     queryFn: async ({ signal }) => (await checker.jobProgram({ signal })).sources(program),
     staleTime: Infinity,
   });
 
-  const { data, error } = useQuery({
+  const { data } = useQuery({
     queryKey: sourceDescriptorsKey(
       (sources ?? []).map((s) => `${s.format}:${s.locator}:${s.option ?? ""}`).sort(),
     ),
@@ -65,5 +62,5 @@ export function useSourceDescriptors(script: string): {
     staleTime: DESCRIPTION_FRESH_MS,
   });
 
-  return { descriptors: data?.descriptors ?? NONE, undescribed: data?.undescribed ?? [], error: sourcesError ?? error };
+  return data?.descriptors ?? NONE;
 }

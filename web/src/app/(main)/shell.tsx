@@ -53,21 +53,12 @@ import { Boundary } from "@/components/boundary";
 import { ProblemView } from "@/components/problem-view";
 import { toProblem } from "@/lib/errors";
 import { settled } from "@/lib/api/settled";
+import { initials } from "@/lib/ui/format";
 import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";
 import { HeaderEndContext } from "@/app/(main)/_parts/header-end";
 import { Trail } from "@/app/(main)/_parts/trail";
 
 const titleCase = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .map((part) => part[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
 
 // Each workspace is its own subdomain instance: `<current>.<base>` → `<slug>.<base>`.
 function workspaceUrl(slug: string, current: string) {

@@ -14,14 +14,12 @@ import {
 } from "@kanzo-tech/ui";
 import { CodeEditor } from "@kanzo-tech/ui/editor";
 import { fossil } from "@fossil-lang/codemirror-fossil";
-import { forceLinting } from "@codemirror/lint";
+import { forceLinting, lintGutter } from "@codemirror/lint";
 import { EditorView } from "@codemirror/view";
 import { X } from "lucide-react";
 import type { FossilProgram } from "@fossil-lang/wasm";
 import * as checker from "@/lib/fossil/checker";
 import { useSourceDescriptors } from "./use-source-descriptors";
-import { type Shown, toProblem } from "@/lib/errors";
-import { ProblemView } from "@/components/problem-view";
 
 /** The chrome a floating cluster wears — the same utilities the canvas controls use. */
 const FLOATING = "rounded-lg border bg-card shadow-sm";
@@ -44,6 +42,7 @@ export function StudioEditor({
 }: {
   program: string;
   onProgramChange: (program: string) => void;
+  /** Every row of the last check — the ones the editor draws — or the one row of a check that never answered. */
   onDiagnostics: (rows: readonly checker.CheckRow[]) => void;
   /** The editor's API, again whenever the view behind it changes. */
   onEditor: (editor: EditorApi) => void;
@@ -53,7 +52,6 @@ export function StudioEditor({
   const [view, setView] = useState<EditorView | null>(null);
   const [opened, setOpened] = useState<FossilProgram | null>(null);
   const [definition, setDefinition] = useState<string | null>(null);
-  const [loadProblem, setLoadProblem] = useState<Shown | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -63,29 +61,43 @@ export function StudioEditor({
         if (alive) setOpened(p);
       })
       .catch((cause: unknown) => {
-        if (alive) setLoadProblem(toProblem(cause));
+        if (alive) onDiagnostics([checker.uncheckedRow(cause)]);
       });
     return () => {
       alive = false;
     };
-  }, []);
+  }, [onDiagnostics]);
 
   // `CodeEditor` reconfigures its language on the identity of `extensions`.
   const extensions = useMemo(
     () =>
       opened
-        ? fossil({
-            ...opened,
-            // The rows are the program's own `check` rows, coded; the editor's type is looser.
-            onDiagnostics: (rows) => onDiagnostics(rows as readonly checker.CheckRow[]),
-            // One pane: a definition in a shape document is reported, not jumped to.
-            onNavigate: (target) =>
-              setDefinition(
-                target === null
-                  ? null
-                  : `${target.uri}:${target.range.start.line + 1}:${target.range.start.character + 1}`,
-              ),
-          })
+        ? [
+            // The gutter is a caller's to install (`CodeEditor` themes the lint UI, ships none of it).
+            lintGutter(),
+            fossil({
+              ...opened,
+              // A check that throws is drawn by the linter on the first character and never reaches
+              // `onDiagnostics`; the studio is told the same row, so nothing reads "Valid" over it.
+              check: async (text) => {
+                try {
+                  return await opened.check(text);
+                } catch (cause) {
+                  onDiagnostics([checker.uncheckedRow(cause)]);
+                  throw cause;
+                }
+              },
+              // The rows are the program's own `check` rows, coded; the editor's type is looser.
+              onDiagnostics: (rows) => onDiagnostics(rows as readonly checker.CheckRow[]),
+              // One pane: a definition in a shape document is reported, not jumped to.
+              onNavigate: (target) =>
+                setDefinition(
+                  target === null
+                    ? null
+                    : `${target.uri}:${target.range.start.line + 1}:${target.range.start.character + 1}`,
+                ),
+            }),
+          ]
         : [],
     [opened, onDiagnostics],
   );
@@ -93,7 +105,7 @@ export function StudioEditor({
   // Schema-aware completion: each `@conn/path` binding is described in the
   // browser with a credential vended for its connection and pushed at the
   // compiler before the next check.
-  const { descriptors, undescribed, error: describeError } = useSourceDescriptors(program);
+  const descriptors = useSourceDescriptors(program);
   useEffect(() => {
     if (!opened || descriptors.length === 0) return;
     for (const descriptor of descriptors) opened.registerDescriptor(descriptor);
@@ -140,17 +152,6 @@ export function StudioEditor({
         onView={setView}
         value={program}
       />
-
-      {(loadProblem || describeError || undescribed.length > 0) && (
-        <div className="absolute inset-x-3 bottom-3 z-10 flex flex-col gap-2">
-          {loadProblem || describeError ? (
-            <ProblemView problem={loadProblem ?? toProblem(describeError)} />
-          ) : (
-            // A source whose columns could not be read: completion for it is off, and this says why.
-            undescribed.map(({ source, problem }) => <ProblemView key={source.key} problem={problem} />)
-          )}
-        </div>
-      )}
 
       <div className="absolute end-3 top-3 z-10">
         <Clipboard className={cn(FLOATING, "w-auto")} timeout={1200} value={program}>

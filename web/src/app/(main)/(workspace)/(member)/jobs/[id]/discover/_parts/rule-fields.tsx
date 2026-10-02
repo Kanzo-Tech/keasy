@@ -26,6 +26,13 @@ import { distinctValuesQuery, isRuleComplete, OPERATOR_META, type Rule, type Rul
 import { useCorpus } from "./corpus";
 import { columnsOf, type TableStats } from "./field-stats";
 
+/** The column a new rule starts on: the program's first field, where the table has one. */
+const firstColumn = (table: TableStats) => table.fields[0]?.name ?? table.columns[0] ?? "";
+const firstColumnOf = (tables: readonly TableStats[], name: string) => {
+  const table = tables.find((t) => t.name === name);
+  return table ? firstColumn(table) : "";
+};
+
 type Items = ListCollection<{ label: string; value: string }>;
 
 const OPERATORS = Object.keys(OPERATOR_META) as RuleOperator[];
@@ -160,7 +167,7 @@ export function RuleBuilder({
   const first = tables[0];
   const [draft, setDraft] = useState<Omit<Rule, "id">>(() => ({
     typeName: first?.name,
-    fieldKey: first?.columns[0] ?? "",
+    fieldKey: first ? firstColumn(first) : "",
     operator: "not_null",
   }));
   const entities = useMemo(
@@ -188,7 +195,7 @@ export function RuleBuilder({
           collection={entities}
           label="Every"
           onChange={(typeName) =>
-            setDraft({ ...draft, typeName, fieldKey: columnsOf(tables, typeName)[0] ?? "", value: undefined, values: undefined })
+            setDraft({ ...draft, typeName, fieldKey: firstColumnOf(tables, typeName), value: undefined, values: undefined })
           }
           value={draft.typeName ?? ""}
         />

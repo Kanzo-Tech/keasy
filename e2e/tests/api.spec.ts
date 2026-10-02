@@ -7,23 +7,10 @@ test("23 what axum refuses before a handler is an ErrorBody through the BFF", as
   expectRefusal(await api(page, "GET", "/v1/nothing-here"), 404, "route/not-found");
 });
 
-test("26 a burst over the rate is request/rate-limited", async ({ page }) => {
-  test.setTimeout(180_000);
-  // The bucket holds a burst and refills steadily; a page holds six connections and never empties
-  // it, and a thousand sockets at once is more than the dev server takes. Waves of a hundred, from
-  // the request context with the same session, until the server refuses one.
-  await page.goto("/settings/preferences");
-  const refused: string[] = [];
-  for (let wave = 0; wave < 40 && refused.length === 0; wave++) {
-    const answers = await Promise.allSettled(
-      Array.from({ length: 100 }, () => page.request.get("/api/v1/auth/workspaces")),
-    );
-    for (const a of answers) {
-      if (a.status === "fulfilled" && a.value.status() === 429) {
-        refused.push(((await a.value.json()) as { code: string }).code);
-      }
-    }
-  }
-  expect(refused.length, "some of the burst was refused").toBeGreaterThan(0);
-  expect(new Set(refused)).toEqual(new Set(["request/rate-limited"]));
+test.fixme("26 a burst over the rate is request/rate-limited", async () => {
+  // waits on a stack whose BFF serves faster than the limiter refills: the dev BFF answers about a
+  // hundred requests a second, which is the dev bucket's refill, so 4000 requests in waves were
+  // never refused (first real run, 2026-10-02), and a thousand sockets at once reset the dev
+  // server. The refusal's code and shape are forced against the server directly by
+  // server/tests/api/failures.rs `a_burst_over_the_rate_is_refused_as_request_rate_limited`.
 });

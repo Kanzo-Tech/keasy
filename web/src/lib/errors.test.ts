@@ -24,6 +24,9 @@ describe("a failure, shown", () => {
 
   it("says a run too large for the browser in keasy's words", () => {
     expect(copyOf("run/over-budget")).toMatchObject({ title: "Too large for the browser" });
+    expect(copyOf("run/over-budget", { budget: 2 * 2 ** 30 })?.detail).toContain("(2 GiB)");
+    expect(copyOf("run/over-budget", { budget: 1.5 * 2 ** 30 })?.detail).toContain("(1.5 GiB)");
+    expect(copyOf("run/over-budget")?.detail).not.toContain("GiB");
   });
 
   it("leaves a fossil code with no entry in fossil's own words", () => {

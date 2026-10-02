@@ -47,11 +47,26 @@ export class ClientError extends Error {
   }
 }
 
-/** keasy's words for a code, where its audience differs from the one the code was written for. */
+/**
+ * keasy's words for a code, where its audience differs from the one the code was written for. A
+ * detail that names a figure the problem carries is written from its `data`.
+ */
 interface Copy {
+  title?: string;
+  detail?: string | ((data: unknown) => string);
+  link?: { label: string; href: string };
+}
+
+/** A {@link Copy} with its detail written for one problem. */
+export interface Worded {
   title?: string;
   detail?: string;
   link?: { label: string; href: string };
+}
+
+/** `bytes` in binary gigabytes, as a person reads a memory figure. */
+function gib(bytes: number): string {
+  return `${(bytes / 2 ** 30).toLocaleString("en", { maximumFractionDigits: 1 })} GiB`;
 }
 
 const signIn = { label: "Sign in again", href: "/api/auth/signin" };
@@ -120,14 +135,19 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Auth
   "store/refused": { title: "The store refused to open the data." },
   "run/over-budget": {
     title: "Too large for the browser",
-    detail:
-      "This job needs more memory than the browser can give it (2 GB). Nothing was written — try it with less data.",
+    detail: (data) => {
+      const budget = (data as { budget?: unknown } | undefined)?.budget;
+      const limit = typeof budget === "number" ? ` (${gib(budget)})` : "";
+      return `This job needs more memory than the browser can give it${limit}. Nothing was written — try it with less data.`;
+    },
   },
 };
 
-/** keasy's copy for `code`, where it overrides the code's own words. */
-export function copyOf(code: string): Copy | undefined {
-  return registry[code as keyof typeof registry];
+/** keasy's copy for `code`, where it overrides the code's own words; `data` is the problem's. */
+export function copyOf(code: string, data?: unknown): Worded | undefined {
+  const copy = registry[code as keyof typeof registry];
+  if (!copy) return undefined;
+  return { ...copy, detail: typeof copy.detail === "function" ? copy.detail(data) : copy.detail };
 }
 
 /** The page that explains `code`, for a code fossil raised; keasy's own codes have none. */

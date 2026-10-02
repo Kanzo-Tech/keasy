@@ -88,18 +88,23 @@ describe("a library's coded failure", () => {
 });
 
 describe("a host failure fossil wrapped", () => {
-  it("keeps keasy's code from the error's own cause, which fossil's wire drops", () => {
-    const refused = new ApiError({ code: "job/not-found", title: "Job not found", detail: "No such job", data: {} }, 404);
-    const wrapped = new FossilError(
-      { code: "storage/host-refused", title: "The host refused", detail: "the host refused job x", severity: "error", data: { scope: "job x" }, cause: { name: "ApiError", detail: "No such job" } },
-      { cause: refused },
-    );
-    expect(toProblem(wrapped)).toMatchObject({ code: "storage/host-refused", cause: { code: "job/not-found" } });
+  it("keeps keasy's code and data under fossil's", () => {
+    const silent = new ApiError({ code: "store/silent", title: "The store did not answer in time", detail: "STS", data: { after: 10_000 } }, 504);
+    const wrapped = FossilError.of("storage/host-refused", { scope: "job x" }, { cause: silent });
+    expect(toProblem(wrapped)).toMatchObject({
+      code: "storage/host-refused",
+      cause: { name: "ApiError", code: "store/silent", data: { after: 10_000 } },
+    });
   });
-});
 
-describe("an ApiError's name", () => {
-  it("is its code, so a wire that keeps only name and message keeps the code", () => {
-    expect(new ApiError({ code: "store/silent", title: "t", detail: "d", data: {} }, 504).name).toBe("store/silent");
+  it("keeps keasy's code in a stored problem, a level further down", () => {
+    const missing = new ApiError({ code: "job/not-found", title: "Job not found", detail: "No such job", data: {} }, 404);
+    const refused = FossilError.of("storage/host-refused", { scope: "job x" }, { cause: missing });
+    const unread = FossilError.of("document/unread", { documents: ["people.csv"] }, { cause: refused.problem });
+    const stored = JSON.parse(JSON.stringify(unread.problem)) as typeof unread.problem;
+    expect(toProblem(FossilError.from(stored))).toMatchObject({
+      code: "document/unread",
+      cause: { code: "storage/host-refused", cause: { code: "job/not-found" } },
+    });
   });
 });

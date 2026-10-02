@@ -47,7 +47,7 @@ describe("the deadline", () => {
         return new Response(body);
       }),
     );
-    const response = await deadlineFetch((ms) => new Silent(ms), 1_000)("/api/v1/ai/stream");
+    const response = await deadlineFetch((ms) => new Silent(ms), 1_000)("/api/v1/jobs/7/events");
     const reader = response.body!.getReader();
 
     for (let i = 0; i < 3; i++) {
@@ -59,6 +59,26 @@ describe("the deadline", () => {
     const stalled = expect(reader.read()).rejects.toMatchObject({ after: 1_000 });
     await vi.advanceTimersByTimeAsync(1_000);
     await stalled;
+  });
+
+  it("leaves a model call to the gateway, which bounds it itself", async () => {
+    vi.useFakeTimers();
+    const fetch = silentFetch();
+    vi.stubGlobal("fetch", fetch);
+    const stop = new AbortController();
+    const init = { method: "POST", signal: stop.signal };
+    const url = "https://keasy.test/api/v1/ai/chat/completions";
+    let settled = false;
+    const answer = deadlineFetch((ms) => new Silent(ms), 1_000)(url, init);
+    answer.then(
+      () => (settled = true),
+      () => (settled = true),
+    );
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(settled).toBe(false);
+    expect(fetch).toHaveBeenCalledWith(url, init);
+    stop.abort(new Error("stopped"));
+    await expect(answer).rejects.toThrow("stopped");
   });
 
   it("lets a caller's own abort be itself", async () => {

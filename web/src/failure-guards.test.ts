@@ -60,7 +60,8 @@ describe("the failure guards", () => {
 
   /**
    * Every wait on the network has a deadline, set in one place: `lib/deadline.ts`, whose
-   * `deadlineFetch` is the BFF auth client's fetch and so every API call's.
+   * `deadlineFetch` is the BFF auth client's fetch and so every API call's — a model call's
+   * included, which it hands whole to the gateway's own bound.
    *
    * Cannot prove: that the figure is right; a request made by a library keasy calls.
    */

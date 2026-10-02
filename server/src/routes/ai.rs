@@ -49,11 +49,13 @@ impl Gateway {
 /// How long the gateway may send nothing — before its answer begins, or between
 /// two chunks of it. Past it the call is `gateway/silent`: as the response, or as the stream's
 /// last event once the answer has begun.
-/// Under the browser's 30 s per chunk, so the gateway is named before the browser
-/// gives up and can only name the server. The route is left out of the server's
+/// Under the browser's 30 s, so the gateway is named before the browser gives up
+/// and can only say the model went silent. The route is left out of the server's
 /// request deadline, which this bound replaces for it.
 pub const IDLE: Duration = Duration::from_secs(25);
-/// The browser's bound on a model stream: `createGateway`'s idle, `@kanzo-tech/llm`.
+/// The browser's bound on a model stream: `@kanzo-tech/llm`'s `createGateway` wants
+/// the response's headers within 30 s and each chunk within 30 s of the last, and
+/// names a miss `ai/silent`. keasy's own deadline leaves `/api/v1/ai/` to it.
 const BROWSER_IDLE: Duration = Duration::from_secs(30);
 const _: () = assert!(
     IDLE.as_secs() < BROWSER_IDLE.as_secs(),

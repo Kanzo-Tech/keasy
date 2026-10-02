@@ -21,6 +21,18 @@ export function race<T>(promise: Promise<T>, ms: number, silent: () => Error): P
 const NO_BODY = new Set([101, 204, 205, 304]);
 
 /**
+ * A model call, which `@kanzo-tech/llm`'s `createGateway` bounds itself — its answer's start and
+ * each chunk after — and names `ai/silent`. A second bound here would race it and call the same
+ * silence `server/silent`, so the path is passed through whole.
+ */
+const MODEL_CALLS = "/api/v1/ai/";
+
+function isModelCall(input: RequestInfo | URL): boolean {
+  const url = input instanceof Request ? input.url : input.toString();
+  return new URL(url, "http://origin.invalid").pathname.startsWith(MODEL_CALLS);
+}
+
+/**
  * `fetch`, with the response's headers due within `ms` and each chunk of its body within `ms` of the
  * last — so a JSON answer and a stream are bounded alike, and a stream whose server sends keep-alives
  * is never cut while it is alive. When the deadline fires, the request is aborted and `silent(ms)` is
@@ -29,6 +41,7 @@ const NO_BODY = new Set([101, 204, 205, 304]);
  */
 export function deadlineFetch(silent: (ms: number) => Error, ms: number = DEADLINE_MS): typeof fetch {
   return async (input, init) => {
+    if (isModelCall(input)) return globalThis.fetch(input, init);
     const outer = init?.signal ?? (input instanceof Request ? input.signal : undefined);
     const controller = new AbortController();
     const forward = () => controller.abort(outer?.reason);

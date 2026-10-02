@@ -146,7 +146,7 @@ function DashboardRegion() {
   );
 }
 
-/** The footer: how much of the corpus is drawn, and where the graph is in its life. */
+/** The footer: where the data is, and how much of it is drawn — `GraphCounts` says when a layout runs. */
 function CorpusStatus() {
   const status = useGraphState((s) => s.status);
   return (
@@ -159,7 +159,7 @@ function CorpusStatus() {
         />
         {status}
       </Badge>
-      <GraphCounts className="truncate" />
+      <GraphCounts className="truncate" spinner />
     </span>
   );
 }

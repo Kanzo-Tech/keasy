@@ -13,8 +13,11 @@ use axum::response::{IntoResponse, Response};
 use super::middleware::AuthenticatedUser;
 use crate::error::{ErrorCode, fail};
 
-/// A workspace role, from `resource_access.<client_id>.roles` on the token.
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// A workspace role, from `resource_access.<client_id>.roles` on the token:
+/// the owner administers the catalog, a member runs jobs. The realm's client
+/// roles are these names (`infra/terraform/realm`).
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "lowercase")]
 pub enum Role {
     Owner,
     Member,

@@ -2908,6 +2908,14 @@
         "minLength": 1,
         "pattern": "^[^\\p{White_Space}/@\\\\\\p{Cc}](?:[^/@\\\\\\p{Cc}]*[^\\p{White_Space}/@\\\\\\p{Cc}])?$"
       },
+      "Role": {
+        "type": "string",
+        "description": "A workspace role, from `resource_access.<client_id>.roles` on the token:\nthe owner administers the catalog, a member runs jobs. The realm's client\nroles are these names (`infra/terraform/realm`).",
+        "enum": [
+          "owner",
+          "member"
+        ]
+      },
       "StorageCredentialInput": {
         "oneOf": [
           {

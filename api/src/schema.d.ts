@@ -747,6 +747,13 @@ export interface components {
         };
         /** @description A credential's, a connection's or a job's name: no leading or trailing whitespace, and no `/`, `@`, `\` or control character. */
         ResourceName: string;
+        /**
+         * @description A workspace role, from `resource_access.<client_id>.roles` on the token:
+         *     the owner administers the catalog, a member runs jobs. The realm's client
+         *     roles are these names (`infra/terraform/realm`).
+         * @enum {string}
+         */
+        Role: "owner" | "member";
         /** @description A credential as a request states it, secrets included. */
         StorageCredentialInput: {
             access_key_id: string;

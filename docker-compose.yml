@@ -207,8 +207,9 @@ services:
 
   # The dev S3 store: SeaweedFS, one process. Static keys in s3.json; iam.json
   # declares the role the server's vend assumes (STS AssumeRole with a session
-  # policy, on this same endpoint). CORS is open by default (`-s3.allowedOrigins`
-  # is `*`) and exposes ETag and Last-Modified.
+  # policy, on this same endpoint). The bucket's CORS is cors.json, put by
+  # s3-init: the server default exposes no Content-Range, and the browser's
+  # ranged reads (fossil's object_store) fail without it.
   # chrislusf/seaweedfs:4.48 is sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
   s3:
     image: chrislusf/seaweedfs:4.48
@@ -252,6 +253,7 @@ services:
     command:
       - |
         aws s3api head-bucket --bucket keasy-dev 2>/dev/null || aws s3 mb s3://keasy-dev
+        aws s3api put-bucket-cors --bucket keasy-dev --cors-configuration file:///etc/seaweedfs/cors.json
         aws s3 sync --no-progress /seed/vocab s3://keasy-dev/vocab
         # The end-to-end suite's own fixtures (e2e/fixtures/): it never reads the dev seed.
         aws s3 sync --no-progress /e2e s3://keasy-dev/e2e
@@ -264,6 +266,7 @@ services:
     volumes:
       - ./infra/dev/seed:/seed:ro
       - ./e2e/fixtures:/e2e:ro
+      - ./infra/dev/seaweedfs/cors.json:/etc/seaweedfs/cors.json:ro
     depends_on:
       s3:
         condition: service_healthy

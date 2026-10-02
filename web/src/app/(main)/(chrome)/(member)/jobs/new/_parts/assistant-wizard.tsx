@@ -52,7 +52,7 @@ import { connectionPath, describeSources, sourceDescriptorsKey } from "./describ
 import { providerFor } from "@/lib/fossil/providers";
 import type { StorageConnection } from "@/lib/connections";
 import { ProblemView } from "@/components/problem-view";
-import { toProblem } from "@/lib/errors";
+import { toastError, toProblem } from "@/lib/errors";
 
 type Connection = StorageConnection;
 type Selection = Record<string, boolean>;
@@ -235,13 +235,15 @@ export function AssistantWizard({
   // failure is shown in the Describe step, which then does not go on without the schemas.
   const described = useQuery({
     queryKey: sourceDescriptorsKey(bindings.map((b) => b.uri)),
-    queryFn: async () => describeSources(await (await checker.jobProgram()).sources(program)),
+    queryFn: async ({ signal }) =>
+      describeSources(await (await checker.jobProgram({ signal })).sources(program), signal),
     enabled: step > 0 && bindings.length > 0,
   });
   const schemasReady =
     readable.every((r) => !r.loading && !r.error) &&
     (bindings.length === 0 || (!described.isPending && !described.isError));
-  const schemas = described.data ?? [];
+  const schemas = described.data?.descriptors ?? [];
+  const undescribed = described.data?.undescribed ?? [];
 
   const reqColumns = useMemo<ColumnDef<CompetencyQuestion>[]>(
     () => [
@@ -395,7 +397,12 @@ export function AssistantWizard({
 
         <StepsContent className="flex flex-col gap-4" index={1}>
           {/* The model that helps write the domain reads the files it will be about. */}
-          <AssistProvider context={() => describeFiles(schemas)} model={COMPLETE}>
+          <AssistProvider
+            context={() => describeFiles(schemas)}
+            model={COMPLETE}
+            // The field says it failed under itself; the code (`ai/silent`, a gateway refusal) is said here.
+            onFailure={(error) => toastError(error, "The suggestion failed")}
+          >
             <Field>
               <FieldLabel>
                 Domain
@@ -410,6 +417,10 @@ export function AssistantWizard({
           {described.isError && (
             <ProblemView onRetry={() => void described.refetch()} problem={toProblem(described.error)} />
           )}
+          {/* Each file that could not be described, and why: the program is written without its columns. */}
+          {undescribed.map(({ source, problem }) => (
+            <ProblemView key={source.key} problem={problem} />
+          ))}
           <Show when={!schemasReady && !described.isError}>
             <p className="flex items-center gap-2 text-muted-foreground text-sm">
               <Spinner aria-hidden />

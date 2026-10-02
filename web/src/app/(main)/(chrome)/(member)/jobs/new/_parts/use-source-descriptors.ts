@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { InferredDescriptor } from "@fossil-lang/introspect";
+import type { InferredDescriptor, UndescribedSource } from "@fossil-lang/introspect";
 
 import * as checker from "@/lib/fossil/checker";
 import { describeSources, sourceDescriptorsKey } from "./describe-sources";
@@ -32,12 +32,16 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
  * without it, and suspending the editor on a keystroke would be the wrong answer — so the failure is
  * returned to be shown beside the program instead of thrown.
  */
-export function useSourceDescriptors(script: string): { descriptors: InferredDescriptor[]; error: unknown } {
+export function useSourceDescriptors(script: string): {
+  descriptors: InferredDescriptor[];
+  undescribed: UndescribedSource[];
+  error: unknown;
+} {
   const program = useDebouncedValue(script, 400);
 
   const { data: sources, error: sourcesError } = useQuery({
     queryKey: ["program-sources", program],
-    queryFn: async () => (await checker.jobProgram()).sources(program),
+    queryFn: async ({ signal }) => (await checker.jobProgram({ signal })).sources(program),
     staleTime: Infinity,
   });
 
@@ -45,12 +49,12 @@ export function useSourceDescriptors(script: string): { descriptors: InferredDes
     queryKey: sourceDescriptorsKey(
       (sources ?? []).map((s) => `${s.format}:${s.locator}:${s.option ?? ""}`).sort(),
     ),
-    queryFn: () => describeSources(sources ?? []),
+    queryFn: ({ signal }) => describeSources(sources ?? [], signal),
     enabled: !!sources && sources.length > 0,
     retry: false,
     // Signed URLs live five minutes; a description older than that is re-asked.
     staleTime: 4 * 60_000,
   });
 
-  return { descriptors: data ?? NONE, error: sourcesError ?? error };
+  return { descriptors: data?.descriptors ?? NONE, undescribed: data?.undescribed ?? [], error: sourcesError ?? error };
 }

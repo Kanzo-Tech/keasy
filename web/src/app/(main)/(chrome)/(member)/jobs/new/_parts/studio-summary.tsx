@@ -23,14 +23,19 @@ import { type Shown } from "@/lib/errors";
 import { ProblemView } from "@/components/problem-view";
 
 /** LSP severity: 1 error, 2 warning, 3 information, 4 hint. */
-const SEVERITY_LABEL = ["error", "error", "warning", "info", "hint"] as const;
-const SEVERITY_TEXT = [
-  "text-destructive dark:text-destructive-foreground",
-  "text-destructive dark:text-destructive-foreground",
-  "text-warning",
-  "text-info",
-  "text-muted-foreground",
-] as const;
+const SEVERITY = { 1: "error", 2: "warning", 3: "info" } as const;
+
+/** A finding as the one failure view shows it: its code, its line and title, its message and help. */
+function finding(row: CheckRow): Shown {
+  return {
+    code: row.code,
+    title: `Line ${row.range.start.line + 1} · ${row.title}`,
+    detail: row.message,
+    help: row.help,
+    severity: SEVERITY[row.severity],
+    data: row.data,
+  };
+}
 
 const ROLE_LABEL = { data: "read as data", schema: "read as a shape" } as const;
 
@@ -145,11 +150,8 @@ export function StudioSummary({
           <CardContent>
             <ul className="flex flex-col gap-2">
               {findings.map((f, i) => (
-                <li className="flex flex-col gap-0.5 rounded-lg border p-3" key={i}>
-                  <span className={`font-medium text-xs ${SEVERITY_TEXT[f.severity] ?? ""}`}>
-                    Line {f.range.start.line + 1} · {SEVERITY_LABEL[f.severity] ?? "note"}
-                  </span>
-                  <span className="text-muted-foreground text-sm">{f.message}</span>
+                <li key={i}>
+                  <ProblemView problem={finding(f)} />
                 </li>
               ))}
             </ul>

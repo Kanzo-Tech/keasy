@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { use, useState } from "react";
+import { createContext, use, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   BarChart3Icon,
@@ -30,7 +30,6 @@ import {
   Status,
   ToggleGroup,
   ToggleGroupItem,
-  toast,
 } from "@kanzo-tech/ui";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import { AskPanel } from "./_parts/ask-panel";
@@ -39,6 +38,8 @@ import { GraphInfo } from "./_parts/graph-info";
 import { GraphSettings } from "./_parts/graph-settings";
 import { RulesPanel } from "./_parts/rules-panel";
 import { Boundary } from "@/components/boundary";
+import { ProblemView } from "@/components/problem-view";
+import { toProblem } from "@/lib/errors";
 import { settled } from "@/lib/api/settled";
 
 /**
@@ -105,25 +106,24 @@ function Opened({ id }: { id: string }) {
   );
 }
 
-/** A failure, as a toast — once per message, and after the commit that reported it. */
-function announce(title: string): void {
-  queueMicrotask(() => {
-    if (!toast.isVisible(title)) toast.create({ id: title, title, type: "error" });
-  });
-}
+/**
+ * What the graph last failed with, as it was thrown: fossil's `FossilError` for a read, kanzo-ui's
+ * `GraphError` (`graph/no-webgl`, `graph/context-lost`, `graph/nothing-to-draw`, …) for its own.
+ */
+const GraphFailure = createContext<unknown>(undefined);
 
 function GraphRegion() {
   const failed = useGraphState((s) => s.status === "failed");
+  const failure = use(GraphFailure);
   return (
     <ShellMain className="relative size-full bg-background">
       <GraphCanvas className="absolute inset-0">
         <GraphToolbar className="absolute end-2 top-2 z-10" />
         <GraphLegend className="absolute start-2 bottom-2 z-10" />
-        <Show when={failed}>
-          <p className="absolute inset-0 grid place-items-center p-6 text-center text-muted-foreground text-sm">
-            The graph could not be drawn here — the corpus would not open, or this browser offers no WebGL
-            context.
-          </p>
+        <Show when={failed && failure !== undefined}>
+          <div className="absolute inset-0 z-20 grid place-items-center p-6">
+            <ProblemView className="w-full max-w-xl" problem={toProblem(failure)} />
+          </div>
         </Show>
       </GraphCanvas>
     </ShellMain>
@@ -166,13 +166,15 @@ function Workspace() {
   const [active, setActive] = useState<PanelId>("info");
   const [panelOpen, setPanelOpen] = useState(true);
   const [view, setView] = useState<ViewId>("graph");
+  const [failure, setFailure] = useState<unknown>(undefined);
 
   const ActiveBody = PANEL_BODY[active];
   const activeLabel = PANELS.find((p) => p.id === active)?.label ?? "";
   const MainRegion = view === "graph" ? GraphRegion : DashboardRegion;
 
   return (
-    <GraphRoot corpus={corpus} filterBy={crossfilter} look={look} onFailure={announce}>
+    <GraphFailure value={failure}>
+    <GraphRoot corpus={corpus} filterBy={crossfilter} look={look} onFailure={setFailure}>
       <HeaderEnd>
         {/* Switching to the dashboard closes the dock: a dashboard is judged at full width. Reopen it
             from the footer strip. */}
@@ -275,5 +277,6 @@ function Workspace() {
         </ToggleGroup>
       </ShellFooter>
     </GraphRoot>
+    </GraphFailure>
   );
 }

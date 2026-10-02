@@ -39,8 +39,6 @@ import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
 
 export default function CredentialsPage() {
-  const router = useRouter();
-
   return (
     <SectionRoot>
       <SectionBody className="overflow-hidden" scale="page">

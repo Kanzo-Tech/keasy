@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { Compass } from "lucide-react";
+import { Compass, Square } from "lucide-react";
 import {
   Button,
   DataList,
@@ -54,12 +54,22 @@ function JobView({ id }: { id: string }) {
   );
 
   // A `pending` job runs here, in the browser; the server never runs the mapping.
-  useBrowserJobRunner(job);
+  const { stop } = useBrowserJobRunner(job);
 
   const problem = runProblem(job);
 
   return (
     <SectionRoot>
+      {stop && (
+        <SectionHeader scale="page">
+          <SectionActions>
+            <Button onClick={stop} size="sm" variant="outline">
+              <Square />
+              Stop
+            </Button>
+          </SectionActions>
+        </SectionHeader>
+      )}
       {job.status === "completed" && !!job.manifest && (
         <SectionHeader scale="page">
           <SectionActions>

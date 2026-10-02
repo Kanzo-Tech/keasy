@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { isFossilError } from "@fossil-lang/types";
 import type { Job } from "@fossil-lang/executor";
 import { ApiError, http, type Schemas } from "@/lib/api/client";
 import { openJobCorpus } from "@/lib/fossil/corpus";
@@ -8,18 +9,24 @@ import { toastError, toProblem } from "@/lib/errors";
 /**
  * A job as `runJob` takes it: every byte goes through keasy's one {@link host};
  * the run report crosses untouched, since `CompleteJobRequest.manifest` is
- * opaque JSON on the server. A failure is reported by the runner instead, which
- * holds every failure — the executor's and its own — in one `catch`.
+ * opaque JSON on the server. `runJob` reports both outcomes, `completed` and
+ * `failed`, and retries a refused report itself; `reported` says whether it got
+ * through, so the runner does not report a failure twice.
  */
-function makeJob(id: string, lease: Lease): Job {
+function makeJob(id: string, reported: { done: boolean }): Job {
   return {
     id,
     host,
-    complete: async ({ status, manifest }) => {
-      if (status === "failed") return;
-      await lease.report(() => http.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body: { status, manifest } }));
+    complete: async ({ status, manifest, problem }, { signal }) => {
+      await http.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body: { status, manifest, problem }, signal });
+      reported.done = true;
     },
   };
+}
+
+/** `runJob` threw this after writing: the output is at the sink, only the report did not land. */
+function unreported(err: unknown): boolean {
+  return isFossilError(err, "storage/host-refused") || isFossilError(err, "storage/host-silent");
 }
 
 /** How often a running job says it is still being run, and how long the server waits before it sweeps. */
@@ -98,8 +105,9 @@ const started = new Set<string>();
  * credentials keasy vends, outcome by `PATCH /v1/jobs/{id}`. The server never runs
  * the mapping. The detail view's existing poll surfaces the terminal status.
  */
-export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
+export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: () => void } {
   const ranRef = useRef(false);
+  const [stop, setStop] = useState<(() => void) | undefined>(undefined);
 
   useEffect(() => {
     if (!job || job.status !== "pending" || !job.script) return;
@@ -110,6 +118,13 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
     const program = job.script;
     const jobId = job.id;
     const held = lease(jobId);
+    const run = new AbortController();
+    const reported = { done: false };
+    // A closed tab stops the run; it cannot report, so the server's lease sweep ends the job.
+    const closing = () => run.abort(new DOMException("The tab closed", "AbortError"));
+    window.addEventListener("pagehide", closing);
+    // Stop: the person's own end to it, reported as `cancelled`.
+    setStop(() => () => run.abort(new DOMException("Stopped", "AbortError")));
 
     void (async () => {
       try {
@@ -126,8 +141,8 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
         const mod = await import("@fossil-lang/executor");
         await mod.initFossilExecutor();
         // runJob reads every document and source the program names through the
-        // host, and reports `completed` itself; a failure is PATCHed below.
-        await mod.runJob(program, makeJob(jobId, held));
+        // host, and reports `completed` or `failed` itself.
+        await mod.runJob(program, makeJob(jobId, reported), { signal: run.signal });
         held.release();
 
         // Tell the host what it is now storing. The run report says what was
@@ -167,24 +182,41 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): void {
           toastError(err, "The datasets entry was not published");
         }
       } catch (err) {
-        // The run's `FossilError`, or a failure before it: the executor never
-        // loaded, or the job could not be marked running.
-        // Asked again until the lease would lapse; after that the sweep ends the job anyway, as
-        // `job/abandoned`, and the run's own problem is said here rather than lost.
-        await held
-          .report(() =>
-            http.PATCH("/v1/jobs/{id}", {
-              params: { path: { id: jobId } },
-              body: { status: "failed", problem: toProblem(err) },
-            }),
-          )
-          .catch((patchErr: unknown) => toastError(patchErr, "The run failed, and the job could not be marked failed"));
+        if (run.signal.aborted) {
+          // Stopped here: say so. A closed tab cannot, and the sweep ends the job instead.
+          if (run.signal.reason instanceof DOMException && run.signal.reason.message === "Stopped") {
+            await held
+              .report(() => http.PATCH("/v1/jobs/{id}", { params: { path: { id: jobId } }, body: { status: "cancelled" } }))
+              .catch((patchErr: unknown) => toastError(patchErr, "The run stopped, and the job could not be marked so"));
+          }
+        } else if (unreported(err)) {
+          // The output was written; only its report failed, and reporting a failure would be a lie.
+          toastError(err, "The run finished, but keasy could not record it");
+        } else if (!reported.done) {
+          // A failure before the run reported anything: the executor never loaded, or the job
+          // could not be marked running. Asked again until the lease would lapse; after that the
+          // sweep ends the job anyway, as `job/abandoned`, and the problem is said here.
+          await held
+            .report(() =>
+              http.PATCH("/v1/jobs/{id}", {
+                params: { path: { id: jobId } },
+                body: { status: "failed", problem: toProblem(err) },
+              }),
+            )
+            .catch((patchErr: unknown) =>
+              toastError(patchErr, "The run failed, and the job could not be marked failed"),
+            );
+        }
       } finally {
         held.release();
+        window.removeEventListener("pagehide", closing);
+        setStop(undefined);
       }
     })();
     // Key off the stable fields, not the `job` object — the 3s poll allocates a
     // fresh object each tick, which would needlessly re-run the effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job?.id, job?.status, job?.script]);
+
+  return { stop };
 }

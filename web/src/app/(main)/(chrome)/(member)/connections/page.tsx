@@ -51,7 +51,6 @@ export default function ConnectionsPage({
 }) {
   const router = useRouter();
   const { type: tab = "data" } = use(searchParams);
-  const noun = { data: "data", vocab: "vocabulary" }[tab];
 
   return (
     <SectionRoot>

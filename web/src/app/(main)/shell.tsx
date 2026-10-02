@@ -28,6 +28,7 @@ import {
   MenuTrigger,
   Separator,
   ShellHeader,
+  ShellMain,
   Show,
   Sidebar,
   SidebarContent,
@@ -54,6 +55,8 @@ import { Link } from "@kanzo-tech/navigation/next";
 import { $api } from "@/lib/api/client";
 import { ROLE_LABEL, workspaceRole, type WorkspaceRole } from "@/lib/auth/roles";
 import { Boundary } from "@/components/boundary";
+import { ProblemView } from "@/components/problem-view";
+import { toProblem } from "@/lib/errors";
 import { settled } from "@/lib/api/settled";
 import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";
 import { HeaderEndContext } from "@/app/(main)/_parts/header-end";
@@ -86,7 +89,7 @@ function workspaceUrl(slug: string, current: string) {
  */
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { session, signOut } = useSession();
+  const { session, status, error, signOut } = useSession();
   const { isMobile, setOpenMobile, state } = useSidebar();
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -245,7 +248,16 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </Breadcrumb>
           <div className="ms-auto flex items-center gap-2 empty:hidden" ref={setHeaderEnd} />
         </ShellHeader>
-        <HeaderEndContext value={headerEnd}>{children}</HeaderEndContext>
+        <HeaderEndContext value={headerEnd}>
+          {/* A session that could not be read is an outage, not a sign-out: say it, by its code. */}
+          {status === "failed" ? (
+            <ShellMain className="items-center justify-center p-4">
+              <ProblemView className="w-full max-w-xl" problem={toProblem(error)} />
+            </ShellMain>
+          ) : (
+            children
+          )}
+        </HeaderEndContext>
       </SidebarInset>
     </>
   );

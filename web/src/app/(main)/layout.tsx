@@ -1,6 +1,7 @@
 import { forbidden, redirect } from "next/navigation";
 import { SidebarProvider } from "@kanzo-tech/ui";
-import { getSession, SessionStoreDown } from "@/lib/auth/server";
+import { AuthError } from "@kanzo-tech/auth";
+import { getSession } from "@/lib/auth/server";
 import { workspaceRole } from "@/lib/auth/roles";
 import { Shell } from "./shell";
 
@@ -29,14 +30,15 @@ export default async function MainLayout({
 }
 
 /**
- * The session, or the auth error page when the store behind it does not answer. A server error
+ * The session, or the auth error page when the store or the IdP behind it does not answer. A server error
  * reaches the browser stripped of everything but a digest, so the code travels in the URL instead.
  */
 async function readSession() {
   try {
     return await getSession();
   } catch (err) {
-    if (err instanceof SessionStoreDown) redirect(`/auth/error?code=${err.code}`);
+    // The store, or the IdP, did not answer: a coded failure, which the problem page renders.
+    if (err instanceof AuthError) redirect(`/auth/error?code=${encodeURIComponent(err.code)}`);
     throw err;
   }
 }

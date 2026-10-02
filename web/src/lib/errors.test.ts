@@ -4,11 +4,13 @@ import { ApiError } from "@/lib/api/client";
 import { copyOf, pageOf, toProblem } from "./errors";
 
 const overBudget = () =>
-  FossilError.of(
-    "run/over-budget",
-    { budget: 2048, consumer: "join", requested: 4096, reserved: 0 },
-    "the join asked for 4096 bytes past a 2048-byte budget",
-  );
+  FossilError.from({
+    code: "run/over-budget",
+    title: "Over budget",
+    detail: "the join asked for 4096 bytes past a 2048-byte budget",
+    severity: "error",
+    data: { budget: 2048, consumer: "join", requested: 4096, reserved: 0 },
+  });
 
 describe("a failure, shown", () => {
   it("is fossil's problem whole when fossil raised it, branched on by code", () => {
@@ -51,5 +53,20 @@ describe("a failure's cause", () => {
       name: "TypeError",
       detail: "Failed to fetch",
     });
+  });
+});
+
+describe("a library's coded failure", () => {
+  it("is keyed by its code, its data kept", () => {
+    const silent = Object.assign(new Error("The model sent nothing for 30 s"), { code: "ai/silent", data: { after: 30_000 } });
+    expect(toProblem(silent)).toMatchObject({ code: "ai/silent", data: { after: 30_000 } });
+  });
+
+  it("keeps the server's code when the AI SDK carries its answer as the response body", () => {
+    const refused = Object.assign(new Error("Gateway Timeout"), {
+      responseBody: JSON.stringify({ code: "gateway/silent", title: "t", detail: "d", data: { after: 30_000 } }),
+    });
+    expect(toProblem(refused, "llm/failed")).toMatchObject({ code: "gateway/silent" });
+    expect(toProblem(Object.assign(new Error("x"), { responseBody: "<html>" }), "llm/failed").code).toBe("llm/failed");
   });
 });

@@ -53,23 +53,14 @@ function required(name: string): string {
   return value;
 }
 
+/** Where a failed sign-in, callback or sign-out lands, with `?code=`; `proxy.ts` keeps it public. */
+export const PROBLEM_PAGE = "/auth/error";
+
 /** Eight hours: a working day, and the lifetime of both the cookie and its ticket. */
 const MAX_AGE = 8 * 60 * 60;
 
 /** How long the session store may take to connect, or to answer one command. */
 const STORE_DEADLINE_MS = 5_000;
-
-/**
- * The session store failed: it did not answer within its deadline, or refused at once because it is
- * down (no offline queue). What every page's session read fails with when Valkey is.
- */
-export class SessionStoreDown extends Error {
-  readonly code = "session/store-unavailable";
-  constructor(detail: string, options?: ErrorOptions) {
-    super(detail, options);
-    this.name = "SessionStoreDown";
-  }
-}
 
 /**
  * Session records live in Valkey/Redis under the opaque ticket the cookie
@@ -95,16 +86,13 @@ function redisAdapter(url: string): TicketAdapter {
   // Started once; it settles when the store first answers, and the client's own reconnects keep it
   // answering. Not a memoized rejection: with a reconnect strategy it never rejects.
   const ready = client.connect();
+  // A store that throws is the package's `session/unavailable`, with this as its cause.
   const bounded = <T>(work: (c: typeof client) => Promise<T>) =>
     race(
       ready.then((c) => work(c)),
       STORE_DEADLINE_MS,
-      () => new SessionStoreDown(`The session store did not answer within ${STORE_DEADLINE_MS / 1000} s`),
-    ).catch((cause: unknown) => {
-      throw cause instanceof SessionStoreDown
-        ? cause
-        : new SessionStoreDown("The session store refused the command", { cause });
-    });
+      () => new Error(`The session store did not answer within ${STORE_DEADLINE_MS / 1000} s`),
+    );
 
   return {
     read: (key) => bounded((c) => c.get(key)),
@@ -146,7 +134,7 @@ function bff(): Bff {
     // `redirectUri` is derived from the incoming request — its origin, this
     // route's path and `/callback` — which lets one image serve every host. A
     // forged `Host` yields a `redirect_uri` Keycloak has not registered.
-    routes: authRoutes(config),
+    routes: authRoutes({ ...config, problemPage: PROBLEM_PAGE }),
     read: authSession(config),
     // The spec's paths already start with `/v1`, so the proxy strips `/api` only.
     proxy: authProxy({

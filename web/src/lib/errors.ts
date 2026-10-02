@@ -138,7 +138,9 @@ export function pageOf(code: string): string | undefined {
 /** A cause, as the tree under a problem shows it: coded when it can be, its own words when not. */
 function causeOf(cause: unknown): Shown | Foreign | undefined {
   if (cause === undefined || cause === null) return undefined;
-  if (isFossilError(cause) || cause instanceof ApiError || cause instanceof ClientError) return toProblem(cause);
+  if (isFossilError(cause) || cause instanceof ApiError || cause instanceof ClientError || coded(cause)) {
+    return toProblem(cause);
+  }
   if (cause instanceof Error) return { name: cause.name, detail: cause.message };
   return { name: typeof cause, detail: String(cause) };
 }
@@ -156,8 +158,48 @@ export function toProblem(err: unknown, code: ClientCode = "web/unknown"): Shown
       ? { code: err.code, title: err.title, detail: err.message, data: err.data }
       : err instanceof ClientError
         ? { code: err.code, title: err.title, detail: err.message }
-        : { code, title: "Something went wrong.", detail: err instanceof Error ? err.message : String(err) };
+        : (coded(err) ??
+          answered(err) ?? {
+            code,
+            title: "Something went wrong.",
+            detail: err instanceof Error ? err.message : String(err),
+          });
   return cause === undefined ? shown : { ...shown, cause };
+}
+
+const GRAMMAR = /^[a-z][a-z-]*\/[a-z][a-z-]*$/;
+
+/**
+ * An error a library coded in the shared grammar — kanzo-ui's `AuthError`, `GraphError`,
+ * `EngineError`, `AiError` — keyed by its `code`, its `data` kept.
+ */
+function coded(err: unknown): Shown | undefined {
+  if (!(err instanceof Error)) return undefined;
+  const { code, data } = err as Error & { code?: unknown; data?: unknown };
+  if (typeof code !== "string" || !GRAMMAR.test(code)) return undefined;
+  return { code, title: copyOf(code)?.title ?? err.message, detail: err.message, data };
+}
+
+/**
+ * A model call the AI SDK refused carries the server's answer as `responseBody`: when that is an
+ * `ErrorBody` (`gateway/silent`, `gateway/unreachable`, …), its code is the failure's, not lost.
+ */
+function answered(err: unknown): Shown | undefined {
+  const body = (err as { responseBody?: unknown } | null)?.responseBody;
+  if (typeof body !== "string") return undefined;
+  try {
+    const parsed = JSON.parse(body) as { code?: unknown; title?: unknown; detail?: unknown; data?: unknown };
+    if (typeof parsed.code !== "string" || !GRAMMAR.test(parsed.code)) return undefined;
+    return {
+      code: parsed.code,
+      title: typeof parsed.title === "string" ? parsed.title : parsed.code,
+      detail: typeof parsed.detail === "string" ? parsed.detail : "",
+      data: parsed.data,
+    };
+  } catch {
+    // Not an ErrorBody: the gateway's own words, which the caller's fallback shows.
+    return undefined;
+  }
 }
 
 /** Toast a failed action: `title` names the action, the description is the code's copy or the failure's own words. */

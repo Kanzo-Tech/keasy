@@ -25,26 +25,24 @@ import { initialValues, SpecForm, toBody } from "@/components/spec-form";
 import { schemaOf } from "@/lib/api/spec";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { $api, type Inputs, invalidate } from "@/lib/api/client";
-import { specOf } from "@/lib/connections";
 import { getProviderIcon } from "@/lib/ui/provider-icons";
 import { toastError } from "@/lib/errors";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
 
-type Tab = "data" | "vocab" | "model";
+type Tab = "data" | "vocab";
 
-/** A member's connection: a source (the sink is the owner's) or a model. */
+/** A member's connection: a source — the sink is the owner's. */
 export default function NewConnectionPage({ searchParams }: { searchParams: Promise<{ type?: Tab }> }) {
   const router = useRouter();
   const { type = "data" } = use(searchParams);
-  const purpose = type === "model" ? "model" : "storage";
-  const schema = schemaOf(purpose === "storage" ? "StorageTarget" : "ModelTarget");
-  const omit = purpose === "storage" ? ["direction"] : [];
+  const schema = schemaOf("StorageTarget");
+  const omit = ["direction"];
 
   const [name, setName] = useState("");
   const [credential, setCredential] = useState("");
   const [values, setValues] = useState(() =>
-    initialValues(schema, purpose === "storage" ? { kind: type } : undefined),
+    initialValues(schema, { kind: type }),
   );
   const inner = toBody(schema, values, omit);
 
@@ -61,9 +59,9 @@ export default function NewConnectionPage({ searchParams }: { searchParams: Prom
 
   const submit = () => {
     if (!inner) return;
-    const target = { [purpose]: purpose === "storage" ? { ...inner, direction: "source" } : inner };
+    const target = { ...inner, direction: "source" };
     create.mutate({
-      body: { name: name.trim(), credential, target: target as unknown as Inputs["ConnectionTarget"] },
+      body: { name: name.trim(), credential, target: target as unknown as Inputs["StorageTarget"] },
     });
   };
 
@@ -75,11 +73,7 @@ export default function NewConnectionPage({ searchParams }: { searchParams: Prom
             Name
             <FieldRequiredIndicator />
           </FieldLabel>
-          <FieldDescription>
-            {purpose === "storage"
-              ? "Used as identifier in @references (e.g. @my-connection/file.csv)"
-              : "What the assistant and Discovery call it by"}
-          </FieldDescription>
+          <FieldDescription>Used as identifier in @references (e.g. @my-connection/file.csv)</FieldDescription>
           <Input onChange={(e) => setName(e.target.value)} placeholder="e.g. hr-data" value={name} />
         </Field>
 
@@ -95,7 +89,7 @@ export default function NewConnectionPage({ searchParams }: { searchParams: Prom
               </Loading>
             }
           >
-            <CredentialPicker onChange={setCredential} purpose={purpose} value={credential} />
+            <CredentialPicker onChange={setCredential} value={credential} />
           </Boundary>
         </Field>
 
@@ -112,21 +106,13 @@ export default function NewConnectionPage({ searchParams }: { searchParams: Prom
   );
 }
 
-/** The credentials a connection of `purpose` can use, as a select; a link to add one when there is none. */
-function CredentialPicker({
-  purpose,
-  value,
-  onChange,
-}: {
-  purpose: "storage" | "model";
-  value: string;
-  onChange: (credential: string) => void;
-}) {
-  const credentials = settled($api.useSuspenseQuery("get", "/v1/credentials", { params: { query: { purpose } } }));
+/** The credentials a connection can use, as a select; a link to add one when there is none. */
+function CredentialPicker({ value, onChange }: { value: string; onChange: (credential: string) => void }) {
+  const credentials = settled($api.useSuspenseQuery("get", "/v1/credentials"));
   const collection = useMemo(
     () =>
       createListCollection({
-        items: credentials.map((c) => ({ label: c.name, value: c.name, kind: String(specOf(c).spec.kind) })),
+        items: credentials.map((c) => ({ label: c.name, value: c.name, kind: c.spec.kind })),
       }),
     [credentials],
   );
@@ -134,8 +120,8 @@ function CredentialPicker({
   if (credentials.length === 0) {
     return (
       <p className="text-muted-foreground text-xs">
-        No {purpose === "storage" ? "storage" : "AI"} credentials yet.{" "}
-        <Link className="text-primary hover:underline" href={`/settings/credentials/new?purpose=${purpose}`}>
+        No credentials yet.{" "}
+        <Link className="text-primary hover:underline" href="/settings/credentials/new">
           Add one first
         </Link>
         .

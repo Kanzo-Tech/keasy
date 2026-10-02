@@ -95,19 +95,16 @@ pub enum ErrorCode {
     /// answer within its deadline; `after` says how long it was given.
     #[serde(rename = "store/silent")]
     StoreSilent,
-    #[serde(rename = "llm/not-configured")]
+    /// This workspace has no AI gateway.
+    #[serde(rename = "gateway/not-configured")]
     AiNotConfigured,
-    /// Several model connections exist and the call named none.
-    #[serde(rename = "llm/connection-required")]
-    AiConnectionRequired,
-    #[serde(rename = "llm/insufficient-credits")]
-    InsufficientCredits,
-    #[serde(rename = "llm/failed")]
-    LlmFailed,
-    /// The provider stopped sending mid-answer, or never started; `after` says
-    /// how long the stream sat idle.
-    #[serde(rename = "llm/silent")]
-    LlmSilent,
+    /// The AI gateway could not be reached.
+    #[serde(rename = "gateway/unreachable")]
+    AiUnreachable,
+    /// The AI gateway sent nothing within its deadline — before its answer
+    /// began, or in the middle of it; `after` says how long it was given.
+    #[serde(rename = "gateway/silent")]
+    AiSilent,
 }
 
 impl ErrorCode {
@@ -145,11 +142,9 @@ impl ErrorCode {
             Self::ListFilesFailed => "The files could not be listed",
             Self::StoreError => "The store refused",
             Self::StoreSilent => "The store did not answer in time",
-            Self::AiNotConfigured => "No model connection",
-            Self::AiConnectionRequired => "Pick a model connection",
-            Self::InsufficientCredits => "Insufficient credits",
-            Self::LlmFailed => "The model call failed",
-            Self::LlmSilent => "The model stopped answering",
+            Self::AiNotConfigured => "AI is not set up for this workspace",
+            Self::AiUnreachable => "The AI gateway is unreachable",
+            Self::AiSilent => "The AI gateway did not answer in time",
         }
     }
 }

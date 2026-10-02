@@ -3,13 +3,11 @@
     {
       "name": "MinIO dev",
       "spec": {
-        "storage": {
-          "kind": "s3",
-          "access_key_id": "minioadmin",
-          "secret_access_key": "minioadmin",
-          "region": "us-east-1",
-          "endpoint": "http://minio.localhost:9000"
-        }
+        "kind": "s3",
+        "access_key_id": "minioadmin",
+        "secret_access_key": "minioadmin",
+        "region": "us-east-1",
+        "endpoint": "http://minio.localhost:9000"
       }
     }
   ],
@@ -17,17 +15,17 @@
     {
       "name": "MinIO dev bucket",
       "credential": "MinIO dev",
-      "target": { "storage": { "url": "s3://keasy-dev/data/", "kind": "data", "direction": "source" } }
+      "target": { "url": "s3://keasy-dev/data/", "kind": "data", "direction": "source" }
     },
     {
       "name": "MinIO dev shapes",
       "credential": "MinIO dev",
-      "target": { "storage": { "url": "s3://keasy-dev/vocab/", "kind": "vocab", "direction": "source" } }
+      "target": { "url": "s3://keasy-dev/vocab/", "kind": "vocab", "direction": "source" }
     },
     {
       "name": "Workspace output",
       "credential": "MinIO dev",
-      "target": { "storage": { "url": "s3://keasy-dev/output/", "kind": "data", "direction": "sink" } }
+      "target": { "url": "s3://keasy-dev/output/", "kind": "data", "direction": "sink" }
     }
   ]
 }

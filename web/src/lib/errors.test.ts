@@ -47,7 +47,7 @@ describe("a failure's cause", () => {
   });
 
   it("is a foreign error's own words when it has no code", () => {
-    expect(toProblem(new ApiError({ code: "llm/failed", title: "t", detail: "d", data: {} }, 502, { cause: new TypeError("Failed to fetch") })).cause).toEqual({
+    expect(toProblem(new ApiError({ code: "gateway/unreachable", title: "t", detail: "d", data: {} }, 502, { cause: new TypeError("Failed to fetch") })).cause).toEqual({
       name: "TypeError",
       detail: "Failed to fetch",
     });

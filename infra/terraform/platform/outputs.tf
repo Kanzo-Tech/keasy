@@ -8,3 +8,9 @@ output "kc_admin_password" {
 output "network_name" {
   value = docker_network.edge.name
 }
+
+# The realm module mints each tenant's team and key with this.
+output "ai_master_key" {
+  value     = random_password.ai_master.result
+  sensitive = true
+}

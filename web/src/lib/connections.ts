@@ -3,27 +3,9 @@ import { schemaOf } from "@/lib/api/spec";
 
 export type Connection = Schemas["ConnectionView"];
 export type Credential = Schemas["CredentialView"];
-export type Purpose = Schemas["Purpose"];
-
-/** A storage connection's prefix, kind and direction; `undefined` for a model one. */
-export function storageOf(connection: Connection): Schemas["StorageTarget"] | undefined {
-  return "storage" in connection.target ? connection.target.storage : undefined;
-}
-
-export function modelOf(connection: Connection): Schemas["ModelTarget"] | undefined {
-  return "model" in connection.target ? connection.target.model : undefined;
-}
-
-/** A credential's purpose and its spec's inner object (`kind` and the non-secret fields). */
-export function specOf(credential: Credential): { purpose: Purpose; spec: Record<string, unknown> } {
-  return "storage" in credential.spec
-    ? { purpose: "storage", spec: credential.spec.storage }
-    : { purpose: "model", spec: credential.spec.model };
-}
-
 /** The title the contract gives a credential kind (`Amazon S3 / S3-compatible`). */
-export function kindTitle(purpose: Purpose, kind: string): string {
-  const schema = schemaOf(purpose === "storage" ? "StorageCredentialInput" : "ModelCredentialInput");
+export function kindTitle(kind: string): string {
+  const schema = schemaOf("StorageCredentialInput");
   return (
     schema.oneOf?.find((b) => b.properties?.kind?.enum?.[0] === kind)?.title ?? kind.replaceAll("_", " ")
   );
@@ -43,10 +25,5 @@ export interface StorageConnection extends Required<Schemas["StorageTarget"]> {
 
 /** The storage connections among `all`, sources and sink alike. */
 export function storageConnections(all: Connection[]): StorageConnection[] {
-  return all.flatMap((c) => {
-    const storage = storageOf(c);
-    return storage
-      ? [{ kind: "data", direction: "source", ...storage, name: c.name, credential: c.credential } as const]
-      : [];
-  });
+  return all.map((c) => ({ kind: "data", direction: "source", ...c.target, name: c.name, credential: c.credential }));
 }

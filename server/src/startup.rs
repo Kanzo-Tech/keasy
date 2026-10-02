@@ -25,7 +25,6 @@ use crate::authentication::middleware::{AuthenticatedUser, bearer_required};
 use crate::authentication::token::{SharedValidator, Validator};
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::database::Database;
-use crate::domain::Purpose;
 use crate::error::{ErrorBody, ErrorCode, ErrorData, fail};
 use crate::routes;
 
@@ -39,6 +38,8 @@ pub struct AppState {
     pub workspace_name: String,
     /// Verifies the bearer token every protected request carries.
     pub auth: SharedValidator,
+    /// The AI gateway every model call is relayed to, if this workspace has one.
+    pub ai: Option<Arc<crate::routes::ai::Gateway>>,
 }
 
 /// The server, bound and ready to serve.
@@ -56,6 +57,7 @@ impl Application {
             application,
             database,
             oidc,
+            ai,
         } = settings;
         let db = get_database(&database).await?;
 
@@ -84,6 +86,7 @@ impl Application {
             workspace_slug: application.workspace_slug,
             workspace_name: application.workspace_name,
             auth,
+            ai: ai.map(|ai| Arc::new(crate::routes::ai::Gateway::new(ai))),
         };
 
         let listener = TcpListener::bind(application.bind_addr)
@@ -221,8 +224,12 @@ fn guarded<S: Clone + Send + Sync + 'static>(router: Router<S>, deadline: Durati
 pub const REQUEST_DEADLINE: Duration = Duration::from_secs(25);
 
 /// Answer within `deadline` or with `server/silent`. Dropping the handler's
-/// future is what ends whatever it was waiting on.
+/// future is what ends whatever it was waiting on. The AI relay is bounded by
+/// its own idle deadline instead (`routes::ai::IDLE`), which names the gateway.
 pub async fn within(deadline: Duration, request: Request<Body>, next: Next) -> Response {
+    if request.uri().path().starts_with("/v1/ai/") {
+        return next.run(request).await;
+    }
     match tokio::time::timeout(deadline, next.run(request)).await {
         Ok(response) => response,
         Err(_) => {
@@ -287,7 +294,7 @@ fn over_rate(error: GovernorError) -> Response {
         version = "1.0.0",
         description = "Keasy host: identity, connections, vended credentials and the job record",
     ),
-    components(schemas(ErrorBody, ErrorCode, ErrorData, Purpose)),
+    components(schemas(ErrorBody, ErrorCode, ErrorData)),
     modifiers(&Bearer, &Unattributed),
     security(("bearer" = [])),
 )]

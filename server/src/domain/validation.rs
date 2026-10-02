@@ -11,8 +11,6 @@ pub enum Operation {
     Write,
     /// Deleted the object the write left.
     Delete,
-    /// Listed the provider's models.
-    Models,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]

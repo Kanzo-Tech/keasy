@@ -16,7 +16,6 @@ import {
 } from "@kanzo-tech/ui";
 import { Link } from "@kanzo-tech/navigation/next";
 import { $api, type Schemas } from "@/lib/api/client";
-import { storageOf } from "@/lib/connections";
 import { hasRunningJobs, pollWhile } from "@/lib/jobs";
 import { Boundary } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
@@ -53,9 +52,9 @@ export function OwnerDashboard() {
 
 function OwnerTiles() {
   const catalog = settled(
-    $api.useSuspenseQuery("get", "/v1/connections", { params: { query: { purpose: "storage" } } }),
+    $api.useSuspenseQuery("get", "/v1/connections"),
   );
-  const sink = catalog.find((c) => storageOf(c)?.direction === "sink");
+  const sink = catalog.find((c) => c.target.direction === "sink");
   return <Tiles heading={OWNER_HEADING} tiles={ownerTiles(sink ? "Configured" : "Not set")} />;
 }
 

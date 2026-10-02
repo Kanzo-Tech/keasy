@@ -30,9 +30,9 @@ export interface Shown {
 
 /**
  * Failures the browser names itself, in the same `area/kind` grammar as fossil's and the server's: a
- * stopped turn, a query the engine refused, a model answer that does not parse, and anything uncoded.
+ * stopped turn, a query the engine refused, a model call that failed uncoded, and anything uncoded.
  */
-export type ClientCode = "ask/stopped" | "query/failed" | "llm/unparseable" | "web/unknown";
+export type ClientCode = "ask/stopped" | "query/failed" | "llm/failed" | "web/unknown";
 
 /** A failure the browser raises itself, coded so it reaches the screen by the same path as the others. */
 export class ClientError extends Error {
@@ -54,46 +54,59 @@ interface Copy {
   link?: { label: string; href: string };
 }
 
-const aiLink = { label: "Go to AI credentials", href: "/settings/credentials?purpose=model" };
-
 const signIn = { label: "Sign in again", href: "/api/auth/signin" };
 
-/** What the web's own server side raises: the session store not answering. */
-export type SessionCode = "session/store-unavailable";
+/** kanzo-ui's own failures, in the same grammar: its graph, its engine, its assisted fields. */
+export type KanzoCode =
+  | "graph/no-webgl"
+  | "graph/context-lost"
+  | "graph/nothing-to-draw"
+  | "graph/untranslatable-filter"
+  | "engine/unavailable"
+  | "ai/silent";
 
-const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | AuthErrorCode | SessionCode, Copy>> = {
-  "callback.state-mismatch": {
+const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | AuthErrorCode | KanzoCode, Copy>> = {
+  "callback/state-mismatch": {
     title: "This sign-in could not be completed.",
     detail:
       "The sign-in was started in another tab, took too long, or was opened from the browser's history. Start it again.",
     link: signIn,
   },
-  "callback.nonce-mismatch": { title: "This sign-in could not be completed.", link: signIn },
-  "token.exchange-failed": { title: "The identity provider refused the sign-in.", link: signIn },
-  "session.absent": { title: "You are signed out.", link: signIn },
-  "organization.not-a-member": { title: "You are not a member of this workspace." },
-  "organization.invalid": { title: "No such workspace." },
-  "claims.no-subject": { title: "The identity provider sent an incomplete identity." },
-  "session/store-unavailable": {
+  "callback/nonce-mismatch": { title: "This sign-in could not be completed.", link: signIn },
+  "token/exchange-failed": { title: "The identity provider refused the sign-in.", link: signIn },
+  "session/absent": { title: "You are signed out.", link: signIn },
+  "organization/not-a-member": { title: "You are not a member of this workspace." },
+  "organization/invalid": { title: "No such workspace." },
+  "claims/no-subject": { title: "The identity provider sent an incomplete identity." },
+  "session/unavailable": {
     title: "Your session could not be read.",
-    detail: "The session store is not answering. Try again in a moment.",
+    detail: "The session service is not answering. Try again in a moment.",
     link: signIn,
   },
-  "llm/not-configured": {
-    title: "No model connection exists yet.",
-    link: { label: "Add a model connection", href: "/connections?type=model" },
-  },
-  "llm/connection-required": { title: "Several model connections exist; pick one." },
-  "llm/insufficient-credits": { title: "Your AI provider account has insufficient credits.", link: aiLink },
+  "session/silent": { title: "Your session could not be read in time.", link: signIn },
+  "idp/silent": { title: "The identity provider did not answer in time.", link: signIn },
+  "idp/unreachable": { title: "The identity provider could not be reached.", link: signIn },
+  "gateway/not-configured": { title: "AI is not set up for this workspace." },
+  "gateway/unreachable": { title: "The AI gateway could not be reached." },
+  "gateway/silent": { title: "The AI gateway did not answer in time." },
+  "ai/silent": { title: "The model stopped answering." },
   "llm/failed": { title: "The model call failed. Please try again." },
-  "llm/silent": { title: "The model stopped answering." },
-  "llm/unparseable": { title: "The model's answer could not be read." },
   "ask/stopped": { title: "Stopped." },
   "query/failed": {
     title: "Query execution failed. The AI may have generated invalid SQL. Try rephrasing your question.",
   },
+  "graph/no-webgl": {
+    title: "This browser cannot draw the graph",
+    detail: "The graph needs WebGL, which this browser or device does not offer. The dashboard still works.",
+  },
+  "graph/context-lost": { title: "The graph's drawing context was lost. Reload to draw it again." },
+  "graph/nothing-to-draw": { title: "Nothing in this output has a position to draw." },
+  "graph/untranslatable-filter": { title: "The graph cannot apply that filter." },
+  "engine/unavailable": { title: "The in-browser engine would not start." },
+  "storage/host-silent": { title: "keasy did not answer the data reader in time." },
+  "module/unreachable": { title: "Part of the app could not be downloaded. Check the connection and retry." },
   "probe/failed": {
-    title: "The store or provider did not accept the credential.",
+    title: "The store did not accept the credential.",
     link: { label: "Go to Credentials", href: "/settings/credentials" },
   },
   "resource/in-use": { title: "It is still in use." },

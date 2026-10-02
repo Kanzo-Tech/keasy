@@ -1,5 +1,5 @@
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use serde::Deserialize;
@@ -10,17 +10,17 @@ use utoipa_axum::routes;
 use crate::authentication::role::{AnyRole, Member};
 use crate::connections::persistence as connections;
 use crate::credentials::{named, persistence, probe};
-use crate::domain::{CredentialSpecInput, CredentialView, Purpose, ResourceName, ValidationReport};
+use crate::domain::{CredentialView, ResourceName, StorageCredentialInput, ValidationReport};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::startup::AppState;
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateCredentialRequest {
     pub name: String,
-    pub spec: CredentialSpecInput,
-    /// A storage URL to LIST before the credential is stored. A storage
-    /// credential has no location of its own, so without one it is only
-    /// checked to build a client.
+    pub spec: StorageCredentialInput,
+    /// A storage URL to LIST before the credential is stored. A credential has
+    /// no location of its own, so without one it is only checked to build a
+    /// client.
     #[serde(default)]
     #[schema(format = "uri")]
     pub probe_url: Option<String>,
@@ -34,14 +34,7 @@ pub struct UpdateCredentialRequest {
     #[serde(default)]
     pub name: Option<String>,
     #[serde(default)]
-    pub spec: Option<CredentialSpecInput>,
-}
-
-#[derive(Debug, Deserialize, utoipa::IntoParams)]
-#[into_params(parameter_in = Query)]
-pub struct PurposeQuery {
-    /// Only those of this purpose.
-    pub purpose: Option<Purpose>,
+    pub spec: Option<StorageCredentialInput>,
 }
 
 #[derive(Debug, Default, Deserialize, ToSchema)]
@@ -63,20 +56,14 @@ fn may_change(caller: &AnyRole, created_by: &str) -> Result<(), Refusal> {
 }
 
 #[utoipa::path(get, path = "/v1/credentials", tag = "Credentials",
-    params(PurposeQuery),
     responses((status = 200, description = "The credentials, with the connections using each; never a secret", body = Vec<CredentialView>))
 )]
 pub async fn list_credentials(
     _: AnyRole,
     State(state): State<AppState>,
-    Query(query): Query<PurposeQuery>,
 ) -> Result<impl IntoResponse, Refusal> {
     let db = &state.db;
-    Ok(Json(persistence::list(
-        &*db.read().await,
-        db.secret_key(),
-        query.purpose,
-    )?))
+    Ok(Json(persistence::list(&*db.read().await, db.secret_key())?))
 }
 
 #[utoipa::path(post, path = "/v1/credentials", tag = "Credentials",
@@ -147,9 +134,6 @@ pub async fn update_credential(
 
     let (spec, report) = match request.spec {
         Some(spec) => {
-            if spec.purpose() != current.spec.purpose() {
-                return Err(Refusal::invalid("a credential's purpose cannot change"));
-            }
             let dependents = connections::using(&*db.read().await, &name)?;
             let (report, failing) = probe::credential(&spec, None, &dependents).await;
             if !report.passed() {

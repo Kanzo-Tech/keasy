@@ -2,7 +2,7 @@ use axum::http::{Method, StatusCode};
 use serde_json::json;
 
 use crate::helpers::{DEAD, fake_s3, spawn_app};
-use keasy_server::domain::{CredentialSpecInput, Direction, StorageCredentialInput};
+use keasy_server::domain::{Direction, StorageCredentialInput};
 
 /// A secret goes in and never comes out: not in a create's answer, not in a
 /// listing, not in a read, and no response schema has a field to carry one.
@@ -15,13 +15,13 @@ async fn no_response_carries_a_secret() {
             Method::POST,
             "/v1/credentials",
             &member,
-            json!({ "name": "minio", "spec": { "storage": {
+            json!({ "name": "minio", "spec": {
                 "kind": "s3", "access_key_id": "AK", "secret_access_key": "top-secret"
-            }}}),
+            }}),
         )
         .await;
     assert_eq!(status, StatusCode::CREATED, "{created}");
-    assert_eq!(created["spec"]["storage"]["region"], "us-east-1");
+    assert_eq!(created["spec"]["region"], "us-east-1");
     for (_, body) in [
         (status, created),
         app.send(Method::GET, "/v1/credentials", &member, json!(null))
@@ -34,12 +34,7 @@ async fn no_response_carries_a_secret() {
     }
 
     let spec = serde_json::to_value(keasy_server::startup::openapi()).unwrap();
-    for view in [
-        "StorageCredentialView",
-        "ModelCredentialView",
-        "CredentialView",
-        "ConnectionView",
-    ] {
+    for view in ["StorageCredentialView", "CredentialView", "ConnectionView"] {
         let schema = spec["components"]["schemas"][view].to_string();
         for secret in [
             "writeOnly",
@@ -108,10 +103,10 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
         StatusCode::NO_CONTENT
     );
 
-    let sink = json!({ "name": "sink2", "credential": "renamed", "target": { "storage": {
-        "url": "s3://b/out2/", "direction": "sink" } } });
-    let source = json!({ "name": "more", "credential": "renamed", "target": { "storage": {
-        "url": "s3://b/more/" } } });
+    let sink = json!({ "name": "sink2", "credential": "renamed", "target": {
+        "url": "s3://b/out2/", "direction": "sink" } });
+    let source = json!({ "name": "more", "credential": "renamed", "target": {
+        "url": "s3://b/more/" } });
     assert_eq!(
         app.send(Method::POST, "/v1/connections", &creator, sink)
             .await
@@ -136,8 +131,7 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
         StatusCode::FORBIDDEN,
         "not even its creator: the sink is the owner's"
     );
-    let to_sink =
-        json!({ "target": { "storage": { "url": "s3://b/data/", "direction": "sink" } } });
+    let to_sink = json!({ "target": { "url": "s3://b/data/", "direction": "sink" } });
     assert_eq!(
         app.send(Method::PATCH, "/v1/connections/data", &creator, to_sink)
             .await
@@ -156,9 +150,9 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
     let owner = app.token_for("u-owner", &["owner"]);
     let s3 = fake_s3().await;
     let spec = |endpoint: &str, secret: &str| {
-        json!({ "storage": {
+        json!({
             "kind": "s3", "access_key_id": "AK", "secret_access_key": secret, "endpoint": endpoint
-        }})
+        })
     };
 
     let (status, body) = app
@@ -192,7 +186,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
             "/v1/connections",
             &member,
             json!({ "name": "data", "credential": "minio",
-            "target": { "storage": { "url": "s3://b/data/" } } }),
+            "target": { "url": "s3://b/data/" } }),
         )
         .await;
     assert_eq!(status, StatusCode::CREATED, "{body}");
@@ -202,7 +196,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
             "/v1/connections",
             &owner,
             json!({ "name": "out", "credential": "minio",
-            "target": { "storage": { "url": "s3://b/out/", "direction": "sink" } } }),
+            "target": { "url": "s3://b/out/", "direction": "sink" } }),
         )
         .await;
     assert_eq!(status, StatusCode::CREATED, "{body}");
@@ -234,7 +228,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
         .await
         .unwrap();
     assert!(
-        matches!(&kept.spec, CredentialSpecInput::Storage(StorageCredentialInput::S3 { endpoint, .. })
+        matches!(&kept.spec, StorageCredentialInput::S3 { endpoint, .. }
         if endpoint.as_deref() == Some(s3.as_str())),
         "the old spec stands"
     );
@@ -252,7 +246,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
         .await
         .unwrap();
     assert!(
-        matches!(&rotated.spec, CredentialSpecInput::Storage(StorageCredentialInput::S3 { secret_access_key, .. })
+        matches!(&rotated.spec, StorageCredentialInput::S3 { secret_access_key, .. }
         if secrecy::ExposeSecret::expose_secret(secret_access_key) == "second")
     );
 

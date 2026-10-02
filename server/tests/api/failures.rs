@@ -1,5 +1,6 @@
 //! Every failure the server can answer, in the one shape: `{code, title,
-//! detail, data}` — whoever produced it, the handler or axum before it.
+//! detail, data}` — whoever produced it, the handler or axum before it. (No
+//! route takes a query string, so a `Query` rejection has nothing to be tested on.)
 
 use axum::http::{Method, StatusCode, header};
 use serde_json::json;
@@ -64,13 +65,6 @@ async fn what_axum_refuses_before_a_handler_speaks_error_body_too() {
                 .bearer_auth(&member)
                 .json(&json!({ "script": "x" })),
             StatusCode::UNPROCESSABLE_ENTITY,
-            "request/malformed",
-        ),
-        (
-            "a query that does not parse",
-            c.get(url(&app, "/v1/connections?purpose=bogus"))
-                .bearer_auth(&member),
-            StatusCode::BAD_REQUEST,
             "request/malformed",
         ),
         (
@@ -288,32 +282,5 @@ async fn a_store_that_refuses_to_vend_is_store_refused() {
     assert_eq!(
         (status, body["code"].as_str().unwrap()),
         (StatusCode::BAD_GATEWAY, "store/refused")
-    );
-}
-
-#[tokio::test]
-async fn a_model_call_without_a_model_connection_says_so() {
-    let app = spawn_app().await;
-    let member = app.token(&["member"]);
-    let request = |connection: Option<&str>| {
-        let mut body = json!({ "system": "s", "messages": [] });
-        if let Some(name) = connection {
-            body["connection"] = json!(name);
-        }
-        app.client
-            .post(url(&app, "/v1/ai/stream"))
-            .bearer_auth(&member)
-            .json(&body)
-            .send()
-    };
-    let (status, body) = refused(request(None).await.unwrap()).await;
-    assert_eq!(
-        (status, body["code"].as_str().unwrap()),
-        (StatusCode::BAD_REQUEST, "llm/not-configured")
-    );
-    let (status, body) = refused(request(Some("gone")).await.unwrap()).await;
-    assert_eq!(
-        (status, body["code"].as_str().unwrap()),
-        (StatusCode::NOT_FOUND, "connection/not-found")
     );
 }

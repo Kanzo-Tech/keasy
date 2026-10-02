@@ -9,7 +9,7 @@ use sealing::SecretKey;
 
 use crate::configuration::DatabaseSettings;
 use crate::database::Database;
-use crate::domain::{Credential, CredentialSpecInput, CredentialView, ResourceName};
+use crate::domain::{Credential, CredentialView, ResourceName, StorageCredentialInput};
 use crate::error::{ErrorCode, Refusal};
 
 /// The credential `name`, unsealed, or 404.
@@ -23,7 +23,7 @@ pub async fn named(db: &Database, name: &str) -> Result<Credential, Refusal> {
 pub async fn create(
     db: &Database,
     name: &str,
-    spec: &CredentialSpecInput,
+    spec: &StorageCredentialInput,
     probe_url: Option<&str>,
     by: &str,
 ) -> Result<CredentialView, Refusal> {

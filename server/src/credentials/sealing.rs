@@ -5,7 +5,7 @@ use secrecy::ExposeSecret;
 use secrecy::zeroize::Zeroizing;
 use serde_json::json;
 
-use crate::domain::{CredentialSpecInput, ModelCredentialInput, StorageCredentialInput};
+use crate::domain::StorageCredentialInput;
 
 const NONCE_LEN: usize = 12;
 const VERSION: u8 = 0x03;
@@ -95,42 +95,41 @@ fn aad(name: &str) -> String {
 
 /// The spec as it is sealed: the one place a secret is exposed as JSON, and the
 /// JSON goes straight into the cipher.
-fn plaintext(spec: &CredentialSpecInput) -> Vec<u8> {
+fn plaintext(spec: &StorageCredentialInput) -> Vec<u8> {
     let value = match spec {
-        CredentialSpecInput::Storage(s) => json!({ "storage": match s {
-            StorageCredentialInput::S3 { access_key_id, secret_access_key, region, endpoint, role_arn, external_id } => json!({
-                "kind": "s3",
-                "access_key_id": access_key_id,
-                "secret_access_key": secret_access_key.expose_secret(),
-                "region": region,
-                "endpoint": endpoint,
-                "role_arn": role_arn,
-                "external_id": external_id,
-            }),
-            StorageCredentialInput::AzureAccountKey { account, key } => json!({
-                "kind": "azure_account_key",
-                "account": account,
-                "key": key.expose_secret(),
-            }),
-            StorageCredentialInput::AzureServicePrincipal { account, tenant_id, client_id, client_secret } => json!({
-                "kind": "azure_service_principal",
-                "account": account,
-                "tenant_id": tenant_id,
-                "client_id": client_id,
-                "client_secret": client_secret.expose_secret(),
-            }),
-        }}),
-        CredentialSpecInput::Model(m) => json!({ "model": match m {
-            ModelCredentialInput::Anthropic { api_key } => json!({
-                "kind": "anthropic",
-                "api_key": api_key.expose_secret(),
-            }),
-            ModelCredentialInput::Openai { api_key, base_url } => json!({
-                "kind": "openai",
-                "api_key": api_key.expose_secret(),
-                "base_url": base_url,
-            }),
-        }}),
+        StorageCredentialInput::S3 {
+            access_key_id,
+            secret_access_key,
+            region,
+            endpoint,
+            role_arn,
+            external_id,
+        } => json!({
+            "kind": "s3",
+            "access_key_id": access_key_id,
+            "secret_access_key": secret_access_key.expose_secret(),
+            "region": region,
+            "endpoint": endpoint,
+            "role_arn": role_arn,
+            "external_id": external_id,
+        }),
+        StorageCredentialInput::AzureAccountKey { account, key } => json!({
+            "kind": "azure_account_key",
+            "account": account,
+            "key": key.expose_secret(),
+        }),
+        StorageCredentialInput::AzureServicePrincipal {
+            account,
+            tenant_id,
+            client_id,
+            client_secret,
+        } => json!({
+            "kind": "azure_service_principal",
+            "account": account,
+            "tenant_id": tenant_id,
+            "client_id": client_id,
+            "client_secret": client_secret.expose_secret(),
+        }),
     };
     value.to_string().into_bytes()
 }
@@ -138,7 +137,7 @@ fn plaintext(spec: &CredentialSpecInput) -> Vec<u8> {
 /// Seal the credential `name` holds.
 pub fn seal_spec(
     name: &str,
-    spec: &CredentialSpecInput,
+    spec: &StorageCredentialInput,
     key: &SecretKey,
 ) -> Result<Vec<u8>, String> {
     seal(&Zeroizing::new(plaintext(spec)), &aad(name), key)
@@ -149,7 +148,7 @@ pub fn open_spec(
     name: &str,
     sealed: &[u8],
     key: &SecretKey,
-) -> Result<CredentialSpecInput, String> {
+) -> Result<StorageCredentialInput, String> {
     let plain = Zeroizing::new(open(sealed, &aad(name), key)?);
     serde_json::from_slice(&plain).map_err(|e| format!("the sealed spec does not parse: {e}"))
 }

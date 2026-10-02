@@ -1,0 +1,32 @@
+# The gateway's dev profile: both aliases on Docker Model Runner, which compose
+# declares and points us at (`models:` in docker-compose.yml), so the whole loop
+# runs offline and free, on the host's GPU. The apps only ever name an alias; what answers it
+# is this file's business. See infra/ai/README.md.
+
+model_list:
+  - model_name: chat
+    litellm_params:
+      model: os.environ/CHAT_MODEL
+      custom_llm_provider: openai
+      api_base: os.environ/CHAT_URL
+      api_key: unused
+  - model_name: complete
+    litellm_params:
+      model: os.environ/COMPLETE_MODEL
+      custom_llm_provider: openai
+      api_base: os.environ/COMPLETE_URL
+      api_key: unused
+
+litellm_settings:
+  drop_params: true
+  # Off unless a request opts in: keasy's BFF opts `complete` in, where the same
+  # field value asked twice is common. A cached chat turn would make Retry a no-op.
+  cache: true
+  cache_params:
+    type: redis
+    mode: default_off
+    ttl: 3600
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL

@@ -46,8 +46,8 @@ fn method(name: &str) -> Method {
 }
 
 /// The authorization contract, route by route: each role is admitted exactly
-/// where the table says, refused with `rbac/insufficient_role` everywhere else,
-/// a token with no workspace role gets `rbac/no_membership`, and no token 401.
+/// where the table says, refused with `rbac/insufficient-role` everywhere else,
+/// a token with no workspace role gets `rbac/no-membership`, and no token 401.
 #[tokio::test]
 async fn every_route_admits_exactly_its_roles() {
     let app = spawn_app().await;
@@ -67,7 +67,7 @@ async fn every_route_admits_exactly_its_roles() {
             } else {
                 assert_eq!(
                     (status, code.as_deref()),
-                    (StatusCode::FORBIDDEN, Some("rbac/insufficient_role")),
+                    (StatusCode::FORBIDDEN, Some("rbac/insufficient-role")),
                     "{verb} {path} must refuse {role:?}"
                 );
             }
@@ -76,7 +76,7 @@ async fn every_route_admits_exactly_its_roles() {
             app.answer(method(verb), path, Some(&nobody)).await,
             (
                 StatusCode::FORBIDDEN,
-                Some("rbac/no_membership".to_string())
+                Some("rbac/no-membership".to_string())
             ),
             "{verb} {path} without a workspace role"
         );
@@ -119,7 +119,7 @@ async fn every_role_gated_route_is_in_the_table() {
             let exists =
                 app.call(method(verb), path, Some(&member)).await != StatusCode::METHOD_NOT_ALLOWED;
             let (_, code) = app.answer(method(verb), path, Some(&nobody)).await;
-            let gated = exists && code.as_deref() == Some("rbac/no_membership");
+            let gated = exists && code.as_deref() == Some("rbac/no-membership");
             assert_eq!(gated, listed, "{verb} {path}");
         }
     }

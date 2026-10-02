@@ -8,7 +8,7 @@
  * The server never reads the file.
  */
 
-import { introspect, type InferredDescriptor } from "@fossil-lang/introspect";
+import { introspect, type InferredDescriptor, type UndescribedSource } from "@fossil-lang/introspect";
 import type { ProgramSource } from "@fossil-lang/types";
 
 import { engine } from "@kanzo-tech/ui/analytics";
@@ -28,6 +28,12 @@ export function connectionPath(connection: StorageConnection, key: string): stri
 export const sourceDescriptorsKey = (sources: readonly string[]) =>
   ["source-descriptors", sources] as const;
 
-export async function describeSources(sources: readonly ProgramSource[]): Promise<InferredDescriptor[]> {
-  return introspect(sources, { host, engine: await engine() });
+/** What could be described, and each source that could not, with its problem — shown, never dropped. */
+export interface Described {
+  descriptors: InferredDescriptor[];
+  undescribed: UndescribedSource[];
+}
+
+export async function describeSources(sources: readonly ProgramSource[], signal?: AbortSignal): Promise<Described> {
+  return introspect(sources, { host, engine: await engine({ signal }), signal });
 }

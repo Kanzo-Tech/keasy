@@ -15,6 +15,7 @@ use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::jobs::owned;
 use crate::startup::AppState;
 use crate::storage_client;
+use crate::storage_client::vend::VendError;
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CredentialsRequest {
@@ -29,6 +30,7 @@ pub struct CredentialsRequest {
         (status = 404, description = "Job not found", body = ErrorBody),
         (status = 409, description = "Read before the job completed, or write while it is not running", body = ErrorBody),
         (status = 502, description = "The store refused to vend", body = ErrorBody),
+        (status = 504, description = "The store, or the identity service before it, did not answer in time", body = ErrorBody),
     )
 )]
 /// Vend a credential over the job's dataset, `{sink}/{folder}/`: to read it
@@ -82,7 +84,15 @@ pub(crate) async fn vended(
 ) -> Result<Response, Refusal> {
     let credential = storage_client::vend::vend(credential, location, access)
         .await
-        .map_err(|e| Refusal::new(StatusCode::BAD_GATEWAY, ErrorCode::StoreError, e))?;
+        .map_err(|e| match e {
+            VendError::Refused(message) => {
+                Refusal::new(StatusCode::BAD_GATEWAY, ErrorCode::StoreError, message)
+            }
+            silent @ VendError::Silent { after, .. } => Refusal::Body(
+                StatusCode::GATEWAY_TIMEOUT,
+                ErrorBody::silent(ErrorCode::StoreSilent, silent.to_string(), after),
+            ),
+        })?;
     Ok((
         [(header::CACHE_CONTROL, "no-store")],
         Json(VendedCredentials {

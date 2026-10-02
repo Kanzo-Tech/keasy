@@ -87,6 +87,7 @@ pub async fn list_jobs(
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, Refusal> {
     crate::jobs::claim_declared(&state.db, &member.user_id, member.email.as_deref()).await?;
+    crate::jobs::sweep(&state.db).await?;
     Ok(Json(persistence::list_of(
         &*state.db.read().await,
         &member.user_id,
@@ -195,7 +196,7 @@ pub async fn update_job(
         }
     })?
     .map(Json)
-    .ok_or_else(|| Refusal::not_found("Job"))
+    .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))
 }
 
 #[utoipa::path(patch, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -205,6 +206,7 @@ pub async fn update_job(
         (status = 200, description = "Job status updated from the browser run", body = Job),
         (status = 400, description = "The job is a draft, which is never run", body = ErrorBody),
         (status = 404, description = "Job not found", body = ErrorBody),
+        (status = 409, description = "The job has already ended", body = ErrorBody),
     )
 )]
 /// The browser ran the mapping and uploaded the output; this records the
@@ -215,10 +217,22 @@ pub async fn complete_job(
     Path(id): Path<String>,
     Json(payload): Json<CompleteJobRequest>,
 ) -> Result<impl IntoResponse, Refusal> {
-    if owned(&state.db, &member.user_id, &id).await?.status == JobStatus::Draft {
-        return Err(Refusal::invalid(
-            "A draft is never run: create the job from it",
-        ));
+    // Only a submitted job is run: a draft never is, and an ended one — the
+    // sweep's `job/abandoned` among them — stays ended.
+    match owned(&state.db, &member.user_id, &id).await?.status {
+        JobStatus::Pending | JobStatus::Running => {}
+        JobStatus::Draft => {
+            return Err(Refusal::invalid(
+                "A draft is never run: create the job from it",
+            ));
+        }
+        JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled => {
+            return Err(Refusal::new(
+                StatusCode::CONFLICT,
+                ErrorCode::NotRunning,
+                "The job has already ended, so it has no run to report",
+            ));
+        }
     }
     let now = now_iso8601();
     let CompleteJobRequest {
@@ -241,14 +255,45 @@ pub async fn complete_job(
                 job.problem = problem;
             }
             JobStatus::Running => {
-                job.started_at.get_or_insert(now);
+                job.started_at.get_or_insert_with(|| now.clone());
+                job.heartbeat_at = Some(now);
             }
             _ => {}
         }
         job.status = status;
     })?
     .map(Json)
-    .ok_or_else(|| Refusal::not_found("Job"))
+    .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))
+}
+
+#[utoipa::path(post, path = "/v1/jobs/{id}/heartbeat", tag = "Jobs",
+    params(("id" = String, Path, description = "Job ID")),
+    responses(
+        (status = 204, description = "The lease is renewed"),
+        (status = 404, description = "Job not found", body = ErrorBody),
+        (status = 409, description = "The job is not running: it ended, or the sweep ended it", body = ErrorBody),
+    )
+)]
+/// The runner is still there. Sent every 15 s while the job runs; a running
+/// job with no heartbeat for the lease (60 s) is swept as `job/abandoned`.
+pub async fn heartbeat(
+    member: Member,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<StatusCode, Refusal> {
+    if owned(&state.db, &member.user_id, &id).await?.status != JobStatus::Running {
+        return Err(Refusal::new(
+            StatusCode::CONFLICT,
+            ErrorCode::NotRunning,
+            "The job is not running, so it holds no lease",
+        ));
+    }
+    let now = now_iso8601();
+    persistence::update(&*state.db.write().await, &id, move |job| {
+        job.heartbeat_at = Some(now)
+    })?
+    .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[utoipa::path(put, path = "/v1/jobs/{id}/relations", tag = "Jobs",
@@ -285,7 +330,7 @@ pub async fn publish_relations(
         job.relations = relations
     })?
     .map(Json)
-    .ok_or_else(|| Refusal::not_found("Job"))
+    .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))
 }
 
 #[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -320,4 +365,5 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(list_jobs, create_job))
         .routes(routes!(get_job, update_job, complete_job, delete_job))
         .routes(routes!(publish_relations))
+        .routes(routes!(heartbeat))
 }

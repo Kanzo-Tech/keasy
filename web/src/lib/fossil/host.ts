@@ -1,6 +1,6 @@
 import "client-only";
 
-import type { Access, Host, Scope, StorageCredential } from "@fossil-lang/types";
+import { type Access, type Host, type Scope, type StorageCredential, until } from "@fossil-lang/types";
 
 import { http } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
@@ -17,23 +17,33 @@ import { queryClient } from "@/lib/api/query-client";
  * after adding or deleting one drops it.
  */
 export const host: Host = {
-  connections: async () => {
-    const connections = await queryClient.fetchQuery({
-      queryKey: ["get", "/v1/connections", {}],
-      queryFn: async () => (await http.GET("/v1/connections")).data ?? [],
-      staleTime: 60_000,
-    });
+  // `signal` is fossil's: the caller's Stop, or the 30 s a host has to answer. Passing it to the
+  // request stops the request too, rather than leaving it to finish unread.
+  connections: async ({ signal }) => {
+    const connections = await until(
+      queryClient.fetchQuery({
+        queryKey: ["get", "/v1/connections", {}],
+        queryFn: async ({ signal: query }) => (await http.GET("/v1/connections", { signal: query })).data ?? [],
+        staleTime: 60_000,
+      }),
+      signal,
+    );
     return Object.fromEntries(
       connections.flatMap((c) => (c.target.direction === "source" ? [[c.name, c.target.url]] : [])),
     );
   },
-  credentials: async (scope: Scope, access: Access): Promise<StorageCredential[]> => {
+  credentials: async (scope: Scope, access: Access, { signal }): Promise<StorageCredential[]> => {
     const vended =
       "job" in scope
-        ? await http.POST("/v1/jobs/{id}/credentials", { params: { path: { id: scope.job } }, body: { access } })
+        ? await http.POST("/v1/jobs/{id}/credentials", {
+            params: { path: { id: scope.job } },
+            body: { access },
+            signal,
+          })
         : await http.POST("/v1/connections/{name}/credentials", {
             params: { path: { name: scope.connection } },
             body: { access },
+            signal,
           });
     return vended.data!.storage_credentials;
   },

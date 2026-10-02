@@ -2,6 +2,8 @@ import "server-only";
 
 import type { Schemas } from "@keasy/api";
 
+import { deadlineFetch } from "@/lib/deadline";
+
 export type Branding = Schemas["Branding"];
 
 /**
@@ -13,15 +15,20 @@ export type Branding = Schemas["Branding"];
  */
 let cached: Promise<Branding> | undefined;
 
+const bounded = deadlineFetch((ms) => new Error(`GET /v1/branding did not answer within ${ms / 1000} s`));
+
 export function getBranding(): Promise<Branding> {
-  cached ??= fetch(`${process.env.KEASY_API_URL?.replace(/\/$/, "")}/v1/branding`, {
+  if (cached) return cached;
+  const read = bounded(`${process.env.KEASY_API_URL?.replace(/\/$/, "")}/v1/branding`, {
     cache: "no-store",
   }).then(async (res) => {
     if (!res.ok) throw new Error(`GET /v1/branding answered ${res.status}`);
     return (await res.json()) as Branding;
   });
-  cached.catch(() => {
-    cached = undefined;
+  // A failed read is forgotten, so the next request asks again rather than the process keeping it.
+  read.catch(() => {
+    if (cached === read) cached = undefined;
   });
-  return cached;
+  cached = read;
+  return read;
 }

@@ -25,7 +25,7 @@ async fn a_job_goes_to_the_sink_or_is_refused() {
     assert_eq!(create(None).await.0, StatusCode::UNPROCESSABLE_ENTITY);
     let (status, body) = create(Some("source")).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(body["code"], "invalid_destination");
+    assert_eq!(body["code"], "job/invalid-destination");
     assert_eq!(create(Some("gone")).await.0, StatusCode::BAD_REQUEST);
     let (status, job) = create(Some("sink")).await;
     assert_eq!(status, StatusCode::CREATED);
@@ -146,7 +146,7 @@ async fn a_job_writes_to_a_folder_of_its_own() {
     let (status, body) = create(job(None, false)).await;
     assert_eq!(
         (status, body["code"].as_str()),
-        (StatusCode::BAD_REQUEST, Some("validation_failed"))
+        (StatusCode::BAD_REQUEST, Some("request/invalid"))
     );
     let (status, _) = create(job(Some("Not A Slug"), false)).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
@@ -158,7 +158,7 @@ async fn a_job_writes_to_a_folder_of_its_own() {
     let (status, body) = create(job(Some("people"), false)).await;
     assert_eq!(
         (status, body["code"].as_str()),
-        (StatusCode::CONFLICT, Some("already_exists"))
+        (StatusCode::CONFLICT, Some("resource/already-exists"))
     );
 
     let (status, draft) = create(job(None, true)).await;

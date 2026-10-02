@@ -35,6 +35,9 @@ pub struct Job {
     pub started_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub completed_at: Option<String>,
+    /// The runner's last heartbeat while the job runs: its lease.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub heartbeat_at: Option<String>,
     /// Why a `Failed` run failed, as the browser that ran it reported it: a
     /// problem (`{ code, title, detail, data, … }`), stored verbatim and
     /// **opaque** — the web branches on its `code`, the server never does.
@@ -87,6 +90,7 @@ impl Job {
             created_at: now_iso8601(),
             started_at: None,
             completed_at: None,
+            heartbeat_at: None,
             problem: None,
             created_by,
             sink_connection,

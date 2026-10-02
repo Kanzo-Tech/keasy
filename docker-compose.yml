@@ -251,6 +251,39 @@ services:
       minio:
         condition: service_healthy
 
+  # ── The `faults` profile: what the end-to-end suite breaks things with (e2e/) ──
+  # Neither starts with `make dev`, nor with `make e2e`: the suite starts and
+  # stops each around the one scenario that needs it.
+
+  # A store that accepts every connection and never answers. Shares MinIO's
+  # aliases, so with `minio` stopped every vend and read the server makes to
+  # `minio.localhost:9000` meets silence instead (scenario 3). Never up beside
+  # `minio`: Docker's DNS would answer the alias with both.
+  minio-silent:
+    profiles: [faults]
+    image: python:3.12-alpine
+    command: ["python", "-u", "/faults/silent.py", "9000"]
+    volumes:
+      - ./e2e/faults:/faults:ro
+    networks:
+      default:
+        aliases:
+          - minio.localhost
+
+  # The AI gateway, silent: accepts the relay's connection and never answers.
+  # Shares LiteLLM's name, so with `litellm` stopped the server's relay meets
+  # silence instead (scenario 13). Never up beside `litellm`.
+  litellm-silent:
+    profiles: [faults]
+    image: python:3.12-alpine
+    command: ["python", "-u", "/faults/silent.py", "4000"]
+    volumes:
+      - ./e2e/faults:/faults:ro
+    networks:
+      default:
+        aliases:
+          - litellm
+
 volumes:
   keasy-data:
   keycloak-postgres-data:

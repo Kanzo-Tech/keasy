@@ -1,10 +1,12 @@
 "use client";
 
 import { createContext, use, type ReactNode } from "react";
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import type { Manifest, SqlCorpus, SqlResult } from "@fossil-lang/corpus";
 import { MosaicProvider, engine, type Coordinator } from "@kanzo-tech/ui/analytics";
 import { queryClient } from "@/lib/api/query-client";
+import { settled } from "@/lib/api/settled";
+import { toastError } from "@/lib/errors";
 import { corpusKey, openJobCorpus } from "@/lib/fossil/corpus";
 import { summarize, type TableStats } from "./field-stats";
 
@@ -25,8 +27,8 @@ const quote = (name: string) => `"${name.replaceAll('"', '""')}"`;
 export function corpusQuery(jobId: string) {
   return queryOptions({
     queryKey: corpusKey(jobId),
-    queryFn: async (): Promise<Corpus> => {
-      const [{ coordinator }, corpus] = await Promise.all([engine(), openJobCorpus(jobId)]);
+    queryFn: async ({ signal }): Promise<Corpus> => {
+      const [{ coordinator }, corpus] = await Promise.all([engine({ signal }), openJobCorpus(jobId, { signal })]);
       const { manifest } = corpus;
       const names = new Set([...manifest.vertex_tables, ...manifest.edge_tables].map((t) => t.name));
       const relation = (name: string) => {
@@ -50,10 +52,20 @@ queryClient.getQueryCache().subscribe((event) => {
 
 const CorpusContext = createContext<Corpus | null>(null);
 
+/**
+ * A chart, stat or filter whose query failed draws the failure in its own frame; what was thrown
+ * is said once more, by its code, through the toast path every failed action takes.
+ */
+function chartFailed(error: unknown) {
+  toastError(error, "A chart could not be drawn");
+}
+
 export function CorpusProvider({ value, children }: { value: Corpus; children: ReactNode }) {
   return (
     <CorpusContext value={value}>
-      <MosaicProvider coordinator={value.coordinator}>{children}</MosaicProvider>
+      <MosaicProvider coordinator={value.coordinator} onFailure={chartFailed}>
+        {children}
+      </MosaicProvider>
     </CorpusContext>
   );
 }
@@ -64,20 +76,20 @@ export function useCorpus(): Corpus {
   return corpus;
 }
 
-/** Every vertex table's column statistics, one `SUMMARIZE` each; empty until they land. */
-export function useFieldStats(): { tables: TableStats[]; error: Error | null } {
+/** Every vertex table's column statistics, one `SUMMARIZE` each. Suspends until they land; a failure throws to the boundary. */
+export function useFieldStats(): TableStats[] {
   const { jobId, corpus, manifest, relation } = useCorpus();
-  const stats = useQuery({
+  const stats = useSuspenseQuery({
     queryKey: [...corpusKey(jobId), "stats"],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       Promise.all(
         manifest.vertex_tables.map(async (table) =>
-          summarize(table, await corpus.sql(`SUMMARIZE ${relation(table.name)}`)),
+          summarize(table, await corpus.sql(`SUMMARIZE ${relation(table.name)}`, { signal })),
         ),
       ),
     ...ONCE,
   });
-  return { tables: stats.data ?? [], error: stats.error };
+  return settled(stats);
 }
 
 /** A `sql` answer's rows as objects keyed by column, the shape a table and a model read. */

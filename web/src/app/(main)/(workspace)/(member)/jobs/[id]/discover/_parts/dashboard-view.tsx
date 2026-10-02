@@ -5,7 +5,9 @@ import { ScrollArea, Skeleton, ToggleGroup, ToggleGroupItem } from "@kanzo-tech/
 import { Dashboard, type DashboardSpec } from "@kanzo-tech/ui/analytics";
 import { verbatim } from "@uwdata/mosaic-sql";
 import { $api, http } from "@/lib/api/client";
+import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
+import { Boundary } from "@/components/boundary";
 import { useCorpus } from "./corpus";
 
 /**
@@ -25,24 +27,33 @@ type SavedDashboards = {
 const SAVE_MS = 800;
 
 export default function DashboardView() {
+  // The saved document is read once; a failed read is shown in place of the dashboard, not
+  // replaced by the automatic one an edit would then overwrite.
+  return (
+    <Boundary className="p-4" fallback={<Skeleton className="h-full w-full" />}>
+      <SavedDashboard />
+    </Boundary>
+  );
+}
+
+function SavedDashboard() {
   const { jobId, manifest, relation } = useCorpus();
   const types = manifest.vertex_tables;
   const [type, setType] = useState(types[0]?.name ?? "");
   const table = types.find((t) => t.name === type);
 
-  const saved = $api.useQuery("get", "/v1/jobs/{id}/dashboard", { params: { path: { id: jobId } } });
+  const saved = settled($api.useSuspenseQuery("get", "/v1/jobs/{id}/dashboard", { params: { path: { id: jobId } } }));
   // What the server holds, with this session's edits over it.
   const [edited, setEdited] = useState<Record<string, DashboardSpec>>({});
   const byType = useMemo(() => {
-    if (saved.isPending) return null;
-    const stored = (saved.data?.spec as SavedDashboards | undefined)?.byType ?? {};
+    const stored = (saved?.spec as SavedDashboards | undefined)?.byType ?? {};
     return { ...stored, ...edited };
-  }, [saved.isPending, saved.data, edited]);
+  }, [saved, edited]);
 
   // Saved after a pause, not per edit: dragging a slider is many edits and one decision.
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
   const change = (spec: DashboardSpec) => {
-    const next = { ...(byType ?? {}), [type]: spec };
+    const next = { ...byType, [type]: spec };
     setEdited((prev) => ({ ...prev, [type]: spec }));
     if (pending.current) clearTimeout(pending.current);
     pending.current = setTimeout(() => {
@@ -62,7 +73,7 @@ export default function DashboardView() {
     [table],
   );
 
-  if (!table || byType === null) return <Skeleton className="h-full w-full" />;
+  if (!table) return <Skeleton className="h-full w-full" />;
 
   return (
     <div className="flex h-full min-h-0 flex-col">

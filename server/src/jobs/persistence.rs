@@ -4,9 +4,10 @@ use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::database::{DbError, DbResult, constraint, enum_column, json_column_opt};
 use crate::domain::{Job, JobStatus};
+use crate::error::{ErrorBody, ErrorCode};
 
-const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, problem, \
-                       created_by, sink_connection, folder, script, manifest, relations";
+const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, heartbeat_at, \
+                       problem, created_by, sink_connection, folder, script, manifest, relations";
 
 /// What the schema refused about `job`, said in its terms.
 fn refused(job: &Job, e: rusqlite::Error) -> DbError {
@@ -27,7 +28,7 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
     conn.execute(
         &format!(
             "INSERT INTO jobs ({COLUMNS})
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)"
         ),
         params![
             job.id,
@@ -36,6 +37,7 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
             job.created_at,
             job.started_at,
             job.completed_at,
+            job.heartbeat_at,
             job.problem
                 .as_ref()
                 .map(serde_json::to_string)
@@ -74,7 +76,7 @@ pub fn update(conn: &Connection, id: &str, f: impl FnOnce(&mut Job)) -> DbResult
 
     conn.execute(
         "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, problem = ?5,
-                         script = ?6, manifest = ?7, relations = ?8, folder = ?9
+                         script = ?6, manifest = ?7, relations = ?8, folder = ?9, heartbeat_at = ?11
          WHERE id = ?10",
         params![
             job.name,
@@ -93,10 +95,42 @@ pub fn update(conn: &Connection, id: &str, f: impl FnOnce(&mut Job)) -> DbResult
             serde_json::to_string(&job.relations)?,
             job.folder,
             id,
+            job.heartbeat_at,
         ],
     )
     .map_err(|e| refused(&job, e))?;
     Ok(Some(job))
+}
+
+/// How long a runner may go without a heartbeat, and a `pending` job without
+/// a runner, before the job is swept as abandoned. Four heartbeats: one lost
+/// request is not an abandoned run.
+pub const LEASE: std::time::Duration = std::time::Duration::from_secs(60);
+
+/// End every job no runner is holding: `running` with a heartbeat (or, before
+/// the first one, a start) older than [`LEASE`], and `pending` created longer
+/// ago than it. Each becomes `failed` with the problem `job/abandoned`.
+///
+/// Run before every read of jobs rather than on a schedule: a tab that closed
+/// cannot say so, and the next person to look is the only one who can notice.
+pub fn sweep(conn: &Connection, now: jiff::Timestamp) -> DbResult<usize> {
+    let spell = |t: jiff::Timestamp| t.strftime("%Y-%m-%dT%H:%M:%SZ").to_string();
+    let cutoff = spell(now - jiff::SignedDuration::try_from(LEASE).expect("a lease fits"));
+    let problem = serde_json::to_string(&ErrorBody::new(
+        ErrorCode::Abandoned,
+        format!(
+            "Nothing ran this job for {} s: the tab that ran it closed, \
+             or never opened it",
+            LEASE.as_secs()
+        ),
+        Vec::new(),
+    ))?;
+    Ok(conn.execute(
+        "UPDATE jobs SET status = 'failed', completed_at = ?1, problem = ?2
+         WHERE (status = 'running' AND COALESCE(heartbeat_at, started_at, created_at) < ?3)
+            OR (status = 'pending' AND created_at < ?3)",
+        params![spell(now), problem, cutoff],
+    )?)
 }
 
 /// Every job in the workspace (the owner's datasets view).
@@ -147,6 +181,7 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
         created_at: row.get("created_at")?,
         started_at: row.get("started_at")?,
         completed_at: row.get("completed_at")?,
+        heartbeat_at: row.get("heartbeat_at")?,
         problem: json_column_opt(row, "problem")?,
         created_by: row.get("created_by")?,
         sink_connection: row.get("sink_connection")?,
@@ -245,5 +280,46 @@ mod tests {
         )
         .unwrap();
         assert!(get(&conn, &stored.id).is_err());
+    }
+
+    fn at(job: &Job, conn: &Connection) -> Job {
+        get(conn, &job.id).unwrap().unwrap()
+    }
+
+    #[test]
+    fn a_job_no_runner_holds_is_swept_to_failed_as_abandoned() {
+        let conn = conn();
+        let now = jiff::Timestamp::now();
+        let ago = |s: i64| {
+            (now - jiff::SignedDuration::from_secs(s))
+                .strftime("%Y-%m-%dT%H:%M:%SZ")
+                .to_string()
+        };
+        let mut stale = filed(JobStatus::Running, "stale");
+        stale.started_at = Some(ago(300));
+        stale.heartbeat_at = Some(ago(61));
+        let mut alive = filed(JobStatus::Running, "alive");
+        alive.started_at = Some(ago(300));
+        alive.heartbeat_at = Some(ago(10));
+        let mut orphan = filed(JobStatus::Pending, "orphan");
+        orphan.created_at = ago(61);
+        let fresh = filed(JobStatus::Pending, "fresh");
+        let draft = job("u-1");
+        for j in [&stale, &alive, &orphan, &fresh, &draft] {
+            insert(&conn, j).unwrap();
+        }
+
+        assert_eq!(sweep(&conn, now).unwrap(), 2);
+
+        for gone in [&stale, &orphan] {
+            let read = at(gone, &conn);
+            assert_eq!(read.status, JobStatus::Failed);
+            assert_eq!(read.problem.as_ref().unwrap()["code"], "job/abandoned");
+            assert!(read.completed_at.is_some());
+        }
+        assert_eq!(at(&alive, &conn).status, JobStatus::Running);
+        assert_eq!(at(&fresh, &conn).status, JobStatus::Pending);
+        assert_eq!(at(&draft, &conn).status, JobStatus::Draft);
+        assert_eq!(sweep(&conn, now).unwrap(), 0, "a swept job is swept once");
     }
 }

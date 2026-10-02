@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import type { SqlCorpus } from "@fossil-lang/corpus";
 import {
@@ -11,17 +12,18 @@ import {
   EmptyIndicator,
   EmptyRoot,
   Show,
-  Skeleton,
   ToggleGroup,
   ToggleGroupItem,
 } from "@kanzo-tech/ui";
 import { Chat, type ToolPart, useChat } from "@kanzo-tech/ai";
 import { DirectChatTransport } from "@kanzo-tech/llm";
-import { type Shown, toProblem } from "@/lib/errors";
+import { corpusKey } from "@/lib/fossil/corpus";
+import { toProblem } from "@/lib/errors";
 import { ProblemView } from "@/components/problem-view";
+import { settled } from "@/lib/api/settled";
 import { askAgent, type QueryOutput } from "./ask-agent";
 import { describeDataSpace } from "./data-space";
-import { useCorpus, useFieldStats } from "./corpus";
+import { ONCE, useCorpus, useFieldStats } from "./corpus";
 import { Finding } from "./finding";
 import { ResultTable } from "./result-table";
 import { generateSuggestions } from "./schema-suggestions";
@@ -49,8 +51,14 @@ function ShowOnGraph({ output }: { output: QueryOutput }) {
 
 /** A `query` call's result, read two ways — and, when it carries vertices, put on the canvas. */
 function QueryResult({ part }: { part: ToolPart }) {
-  const output = part.output as QueryOutput;
   const [view, setView] = useState<"results" | "query">("results");
+  // The engine refused the model's SQL: the agent reads the error and tries again, and the reader
+  // sees it as what it is.
+  if (part.state === "output-error") {
+    return <ProblemView problem={{ code: "query/failed", title: "The query failed", detail: part.errorText }} />;
+  }
+  if (part.state !== "output-available") return null;
+  const output = part.output as QueryOutput;
   return (
     <div className="flex flex-col gap-2">
       {/* Single-select and never empty: two readings of one answer. */}
@@ -93,7 +101,10 @@ function AskChat({ schema, corpus, starters }: { schema: string; corpus: SqlCorp
   const [transport] = useState(() => new DirectChatTransport({ agent: askAgent(schema, corpus) }));
   const chat = useChat({ transport });
   return (
-    <Chat
+    <div className="flex h-full min-h-0 flex-col">
+      {/* What stopped the answer, by its code: the gateway's refusal, its silence, a broken stream. */}
+      {chat.error && <ProblemView className="m-2" problem={toProblem(chat.error, "llm/failed")} />}
+      <Chat
       chat={chat}
       className="p-2"
       empty={
@@ -112,43 +123,28 @@ function AskChat({ schema, corpus, starters }: { schema: string; corpus: SqlCorp
       tools={TOOLS}
       translations={{ placeholder: "Ask about your data…" }}
     />
+    </div>
   );
 }
 
 export function AskPanel() {
-  const { coordinator, corpus, manifest, relation } = useCorpus();
-  const { tables } = useFieldStats();
+  const { jobId, coordinator, corpus, manifest, relation } = useCorpus();
+  const tables = useFieldStats();
 
   // The schema the assistant reasons over: DuckDB's own catalog, read back from
   // the views the corpus mounted. Names, columns and TYPES are the ones a query
-  // will actually meet.
-  const [schema, setSchema] = useState<string | null>(null);
-  const [problem, setProblem] = useState<Shown | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    describeDataSpace((sql) => coordinator.query(sql, { type: "json" }), corpus.url, relation, manifest)
-      .then((ddl) => {
-        if (!cancelled) setSchema(ddl);
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setProblem(toProblem(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [coordinator, corpus, relation, manifest]);
+  // will actually meet. Read before the panel opens; a failure throws to the
+  // panel's boundary.
+  const schema = settled(
+    useSuspenseQuery({
+      queryKey: [...corpusKey(jobId), "data-space"],
+      queryFn: ({ signal }) =>
+        describeDataSpace((sql) => coordinator.query(sql, { type: "json", signal }), corpus.url, relation, manifest),
+      ...ONCE,
+    }),
+  );
 
   // Derived from the schema the reader already has, so offering them costs nothing.
   const starters = useMemo(() => generateSuggestions(tables, manifest), [tables, manifest]);
-
-  if (problem) return <ProblemView problem={problem} />;
-  if (schema === null) {
-    return (
-      <div className="flex flex-col gap-2 p-3" aria-label="Reading the schema…">
-        <Skeleton className="h-4 w-2/3" />
-        <Skeleton className="h-4 w-1/2" />
-      </div>
-    );
-  }
   return <AskChat corpus={corpus} schema={schema} starters={starters} />;
 }

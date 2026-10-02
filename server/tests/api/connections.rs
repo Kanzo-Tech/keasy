@@ -20,7 +20,7 @@ async fn what_is_in_use_is_not_deleted() {
         .send(Method::DELETE, "/v1/credentials/key", &member, json!(null))
         .await;
     assert_eq!(status, StatusCode::CONFLICT);
-    assert_eq!(body["code"], "in_use");
+    assert_eq!(body["code"], "resource/in-use");
     assert_eq!(body["data"]["dependents"], json!(["data", "sink"]));
 
     let (_, job) = app
@@ -74,7 +74,7 @@ async fn a_storage_location_never_overlaps_another() {
             )
             .await;
         assert_eq!(status, StatusCode::CONFLICT, "{url}: {body}");
-        assert_eq!(body["code"], "overlaps", "{url}");
+        assert_eq!(body["code"], "connection/overlaps", "{url}");
         assert_eq!(body["data"]["dependents"], json!(collides), "{url}");
     }
 

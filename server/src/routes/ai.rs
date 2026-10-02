@@ -4,10 +4,13 @@
 //! workspace's key, who is asking, and how much an answer may cost.
 
 use axum::Json;
-use axum::body::Body;
+use std::time::Duration;
+
+use axum::body::{Body, Bytes};
 use axum::extract::State;
 use axum::http::{StatusCode, header};
 use axum::response::Response;
+use futures::StreamExt;
 use secrecy::ExposeSecret;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
@@ -33,13 +36,52 @@ impl Gateway {
             url: settings.url,
             key: settings.key,
             // A connect timeout and no total one: an answer streams for as
-            // long as the model writes it.
+            // long as the model writes it, bounded instead by `IDLE` between
+            // two chunks.
             http: reqwest::Client::builder()
-                .connect_timeout(std::time::Duration::from_secs(10))
+                .connect_timeout(std::time::Duration::from_secs(5))
                 .build()
                 .expect("a TLS backend is compiled in"),
         }
     }
+}
+
+/// How long the gateway may send nothing — before its answer begins, or between
+/// two chunks of it. Past it the call is `gateway/silent`, or the stream is cut.
+/// Under the browser's 30 s per chunk, so the gateway is named before the browser
+/// gives up and can only name the server. The route is left out of the server's
+/// request deadline, which this bound replaces for it.
+pub const IDLE: Duration = Duration::from_secs(25);
+
+/// `chunks`, ended with an error once `idle` passes without one.
+fn until_idle<S>(
+    chunks: S,
+    idle: Duration,
+) -> impl futures::Stream<Item = Result<Bytes, std::io::Error>>
+where
+    S: futures::Stream<Item = Result<Bytes, reqwest::Error>> + Unpin,
+{
+    futures::stream::unfold(Some(chunks), move |state| async move {
+        let mut chunks = state?;
+        match tokio::time::timeout(idle, chunks.next()).await {
+            Ok(Some(Ok(chunk))) => Some((Ok(chunk), Some(chunks))),
+            Ok(Some(Err(e))) => Some((Err(std::io::Error::other(e)), None)),
+            Ok(None) => None,
+            Err(_) => {
+                warn!(
+                    after_ms = idle.as_millis() as u64,
+                    "AI gateway went silent mid-answer"
+                );
+                Some((
+                    Err(std::io::Error::new(
+                        std::io::ErrorKind::TimedOut,
+                        "the AI gateway sent nothing within its deadline",
+                    )),
+                    None,
+                ))
+            }
+        }
+    })
 }
 
 /// A model, by what it is for. Which upstream answers is the gateway's
@@ -86,7 +128,8 @@ pub struct ChatCompletionRequest {
     responses(
         (status = 200, description = "The gateway's answer as it streams: OpenAI chat completion chunks (`text/event-stream`) or one completion (`application/json`)"),
         (status = 400, description = "Not an alias, or a malformed request", body = ErrorBody),
-        (status = 502, description = "The AI gateway did not answer", body = ErrorBody),
+        (status = 502, description = "The AI gateway could not be reached", body = ErrorBody),
+        (status = 504, description = "The AI gateway did not begin its answer in time", body = ErrorBody),
         (status = 503, description = "This workspace has no AI gateway", body = ErrorBody),
     )
 )]
@@ -122,19 +165,35 @@ pub async fn chat_completions(
         body["cache"] = json!({ "use-cache": true });
     }
 
-    let upstream = gateway
+    relay(gateway, &body, IDLE).await
+}
+
+/// Send `body` to the gateway and stream its answer back, every wait bounded by `idle`.
+async fn relay(gateway: &Gateway, body: &Value, idle: Duration) -> Result<Response, Refusal> {
+    let sent = gateway
         .http
         .post(format!("{}/v1/chat/completions", gateway.url))
         .bearer_auth(gateway.key.expose_secret())
-        .json(&body)
-        .send()
+        .json(body)
+        .send();
+    let upstream = tokio::time::timeout(idle, sent)
         .await
+        .map_err(|_| {
+            Refusal::Body(
+                StatusCode::GATEWAY_TIMEOUT,
+                ErrorBody::silent(
+                    ErrorCode::AiSilent,
+                    "the AI gateway did not begin its answer within its deadline",
+                    idle,
+                ),
+            )
+        })?
         .map_err(|e| {
             warn!("AI gateway unreachable: {e}");
             Refusal::new(
                 StatusCode::BAD_GATEWAY,
                 ErrorCode::AiUnreachable,
-                "the AI gateway did not answer",
+                "the AI gateway could not be reached",
             )
         })?;
 
@@ -147,7 +206,7 @@ pub async fn chat_completions(
         .status(upstream.status())
         .header(header::CONTENT_TYPE, content_type)
         .header(header::CACHE_CONTROL, "no-cache")
-        .body(Body::from_stream(upstream.bytes_stream()))
+        .body(Body::from_stream(until_idle(upstream.bytes_stream(), idle)))
         .map_err(|e| {
             Refusal::new(
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -160,4 +219,76 @@ pub async fn chat_completions(
 /// The routes this module serves.
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new().routes(routes!(chat_completions))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::configuration::AiSettings;
+
+    fn gateway(url: String) -> Gateway {
+        Gateway::new(AiSettings {
+            url,
+            key: secrecy::SecretString::from("k"),
+        })
+    }
+
+    const SHORT: Duration = Duration::from_millis(300);
+
+    #[tokio::test]
+    async fn a_gateway_that_accepts_and_never_answers_is_gateway_silent() {
+        let held = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}", held.local_addr().unwrap());
+        let started = std::time::Instant::now();
+        let refused = relay(&gateway(url), &json!({}), SHORT).await.unwrap_err();
+        let response = axum::response::IntoResponse::into_response(refused);
+        assert_eq!(response.status(), StatusCode::GATEWAY_TIMEOUT);
+        let body: Value = serde_json::from_slice(
+            &axum::body::to_bytes(response.into_body(), usize::MAX)
+                .await
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(body["code"], "gateway/silent");
+        assert_eq!(body["data"]["after"], 300);
+        assert!(started.elapsed() < Duration::from_secs(3));
+    }
+
+    #[tokio::test]
+    async fn a_gateway_that_goes_quiet_mid_answer_has_its_stream_cut() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let app = axum::Router::new().fallback(|| async {
+            let first = futures::stream::iter([Ok::<_, std::io::Error>(Bytes::from_static(
+                b"data: {\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n\n",
+            ))]);
+            Response::builder()
+                .header(header::CONTENT_TYPE, "text/event-stream")
+                .body(Body::from_stream(first.chain(futures::stream::pending())))
+                .unwrap()
+        });
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+
+        let response = relay(&gateway(url), &json!({}), SHORT).await.unwrap();
+        let mut body = response.into_body().into_data_stream();
+        assert!(
+            body.next().await.unwrap().is_ok(),
+            "what came before the silence is relayed"
+        );
+        let started = std::time::Instant::now();
+        assert!(
+            body.next().await.unwrap().is_err(),
+            "the silence ends the stream as an error"
+        );
+        assert!(started.elapsed() < Duration::from_secs(2));
+    }
+
+    #[tokio::test]
+    async fn an_unreachable_gateway_is_gateway_unreachable() {
+        let refused = relay(&gateway("http://127.0.0.1:1".into()), &json!({}), SHORT)
+            .await
+            .unwrap_err();
+        let response = axum::response::IntoResponse::into_response(refused);
+        assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+    }
 }

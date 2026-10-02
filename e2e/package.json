@@ -1,0 +1,16 @@
+{
+  "name": "@keasy/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "guard": "playwright test --project=guard",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^20.19.37",
+    "typescript": "^5.9.3"
+  }
+}

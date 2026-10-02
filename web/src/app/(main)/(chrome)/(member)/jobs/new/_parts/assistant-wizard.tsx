@@ -2,13 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft, ArrowRight, Database, Plus, Wand2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Database, Plus, Wand2 } from "lucide-react";
 import { Assist, AssistProvider } from "@kanzo-tech/ai";
 import {
-  Alert,
-  AlertAction,
-  AlertDescription,
-  AlertTitle,
   Button,
   EmptyContent,
   EmptyDescription,
@@ -47,6 +43,8 @@ import * as checker from "@/lib/fossil/checker";
 import { connectionPath, describeSources, sourceDescriptorsKey } from "./describe-sources";
 import { providerFor } from "@/lib/fossil/providers";
 import type { StorageConnection } from "@/lib/connections";
+import { ProblemView } from "@/components/problem-view";
+import { toastError, toProblem } from "@/lib/errors";
 
 type Connection = StorageConnection;
 type Selection = Record<string, boolean>;
@@ -90,7 +88,8 @@ const FILE_COLUMNS: ColumnDef<ConnectionFile>[] = [
 /** One model call at a time: started, stopped when superseded or left, and how it ended. */
 function useCall() {
   const [status, setStatus] = useState<"idle" | "running" | "done" | "error">("idle");
-  const [error, setError] = useState<string | null>(null);
+  // What was thrown, whole: a gateway refusal, `ai/silent`, a structured answer that would not parse.
+  const [error, setError] = useState<unknown>(null);
   const ctrl = useRef<AbortController>(undefined);
   useEffect(() => () => ctrl.current?.abort(), []);
 
@@ -106,7 +105,7 @@ function useCall() {
     } catch (e) {
       if (mine.signal.aborted) return;
       setStatus("error");
-      setError(e instanceof Error ? e.message : String(e));
+      setError(e);
     }
   }, []);
 
@@ -122,12 +121,17 @@ function ConnectionFiles({
   connection,
   files,
   loading,
+  error,
+  onRetry,
   selection,
   onSelectionChange,
 }: {
   connection: Connection;
   files: ConnectionFile[];
   loading: boolean;
+  /** Why this connection's files could not be listed: shown in place of them, beside the others. */
+  error: unknown;
+  onRetry: () => void;
   selection: Selection;
   onSelectionChange: (selection: Selection) => void;
 }) {
@@ -145,13 +149,17 @@ function ConnectionFiles({
       <h3 className="font-medium text-sm">
         Files in <span className="font-mono">@{connection.name}</span>
       </h3>
-      <DataTableRoot table={table}>
-        <DataTableContent<ConnectionFile>
-          empty={loading ? <Spinner className="mx-auto" /> : "No files a provider can read."}
-          onRowClick={(file) => table.getRow(file.path).toggleSelected()}
-        />
-        <DataTablePagination />
-      </DataTableRoot>
+      {error ? (
+        <ProblemView onRetry={onRetry} problem={toProblem(error)} />
+      ) : (
+        <DataTableRoot table={table}>
+          <DataTableContent<ConnectionFile>
+            empty={loading ? <Spinner className="mx-auto" /> : "No files a provider can read."}
+            onRowClick={(file) => table.getRow(file.path).toggleSelected()}
+          />
+          <DataTablePagination />
+        </DataTableRoot>
+      )}
     </section>
   );
 }
@@ -183,6 +191,9 @@ export function AssistantWizard({
   });
   const selected = connectionTable.getSelectedRowModel().rows.map((row) => row.original);
 
+  // The named exception to "useSuspenseQuery only" (fossil docs/design/failure, G2.4): one listing
+  // per selected connection, and the ones that loaded are worth showing beside the one that did
+  // not — so each reads its own `error` and shows it in its place.
   const listings = useQueries({
     queries: selected.map((c) =>
       $api.queryOptions("get", "/v1/connections/{name}/files", { params: { path: { name: c.name } } }),
@@ -192,7 +203,15 @@ export function AssistantWizard({
     const files = (listings[i]?.data ?? []).filter((f) => providerFor(f.path, "data", providers));
     const selection =
       fileSelection[connection.name] ?? Object.fromEntries(files.map((f) => [f.path, true]));
-    return { connection, files, selection, loading: listings[i]?.isPending ?? true };
+    const listing = listings[i];
+    return {
+      connection,
+      files,
+      selection,
+      loading: listing?.isPending ?? true,
+      error: listing?.error ?? null,
+      retry: () => void listing?.refetch(),
+    };
   });
   const picked = readable.flatMap(({ connection, files, selection }) =>
     files.filter((f) => selection[f.path]).map((f) => ({ connection, path: f.path })),
@@ -208,14 +227,19 @@ export function AssistantWizard({
       : [];
   });
   const program = bindings.map((b, i) => `f${i} := io.${b.constructor}("${b.uri}")`).join("\n");
+  // The same exception: the description depends on the wizard's own selection, and its failure is
+  // shown on the Sources screen, which then does not go on without the schemas.
   const described = useQuery({
     queryKey: sourceDescriptorsKey(bindings.map((b) => b.uri)),
-    queryFn: async () => describeSources(await (await checker.jobProgram()).sources(program)),
+    queryFn: async ({ signal }) =>
+      describeSources(await (await checker.jobProgram({ signal })).sources(program), signal),
     enabled: bindings.length > 0,
   });
   const schemasReady =
-    readable.every((r) => !r.loading) && (bindings.length === 0 || !described.isPending);
-  const schemas = described.data ?? [];
+    readable.every((r) => !r.loading && !r.error) &&
+    (bindings.length === 0 || (!described.isPending && !described.isError));
+  const schemas = described.data?.descriptors ?? [];
+  const undescribed = described.data?.undescribed ?? [];
 
   const reqColumns = useMemo<ColumnDef<CompetencyQuestion>[]>(
     () => [
@@ -352,18 +376,25 @@ export function AssistantWizard({
                 />
                 <DataTablePagination />
               </DataTableRoot>
-              {readable.map(({ connection, files, selection, loading }) => (
+              {readable.map(({ connection, files, selection, loading, error, retry }) => (
                 <ConnectionFiles
                   connection={connection}
+                  error={error}
                   files={files}
                   key={connection.name}
                   loading={loading}
+                  onRetry={retry}
                   onSelectionChange={(next) => setFileSelection((prev) => ({ ...prev, [connection.name]: next }))}
                   selection={selection}
                 />
               ))}
               {/* The model that helps write the domain reads the files it will be about. */}
-              <AssistProvider context={() => describeFiles(schemas)} model={COMPLETE}>
+              <AssistProvider
+                context={() => describeFiles(schemas)}
+                model={COMPLETE}
+                // The field says it failed under itself; the code (`ai/silent`, a gateway refusal) is said here.
+                onFailure={(error) => toastError(error, "The suggestion failed")}
+              >
                 <Field>
                   <FieldLabel>
                     Domain
@@ -375,7 +406,14 @@ export function AssistantWizard({
                   <FieldHelper>What the knowledge graph is about, or what it is for.</FieldHelper>
                 </Field>
               </AssistProvider>
-              <Show when={!schemasReady}>
+              {described.isError && (
+                <ProblemView onRetry={() => void described.refetch()} problem={toProblem(described.error)} />
+              )}
+              {/* Each file that could not be described, and why: the program is written without its columns. */}
+              {undescribed.map(({ source, problem }) => (
+                <ProblemView key={source.key} problem={problem} />
+              ))}
+              <Show when={!schemasReady && !described.isError}>
                 <p className="flex items-center gap-2 text-muted-foreground text-sm">
                   <Spinner aria-hidden />
                   Reading the schemas of the selected files
@@ -399,18 +437,9 @@ export function AssistantWizard({
                       Add requirement
                     </Button>
                   </div>
-                  <Show when={suggest.status === "error"}>
-                    <Alert variant="destructive">
-                      <AlertCircle />
-                      <AlertTitle>Suggesting requirements failed</AlertTitle>
-                      <AlertDescription>{suggest.error}</AlertDescription>
-                      <AlertAction>
-                        <Button onClick={askForRequirements} size="sm" variant="outline">
-                          Try again
-                        </Button>
-                      </AlertAction>
-                    </Alert>
-                  </Show>
+                  {suggest.status === "error" && (
+                    <ProblemView onRetry={askForRequirements} problem={toProblem(suggest.error, "llm/failed")} />
+                  )}
                   <DataTableRoot table={reqTable}>
                     <DataTableContent<CompetencyQuestion>
                       empty="No requirements yet."
@@ -433,18 +462,9 @@ export function AssistantWizard({
                 Writing the Fossil program
               </p>
             </Show>
-            <Show when={generate.status === "error"}>
-              <Alert variant="destructive">
-                <AlertCircle />
-                <AlertTitle>Generation failed</AlertTitle>
-                <AlertDescription>{generate.error}</AlertDescription>
-                <AlertAction>
-                  <Button onClick={generateProgram} size="sm" variant="outline">
-                    Try again
-                  </Button>
-                </AlertAction>
-              </Alert>
-            </Show>
+            {generate.status === "error" && (
+              <ProblemView onRetry={generateProgram} problem={toProblem(generate.error, "llm/failed")} />
+            )}
             <Show when={draft.length > 0}>
               <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 font-mono text-muted-foreground text-xs">
                 {draft}

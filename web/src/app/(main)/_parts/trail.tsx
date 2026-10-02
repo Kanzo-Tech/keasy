@@ -23,6 +23,9 @@ import type { Crumb } from "@/app/(main)/_parts/route-config";
 /** A crumb's name: its label resolved (a job's own name), else the route's. */
 function useCrumbName(crumb: Crumb): string {
   const jobId = crumb.label?.kind === "job" ? crumb.label.id : "";
+  // The named exception to "useSuspenseQuery only" (fossil docs/design/failure, G2.4): the header
+  // must not suspend or fail on a label. The route's name stands until the job's arrives, and the
+  // page below the header reads the same job and shows its failure.
   const { data: job } = $api.useQuery(
     "get",
     "/v1/jobs/{id}",

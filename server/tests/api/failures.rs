@@ -136,12 +136,18 @@ async fn sink(app: &TestApp) {
 }
 
 async fn submitted(app: &TestApp, member: &str) -> String {
+    // A job to run writes to a folder of its own.
+    static FOLDERS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let folder = format!(
+        "out-{}",
+        FOLDERS.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    );
     let (status, job) = app
         .send(
             Method::POST,
             "/v1/jobs",
             member,
-            json!({ "script": "x", "sink_connection": "sink" }),
+            json!({ "script": "x", "sink_connection": "sink", "folder": folder }),
         )
         .await;
     assert_eq!(status, StatusCode::ACCEPTED);

@@ -66,6 +66,8 @@ pub struct Owner;
 /// created it.
 pub struct Member {
     pub user_id: String,
+    /// The verified email, for what was declared for this person by address.
+    pub email: Option<String>,
 }
 
 /// Admits either role, and says which and who: a handler that admits both
@@ -104,6 +106,7 @@ impl<S: Send + Sync> FromRequestParts<S> for Member {
         match role(parts)? {
             (Role::Member, user) => Ok(Member {
                 user_id: user.user_id.clone(),
+                email: user.claims.verified_email().map(str::to_owned),
             }),
             _ => Err(RbacError::InsufficientRole),
         }

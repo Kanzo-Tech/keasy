@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@kanzo-tech/ui";
+import { getBranding } from "@/lib/branding";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -24,24 +25,31 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Keasy Dashboard",
-  description: "Monitor and manage Keasy jobs",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { name } = await getBranding();
+  return { title: name, description: "Monitor and manage Keasy jobs" };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const branding = await getBranding();
   return (
     <html
       lang="en"
       suppressHydrationWarning
       className={`h-full ${geistSans.variable} ${geistMono.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
+      {/* The operator's stylesheet, declared per instance — trusted configuration, not user input. */}
+      {branding.theme_css && (
+        <head>
+          <style dangerouslySetInnerHTML={{ __html: branding.theme_css }} id="keasy-brand" />
+        </head>
+      )}
       <body className="h-full font-sans antialiased">
-        <Providers>
+        <Providers branding={branding}>
           {children}
           <Toaster />
         </Providers>

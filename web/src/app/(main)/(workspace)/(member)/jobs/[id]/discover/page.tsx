@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { createContext, use, useState } from "react";
+import { createContext, use, useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   BarChart3Icon,
@@ -12,7 +12,15 @@ import {
   ShieldCheckIcon,
   XIcon,
 } from "lucide-react";
-import { GraphCanvas, GraphCounts, GraphLegend, GraphRoot, GraphToolbar, useGraphPrefs, useGraphState } from "@kanzo-tech/graph";
+import {
+  GraphCanvas,
+  GraphCounts,
+  GraphLegend,
+  GraphRoot,
+  GraphToolbar,
+  useGraphPrefs,
+  useGraphState,
+} from "@kanzo-tech/graph";
 import { useCrossfilter } from "@kanzo-tech/ui/analytics";
 import {
   Badge,
@@ -138,12 +146,11 @@ function DashboardRegion() {
   );
 }
 
-/** The footer: what the corpus holds, and whether all of it has been drawn. */
-function CorpusCounts() {
+/** The footer: where the data is, and how much of it is drawn — `GraphCounts` says when a layout runs. */
+function CorpusStatus() {
   const status = useGraphState((s) => s.status);
   return (
-    <div className="flex items-center gap-2 px-1 text-muted-foreground text-xs tabular-nums">
-      <GraphCounts />
+    <span className="flex min-w-0 items-center gap-2 px-1 text-muted-foreground text-xs">
       <Badge className="gap-1.5" size="xs" variant="outline">
         <Status
           className="ring-0"
@@ -152,13 +159,19 @@ function CorpusCounts() {
         />
         {status}
       </Badge>
-    </div>
+      <GraphCounts className="truncate" spinner />
+    </span>
   );
 }
 
 function Workspace() {
-  const { corpus } = useCorpus();
+  const { corpus, manifest } = useCorpus();
   const { look } = useGraphPrefs();
+  // Colour by type, ranked in the manifest's order so a type keeps its colour as rows arrive.
+  const categories = useMemo(
+    () => Object.fromEntries(manifest.vertex_tables.map((t) => [t.name, t.name])),
+    [manifest],
+  );
   const crossfilter = useCrossfilter();
   const [active, setActive] = useState<PanelId>("info");
   const [panelOpen, setPanelOpen] = useState(true);
@@ -171,7 +184,13 @@ function Workspace() {
 
   return (
     <GraphFailure value={failure}>
-    <GraphRoot corpus={corpus} filterBy={crossfilter} look={look} onFailure={setFailure}>
+    <GraphRoot
+      categories={categories}
+      corpus={corpus}
+      filterBy={crossfilter}
+      look={look}
+      onFailure={setFailure}
+    >
       <HeaderEnd>
         {/* Switching to the dashboard closes the dock: a dashboard is judged at full width. Reopen it
             from the footer strip. */}
@@ -248,7 +267,7 @@ function Workspace() {
       </ShellBody>
 
       <ShellFooter className="h-8 flex-row items-center justify-between px-2">
-        <CorpusCounts />
+        <CorpusStatus />
         {/* Single-select and deselectable: clicking the active icon again collapses the dock. */}
         <ToggleGroup
           aria-label="Panels"

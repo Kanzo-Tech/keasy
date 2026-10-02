@@ -50,11 +50,29 @@ Both are declared in `infra/terraform/realm/dev.tfvars` (`tenants`,
 | Credentials | `minioadmin` / `minioadmin` |
 | Bucket | `keasy-dev`, seeded from `infra/dev/seed/` on every `up` |
 
-At boot the instance declares, over that bucket, the **MinIO dev bucket** source
-connection, the **MinIO dev shapes** vocabulary connection (`vocab/`), the sink
-(`output/`). Access is proved before each connection row is written, and an
-existing sink is never overwritten. `infra/dev/shop.fossil` is a program over
-those two connections, ready to paste into a new job.
+The dev graph is the [LDBC Social Network Benchmark](https://ldbcouncil.org/benchmarks/snb/)
+at scale factor 0.1 — the official Interactive v1 `CsvCompositeMergeForeign` archive
+(about 17 MB compressed, 59 MB of CSV: 1.5k people, 136k posts, 151k comments). It is
+not in git; fetch it once, before `make dev`:
+
+```bash
+make seed   # downloads, checks the SHA-256, unpacks into infra/dev/seed/ldbc/
+```
+
+Without it the bucket holds the shapes alone and `minio-init` says to run `make seed`.
+The end-to-end suite does not need it: `minio-init` also mirrors the suite's own
+fixtures (`e2e/fixtures/`, a small shop: people, orders and `shop.shex`) to `e2e/`,
+and the suite declares its connections over them (**E2E source**, **E2E shapes**) as
+it signs in.
+
+At boot the instance declares, over that bucket, the **LDBC SNB** source connection
+(`ldbc/`), the **MinIO dev shapes** vocabulary connection (`vocab/`, holding
+`snb.shex`) and the sink (`output/`). Access is proved before each connection row is
+written, and an existing sink is never overwritten. It also declares the job **LDBC
+SNB SF0.1** for `dev@keasy.local`, running `infra/dev/snb.fossil` into
+`output/ldbc-snb/`: it is in that
+member's job list on first sign-in as a draft: open it in the studio and create it to
+run it in the browser.
 
 `minio.localhost` and `keycloak.localhost` are load-bearing: Docker's DNS answers
 them inside the compose network and `*.localhost` is loopback on the host, so a
@@ -99,6 +117,12 @@ A **credential** (S3 or Azure) is who keasy is when it reaches a store; a
 are validated on every write,
 and a credential in use cannot be deleted. `KEASY_BOOTSTRAP_FILE` declares them at
 boot in the API's own request format (dev: `infra/dev/bootstrap.json`).
+
+An instance's look is declared, not edited: `KEASY_BRANDING_FILE` names a YAML
+file holding exactly what kanzo-ui's theme generator exports (`branding:` with
+`theme_css`, `families`, `default`, `lock`, and optionally `logo`), validated at
+boot and served publicly at `GET /v1/branding`. Without it every shipped theme is
+offered. Example: `infra/dev/branding.example.yml`; in prod, a tenant's `branding_file`.
 
 Stored credentials are sealed with `KEASY_SECRET_KEY`: 32 random bytes in base64
 (`openssl rand -base64 32`); `keasy-server rekey` seals them again under
@@ -146,7 +170,7 @@ make api   # UPDATE_EXPECT=1 cargo test --test api openapi, then pnpm generate
 
 ```
 api/                @keasy/api: the committed spec, its generated types and the client
-e2e/                @keasy/e2e: one Playwright test per failure scenario, and the `faults` profile's servers
+e2e/                @keasy/e2e: one Playwright test per failure scenario, its fixtures, and the `faults` profile's servers
 infra/dev/          MinIO seed and an example program, dev-only
 infra/terraform/    platform/ and realm/ — the Swarm deployment, and dev's realm
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)

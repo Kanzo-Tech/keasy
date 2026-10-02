@@ -33,5 +33,8 @@ tenants = {
     owners       = ["angel.iglesias@kanzo.tech"]
     members      = []
     ai_budget    = 50 # USD per 30 days
+    # Optional: the workspace's look — the theme generator's YAML, as exported
+    # (see infra/dev/branding.example.yml).
+    # branding_file = "branding/acme.yml"
   }
 }

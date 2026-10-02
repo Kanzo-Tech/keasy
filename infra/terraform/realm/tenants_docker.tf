@@ -40,6 +40,18 @@ resource "docker_secret" "secret_key" {
   data     = base64encode(random_bytes.secret_key[each.key].base64)
 }
 
+# The tenant's branding — the theme generator's YAML, mounted as a file: CSS
+# outgrows an env var. Swarm configs are immutable, so the name carries the
+# content's hash and a change rolls a new config in before the old one goes.
+resource "docker_config" "branding" {
+  for_each = { for slug, t in local.stack_tenants : slug => file(t.branding_file) if t.branding_file != null }
+  name     = "keasy-ws-${each.key}-branding-${substr(sha256(each.value), 0, 12)}"
+  data     = base64encode(each.value)
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 resource "docker_volume" "data" {
   for_each = local.stack_tenants
   name     = "keasy-ws-${each.key}-data"
@@ -52,7 +64,7 @@ resource "docker_service" "server" {
   task_spec {
     container_spec {
       image = local.server_image
-      env = {
+      env = merge({
         KEASY_DATA_DIR       = "/var/lib/keasy"
         KEASY_WORKSPACE_NAME = each.value.display_name
         KEASY_ORG_ALIAS      = each.key
@@ -67,6 +79,17 @@ resource "docker_service" "server" {
         # The AI gateway on the overlay, and this workspace's key to it.
         KEASY_AI_URL      = "http://ai-gateway:4000"
         KEASY_AI_KEY_FILE = "/run/secrets/ai-key"
+        }, contains(keys(docker_config.branding), each.key) ? {
+        KEASY_BRANDING_FILE = "/etc/keasy/branding.yml"
+      } : {})
+
+      dynamic "configs" {
+        for_each = contains(keys(docker_config.branding), each.key) ? [docker_config.branding[each.key]] : []
+        content {
+          config_id   = configs.value.id
+          config_name = configs.value.name
+          file_name   = "/etc/keasy/branding.yml"
+        }
       }
 
       secrets {

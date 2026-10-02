@@ -150,6 +150,14 @@ function bff(): Bff {
   return bound;
 }
 
+/**
+ * Keycloak's account console for this realm, where the member's password, sign-in
+ * methods and sessions live. Keycloak serves it at `{issuer}/account`.
+ */
+export function accountConsoleUrl(): string {
+  return `${required("KEASY_OIDC_ISSUER_URL").replace(/\/$/, "")}/account`;
+}
+
 /** `/api/auth`: sign-in, callback, sign-out, session. */
 export function authHandlers(): AuthRouteHandlers {
   return bff().routes;

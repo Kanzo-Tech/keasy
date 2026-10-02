@@ -1,4 +1,4 @@
-//! A job's dataset, `{sink.url}/{job_id}/`: the credential that writes it
+//! A job's dataset, `{sink.url}/{folder}/`: the credential that writes it
 //! while the job runs and reads it once it has completed.
 
 use axum::Json;
@@ -33,7 +33,7 @@ pub struct CredentialsRequest {
         (status = 504, description = "The store, or the identity service before it, did not answer in time", body = ErrorBody),
     )
 )]
-/// Vend a credential over the job's dataset, `{sink}/{job_id}/`: to read it
+/// Vend a credential over the job's dataset, `{sink}/{folder}/`: to read it
 /// once the job has completed, or to write it while the job runs. The store
 /// holds the boundary, so the credential opens nothing else.
 pub async fn vend_job_credentials(
@@ -69,7 +69,11 @@ pub async fn vend_job_credentials(
             )
         })?;
     let (sink, credential) = crate::connections::storage(&state.db, &sink).await?;
-    vended(&credential, &job.output_under(&sink), req.access).await
+    // Only a draft has no folder, and a draft is neither running nor completed.
+    let output = job
+        .output_under(&sink)
+        .ok_or_else(|| Refusal::invalid("The job has no output folder"))?;
+    vended(&credential, &output, req.access).await
 }
 
 /// The response every vending route answers with: never cached.

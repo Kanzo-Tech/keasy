@@ -125,6 +125,9 @@ importers:
       '@uwdata/mosaic-core':
         specifier: ^0.29.2
         version: 0.29.2
+      '@uwdata/mosaic-plot':
+        specifier: ^0.29.2
+        version: 0.29.2
       '@uwdata/mosaic-sql':
         specifier: ^0.29.0
         version: 0.29.0

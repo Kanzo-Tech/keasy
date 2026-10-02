@@ -1,7 +1,6 @@
-import { ShieldCheck } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import {
-  Alert,
-  AlertDescription,
+  Button,
   SectionBody,
   SectionDescription,
   SectionHeader,
@@ -9,6 +8,7 @@ import {
   SectionTitle,
   SectionTitleGroup,
 } from "@kanzo-tech/ui";
+import { accountConsoleUrl } from "@/lib/auth/server";
 
 export default function SecuritySettingsPage() {
   return (
@@ -16,21 +16,22 @@ export default function SecuritySettingsPage() {
       <SectionHeader scale="page">
         <SectionTitleGroup>
           <SectionTitle level={1} scale="page">
-            Password & Authentication
+            Security
           </SectionTitle>
           <SectionDescription>
-            Your account is managed by your organization&apos;s identity provider.
+            Sign-in, password and sessions are managed by your identity provider, not by Keasy.
           </SectionDescription>
         </SectionTitleGroup>
       </SectionHeader>
       <SectionBody scale="page">
-        <Alert>
-          <ShieldCheck />
-          <AlertDescription>
-            To change your password or manage your authentication settings, please contact your
-            administrator.
-          </AlertDescription>
-        </Alert>
+        <div>
+          <Button asChild variant="outline">
+            <a href={accountConsoleUrl()} rel="noopener noreferrer" target="_blank">
+              Manage account
+              <ExternalLink />
+            </a>
+          </Button>
+        </div>
       </SectionBody>
     </SectionRoot>
   );

@@ -3,6 +3,7 @@
 import type { Foreign, Related, Severity } from "@fossil-lang/types";
 import {
   Button,
+  cn,
   Diagnostic,
   DiagnosticActions,
   DiagnosticContent,
@@ -75,7 +76,11 @@ function Item({ row, open, actions }: { row: Row; open?: boolean; actions?: Reac
     <Diagnostic data-code={row.code} defaultOpen={open} variant={VARIANT[row.severity]}>
       <DiagnosticHeader>
         <DiagnosticSeverity>{WORD[row.severity]}</DiagnosticSeverity>
-        <DiagnosticTitle>{row.title}</DiagnosticTitle>
+        {/* In a narrow container (a popover, a side panel) the title takes a line of its own
+            under severity, code and actions instead of being squeezed to a word per line. */}
+        <DiagnosticTitle className="@max-md:order-last @max-md:basis-full @max-md:whitespace-normal">
+          {row.title}
+        </DiagnosticTitle>
         <Show when={row.code !== undefined}>
           <DiagnosticSource asChild>
             {page ? (
@@ -131,7 +136,7 @@ export interface ProblemViewProps {
 export function ProblemView({ problem, onRetry, retryLabel = "Try again", className }: ProblemViewProps) {
   const row = worded(problem);
   return (
-    <DiagnosticList className={className} data-code={problem.code} data-problem="">
+    <DiagnosticList className={cn("@container", className)} data-code={problem.code} data-problem="">
       <Item
         actions={
           <>

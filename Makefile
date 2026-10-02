@@ -11,13 +11,16 @@
 # Crates compile at runtime into the persistent `server-target` + `cargo-registry`
 # volumes, so only the first `up` (or one after `make clean`) pays a cold compile.
 
-.PHONY: help dev down logs restart clean ps api e2e deploy-platform deploy-realm
+.PHONY: help dev seed down logs restart clean ps api e2e deploy-platform deploy-realm
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 dev: ## Start/rebuild dev env (only needed for dep/Dockerfile changes — code hot-reloads)
 	docker compose up --build -d
+
+seed: ## Fetch the dev graph (LDBC SNB SF0.1, ~17 MB, checksummed) for the next `make dev` to upload
+	sh infra/dev/seed.sh
 
 down: ## Stop all services
 	docker compose down

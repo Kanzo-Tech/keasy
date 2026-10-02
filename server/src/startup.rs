@@ -1,14 +1,19 @@
 use std::sync::Arc;
 
+use std::time::Duration;
+
+use axum::body::Body;
 use axum::extract::DefaultBodyLimit;
 use axum::http::{Request, StatusCode};
-use axum::response::Response;
-use axum::{Router, middleware};
+use axum::middleware::Next;
+use axum::response::{IntoResponse, Response};
+use axum::{Json, Router, middleware};
 use tokio::net::TcpListener;
 use tower_governor::GovernorError;
 use tower_governor::GovernorLayer;
 use tower_governor::governor::GovernorConfigBuilder;
 use tower_governor::key_extractor::KeyExtractor;
+use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tracing::info;
 use utoipa::Modify;
@@ -190,14 +195,59 @@ pub fn router(state: AppState) -> Router {
         ));
     let (router, _) = public.merge(protected).split_for_parts();
 
+    guarded(router, REQUEST_DEADLINE).with_state(state)
+}
+
+/// What every request passes through, outermost last: a body limit, the
+/// request deadline, a panic caught as a 500, and every failure spoken as an
+/// [`ErrorBody`] — so a client never meets a dropped connection, a hang or a
+/// plain-text body.
+fn guarded<S: Clone + Send + Sync + 'static>(router: Router<S>, deadline: Duration) -> Router<S> {
     router
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024))
+        .layer(middleware::from_fn(move |request, next| {
+            within(deadline, request, next)
+        }))
+        .layer(CatchPanicLayer::custom(crate::error::panicked))
+        .layer(middleware::map_response(crate::error::as_error_body))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(crate::telemetry::request_span)
                 .on_response(DefaultOnResponse::new().level(tracing::Level::INFO)),
         )
-        .with_state(state)
+}
+
+/// How long a request may take to answer, its headers at least: a stream's body
+/// runs past it, and is bounded by its own idle deadline instead. Under the
+/// browser's 30 s, so the server's own code reaches the screen before the
+/// browser gives up and has to name the server itself.
+pub const REQUEST_DEADLINE: Duration = Duration::from_secs(25);
+
+/// Answer within `deadline` or with `server/silent`. Dropping the handler's
+/// future is what ends whatever it was waiting on. The AI relay is bounded by
+/// its own idle deadline instead (`routes::ai::IDLE`), which names the gateway.
+pub async fn within(deadline: Duration, request: Request<Body>, next: Next) -> Response {
+    if request.uri().path().starts_with("/v1/ai/") {
+        return next.run(request).await;
+    }
+    match tokio::time::timeout(deadline, next.run(request)).await {
+        Ok(response) => response,
+        Err(_) => {
+            tracing::warn!(
+                after_ms = deadline.as_millis() as u64,
+                "request deadline fired"
+            );
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorBody::silent(
+                    ErrorCode::ServerSilent,
+                    "The server did not answer within its deadline",
+                    deadline,
+                )),
+            )
+                .into_response()
+        }
+    }
 }
 
 /// Keyed by who is calling, not from where. Every request reaches this server
@@ -278,5 +328,53 @@ struct Unattributed;
 impl Modify for Unattributed {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
         openapi.info.contact = None;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::routing::get;
+    use tower::ServiceExt;
+
+    use super::*;
+
+    async fn answer(router: Router, path: &str) -> (StatusCode, serde_json::Value) {
+        let response = router
+            .oneshot(Request::get(path).body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        let status = response.status();
+        let bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        (status, serde_json::from_slice(&bytes).unwrap())
+    }
+
+    #[tokio::test]
+    async fn a_handler_that_panics_answers_a_500_body_not_a_dropped_connection() {
+        async fn boom() -> &'static str {
+            panic!("boom")
+        }
+        let router = guarded(Router::new().route("/boom", get(boom)), REQUEST_DEADLINE);
+        let (status, body) = answer(router, "/boom").await;
+        assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(body["code"], "server/internal");
+    }
+
+    #[tokio::test]
+    async fn a_handler_past_the_deadline_answers_server_silent_with_how_long() {
+        async fn stuck() -> &'static str {
+            std::future::pending().await
+        }
+        let router = guarded(
+            Router::new().route("/stuck", get(stuck)),
+            Duration::from_millis(100),
+        );
+        let started = std::time::Instant::now();
+        let (status, body) = answer(router, "/stuck").await;
+        assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(body["code"], "server/silent");
+        assert_eq!(body["data"]["after"], 100);
+        assert!(started.elapsed() < Duration::from_secs(2));
     }
 }

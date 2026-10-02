@@ -85,7 +85,8 @@ export function StudioEditor({
       opened
         ? fossil({
             ...opened,
-            onDiagnostics,
+            // The rows are the program's own `check` rows, coded; the editor's type is looser.
+            onDiagnostics: (rows) => onDiagnostics(rows as readonly checker.CheckRow[]),
             // One pane: a definition in a shape document is reported, not jumped to.
             onNavigate: (target) =>
               setDefinition(
@@ -101,7 +102,7 @@ export function StudioEditor({
   // Schema-aware completion: each `@conn/path` binding is described in the
   // browser with a credential vended for its connection and pushed at the
   // compiler before the next check.
-  const descriptors = useSourceDescriptors(program);
+  const { descriptors, undescribed, error: describeError } = useSourceDescriptors(program);
   useEffect(() => {
     if (!opened || descriptors.length === 0) return;
     for (const descriptor of descriptors) opened.registerDescriptor(descriptor);
@@ -132,9 +133,14 @@ export function StudioEditor({
         value={program}
       />
 
-      {loadProblem && (
-        <div className="absolute inset-x-3 bottom-3 z-10">
-          <ProblemView problem={loadProblem} />
+      {(loadProblem || describeError || undescribed.length > 0) && (
+        <div className="absolute inset-x-3 bottom-3 z-10 flex flex-col gap-2">
+          {loadProblem || describeError ? (
+            <ProblemView problem={loadProblem ?? toProblem(describeError)} />
+          ) : (
+            // A source whose columns could not be read: completion for it is off, and this says why.
+            undescribed.map(({ source, problem }) => <ProblemView key={source.key} problem={problem} />)
+          )}
         </div>
       )}
 

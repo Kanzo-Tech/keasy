@@ -153,5 +153,5 @@ async fn a_workspace_without_a_gateway_says_so() {
         )
         .await;
     assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE, "{body}");
-    assert_eq!(body["code"], "ai_not_configured");
+    assert_eq!(body["code"], "gateway/not-configured");
 }

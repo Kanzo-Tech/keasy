@@ -3,6 +3,7 @@ mod authentication;
 mod authorization;
 mod connections;
 mod credentials;
+mod failures;
 mod health_check;
 mod helpers;
 mod jobs;

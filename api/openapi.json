@@ -85,7 +85,7 @@
             "$ref": "#/components/responses/InternalError"
           },
           "502": {
-            "description": "The AI gateway did not answer",
+            "description": "The AI gateway could not be reached",
             "content": {
               "application/json": {
                 "schema": {
@@ -96,6 +96,16 @@
           },
           "503": {
             "description": "This workspace has no AI gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The AI gateway did not begin its answer in time",
             "content": {
               "application/json": {
                 "schema": {
@@ -546,6 +556,16 @@
           },
           "503": {
             "$ref": "#/components/responses/KeysUnavailable"
+          },
+          "504": {
+            "description": "The store, or the identity service before it, did not answer in time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -1446,6 +1466,16 @@
               }
             }
           },
+          "409": {
+            "description": "The job has already ended, or was never submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
@@ -1538,6 +1568,76 @@
                 }
               }
             }
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          },
+          "504": {
+            "description": "The store, or the identity service before it, did not answer in time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/heartbeat": {
+      "post": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "The runner is still there. Sent every 15 s while the job runs; a running\njob with no heartbeat for the lease (60 s) is swept as `job/abandoned`.",
+        "operationId": "heartbeat",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The lease is renewed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The job is not running: it ended, or the sweep ended it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
           },
           "503": {
             "$ref": "#/components/responses/KeysUnavailable"
@@ -1987,38 +2087,56 @@
       },
       "ErrorCode": {
         "type": "string",
-        "description": "Every error the server answers with. Closed: a code the server does not\ndeclare here cannot be sent, and the web keys its copy by this enum.",
+        "description": "Every error the server answers with. Closed: a code the server does not\ndeclare here cannot be sent, and the web keys its copy by this enum.\n\nOne grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry\nin the web keys all three. The areas are keasy's own and never one of\nfossil's (`storage`, `engine`, `run`, …): a code means one thing.",
         "enum": [
-          "auth/session_required",
-          "auth/keys_unavailable",
-          "rbac/no_membership",
-          "rbac/insufficient_role",
-          "rate_limited",
-          "validation_failed",
-          "invalid_format",
-          "not_found",
-          "forbidden",
-          "internal_error",
-          "not_draft",
-          "not_completed",
-          "not_running",
-          "still_running",
-          "invalid_destination",
-          "no_destination",
-          "already_exists",
-          "in_use",
-          "overlaps",
-          "probe_failed",
-          "list_files_failed",
-          "store_error",
-          "ai_not_configured",
-          "ai_unreachable"
+          "auth/session-required",
+          "auth/keys-unavailable",
+          "rbac/no-membership",
+          "rbac/insufficient-role",
+          "rbac/forbidden",
+          "request/rate-limited",
+          "request/invalid",
+          "request/malformed",
+          "request/method-not-allowed",
+          "request/too-large",
+          "route/not-found",
+          "server/internal",
+          "server/silent",
+          "job/not-found",
+          "job/not-draft",
+          "job/not-completed",
+          "job/not-running",
+          "job/still-running",
+          "job/abandoned",
+          "job/invalid-destination",
+          "job/no-destination",
+          "credential/not-found",
+          "connection/not-found",
+          "resource/already-exists",
+          "resource/in-use",
+          "connection/overlaps",
+          "probe/failed",
+          "store/list-failed",
+          "store/refused",
+          "store/silent",
+          "gateway/not-configured",
+          "gateway/unreachable",
+          "gateway/silent"
         ]
       },
       "ErrorData": {
         "type": "object",
         "description": "What a refusal carries beside its words.",
         "properties": {
+          "after": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "How long a deadline waited before it fired, in milliseconds: set on\nthe `*/silent` codes, and only on them.",
+            "minimum": 0
+          },
           "dependents": {
             "type": "array",
             "items": {
@@ -2074,6 +2192,13 @@
           "created_by": {
             "type": "string",
             "description": "Keycloak `sub` of the member who created the job, and the only one who\nmay see, change, run or read it. Taken from the token, never the body."
+          },
+          "heartbeat_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The runner's last heartbeat while the job runs: its lease."
           },
           "id": {
             "type": "string"

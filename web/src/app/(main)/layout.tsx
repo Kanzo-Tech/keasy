@@ -1,5 +1,6 @@
 import { forbidden, redirect } from "next/navigation";
 import { SidebarProvider } from "@kanzo-tech/ui";
+import { AuthError } from "@kanzo-tech/auth";
 import { getSession } from "@/lib/auth/server";
 import { workspaceRole } from "@/lib/auth/roles";
 import { Shell } from "./shell";
@@ -17,7 +18,7 @@ export default async function MainLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getSession();
+  const session = await readSession();
   if (!session) redirect("/api/auth/signin");
   if (!workspaceRole(session)) forbidden();
 
@@ -26,4 +27,18 @@ export default async function MainLayout({
       <Shell>{children}</Shell>
     </SidebarProvider>
   );
+}
+
+/**
+ * The session, or the auth error page when the store or the IdP behind it does not answer. A server error
+ * reaches the browser stripped of everything but a digest, so the code travels in the URL instead.
+ */
+async function readSession() {
+  try {
+    return await getSession();
+  } catch (err) {
+    // The store, or the IdP, did not answer: a coded failure, which the problem page renders.
+    if (err instanceof AuthError) redirect(`/auth/error?code=${encodeURIComponent(err.code)}`);
+    throw err;
+  }
 }

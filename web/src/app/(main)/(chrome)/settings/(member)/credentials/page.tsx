@@ -14,6 +14,7 @@ import {
   MenuItem,
   SectionBody,
   SectionRoot,
+  Skeleton,
   toast,
 } from "@kanzo-tech/ui";
 import {
@@ -34,10 +35,30 @@ import { $api, invalidate } from "@/lib/api/client";
 import { type Credential, kindTitle } from "@/lib/connections";
 import { getProviderIcon } from "@/lib/ui/provider-icons";
 import { toastError } from "@/lib/errors";
+import { Boundary, Loading } from "@/components/boundary";
+import { settled } from "@/lib/api/settled";
 
 export default function CredentialsPage() {
+  return (
+    <SectionRoot>
+      <SectionBody className="overflow-hidden" scale="page">
+        <Boundary
+          fallback={
+            <Loading>
+              <Skeleton className="h-40 w-full" />
+            </Loading>
+          }
+        >
+          <Credentials />
+        </Boundary>
+      </SectionBody>
+    </SectionRoot>
+  );
+}
+
+function Credentials() {
   const router = useRouter();
-  const { data: credentials = [] } = $api.useQuery("get", "/v1/credentials");
+  const credentials = settled($api.useSuspenseQuery("get", "/v1/credentials"));
 
   const refresh = () => invalidate("/v1/credentials", "/v1/connections");
   const remove = $api.useMutation("delete", "/v1/credentials/{name}", {
@@ -118,49 +139,43 @@ export default function CredentialsPage() {
   const table = useDataTable({ columns, data: credentials });
   const newHref = "/settings/credentials/new";
 
-  return (
-    <SectionRoot>
-      <SectionBody className="overflow-hidden" scale="page">
-          {credentials.length === 0 ? (
-            <EmptyRoot>
-              <EmptyHeader>
-                <EmptyIndicator variant="icon">
-                  <KeyRound />
-                </EmptyIndicator>
-                <EmptyTitle asChild>
-                  <h2>No credentials</h2>
-                </EmptyTitle>
-                <EmptyDescription>
-                  A credential is who keasy is when it reaches a store; connections use it.
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <Button asChild size="sm" variant="outline">
-                  <Link href={newHref}>Add credential</Link>
-                </Button>
-              </EmptyContent>
-            </EmptyRoot>
-          ) : (
-            <DataTableRoot table={table}>
-              <DataTableToolbar>
-                <DataTableSearch column="name" placeholder="Search credentials..." />
-                <div className="ms-auto flex items-center gap-2">
-                  <Button asChild size="sm">
-                    <Link href={newHref}>
-                      <Plus />
-                      Add credential
-                    </Link>
-                  </Button>
-                </div>
-              </DataTableToolbar>
-              <DataTableContent<Credential>
-                empty="No credentials match this filter."
-                onRowClick={(c) => router.push(`/settings/credentials/${encodeURIComponent(c.name)}`)}
-              />
-              <DataTablePagination />
-            </DataTableRoot>
-          )}
-      </SectionBody>
-    </SectionRoot>
+  return credentials.length === 0 ? (
+    <EmptyRoot>
+      <EmptyHeader>
+        <EmptyIndicator variant="icon">
+          <KeyRound />
+        </EmptyIndicator>
+        <EmptyTitle asChild>
+          <h2>No credentials</h2>
+        </EmptyTitle>
+        <EmptyDescription>
+          A credential is who keasy is when it reaches a store; connections use it.
+        </EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <Button asChild size="sm" variant="outline">
+          <Link href={newHref}>Add credential</Link>
+        </Button>
+      </EmptyContent>
+    </EmptyRoot>
+  ) : (
+    <DataTableRoot table={table}>
+      <DataTableToolbar>
+        <DataTableSearch column="name" placeholder="Search credentials..." />
+        <div className="ms-auto flex items-center gap-2">
+          <Button asChild size="sm">
+            <Link href={newHref}>
+              <Plus />
+              Add credential
+            </Link>
+          </Button>
+        </div>
+      </DataTableToolbar>
+      <DataTableContent<Credential>
+        empty="No credentials match this filter."
+        onRowClick={(c) => router.push(`/settings/credentials/${encodeURIComponent(c.name)}`)}
+      />
+      <DataTablePagination />
+    </DataTableRoot>
   );
 }

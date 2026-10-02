@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
   Badge,
   Button,
@@ -40,7 +40,9 @@ import {
 } from "@kanzo-tech/ui";
 import { ChevronDown, Pencil, PlugZap, Save, X } from "lucide-react";
 import { useRouter } from "@kanzo-tech/navigation/next";
-import { $api, http, invalidate } from "@/lib/api/client";
+import { $api, http, invalidate, type Schemas } from "@/lib/api/client";
+import { Boundary, Loading } from "@/components/boundary";
+import { settled } from "@/lib/api/settled";
 import { storageConnections } from "@/lib/connections";
 import { type Shown, toastError, toProblem } from "@/lib/errors";
 import * as checker from "@/lib/fossil/checker";
@@ -72,9 +74,29 @@ const AUTOSAVE_MS = 1500;
  * pages rather than being Configure's first field. The draft saves itself, so
  * the strip at the bottom reports rather than commands.
  */
-export function JobStudio() {
+export function JobStudioPage() {
+  const id = useSearchParams().get("draft");
+  return (
+    <Boundary
+      fallback={
+        <Loading>
+          <Spinner className="m-auto" />
+        </Loading>
+      }
+    >
+      {id ? <StoredDraft id={id} /> : <JobStudio />}
+    </Boundary>
+  );
+}
+
+/** A `?draft=` that does not exist is not found, and nothing autosaves into it. */
+function StoredDraft({ id }: { id: string }) {
+  const draft = settled($api.useSuspenseQuery("get", "/v1/jobs/{id}", { params: { path: { id } } }));
+  return <JobStudio draft={draft.status === "draft" ? draft : undefined} />;
+}
+
+function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const store = useJobEditorStore();
   const [railOpen, setRailOpen] = useState(true);
@@ -86,29 +108,18 @@ export function JobStudio() {
   // The draft's server id: the `?draft=` the member arrived with, or the one the
   // first autosave minted. Held in state so subsequent saves UPDATE rather than
   // creating a second draft per keystroke pause.
-  const [draftId, setDraftId] = useState<string | null>(searchParams.get("draft"));
+  const [draftId, setDraftId] = useState<string | null>(draft?.id ?? null);
 
-  const { data: allConnections = [] } = $api.useQuery("get", "/v1/connections");
+  const allConnections = settled($api.useSuspenseQuery("get", "/v1/connections"));
   const connections = useMemo(() => storageConnections(allConnections), [allConnections]);
-  const { data: providers = [] } = useQuery(checker.providersQuery);
-
-  const { data: draftJob } = $api.useQuery(
-    "get",
-    "/v1/jobs/{id}",
-    { params: { path: { id: draftId! } } },
-    { enabled: !!searchParams.get("draft") },
-  );
+  const providers = settled(useSuspenseQuery(checker.providersQuery));
 
   useEffect(() => {
-    if (!draftJob || draftJob.status !== "draft") return;
-    store.restoreDraft(
-      draftJob.script ?? "",
-      draftJob.name ?? "",
-      draftJob.sink_connection,
-    );
+    if (!draft) return;
+    store.restoreDraft(draft.script ?? "", draft.name ?? "", draft.sink_connection);
     setSaved(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftJob]);
+  }, [draft]);
 
   useEffect(() => () => useJobEditorStore.getState().reset(), []);
 
@@ -204,7 +215,10 @@ export function JobStudio() {
       // is dropped and the real job created in its place.
       if (!destination) throw new Error("Pick a destination before launching");
       if (draftId) {
-        await http.DELETE("/v1/jobs/{id}", { params: { path: { id: draftId } } }).catch(() => {});
+        // The job is launched either way; a draft left behind is said, not swallowed.
+        await http
+          .DELETE("/v1/jobs/{id}", { params: { path: { id: draftId } } })
+          .catch((err: unknown) => toastError(err, "The draft could not be removed"));
       }
       const { data: job } = await http.POST("/v1/jobs", {
         body: {

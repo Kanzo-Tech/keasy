@@ -25,7 +25,7 @@ async fn a_job_goes_to_the_sink_or_is_refused() {
     assert_eq!(create(None).await.0, StatusCode::UNPROCESSABLE_ENTITY);
     let (status, body) = create(Some("source")).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(body["code"], "invalid_destination");
+    assert_eq!(body["code"], "job/invalid-destination");
     assert_eq!(create(Some("gone")).await.0, StatusCode::BAD_REQUEST);
     let (status, job) = create(Some("sink")).await;
     assert_eq!(status, StatusCode::CREATED);

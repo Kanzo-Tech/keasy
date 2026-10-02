@@ -1,8 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { use, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { createContext, use, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   BarChart3Icon,
   InfoIcon,
@@ -30,7 +30,6 @@ import {
   Status,
   ToggleGroup,
   ToggleGroupItem,
-  toast,
 } from "@kanzo-tech/ui";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import { AskPanel } from "./_parts/ask-panel";
@@ -38,8 +37,10 @@ import { CorpusProvider, corpusQuery, useCorpus } from "./_parts/corpus";
 import { GraphInfo } from "./_parts/graph-info";
 import { GraphSettings } from "./_parts/graph-settings";
 import { RulesPanel } from "./_parts/rules-panel";
-import { toProblem } from "@/lib/errors";
+import { Boundary } from "@/components/boundary";
 import { ProblemView } from "@/components/problem-view";
+import { toProblem } from "@/lib/errors";
+import { settled } from "@/lib/api/settled";
 
 /**
  * Discovery, composed as kanzo-ui's `workspace` showcase: the header picks what `ShellMain` shows
@@ -81,49 +82,48 @@ type ViewId = (typeof VIEWS)[number]["id"];
 export default function DiscoverPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   // Opening the corpus is the one door: a missing job (404), one that has not completed (409) and an
-  // unreadable output all fail it, so its error is the only one the page renders.
-  const corpus = useQuery(corpusQuery(id));
-
-  if (corpus.error) {
-    return (
-      <ShellMain className="p-4">
-        <ProblemView onRetry={() => void corpus.refetch()} problem={toProblem(corpus.error)} />
-      </ShellMain>
-    );
-  }
-  if (!corpus.data) {
-    return (
-      <ShellMain className="items-center justify-center">
-        <Spinner className="text-muted-foreground" />
-      </ShellMain>
-    );
-  }
+  // unreadable output all fail it, and the boundary shows that failure in place of the workspace.
   return (
-    <CorpusProvider value={corpus.data}>
+    <Boundary
+      fallback={
+        <ShellMain className="items-center justify-center">
+          <Spinner className="text-muted-foreground" />
+        </ShellMain>
+      }
+      frame={(failure) => <ShellMain className="p-4">{failure}</ShellMain>}
+    >
+      <Opened id={id} />
+    </Boundary>
+  );
+}
+
+function Opened({ id }: { id: string }) {
+  const corpus = settled(useSuspenseQuery(corpusQuery(id)));
+  return (
+    <CorpusProvider value={corpus}>
       <Workspace />
     </CorpusProvider>
   );
 }
 
-/** A failure, as a toast — once per message, and after the commit that reported it. */
-function announce(title: string): void {
-  queueMicrotask(() => {
-    if (!toast.isVisible(title)) toast.create({ id: title, title, type: "error" });
-  });
-}
+/**
+ * What the graph last failed with, as it was thrown: fossil's `FossilError` for a read, kanzo-ui's
+ * `GraphError` (`graph/no-webgl`, `graph/context-lost`, `graph/nothing-to-draw`, …) for its own.
+ */
+const GraphFailure = createContext<unknown>(undefined);
 
 function GraphRegion() {
   const failed = useGraphState((s) => s.status === "failed");
+  const failure = use(GraphFailure);
   return (
     <ShellMain className="relative size-full bg-background">
       <GraphCanvas className="absolute inset-0">
         <GraphToolbar className="absolute end-2 top-2 z-10" />
         <GraphLegend className="absolute start-2 bottom-2 z-10" />
-        <Show when={failed}>
-          <p className="absolute inset-0 grid place-items-center p-6 text-center text-muted-foreground text-sm">
-            The graph could not be drawn here — the corpus would not open, or this browser offers no WebGL
-            context.
-          </p>
+        <Show when={failed && failure !== undefined}>
+          <div className="absolute inset-0 z-20 grid place-items-center p-6">
+            <ProblemView className="w-full max-w-xl" problem={toProblem(failure)} />
+          </div>
         </Show>
       </GraphCanvas>
     </ShellMain>
@@ -166,13 +166,15 @@ function Workspace() {
   const [active, setActive] = useState<PanelId>("info");
   const [panelOpen, setPanelOpen] = useState(true);
   const [view, setView] = useState<ViewId>("graph");
+  const [failure, setFailure] = useState<unknown>(undefined);
 
   const ActiveBody = PANEL_BODY[active];
   const activeLabel = PANELS.find((p) => p.id === active)?.label ?? "";
   const MainRegion = view === "graph" ? GraphRegion : DashboardRegion;
 
   return (
-    <GraphRoot corpus={corpus} filterBy={crossfilter} look={look} onFailure={announce}>
+    <GraphFailure value={failure}>
+    <GraphRoot corpus={corpus} filterBy={crossfilter} look={look} onFailure={setFailure}>
       <HeaderEnd>
         {/* Switching to the dashboard closes the dock: a dashboard is judged at full width. Reopen it
             from the footer strip. */}
@@ -233,7 +235,14 @@ function Workspace() {
                   </div>
                 </div>
                 <div className="min-h-0 flex-1">
-                  <ActiveBody />
+                  {/* Keyed by panel, so a failed panel does not stay failed under the next one. */}
+                  <Boundary
+                    className="p-3"
+                    fallback={<Skeleton className="m-3 h-40" />}
+                    key={active}
+                  >
+                    <ActiveBody />
+                  </Boundary>
                 </div>
               </ShellAside>
             </ResizablePanel>
@@ -268,5 +277,6 @@ function Workspace() {
         </ToggleGroup>
       </ShellFooter>
     </GraphRoot>
+    </GraphFailure>
   );
 }

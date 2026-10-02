@@ -11,7 +11,7 @@ use crate::authentication::role::{AnyRole, Member};
 use crate::connections::persistence as connections;
 use crate::credentials::{named, persistence, probe};
 use crate::domain::{CredentialView, ResourceName, StorageCredentialInput, ValidationReport};
-use crate::error::{ErrorBody, Refusal};
+use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::startup::AppState;
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -158,7 +158,7 @@ pub async fn update_credential(
         report.as_ref(),
     )?;
     let stored = persistence::get(&conn, db.secret_key(), new_name.as_ref())?
-        .ok_or_else(|| Refusal::not_found("Credential"))?;
+        .ok_or_else(|| Refusal::not_found(ErrorCode::CredentialNotFound, "No such credential"))?;
     let used_by = persistence::users_of(&conn, new_name.as_ref())?;
     Ok(Json(stored.view(used_by)))
 }

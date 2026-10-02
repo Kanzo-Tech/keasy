@@ -239,6 +239,7 @@ pub async fn list_connection_files(
         (status = 400, description = "Not a storage source, or an access a source does not give", body = ErrorBody),
         (status = 404, description = "No such connection", body = ErrorBody),
         (status = 502, description = "The store refused to vend", body = ErrorBody),
+        (status = 504, description = "The store, or the identity service before it, did not answer in time", body = ErrorBody),
     )
 )]
 /// Vend a read credential over a source connection's prefix — Unity Catalog's

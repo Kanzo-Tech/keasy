@@ -10,12 +10,12 @@ use sealing::SecretKey;
 use crate::configuration::DatabaseSettings;
 use crate::database::Database;
 use crate::domain::{Credential, CredentialView, ResourceName, StorageCredentialInput};
-use crate::error::Refusal;
+use crate::error::{ErrorCode, Refusal};
 
 /// The credential `name`, unsealed, or 404.
 pub async fn named(db: &Database, name: &str) -> Result<Credential, Refusal> {
     persistence::get(&*db.read().await, db.secret_key(), name)?
-        .ok_or_else(|| Refusal::not_found("Credential"))
+        .ok_or_else(|| Refusal::not_found(ErrorCode::CredentialNotFound, "No such credential"))
 }
 
 /// Parse, probe, seal and store a credential. A model credential must list
@@ -35,7 +35,7 @@ pub async fn create(
     let conn = db.write().await;
     persistence::insert(&conn, db.secret_key(), &name, spec, by, &report)?;
     let stored = persistence::get(&conn, db.secret_key(), name.as_ref())?
-        .ok_or_else(|| Refusal::not_found("Credential"))?;
+        .ok_or_else(|| Refusal::not_found(ErrorCode::CredentialNotFound, "No such credential"))?;
     Ok(stored.view(Vec::new()))
 }
 

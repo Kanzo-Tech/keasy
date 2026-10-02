@@ -124,6 +124,7 @@ declared in `realm/terraform.tfvars`. Images are published to GHCR by
 | `make logs` / `make logs-<svc>` | Tail logs |
 | `make restart` / `make restart-<svc>` | Restart without rebuilding |
 | `make shell-<svc>` | Shell in a container |
+| `make e2e` | The failure scenarios (`e2e/`, Playwright) against the stack; main checkout only, as Keycloak admits :3000 alone |
 
 `docker-compose.yml` is the dev stack and nothing else. Dev applies the same
 `infra/terraform/realm` module as prod, with `dev.tfvars`.
@@ -145,6 +146,7 @@ make api   # UPDATE_EXPECT=1 cargo test --test api openapi, then pnpm generate
 
 ```
 api/                @keasy/api: the committed spec, its generated types and the client
+e2e/                @keasy/e2e: one Playwright test per failure scenario, and the `faults` profile's servers
 infra/dev/          MinIO seed and an example program, dev-only
 infra/terraform/    platform/ and realm/ — the Swarm deployment, and dev's realm
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)

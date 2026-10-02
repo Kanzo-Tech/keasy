@@ -1,0 +1,65 @@
+name: e2e
+
+# The failure scenarios (e2e/), against the whole compose stack: every PR to main.
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    # The first `up` compiles the server's dependencies from cold.
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Every audit scenario has a test
+        run: pnpm --filter @keasy/e2e exec playwright test --project=guard
+
+      - run: pnpm --filter @keasy/e2e typecheck
+
+      # The issuer and the store are addressed as *.localhost from both sides; Chromium resolves
+      # them to loopback itself, this makes curl and Node agree.
+      - name: Resolve the dev hostnames
+        run: echo "127.0.0.1 keycloak.localhost minio.localhost" | sudo tee -a /etc/hosts
+
+      - name: Bring up the stack
+        run: docker compose up -d --build --wait --wait-timeout 3600 web
+
+      - run: pnpm --filter @keasy/e2e exec playwright install --with-deps chromium
+
+      - name: Run the scenarios
+        run: pnpm --filter @keasy/e2e test
+        env:
+          CI: "1"
+
+      - name: Stack logs
+        if: failure()
+        run: docker compose --profile faults logs --no-color > compose.log
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+            compose.log
+          retention-days: 14

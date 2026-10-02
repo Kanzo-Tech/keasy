@@ -14,6 +14,7 @@ import {
   MenuItem,
   SectionBody,
   SectionRoot,
+  Skeleton,
   toast,
 } from "@kanzo-tech/ui";
 import {
@@ -32,8 +33,10 @@ import {
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { $api, invalidate, type Schemas } from "@/lib/api/client";
 import { formatDate, formatJobDuration } from "@/lib/ui/format";
-import { hasRunningJobs, isTerminalStatus, runProblem } from "@/lib/jobs";
-import { copyOf } from "@/lib/errors";
+import { hasRunningJobs, isTerminalStatus, pollWhile, runProblem } from "@/lib/jobs";
+import { copyOf, toastError } from "@/lib/errors";
+import { Boundary, Loading } from "@/components/boundary";
+import { settled } from "@/lib/api/settled";
 
 type Job = Schemas["Job"];
 type JobStatus = Schemas["JobStatus"];
@@ -48,18 +51,36 @@ const STATUS: Record<JobStatus, { label: string; variant: React.ComponentProps<t
 };
 
 export default function JobsPage() {
+  return (
+    <SectionRoot>
+      <SectionBody className="overflow-hidden" scale="page">
+        <Boundary
+          fallback={
+            <Loading>
+              <Skeleton className="h-40 w-full" />
+            </Loading>
+          }
+        >
+          <Jobs />
+        </Boundary>
+      </SectionBody>
+    </SectionRoot>
+  );
+}
+
+function Jobs() {
   const router = useRouter();
 
-  const { data: jobs = [] } = $api.useQuery("get", "/v1/jobs", {}, {
-    refetchInterval: (query) => (hasRunningJobs(query.state.data) ? 2000 : 0),
-  });
+  const jobs = settled(
+    $api.useSuspenseQuery("get", "/v1/jobs", {}, { refetchInterval: pollWhile(hasRunningJobs, 2000) }),
+  );
 
   const { mutate: deleteJob } = $api.useMutation("delete", "/v1/jobs/{id}", {
     onSuccess: () => {
       toast.create({ title: "Job deleted", type: "success" });
       void invalidate("/v1/jobs");
     },
-    onError: () => toast.create({ title: "Failed to delete job", type: "error" }),
+    onError: (err) => toastError(err, "Failed to delete job"),
   });
   const remove = useCallback(
     (id: string) => deleteJob({ params: { path: { id } } }),
@@ -116,50 +137,44 @@ export default function JobsPage() {
   );
   const table = useDataTable({ columns, data: jobs });
 
-  return (
-    <SectionRoot>
-      <SectionBody className="overflow-hidden" scale="page">
-        {jobs.length === 0 ? (
-          <EmptyRoot>
-            <EmptyHeader>
-              <EmptyIndicator variant="icon">
-                <Briefcase />
-              </EmptyIndicator>
-              <EmptyTitle asChild>
-                <h2>No jobs yet</h2>
-              </EmptyTitle>
-              <EmptyDescription>Create a job to process and transform your data assets.</EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button asChild size="sm" variant="outline">
-                <Link href="/jobs/new">Create job</Link>
-              </Button>
-            </EmptyContent>
-          </EmptyRoot>
-        ) : (
-          <DataTableRoot table={table}>
-            <DataTableToolbar>
-              <DataTableSearch column="name" placeholder="Search jobs..." />
-              <div className="ms-auto flex items-center gap-2">
-                <DataTableViewOptions />
-                <Button asChild size="sm">
-                  <Link href="/jobs/new">
-                    <Plus />
-                    Create job
-                  </Link>
-                </Button>
-              </div>
-            </DataTableToolbar>
-            <DataTableContent<Job>
-              empty="No jobs match this filter."
-              onRowClick={(job) =>
-                router.push(job.status === "draft" ? `/jobs/new?draft=${job.id}` : `/jobs/${job.id}`)
-              }
-            />
-            <DataTablePagination />
-          </DataTableRoot>
-        )}
-      </SectionBody>
-    </SectionRoot>
+  return jobs.length === 0 ? (
+    <EmptyRoot>
+      <EmptyHeader>
+        <EmptyIndicator variant="icon">
+          <Briefcase />
+        </EmptyIndicator>
+        <EmptyTitle asChild>
+          <h2>No jobs yet</h2>
+        </EmptyTitle>
+        <EmptyDescription>Create a job to process and transform your data assets.</EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <Button asChild size="sm" variant="outline">
+          <Link href="/jobs/new">Create job</Link>
+        </Button>
+      </EmptyContent>
+    </EmptyRoot>
+  ) : (
+    <DataTableRoot table={table}>
+      <DataTableToolbar>
+        <DataTableSearch column="name" placeholder="Search jobs..." />
+        <div className="ms-auto flex items-center gap-2">
+          <DataTableViewOptions />
+          <Button asChild size="sm">
+            <Link href="/jobs/new">
+              <Plus />
+              Create job
+            </Link>
+          </Button>
+        </div>
+      </DataTableToolbar>
+      <DataTableContent<Job>
+        empty="No jobs match this filter."
+        onRowClick={(job) =>
+          router.push(job.status === "draft" ? `/jobs/new?draft=${job.id}` : `/jobs/${job.id}`)
+        }
+      />
+      <DataTablePagination />
+    </DataTableRoot>
   );
 }

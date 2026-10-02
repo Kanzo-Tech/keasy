@@ -55,6 +55,7 @@ const QUESTION = jsonSchema<{ question: string; rationale: string }>({
 export function suggestQuestions(domain: string, schemas: readonly InferredDescriptor[], signal: AbortSignal) {
   return streamText({
     model: gateway("chat"),
+    maxRetries: 0,
     system: SUGGEST_PROMPT,
     prompt: `Domain: ${domain}\n\n${describeFiles(schemas)}`,
     output: Output.array({ element: QUESTION }),
@@ -79,6 +80,7 @@ export function writeProgram(
   const listed = questions.map((q, i) => `${i + 1}. ${q}\n`).join("");
   return streamText({
     model: gateway("chat"),
+    maxRetries: 0,
     system: PROGRAM_PROMPT,
     prompt: `Domain: ${domain}\n\nCompetency Questions:\n${listed}\nData Schemas:\n${describeFiles(schemas)}`,
     output: Output.object({ schema: PROGRAM }),

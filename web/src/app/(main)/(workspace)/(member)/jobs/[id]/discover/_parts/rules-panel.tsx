@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useDeferredValue, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { XIcon } from "lucide-react";
-import { Button, cn, ScrollArea, Show, Skeleton } from "@kanzo-tech/ui";
+import { Button, cn, ScrollArea, Skeleton } from "@kanzo-tech/ui";
 import { numbers } from "@kanzo-tech/ui/analytics";
 import { useGraphContext } from "@kanzo-tech/graph";
 import { corpusKey } from "@/lib/fossil/corpus";
@@ -13,8 +13,8 @@ import { useCorpus, useFieldStats } from "./corpus";
 import { Finding } from "./finding";
 import { OPERATOR_META, type Rule, ruleIdsQuery, runRules } from "./rule-engine";
 import { RuleBuilder } from "./rule-fields";
-import { toProblem } from "@/lib/errors";
 import { ProblemView } from "@/components/problem-view";
+import { settled } from "@/lib/api/settled";
 
 /** Rules live in this browser only, per job. */
 function createRulesStore(jobId: string) {
@@ -36,12 +36,15 @@ const sentence = (rule: Rule) => {
  */
 export function RulesPanel() {
   const { jobId, coordinator, manifest, relation } = useCorpus();
-  const { tables } = useFieldStats();
+  const tables = useFieldStats();
   const { select } = useGraphContext();
   const [useRules] = useState(() => createRulesStore(jobId));
-  const { rules } = useRules();
+  const { rules: current } = useRules();
+  // The counts follow the rules a beat behind: the panel keeps the last counts on screen while the
+  // new ones are read, instead of falling back to its skeleton on every edit.
+  const rules = useDeferredValue(current);
 
-  const results = useQuery({
+  const results = useSuspenseQuery({
     queryKey: [...corpusKey(jobId), "rules", rules],
     queryFn: () =>
       runRules(
@@ -51,9 +54,10 @@ export function RulesPanel() {
       ),
     staleTime: Infinity,
   });
-  const pending = results.data === undefined;
-  const countOf = (i: number) => results.data?.[i]?.violationCount ?? -1;
-  const violations = (results.data ?? []).reduce((n, r) => n + Math.max(r.violationCount, 0), 0);
+  const counted = settled(results);
+  const pending = rules !== current;
+  const countOf = (i: number) => counted[i]?.violationCount ?? -1;
+  const violations = counted.reduce((n, r) => n + Math.max(r.violationCount, 0), 0);
 
   const keyOf = (type: string | undefined) => manifest.vertex_tables.find((t) => t.name === type)?.key ?? "dense_id";
   const failingIds = async (rule: Rule) => {
@@ -75,7 +79,6 @@ export function RulesPanel() {
   return (
     <ScrollArea className="h-full p-3">
       <div className="space-y-3">
-        {results.error && <ProblemView problem={toProblem(results.error)} />}
         {rules.length === 0 ? (
           <p className="text-muted-foreground text-xs">No rules yet. Add one below to check the data.</p>
         ) : pending ? (
@@ -125,15 +128,13 @@ export function RulesPanel() {
                     <XIcon className="size-3.5" />
                   </Button>
                 </div>
-                {results.data?.[i]?.problem && <ProblemView problem={results.data[i].problem} />}
+                {counted[i]?.problem && <ProblemView problem={counted[i].problem} />}
               </li>
             );
           })}
         </ul>
 
-        <Show fallback={<Skeleton className="h-40 w-full" />} when={tables.length > 0}>
-          <RuleBuilder onAdd={add} rules={rules} tables={tables} />
-        </Show>
+        <RuleBuilder onAdd={add} rules={current} tables={tables} />
       </div>
     </ScrollArea>
   );

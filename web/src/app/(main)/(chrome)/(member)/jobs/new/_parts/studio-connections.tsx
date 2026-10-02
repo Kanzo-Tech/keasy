@@ -18,6 +18,8 @@ import {
 } from "@kanzo-tech/ui";
 import { BookMarked, Database, PlugZap } from "lucide-react";
 import type { StorageConnection } from "@/lib/connections";
+import { type Shown } from "@/lib/errors";
+import { ProblemView } from "@/components/problem-view";
 
 const KIND_ICON = { data: Database, vocab: BookMarked } as const;
 const KIND_LABEL = { data: "data source", vocab: "RDF vocabulary" } as const;
@@ -27,19 +29,26 @@ const roleOf = (c: StorageConnection) => (c.direction === "sink" ? "output" : KI
 
 const reference = (c: StorageConnection) => (c.kind === "vocab" ? `@${c.name}` : `@${c.name}/`);
 
-/** The connections a program can reference: drag one into it, or click to write it at the caret. */
+/**
+ * The connections a program can reference — drag one into it, or click to write it at the caret —
+ * and which of them it reads, marked in use.
+ */
 export function StudioConnections({
   connections,
   used,
+  usedProblem,
   onInsert,
 }: {
   connections: StorageConnection[];
   /** Connection names the program references — fossil's `refs()`, not a regex. */
   used: Set<string>;
+  /** Why the program's references could not be read, so no mark is trusted. */
+  usedProblem: Shown | null;
   onInsert: (text: string) => void;
 }) {
   return (
     <div className="flex flex-col gap-3 p-3">
+      {usedProblem && <ProblemView problem={usedProblem} />}
       <p className="text-muted-foreground text-xs">
         Drag one into the program, click it to write it at the caret, or press @ in the editor.
       </p>

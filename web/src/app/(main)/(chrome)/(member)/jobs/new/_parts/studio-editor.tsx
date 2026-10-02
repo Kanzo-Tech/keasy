@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  Button,
   Clipboard,
   ClipboardTrigger,
   cn,
@@ -15,6 +16,7 @@ import { CodeEditor } from "@kanzo-tech/ui/editor";
 import { fossil } from "@fossil-lang/codemirror-fossil";
 import { forceLinting } from "@codemirror/lint";
 import { EditorView } from "@codemirror/view";
+import { X } from "lucide-react";
 import type { FossilProgram } from "@fossil-lang/wasm";
 import * as checker from "@/lib/fossil/checker";
 import { useSourceDescriptors } from "./use-source-descriptors";
@@ -24,7 +26,7 @@ import { ProblemView } from "@/components/problem-view";
 /** The chrome a floating cluster wears — the same utilities the canvas controls use. */
 const FLOATING = "rounded-lg border bg-card shadow-sm";
 
-/** What the inspector may do to the program. */
+/** What the studio around the editor may do to the program. */
 export interface EditorApi {
   /** Writes `text` over the selection and leaves the caret after it. */
   insert: (text: string) => void;
@@ -32,20 +34,21 @@ export interface EditorApi {
   reveal: (line: number, character: number) => void;
 }
 
-/** The program, with an inspector beside it; the language layer is `fossil()` over the job's program. */
+/** The program, with one panel beside it; the language layer is `fossil()` over the job's program. */
 export function StudioEditor({
   program,
   onProgramChange,
-  railOpen,
   onDiagnostics,
-  inspector,
+  onEditor,
+  rail,
 }: {
   program: string;
   onProgramChange: (program: string) => void;
-  railOpen: boolean;
   onDiagnostics: (rows: readonly checker.CheckRow[]) => void;
-  /** The rail's content, handed the function that writes at the caret. */
-  inspector: (editor: EditorApi) => React.ReactNode;
+  /** The editor's API, again whenever the view behind it changes. */
+  onEditor: (editor: EditorApi) => void;
+  /** The panel beside the program, under a header with its name and a close button; none, no rail. */
+  rail: { label: string; onClose: () => void; content: React.ReactNode } | null;
 }) {
   const [view, setView] = useState<EditorView | null>(null);
   const [opened, setOpened] = useState<FossilProgram | null>(null);
@@ -123,6 +126,7 @@ export function StudioEditor({
     }),
     [view],
   );
+  useEffect(() => onEditor(editor), [editor, onEditor]);
 
   const pane = (
     <>
@@ -165,7 +169,7 @@ export function StudioEditor({
   return (
     <Show
       fallback={<div className="relative flex min-h-0 flex-1 flex-col bg-background">{pane}</div>}
-      when={railOpen}
+      when={rail !== null}
     >
       <Resizable
         className="min-h-0 flex-1"
@@ -180,8 +184,24 @@ export function StudioEditor({
         </ResizablePanel>
         <ResizableResizeTrigger id="editor:rail" withHandle />
         <ResizablePanel className="flex min-h-0 min-w-0 flex-col" id="rail">
-          <ShellAside aria-label="Inspector" className="size-full min-h-0 border-s-0" side="end">
-            {inspector(editor)}
+          <ShellAside
+            aria-label={`${rail?.label} panel`}
+            className="size-full min-h-0 border-s-0"
+            side="end"
+          >
+            <div className="flex h-9 shrink-0 items-center gap-2 border-b px-3">
+              <span className="font-medium text-sm">{rail?.label}</span>
+              <Button
+                aria-label="Close panel"
+                className="-me-1 ms-auto"
+                onClick={rail?.onClose}
+                size="icon-sm"
+                variant="ghost"
+              >
+                <X />
+              </Button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto">{rail?.content}</div>
           </ShellAside>
         </ResizablePanel>
       </Resizable>

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
-  Badge,
   Button,
   ButtonGroup,
   ButtonGroupSeparator,
@@ -22,25 +21,14 @@ import {
   MenuTrigger,
   Show,
   Spinner,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   ToggleGroup,
   ToggleGroupItem,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
   toast,
 } from "@kanzo-tech/ui";
-import {
-  Check,
-  ChevronDown,
-  FolderOutput,
-  PanelRight,
-  Pencil,
-  PlugZap,
-  Save,
-  TriangleAlert,
-  X,
-} from "lucide-react";
+import { Check, ChevronDown, FolderOutput, Pencil, PlugZap, Save, X } from "lucide-react";
 import { useRouter } from "@kanzo-tech/navigation/next";
 import { $api, ApiError, http, invalidate, type Schemas } from "@/lib/api/client";
 import { Boundary, Loading } from "@/components/boundary";
@@ -51,28 +39,34 @@ import * as checker from "@/lib/fossil/checker";
 import { AssistantWizard } from "./assistant-wizard";
 import { ModePicker } from "./mode-picker";
 import { folderProblem, folderSlug } from "./folder";
-import { CreateJobDialog } from "./create-job-dialog";
-import { FindingsList } from "./findings-list";
+import { FindingsBadge } from "./findings-badge";
 import { StudioConnections } from "./studio-connections";
-import { StudioEditor } from "./studio-editor";
+import { type EditorApi, StudioEditor } from "./studio-editor";
 import { StudioOutput, type OutputValues } from "./studio-output";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { useJobEditorStore } from "./job-editor-store";
 
-type InspectorTab = "connections" | "output" | "problems";
+const PANELS = [
+  { id: "connections", label: "Connections", icon: PlugZap },
+  { id: "output", label: "Output", icon: FolderOutput },
+] as const;
+
+type PanelId = (typeof PANELS)[number]["id"];
 
 /** Quiet before the draft writes itself. Long enough that a pause in typing is
  *  a pause, short enough that leaving the tab does not lose a paragraph. */
 const AUTOSAVE_MS = 1500;
 
 /**
- * The job studio: one screen, the program and an inspector beside it.
+ * The job studio: one screen, the program and one panel beside it.
  *
- * Where the output lands and what the compiler found are not pages to walk
- * through but properties of the program you are writing, so they sit in the
- * inspector next to it (Hex, Observable). Create is the one commit point and
- * opens a review of what the job reads and writes, the way a commit dialog does.
- * The draft saves itself, so the strip at the bottom reports rather than commands.
+ * What the program reads and where its output lands are not pages to walk
+ * through but properties of the program you are writing, so they are panels
+ * next to it, picked from the bottom strip the way discovery picks its dock
+ * (Hex, Observable). What the compiler found is the header's tally, pressed to
+ * list it. Create is the one commit point and commits: when something stands in
+ * its way it says what, and pressing it shows where. The draft saves itself, so
+ * the strip at the bottom reports rather than commands.
  */
 export function JobStudioPage() {
   const id = useSearchParams().get("draft");
@@ -100,8 +94,9 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
 
   const store = useJobEditorStore();
   const [railOpen, setRailOpen] = useState(true);
-  const [tab, setTab] = useState<InspectorTab>("connections");
-  const [reviewing, setReviewing] = useState(false);
+  const [panel, setPanel] = useState<PanelId>("connections");
+  const [findingsOpen, setFindingsOpen] = useState(false);
+  const [editor, setEditor] = useState<EditorApi | null>(null);
   const [diagnostics, setDiagnostics] = useState<readonly checker.CheckRow[]>([]);
   const [refs, setRefs] = useState<checker.SourceRefInfo[]>([]);
   const [refsProblem, setRefsProblem] = useState<Shown | null>(null);
@@ -129,7 +124,7 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
   // A job's connections are its program's `@conn` references, read out of
   // fossil's typed lineage — the same parse `fossil refs` runs natively, so the
   // browser and the CLI never disagree about what a job reads. One computation
-  // feeds the rail's "in use" marks, the status strip's count and Summary's list.
+  // feeds the Connections panel's "in use" marks and the status strip's count.
   useEffect(() => {
     let alive = true;
     const id = setTimeout(() => {
@@ -174,8 +169,32 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
   const [takenFolder, setTakenFolder] = useState<string | null>(null);
 
   const errors = diagnostics.filter((d) => d.severity === 1).length;
-  const blocked =
-    errors > 0 || !store.script.trim() || !destination || !folderValid || folder === takenFolder;
+  const outputIncomplete = !destination || !folderValid || folder === takenFolder;
+
+  const openPanel = (id: PanelId) => {
+    setPanel(id);
+    setRailOpen(true);
+  };
+
+  // What stands in Create's way, first thing first: the words its tooltip says,
+  // and where pressing it takes the member to fix it.
+  const blocker: { reason: string; show?: () => void } | null = !store.script.trim()
+    ? { reason: "Write the program first." }
+    : errors > 0
+      ? {
+          reason: `Fix the program's ${errors === 1 ? "error" : `${errors} errors`} first.`,
+          show: () => setFindingsOpen(true),
+        }
+      : !destination
+        ? { reason: "Pick where the graph lands, under Output.", show: () => openPanel("output") }
+        : folder === takenFolder
+          ? {
+              reason: "Another job writes to this folder. Pick another under Output.",
+              show: () => openPanel("output"),
+            }
+          : !folderValid
+            ? { reason: "Fix the output folder, under Output.", show: () => openPanel("output") }
+            : null;
 
   // ── Saving ──────────────────────────────────────────────────────────────
 
@@ -253,7 +272,10 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
       router.push(`/jobs/${job.id}`);
     },
     onError: (err) => {
-      if (err instanceof ApiError && err.code === "resource/already-exists") setTakenFolder(folder);
+      if (err instanceof ApiError && err.code === "resource/already-exists") {
+        setTakenFolder(folder);
+        openPanel("output");
+      }
       toastError(err, "Failed to create job");
     },
   });
@@ -265,7 +287,6 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
     sinkConnectionId: store.sinkConnectionId,
     folder,
   };
-  const outputIncomplete = !destination || !folderValid || folder === takenFolder;
   const onOutputChange = useCallback((patch: Partial<OutputValues>) => {
     const s = useJobEditorStore.getState();
     if (patch.sinkConnectionId !== undefined) s.setSinkConnectionId(patch.sinkConnectionId);
@@ -291,16 +312,18 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="@container flex h-14 min-w-0 shrink-0 items-center gap-2 border-b px-3">
+        {/* At rest the preview sizes the root and truncates itself; editing, the root takes a
+            fixed width that the input fills, so the cancel button closes the field at its end. */}
         <Editable
           activationMode="dblclick"
-          className="w-auto max-w-[10rem] @3xl:max-w-[20rem]"
+          className="w-auto max-w-[10rem] has-[[data-slot=editable-area][data-focus]]:w-64 has-[[data-slot=editable-area][data-focus]]:max-w-[50cqw] @3xl:max-w-[20rem]"
           onValueChange={(d) => store.setName(d.value)}
           placeholder="Unnamed job"
           value={store.name}
         >
-          <EditableArea className="w-auto">
+          <EditableArea className="w-auto data-focus:flex-1">
             <EditableInput asChild>
-              <Input className="h-8 w-56" />
+              <Input size="sm" />
             </EditableInput>
             <EditablePreview className="font-medium" size="sm" variant="ghost" />
           </EditableArea>
@@ -319,12 +342,14 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
         </Editable>
 
         <div className="ms-auto flex items-center gap-1.5">
-          <ValidationBadge
-            diagnostics={diagnostics}
-            onOpen={() => {
-              setRailOpen(true);
-              setTab("problems");
+          <FindingsBadge
+            findings={diagnostics}
+            onOpenChange={setFindingsOpen}
+            onSelect={(f) => {
+              setFindingsOpen(false);
+              editor?.reveal(f.range.start.line, f.range.start.character);
             }}
+            open={findingsOpen}
           />
           <ButtonGroup aria-label="Save">
             <Button
@@ -361,91 +386,68 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
               </MenuContent>
             </Menu>
           </ButtonGroup>
-          <Button
-            disabled={submitting || !store.script.trim()}
-            onClick={() => {
-              // An incomplete output is fixed where it is set, not in the review.
-              if (outputIncomplete) {
-                setRailOpen(true);
-                setTab("output");
-                return;
-              }
-              setReviewing(true);
-            }}
-            size="sm"
-          >
-            <Check />
-            Create
-          </Button>
+          {/* A disabled button takes no pointer, so the press lands on the wrapper, which shows
+              where the blocker is fixed. */}
+          <Tooltip disabled={!blocker || submitting}>
+            <TooltipTrigger asChild>
+              <span
+                className="inline-flex"
+                onClick={() => blocker?.show?.()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") blocker?.show?.();
+                }}
+                role="presentation"
+                tabIndex={blocker ? 0 : undefined}
+              >
+                <Button
+                  disabled={!!blocker || submitting}
+                  onClick={() => {
+                    // A create racing the autosave's first POST would leave its draft behind.
+                    if (!draftMutation.isPending) confirmMutation.mutate();
+                  }}
+                  size="sm"
+                >
+                  <Show fallback={<Check />} when={submitting}>
+                    <Spinner />
+                  </Show>
+                  Create
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{blocker?.reason}</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
       <StudioEditor
-        inspector={(editor) => (
-          <Tabs
-            className="@container flex min-h-0 flex-1 flex-col gap-0"
-            onValueChange={(d) => setTab(d.value as InspectorTab)}
-            value={tab}
-          >
-            {/* A narrow rail keeps the icons and drops the words; the names stay as labels. */}
-            <TabsList className="mx-3 mt-2 grid grid-cols-3">
-              <TabsTrigger aria-label="Connections" value="connections">
-                <PlugZap />
-                <span className="hidden @[18rem]:inline">Connections</span>
-              </TabsTrigger>
-              <TabsTrigger aria-label="Output" value="output">
-                <FolderOutput />
-                <span className="hidden @[18rem]:inline">Output</span>
-                <Show when={outputIncomplete}>
-                  <span aria-label="incomplete" className="size-1.5 rounded-full bg-destructive" />
-                </Show>
-              </TabsTrigger>
-              <TabsTrigger aria-label="Problems" value="problems">
-                <TriangleAlert />
-                <span className="hidden @[18rem]:inline">Problems</span>
-                <Show when={diagnostics.length > 0}>
-                  <Badge size="xs" variant={errors ? "destructive" : "warning"}>
-                    {diagnostics.length}
-                  </Badge>
-                </Show>
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent className="min-h-0 flex-1 overflow-auto" value="connections">
-              <StudioConnections
-                connections={connections}
-                onInsert={editor.insert}
-                used={usedNames}
-              />
-            </TabsContent>
-            <TabsContent className="min-h-0 flex-1 overflow-auto" value="output">
-              <StudioOutput
-                connections={connections}
-                folderTaken={folder === takenFolder}
-                onChange={onOutputChange}
-                values={output}
-              />
-            </TabsContent>
-            <TabsContent className="min-h-0 flex-1 overflow-auto p-3" value="problems">
-              <Show
-                fallback={
-                  <p className="text-muted-foreground text-sm">
-                    Every reference resolves and every mapping type-checks.
-                  </p>
-                }
-                when={diagnostics.length > 0}
-              >
-                <FindingsList
-                  findings={diagnostics}
-                  onSelect={(f) => editor.reveal(f.range.start.line, f.range.start.character)}
-                />
-              </Show>
-            </TabsContent>
-          </Tabs>
-        )}
         onDiagnostics={setDiagnostics}
+        onEditor={setEditor}
         onProgramChange={store.setScript}
         program={store.script}
-        railOpen={railOpen}
+        rail={
+          railOpen
+            ? {
+                label: PANELS.find((p) => p.id === panel)!.label,
+                onClose: () => setRailOpen(false),
+                content:
+                  panel === "connections" ? (
+                    <StudioConnections
+                      connections={connections}
+                      onInsert={(text) => editor?.insert(text)}
+                      used={usedNames}
+                      usedProblem={refsProblem}
+                    />
+                  ) : (
+                    <StudioOutput
+                      connections={connections}
+                      folderTaken={folder === takenFolder}
+                      onChange={onOutputChange}
+                      values={output}
+                    />
+                  ),
+              }
+            : null
+        }
       />
 
       <div className="flex h-8 shrink-0 flex-row items-center gap-2 border-t px-3 text-muted-foreground text-xs">
@@ -454,60 +456,35 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
           {" · "}
           {draftMutation.isPending ? "saving…" : saved ? "draft saved" : "unsaved changes"}
         </span>
+        {/* Single-select and deselectable: pressing the open panel's icon again collapses the rail. */}
         <ToggleGroup
           aria-label="Panels"
           className="ms-auto"
           multiple={false}
-          onValueChange={(d) => setRailOpen(d.value.length > 0)}
+          onValueChange={(d) => {
+            const next = d.value[0] as PanelId | undefined;
+            if (next) openPanel(next);
+            else setRailOpen(false);
+          }}
           size="sm"
           spacing={2}
-          value={railOpen ? ["inspector"] : []}
+          value={railOpen ? [panel] : []}
         >
-          <ToggleGroupItem aria-label="Inspector" value="inspector">
-            <PanelRight />
-          </ToggleGroupItem>
+          {PANELS.map((p) => (
+            <ToggleGroupItem aria-label={p.label} className="relative" key={p.id} title={p.label} value={p.id}>
+              <p.icon />
+              <Show when={p.id === "output" && outputIncomplete}>
+                <span
+                  aria-label="incomplete"
+                  className="absolute end-1 top-1 size-1.5 rounded-full bg-destructive"
+                />
+              </Show>
+            </ToggleGroupItem>
+          ))}
         </ToggleGroup>
       </div>
 
-      <CreateJobDialog
-        blocked={blocked}
-        connections={connections}
-        creating={submitting}
-        findings={diagnostics}
-        name={store.name}
-        onCreate={() => {
-          if (!draftMutation.isPending) confirmMutation.mutate();
-        }}
-        onOpenChange={setReviewing}
-        open={reviewing}
-        output={output}
-        refs={refs}
-        refsProblem={refsProblem}
-      />
       <UnsavedChangesGuard dirty={dirty} />
     </div>
-  );
-}
-
-/** The compiler's tally; it opens the Problems tab, where each finding jumps to its line. */
-function ValidationBadge({
-  diagnostics,
-  onOpen,
-}: {
-  diagnostics: readonly checker.CheckRow[];
-  onOpen: () => void;
-}) {
-  const errors = diagnostics.filter((d) => d.severity === 1).length;
-  const warnings = diagnostics.length - errors;
-  return (
-    <Badge asChild size="lg" variant={errors ? "destructive" : warnings ? "warning" : "success"}>
-      <button onClick={onOpen} type="button">
-        {errors
-          ? `${errors} error${errors === 1 ? "" : "s"}`
-          : warnings
-            ? `${warnings} warning${warnings === 1 ? "" : "s"}`
-            : "Valid"}
-      </button>
-    </Badge>
   );
 }

@@ -4,13 +4,24 @@
  * What introspection answered for the sources the job editor's program reads, to hand to fossil.
  * Fossil answers which sources those are; they are described only when that answer changes, never
  * on a keystroke that leaves it alone.
+ *
+ * `@fossil-lang/introspect` owns the DESCRIBE each reader needs and the DuckDB→fossil type table.
+ * keasy lends it the data plane: its `host` vends a read credential per source connection, and the
+ * page's engine reads through it, by range, from the store. The server never reads the file.
  */
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { introspect } from "@fossil-lang/introspect";
+import { engine } from "@kanzo-tech/ui/analytics";
 
 import * as checker from "@/lib/fossil/checker";
-import { type Described, describeSources, sourceDescriptorsKey } from "./describe-sources";
+import { host } from "@/lib/fossil/host";
+
+export const sourceDescriptorsKey = (sources: readonly string[]) => ["source-descriptors", sources] as const;
+
+/** What could be described, and each source that could not, with its problem — shown, never dropped. */
+type Described = Awaited<ReturnType<typeof introspect>>;
 
 /** A pause in typing long enough to ask fossil again which sources the program reads. */
 const TYPING_PAUSE_MS = 400;
@@ -50,7 +61,7 @@ export function useSourceDescriptors(script: string): Described | null {
     queryKey: sourceDescriptorsKey(
       (sources ?? []).map((s) => `${s.format}:${s.locator}:${s.option ?? ""}`).sort(),
     ),
-    queryFn: ({ signal }) => describeSources(sources ?? [], signal),
+    queryFn: async ({ signal }) => introspect(sources ?? [], { host, engine: await engine({ signal }), signal }),
     enabled: !!sources && sources.length > 0,
     retry: false,
     staleTime: DESCRIPTION_FRESH_MS,

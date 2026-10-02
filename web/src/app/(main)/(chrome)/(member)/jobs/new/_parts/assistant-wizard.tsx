@@ -36,11 +36,14 @@ import {
   useDataTable,
 } from "@kanzo-tech/ui/table";
 import { Link } from "@kanzo-tech/navigation/next";
+import { engine } from "@kanzo-tech/ui/analytics";
+import { introspect } from "@fossil-lang/introspect";
 import { $api } from "@/lib/api/client";
 import { gateway } from "@/lib/ai";
 import { type CompetencyQuestion, describeFiles, suggestQuestions, writeProgram } from "./assistant-prompts";
 import * as checker from "@/lib/fossil/checker";
-import { describeSources, sourceDescriptorsKey } from "./describe-sources";
+import { host } from "@/lib/fossil/host";
+import { sourceDescriptorsKey } from "./use-source-descriptors";
 import { providerFor } from "@/lib/fossil/providers";
 import { reference, type StorageConnection } from "@/lib/connections";
 import { ProblemView } from "@/components/problem-view";
@@ -232,7 +235,11 @@ export function AssistantWizard({
   const described = useQuery({
     queryKey: sourceDescriptorsKey(bindings.map((b) => b.uri)),
     queryFn: async ({ signal }) =>
-      describeSources(await (await checker.jobProgram({ signal })).sources(program), signal),
+      introspect(await (await checker.jobProgram({ signal })).sources(program), {
+        host,
+        engine: await engine({ signal }),
+        signal,
+      }),
     enabled: bindings.length > 0,
   });
   const schemasReady =

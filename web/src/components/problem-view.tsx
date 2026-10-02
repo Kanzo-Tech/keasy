@@ -31,7 +31,24 @@ interface Row {
   children: Row[];
 }
 
-const foreign = (cause: Foreign): Row => ({ title: cause.name, detail: cause.detail, severity: "error", children: [] });
+/**
+ * A cause a library kept as `{ name, detail }`. keasy's `ApiError` is named by its code so that the
+ * code survives that (fossil's wire): a name in the grammar is shown as the code it is.
+ */
+function foreign(cause: Foreign): Row {
+  if (CODED.test(cause.name)) {
+    return {
+      code: cause.name,
+      title: copyOf(cause.name)?.title ?? cause.name,
+      detail: cause.detail,
+      severity: "error",
+      children: [],
+    };
+  }
+  return { title: cause.name, detail: cause.detail, severity: "error", children: [] };
+}
+
+const CODED = /^[a-z][a-z-]*\/[a-z][a-z-]*$/;
 const related = (r: Related): Row => ({ title: r.detail, help: r.help, severity: r.severity, children: [] });
 
 function rows(problem: Shown): Row[] {

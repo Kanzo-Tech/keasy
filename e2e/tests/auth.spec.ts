@@ -12,9 +12,12 @@ test.describe("signed out", () => {
     // The BFF caches the IdP's discovery, so with Keycloak already down a sign-in sends the browser
     // straight to a host it cannot reach — the browser's error page, not keasy's to draw. What keasy
     // does own is the callback's token exchange: Keycloak goes down between the form and that.
-    await page.route("**/api/auth/callback**", async (route) => {
+    // The callback is a redirect hop, which Playwright does not route; the form's POST is not, so
+    // Keycloak answers it, and goes down before the browser follows its redirect to the callback.
+    await page.route("**/login-actions/authenticate**", async (route) => {
+      const answer = await route.fetch({ maxRedirects: 0 });
       stop("keycloak");
-      await route.continue();
+      await route.fulfill({ response: answer });
     });
     try {
       await page.goto("/");

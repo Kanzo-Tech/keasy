@@ -29,7 +29,9 @@ export class ApiError extends Error {
     options?: ErrorOptions,
   ) {
     super(body.detail, options);
-    this.name = "ApiError";
+    // The code as the name: a library that keeps only `{ name, message }` of an error it did not
+    // raise — fossil's wire does, for a host failure it wraps — still carries the code that way.
+    this.name = body.code;
     this.code = body.code;
     this.title = body.title;
     this.data = body.data;

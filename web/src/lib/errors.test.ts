@@ -81,3 +81,9 @@ describe("a host failure fossil wrapped", () => {
     expect(toProblem(wrapped)).toMatchObject({ code: "storage/host-refused", cause: { code: "job/not-found" } });
   });
 });
+
+describe("an ApiError's name", () => {
+  it("is its code, so a wire that keeps only name and message keeps the code", () => {
+    expect(new ApiError({ code: "store/silent", title: "t", detail: "d", data: {} }, 504).name).toBe("store/silent");
+  });
+});

@@ -3,7 +3,6 @@
 import type { Foreign, Related, Severity } from "@fossil-lang/types";
 import {
   Button,
-  cn,
   Diagnostic,
   DiagnosticActions,
   DiagnosticContent,
@@ -69,11 +68,29 @@ function worded(problem: Shown): Row & { link?: { label: string; href: string } 
   };
 }
 
-function Item({ row, open, actions }: { row: Row; open?: boolean; actions?: React.ReactNode }) {
+function Item({
+  row,
+  open,
+  actions,
+  problem,
+}: {
+  row: Row;
+  open?: boolean;
+  actions?: React.ReactNode;
+  /** The problem's own row rather than one of its causes. */
+  problem?: boolean;
+}) {
   const page = row.code ? pageOf(row.code) : undefined;
   const more = Boolean(row.detail || row.help || row.children.length > 0);
   return (
-    <Diagnostic data-code={row.code} defaultOpen={open} variant={VARIANT[row.severity]}>
+    // Its own query container, so the title's narrow layout follows the item's width in any list.
+    <Diagnostic
+      className="@container"
+      data-code={row.code}
+      data-problem={problem ? "" : undefined}
+      defaultOpen={open}
+      variant={VARIANT[row.severity]}
+    >
       <DiagnosticHeader className="flex-nowrap items-start">
         {/* What the row is takes the rest of the line and the actions stay at its end. In a narrow
             container (a popover, a side panel) the title takes a line of its own under severity and
@@ -122,6 +139,38 @@ function Item({ row, open, actions }: { row: Row; open?: boolean; actions?: Reac
   );
 }
 
+export interface ProblemItemProps {
+  problem: Shown;
+  /** Beside the problem's own link and details: a retry, a "go to". */
+  actions?: React.ReactNode;
+}
+
+/**
+ * One problem as one item of a `DiagnosticList` — for a list that is not only this problem, such as
+ * kanzo-ui's `FindingsGroup`. `data-problem` and `data-code` sit on the item, which is what an
+ * end-to-end test finds.
+ */
+export function ProblemItem({ problem, actions }: ProblemItemProps) {
+  const row = worded(problem);
+  return (
+    <Item
+      actions={
+        <>
+          {row.link && (
+            <Button asChild size="sm" variant="outline">
+              <Link href={row.link.href}>{row.link.label}</Link>
+            </Button>
+          )}
+          {actions}
+        </>
+      }
+      open
+      problem
+      row={row}
+    />
+  );
+}
+
 export interface ProblemViewProps {
   problem: Shown;
   /** Offered beside the problem as a retry. */
@@ -137,26 +186,17 @@ export interface ProblemViewProps {
  * the code on the view and on every coded row of its tree, the one thing an end-to-end test asserts on.
  */
 export function ProblemView({ problem, onRetry, retryLabel = "Try again", className }: ProblemViewProps) {
-  const row = worded(problem);
   return (
-    <DiagnosticList className={cn("@container", className)} data-code={problem.code} data-problem="">
-      <Item
+    <DiagnosticList className={className}>
+      <ProblemItem
         actions={
-          <>
-            {row.link && (
-              <Button asChild size="sm" variant="outline">
-                <Link href={row.link.href}>{row.link.label}</Link>
-              </Button>
-            )}
-            {onRetry && (
-              <Button onClick={onRetry} size="sm" variant="outline">
-                {retryLabel}
-              </Button>
-            )}
-          </>
+          onRetry && (
+            <Button onClick={onRetry} size="sm" variant="outline">
+              {retryLabel}
+            </Button>
+          )
         }
-        open
-        row={row}
+        problem={problem}
       />
     </DiagnosticList>
   );

@@ -23,9 +23,17 @@ model_list:
   #     api_base: https://inference-api.nousresearch.com/v1
   #     api_key: os.environ/NOUS_API_KEY
 
+# Inside keasy's relay, which calls the gateway silent after 25 s without a byte
+# (`server/src/routes/ai.rs`, `IDLE`): the upstream's timeout (a read timeout, so it
+# bounds the wait for the answer to begin and each chunk after, not a long stream)
+# is under it, so a hung upstream is ended here before the relay gives up. A retry
+# after a timeout could not fit inside 25 s and is never made; one retry is left
+# for a refusal that comes back fast (overloaded, rate-limited, a 5xx).
 router_settings:
-  num_retries: 2
-  timeout: 120
+  timeout: 20
+  num_retries: 1
+  retry_policy:
+    TimeoutErrorRetries: 0
   # fallbacks: [{ "chat": ["chat-fallback"] }]
 
 litellm_settings:

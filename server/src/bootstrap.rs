@@ -29,7 +29,9 @@ const BY: &str = "bootstrap";
 /// does not exist until the person first signs in; so the job is held for the
 /// address ([`declared_for`]) and the member whose verified email it is takes
 /// it over the first time they list their jobs (`jobs::claim_declared`). It is
-/// declared `Pending`: the browser that opens it runs it.
+/// declared a draft: a job waiting to run is swept as abandoned once its lease
+/// lapses, and nobody ran this one; the member opens it in the studio and
+/// creates it when they mean to.
 #[derive(Deserialize)]
 struct DeclaredJob {
     name: String,
@@ -154,7 +156,7 @@ async fn ensure_job(db: &Database, dir: &Path, declared: DeclaredJob) -> Result<
         .map_err(|e| format!("{}: {e}", script_path.display()))?;
 
     let mut job = Job::new(
-        JobStatus::Pending,
+        JobStatus::Draft,
         Some(declared.name),
         declared.sink_connection,
         Some(folder),

@@ -294,7 +294,7 @@ async fn a_declared_job_goes_to_the_member_the_realm_vouches_for() {
     let listed = listed.as_array().unwrap();
     assert_eq!(listed.len(), 1, "declared once across two boots");
     assert_eq!(listed[0]["name"], "Seeded");
-    assert_eq!(listed[0]["status"], "pending");
+    assert_eq!(listed[0]["status"], "draft", "a draft: nothing sweeps it before anyone opens it");
     assert_eq!(listed[0]["folder"], "seeded");
     assert_eq!(listed[0]["script"], "program");
     assert_eq!(listed[0]["created_by"], "u-1");

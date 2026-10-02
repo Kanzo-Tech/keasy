@@ -53,14 +53,18 @@ const QUESTION = jsonSchema<{ question: string; rationale: string }>({
 
 /** Competency questions for the data, each arriving as soon as it is whole. */
 export function suggestQuestions(domain: string, schemas: readonly InferredDescriptor[], signal: AbortSignal) {
-  return streamText({
-    model: gateway("chat"),
-    maxRetries: 0,
-    system: SUGGEST_PROMPT,
-    prompt: `Domain: ${domain}\n\n${describeFiles(schemas)}`,
-    output: Output.array({ element: QUESTION }),
-    abortSignal: signal,
-  }).elementStream;
+  return failing(
+    (onError) =>
+      streamText({
+        model: gateway("chat"),
+        maxRetries: 0,
+        system: SUGGEST_PROMPT,
+        prompt: `Domain: ${domain}\n\n${describeFiles(schemas)}`,
+        output: Output.array({ element: QUESTION }),
+        abortSignal: signal,
+        onError,
+      }).elementStream,
+  );
 }
 
 const PROGRAM = jsonSchema<{ program: string }>({
@@ -78,12 +82,29 @@ export function writeProgram(
   signal: AbortSignal,
 ) {
   const listed = questions.map((q, i) => `${i + 1}. ${q}\n`).join("");
-  return streamText({
-    model: gateway("chat"),
-    maxRetries: 0,
-    system: PROGRAM_PROMPT,
-    prompt: `Domain: ${domain}\n\nCompetency Questions:\n${listed}\nData Schemas:\n${describeFiles(schemas)}`,
-    output: Output.object({ schema: PROGRAM }),
-    abortSignal: signal,
-  }).partialOutputStream;
+  return failing(
+    (onError) =>
+      streamText({
+        model: gateway("chat"),
+        maxRetries: 0,
+        system: PROGRAM_PROMPT,
+        prompt: `Domain: ${domain}\n\nCompetency Questions:\n${listed}\nData Schemas:\n${describeFiles(schemas)}`,
+        output: Output.object({ schema: PROGRAM }),
+        abortSignal: signal,
+        onError,
+      }).partialOutputStream,
+  );
+}
+
+/**
+ * `stream`, throwing the error that ended it. An output stream drops the answer's error event — it
+ * reaches `onError` and the stream ends as if whole — so a cut answer would pass for a short one,
+ * and the relay's `gateway/silent` would be lost.
+ */
+async function* failing<T>(stream: (onError: (event: { error: unknown }) => void) => AsyncIterable<T>) {
+  let failure: { error: unknown } | undefined;
+  yield* stream((event) => {
+    failure = event;
+  });
+  if (failure) throw failure.error;
 }

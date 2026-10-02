@@ -47,24 +47,33 @@ impl Gateway {
 }
 
 /// How long the gateway may send nothing — before its answer begins, or between
-/// two chunks of it. Past it the call is `gateway/silent`, or the stream is cut.
+/// two chunks of it. Past it the call is `gateway/silent`: as the response, or as the stream's
+/// last event once the answer has begun.
 /// Under the browser's 30 s per chunk, so the gateway is named before the browser
 /// gives up and can only name the server. The route is left out of the server's
 /// request deadline, which this bound replaces for it.
 pub const IDLE: Duration = Duration::from_secs(25);
+/// The browser's bound on a model stream: `createGateway`'s idle, `@kanzo-tech/llm`.
+const BROWSER_IDLE: Duration = Duration::from_secs(30);
+const _: () = assert!(
+    IDLE.as_secs() < BROWSER_IDLE.as_secs(),
+    "the relay names the gateway before the browser gives up"
+);
 
-/// `chunks`, ended with an error once `idle` passes without one.
+/// `chunks`, ended once `idle` passes without one: with `silence` as the last chunk when there is
+/// one, or else with an I/O error.
 fn until_idle<S>(
     chunks: S,
     idle: Duration,
+    silence: Option<Bytes>,
 ) -> impl futures::Stream<Item = Result<Bytes, std::io::Error>>
 where
     S: futures::Stream<Item = Result<Bytes, reqwest::Error>> + Unpin,
 {
-    futures::stream::unfold(Some(chunks), move |state| async move {
-        let mut chunks = state?;
+    futures::stream::unfold(Some((chunks, silence)), move |state| async move {
+        let (mut chunks, silence) = state?;
         match tokio::time::timeout(idle, chunks.next()).await {
-            Ok(Some(Ok(chunk))) => Some((Ok(chunk), Some(chunks))),
+            Ok(Some(Ok(chunk))) => Some((Ok(chunk), Some((chunks, silence)))),
             Ok(Some(Err(e))) => Some((Err(std::io::Error::other(e)), None)),
             Ok(None) => None,
             Err(_) => {
@@ -72,16 +81,29 @@ where
                     after_ms = idle.as_millis() as u64,
                     "AI gateway went silent mid-answer"
                 );
-                Some((
-                    Err(std::io::Error::new(
+                let last = silence.ok_or_else(|| {
+                    std::io::Error::new(
                         std::io::ErrorKind::TimedOut,
                         "the AI gateway sent nothing within its deadline",
-                    )),
-                    None,
-                ))
+                    )
+                });
+                Some((last, None))
             }
         }
     })
+}
+
+/// `body` as the chat completions stream's error event — `data: {"error": {"message": …}}`, the
+/// chunk an OpenAI-compatible client reads as a failure rather than as more answer — with the
+/// body's own fields beside `message`. It opens with a blank line, so a chunk the gateway left
+/// half-written cannot swallow it.
+///
+/// The 200 and its headers are already sent when a stream goes quiet, so a status cannot say it;
+/// cutting the connection would leave the browser a network error and nothing to name.
+fn error_event(body: &ErrorBody) -> Bytes {
+    let mut error = serde_json::to_value(body).expect("an ErrorBody serializes");
+    error["message"] = json!(body.detail);
+    Bytes::from(format!("\n\ndata: {}\n\n", json!({ "error": error })))
 }
 
 /// A model, by what it is for. Which upstream answers is the gateway's
@@ -126,7 +148,7 @@ pub struct ChatCompletionRequest {
 #[utoipa::path(post, path = "/v1/ai/chat/completions", tag = "AI",
     request_body = ChatCompletionRequest,
     responses(
-        (status = 200, description = "The gateway's answer as it streams: OpenAI chat completion chunks (`text/event-stream`) or one completion (`application/json`)"),
+        (status = 200, description = "The gateway's answer as it streams: OpenAI chat completion chunks (`text/event-stream`), ended by an error event carrying `gateway/silent` if the gateway goes quiet mid-answer, or one completion (`application/json`)"),
         (status = 400, description = "Not an alias, or a malformed request", body = ErrorBody),
         (status = 502, description = "The AI gateway could not be reached", body = ErrorBody),
         (status = 504, description = "The AI gateway did not begin its answer in time", body = ErrorBody),
@@ -202,11 +224,25 @@ async fn relay(gateway: &Gateway, body: &Value, idle: Duration) -> Result<Respon
         .get(header::CONTENT_TYPE)
         .cloned()
         .unwrap_or(header::HeaderValue::from_static("application/json"));
+    // Only an answer that streams has a place to say it went quiet; a JSON body is cut.
+    let streams =
+        upstream.status().is_success() && content_type.as_bytes().starts_with(b"text/event-stream");
+    let silence = streams.then(|| {
+        error_event(&ErrorBody::silent(
+            ErrorCode::AiSilent,
+            "the AI gateway went silent mid-answer",
+            idle,
+        ))
+    });
     Response::builder()
         .status(upstream.status())
         .header(header::CONTENT_TYPE, content_type)
         .header(header::CACHE_CONTROL, "no-cache")
-        .body(Body::from_stream(until_idle(upstream.bytes_stream(), idle)))
+        .body(Body::from_stream(until_idle(
+            upstream.bytes_stream(),
+            idle,
+            silence,
+        )))
         .map_err(|e| {
             Refusal::new(
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -254,21 +290,26 @@ mod tests {
         assert!(started.elapsed() < Duration::from_secs(3));
     }
 
-    #[tokio::test]
-    async fn a_gateway_that_goes_quiet_mid_answer_has_its_stream_cut() {
+    /// A gateway that answers `content_type` with one chunk, then nothing.
+    async fn quiet_after_one_chunk(content_type: &'static str) -> String {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let url = format!("http://{}", listener.local_addr().unwrap());
-        let app = axum::Router::new().fallback(|| async {
+        let app = axum::Router::new().fallback(move || async move {
             let first = futures::stream::iter([Ok::<_, std::io::Error>(Bytes::from_static(
                 b"data: {\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n\n",
             ))]);
             Response::builder()
-                .header(header::CONTENT_TYPE, "text/event-stream")
+                .header(header::CONTENT_TYPE, content_type)
                 .body(Body::from_stream(first.chain(futures::stream::pending())))
                 .unwrap()
         });
         tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        url
+    }
 
+    #[tokio::test]
+    async fn a_gateway_that_goes_quiet_mid_answer_ends_the_stream_with_gateway_silent() {
+        let url = quiet_after_one_chunk("text/event-stream").await;
         let response = relay(&gateway(url), &json!({}), SHORT).await.unwrap();
         let mut body = response.into_body().into_data_stream();
         assert!(
@@ -276,11 +317,39 @@ mod tests {
             "what came before the silence is relayed"
         );
         let started = std::time::Instant::now();
+        let last = body
+            .next()
+            .await
+            .unwrap()
+            .expect("the silence is an event, not a cut");
+        assert!(started.elapsed() < Duration::from_secs(2));
+        assert!(body.next().await.is_none(), "the event ends the stream");
+
+        let text = std::str::from_utf8(&last).unwrap();
+        assert!(
+            text.starts_with("\n\ndata: ") && text.ends_with("\n\n"),
+            "one SSE event, on its own: {text:?}"
+        );
+        let event: Value =
+            serde_json::from_str(text.trim().strip_prefix("data: ").unwrap()).unwrap();
+        // What an OpenAI-compatible client requires of an error chunk: an `error` with a `message`,
+        // and no `choices`.
+        assert!(event.get("choices").is_none());
+        assert_eq!(event["error"]["message"], event["error"]["detail"]);
+        assert_eq!(event["error"]["code"], "gateway/silent");
+        assert_eq!(event["error"]["data"]["after"], 300);
+    }
+
+    #[tokio::test]
+    async fn a_json_answer_that_goes_quiet_is_cut() {
+        let url = quiet_after_one_chunk("application/json").await;
+        let response = relay(&gateway(url), &json!({}), SHORT).await.unwrap();
+        let mut body = response.into_body().into_data_stream();
+        assert!(body.next().await.unwrap().is_ok());
         assert!(
             body.next().await.unwrap().is_err(),
-            "the silence ends the stream as an error"
+            "a JSON body has no place for an event, so the silence ends it as an error"
         );
-        assert!(started.elapsed() < Duration::from_secs(2));
     }
 
     #[tokio::test]

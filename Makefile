@@ -54,12 +54,12 @@ api: ## Regenerate api/openapi.json and api/src/schema.d.ts from the server's ro
 	pnpm --filter @keasy/api generate
 
 # ── The end-to-end suite ───────────────────────────────────────────────────
-# Brings the stack up, then runs every
+# Brings the stack up without models (e2e/compose.yml, as CI does), then runs every
 # failure scenario against it on :3000 — the only origin Keycloak admits, so it
 # runs from the main checkout, not a worktree. Scenarios stop and start services
 # themselves, and leave them running.
 e2e: ## Run the e2e suite against the compose stack (main checkout only: Keycloak admits :3000)
-	docker compose up -d --wait --wait-timeout 1800 web
+	docker compose -f docker-compose.yml -f e2e/compose.yml up -d --wait --wait-timeout 1800 web
 	pnpm --filter @keasy/e2e exec playwright install chromium
 	pnpm --filter @keasy/e2e test
 

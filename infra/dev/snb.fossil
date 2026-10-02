@@ -11,7 +11,7 @@
 // identifiers, so `Row.<field>` cannot spell them, and fossil has no way yet to
 // rename or reference a column whose header is not one.
 
-type { Place, Organisation, TagClass, Tag, Person, Forum, Post, Comment } := io.shex("@MinIO dev shapes/snb.shex")
+type { Place, Organisation, TagClass, Tag, Person, Forum, Post, Comment } := io.shex("@Dev shapes/snb.shex")
 
 PlaceRow        := io.csv("@LDBC SNB/static/place_0_0.csv", delimiter = "|")
 OrganisationRow := io.csv("@LDBC SNB/static/organisation_0_0.csv", delimiter = "|")

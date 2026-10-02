@@ -34,7 +34,9 @@ pub enum StorageCredentialInput {
         #[schema(format = "uri")]
         endpoint: Option<String>,
         /// The role keasy assumes to vend a credential scoped to one prefix.
-        /// AWS needs it; S3-compatible stores (MinIO, Ceph) ignore it.
+        /// AWS needs it. With an endpoint and no role, keasy asks for
+        /// `arn:aws:iam::000000000000:role/keasy-vended`; a store that validates
+        /// roles (Ceph RGW, SeaweedFS) needs that role declared, or this set.
         #[serde(default)]
         role_arn: Option<String>,
         /// AWS's guard against the confused deputy, when the role's trust

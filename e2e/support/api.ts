@@ -42,10 +42,10 @@ export function expectRefusal(answer: Answer, status: number, code: string) {
 }
 
 export const SINK = "Workspace output";
-/** The suite's own connections, over its fixtures (e2e/fixtures/, mirrored by `minio-init`). */
+/** The suite's own connections, over its fixtures (e2e/fixtures/, mirrored by `s3-init`). */
 export const SOURCE = "E2E source";
 export const SHAPES = "E2E shapes";
-const CREDENTIAL = "MinIO dev";
+const CREDENTIAL = "Dev S3";
 
 export const CONNECTIONS = [
   { name: SOURCE, credential: CREDENTIAL, target: { url: "s3://keasy-dev/e2e/data/", kind: "data", direction: "source" } },

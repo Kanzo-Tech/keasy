@@ -1,7 +1,7 @@
 # The dev stack. Every value is a dev literal; prod is infra/terraform.
 #
 # `*.localhost` is loopback on the host and a network alias here, so one URL
-# works from the browser and from a container: Keycloak's issuer and the MinIO
+# works from the browser and from a container: Keycloak's issuer and the S3
 # endpoint a vended credential names are both addressed that way.
 
 services:
@@ -152,7 +152,7 @@ services:
       KEASY_WORKSPACE_NAME: Dev Workspace
       KEASY_OIDC_ISSUER_URL: http://keycloak.localhost:8180/realms/keasy
       KEASY_OIDC_CLIENT_ID: keasy-ws-dev
-      # The MinIO credential, its data and shapes sources and the sink, in the
+      # The dev S3 credential, its data and shapes sources and the sink, in the
       # API's own request format.
       KEASY_BOOTSTRAP_FILE: /etc/keasy/bootstrap.json
       # dev.tfvars fixes the dev tenant's gateway key.
@@ -161,7 +161,7 @@ services:
     depends_on:
       keycloak-realm:
         condition: service_completed_successfully
-      minio-init:
+      s3-init:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/healthz/live"]
@@ -205,23 +205,33 @@ services:
       timeout: 3s
       retries: 10
 
-  minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
-    command: ["server", "/data", "--console-address", ":9001"]
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+  # The dev S3 store: SeaweedFS, one process. Static keys in s3.json; iam.json
+  # declares the role the server's vend assumes (STS AssumeRole with a session
+  # policy, on this same endpoint). CORS is open by default (`-s3.allowedOrigins`
+  # is `*`) and exposes ETag and Last-Modified.
+  # chrislusf/seaweedfs:4.48 is sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+  s3:
+    image: chrislusf/seaweedfs:4.48
+    command:
+      - mini
+      - -s3.port=9000
+      - -s3.port.iceberg=0
+      - -s3.port.lance=0
+      - -s3.config=/etc/seaweedfs/s3.json
+      - -s3.iam.config=/etc/seaweedfs/iam.json
+      - -admin.ui=false
+      - -webdav=false
     ports:
       - "9000:9000"
-      - "9001:9001"
     networks:
       default:
         aliases:
-          - minio.localhost
+          - s3.localhost
     volumes:
-      - minio-data:/data
+      - s3-data:/data
+      - ./infra/dev/seaweedfs:/etc/seaweedfs:ro
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:9000/healthz"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -230,39 +240,43 @@ services:
   # Idempotent, so a re-`up` converges. The shapes are in git; the graph is
   # LDBC SNB SF0.1, which `make seed` fetches into infra/dev/seed/ldbc/ — without
   # it the bucket holds the shapes alone, and this says so.
-  minio-init:
-    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+  s3-init:
+    image: amazon/aws-cli:2.37.8
     restart: "no"
+    environment:
+      AWS_ACCESS_KEY_ID: keasy-admin
+      AWS_SECRET_ACCESS_KEY: keasy-admin-secret
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://s3:9000
     entrypoint: ["/bin/sh", "-ec"]
     command:
       - |
-        mc alias set dev http://minio:9000 minioadmin minioadmin
-        mc mb --ignore-existing dev/keasy-dev
-        mc mirror --overwrite /seed/vocab dev/keasy-dev/vocab
+        aws s3api head-bucket --bucket keasy-dev 2>/dev/null || aws s3 mb s3://keasy-dev
+        aws s3 sync --no-progress /seed/vocab s3://keasy-dev/vocab
         # The end-to-end suite's own fixtures (e2e/fixtures/): it never reads the dev seed.
-        mc mirror --overwrite /e2e dev/keasy-dev/e2e
+        aws s3 sync --no-progress /e2e s3://keasy-dev/e2e
         if [ -f /seed/ldbc/.sha256 ]; then
-          mc mirror --overwrite --exclude ".gitignore" --exclude ".sha256" /seed/ldbc dev/keasy-dev/ldbc
+          aws s3 sync --no-progress --exclude ".gitignore" --exclude ".sha256" /seed/ldbc s3://keasy-dev/ldbc
         else
-          echo "minio-init: no LDBC SNB seed — run \`make seed\`, then \`make dev\`"
+          echo "s3-init: no LDBC SNB seed — run \`make seed\`, then \`make dev\`"
         fi
-        mc ls --recursive dev/keasy-dev
+        aws s3 ls --recursive s3://keasy-dev
     volumes:
       - ./infra/dev/seed:/seed:ro
       - ./e2e/fixtures:/e2e:ro
     depends_on:
-      minio:
+      s3:
         condition: service_healthy
 
   # ── The `faults` profile: what the end-to-end suite breaks things with (e2e/) ──
   # Neither starts with `make dev`, nor with `make e2e`: the suite starts and
   # stops each around the one scenario that needs it.
 
-  # A store that accepts every connection and never answers. Shares MinIO's
-  # aliases, so with `minio` stopped every vend and read the server makes to
-  # `minio.localhost:9000` meets silence instead (scenario 3). Never up beside
-  # `minio`: Docker's DNS would answer the alias with both.
-  minio-silent:
+  # A store that accepts every connection and never answers. Shares the S3
+  # store's alias, so with `s3` stopped every vend and read the server makes to
+  # `s3.localhost:9000` meets silence instead (scenario 3). Never up beside
+  # `s3`: Docker's DNS would answer the alias with both.
+  s3-silent:
     profiles: [faults]
     image: python:3.12-alpine
     command: ["python", "-u", "/faults/silent.py", "9000"]
@@ -271,7 +285,7 @@ services:
     networks:
       default:
         aliases:
-          - minio.localhost
+          - s3.localhost
 
   # The AI gateway, silent: accepts the relay's connection and never answers.
   # Shares LiteLLM's name, so with `litellm` stopped the server's relay meets
@@ -293,7 +307,7 @@ volumes:
   keycloak-realm-state:
   server-target:
   cargo-registry:
-  minio-data:
+  s3-data:
   litellm-postgres-data:
 
 # What answers the gateway's aliases in dev: Hermes 3, quantized, on Docker

@@ -2669,7 +2669,7 @@
                   "string",
                   "null"
                 ],
-                "description": "The role keasy assumes to vend a credential scoped to one prefix.\nAWS needs it; S3-compatible stores (MinIO, Ceph) ignore it."
+                "description": "The role keasy assumes to vend a credential scoped to one prefix.\nAWS needs it. With an endpoint and no role, keasy asks for\n`arn:aws:iam::000000000000:role/keasy-vended`; a store that validates\nroles (Ceph RGW, SeaweedFS) needs that role declared, or this set."
               },
               "secret_access_key": {
                 "type": "string",

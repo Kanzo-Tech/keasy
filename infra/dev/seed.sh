@@ -4,7 +4,7 @@
 #
 # The archive is downloaded into infra/dev/.cache/, checked against the digest
 # pinned here, and unpacked into infra/dev/seed/ldbc/ (both gitignored), which
-# the compose `minio-init` service uploads to s3://keasy-dev/ldbc/. Nothing is
+# the compose `s3-init` service uploads to s3://keasy-dev/ldbc/. Nothing is
 # rewritten: the files land as the datagen wrote them. A second run is a no-op.
 set -eu
 

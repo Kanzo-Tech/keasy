@@ -66,7 +66,7 @@ pub fn store(
                 .with_retry(retry());
             if let Some(endpoint) = endpoint {
                 // object_store refuses plain HTTP unless told; an `http://`
-                // endpoint (MinIO on a laptop) is that telling.
+                // endpoint (a dev store on a laptop) is that telling.
                 builder = builder
                     .with_endpoint(endpoint)
                     .with_allow_http(endpoint.starts_with("http://"));

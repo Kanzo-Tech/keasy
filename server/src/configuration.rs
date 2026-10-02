@@ -110,7 +110,7 @@ impl BrandingSettings {
     /// The generator's snippet, checked.
     pub fn from_yaml(yaml: &str) -> Result<Self, String> {
         let BrandingFile { mut branding } =
-            serde_yaml::from_str(yaml).map_err(|e| e.to_string())?;
+            serde_norway::from_str(yaml).map_err(|e| e.to_string())?;
         let blank = |s: &Option<String>| s.as_deref().is_none_or(|s| s.trim().is_empty());
         if blank(&branding.logo) {
             branding.logo = None;

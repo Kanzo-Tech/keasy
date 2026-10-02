@@ -47,7 +47,7 @@ sha2 = "0.11.0"
 quick-xml = { version = "0.42.0", features = ["serialize"] }
 chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
 # The branding file: the theme generator's YAML, read as-is.
-serde_yaml = "0.9"
+serde_norway = "0.9"
 
 [dev-dependencies]
 rcgen = "0.13"

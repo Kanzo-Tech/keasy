@@ -1,23 +1,23 @@
 import type { Coordinator } from "@kanzo-tech/ui/analytics";
 import { jsonSchema, stepCountIs, tool, ToolLoopAgent } from "@kanzo-tech/llm";
 import { gateway } from "@/lib/ai";
-import { runSql, type Catalog, type SqlResult } from "@/lib/fossil/corpus";
 import { type Shown, toProblem } from "@/lib/errors";
-import { recordsOf } from "./corpus";
-import { graphKey } from "./field-stats";
 
 /** How much of a result set the model reads; the panel shows all of it. */
 const SAMPLE_ROWS = 30;
 const SAMPLE_CHARS = 4000;
-/** The most rows a query brings back to the browser. */
-const ROWS = 1000;
+/** The most rows a query may bring back to the browser: every SELECT says so in its own `LIMIT`. */
+export const ROWS = 1000;
 
 /** A 64-bit integer comes back as a `bigint`, which a message cannot carry. */
 const plain = (value: unknown) => (typeof value === "bigint" ? Number(value) : value);
 
-/** The rows the model reads back: the first few, as records, cut to a budget. */
-export function sample(result: SqlResult): string {
-  const json = JSON.stringify(recordsOf({ ...result, rows: result.rows.slice(0, SAMPLE_ROWS) }));
+/** An answer's rows, plain enough to keep in a message. */
+type Row = Record<string, unknown>;
+
+/** The rows the model reads back: the first few, cut to a budget. */
+export function sample(rows: readonly Row[]): string {
+  const json = JSON.stringify(rows.slice(0, SAMPLE_ROWS));
   return json.length > SAMPLE_CHARS ? `${json.slice(0, SAMPLE_CHARS)}...` : json;
 }
 
@@ -52,7 +52,8 @@ graph.
 - Name every table exactly as its CREATE TABLE above does, catalog included
   (\`"jobs/7"."Person"\`): an unqualified name matches nothing.
 - Always quote identifiers with double quotes: \`"Table"."column"\`.
-- Default to \`LIMIT 100\`; for top-N use \`ORDER BY ... DESC LIMIT N\`.
+- Every SELECT ends in a \`LIMIT\` of at most ${ROWS}: default to \`LIMIT 100\`; for top-N use
+  \`ORDER BY ... DESC LIMIT N\`.
 - Always include readable columns (subject, name, label, title) in SELECT.
 - String match: \`"col" ILIKE '%term%'\`. Numeric: \`"col" > N\`, BETWEEN.
 - Aggregation: \`SELECT "col", COUNT(*) FROM "Table" GROUP BY "col"\`.
@@ -67,8 +68,11 @@ After the rows come back, answer in concise markdown: the key numbers, patterns 
 citing actual values. Do not repeat the SQL; the reader can open it.`;
 }
 
-/** What a `query` call hands the panel: every row it read, plain enough to keep in a message. */
-export type QueryOutput = SqlResult & { readonly sql: string };
+/** What a `query` call hands the panel: every row it read. */
+export interface QueryOutput {
+  readonly sql: string;
+  readonly rows: readonly Row[];
+}
 
 /** A `query` call's answer: its rows, or the engine's refusal. */
 export type QueryAnswer = QueryOutput | { readonly sql: string; readonly refused: Shown };
@@ -77,20 +81,20 @@ export type QueryAnswer = QueryOutput | { readonly sql: string; readonly refused
  * The one tool: run SQL over the graph, here in the browser. The panel keeps the whole result —
  * the table, and the vertices it can show on the canvas — and the model reads a sample.
  */
-export function askAgent(schema: string, coordinator: Coordinator, catalog: Catalog) {
+export function askAgent(schema: string, coordinator: Coordinator, key: string) {
   return new ToolLoopAgent({
     model: gateway("chat"),
-    instructions: askInstructions(schema, graphKey(catalog)),
+    instructions: askInstructions(schema, key),
     stopWhen: stepCountIs(5),
     // Not retried here: the gateway retries its upstreams, and a silent gateway asked three times
     // is three deadlines where the person waits for one.
     maxRetries: 0,
     tools: {
       query: tool({
-        description: "Run one DuckDB SQL SELECT over the graph and return its rows.",
+        description: `Run one DuckDB SQL SELECT over the graph and return its rows. It must end in a LIMIT of at most ${ROWS}.`,
         inputSchema: jsonSchema<{ sql: string }>({
           type: "object",
-          properties: { sql: { type: "string", description: "One DuckDB SELECT statement." } },
+          properties: { sql: { type: "string", description: `One DuckDB SELECT statement, with a LIMIT of at most ${ROWS}.` } },
           required: ["sql"],
           additionalProperties: false,
         }),
@@ -99,9 +103,12 @@ export function askAgent(schema: string, coordinator: Coordinator, catalog: Cata
         execute: async ({ sql }, { abortSignal }): Promise<QueryAnswer> => {
           try {
             // The coordinator takes no signal: a stopped chat drops the answer when it lands.
-            const result = await runSql(coordinator, sql, { limit: ROWS });
+            const answer = (await coordinator.query(sql, { type: "json" })) as Iterable<Row>;
             abortSignal?.throwIfAborted();
-            return { sql, ...result, rows: result.rows.map((row) => row.map(plain)) };
+            const rows = Array.from(answer, (row) =>
+              Object.fromEntries(Object.entries(row).map(([column, value]) => [column, plain(value)])),
+            );
+            return { sql, rows };
           } catch (err) {
             if (abortSignal?.aborted) throw err;
             return { sql, refused: toProblem(err, "query/failed") };
@@ -112,7 +119,7 @@ export function askAgent(schema: string, coordinator: Coordinator, catalog: Cata
           value:
             "refused" in output
               ? `The query failed: ${output.refused.detail}`
-              : `${output.rows.length}${output.truncated ? "+" : ""} rows. First rows: ${sample(output)}`,
+              : `${output.rows.length} rows. First rows: ${sample(output.rows)}`,
         }),
       }),
     },

@@ -22,8 +22,8 @@ import {
   useFilter,
 } from "@kanzo-tech/ui";
 import { useChartQuery } from "@kanzo-tech/ui/analytics";
+import { TableRefNode } from "@uwdata/mosaic-sql";
 import { distinctValuesQuery, isRuleComplete, OPERATOR_META, type Rule, type RuleOperator } from "./rule-engine";
-import { relation } from "@/lib/fossil/corpus";
 import { useCorpus } from "./corpus";
 import { columnsOf, type TableStats } from "./field-stats";
 
@@ -92,7 +92,7 @@ function ValueInput({ rule, onChange }: { rule: Omit<Rule, "id">; onChange: (upd
   const facets = useChartQuery({
     filterBy: null,
     deps: [typeName, fieldKey],
-    query: () => (typeName && fieldKey ? distinctValuesQuery(fieldKey, relation(jobId, typeName)) : null),
+    query: () => (typeName && fieldKey ? distinctValuesQuery(fieldKey, new TableRefNode([jobId, typeName])) : null),
   });
   const { contains } = useFilter({ sensitivity: "base" });
   const [query, setQuery] = useState("");

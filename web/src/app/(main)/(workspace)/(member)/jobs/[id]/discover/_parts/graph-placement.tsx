@@ -2,19 +2,16 @@
 
 import { createContext, use, useMemo, type Dispatch, type SetStateAction } from "react";
 import { createListCollection, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@kanzo-tech/ui";
-import type { Catalog } from "@/lib/fossil/corpus";
-import { useCorpus } from "./corpus";
+import type { Channels } from "@kanzo-tech/graph";
+import { useFieldStats } from "./corpus";
+import type { TableStats } from "./field-stats";
 
 /**
  * Where the graph draws a vertex, as the reader chose it: two numeric columns (`lon` and `lat` draw
  * a map) or neither, and the layout simulates on the GPU; `cluster`, a column the running layout
  * pulls points together by. A view choice, so it is the page's, not the corpus's.
  */
-export interface Placement {
-  x?: string;
-  y?: string;
-  cluster?: string;
-}
+export type Placement = Pick<Channels, "x" | "y" | "cluster">;
 
 export const PlacementContext = createContext<[Placement, Dispatch<SetStateAction<Placement>>] | null>(null);
 
@@ -29,13 +26,9 @@ export function channelsOf({ x, y, cluster }: Placement): Placement {
   return x && y ? { x, y, cluster } : { cluster };
 }
 
-const NUMERIC = /^(u?int\d*|float\d*|double|real|decimal|numeric|tinyint|smallint|integer|bigint|hugeint|utinyint|usmallint|uinteger|ubigint)/i;
-
-/** The program's columns over every vertex table, once each by name — fossil's own, with a `role`, left out. */
-function columnsOf(catalog: Catalog, numeric: boolean): string[] {
-  const names = catalog.vertex_tables.flatMap((t) =>
-    t.properties.filter((p) => p.role === undefined && (!numeric || NUMERIC.test(p.type))).map((p) => p.name),
-  );
+/** The program's fields over every vertex table, once each by name — fossil's own are not fields. */
+function fieldsOf(tables: readonly TableStats[], numeric: boolean): string[] {
+  const names = tables.flatMap((t) => t.fields.filter((f) => !numeric || f.kind === "numeric").map((f) => f.name));
   return [...new Set(names)].sort();
 }
 
@@ -73,10 +66,10 @@ function Pick({ label, columns, value, onChange }: { label: string; columns: str
 
 /** The Settings panel's placement: x and y over the numeric columns, cluster over any. */
 export function GraphPlacement() {
-  const { catalog } = useCorpus();
+  const tables = useFieldStats();
   const [placement, setPlacement] = usePlacement();
-  const numeric = useMemo(() => columnsOf(catalog, true), [catalog]);
-  const any = useMemo(() => columnsOf(catalog, false), [catalog]);
+  const numeric = useMemo(() => fieldsOf(tables, true), [tables]);
+  const any = useMemo(() => fieldsOf(tables, false), [tables]);
   const half = Boolean(placement.x) !== Boolean(placement.y);
   const set = (key: keyof Placement) => (value?: string) => setPlacement((p) => ({ ...p, [key]: value }));
   return (

@@ -3,14 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollArea, Skeleton, ToggleGroup, ToggleGroupItem } from "@kanzo-tech/ui";
 import { Dashboard, type DashboardSpec } from "@kanzo-tech/ui/analytics";
-import { verbatim } from "@uwdata/mosaic-sql";
+import { TableRefNode } from "@uwdata/mosaic-sql";
 import { $api, http } from "@/lib/api/client";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { Boundary } from "@/components/boundary";
-import { relation } from "@/lib/fossil/corpus";
-import { useCorpus } from "./corpus";
-import { bookkeeping } from "./field-stats";
+import { roleColumns, useCorpus, useRows, vertexTables } from "./corpus";
 
 /**
  * The Dashboard view: kanzo-ui's `Dashboard` over one vertex type at a time, on the crossfilter the
@@ -39,10 +37,10 @@ export default function DashboardView() {
 }
 
 function SavedDashboard() {
-  const { jobId, catalog } = useCorpus();
-  const types = catalog.vertex_tables;
-  const [type, setType] = useState(types[0]?.name ?? "");
-  const table = types.find((t) => t.name === type);
+  const { jobId } = useCorpus();
+  const types = useRows<{ table_name: string }>(vertexTables(jobId)).map((t) => t.table_name);
+  const kept = useRows<{ table_name: string; column_name: string }>(roleColumns(jobId));
+  const [type, setType] = useState(types[0] ?? "");
 
   const saved = settled($api.useSuspenseQuery("get", "/v1/jobs/{id}/dashboard", { params: { path: { id: jobId } } }));
   // What the server holds, with this session's edits over it.
@@ -67,9 +65,10 @@ function SavedDashboard() {
   };
   useEffect(() => () => void (pending.current && clearTimeout(pending.current)), []);
 
-  const exclude = useMemo(() => (table ? bookkeeping(table) : []), [table]);
+  // fossil's bookkeeping is not a field to chart.
+  const exclude = useMemo(() => kept.filter((c) => c.table_name === type).map((c) => c.column_name), [kept, type]);
 
-  if (!table) return <Skeleton className="h-full w-full" />;
+  if (!types.includes(type)) return <Skeleton className="h-full w-full" />;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -85,8 +84,8 @@ function SavedDashboard() {
           value={[type]}
         >
           {types.map((t) => (
-            <ToggleGroupItem key={t.name} value={t.name}>
-              {t.name}
+            <ToggleGroupItem key={t} value={t}>
+              {t}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
@@ -98,7 +97,7 @@ function SavedDashboard() {
           key={type}
           onChange={change}
           rowNoun={type}
-          table={verbatim(relation(jobId, type))}
+          table={new TableRefNode([jobId, type])}
           value={byType[type]}
         />
       </ScrollArea>

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { open } from "@fossil-lang/corpus";
 import { engine } from "@kanzo-tech/ui/analytics";
+import { TableRefNode } from "@uwdata/mosaic-sql";
 import { ApiError, http, type Schemas } from "@/lib/api/client";
 import { bounds } from "@/lib/api/spec";
-import { openJobCorpus, readCatalog } from "@/lib/fossil/corpus";
 import { host } from "@/lib/fossil/host";
 import { toastError, toProblem } from "@/lib/errors";
 
@@ -147,24 +148,25 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: (
         // a failed run would be a lie about durable data — so it is said, not
         // stored.
         try {
-          const close = await openJobCorpus(jobId);
+          const attachedTo = await engine();
+          const close = await open(jobId, { engine: attachedTo, host });
           try {
-            const { coordinator } = await engine();
-            const { vertex_tables, edge_tables } = await readCatalog(coordinator, jobId);
             // `fossil_tables` names each table's file relative to the corpus root, which is how
-            // keasy stores it.
-            const relation = (t: { name: string; record_count: number; path: string }) => ({
-              name: t.name,
-              rows: t.record_count,
-              files: [t.path],
-            });
-            const relations = [
-              ...vertex_tables.map((t) => ({
-                ...relation(t),
-                columns: t.properties.map((p) => ({ name: p.name, data_type: p.type })),
-              })),
-              ...edge_tables.map(relation),
-            ];
+            // keasy stores it; a vertex table's columns ride along, an edge table's do not.
+            const rows = (await attachedTo.coordinator.query(
+              `SELECT t.table_name, t.rows::DOUBLE AS rows, t.path, c.column_name, c.type
+                 FROM ${new TableRefNode([jobId, "fossil_tables"])} t
+                 LEFT JOIN ${new TableRefNode([jobId, "fossil_columns"])} c ON c.table_name = t.table_name AND t.kind = 'vertex'
+                ORDER BY t.kind DESC, t.table_name, c.ordinal`,
+              { type: "json" },
+            )) as Iterable<{ table_name: string; rows: number; path: string; column_name: string | null; type: string }>;
+            const byName = new Map<string, Schemas["OutputRelation"]>();
+            for (const r of rows) {
+              const relation = byName.get(r.table_name) ?? { name: r.table_name, rows: r.rows, files: [r.path] };
+              if (r.column_name !== null) (relation.columns ??= []).push({ name: r.column_name, data_type: r.type });
+              byName.set(r.table_name, relation);
+            }
+            const relations = [...byName.values()];
             await held.report(() =>
               http.PUT("/v1/jobs/{id}/relations", { params: { path: { id: jobId } }, body: { relations } }),
             );

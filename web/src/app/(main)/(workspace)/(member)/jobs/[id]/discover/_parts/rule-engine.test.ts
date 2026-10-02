@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { TableRefNode } from "@uwdata/mosaic-sql";
 import {
   ruleIdsQuery,
   ruleCountQuery,
@@ -7,8 +8,8 @@ import {
   type Rule,
 } from "./rule-engine";
 
-/** A relation as the corpus names it: catalog and all, quoted already. */
-const REL = '"jobs/7"."Person"';
+/** A relation as the corpus names it: catalog and all. */
+const REL = new TableRefNode(["jobs/7", "Person"]);
 
 describe("rule-engine", () => {
   describe("isRuleComplete", () => {
@@ -44,9 +45,9 @@ describe("rule-engine", () => {
   });
 
   describe("query builders produce valid SQL", () => {
-    it("ruleCountQuery reads the relation as the corpus names it, unquoted again", () => {
+    it("ruleCountQuery reads the relation as the corpus names it, each part quoted", () => {
       const rule: Rule = { id: "1", fieldKey: "name", operator: "not_null" };
-      expect(ruleCountQuery(rule, REL)!.toString()).toContain(`FROM ${REL}`);
+      expect(ruleCountQuery(rule, REL)!.toString()).toContain(`FROM "jobs/7"."Person"`);
     });
 
     it("distinctValuesQuery generates DISTINCT + ORDER BY + LIMIT", () => {

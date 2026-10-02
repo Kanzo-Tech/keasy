@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { createContext, use, useMemo, useState } from "react";
+import { createContext, use, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   BarChart3Icon,
@@ -21,7 +21,7 @@ import {
   useGraphPrefs,
   useGraphState,
 } from "@kanzo-tech/graph";
-import { useCrossfilter } from "@kanzo-tech/ui/analytics";
+import { useCrossfilter, useMosaic } from "@kanzo-tech/ui/analytics";
 import {
   Badge,
   Button,
@@ -166,13 +166,9 @@ function CorpusStatus() {
 }
 
 function Workspace() {
-  const { jobId, coordinator, catalog } = useCorpus();
+  const { jobId } = useCorpus();
+  const { coordinator } = useMosaic();
   const { look } = useGraphPrefs();
-  // Colour by type, ranked in `fossil_tables`' order so a type keeps its colour as rows arrive.
-  const categories = useMemo(
-    () => Object.fromEntries(catalog.vertex_tables.map((t) => [t.name, t.name])),
-    [catalog],
-  );
   const placement = useState<Placement>({});
   const crossfilter = useCrossfilter();
   const [active, setActive] = useState<PanelId>("info");
@@ -188,7 +184,6 @@ function Workspace() {
     <GraphFailure value={failure}>
     <PlacementContext value={placement}>
     <GraphRoot
-      categories={categories}
       coordinator={coordinator}
       filterBy={crossfilter}
       from={jobId}

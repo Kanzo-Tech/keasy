@@ -4,7 +4,7 @@ vi.mock("@/lib/api/client", async () => {
   const { ApiError } = await import("@keasy/api");
   return { ApiError, http: {} };
 });
-vi.mock("@/lib/fossil/corpus", () => ({}));
+vi.mock("@fossil-lang/corpus", () => ({}));
 vi.mock("@/lib/fossil/host", () => ({ host: {} }));
 vi.mock("@/lib/errors", () => ({ toastError: vi.fn(), toProblem: vi.fn() }));
 

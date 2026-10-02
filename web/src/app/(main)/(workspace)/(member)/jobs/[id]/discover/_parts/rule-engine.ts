@@ -13,8 +13,8 @@ import {
   neq,
   not,
   regexp_matches,
-  verbatim,
   type ExprNode,
+  type TableRefNode,
 } from "@uwdata/mosaic-sql";
 import { type Shown, toProblem } from "@/lib/errors";
 
@@ -77,14 +77,11 @@ export const OPERATOR_META: Record<RuleOperator, OperatorMeta> = {
 
 // ── Violation expression builder ─────────────────────────────────────────
 
-/**
- * The builders read FROM a relation as the corpus names it — `"jobs/7"."Person"`, catalog and all —
- * which mosaic-sql would quote again as one identifier, so it rides `verbatim`.
- */
-const from = (relation: string) => Query.from(verbatim(relation));
+/** The builders read FROM a relation as the corpus names it — `"jobs/7"."Person"`, catalog and all. */
+const from = (relation: TableRefNode) => Query.from(relation);
 
 /** Build a mosaic-sql expression that matches VIOLATING rows for a rule. */
-function violationExpr(rule: Rule, relation: string): ExprNode | null {
+function violationExpr(rule: Rule, relation: TableRefNode): ExprNode | null {
   const col = column(rule.fieldKey);
   const meta = OPERATOR_META[rule.operator];
 
@@ -128,21 +125,21 @@ function violationExpr(rule: Rule, relation: string): ExprNode | null {
 // ── Query builders (return mosaic-sql Query objects) ─────────────────────
 
 /** Query that returns the key of every vertex that breaks the rule — what the canvas selects. */
-export function ruleIdsQuery(rule: Rule, relation: string, key: string): Query | null {
+export function ruleIdsQuery(rule: Rule, relation: TableRefNode, key: string): Query | null {
   const expr = violationExpr(rule, relation);
   if (!expr) return null;
   return from(relation).select({ id: column(key) }).where(expr);
 }
 
 /** Query that returns the count of vertices that break the rule. */
-export function ruleCountQuery(rule: Rule, relation: string): Query | null {
+export function ruleCountQuery(rule: Rule, relation: TableRefNode): Query | null {
   const expr = violationExpr(rule, relation);
   if (!expr) return null;
   return from(relation).select({ cnt: count() }).where(expr);
 }
 
 /** Query for distinct values of a field (autocomplete). */
-export function distinctValuesQuery(field: string, relation: string, limit = 50): Query {
+export function distinctValuesQuery(field: string, relation: TableRefNode, limit = 50): Query {
   return from(relation)
     .select({ value: column(field) })
     .distinct()
@@ -165,7 +162,7 @@ type QueryFn = (query: Query) => Promise<Record<string, unknown>[]>;
 export async function runRules(
   rules: Rule[],
   execQuery: QueryFn,
-  relation: (typeName: string) => string,
+  relation: (typeName: string) => TableRefNode,
 ): Promise<RuleResult[]> {
   return Promise.all(
     rules.map(async (rule): Promise<RuleResult> => {

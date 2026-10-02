@@ -48,10 +48,10 @@ impl Gateway {
 
 /// How long the gateway may send nothing — before its answer begins, or between
 /// two chunks of it. Past it the call is `gateway/silent`, or the stream is cut.
-/// The route is left out of the server's request deadline: a local model that is
-/// still loading may take longer than that to begin, and this bound is the one
-/// that names who went quiet.
-pub const IDLE: Duration = Duration::from_secs(30);
+/// Under the browser's 30 s per chunk, so the gateway is named before the browser
+/// gives up and can only name the server. The route is left out of the server's
+/// request deadline, which this bound replaces for it.
+pub const IDLE: Duration = Duration::from_secs(25);
 
 /// `chunks`, ended with an error once `idle` passes without one.
 fn until_idle<S>(

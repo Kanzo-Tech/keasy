@@ -9,6 +9,9 @@ import {
   type Severity,
 } from "@fossil-lang/types";
 import type { AuthErrorCode } from "@kanzo-tech/auth";
+import type { GraphError } from "@kanzo-tech/graph";
+import type { AiError } from "@kanzo-tech/llm";
+import type { EngineError } from "@kanzo-tech/mosaic";
 import { toast } from "@kanzo-tech/ui";
 
 import { ApiError, type ErrorCode, type NoBodyCode } from "@/lib/api/client";
@@ -31,9 +34,9 @@ export interface Shown {
 
 /**
  * Failures the browser names itself, in the same `area/kind` grammar as fossil's and the server's: a
- * stopped turn, a query the engine refused, a model call that failed uncoded, and anything uncoded.
+ * query the engine refused, a model call that failed uncoded, and anything uncoded.
  */
-export type ClientCode = "ask/stopped" | "query/failed" | "llm/failed" | "web/unknown";
+export type ClientCode = "query/failed" | "llm/failed" | "web/unknown";
 
 /** A failure the browser raises itself, coded so it reaches the screen by the same path as the others. */
 export class ClientError extends Error {
@@ -72,16 +75,13 @@ function gib(bytes: number): string {
 
 const signIn = { label: "Sign in again", href: "/api/auth/signin" };
 
-/** kanzo-ui's own failures, in the same grammar: its graph, its engine, its assisted fields. */
-export type KanzoCode =
-  | "graph/no-webgl"
-  | "graph/context-lost"
-  | "graph/nothing-to-draw"
-  | "graph/untranslatable-filter"
-  | "engine/unavailable"
-  | "ai/silent";
+/**
+ * kanzo-ui's own failures, in the same grammar — its sign-in, its graph, its engine, its model
+ * calls — as each library's error class declares them, so a code it renames is a type error here.
+ */
+type KanzoCode = AuthErrorCode | GraphError["code"] | EngineError["code"] | AiError["code"];
 
-const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | AuthErrorCode | KanzoCode, Copy>> = {
+const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | KanzoCode, Copy>> = {
   "callback/state-mismatch": {
     title: "This sign-in could not be completed.",
     detail:
@@ -107,7 +107,6 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Auth
   "gateway/silent": { title: "The AI gateway did not answer in time." },
   "ai/silent": { title: "The model stopped answering." },
   "llm/failed": { title: "The model call failed. Please try again." },
-  "ask/stopped": { title: "Stopped." },
   "query/failed": {
     title: "Query execution failed. The AI may have generated invalid SQL. Try rephrasing your question.",
   },
@@ -117,7 +116,7 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Auth
   },
   "graph/context-lost": { title: "The graph's drawing context was lost. Reload to draw it again." },
   "graph/nothing-to-draw": { title: "Nothing in this output has a position to draw." },
-  "graph/untranslatable-filter": { title: "The graph cannot apply that filter." },
+  "graph/unfilterable": { title: "The graph cannot apply that filter." },
   "engine/unavailable": { title: "The in-browser engine would not start." },
   "storage/host-silent": { title: "keasy did not answer the data reader in time." },
   "module/unreachable": { title: "Part of the app could not be downloaded. Check the connection and retry." },

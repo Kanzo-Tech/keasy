@@ -11,9 +11,9 @@ vi.mock("@/lib/api/query-client", async () => {
   const { QueryClient } = await import("@tanstack/react-query");
   return { queryClient: new QueryClient() };
 });
-vi.mock("@/lib/fossil/corpus", () => ({
-  corpusKey: (jobId: string) => ["corpus", jobId] as const,
-  openJobCorpus: async () => {
+vi.mock("@/lib/fossil/host", () => ({ host: {} }));
+vi.mock("@fossil-lang/corpus", () => ({
+  open: async () => {
     throw notFound;
   },
 }));

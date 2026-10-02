@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
-import type { SqlCorpus } from "@fossil-lang/corpus";
+import { Query, useMosaic } from "@kanzo-tech/ui/analytics";
+import { TableRefNode, column, eq, literal } from "@uwdata/mosaic-sql";
 import {
   Clipboard,
   ClipboardTrigger,
@@ -17,33 +18,30 @@ import {
 } from "@kanzo-tech/ui";
 import { Chat, type ToolPart, useChat } from "@kanzo-tech/ai";
 import { DirectChatTransport } from "@kanzo-tech/llm";
-import { corpusKey } from "@/lib/fossil/corpus";
 import { toProblem } from "@/lib/errors";
 import { ProblemView } from "@/components/problem-view";
 import { settled } from "@/lib/api/settled";
 import { askAgent, type QueryAnswer, type QueryOutput } from "./ask-agent";
 import { describeDataSpace } from "./data-space";
-import { ONCE, useCorpus, useFieldStats } from "./corpus";
-import { graphKey } from "./field-stats";
+import { corpusKey, ONCE, useCorpus, useFieldStats, useGraphKey, useRows } from "./corpus";
 import { Finding } from "./finding";
 import { ResultTable } from "./result-table";
-import { generateSuggestions } from "./schema-suggestions";
+import { type Edge, generateSuggestions } from "./schema-suggestions";
 
 /**
  * The answer's vertices as something to press — the showcase's `Finding`, as the Rules panel offers —
  * when the answer carries the graph's key column.
  */
 function ShowOnGraph({ output }: { output: QueryOutput }) {
-  const at = output.columns.indexOf(graphKey(useCorpus().manifest));
-  if (at < 0) return null;
-  const ids = [...new Set(output.rows.map((row) => Number(row[at])).filter(Number.isFinite))];
+  const key = useGraphKey();
+  if (!output.rows[0] || !(key in output.rows[0])) return null;
+  const ids = [...new Set(output.rows.map((row) => Number(row[key])).filter(Number.isFinite))];
   return (
     <Finding disabled={ids.length === 0} label={output.sql} load={async () => ids} source="ask">
       <span className="flex items-baseline gap-2">
         <span className="flex-1 text-xs leading-relaxed">Show these on the graph</span>
         <span className="shrink-0 font-medium text-xs tabular-nums">
           {ids.length.toLocaleString()}
-          {output.truncated ? "+" : ""}
         </span>
       </span>
     </Finding>
@@ -76,7 +74,7 @@ function QueryResult({ part }: { part: ToolPart }) {
         <ToggleGroupItem value="query">SQL</ToggleGroupItem>
       </ToggleGroup>
       <Show when={view === "results"}>
-        <ResultTable pageSize={8} result={output} />
+        <ResultTable pageSize={8} rows={output.rows} />
       </Show>
       <Show when={view === "query"}>
         <div className="relative">
@@ -96,14 +94,16 @@ function QueryResult({ part }: { part: ToolPart }) {
 const TOOLS = { query: (part: ToolPart) => <QueryResult part={part} /> };
 
 /** The conversation, once there is a schema to reason over. One agent for the panel's life. */
-function AskChat({ schema, corpus, starters }: { schema: string; corpus: SqlCorpus; starters: string[] }) {
+function AskChat({ schema, starters }: { schema: string; starters: string[] }) {
+  const { coordinator } = useMosaic();
+  const key = useGraphKey();
   // What stopped an answer, as thrown: the AI SDK hands `useChat` a sentence, so the transport keeps
   // the value itself for the failure view.
   const [failure, setFailure] = useState<unknown>(undefined);
   const [transport] = useState(
     () =>
       new DirectChatTransport({
-        agent: askAgent(schema, corpus),
+        agent: askAgent(schema, coordinator, key),
         onError: (error) => {
           setFailure(error);
           return error instanceof Error ? error.message : String(error);
@@ -139,23 +139,29 @@ function AskChat({ schema, corpus, starters }: { schema: string; corpus: SqlCorp
 }
 
 export function AskPanel() {
-  const { jobId, coordinator, corpus, manifest } = useCorpus();
+  const { jobId } = useCorpus();
+  const { coordinator } = useMosaic();
   const tables = useFieldStats();
+  const edges = useRows<Edge>(
+    Query.from(new TableRefNode([jobId, "fossil_tables"]))
+      .select("source", "destination")
+      .where(eq(column("kind"), literal("edge"))),
+  );
 
   // The schema the assistant reasons over: DuckDB's own catalog, read back from
-  // the views the corpus mounted. Names, columns and TYPES are the ones a query
+  // the views the corpus attached. Names, columns and TYPES are the ones a query
   // will actually meet. Read before the panel opens; a failure throws to the
   // panel's boundary.
   const schema = settled(
     useSuspenseQuery({
       queryKey: [...corpusKey(jobId), "data-space"],
       queryFn: ({ signal }) =>
-        describeDataSpace((sql) => coordinator.query(sql, { type: "json", signal }), corpus, manifest),
+        describeDataSpace((sql) => coordinator.query(sql, { type: "json", signal }), jobId),
       ...ONCE,
     }),
   );
 
   // Derived from the schema the reader already has, so offering them costs nothing.
-  const starters = useMemo(() => generateSuggestions(tables, manifest), [tables, manifest]);
-  return <AskChat corpus={corpus} schema={schema} starters={starters} />;
+  const starters = useMemo(() => generateSuggestions(tables, edges), [tables, edges]);
+  return <AskChat schema={schema} starters={starters} />;
 }

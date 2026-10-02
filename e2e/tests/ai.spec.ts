@@ -73,11 +73,16 @@ test("15 a structured answer that does not parse fails the assistant's step, not
   await expectProblem(page, "llm/failed", { within: 20_000 });
 });
 
-test("16 SQL the engine refuses is engine/failed in the tool's frame", async ({ page, corpusJob }) => {
+test("16 SQL the engine refuses reaches the tool's frame as query/failed with the engine's words", async ({ page, corpusJob }) => {
   let calls = 0;
+  // What the model is handed back after the refusal: the engine's own words.
+  let readBack = "";
   await page.route(AI, (route) => {
     calls++;
-    if (calls > 1) return stream(route, sse(text("The query did not run."), text("", "stop")));
+    if (calls > 1) {
+      readBack = route.request().postData() ?? "";
+      return stream(route, sse(text("The query did not run."), text("", "stop")));
+    }
     const call = {
       id: "e2e",
       object: "chat.completion.chunk",
@@ -101,6 +106,7 @@ test("16 SQL the engine refuses is engine/failed in the tool's frame", async ({ 
   });
   await openPanel(page, corpusJob, "Ask");
   await ask(page, "How many people are there?");
-  // fossil's own code for a statement its engine refused: the corpus raised it.
-  await expectProblem(page, "engine/failed", { within: 20_000 });
+  // DuckDB's refusal, uncoded, is the tool's: its code is keasy's, its words the engine's.
+  await expectProblem(page, "query/failed", { within: 20_000 });
+  await expect.poll(() => readBack).toMatch(/syntax error/i);
 });

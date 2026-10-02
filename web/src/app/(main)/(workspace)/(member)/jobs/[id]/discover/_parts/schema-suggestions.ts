@@ -1,11 +1,16 @@
-import type { Manifest } from "@fossil-lang/corpus";
 import type { TableStats } from "./field-stats";
+
+/** An edge table's two ends, as `fossil_tables` names them. */
+export interface Edge {
+  source: string;
+  destination: string;
+}
 
 /**
  * Generate starter question suggestions programmatically from the corpus's tables.
  * Inspired by ThoughtSpot / Tableau Ask Data — instant, no LLM cost.
  */
-export function generateSuggestions(tables: TableStats[], manifest: Manifest): string[] {
+export function generateSuggestions(tables: readonly TableStats[], edges: readonly Edge[]): string[] {
   const suggestions: string[] = [];
 
   for (const t of tables) {
@@ -21,13 +26,11 @@ export function generateSuggestions(tables: TableStats[], manifest: Manifest): s
     if (measures.length > 0) {
       suggestions.push(`Show the distribution of ${measures[0].name}`);
     }
-    if (t.count > 0) {
-      suggestions.push(`How many ${t.name} entities are there?`);
-    }
+    suggestions.push(`How many ${t.name} entities are there?`);
   }
 
-  for (const e of manifest.edge_tables) {
-    suggestions.push(`How are ${e.source.references} connected to ${e.destination.references}?`);
+  for (const e of edges) {
+    suggestions.push(`How are ${e.source} connected to ${e.destination}?`);
   }
 
   return [...new Set(suggestions)].slice(0, 4);

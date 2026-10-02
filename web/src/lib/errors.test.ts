@@ -29,6 +29,12 @@ describe("a failure, shown", () => {
     expect(copyOf("run/over-budget")?.detail).not.toContain("GiB");
   });
 
+  it("names the missing file of a source from the locator it carries", () => {
+    expect(copyOf("source/not-found")).toMatchObject({ title: "The source names no file" });
+    expect(copyOf("source/not-found", { locator: "s3://lake/in/users.csv" })?.detail).toContain("s3://lake/in/users.csv");
+    expect(copyOf("source/not-found")?.detail).not.toContain("undefined");
+  });
+
   it("leaves a fossil code with no entry in fossil's own words", () => {
     expect(copyOf("corpus/unreadable")).toBeUndefined();
   });

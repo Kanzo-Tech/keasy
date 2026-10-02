@@ -702,6 +702,82 @@
         }
       }
     },
+    "/v1/connections/{name}/folders/{folder}": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Whether a job to run may take `folder` in the sink: no job but a draft\nholds it. It reveals only whether the folder is held, never whose job holds\nit.",
+        "operationId": "folder_availability",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "The sink connection's name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "folder",
+            "in": "path",
+            "description": "The folder under the sink",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/JobFolder"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Whether a job to run may write to the folder",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FolderAvailability"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The connection is not the sink (`job/invalid-destination`), or the folder is misspelled (`data.field`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Connection not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      }
+    },
     "/v1/connections/{name}/validate": {
       "post": {
         "tags": [
@@ -1983,6 +2059,93 @@
         }
       }
     },
+    "/v1/jobs/{id}/submit": {
+      "post": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "A draft becomes the job to run, in place: the edits, the folder check and\nthe promotion are one write, so a refusal leaves the draft as it was and a\nsuccess leaves no draft behind.",
+        "operationId": "submit_job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "The draft is now the job to run, under the same id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Job is not a draft (`job/not-draft`), or the name or folder is missing or misspelled (`data.field`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Another job writes to that folder already: `job/folder-taken`; the job stays a draft, unchanged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      }
+    },
     "/version": {
       "get": {
         "tags": [
@@ -2525,6 +2688,18 @@
           }
         }
       },
+      "FolderAvailability": {
+        "type": "object",
+        "description": "Whether a folder of the sink is free for a job to run.",
+        "required": [
+          "available"
+        ],
+        "properties": {
+          "available": {
+            "type": "boolean"
+          }
+        }
+      },
       "Job": {
         "type": "object",
         "required": [
@@ -2955,6 +3130,39 @@
             "type": "string",
             "format": "uri",
             "description": "The prefix the connection is: `s3://bucket/prefix/` or `az://container/prefix/`."
+          }
+        }
+      },
+      "SubmitJobRequest": {
+        "type": "object",
+        "description": "A draft's final edits as it becomes a job to run, spelled as on update.",
+        "properties": {
+          "folder": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JobFolder",
+                "description": "Needed unless the draft holds one already."
+              }
+            ]
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResourceName"
+              }
+            ]
+          },
+          "script": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },

@@ -184,6 +184,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/connections/{name}/folders/{folder}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether a job to run may take `folder` in the sink: no job but a draft
+         *     holds it. It reveals only whether the folder is held, never whose job holds
+         *     it.
+         */
+        get: operations["folder_availability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/connections/{name}/validate": {
         parameters: {
             query?: never;
@@ -387,6 +408,27 @@ export interface paths {
          */
         put: operations["publish_relations"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * A draft becomes the job to run, in place: the edits, the folder check and
+         *     the promotion are one write, so a refusal leaves the draft as it was and a
+         *     success leaves no draft behind.
+         */
+        post: operations["submit_job"];
         delete?: never;
         options?: never;
         head?: never;
@@ -606,6 +648,10 @@ export interface components {
             /** Format: int64 */
             size: number;
         };
+        /** @description Whether a folder of the sink is free for a job to run. */
+        FolderAvailability: {
+            available: boolean;
+        };
         Job: {
             completed_at?: string | null;
             created_at: string;
@@ -770,6 +816,12 @@ export interface components {
              * @description The prefix the connection is: `s3://bucket/prefix/` or `az://container/prefix/`.
              */
             url: string;
+        };
+        /** @description A draft's final edits as it becomes a job to run, spelled as on update. */
+        SubmitJobRequest: {
+            folder?: null | components["schemas"]["JobFolder"];
+            name?: null | components["schemas"]["ResourceName"];
+            script?: string | null;
         };
         /** @description One theme: the `data-theme` value it is selected by, and its display name. */
         ThemeChoice: {
@@ -1439,6 +1491,54 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+        };
+    };
+    folder_availability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The sink connection's name */
+                name: string;
+                /** @description The folder under the sink */
+                folder: components["schemas"]["JobFolder"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Whether a job to run may write to the folder */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FolderAvailability"];
+                };
+            };
+            /** @description The connection is not the sink (`job/invalid-destination`), or the folder is misspelled (`data.field`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Connection not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
         };
     };
     validate_connection: {
@@ -2325,6 +2425,65 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    submit_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitJobRequest"];
+            };
+        };
+        responses: {
+            /** @description The draft is now the job to run, under the same id */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            /** @description Job is not a draft (`job/not-draft`), or the name or folder is missing or misspelled (`data.field`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Another job writes to that folder already: `job/folder-taken`; the job stays a draft, unchanged */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

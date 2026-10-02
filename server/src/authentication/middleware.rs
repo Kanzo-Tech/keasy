@@ -50,7 +50,7 @@ pub async fn bearer_required(
 /// The workspace role a token's client-role claim carries, if it carries one.
 ///
 /// Disjoint, not hierarchical: `owner` does not contain `member`, it excludes
-/// it, so this reads the claim and does not rank it — and `web/src/lib/roles.ts`
+/// it, so this reads the claim and does not rank it — and `web/src/lib/auth/roles.ts`
 /// reads the same claim to the same three answers.
 ///
 /// Both roles at once is a provisioning error (`var.tenants` refuses an email

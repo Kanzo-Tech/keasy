@@ -13,7 +13,7 @@ import { can, type Session } from "@kanzo-tech/auth";
  * Holding *both* is also `null`: two disjoint planes at once is a provisioning
  * error (`var.tenants` refuses an email listed in `owners` and in `members`),
  * and guessing which one was meant is how a surface gets drawn that the resource
- * server will refuse. `server/src/middleware/bearer.rs` reads the same claim and
+ * server will refuse. `server/src/authentication/middleware.rs` reads the same claim and
  * reaches the same three answers — that is the agreement between the halves.
  *
  * They come from `resource_access.<clientId>.roles`, scoped to this workspace's

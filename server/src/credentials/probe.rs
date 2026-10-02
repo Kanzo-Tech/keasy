@@ -1,14 +1,17 @@
 //! Validation: prove a credential does what its connections need of it — LIST
-//! a source, WRITE and DELETE under the sink.
+//! a source, WRITE and DELETE under the sink. Every probe of one request runs
+//! at once, each within the store's deadline, so a store that hangs fails its
+//! check by name before the request's own deadline fires.
 
 use futures::StreamExt;
+use futures::future::join_all;
 use object_store::PutPayload;
 
 use crate::domain::{
     Check, ConnectionView, Direction, Operation, Outcome, StorageCredentialInput, StorageLocation,
     StorageTarget, ValidationReport,
 };
-use crate::storage_client;
+use crate::storage_client::{self, STORE_DEADLINE, bounded};
 
 fn check(operation: Operation, outcome: Result<Option<String>, String>) -> Check {
     match outcome {
@@ -48,15 +51,15 @@ fn through(name: &str, checks: Vec<Check>) -> Vec<Check> {
 
 /// LIST under `url`: the first page is proof enough.
 async fn list(credential: &StorageCredentialInput, url: &str) -> Check {
-    let listed = async {
+    let listed = bounded(STORE_DEADLINE, async {
         let url = StorageLocation::parse(url)?;
         let store = storage_client::store(credential, &url)?;
         match store.list(url.path()).next().await {
             Some(Err(e)) => Err(e.to_string()),
             _ => Ok(None),
         }
-    };
-    check(Operation::List, listed.await)
+    });
+    check(Operation::List, listed.await.map_err(|e| e.to_string()))
 }
 
 /// WRITE an object under the sink, then DELETE it: a listing would only prove
@@ -71,14 +74,21 @@ async fn write_delete(credential: &StorageCredentialInput, url: &str) -> Vec<Che
     let probe = url
         .path()
         .child(format!("keasy-validate-{}", uuid::Uuid::new_v4()));
-    if let Err(e) = store.put(&probe, PutPayload::new()).await {
-        return vec![check(Operation::Write, Err(e.to_string()))];
+    let probed = bounded(STORE_DEADLINE, async {
+        if let Err(e) = store.put(&probe, PutPayload::new()).await {
+            return Ok(Err(e.to_string()));
+        }
+        Ok(Ok(store.delete(&probe).await.map_err(|e| e.to_string())))
+    })
+    .await;
+    match probed {
+        Err(silent) => vec![check(Operation::Write, Err(silent.to_string()))],
+        Ok(Err(e)) => vec![check(Operation::Write, Err(e))],
+        Ok(Ok(deleted)) => vec![
+            check(Operation::Write, Ok(None)),
+            check(Operation::Delete, deleted.map(|()| None)),
+        ],
     }
-    let deleted = store.delete(&probe).await.map_err(|e| e.to_string());
-    vec![
-        check(Operation::Write, Ok(None)),
-        check(Operation::Delete, deleted.map(|()| None)),
-    ]
 }
 
 async fn storage(credential: &StorageCredentialInput, target: &StorageTarget) -> Vec<Check> {
@@ -101,20 +111,24 @@ pub async fn credential(
     url: Option<&str>,
     dependents: &[ConnectionView],
 ) -> (ValidationReport, Vec<String>) {
+    let (through_dependents, at_url) = futures::join!(
+        join_all(dependents.iter().map(|d| storage(spec, &d.target))),
+        async {
+            match url {
+                Some(url) => Some(list(spec, url).await),
+                None => None,
+            }
+        },
+    );
     let mut checks = Vec::new();
     let mut failing = Vec::new();
-    let mut add = |name: &str, found: Vec<Check>, checks: &mut Vec<Check>| {
+    for (d, found) in dependents.iter().zip(through_dependents) {
         if found.iter().any(|c| c.result == Outcome::Fail) {
-            failing.push(name.to_string());
+            failing.push(d.name.clone());
         }
-        checks.extend(through(name, found));
-    };
-    for d in dependents {
-        add(&d.name, storage(spec, &d.target).await, &mut checks);
+        checks.extend(through(&d.name, found));
     }
-    if let Some(url) = url {
-        checks.push(list(spec, url).await);
-    }
+    checks.extend(at_url);
     if checks.is_empty() {
         checks.push(Check {
             operation: Operation::List,

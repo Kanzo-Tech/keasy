@@ -668,6 +668,16 @@
           },
           "503": {
             "$ref": "#/components/responses/KeysUnavailable"
+          },
+          "504": {
+            "description": "The store did not answer in time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -2480,7 +2490,7 @@
             "type": "string"
           },
           "manifest": {
-            "description": "What the run reported, verbatim and **opaque**: fossil's own run report,\nwhich IS the manifest the corpus carries. keasy stores it, hands it back\nand never reads a field of it — the last time a host re-typed this\nstruct, it ended up asking for `vertex/<Type>.parquet`, a file the\nlayout pass deletes. Its presence is the one thing keasy asks of it:\n\"this job produced output\"."
+            "description": "What the run reported, verbatim and **opaque**: fossil's own run report\n(`RunReport`, `{dest, dropped}`) — not the manifest, which is the\ncorpus's own `fossil.json`. keasy stores it, hands it back and never\nreads a field of it — the last time a host re-typed this struct, it\nended up asking for `vertex/<Type>.parquet`, a file the layout pass\ndeletes. Its presence is the one thing keasy asks of it: \"this job\nproduced output\"."
           },
           "name": {
             "type": [
@@ -2496,7 +2506,7 @@
             "items": {
               "$ref": "#/components/schemas/OutputRelation"
             },
-            "description": "What the corpus holds and what it is called, as the corpus reader\nenumerated it (`@fossil-lang/corpus`). fossil names every relation and\nevery file; keasy joins them to the destination it owns and signs them\nfor reading."
+            "description": "What the corpus holds and what it is called, as the corpus reader\nenumerated it (`@fossil-lang/corpus`). fossil names every relation and\nevery file; keasy joins them to the destination it owns, which a\ncredential vended over the job's folder reads."
           },
           "script": {
             "type": [
@@ -2506,7 +2516,7 @@
           },
           "sink_connection": {
             "type": "string",
-            "description": "The sink connection the output lands in, under `{sink.url}/{folder}`,\nsigned with that connection's credential."
+            "description": "The sink connection the output lands in, under `{sink.url}/{folder}`,\nreached with a credential vended from that connection's."
           },
           "started_at": {
             "type": [
@@ -3145,5 +3155,9 @@
     {
       "bearer": []
     }
-  ]
+  ],
+  "x-keasy-bounds": {
+    "job_lease_ms": 60000,
+    "request_ms": 25000
+  }
 }

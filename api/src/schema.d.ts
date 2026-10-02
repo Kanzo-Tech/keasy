@@ -624,12 +624,13 @@ export interface components {
             heartbeat_at?: string | null;
             id: string;
             /**
-             * @description What the run reported, verbatim and **opaque**: fossil's own run report,
-             *     which IS the manifest the corpus carries. keasy stores it, hands it back
-             *     and never reads a field of it — the last time a host re-typed this
-             *     struct, it ended up asking for `vertex/<Type>.parquet`, a file the
-             *     layout pass deletes. Its presence is the one thing keasy asks of it:
-             *     "this job produced output".
+             * @description What the run reported, verbatim and **opaque**: fossil's own run report
+             *     (`RunReport`, `{dest, dropped}`) — not the manifest, which is the
+             *     corpus's own `fossil.json`. keasy stores it, hands it back and never
+             *     reads a field of it — the last time a host re-typed this struct, it
+             *     ended up asking for `vertex/<Type>.parquet`, a file the layout pass
+             *     deletes. Its presence is the one thing keasy asks of it: "this job
+             *     produced output".
              */
             manifest?: unknown;
             name?: string | null;
@@ -642,14 +643,14 @@ export interface components {
             /**
              * @description What the corpus holds and what it is called, as the corpus reader
              *     enumerated it (`@fossil-lang/corpus`). fossil names every relation and
-             *     every file; keasy joins them to the destination it owns and signs them
-             *     for reading.
+             *     every file; keasy joins them to the destination it owns, which a
+             *     credential vended over the job's folder reads.
              */
             relations?: components["schemas"]["OutputRelation"][];
             script?: string | null;
             /**
              * @description The sink connection the output lands in, under `{sink.url}/{folder}`,
-             *     signed with that connection's credential.
+             *     reached with a credential vended from that connection's.
              */
             sink_connection: string;
             started_at?: string | null;
@@ -1413,6 +1414,15 @@ export interface operations {
                 };
             };
             503: components["responses"]["KeysUnavailable"];
+            /** @description The store did not answer in time */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     validate_connection: {

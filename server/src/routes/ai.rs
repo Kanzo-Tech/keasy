@@ -53,12 +53,11 @@ impl Gateway {
 /// and can only say the model went silent. The route is left out of the server's
 /// request deadline, which this bound replaces for it.
 pub const IDLE: Duration = Duration::from_secs(25);
-/// The browser's bound on a model stream: `@kanzo-tech/llm`'s `createGateway` wants
-/// the response's headers within 30 s and each chunk within 30 s of the last, and
-/// names a miss `ai/silent`. keasy's own deadline leaves `/api/v1/ai/` to it.
-const BROWSER_IDLE: Duration = Duration::from_secs(30);
+// `@kanzo-tech/llm`'s `createGateway` wants the response's headers within the
+// browser's deadline and each chunk within it of the last, and names a miss
+// `ai/silent`. keasy's own deadline leaves these routes to it.
 const _: () = assert!(
-    IDLE.as_secs() < BROWSER_IDLE.as_secs(),
+    IDLE.as_millis() < crate::startup::BROWSER_DEADLINE.as_millis(),
     "the relay names the gateway before the browser gives up"
 );
 
@@ -259,6 +258,16 @@ pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new().routes(routes!(chat_completions))
 }
 
+/// The paths [`router`] serves, read from its routes: what the server's request
+/// deadline leaves to [`IDLE`].
+static PATHS: std::sync::LazyLock<Vec<String>> =
+    std::sync::LazyLock::new(|| router().into_openapi().paths.paths.into_keys().collect());
+
+/// Whether `path` is one this module relays.
+pub fn relays(path: &str) -> bool {
+    PATHS.iter().any(|p| p == path)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -272,6 +281,13 @@ mod tests {
     }
 
     const SHORT: Duration = Duration::from_millis(300);
+
+    #[test]
+    fn the_deadline_leaves_exactly_the_relayed_routes() {
+        assert!(relays("/v1/ai/chat/completions"));
+        assert!(!relays("/v1/ai"));
+        assert!(!relays("/v1/jobs"));
+    }
 
     #[tokio::test]
     async fn a_gateway_that_accepts_and_never_answers_is_gateway_silent() {

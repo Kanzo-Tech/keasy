@@ -216,6 +216,7 @@ pub async fn validate_connection(
         (status = 400, description = "Not a storage connection", body = ErrorBody),
         (status = 404, description = "No such connection", body = ErrorBody),
         (status = 502, description = "The store refused the listing", body = ErrorBody),
+        (status = 504, description = "The store did not answer in time", body = ErrorBody),
     )
 )]
 pub async fn list_connection_files(
@@ -228,7 +229,7 @@ pub async fn list_connection_files(
     storage_client::list_files(&credential, &url)
         .await
         .map(|files| Json(files.into_iter().map(FileEntry::from).collect::<Vec<_>>()))
-        .map_err(|e| Refusal::new(StatusCode::BAD_GATEWAY, ErrorCode::ListFilesFailed, e))
+        .map_err(|e| e.refusal(ErrorCode::ListFilesFailed))
 }
 
 #[utoipa::path(post, path = "/v1/connections/{name}/credentials", tag = "Connections",

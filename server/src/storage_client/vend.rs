@@ -19,6 +19,7 @@ use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 use sha2::Sha256;
 
+use super::StoreFailure;
 use crate::domain::{Access, StorageCredentialInput, StorageLocation, Store, VendedCredential};
 
 /// How long a vended credential lives: Unity Catalog's and Polaris's default.
@@ -54,49 +55,20 @@ pub const DEADLINES: Deadlines = Deadlines {
     request: Duration::from_secs(10),
 };
 
-/// Why a vend did not happen: the store said no, or it said nothing in time.
-#[derive(Debug)]
-pub enum VendError {
-    Refused(String),
-    /// `who` did not answer within `after`.
-    Silent {
-        who: &'static str,
-        after: Duration,
-    },
-}
-
-impl std::fmt::Display for VendError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Refused(message) => f.write_str(message),
-            Self::Silent { who, after } => {
-                write!(f, "{who} did not answer within {} s", after.as_secs_f64())
-            }
-        }
-    }
-}
-
-impl From<String> for VendError {
-    fn from(message: String) -> Self {
-        Self::Refused(message)
-    }
-}
-
-impl From<&str> for VendError {
-    fn from(message: &str) -> Self {
-        Self::Refused(message.to_string())
-    }
-}
+const _: () = assert!(
+    DEADLINES.request.saturating_mul(2).as_millis() < crate::startup::REQUEST_DEADLINE.as_millis(),
+    "a vend's two calls in a row end inside the server's request deadline"
+);
 
 /// A reqwest failure, as a refusal or as `who` going silent.
-fn reqwest_error(who: &'static str, deadlines: Deadlines, e: reqwest::Error) -> VendError {
+fn reqwest_error(who: &'static str, deadlines: Deadlines, e: reqwest::Error) -> StoreFailure {
     if e.is_timeout() {
-        VendError::Silent {
+        StoreFailure::Silent {
             who,
             after: deadlines.request,
         }
     } else {
-        VendError::Refused(format!("{who}: {e}"))
+        StoreFailure::Refused(format!("{who}: {e}"))
     }
 }
 
@@ -113,7 +85,7 @@ pub async fn vend(
     credential: &StorageCredentialInput,
     location: &StorageLocation,
     access: Access,
-) -> Result<VendedCredential, VendError> {
+) -> Result<VendedCredential, StoreFailure> {
     vend_within(credential, location, access, DEADLINES).await
 }
 
@@ -122,7 +94,7 @@ async fn vend_within(
     location: &StorageLocation,
     access: Access,
     deadlines: Deadlines,
-) -> Result<VendedCredential, VendError> {
+) -> Result<VendedCredential, StoreFailure> {
     match credential {
         StorageCredentialInput::S3 {
             access_key_id,
@@ -136,7 +108,7 @@ async fn vend_within(
                 (Some(role), _) => role.as_str(),
                 (None, Some(_)) => S3_COMPATIBLE_ROLE,
                 (None, None) => {
-                    return Err(VendError::Refused(
+                    return Err(StoreFailure::Refused(
                         "AWS scopes a credential to a prefix by assuming a role: \
                          the credential needs its role_arn"
                             .into(),
@@ -238,7 +210,7 @@ async fn assume_role(
     location: &StorageLocation,
     access: Access,
     deadlines: Deadlines,
-) -> Result<VendedCredential, VendError> {
+) -> Result<VendedCredential, StoreFailure> {
     let mut config = aws_sdk_sts::Config::builder()
         .behavior_version(BehaviorVersion::latest())
         // The whole operation, retries included: the SDK's default bounds
@@ -270,11 +242,11 @@ async fn assume_role(
         .send()
         .await
         .map_err(|e| match e {
-            SdkError::TimeoutError(_) => VendError::Silent {
+            SdkError::TimeoutError(_) => StoreFailure::Silent {
                 who: "STS",
                 after: deadlines.request,
             },
-            e => VendError::Refused(format!(
+            e => StoreFailure::Refused(format!(
                 "the store refused to vend a credential: {}",
                 aws_error(&e)
             )),
@@ -403,7 +375,7 @@ async fn entra_token(
     tenant_id: &str,
     client_id: &str,
     client_secret: &SecretString,
-) -> Result<SecretString, VendError> {
+) -> Result<SecretString, StoreFailure> {
     let silent = |e| reqwest_error("Entra", deadlines, e);
     let response = client
         .post(format!("{base}/{tenant_id}/oauth2/v2.0/token"))
@@ -417,7 +389,7 @@ async fn entra_token(
         .await
         .map_err(silent)?;
     if !response.status().is_success() {
-        return Err(VendError::Refused(format!(
+        return Err(StoreFailure::Refused(format!(
             "Entra refused the service principal ({})",
             response.status()
         )));
@@ -435,7 +407,7 @@ async fn user_delegation_key(
     token: &SecretString,
     start: DateTime<Utc>,
     expiry: DateTime<Utc>,
-) -> Result<UserDelegationKey, VendError> {
+) -> Result<UserDelegationKey, StoreFailure> {
     let silent = |e| reqwest_error("Azure Blob", deadlines, e);
     let body = format!(
         "<?xml version=\"1.0\" encoding=\"utf-8\"?><KeyInfo><Start>{}</Start><Expiry>{}</Expiry></KeyInfo>",
@@ -451,13 +423,13 @@ async fn user_delegation_key(
         .await
         .map_err(silent)?;
     if !response.status().is_success() {
-        return Err(VendError::Refused(format!(
+        return Err(StoreFailure::Refused(format!(
             "Azure refused a user delegation key ({})",
             response.status()
         )));
     }
     let text = response.text().await.map_err(silent)?;
-    quick_xml::de::from_str(&text).map_err(|e| VendError::Refused(e.to_string()))
+    quick_xml::de::from_str(&text).map_err(|e| StoreFailure::Refused(e.to_string()))
 }
 
 /// A user delegation SAS over the location's directory: the string-to-sign of
@@ -634,8 +606,8 @@ mod tests {
         request: Duration::from_millis(300),
     };
 
-    fn is_silent(e: &VendError, expected: &str) -> bool {
-        matches!(e, VendError::Silent { who, after } if *who == expected && *after == SHORT.request)
+    fn is_silent(e: &StoreFailure, expected: &str) -> bool {
+        matches!(e, StoreFailure::Silent { who, after } if *who == expected && *after == SHORT.request)
     }
 
     #[tokio::test]

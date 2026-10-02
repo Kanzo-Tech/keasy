@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { isFossilError } from "@fossil-lang/types";
 import type { Job } from "@fossil-lang/executor";
 import { ApiError, http, type Schemas } from "@/lib/api/client";
 import { openJobCorpus } from "@/lib/fossil/corpus";
@@ -10,23 +9,24 @@ import { toastError, toProblem } from "@/lib/errors";
  * A job as `runJob` takes it: every byte goes through keasy's one {@link host};
  * the run report crosses untouched, since `CompleteJobRequest.manifest` is
  * opaque JSON on the server. `runJob` reports both outcomes, `completed` and
- * `failed`, and retries a refused report itself; `reported` says whether it got
- * through, so the runner does not report a failure twice.
+ * `failed`, and retries a refused report itself; `reported` says which it tried
+ * and whether it got through, so the runner does not report a failure twice.
  */
-function makeJob(id: string, reported: { done: boolean }): Job {
+function makeJob(id: string, reported: Reported): Job {
   return {
     id,
     host,
     complete: async ({ status, manifest, problem }, { signal }) => {
+      reported.status = status;
       await http.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body: { status, manifest, problem }, signal });
       reported.done = true;
     },
   };
 }
 
-/** `runJob` threw this after writing: the output is at the sink, only the report did not land. */
-function unreported(err: unknown): boolean {
-  return isFossilError(err, "storage/host-refused") || isFossilError(err, "storage/host-silent");
+interface Reported {
+  status?: "completed" | "failed";
+  done: boolean;
 }
 
 /** How often a running job says it is still being run, and how long the server waits before it sweeps. */
@@ -119,7 +119,7 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: (
     const jobId = job.id;
     const held = lease(jobId);
     const run = new AbortController();
-    const reported = { done: false };
+    const reported: Reported = { done: false };
     // A closed tab stops the run; it cannot report, so the server's lease sweep ends the job.
     const closing = () => run.abort(new DOMException("The tab closed", "AbortError"));
     window.addEventListener("pagehide", closing);
@@ -189,7 +189,7 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: (
               .report(() => http.PATCH("/v1/jobs/{id}", { params: { path: { id: jobId } }, body: { status: "cancelled" } }))
               .catch((patchErr: unknown) => toastError(patchErr, "The run stopped, and the job could not be marked so"));
           }
-        } else if (unreported(err)) {
+        } else if (reported.status === "completed") {
           // The output was written; only its report failed, and reporting a failure would be a lie.
           toastError(err, "The run finished, but keasy could not record it");
         } else if (!reported.done) {

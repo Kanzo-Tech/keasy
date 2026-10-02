@@ -115,18 +115,60 @@ impl StoreFailure {
     }
 }
 
+/// Whether `e`, or anything it was caused by, is a request that timed out.
+/// object_store's own `HttpError` is never in the chain — its wrapper is
+/// transparent — so the client's error is what says so.
+fn timed_out(e: &(dyn std::error::Error + 'static)) -> bool {
+    let mut next = Some(e);
+    while let Some(e) = next {
+        if e.downcast_ref::<reqwest::Error>()
+            .is_some_and(reqwest::Error::is_timeout)
+        {
+            return true;
+        }
+        if let Some(io) = e.downcast_ref::<std::io::Error>()
+            && io.kind() == std::io::ErrorKind::TimedOut
+        {
+            return true;
+        }
+        next = e.source();
+    }
+    false
+}
+
+/// An object store failure: the store silent when its requests timed out,
+/// retries included, and a refusal in its own words otherwise.
+pub fn failure(e: object_store::Error) -> StoreFailure {
+    if timed_out(&e) {
+        StoreFailure::Silent {
+            who: "The store",
+            after: STORE_REQUEST,
+        }
+    } else {
+        StoreFailure::Refused(e.to_string())
+    }
+}
+
+/// A refusal's words, for a caller that reports a refusal and answers a
+/// silence whole.
+pub fn refused(e: object_store::Error) -> Result<String, StoreFailure> {
+    match failure(e) {
+        StoreFailure::Refused(message) => Ok(message),
+        silent => Err(silent),
+    }
+}
+
 /// `operation`, or the store named silent once `deadline` passes without it.
 pub async fn bounded<T>(
     deadline: Duration,
-    operation: impl Future<Output = Result<T, String>>,
+    operation: impl Future<Output = Result<T, StoreFailure>>,
 ) -> Result<T, StoreFailure> {
-    match tokio::time::timeout(deadline, operation).await {
-        Ok(done) => done.map_err(StoreFailure::Refused),
-        Err(_) => Err(StoreFailure::Silent {
+    tokio::time::timeout(deadline, operation)
+        .await
+        .unwrap_or(Err(StoreFailure::Silent {
             who: "The store",
             after: deadline,
-        }),
-    }
+        }))
 }
 
 /// An object store client that keeps its provider, so it can sign.
@@ -239,7 +281,7 @@ pub async fn list_files(
         let mut entries = Vec::new();
         let mut listing = store.list(location.path());
         while let Some(meta) = listing.next().await {
-            entries.push(meta.map_err(|e| format!("listing failed: {e}"))?);
+            entries.push(meta.map_err(failure)?);
         }
         Ok(entries)
     })
@@ -265,9 +307,9 @@ mod tests {
     #[tokio::test]
     async fn an_operation_past_its_deadline_names_the_store_silent() {
         let after = Duration::from_millis(50);
-        let hung = bounded(after, std::future::pending::<Result<(), String>>()).await;
+        let hung = bounded(after, std::future::pending::<Result<(), StoreFailure>>()).await;
         assert!(matches!(hung, Err(StoreFailure::Silent { after: a, .. }) if a == after));
-        let refused = bounded(after, async { Err::<(), _>("no".to_string()) }).await;
+        let refused = bounded(after, async { Err::<(), _>(StoreFailure::from("no")) }).await;
         assert!(matches!(refused, Err(StoreFailure::Refused(m)) if m == "no"));
     }
 

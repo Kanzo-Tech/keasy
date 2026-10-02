@@ -82,7 +82,9 @@ pub async fn save(
     )?;
     let credential = fits(credential, &mut connection)?;
     disjoint(db, &connection, name).await?;
-    let report = crate::credentials::probe::connection(&credential.spec, &connection.target).await;
+    let report = crate::credentials::probe::connection(&credential.spec, &connection.target)
+        .await
+        .map_err(|e| e.refusal(ErrorCode::ProbeFailed))?;
     if !report.passed() {
         return Err(Refusal::probe_failed(report.failures(), Vec::new()));
     }

@@ -1,7 +1,7 @@
 //! Validation: prove a credential does what its connections need of it — LIST
 //! a source, WRITE and DELETE under the sink. Every probe of one request runs
-//! at once, each within the store's deadline, so a store that hangs fails its
-//! check by name before the request's own deadline fires.
+//! at once, each within the store's deadline, so a store that hangs answers
+//! the request as `store/silent` before the request's own deadline fires.
 
 use futures::StreamExt;
 use futures::future::join_all;
@@ -11,7 +11,7 @@ use crate::domain::{
     Check, ConnectionView, Direction, Operation, Outcome, StorageCredentialInput, StorageLocation,
     StorageTarget, ValidationReport,
 };
-use crate::storage_client::{self, STORE_DEADLINE, bounded};
+use crate::storage_client::{self, STORE_DEADLINE, StoreFailure, bounded, refused};
 
 fn check(operation: Operation, outcome: Result<Option<String>, String>) -> Check {
     match outcome {
@@ -49,68 +49,90 @@ fn through(name: &str, checks: Vec<Check>) -> Vec<Check> {
         .collect()
 }
 
+/// The store `url` names, opened with `credential`, or why it could not be.
+fn open(
+    credential: &StorageCredentialInput,
+    url: &str,
+) -> Result<(storage_client::CloudStore, StorageLocation), String> {
+    let url = StorageLocation::parse(url)?;
+    Ok((storage_client::store(credential, &url)?, url))
+}
+
 /// LIST under `url`: the first page is proof enough.
-async fn list(credential: &StorageCredentialInput, url: &str) -> Check {
+async fn list(credential: &StorageCredentialInput, url: &str) -> Result<Check, StoreFailure> {
+    let (store, url) = match open(credential, url) {
+        Ok(opened) => opened,
+        Err(e) => return Ok(check(Operation::List, Err(e))),
+    };
     let listed = bounded(STORE_DEADLINE, async {
-        let url = StorageLocation::parse(url)?;
-        let store = storage_client::store(credential, &url)?;
         match store.list(url.path()).next().await {
-            Some(Err(e)) => Err(e.to_string()),
-            _ => Ok(None),
+            Some(Err(e)) => Ok(Err(refused(e)?)),
+            _ => Ok(Ok(None)),
         }
-    });
-    check(Operation::List, listed.await.map_err(|e| e.to_string()))
+    })
+    .await?;
+    Ok(check(Operation::List, listed))
 }
 
 /// WRITE an object under the sink, then DELETE it: a listing would only prove
 /// the credential can read.
-async fn write_delete(credential: &StorageCredentialInput, url: &str) -> Vec<Check> {
-    let (store, url) = match StorageLocation::parse(url)
-        .and_then(|url| Ok((storage_client::store(credential, &url)?, url)))
-    {
+async fn write_delete(
+    credential: &StorageCredentialInput,
+    url: &str,
+) -> Result<Vec<Check>, StoreFailure> {
+    let (store, url) = match open(credential, url) {
         Ok(opened) => opened,
-        Err(e) => return vec![check(Operation::Write, Err(e))],
+        Err(e) => return Ok(vec![check(Operation::Write, Err(e))]),
     };
     let probe = url
         .path()
         .child(format!("keasy-validate-{}", uuid::Uuid::new_v4()));
     let probed = bounded(STORE_DEADLINE, async {
         if let Err(e) = store.put(&probe, PutPayload::new()).await {
-            return Ok(Err(e.to_string()));
+            return Ok(Err(refused(e)?));
         }
-        Ok(Ok(store.delete(&probe).await.map_err(|e| e.to_string())))
+        Ok(Ok(match store.delete(&probe).await {
+            Ok(()) => None,
+            Err(e) => Some(refused(e)?),
+        }))
     })
-    .await;
-    match probed {
-        Err(silent) => vec![check(Operation::Write, Err(silent.to_string()))],
-        Ok(Err(e)) => vec![check(Operation::Write, Err(e))],
-        Ok(Ok(deleted)) => vec![
+    .await?;
+    Ok(match probed {
+        Err(e) => vec![check(Operation::Write, Err(e))],
+        Ok(deleted) => vec![
             check(Operation::Write, Ok(None)),
-            check(Operation::Delete, deleted.map(|()| None)),
+            check(Operation::Delete, deleted.map_or(Ok(None), Err)),
         ],
-    }
+    })
 }
 
-async fn storage(credential: &StorageCredentialInput, target: &StorageTarget) -> Vec<Check> {
+async fn storage(
+    credential: &StorageCredentialInput,
+    target: &StorageTarget,
+) -> Result<Vec<Check>, StoreFailure> {
     match target.direction {
-        Direction::Source => vec![list(credential, &target.url).await],
+        Direction::Source => Ok(vec![list(credential, &target.url).await?]),
         Direction::Sink => write_delete(credential, &target.url).await,
     }
 }
 
-/// What `target` needs of `spec`, probed.
-pub async fn connection(spec: &StorageCredentialInput, target: &StorageTarget) -> ValidationReport {
-    report(storage(spec, target).await)
+/// What `target` needs of `spec`, probed; a store that does not answer is
+/// the whole answer, not a failed check.
+pub async fn connection(
+    spec: &StorageCredentialInput,
+    target: &StorageTarget,
+) -> Result<ValidationReport, StoreFailure> {
+    Ok(report(storage(spec, target).await?))
 }
 
 /// A credential, probed through every connection that uses it and at `url`
 /// when given, and the dependents that failed. A credential with nothing to
-/// reach says so.
+/// reach says so; a store that does not answer is the whole answer.
 pub async fn credential(
     spec: &StorageCredentialInput,
     url: Option<&str>,
     dependents: &[ConnectionView],
-) -> (ValidationReport, Vec<String>) {
+) -> Result<(ValidationReport, Vec<String>), StoreFailure> {
     let (through_dependents, at_url) = futures::join!(
         join_all(dependents.iter().map(|d| storage(spec, &d.target))),
         async {
@@ -120,6 +142,10 @@ pub async fn credential(
             }
         },
     );
+    let through_dependents = through_dependents
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?;
+    let at_url = at_url.transpose()?;
     let mut checks = Vec::new();
     let mut failing = Vec::new();
     for (d, found) in dependents.iter().zip(through_dependents) {
@@ -136,5 +162,5 @@ pub async fn credential(
             message: Some("no connection uses it and no URL was given to list".into()),
         });
     }
-    (report(checks), failing)
+    Ok((report(checks), failing))
 }

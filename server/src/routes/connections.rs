@@ -98,6 +98,7 @@ pub async fn list_connections(
         (status = 403, description = "A sink by a member, or a source or model by the owner", body = ErrorBody),
         (status = 409, description = "A connection of that name, or a second sink", body = ErrorBody),
         (status = 422, description = "The connection did not validate", body = ErrorBody),
+        (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
 pub async fn create_connection(
@@ -140,6 +141,7 @@ pub async fn get_connection(
         (status = 403, description = "Not the caller's to change", body = ErrorBody),
         (status = 404, description = "No such connection", body = ErrorBody),
         (status = 422, description = "The connection did not validate", body = ErrorBody),
+        (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
 pub async fn update_connection(
@@ -194,6 +196,7 @@ pub async fn delete_connection(
     responses(
         (status = 200, description = "The probe's report, stored with the connection", body = ValidationReport),
         (status = 404, description = "No such connection", body = ErrorBody),
+        (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
 /// LIST a source, WRITE and DELETE under the sink, list a model's provider.
@@ -204,7 +207,9 @@ pub async fn validate_connection(
 ) -> Result<impl IntoResponse, Refusal> {
     let connection = named(&state.db, &name).await?;
     let credential = crate::credentials::named(&state.db, &connection.credential).await?;
-    let report = crate::credentials::probe::connection(&credential.spec, &connection.target).await;
+    let report = crate::credentials::probe::connection(&credential.spec, &connection.target)
+        .await
+        .map_err(|e| e.refusal(ErrorCode::ProbeFailed))?;
     persistence::set_validation(&*state.db.write().await, &name, &report)?;
     Ok(Json(report))
 }

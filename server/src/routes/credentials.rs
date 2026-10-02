@@ -73,6 +73,7 @@ pub async fn list_credentials(
         (status = 400, description = "An invalid name", body = ErrorBody),
         (status = 409, description = "A credential of that name exists", body = ErrorBody),
         (status = 422, description = "The credential did not validate", body = ErrorBody),
+        (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
 pub async fn create_credential(
@@ -116,6 +117,7 @@ pub async fn get_credential(
         (status = 403, description = "Neither its creator nor the owner", body = ErrorBody),
         (status = 404, description = "No such credential", body = ErrorBody),
         (status = 422, description = "A connection using it would not validate with the new spec; `dependents` names them", body = ErrorBody),
+        (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
 /// Rotation replaces the whole spec, and is committed only if every connection
@@ -135,7 +137,9 @@ pub async fn update_credential(
     let (spec, report) = match request.spec {
         Some(spec) => {
             let dependents = connections::using(&*db.read().await, &name)?;
-            let (report, failing) = probe::credential(&spec, None, &dependents).await;
+            let (report, failing) = probe::credential(&spec, None, &dependents)
+                .await
+                .map_err(|e| e.refusal(ErrorCode::ProbeFailed))?;
             if !report.passed() {
                 return Err(Refusal::probe_failed(
                     format!("the new spec was not stored: {}", report.failures()),
@@ -189,6 +193,7 @@ pub async fn delete_credential(
     responses(
         (status = 200, description = "The probe's report, stored with the credential", body = ValidationReport),
         (status = 404, description = "No such credential", body = ErrorBody),
+        (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
 /// Probe the credential through every connection that uses it, and at `url`.
@@ -201,8 +206,9 @@ pub async fn validate_credential(
     let db = &state.db;
     let credential = named(db, &name).await?;
     let dependents = connections::using(&*db.read().await, &name)?;
-    let (report, _) =
-        probe::credential(&credential.spec, request.url.as_deref(), &dependents).await;
+    let (report, _) = probe::credential(&credential.spec, request.url.as_deref(), &dependents)
+        .await
+        .map_err(|e| e.refusal(ErrorCode::ProbeFailed))?;
     persistence::set_validation(&*db.write().await, &name, &report)?;
     Ok(Json(report))
 }

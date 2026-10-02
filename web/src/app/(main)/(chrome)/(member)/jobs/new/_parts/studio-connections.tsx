@@ -22,6 +22,9 @@ import type { StorageConnection } from "@/lib/connections";
 const KIND_ICON = { data: Database, vocab: BookMarked } as const;
 const KIND_LABEL = { data: "data source", vocab: "RDF vocabulary" } as const;
 
+/** What a connection is to a program: a sink is where output goes, whatever its kind. */
+const roleOf = (c: StorageConnection) => (c.direction === "sink" ? "output" : KIND_LABEL[c.kind]);
+
 const reference = (c: StorageConnection) => (c.kind === "vocab" ? `@${c.name}` : `@${c.name}/`);
 
 /** The connections a program can reference: drag one into it, or click to write it at the caret. */
@@ -90,7 +93,7 @@ export function StudioConnections({
                       </Show>
                     </ItemTitle>
                     <ItemDescription className="line-clamp-1 text-xs">{c.url}</ItemDescription>
-                    <span className="text-faint text-xs">{KIND_LABEL[c.kind]}</span>
+                    <span className="text-faint text-xs">{roleOf(c)}</span>
                   </ItemContent>
                   <ItemActions>
                     <Badge size="xs" variant="outline">

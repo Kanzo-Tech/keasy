@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Session } from "@kanzo-tech/auth";
-import { workspaceRole } from "./roles";
+import { schemaOf } from "@/lib/api/spec";
+import { ROLE_LABEL, workspaceRole } from "./roles";
 
 /** A session holding exactly these client roles, and nothing else that matters here. */
 function session(...roles: string[]): Session {
@@ -36,5 +37,11 @@ describe("workspaceRole", () => {
   it("is null when both roles are held at once", () => {
     expect(workspaceRole(session("owner", "member"))).toBeNull();
     expect(workspaceRole(session("member", "owner"))).toBeNull();
+  });
+});
+
+describe("ROLE_LABEL", () => {
+  it("labels exactly the roles the contract publishes", () => {
+    expect(Object.keys(ROLE_LABEL).sort()).toEqual([...(schemaOf("Role").enum ?? [])].sort());
   });
 });

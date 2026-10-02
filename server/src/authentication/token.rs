@@ -92,7 +92,6 @@ impl Claims {
         self.email.as_deref().filter(|_| self.email_verified)
     }
 
-
     /// The roles this person holds **in this application**, and nowhere else. A
     /// role granted on another client authorizes nothing here.
     pub fn roles_for(&self, client_id: &str) -> &[String] {

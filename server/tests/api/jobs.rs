@@ -281,7 +281,9 @@ async fn a_declared_job_goes_to_the_member_the_realm_vouches_for() {
     };
     let app = &app;
     let list = |token: String| async move {
-        app.send(Method::GET, "/v1/jobs", &token, json!(null)).await.1
+        app.send(Method::GET, "/v1/jobs", &token, json!(null))
+            .await
+            .1
     };
 
     assert_eq!(
@@ -294,13 +296,23 @@ async fn a_declared_job_goes_to_the_member_the_realm_vouches_for() {
     let listed = listed.as_array().unwrap();
     assert_eq!(listed.len(), 1, "declared once across two boots");
     assert_eq!(listed[0]["name"], "Seeded");
-    assert_eq!(listed[0]["status"], "draft", "a draft: nothing sweeps it before anyone opens it");
+    assert_eq!(
+        listed[0]["status"], "draft",
+        "a draft: nothing sweeps it before anyone opens it"
+    );
     assert_eq!(listed[0]["folder"], "seeded");
     assert_eq!(listed[0]["script"], "program");
     assert_eq!(listed[0]["created_by"], "u-1");
 
     boot().await;
     let listed = list(token("u-1", "dev@keasy.local", true)).await;
-    assert_eq!(listed.as_array().unwrap().len(), 1, "a claimed job is not declared again");
-    assert_eq!(list(token("u-2", "other@keasy.local", true)).await, json!([]));
+    assert_eq!(
+        listed.as_array().unwrap().len(),
+        1,
+        "a claimed job is not declared again"
+    );
+    assert_eq!(
+        list(token("u-2", "other@keasy.local", true)).await,
+        json!([])
+    );
 }

@@ -144,11 +144,15 @@ async fn ensure_job(db: &Database, dir: &Path, declared: DeclaredJob) -> Result<
     {
         return Ok(false);
     }
-    let is_sink = crate::connections::persistence::get(&*db.read().await, &declared.sink_connection)
-        .map_err(|e| e.to_string())?
-        .is_some_and(|c| c.target.is_sink());
+    let is_sink =
+        crate::connections::persistence::get(&*db.read().await, &declared.sink_connection)
+            .map_err(|e| e.to_string())?
+            .is_some_and(|c| c.target.is_sink());
     if !is_sink {
-        return Err(format!("`{}` is not a sink connection", declared.sink_connection));
+        return Err(format!(
+            "`{}` is not a sink connection",
+            declared.sink_connection
+        ));
     }
     let folder = JobFolder::parse(&declared.folder)?;
     let script_path = dir.join(&declared.script_file);

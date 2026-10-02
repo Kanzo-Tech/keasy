@@ -38,7 +38,7 @@ jobs:
       # The issuer and the store are addressed as *.localhost from both sides; Chromium resolves
       # them to loopback itself, this makes curl and Node agree.
       - name: Resolve the dev hostnames
-        run: echo "127.0.0.1 keycloak.localhost minio.localhost" | sudo tee -a /etc/hosts
+        run: echo "127.0.0.1 keycloak.localhost s3.localhost" | sudo tee -a /etc/hosts
 
       - name: Bring up the stack
         run: docker compose up -d --build --wait --wait-timeout 3600 web

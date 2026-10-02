@@ -1,30 +1,30 @@
 {
   "credentials": [
     {
-      "name": "MinIO dev",
+      "name": "Dev S3",
       "spec": {
         "kind": "s3",
-        "access_key_id": "minioadmin",
-        "secret_access_key": "minioadmin",
+        "access_key_id": "keasy-admin",
+        "secret_access_key": "keasy-admin-secret",
         "region": "us-east-1",
-        "endpoint": "http://minio.localhost:9000"
+        "endpoint": "http://s3.localhost:9000"
       }
     }
   ],
   "connections": [
     {
       "name": "LDBC SNB",
-      "credential": "MinIO dev",
+      "credential": "Dev S3",
       "target": { "url": "s3://keasy-dev/ldbc/", "kind": "data", "direction": "source" }
     },
     {
-      "name": "MinIO dev shapes",
-      "credential": "MinIO dev",
+      "name": "Dev shapes",
+      "credential": "Dev S3",
       "target": { "url": "s3://keasy-dev/vocab/", "kind": "vocab", "direction": "source" }
     },
     {
       "name": "Workspace output",
-      "credential": "MinIO dev",
+      "credential": "Dev S3",
       "target": { "url": "s3://keasy-dev/output/", "kind": "data", "direction": "sink" }
     }
   ],

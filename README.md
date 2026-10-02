@@ -41,13 +41,14 @@ Both are declared in `infra/terraform/realm/dev.tfvars` (`tenants`,
 
 ## Dev data
 
-`make dev` also brings up MinIO, dev-only:
+`make dev` also brings up an S3 store, dev-only: [SeaweedFS](https://github.com/seaweedfs/seaweedfs),
+configured by `infra/dev/seaweedfs/` (its keys in `s3.json`, and in `iam.json` the role
+the server assumes to vend a credential scoped to one prefix). It has no console.
 
 | What | Where |
 |------|-------|
-| S3 API | `http://minio.localhost:9000` (and `http://localhost:9000`) |
-| Console | [http://localhost:9001](http://localhost:9001) |
-| Credentials | `minioadmin` / `minioadmin` |
+| S3 API (and STS) | `http://s3.localhost:9000` (and `http://localhost:9000`) |
+| Credentials | `keasy-admin` / `keasy-admin-secret` |
 | Bucket | `keasy-dev`, seeded from `infra/dev/seed/` on every `up` |
 
 The dev graph is the [LDBC Social Network Benchmark](https://ldbcouncil.org/benchmarks/snb/)
@@ -59,14 +60,14 @@ not in git; fetch it once, before `make dev`:
 make seed   # downloads, checks the SHA-256, unpacks into infra/dev/seed/ldbc/
 ```
 
-Without it the bucket holds the shapes alone and `minio-init` says to run `make seed`.
-The end-to-end suite does not need it: `minio-init` also mirrors the suite's own
+Without it the bucket holds the shapes alone and `s3-init` says to run `make seed`.
+The end-to-end suite does not need it: `s3-init` also mirrors the suite's own
 fixtures (`e2e/fixtures/`, a small shop: people, orders and `shop.shex`) to `e2e/`,
 and the suite declares its connections over them (**E2E source**, **E2E shapes**) as
 it signs in.
 
 At boot the instance declares, over that bucket, the **LDBC SNB** source connection
-(`ldbc/`), the **MinIO dev shapes** vocabulary connection (`vocab/`, holding
+(`ldbc/`), the **Dev shapes** vocabulary connection (`vocab/`, holding
 `snb.shex`) and the sink (`output/`). Access is proved before each connection row is
 written, and an existing sink is never overwritten. It also declares the job **LDBC
 SNB SF0.1** for `dev@keasy.local`, running `infra/dev/snb.fossil` into
@@ -74,9 +75,9 @@ SNB SF0.1** for `dev@keasy.local`, running `infra/dev/snb.fossil` into
 member's job list on first sign-in as a draft: open it in the studio and create it to
 run it in the browser.
 
-`minio.localhost` and `keycloak.localhost` are load-bearing: Docker's DNS answers
-them inside the compose network and `*.localhost` is loopback on the host, so a
-URL the server presigns, and the issuer a token names, work from both sides.
+`s3.localhost` and `keycloak.localhost` are load-bearing: Docker's DNS answers
+them inside the compose network and `*.localhost` is loopback on the host, so the
+endpoint a vended credential names, and the issuer a token names, work from both sides.
 
 ## Architecture
 
@@ -171,7 +172,7 @@ make api   # UPDATE_EXPECT=1 cargo test --test api openapi, then pnpm generate
 ```
 api/                @keasy/api: the committed spec, its generated types and the client
 e2e/                @keasy/e2e: one Playwright test per failure scenario, its fixtures, and the `faults` profile's servers
-infra/dev/          MinIO seed and an example program, dev-only
+infra/dev/          the S3 store's config and seed, and an example program, dev-only
 infra/terraform/    platform/ and realm/ — the Swarm deployment, and dev's realm
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)
   src/main.rs       subcommands: none serves, `rekey` reseals the credentials

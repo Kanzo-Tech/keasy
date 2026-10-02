@@ -29,7 +29,9 @@ pub const VENDED_FOR: Duration = Duration::from_secs(3600);
 /// the same margin.
 const CLOCK_SKEW: Duration = Duration::from_secs(300);
 
-/// S3-compatible stores (MinIO, Ceph) ignore the role but the call names one.
+/// The role an S3-compatible endpoint is asked for when the credential names
+/// none. The dev store (`infra/dev/seaweedfs/iam.json`) declares exactly this
+/// one; a store that validates roles needs the credential's `role_arn`.
 const S3_COMPATIBLE_ROLE: &str = "arn:aws:iam::000000000000:role/keasy-vended";
 
 const AZURE_VERSION: &str = "2022-11-02";

@@ -8,22 +8,22 @@ import { signIn } from "../support/sign-in";
 test("03 a store that accepts and never answers ends the run as store/silent", async ({ page }) => {
   test.setTimeout(300_000);
   const id = await createJob(page, { name: "e2e silent store" });
-  stop("minio");
-  up("minio-silent");
+  stop("s3");
+  up("s3-silent");
   try {
     await page.goto(`/jobs/${id}`);
     // STS is given 10 s; the run reports the failure it got.
     await expectProblem(page, "store/silent", { within: 40_000 });
   } finally {
-    stop("minio-silent");
-    up("minio");
+    stop("s3-silent");
+    up("s3");
   }
 });
 
 test("04 a store that refuses to vend ends the run as store/refused", async ({ page }) => {
   test.setTimeout(300_000);
   const id = await createJob(page, { name: "e2e refused store" });
-  await without(["minio"], async () => {
+  await without(["s3"], async () => {
     await page.goto(`/jobs/${id}`);
     await expectProblem(page, "store/refused", { within: 30_000 });
   });
@@ -62,7 +62,7 @@ test("07 with Valkey down a page fails in seconds as session/unavailable", async
 
 test("21 a file listing that fails is store/list-failed, not an empty folder", async ({ page }) => {
   test.setTimeout(300_000);
-  await without(["minio"], async () => {
+  await without(["s3"], async () => {
     await page.goto(`/connections/${encodeURIComponent(SOURCE)}`);
     await expectProblem(page, "store/list-failed", { within: 30_000 });
   });

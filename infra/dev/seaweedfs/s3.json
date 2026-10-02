@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "keasy-admin",
+      "credentials": [{ "accessKey": "keasy-admin", "secretKey": "keasy-admin-secret" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

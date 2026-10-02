@@ -74,24 +74,27 @@ function Item({ row, open, actions }: { row: Row; open?: boolean; actions?: Reac
   const more = Boolean(row.detail || row.help || row.children.length > 0);
   return (
     <Diagnostic data-code={row.code} defaultOpen={open} variant={VARIANT[row.severity]}>
-      <DiagnosticHeader>
-        <DiagnosticSeverity>{WORD[row.severity]}</DiagnosticSeverity>
-        {/* In a narrow container (a popover, a side panel) the title takes a line of its own
-            under severity, code and actions instead of being squeezed to a word per line. */}
-        <DiagnosticTitle className="@max-md:order-last @max-md:basis-full @max-md:whitespace-normal">
-          {row.title}
-        </DiagnosticTitle>
-        <Show when={row.code !== undefined}>
-          <DiagnosticSource asChild>
-            {page ? (
-              <a href={page} rel="noreferrer" target="_blank">
-                {row.code}
-              </a>
-            ) : (
-              <span>{row.code}</span>
-            )}
-          </DiagnosticSource>
-        </Show>
+      <DiagnosticHeader className="flex-nowrap items-start">
+        {/* What the row is takes the rest of the line and the actions stay at its end. In a narrow
+            container (a popover, a side panel) the title takes a line of its own under severity and
+            code instead of being squeezed to a word per line — still left of the actions. */}
+        <div className="flex min-h-6 min-w-0 flex-1 flex-wrap items-center gap-2">
+          <DiagnosticSeverity>{WORD[row.severity]}</DiagnosticSeverity>
+          <DiagnosticTitle className="@max-md:order-last @max-md:basis-full @max-md:whitespace-normal">
+            {row.title}
+          </DiagnosticTitle>
+          <Show when={row.code !== undefined}>
+            <DiagnosticSource asChild>
+              {page ? (
+                <a href={page} rel="noreferrer" target="_blank">
+                  {row.code}
+                </a>
+              ) : (
+                <span>{row.code}</span>
+              )}
+            </DiagnosticSource>
+          </Show>
+        </div>
         <DiagnosticActions>
           {actions}
           <Show when={more}>

@@ -9,11 +9,14 @@ import {
   type SourceRefInfo,
 } from "@fossil-lang/wasm";
 
-import { until } from "@fossil-lang/types";
+import { type CheckRow, FossilError, isFossilError, until } from "@fossil-lang/types";
 
 import { host } from "./host";
 
 export type { CheckRow, ProviderInfo, SourceRefInfo } from "@fossil-lang/wasm";
+
+/** The key the job's program is open under: every `CheckRow.uri` about it. */
+export const JOB_URI = "job.fossil";
 
 let opened: Promise<FossilProgram> | undefined;
 
@@ -29,7 +32,7 @@ export function jobProgram({ signal }: { signal?: AbortSignal } = {}): Promise<F
 
 function opening(): Promise<FossilProgram> {
   if (opened === undefined) {
-    const opening = openProgram("job.fossil", { host });
+    const opening = openProgram(JOB_URI, { host });
     opened = opening;
     opening.catch(() => {
       // The caller that awaited it sees the failure; this only clears the cache for the next one.
@@ -54,3 +57,25 @@ export const providersQuery = {
   },
   staleTime: Infinity,
 } as const;
+
+/**
+ * A check that never answered — the program could not be opened, or `check` threw — as the one row
+ * the studio counts. It is the row `@fossil-lang/codemirror-fossil`'s linter draws for the same
+ * failure: on the first character, by its code, and `internal/bug` when fossil did not raise it.
+ * So the badge and the editor say the same thing, and a program nobody could check is not "Valid".
+ */
+export function uncheckedRow(cause: unknown): CheckRow {
+  const { problem } = isFossilError(cause)
+    ? cause
+    : FossilError.of("internal/bug", { what: "the check failed outside fossil" }, { cause });
+  return {
+    uri: JOB_URI,
+    range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+    severity: 1,
+    code: problem.code,
+    title: problem.title,
+    message: problem.detail,
+    help: problem.help,
+    data: problem.data,
+  } as CheckRow;
+}

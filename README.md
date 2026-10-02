@@ -149,7 +149,7 @@ declared in `realm/terraform.tfvars`. Images are published to GHCR by
 | `make logs` / `make logs-<svc>` | Tail logs |
 | `make restart` / `make restart-<svc>` | Restart without rebuilding |
 | `make shell-<svc>` | Shell in a container |
-| `make e2e` | The failure scenarios (`e2e/`, Playwright) against the stack; main checkout only, as Keycloak admits :3000 alone |
+| `make e2e` | The failure scenarios (`e2e/`, Playwright) against the stack without models (`e2e/compose.yml`, as CI); main checkout only, as Keycloak admits :3000 alone |
 
 `docker-compose.yml` is the dev stack and nothing else. Dev applies the same
 `infra/terraform/realm` module as prod, with `dev.tfvars`.

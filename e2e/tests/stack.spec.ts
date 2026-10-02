@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { createJob, SOURCE } from "../support/api";
 import { stop, up, without } from "../support/compose";
 import { expectProblem } from "../support/problem";
+import { signIn } from "../support/sign-in";
 
 test("03 a store that accepts and never answers ends the run as store/silent", async ({ page }) => {
   test.setTimeout(300_000);
@@ -45,11 +46,11 @@ test("05 with the API down every list shows a problem, not an empty state", asyn
   });
 });
 
-test("07 with Valkey down a page fails in seconds as session/store-unavailable", async ({ page }) => {
+test("07 with Valkey down a page fails in seconds as session/unavailable", async ({ page }) => {
   test.setTimeout(300_000);
   await without(["valkey"], async () => {
     await page.goto("/");
-    await expectProblem(page, "session/store-unavailable", { within: 15_000 });
+    await expectProblem(page, "session/unavailable", { within: 15_000 });
   });
 });
 
@@ -61,8 +62,13 @@ test("21 a file listing that fails is store/list-failed, not an empty folder", a
   });
 });
 
-test("25 signing out with Keycloak down lands on /auth/error, not a stuck button", async ({ page }) => {
+test("25 signing out with Keycloak down lands on /auth/error, not a stuck button", async ({ browser, baseURL }) => {
   test.setTimeout(300_000);
+  // A session of its own: signing out ends the session it signs out of, and the shared one is the
+  // next scenario's.
+  const context = await browser.newContext({ storageState: { cookies: [], origins: [] }, baseURL });
+  const page = await context.newPage();
+  await signIn(page, "dev@keasy.local");
   await page.goto("/settings/preferences");
   await without(["keycloak"], async () => {
     // What the Log out button does: a same-origin navigation to the BFF's sign-out.
@@ -72,4 +78,5 @@ test("25 signing out with Keycloak down lands on /auth/error, not a stuck button
     await expect(page).toHaveURL(/\/auth\/error\?code=/, { timeout: 45_000 });
     await expectProblem(page, "idp/unreachable", { within: 5_000 });
   });
+  await context.close();
 });

@@ -8,13 +8,14 @@ test("23 what axum refuses before a handler is an ErrorBody through the BFF", as
 });
 
 test("26 a burst over the rate is request/rate-limited", async ({ page }) => {
+  // A browser opens six connections to a host, so a burst from a page never outruns the bucket's
+  // refill; the request context does not wait its turn, and carries the same session.
   await page.goto("/settings/preferences");
-  const codes = await page.evaluate(async () => {
-    const answers = await Promise.all(
-      Array.from({ length: 600 }, () => fetch("/api/v1/auth/workspaces").then(async (r) => [r.status, await r.text()] as const)),
-    );
-    return answers.filter(([status]) => status === 429).map(([, text]) => (JSON.parse(text) as { code: string }).code);
-  });
-  expect(codes.length, "some of the burst was refused").toBeGreaterThan(0);
-  expect(new Set(codes)).toEqual(new Set(["request/rate-limited"]));
+  const answers = await Promise.all(
+    Array.from({ length: 1500 }, () => page.request.get("/api/v1/auth/workspaces")),
+  );
+  const refused = answers.filter((a) => a.status() === 429);
+  expect(refused.length, "some of the burst was refused").toBeGreaterThan(0);
+  const codes = new Set(await Promise.all(refused.map(async (a) => ((await a.json()) as { code: string }).code)));
+  expect(codes).toEqual(new Set(["request/rate-limited"]));
 });

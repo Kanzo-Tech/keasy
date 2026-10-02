@@ -1,3 +1,5 @@
+import { referenceTo } from "@fossil-lang/types";
+
 import type { Schemas } from "@/lib/api/client";
 import { schemaOf } from "@/lib/api/spec";
 
@@ -29,11 +31,10 @@ export function storageConnections(all: Connection[]): StorageConnection[] {
 }
 
 /**
- * The reference a program writes for a file listed in `connection` (its key in the bucket):
- * `@name/` and the key relative to the connection's own prefix.
+ * What a program writes for a file listed in `connection` — its key in the bucket — through that
+ * connection: fossil's `referenceTo` over the file's URL, `@name/` and the key past the prefix.
  */
 export function reference(connection: Pick<StorageConnection, "name" | "url">, key: string): string {
-  const prefix = new URL(connection.url).pathname.replace(/^\/+|\/+$/g, "");
-  const path = prefix && key.startsWith(`${prefix}/`) ? key.slice(prefix.length + 1) : key;
-  return `@${connection.name}/${path}`;
+  const bucket = connection.url.replace(/^([a-z][a-z0-9+.-]*:\/\/[^/]*).*$/i, "$1");
+  return referenceTo(`${bucket}/${key}`, { [connection.name]: connection.url });
 }

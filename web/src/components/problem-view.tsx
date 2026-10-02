@@ -115,7 +115,9 @@ function Item({
         <DiagnosticActions>
           {actions}
           <Show when={more}>
-            <DiagnosticTrigger aria-label="Details" />
+            {/* Named by the row it opens: a list of findings is a list of these, and six
+                buttons all called "Details" cannot be told apart by ear. */}
+            <DiagnosticTrigger aria-label={`Details: ${row.title}`} />
           </Show>
         </DiagnosticActions>
       </DiagnosticHeader>

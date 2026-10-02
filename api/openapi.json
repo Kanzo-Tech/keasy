@@ -1292,7 +1292,7 @@
             }
           },
           "400": {
-            "description": "The destination is not a sink, or the folder is missing or misspelled",
+            "description": "The destination is not a sink, or the name or folder is missing or misspelled (`data.field`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1308,7 +1308,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "409": {
-            "description": "Another job writes to that folder already",
+            "description": "Another job writes to that folder already: `job/folder-taken`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1422,7 +1422,7 @@
             }
           },
           "400": {
-            "description": "Job is not a draft, or the folder is misspelled",
+            "description": "Job is not a draft, or the name or folder is misspelled (`data.field`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -2449,6 +2449,7 @@
           "job/abandoned",
           "job/invalid-destination",
           "job/no-destination",
+          "job/folder-taken",
           "credential/not-found",
           "connection/not-found",
           "resource/already-exists",
@@ -2482,6 +2483,13 @@
               "type": "string"
             },
             "description": "What the refusal is about: what still uses a credential or connection,\nor the connections a rotation would break."
+          },
+          "field": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The request field the refusal is about, so a form can say it on that\nfield: `folder`, `name`."
           }
         }
       },

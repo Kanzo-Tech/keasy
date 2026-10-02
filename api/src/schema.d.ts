@@ -585,7 +585,7 @@ export interface components {
          *     fossil's (`storage`, `engine`, `run`, …): a code means one thing.
          * @enum {string}
          */
-        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/still-running" | "job/abandoned" | "job/invalid-destination" | "job/no-destination" | "credential/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/list-failed" | "store/refused" | "store/silent" | "gateway/not-configured" | "gateway/unreachable" | "gateway/silent";
+        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/still-running" | "job/abandoned" | "job/invalid-destination" | "job/no-destination" | "job/folder-taken" | "credential/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/list-failed" | "store/refused" | "store/silent" | "gateway/not-configured" | "gateway/unreachable" | "gateway/silent";
         /** @description What a refusal carries beside its words. */
         ErrorData: {
             /**
@@ -599,6 +599,11 @@ export interface components {
              *     or the connections a rotation would break.
              */
             dependents?: string[];
+            /**
+             * @description The request field the refusal is about, so a form can say it on that
+             *     field: `folder`, `name`.
+             */
+            field?: string | null;
         };
         /** @description One object under a connection's prefix. */
         FileEntry: {
@@ -1866,7 +1871,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description The destination is not a sink, or the folder is missing or misspelled */
+            /** @description The destination is not a sink, or the name or folder is missing or misspelled (`data.field`) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1877,7 +1882,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            /** @description Another job writes to that folder already */
+            /** @description Another job writes to that folder already: `job/folder-taken` */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1953,7 +1958,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description Job is not a draft, or the folder is misspelled */
+            /** @description Job is not a draft, or the name or folder is misspelled (`data.field`) */
             400: {
                 headers: {
                     [name: string]: unknown;

@@ -131,8 +131,8 @@ pub async fn update_credential(
     let db = &state.db;
     let current = named(db, &name).await?;
     may_change(&caller, &current.created_by)?;
-    let new_name =
-        ResourceName::parse(request.name.as_deref().unwrap_or(&name)).map_err(Refusal::invalid)?;
+    let new_name = ResourceName::parse(request.name.as_deref().unwrap_or(&name))
+        .map_err(|e| Refusal::invalid_field("name", e))?;
 
     let (spec, report) = match request.spec {
         Some(spec) => {

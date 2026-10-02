@@ -31,6 +31,9 @@ pub enum DbError {
     /// A second row of that name, or a second sink.
     #[error("{0}")]
     AlreadyExists(String),
+    /// A second job that is not a draft writing to one folder of the sink.
+    #[error("{0}")]
+    FolderTaken(String),
     /// Still referenced by `dependents`.
     #[error("{message}")]
     InUse {
@@ -58,6 +61,13 @@ impl IntoResponse for DbError {
             DbError::AlreadyExists(message) => {
                 fail(StatusCode::CONFLICT, ErrorCode::AlreadyExists, message)
             }
+            DbError::FolderTaken(message) => crate::error::Refusal::field(
+                StatusCode::CONFLICT,
+                ErrorCode::FolderTaken,
+                "folder",
+                message,
+            )
+            .into_response(),
             DbError::InUse {
                 message,
                 dependents,

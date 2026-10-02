@@ -74,7 +74,7 @@ pub async fn save(
     mut connection: ConnectionView,
     by: &str,
 ) -> Result<ConnectionView, Refusal> {
-    ResourceName::parse(&connection.name).map_err(Refusal::invalid)?;
+    ResourceName::parse(&connection.name).map_err(|e| Refusal::invalid_field("name", e))?;
     let credential = crate::credentials::persistence::get(
         &*db.read().await,
         db.secret_key(),

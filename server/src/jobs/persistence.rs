@@ -13,7 +13,7 @@ const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, h
 fn refused(job: &Job, e: rusqlite::Error) -> DbError {
     use rusqlite::ffi;
     match constraint(&e) {
-        Some(ffi::SQLITE_CONSTRAINT_UNIQUE) => DbError::AlreadyExists(format!(
+        Some(ffi::SQLITE_CONSTRAINT_UNIQUE) => DbError::FolderTaken(format!(
             "another job writes to the folder {:?} already",
             job.folder.as_deref().unwrap_or_default()
         )),
@@ -241,7 +241,7 @@ mod tests {
         let second = filed(JobStatus::Pending, "people");
         assert!(matches!(
             insert(&conn, &second),
-            Err(DbError::AlreadyExists(_))
+            Err(DbError::FolderTaken(_))
         ));
         insert(&conn, &filed(JobStatus::Pending, "orders")).unwrap();
 

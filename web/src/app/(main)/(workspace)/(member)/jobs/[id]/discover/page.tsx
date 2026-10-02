@@ -12,7 +12,7 @@ import {
   ShieldCheckIcon,
   XIcon,
 } from "lucide-react";
-import { GraphCanvas, GraphLegend, GraphRoot, GraphToolbar, useGraphPrefs, useGraphState } from "@kanzo-tech/graph";
+import { GraphCanvas, GraphCounts, GraphLegend, GraphRoot, GraphToolbar, useGraphPrefs, useGraphState } from "@kanzo-tech/graph";
 import { useCrossfilter } from "@kanzo-tech/ui/analytics";
 import {
   Badge,
@@ -140,13 +140,10 @@ function DashboardRegion() {
 
 /** The footer: what the corpus holds, and whether all of it has been drawn. */
 function CorpusCounts() {
-  const { manifest } = useCorpus();
   const status = useGraphState((s) => s.status);
-  const count = (tables: readonly { record_count: number }[]) =>
-    tables.reduce((sum, table) => sum + table.record_count, 0);
   return (
-    <span className="flex items-center gap-2 px-1 text-muted-foreground text-xs tabular-nums">
-      {count(manifest.vertex_tables).toLocaleString()} nodes · {count(manifest.edge_tables).toLocaleString()} edges
+    <div className="flex items-center gap-2 px-1 text-muted-foreground text-xs tabular-nums">
+      <GraphCounts />
       <Badge className="gap-1.5" size="xs" variant="outline">
         <Status
           className="ring-0"
@@ -155,7 +152,7 @@ function CorpusCounts() {
         />
         {status}
       </Badge>
-    </span>
+    </div>
   );
 }
 

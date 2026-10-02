@@ -1,7 +1,7 @@
 "use client";
 
 import { AuthProvider } from "@kanzo-tech/auth";
-import { themeIndex, type SectionManifest } from "@kanzo-tech/theme";
+import type { SectionManifest } from "@kanzo-tech/theme";
 import { GRAPH_SECTION } from "@kanzo-tech/graph/section";
 import { KanzoThemeProvider, cookieStorageAdapter, themeScript } from "@kanzo-tech/ui";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -16,7 +16,6 @@ import { auth } from "@/lib/api/session";
  * server paints the defaults and the client re-skins on hydration.
  */
 const storage = cookieStorageAdapter();
-const themes = themeIndex.map((entry) => ({ value: entry.name, label: entry.name }));
 // Hoisted so the provider's resolution memo sees one identity.
 const sections: SectionManifest[] = [GRAPH_SECTION];
 
@@ -26,12 +25,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   ));
 
   return (
-    <KanzoThemeProvider
-      defaultTheme={{ dark: "kanzo-dark", light: "kanzo" }}
-      sections={sections}
-      storage={storage}
-      themes={themes}
-    >
+    <KanzoThemeProvider sections={sections} storage={storage}>
       <AuthProvider auth={auth}>
         <QueryClientProvider client={queryClient}>
           {children}

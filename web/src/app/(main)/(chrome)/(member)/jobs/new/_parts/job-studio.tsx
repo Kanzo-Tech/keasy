@@ -289,13 +289,8 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
               <EditableInput asChild>
                 <Input className="h-8 w-56" />
               </EditableInput>
-              {/* `block` is what makes `truncate` work: `EditablePreview` bakes
-                  in `whitespace-pre-wrap` and inherits `inline-flex`, and
-                  ellipsis does nothing on a flex container. `whitespace-nowrap`
-                  is spelled out beside `truncate` because tailwind-merge files
-                  them under different groups. */}
               <EditablePreview
-                className="block w-auto max-w-[8rem] truncate whitespace-nowrap px-2 py-1 font-medium @3xl:max-w-[16rem]"
+                className="w-auto max-w-[8rem] px-2 py-1 font-medium @3xl:max-w-[16rem]"
                 size="sm"
                 variant="ghost"
               />

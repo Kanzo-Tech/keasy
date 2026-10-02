@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { createJob, SOURCE } from "../support/api";
+import { api, createJob, SOURCE } from "../support/api";
 import { stop, up, without } from "../support/compose";
 import { expectProblem } from "../support/problem";
 import { signIn } from "../support/sign-in";
@@ -44,6 +44,12 @@ test("05 with the API down every list shows a problem, not an empty state", asyn
     }
     await owner.close();
   });
+  // The server came back with no realm keys cached; its first fetch can miss and start the
+  // re-fetch cooldown, refusing with auth/keys-unavailable for a while. The next scenario is not
+  // about that, so wait until the API answers again.
+  await expect
+    .poll(async () => (await api(page, "GET", "/v1/auth/workspaces")).status, { timeout: 120_000, intervals: [5_000] })
+    .toBe(200);
 });
 
 test("07 with Valkey down a page fails in seconds as session/unavailable", async ({ page }) => {

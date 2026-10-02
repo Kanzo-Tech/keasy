@@ -41,6 +41,7 @@
     "@tanstack/react-query-devtools": "^5.91.3",
     "@tanstack/react-table": "^8.21.3",
     "@uwdata/mosaic-core": "^0.29.2",
+    "@uwdata/mosaic-plot": "^0.29.2",
     "@uwdata/mosaic-sql": "^0.29.0",
     "@uwdata/vgplot": "^0.29.2",
     "ai": "^7.0.126",

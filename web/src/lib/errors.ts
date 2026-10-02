@@ -168,7 +168,8 @@ export function toProblem(err: unknown, code: ClientCode = "web/unknown"): Shown
   return cause === undefined ? shown : { ...shown, cause };
 }
 
-const GRAMMAR = /^[a-z][a-z-]*\/[a-z][a-z-]*$/;
+/** The `area/kind` grammar fossil's codes follow: digits allowed after a segment's first letter (`source/not-utf8`). */
+const GRAMMAR = /^[a-z][a-z0-9]*(-[a-z0-9]+)*\/[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 
 /**
  * An error a library coded in the shared grammar — kanzo-ui's `AuthError`, `GraphError`,

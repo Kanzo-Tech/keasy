@@ -62,6 +62,13 @@ describe("a library's coded failure", () => {
     expect(toProblem(silent)).toMatchObject({ code: "ai/silent", data: { after: 30_000 } });
   });
 
+  it("is read in fossil's grammar, digits and all", () => {
+    const code = (c: string) => toProblem(Object.assign(new Error("x"), { code: c })).code;
+    expect(code("source/not-utf8")).toBe("source/not-utf8");
+    expect(code("source/-utf8")).toBe("web/unknown");
+    expect(code("Source/x")).toBe("web/unknown");
+  });
+
   it("keeps the server's code when the AI SDK carries its answer as the response body", () => {
     const refused = Object.assign(new Error("Gateway Timeout"), {
       responseBody: JSON.stringify({ code: "gateway/silent", title: "t", detail: "d", data: { after: 30_000 } }),

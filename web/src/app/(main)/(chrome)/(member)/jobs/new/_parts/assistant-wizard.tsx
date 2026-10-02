@@ -52,7 +52,7 @@ import { connectionPath, describeSources, sourceDescriptorsKey } from "./describ
 import { providerFor } from "@/lib/fossil/providers";
 import type { StorageConnection } from "@/lib/connections";
 import { ProblemView } from "@/components/problem-view";
-import { toastError, toProblem } from "@/lib/errors";
+import { ClientError, toastError, toProblem } from "@/lib/errors";
 
 type Connection = StorageConnection;
 type Selection = Record<string, boolean>;
@@ -302,6 +302,15 @@ export function AssistantWizard({
         setReqs((prev) => [...prev, { id, ...q }]);
         reqTable.setRowSelection((prev) => ({ ...prev, [id]: true }));
       }
+      // An answer that is not the JSON asked for streams no element and throws nothing: it would
+      // read as "No requirements yet." Asked for five to ten, none is a failure.
+      if (n === 0 && !signal.aborted) {
+        throw new ClientError(
+          "llm/failed",
+          "The model's suggestions could not be read",
+          "The answer held no requirement in the form asked for.",
+        );
+      }
     });
 
   const generateProgram = () =>
@@ -310,6 +319,9 @@ export function AssistantWizard({
       for await (const partial of writeProgram(domain, questions, schemas, signal)) {
         program = partial.program ?? program;
         setDraft(program);
+      }
+      if (!program.trim() && !signal.aborted) {
+        throw new ClientError("llm/failed", "The model wrote no program", "The answer held no program in the form asked for.");
       }
       onComplete(program);
       toast.create({ title: "Script generated — review before submitting", type: "success" });

@@ -59,8 +59,12 @@ export const PROBLEM_PAGE = "/auth/error";
 /** Eight hours: a working day, and the lifetime of both the cookie and its ticket. */
 const MAX_AGE = 8 * 60 * 60;
 
-/** How long the session store may take to connect, or to answer one command. */
-const STORE_DEADLINE_MS = 5_000;
+/**
+ * The G1 table's figures for Valkey: 5 s to connect, 30 s to answer a command. A store that is
+ * down refuses at once (no offline queue), so the command figure only bounds one that hangs.
+ */
+const STORE_CONNECT_MS = 5_000;
+const STORE_COMMAND_MS = 30_000;
 
 /**
  * Session records live in Valkey/Redis under the opaque ticket the cookie
@@ -77,7 +81,7 @@ function redisAdapter(url: string): TicketAdapter {
     url,
     disableOfflineQueue: true,
     socket: {
-      connectTimeout: STORE_DEADLINE_MS,
+      connectTimeout: STORE_CONNECT_MS,
       reconnectStrategy: (retries) => Math.min(250 * 2 ** retries, 5_000),
     },
   }).on("error", (error) => {
@@ -90,8 +94,8 @@ function redisAdapter(url: string): TicketAdapter {
   const bounded = <T>(work: (c: typeof client) => Promise<T>) =>
     race(
       ready.then((c) => work(c)),
-      STORE_DEADLINE_MS,
-      () => new Error(`The session store did not answer within ${STORE_DEADLINE_MS / 1000} s`),
+      STORE_COMMAND_MS,
+      () => new Error(`The session store did not answer within ${STORE_COMMAND_MS / 1000} s`),
     );
 
   return {

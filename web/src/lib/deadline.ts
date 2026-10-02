@@ -11,7 +11,9 @@ export const DEADLINE_MS = 30_000;
 export function race<T>(promise: Promise<T>, ms: number, silent: () => Error): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const fired = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(silent()), ms);
+    // One turn of the loop before rejecting: after a stall (a dev compile, a long GC) the timer
+    // and the answer are due together, and the timer phase runs first.
+    timer = setTimeout(() => setTimeout(() => reject(silent()), 0), ms);
   });
   return Promise.race([promise, fired]).finally(() => clearTimeout(timer));
 }

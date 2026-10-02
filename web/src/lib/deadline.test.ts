@@ -73,7 +73,8 @@ describe("the deadline", () => {
     vi.useFakeTimers();
     const raced = race(new Promise(() => {}), 5_000, () => new Silent(5_000));
     const settled = expect(raced).rejects.toMatchObject({ after: 5_000 });
-    await vi.advanceTimersByTimeAsync(5_000);
+    // The deadline, and the one turn it gives an answer due at the same moment.
+    await vi.advanceTimersByTimeAsync(5_001);
     await settled;
   });
 });

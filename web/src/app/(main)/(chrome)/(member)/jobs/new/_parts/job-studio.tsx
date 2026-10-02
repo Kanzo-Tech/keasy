@@ -379,10 +379,7 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
           <FindingsBadge
             findings={diagnostics}
             onOpenChange={setFindingsOpen}
-            onSelect={(f) => {
-              setFindingsOpen(false);
-              editor?.reveal(f.range.start.line, f.range.start.character);
-            }}
+            onSelect={(f) => editor?.reveal(f.range.start.line, f.range.start.character)}
             open={findingsOpen}
           />
           <ButtonGroup aria-label="Save">

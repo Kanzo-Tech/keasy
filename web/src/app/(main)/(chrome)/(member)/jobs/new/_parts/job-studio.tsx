@@ -28,7 +28,7 @@ import {
   TooltipTrigger,
   toast,
 } from "@kanzo-tech/ui";
-import { Check, ChevronDown, FolderOutput, Pencil, PlugZap, Save, X } from "lucide-react";
+import { Check, ChevronDown, Database, FolderDown, Pencil, Save, X } from "lucide-react";
 import { useRouter } from "@kanzo-tech/navigation/next";
 import { $api, ApiError, http, invalidate, type Schemas } from "@/lib/api/client";
 import { Boundary, Loading } from "@/components/boundary";
@@ -47,8 +47,8 @@ import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { useJobEditorStore } from "./job-editor-store";
 
 const PANELS = [
-  { id: "connections", label: "Connections", icon: PlugZap },
-  { id: "output", label: "Output", icon: FolderOutput },
+  { id: "connections", label: "Connections", icon: Database },
+  { id: "output", label: "Output", icon: FolderDown },
 ] as const;
 
 type PanelId = (typeof PANELS)[number]["id"];
@@ -456,7 +456,7 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
           {" · "}
           {draftMutation.isPending ? "saving…" : saved ? "draft saved" : "unsaved changes"}
         </span>
-        {/* Single-select and deselectable: pressing the open panel's icon again collapses the rail. */}
+        {/* Single-select and deselectable: pressing the open panel's button again collapses the rail. */}
         <ToggleGroup
           aria-label="Panels"
           className="ms-auto"
@@ -471,8 +471,9 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
           value={railOpen ? [panel] : []}
         >
           {PANELS.map((p) => (
-            <ToggleGroupItem aria-label={p.label} className="relative" key={p.id} title={p.label} value={p.id}>
+            <ToggleGroupItem aria-label={p.label} className="relative" key={p.id} value={p.id}>
               <p.icon />
+              {p.label}
               <Show when={p.id === "output" && outputIncomplete}>
                 <span
                   aria-label="incomplete"

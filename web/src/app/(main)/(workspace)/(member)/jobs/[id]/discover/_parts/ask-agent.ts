@@ -1,7 +1,7 @@
 import type { Coordinator } from "@kanzo-tech/ui/analytics";
 import { jsonSchema, stepCountIs, tool, ToolLoopAgent } from "@kanzo-tech/llm";
 import { gateway } from "@/lib/ai";
-import { type Shown, toProblem } from "@/lib/errors";
+import { type Wire, wireOf } from "@/lib/errors";
 
 /** How much of a result set the model reads; the panel shows all of it. */
 const SAMPLE_ROWS = 30;
@@ -75,7 +75,7 @@ export interface QueryOutput {
 }
 
 /** A `query` call's answer: its rows, or the engine's refusal. */
-export type QueryAnswer = QueryOutput | { readonly sql: string; readonly refused: Shown };
+export type QueryAnswer = QueryOutput | { readonly sql: string; readonly refused: Wire };
 
 /**
  * The one tool: run SQL over the graph, here in the browser. The panel keeps the whole result —
@@ -111,7 +111,7 @@ export function askAgent(schema: string, coordinator: Coordinator, key: string) 
             return { sql, rows };
           } catch (err) {
             if (abortSignal?.aborted) throw err;
-            return { sql, refused: toProblem(err, "query/failed") };
+            return { sql, refused: wireOf(err, "query/failed") };
           }
         },
         toModelOutput: ({ output }) => ({

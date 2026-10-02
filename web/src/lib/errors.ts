@@ -1,36 +1,11 @@
-import {
-  type Code,
-  CODES,
-  type Foreign,
-  helpUrl,
-  isCode,
-  isFossilError,
-  type Related,
-  type Severity,
-} from "@fossil-lang/types";
+import { type Code, CODES, type Foreign, helpUrl, isCode, isFossilError } from "@fossil-lang/types";
 import type { AuthErrorCode } from "@kanzo-tech/auth";
 import type { GraphError } from "@kanzo-tech/graph";
 import type { AiError } from "@kanzo-tech/llm";
 import type { EngineError } from "@kanzo-tech/mosaic";
-import { toast } from "@kanzo-tech/ui";
+import { type ProblemCopy, toast } from "@kanzo-tech/ui";
 
 import { ApiError, type ErrorCode, type NoBodyCode } from "@/lib/api/client";
-
-/**
- * A failure as a screen shows it — one shape for fossil's `Problem`, keasy's server `ErrorBody` and
- * the failures the browser names itself: a code to branch on, a fixed title, a detail for a person
- * that nothing parses, and the data the code carries.
- */
-export interface Shown {
-  code: string;
-  title: string;
-  detail: string;
-  severity?: Severity;
-  help?: string;
-  related?: Related[];
-  cause?: Shown | Foreign;
-  data?: unknown;
-}
 
 /**
  * Failures the browser names itself, in the same `area/kind` grammar as fossil's and the server's: a
@@ -58,13 +33,6 @@ export class ClientError extends Error {
 interface Copy {
   title?: string;
   detail?: string | ((data: unknown) => string);
-  link?: { label: string; href: string };
-}
-
-/** A {@link Copy} with its detail written for one problem. */
-export interface Worded {
-  title?: string;
-  detail?: string;
   link?: { label: string; href: string };
 }
 
@@ -154,7 +122,7 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
 };
 
 /** keasy's copy for `code`, where it overrides the code's own words; `data` is the problem's. */
-export function copyOf(code: string, data?: unknown): Worded | undefined {
+export function copyOf(code: string, data?: unknown): ProblemCopy | undefined {
   const copy = registry[code as keyof typeof registry];
   if (!copy) return undefined;
   return { ...copy, detail: typeof copy.detail === "function" ? copy.detail(data) : copy.detail };
@@ -165,90 +133,92 @@ export function pageOf(code: string): string | undefined {
   return (CODES as readonly string[]).includes(code) ? helpUrl(code as Code) : undefined;
 }
 
-/** A cause, as the tree under a problem shows it: coded when it can be, its own words when not. */
-function causeOf(cause: unknown): Shown | Foreign | undefined {
-  if (cause === undefined || cause === null) return undefined;
-  if (isFossilError(cause) || cause instanceof ApiError || cause instanceof ClientError || coded(cause)) {
-    return toProblem(cause);
-  }
-  if (cause instanceof Error) return { name: cause.name, detail: cause.message };
-  return { name: typeof cause, detail: String(cause) };
+/**
+ * A failure by the fields every coded error here shares — fossil's `FossilError`, the server's
+ * `ApiError`, kanzo-ui's `AuthError`, `GraphError`, `EngineError` and `AiError` — which is what
+ * kanzo-ui's `Problem` reads. `detail` is a stored problem's word for `message`.
+ */
+export interface Coded {
+  code: string;
+  title?: string;
+  message?: string;
+  detail?: string;
+  data?: unknown;
+  cause?: unknown;
 }
 
-/**
- * Any thrown value as a {@link Shown}: a `FossilError` is its problem, an `ApiError` the server's
- * body, and anything else is `code` (`web/unknown` by default) in its own words. A cause the thrown
- * value carries is kept, one level down.
- */
-export function toProblem(err: unknown, code: ClientCode = "web/unknown"): Shown {
-  if (isFossilError(err)) return err.problem;
-  const cause = err instanceof Error ? causeOf(err.cause) : undefined;
-  const shown: Shown =
-    err instanceof ApiError
-      ? { code: err.code, title: err.title, detail: err.message, data: err.data }
-      : err instanceof ClientError
-        ? { code: err.code, title: err.title, detail: err.message }
-        : (coded(err) ??
-          answered(err) ??
-          streamed(err) ?? {
-            code,
-            title: "Something went wrong.",
-            detail: err instanceof Error ? err.message : (messageOf(err) ?? String(err)),
-          });
-  return cause === undefined ? shown : { ...shown, cause };
-}
+const isCoded = (err: unknown): err is Coded =>
+  typeof err === "object" && err !== null && isCode((err as { code?: unknown }).code);
 
 /**
- * An error a library coded in the shared grammar — kanzo-ui's `AuthError`, `GraphError`,
- * `EngineError`, `AiError` — keyed by its `code`, its `data` kept.
+ * Any thrown value with a code to branch on: one that carries a code is itself — an AI SDK stream's
+ * error event included, which keasy's relay codes `gateway/silent`; a model call the AI SDK refused
+ * is the server's `ErrorBody` it holds; anything else is `uncoded`, in its own words, its cause kept.
  */
-function coded(err: unknown): Shown | undefined {
-  if (!(err instanceof Error)) return undefined;
-  const { code, data } = err as Error & { code?: unknown; data?: unknown };
-  if (!isCode(code)) return undefined;
-  return { code, title: copyOf(code)?.title ?? err.message, detail: err.message, data };
+export function coded(err: unknown, uncoded: ClientCode = "web/unknown"): Coded {
+  if (isCoded(err)) return err;
+  return (
+    answered(err) ?? {
+      code: uncoded,
+      title: "Something went wrong.",
+      message: messageOf(err) ?? String(err),
+      cause: (err as { cause?: unknown } | null)?.cause,
+    }
+  );
 }
 
 /**
  * A model call the AI SDK refused carries the server's answer as `responseBody`: when that is an
  * `ErrorBody` (`gateway/silent`, `gateway/unreachable`, …), its code is the failure's, not lost.
  */
-function answered(err: unknown): Shown | undefined {
+function answered(err: unknown): Coded | undefined {
   const body = (err as { responseBody?: unknown } | null)?.responseBody;
   if (typeof body !== "string") return undefined;
   try {
-    const parsed = JSON.parse(body) as { code?: unknown; title?: unknown; detail?: unknown; data?: unknown };
-    if (!isCode(parsed.code)) return undefined;
-    return {
-      code: parsed.code,
-      title: typeof parsed.title === "string" ? parsed.title : parsed.code,
-      detail: typeof parsed.detail === "string" ? parsed.detail : "",
-      data: parsed.data,
-    };
+    const parsed = JSON.parse(body) as Coded;
+    return isCoded(parsed) ? parsed : undefined;
   } catch {
     // Not an ErrorBody: the gateway's own words, which the caller's fallback shows.
     return undefined;
   }
 }
 
-/**
- * An error event in a streamed answer, as the AI SDK hands it over: not an `Error` but the
- * protocol's `{ message, type, param, code }`, every other field dropped. keasy's relay writes one
- * when the gateway goes quiet mid-answer, coded `gateway/silent`, with its detail as `message`; a
- * provider's own (`server_error`, `429`) is not in the grammar, and stays the caller's fallback.
- */
-function streamed(err: unknown): Shown | undefined {
-  if (err instanceof Error || typeof err !== "object" || err === null) return undefined;
-  const { code } = err as { code?: unknown };
-  if (!isCode(code)) return undefined;
-  const detail = messageOf(err) ?? "";
-  return { code, title: copyOf(code)?.title ?? detail, detail };
-}
-
-/** The `message` a thrown non-`Error` carries, as the protocol's error objects do. */
+/** The `message` a thrown value carries, an `Error`'s or a protocol's error object's. */
 function messageOf(err: unknown): string | undefined {
   const message = (err as { message?: unknown } | null)?.message;
   return typeof message === "string" ? message : undefined;
+}
+
+/** A failure as JSON keeps it: what a failed run stores on its job, and what a refused query hands the model. */
+export interface Wire {
+  code: string;
+  title: string;
+  detail: string;
+  data?: unknown;
+  cause?: Wire | Foreign;
+}
+
+/**
+ * A failure in its {@link Wire} form — fossil's own for a `FossilError`, the {@link coded} fields
+ * otherwise — with its cause one level down, coded when it can be and in its own words when not.
+ */
+export function wireOf(err: unknown, uncoded?: ClientCode): Wire {
+  if (isFossilError(err)) return err.problem;
+  const { code, title, message, detail, data, cause } = coded(err, uncoded);
+  const words = message ?? detail ?? "";
+  const under =
+    cause === undefined || cause === null
+      ? undefined
+      : isCoded(cause)
+        ? wireOf(cause)
+        : { name: cause instanceof Error ? cause.name : typeof cause, detail: messageOf(cause) ?? String(cause) };
+  return {
+    code,
+    title: title ?? words,
+    detail: words,
+    ...(data === undefined ? {} : { data }),
+    ...(under === undefined ? {} : { cause: under }),
+  };
 }
 
 /** A refusal about one field of the request, as a form says it on that field. */
@@ -267,16 +237,6 @@ export function fieldProblem(error: unknown): FieldProblem | null {
 
 /** Toast a failed action: `title` names the action, the description is the code's copy or the failure's own words. */
 export function toastError(error: unknown, title: string): void {
-  const shown = toProblem(error);
-  toast.create({ title, description: copyOf(shown.code)?.title ?? shown.detail, type: "error" });
-}
-
-/** A failure the sign-in flow reported by its code alone, as the auth error page shows it. */
-export function authProblem(code: string): Shown {
-  const copy = copyOf(code);
-  return {
-    code,
-    title: copy?.title ?? "Signing in failed.",
-    detail: copy?.detail ?? "The sign-in could not be completed. Start it again.",
-  };
+  const { code, message, detail } = coded(error);
+  toast.create({ title, description: copyOf(code)?.title ?? message ?? detail, type: "error" });
 }

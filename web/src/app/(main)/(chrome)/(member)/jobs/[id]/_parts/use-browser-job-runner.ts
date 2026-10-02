@@ -5,7 +5,7 @@ import { TableRefNode } from "@uwdata/mosaic-sql";
 import { ApiError, http, type Schemas } from "@/lib/api/client";
 import { bounds } from "@/lib/api/spec";
 import { host } from "@/lib/fossil/host";
-import { toastError, toProblem } from "@/lib/errors";
+import { toastError, wireOf } from "@/lib/errors";
 
 /**
  * How long the server waits on a running job before it sweeps it, as the server publishes it, and
@@ -197,7 +197,7 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: (
             .report(() =>
               http.PATCH("/v1/jobs/{id}", {
                 params: { path: { id: jobId } },
-                body: { status: "failed", problem: toProblem(err) },
+                body: { status: "failed", problem: wireOf(err) },
               }),
             )
             .catch((patchErr: unknown) =>

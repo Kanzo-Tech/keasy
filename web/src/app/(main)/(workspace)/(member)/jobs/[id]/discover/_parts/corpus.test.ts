@@ -2,7 +2,6 @@ import { QueryClient, QueryObserver } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "@/lib/api/client";
-import { toProblem } from "@/lib/errors";
 
 const notFound = new ApiError({ code: "job/not-found", title: "Not found", detail: "No such job", data: {} }, 404);
 
@@ -33,6 +32,6 @@ describe("corpusQuery", () => {
     });
     const result = await settled;
     expect(result.status).toBe("error");
-    expect(toProblem(result.error).code).toBe("job/not-found");
+    expect(result.error).toMatchObject({ code: "job/not-found" });
   });
 });

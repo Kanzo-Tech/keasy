@@ -11,7 +11,6 @@ import {
   FindingsTrigger,
 } from "@kanzo-tech/ui";
 import type { CheckRow } from "@/lib/fossil/checker";
-import { type Shown } from "@/lib/errors";
 import { ProblemItem } from "@/components/problem-view";
 
 /** LSP severity: 1 error, 2 warning, 3 information — as kanzo-ui's variants. */
@@ -31,11 +30,11 @@ interface CompilerFinding extends Finding {
 }
 
 /** A finding as the one failure view shows it: its code, its line and title, its message and help. */
-function problemOf(row: CheckRow): Shown {
+function problemOf(row: CheckRow) {
   return {
     code: row.code,
     title: `Line ${row.range.start.line + 1} · ${row.title}`,
-    detail: row.message,
+    message: row.message,
     help: row.help,
     severity: SEVERITY[row.severity],
     data: row.data,
@@ -43,7 +42,9 @@ function problemOf(row: CheckRow): Shown {
 }
 
 const item = ({ row }: CompilerFinding) => (
-  <ProblemItem actions={<FindingsGoTo variant="outline">Go to line</FindingsGoTo>} problem={problemOf(row)} />
+  <ProblemItem error={problemOf(row)}>
+    <FindingsGoTo variant="outline">Go to line</FindingsGoTo>
+  </ProblemItem>
 );
 
 /**

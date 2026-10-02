@@ -19,7 +19,6 @@ import {
 } from "@kanzo-tech/ui";
 import { Chat, type ToolPart, useChat } from "@kanzo-tech/ai";
 import { DirectChatTransport } from "@kanzo-tech/llm";
-import { toProblem } from "@/lib/errors";
 import { ProblemView } from "@/components/problem-view";
 import { settled } from "@/lib/api/settled";
 import { askAgent, type QueryAnswer, type QueryOutput } from "./ask-agent";
@@ -54,7 +53,7 @@ function QueryResult({ part }: { part: ToolPart }) {
   if (part.state !== "output-available") return null;
   const answer = part.output as QueryAnswer;
   // The engine refused the model's SQL: the agent reads why and tries again; the reader sees it.
-  if ("refused" in answer) return <ProblemView problem={answer.refused} />;
+  if ("refused" in answer) return <ProblemView error={answer.refused} />;
   const output = answer;
   return (
     <div className="flex flex-col gap-2">
@@ -114,7 +113,7 @@ function AskChat({ schema, starters }: { schema: string; starters: string[] }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* What stopped the answer, by its code: the gateway's refusal, its silence, a broken stream. */}
-      {chat.error && <ProblemView className="m-2" problem={toProblem(failure ?? chat.error, "llm/failed")} />}
+      {chat.error && <ProblemView className="m-2" error={failure ?? chat.error} uncoded="llm/failed" />}
       <Chat
       chat={chat}
       className="p-2"

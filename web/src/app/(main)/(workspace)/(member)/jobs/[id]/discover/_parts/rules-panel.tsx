@@ -132,7 +132,7 @@ export function RulesPanel() {
                     <XIcon className="size-3.5" />
                   </Button>
                 </div>
-                {counted[i]?.problem && <ProblemView problem={counted[i].problem} />}
+                {counted[i]?.problem !== undefined && <ProblemView error={counted[i].problem} uncoded="query/failed" />}
               </li>
             );
           })}

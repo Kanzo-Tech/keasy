@@ -48,7 +48,7 @@ import { channelsOf, PlacementContext, type Placement } from "./_parts/graph-pla
 import { RulesPanel } from "./_parts/rules-panel";
 import { Boundary } from "@/components/boundary";
 import { ProblemView } from "@/components/problem-view";
-import { toastError, toProblem } from "@/lib/errors";
+import { toastError } from "@/lib/errors";
 import { settled } from "@/lib/api/settled";
 
 /**
@@ -131,7 +131,7 @@ function GraphRegion() {
         <GraphLegend className="absolute start-2 bottom-2 z-10" />
         <Show when={failed && failure !== undefined}>
           <div className="absolute inset-0 z-20 grid place-items-center p-6">
-            <ProblemView className="w-full max-w-xl" problem={toProblem(failure)} />
+            <ProblemView className="w-full max-w-xl" error={failure} />
           </div>
         </Show>
       </GraphCanvas>

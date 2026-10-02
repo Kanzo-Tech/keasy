@@ -47,7 +47,7 @@ import { sourceDescriptorsKey } from "./use-source-descriptors";
 import { providerFor } from "@/lib/fossil/providers";
 import { reference, type StorageConnection } from "@/lib/connections";
 import { ProblemView } from "@/components/problem-view";
-import { ClientError, toastError, toProblem } from "@/lib/errors";
+import { ClientError, toastError } from "@/lib/errors";
 
 type Connection = StorageConnection;
 type Selection = Record<string, boolean>;
@@ -153,7 +153,7 @@ function ConnectionFiles({
         Files in <span className="font-mono">@{connection.name}</span>
       </h3>
       {error ? (
-        <ProblemView onRetry={onRetry} problem={toProblem(error)} />
+        <ProblemView error={error} onRetry={onRetry} />
       ) : (
         <DataTableRoot table={table}>
           <DataTableContent<ConnectionFile>
@@ -426,11 +426,11 @@ export function AssistantWizard({
                 </Field>
               </AssistProvider>
               {described.isError && (
-                <ProblemView onRetry={() => void described.refetch()} problem={toProblem(described.error)} />
+                <ProblemView onRetry={() => void described.refetch()} error={described.error} />
               )}
               {/* Each file that could not be described, and why: the program is written without its columns. */}
               {undescribed.map(({ source, problem }) => (
-                <ProblemView key={source.key} problem={problem} />
+                <ProblemView error={problem} key={source.key} />
               ))}
               <Show when={!schemasReady && !described.isError}>
                 <p className="flex items-center gap-2 text-muted-foreground text-sm">
@@ -457,7 +457,7 @@ export function AssistantWizard({
                     </Button>
                   </div>
                   {suggest.status === "error" && (
-                    <ProblemView onRetry={askForRequirements} problem={toProblem(suggest.error, "llm/failed")} />
+                    <ProblemView error={suggest.error} onRetry={askForRequirements} uncoded="llm/failed" />
                   )}
                   <DataTableRoot table={reqTable}>
                     <DataTableContent<CompetencyQuestion>
@@ -482,7 +482,7 @@ export function AssistantWizard({
               </p>
             </Show>
             {generate.status === "error" && (
-              <ProblemView onRetry={generateProgram} problem={toProblem(generate.error, "llm/failed")} />
+              <ProblemView error={generate.error} onRetry={generateProgram} uncoded="llm/failed" />
             )}
             <Show when={draft.length > 0}>
               <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 font-mono text-muted-foreground text-xs">

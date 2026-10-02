@@ -110,7 +110,7 @@ function JobView({ id }: { id: string }) {
           </DataListItem>
         </DataList>
 
-        {problem && <ProblemView problem={problem} />}
+        {problem && <ProblemView error={problem} />}
       </SectionBody>
     </SectionRoot>
   );

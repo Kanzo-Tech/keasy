@@ -18,7 +18,6 @@ import {
 } from "@kanzo-tech/ui";
 import { BookMarked, Database, PlugZap } from "lucide-react";
 import type { StorageConnection } from "@/lib/connections";
-import { type Shown } from "@/lib/errors";
 import { ProblemView } from "@/components/problem-view";
 
 const KIND_ICON = { data: Database, vocab: BookMarked } as const;
@@ -43,12 +42,12 @@ export function StudioConnections({
   /** Connection names the program references — fossil's `refs()`, not a regex. */
   used: Set<string>;
   /** Why the program's references could not be read, so no mark is trusted. */
-  usedProblem: Shown | null;
+  usedProblem: unknown;
   onInsert: (text: string) => void;
 }) {
   return (
     <div className="flex flex-col gap-3 p-3">
-      {usedProblem && <ProblemView problem={usedProblem} />}
+      {usedProblem !== undefined && <ProblemView error={usedProblem} />}
       <p className="text-muted-foreground text-xs">
         Drag one into the program, click it to write it at the caret, or press @ in the editor.
       </p>

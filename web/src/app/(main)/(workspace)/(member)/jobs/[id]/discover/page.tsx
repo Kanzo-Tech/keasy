@@ -48,7 +48,7 @@ import { channelsOf, PlacementContext, type Placement } from "./_parts/graph-pla
 import { RulesPanel } from "./_parts/rules-panel";
 import { Boundary } from "@/components/boundary";
 import { ProblemView } from "@/components/problem-view";
-import { toProblem } from "@/lib/errors";
+import { toastError, toProblem } from "@/lib/errors";
 import { settled } from "@/lib/api/settled";
 
 /**
@@ -188,7 +188,12 @@ function Workspace() {
       filterBy={crossfilter}
       from={jobId}
       look={look}
-      onFailure={setFailure}
+      onFailure={(error) => {
+        // A canvas that cannot draw shows why in its own region; a selection or search that failed
+        // leaves the graph drawn, so the toast is where it is said.
+        setFailure(error);
+        toastError(error, "The graph could not do that");
+      }}
       {...channelsOf(placement[0])}
     >
       <HeaderEnd>

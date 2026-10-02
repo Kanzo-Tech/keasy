@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
-import { Query, useMosaic } from "@kanzo-tech/ui/analytics";
+import { Query, useMosaic, useQueryRows } from "@kanzo-tech/ui/analytics";
+import { GraphSelect } from "@kanzo-tech/graph";
 import { TableRefNode, column, eq, literal } from "@uwdata/mosaic-sql";
 import {
   Clipboard,
@@ -23,13 +24,12 @@ import { ProblemView } from "@/components/problem-view";
 import { settled } from "@/lib/api/settled";
 import { askAgent, type QueryAnswer, type QueryOutput } from "./ask-agent";
 import { describeDataSpace } from "./data-space";
-import { corpusKey, ONCE, useCorpus, useFieldStats, useGraphKey, useRows } from "./corpus";
-import { Finding } from "./finding";
+import { corpusKey, ONCE, useCorpus, useFieldStats, useGraphKey } from "./corpus";
 import { ResultTable } from "./result-table";
 import { type Edge, generateSuggestions } from "./schema-suggestions";
 
 /**
- * The answer's vertices as something to press — the showcase's `Finding`, as the Rules panel offers —
+ * The answer's vertices as something to press — kanzo-ui's `GraphSelect`, as the Rules panel offers —
  * when the answer carries the graph's key column.
  */
 function ShowOnGraph({ output }: { output: QueryOutput }) {
@@ -37,14 +37,14 @@ function ShowOnGraph({ output }: { output: QueryOutput }) {
   if (!output.rows[0] || !(key in output.rows[0])) return null;
   const ids = [...new Set(output.rows.map((row) => Number(row[key])).filter(Number.isFinite))];
   return (
-    <Finding disabled={ids.length === 0} label={output.sql} load={async () => ids} source="external">
+    <GraphSelect disabled={ids.length === 0} label={output.sql} load={async () => ids}>
       <span className="flex items-baseline gap-2">
         <span className="flex-1 text-xs leading-relaxed">Show these on the graph</span>
         <span className="shrink-0 font-medium text-xs tabular-nums">
           {ids.length.toLocaleString()}
         </span>
       </span>
-    </Finding>
+    </GraphSelect>
   );
 }
 
@@ -142,7 +142,7 @@ export function AskPanel() {
   const { jobId } = useCorpus();
   const { coordinator } = useMosaic();
   const tables = useFieldStats();
-  const edges = useRows<Edge>(
+  const edges = useQueryRows<Edge>(
     Query.from(new TableRefNode([jobId, "fossil_tables"]))
       .select("source", "destination")
       .where(eq(column("kind"), literal("edge"))),

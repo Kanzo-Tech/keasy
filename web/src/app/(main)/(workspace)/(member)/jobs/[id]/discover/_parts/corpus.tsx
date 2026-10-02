@@ -4,7 +4,15 @@ import { createContext, use, type ReactNode } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { TableRefNode, column, eq, isNotNull, literal } from "@uwdata/mosaic-sql";
 import { open, type Close } from "@fossil-lang/corpus";
-import { MosaicProvider, Query, engine, queryFieldStats, useMosaic, type Coordinator } from "@kanzo-tech/ui/analytics";
+import {
+  MosaicProvider,
+  Query,
+  engine,
+  queryFieldStats,
+  useMosaic,
+  useQueryRows,
+  type Coordinator,
+} from "@kanzo-tech/ui/analytics";
 import { queryClient } from "@/lib/api/query-client";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
@@ -91,25 +99,9 @@ export const roleColumns = (jobId: string, role?: "address" | "identity" | "endp
     .select("table_name", "column_name")
     .where(role ? eq(column("role"), literal(role)) : isNotNull(column("role")));
 
-/** A statement's rows, as objects keyed by column. */
-async function rowsOf<Row>(coordinator: Coordinator, query: Query | string): Promise<Row[]> {
-  return (await coordinator.query(query)).toArray() as Row[];
-}
-
-/**
- * A statement's rows, suspending until they land. The coordinator caches the answer; the query cache
- * is here for the suspense, and drops it with the page.
- */
-export function useRows<Row>(query: Query): Row[] {
-  const { jobId } = useCorpus();
-  const { coordinator } = useMosaic();
-  const sql = String(query);
-  return settled(useSuspenseQuery({ queryKey: [...corpusKey(jobId), sql], queryFn: () => rowsOf<Row>(coordinator, sql), ...ONCE }));
-}
-
 /** The column the graph keys a vertex by — the `address` column, the same in every vertex table of one corpus. */
 export function useGraphKey(): string {
-  const [address] = useRows<{ column_name: string }>(roleColumns(useCorpus().jobId, "address"));
+  const [address] = useQueryRows<{ column_name: string }>(roleColumns(useCorpus().jobId, "address"));
   if (!address) throw new Error("The corpus declares no vertex table, so nothing has a key");
   return address.column_name;
 }
@@ -123,22 +115,19 @@ export function useGraphKey(): string {
 export function useFieldStats(): TableStats[] {
   const { jobId } = useCorpus();
   const { coordinator } = useMosaic();
+  const tables = useQueryRows<{ table_name: string }>(vertexTables(jobId));
+  const kept = useQueryRows<{ table_name: string; column_name: string }>(roleColumns(jobId));
   const stats = useSuspenseQuery({
     queryKey: [...corpusKey(jobId), "stats"],
-    queryFn: async () => {
-      const [tables, kept] = await Promise.all([
-        rowsOf<{ table_name: string }>(coordinator, vertexTables(jobId)),
-        rowsOf<{ table_name: string; column_name: string }>(coordinator, roleColumns(jobId)),
-      ]);
-      return Promise.all(
+    queryFn: () =>
+      Promise.all(
         tables.map(async ({ table_name: name }) => ({
           name,
           ...(await queryFieldStats(coordinator, new TableRefNode([jobId, name]), {
             exclude: kept.filter((c) => c.table_name === name).map((c) => c.column_name),
           })),
         })),
-      );
-    },
+      ),
     ...ONCE,
   });
   return settled(stats);

@@ -65,8 +65,9 @@ test("15 a structured answer that does not parse fails the assistant's step, not
   await page.getByText("Assistant", { exact: true }).click();
   // Ark draws the checkbox's control over its input.
   await page.getByRole("checkbox", { name: "Select MinIO dev bucket" }).check({ force: true });
-  await page.getByRole("button", { name: "Next" }).click();
-  await page.getByRole("button", { name: "Next" }).click({ timeout: 60_000 });
+  const next = page.getByRole("button", { name: "Next", exact: true });
+  await next.click();
+  await next.click({ timeout: 60_000 });
   await expectProblem(page, "llm/failed", { within: 20_000 });
 });
 

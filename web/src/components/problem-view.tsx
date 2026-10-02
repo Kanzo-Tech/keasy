@@ -96,8 +96,9 @@ function Item({ row, open, actions }: { row: Row; open?: boolean; actions?: Reac
         </Show>
         <Show when={row.children.length > 0}>
           <DiagnosticList>
+            {/* A coded cause is part of the explanation, so it is open; a foreign one stays folded. */}
             {row.children.map((child, i) => (
-              <Item key={i} row={child} />
+              <Item key={i} open={child.code !== undefined} row={child} />
             ))}
           </DiagnosticList>
         </Show>

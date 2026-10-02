@@ -11,6 +11,7 @@
 import "client-only";
 
 import { open, type Close } from "@fossil-lang/corpus";
+import { FossilError } from "@fossil-lang/types";
 import { engine, type Coordinator } from "@kanzo-tech/ui/analytics";
 
 import { host } from "@/lib/fossil/host";
@@ -113,11 +114,17 @@ export interface SqlResult {
 /**
  * **One statement, as written**, through the page's coordinator — the Ask agent's and SUMMARIZE's.
  * At most `limit` rows come back, whatever the statement's own `LIMIT` says: one row past it says the
- * cap bit.
+ * cap bit. A statement the engine refuses is `engine/failed`, the engine's own error kept whole as
+ * its cause — what `corpus.sql` answered before the corpus became an attach.
  */
 export async function runSql(coordinator: Coordinator, statement: string, { limit = 10_000 } = {}): Promise<SqlResult> {
   const body = statement.trim().replace(/;+\s*$/, "");
-  const rows = await rowsOf(coordinator, `SELECT * FROM (${body}) AS _q LIMIT ${limit + 1}`);
+  let rows: Record<string, unknown>[];
+  try {
+    rows = await rowsOf(coordinator, `SELECT * FROM (${body}) AS _q LIMIT ${limit + 1}`);
+  } catch (cause) {
+    throw FossilError.of("engine/failed", {}, { cause });
+  }
   const columns = rows.length > 0 ? Object.keys(rows[0] as object) : [];
   return {
     columns,

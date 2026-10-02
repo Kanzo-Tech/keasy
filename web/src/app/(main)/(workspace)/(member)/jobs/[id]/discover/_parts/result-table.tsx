@@ -8,7 +8,7 @@ import {
   DataTableRoot,
   useDataTable,
 } from "@kanzo-tech/ui/table";
-import type { SqlResult } from "@fossil-lang/corpus";
+import type { SqlResult } from "@/lib/fossil/corpus";
 
 type Row = readonly unknown[];
 

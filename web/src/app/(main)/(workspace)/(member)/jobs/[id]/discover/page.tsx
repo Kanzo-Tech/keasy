@@ -44,6 +44,7 @@ import { AskPanel } from "./_parts/ask-panel";
 import { CorpusProvider, corpusQuery, useCorpus } from "./_parts/corpus";
 import { GraphInfo } from "./_parts/graph-info";
 import { GraphSettings } from "./_parts/graph-settings";
+import { channelsOf, PlacementContext, type Placement } from "./_parts/graph-placement";
 import { RulesPanel } from "./_parts/rules-panel";
 import { Boundary } from "@/components/boundary";
 import { ProblemView } from "@/components/problem-view";
@@ -165,13 +166,14 @@ function CorpusStatus() {
 }
 
 function Workspace() {
-  const { corpus, manifest } = useCorpus();
+  const { jobId, coordinator, catalog } = useCorpus();
   const { look } = useGraphPrefs();
-  // Colour by type, ranked in the manifest's order so a type keeps its colour as rows arrive.
+  // Colour by type, ranked in `fossil_tables`' order so a type keeps its colour as rows arrive.
   const categories = useMemo(
-    () => Object.fromEntries(manifest.vertex_tables.map((t) => [t.name, t.name])),
-    [manifest],
+    () => Object.fromEntries(catalog.vertex_tables.map((t) => [t.name, t.name])),
+    [catalog],
   );
+  const placement = useState<Placement>({});
   const crossfilter = useCrossfilter();
   const [active, setActive] = useState<PanelId>("info");
   const [panelOpen, setPanelOpen] = useState(true);
@@ -184,12 +186,15 @@ function Workspace() {
 
   return (
     <GraphFailure value={failure}>
+    <PlacementContext value={placement}>
     <GraphRoot
       categories={categories}
-      corpus={corpus}
+      coordinator={coordinator}
       filterBy={crossfilter}
+      from={jobId}
       look={look}
       onFailure={setFailure}
+      {...channelsOf(placement[0])}
     >
       <HeaderEnd>
         {/* Switching to the dashboard closes the dock: a dashboard is judged at full width. Reopen it
@@ -293,6 +298,7 @@ function Workspace() {
         </ToggleGroup>
       </ShellFooter>
     </GraphRoot>
+    </PlacementContext>
     </GraphFailure>
   );
 }

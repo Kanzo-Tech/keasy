@@ -1,11 +1,11 @@
-import type { Manifest } from "@fossil-lang/corpus";
+import type { Catalog } from "@/lib/fossil/corpus";
 import type { TableStats } from "./field-stats";
 
 /**
  * Generate starter question suggestions programmatically from the corpus's tables.
  * Inspired by ThoughtSpot / Tableau Ask Data — instant, no LLM cost.
  */
-export function generateSuggestions(tables: TableStats[], manifest: Manifest): string[] {
+export function generateSuggestions(tables: TableStats[], catalog: Catalog): string[] {
   const suggestions: string[] = [];
 
   for (const t of tables) {
@@ -26,7 +26,7 @@ export function generateSuggestions(tables: TableStats[], manifest: Manifest): s
     }
   }
 
-  for (const e of manifest.edge_tables) {
+  for (const e of catalog.edge_tables) {
     suggestions.push(`How are ${e.source.references} connected to ${e.destination.references}?`);
   }
 

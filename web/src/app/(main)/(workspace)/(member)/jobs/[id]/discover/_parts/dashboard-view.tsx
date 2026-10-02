@@ -8,6 +8,7 @@ import { $api, http } from "@/lib/api/client";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { Boundary } from "@/components/boundary";
+import { relation } from "@/lib/fossil/corpus";
 import { useCorpus } from "./corpus";
 import { bookkeeping } from "./field-stats";
 
@@ -38,8 +39,8 @@ export default function DashboardView() {
 }
 
 function SavedDashboard() {
-  const { jobId, corpus, manifest } = useCorpus();
-  const types = manifest.vertex_tables;
+  const { jobId, catalog } = useCorpus();
+  const types = catalog.vertex_tables;
   const [type, setType] = useState(types[0]?.name ?? "");
   const table = types.find((t) => t.name === type);
 
@@ -97,7 +98,7 @@ function SavedDashboard() {
           key={type}
           onChange={change}
           rowNoun={type}
-          table={verbatim(corpus.relation(type))}
+          table={verbatim(relation(jobId, type))}
           value={byType[type]}
         />
       </ScrollArea>

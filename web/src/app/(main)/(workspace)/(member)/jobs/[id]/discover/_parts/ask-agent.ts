@@ -1,6 +1,7 @@
-import type { SqlCorpus, SqlResult } from "@fossil-lang/corpus";
+import type { Coordinator } from "@kanzo-tech/ui/analytics";
 import { jsonSchema, stepCountIs, tool, ToolLoopAgent } from "@kanzo-tech/llm";
 import { gateway } from "@/lib/ai";
+import { runSql, type Catalog, type SqlResult } from "@/lib/fossil/corpus";
 import { type Shown, toProblem } from "@/lib/errors";
 import { recordsOf } from "./corpus";
 import { graphKey } from "./field-stats";
@@ -76,10 +77,10 @@ export type QueryAnswer = QueryOutput | { readonly sql: string; readonly refused
  * The one tool: run SQL over the graph, here in the browser. The panel keeps the whole result —
  * the table, and the vertices it can show on the canvas — and the model reads a sample.
  */
-export function askAgent(schema: string, corpus: SqlCorpus) {
+export function askAgent(schema: string, coordinator: Coordinator, catalog: Catalog) {
   return new ToolLoopAgent({
     model: gateway("chat"),
-    instructions: askInstructions(schema, graphKey(corpus.manifest)),
+    instructions: askInstructions(schema, graphKey(catalog)),
     stopWhen: stepCountIs(5),
     // Not retried here: the gateway retries its upstreams, and a silent gateway asked three times
     // is three deadlines where the person waits for one.
@@ -97,7 +98,9 @@ export function askAgent(schema: string, corpus: SqlCorpus) {
         // and tries again, and the panel shows the refusal as what it is.
         execute: async ({ sql }, { abortSignal }): Promise<QueryAnswer> => {
           try {
-            const result = await corpus.sql(sql, { limit: ROWS, signal: abortSignal });
+            // The coordinator takes no signal: a stopped chat drops the answer when it lands.
+            const result = await runSql(coordinator, sql, { limit: ROWS });
+            abortSignal?.throwIfAborted();
             return { sql, ...result, rows: result.rows.map((row) => row.map(plain)) };
           } catch (err) {
             if (abortSignal?.aborted) throw err;

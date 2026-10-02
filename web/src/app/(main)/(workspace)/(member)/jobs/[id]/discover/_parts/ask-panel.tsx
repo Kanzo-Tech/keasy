@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
-import type { SqlCorpus } from "@fossil-lang/corpus";
+import type { Coordinator } from "@kanzo-tech/ui/analytics";
 import {
   Clipboard,
   ClipboardTrigger,
@@ -17,7 +17,7 @@ import {
 } from "@kanzo-tech/ui";
 import { Chat, type ToolPart, useChat } from "@kanzo-tech/ai";
 import { DirectChatTransport } from "@kanzo-tech/llm";
-import { corpusKey } from "@/lib/fossil/corpus";
+import { corpusKey, type Catalog } from "@/lib/fossil/corpus";
 import { toProblem } from "@/lib/errors";
 import { ProblemView } from "@/components/problem-view";
 import { settled } from "@/lib/api/settled";
@@ -34,7 +34,7 @@ import { generateSuggestions } from "./schema-suggestions";
  * when the answer carries the graph's key column.
  */
 function ShowOnGraph({ output }: { output: QueryOutput }) {
-  const at = output.columns.indexOf(graphKey(useCorpus().manifest));
+  const at = output.columns.indexOf(graphKey(useCorpus().catalog));
   if (at < 0) return null;
   const ids = [...new Set(output.rows.map((row) => Number(row[at])).filter(Number.isFinite))];
   return (
@@ -96,14 +96,24 @@ function QueryResult({ part }: { part: ToolPart }) {
 const TOOLS = { query: (part: ToolPart) => <QueryResult part={part} /> };
 
 /** The conversation, once there is a schema to reason over. One agent for the panel's life. */
-function AskChat({ schema, corpus, starters }: { schema: string; corpus: SqlCorpus; starters: string[] }) {
+function AskChat({
+  schema,
+  coordinator,
+  catalog,
+  starters,
+}: {
+  schema: string;
+  coordinator: Coordinator;
+  catalog: Catalog;
+  starters: string[];
+}) {
   // What stopped an answer, as thrown: the AI SDK hands `useChat` a sentence, so the transport keeps
   // the value itself for the failure view.
   const [failure, setFailure] = useState<unknown>(undefined);
   const [transport] = useState(
     () =>
       new DirectChatTransport({
-        agent: askAgent(schema, corpus),
+        agent: askAgent(schema, coordinator, catalog),
         onError: (error) => {
           setFailure(error);
           return error instanceof Error ? error.message : String(error);
@@ -139,23 +149,23 @@ function AskChat({ schema, corpus, starters }: { schema: string; corpus: SqlCorp
 }
 
 export function AskPanel() {
-  const { jobId, coordinator, corpus, manifest } = useCorpus();
+  const { jobId, coordinator, catalog } = useCorpus();
   const tables = useFieldStats();
 
   // The schema the assistant reasons over: DuckDB's own catalog, read back from
-  // the views the corpus mounted. Names, columns and TYPES are the ones a query
+  // the views the corpus attached. Names, columns and TYPES are the ones a query
   // will actually meet. Read before the panel opens; a failure throws to the
   // panel's boundary.
   const schema = settled(
     useSuspenseQuery({
       queryKey: [...corpusKey(jobId), "data-space"],
       queryFn: ({ signal }) =>
-        describeDataSpace((sql) => coordinator.query(sql, { type: "json", signal }), corpus, manifest),
+        describeDataSpace((sql) => coordinator.query(sql, { type: "json", signal }), jobId, catalog),
       ...ONCE,
     }),
   );
 
   // Derived from the schema the reader already has, so offering them costs nothing.
-  const starters = useMemo(() => generateSuggestions(tables, manifest), [tables, manifest]);
-  return <AskChat corpus={corpus} schema={schema} starters={starters} />;
+  const starters = useMemo(() => generateSuggestions(tables, catalog), [tables, catalog]);
+  return <AskChat catalog={catalog} coordinator={coordinator} schema={schema} starters={starters} />;
 }

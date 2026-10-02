@@ -8,7 +8,7 @@ import { XIcon } from "lucide-react";
 import { Button, cn, ScrollArea, Skeleton } from "@kanzo-tech/ui";
 import { numbers } from "@kanzo-tech/ui/analytics";
 import { useGraphContext } from "@kanzo-tech/graph";
-import { corpusKey } from "@/lib/fossil/corpus";
+import { corpusKey, relation } from "@/lib/fossil/corpus";
 import { useCorpus, useFieldStats } from "./corpus";
 import { Finding } from "./finding";
 import { OPERATOR_META, type Rule, ruleIdsQuery, runRules } from "./rule-engine";
@@ -35,7 +35,7 @@ const sentence = (rule: Rule) => {
  * report that changed as you browsed would be a different question every time you looked.
  */
 export function RulesPanel() {
-  const { jobId, coordinator, corpus, manifest } = useCorpus();
+  const { jobId, coordinator, catalog } = useCorpus();
   const tables = useFieldStats();
   const { select } = useGraphContext();
   const [useRules] = useState(() => createRulesStore(jobId));
@@ -50,7 +50,7 @@ export function RulesPanel() {
       runRules(
         rules,
         async (q) => (await coordinator.query(q, { type: "json" })) as unknown as Record<string, unknown>[],
-        (name) => corpus.relation(name),
+        (name) => relation(jobId, name),
       ),
     staleTime: Infinity,
   });
@@ -60,12 +60,12 @@ export function RulesPanel() {
   const violations = counted.reduce((n, r) => n + Math.max(r.violationCount, 0), 0);
 
   const keyOf = (type: string | undefined) => {
-    const table = manifest.vertex_tables.find((t) => t.name === type);
+    const table = catalog.vertex_tables.find((t) => t.name === type);
     if (!table) throw new Error(`The corpus declares no vertex table ${type ?? ""}`);
     return table.key;
   };
   const failingIds = async (rule: Rule) => {
-    const query = ruleIdsQuery(rule, corpus.relation(rule.typeName ?? ""), keyOf(rule.typeName));
+    const query = ruleIdsQuery(rule, relation(jobId, rule.typeName ?? ""), keyOf(rule.typeName));
     return query ? numbers(await coordinator.query(query), "id") : [];
   };
 

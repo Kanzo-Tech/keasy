@@ -1,37 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import type { Job } from "@fossil-lang/executor";
+import { engine } from "@kanzo-tech/ui/analytics";
 import { ApiError, http, type Schemas } from "@/lib/api/client";
 import { bounds } from "@/lib/api/spec";
-import { openJobCorpus } from "@/lib/fossil/corpus";
+import { openJobCorpus, readCatalog } from "@/lib/fossil/corpus";
 import { host } from "@/lib/fossil/host";
 import { toastError, toProblem } from "@/lib/errors";
-
-/**
- * A job as `runJob` takes it: every byte goes through keasy's one {@link host};
- * the run report crosses untouched, since `CompleteJobRequest.manifest` is
- * opaque JSON on the server. `runJob` reports both outcomes, `completed` and
- * `failed`, and retries a refused report itself; `reported` says which it tried
- * and whether it got through, so the runner does not report a failure twice. It
- * retries for {@link LEASE_MS}, the server's sweep, so it stops when the job is
- * no longer ours to report.
- */
-function makeJob(id: string, reported: Reported): Job {
-  return {
-    id,
-    host,
-    lease: LEASE_MS,
-    complete: async ({ status, manifest, problem }, { signal }) => {
-      reported.status = status;
-      await http.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body: { status, manifest, problem }, signal });
-      reported.done = true;
-    },
-  };
-}
-
-interface Reported {
-  status?: "completed" | "failed";
-  done: boolean;
-}
 
 /**
  * How long the server waits on a running job before it sweeps it, as the server publishes it, and
@@ -110,7 +83,7 @@ const started = new Set<string>();
  * Browser-driven execution (client-compute): when a job is `Pending`, the
  * browser is its worker. Reads the program from the job record, marks it
  * `Running` (reusing the completion PATCH), then runs the mapping on
- * DataFusion-WASM end-to-end via `runJob` — sources and GraphAr output through
+ * DataFusion-WASM end-to-end via `run` — sources and GraphAr output through
  * credentials keasy vends, outcome by `PATCH /v1/jobs/{id}`. The server never runs
  * the mapping. The detail view's existing poll surfaces the terminal status.
  */
@@ -128,7 +101,8 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: (
     const jobId = job.id;
     const held = lease(jobId);
     const run = new AbortController();
-    const reported: Reported = { done: false };
+    // The corpus is written: from here on a failure is keasy's record of it, never the run's.
+    let ran = false;
     // A closed tab stops the run; it cannot report, so the server's lease sweep ends the job.
     const closing = () => run.abort(new DOMException("The tab closed", "AbortError"));
     window.addEventListener("pagehide", closing);
@@ -149,14 +123,23 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: (
 
         const mod = await import("@fossil-lang/executor");
         await mod.initFossilExecutor();
-        // runJob reads every document and source the program names through the
-        // host, and reports `completed` or `failed` itself.
-        await mod.runJob(program, makeJob(jobId, reported), { signal: run.signal });
+        // `run` reads every document and source the program names through the host, writes the
+        // corpus under the job, and answers its report or throws its `FossilError`. Recording the
+        // outcome is keasy's: the report crosses untouched, since `CompleteJobRequest.manifest` is
+        // opaque JSON on the server, and it is asked again for as long as the lease is ours.
+        const report = await mod.run(program, { host, job: jobId, signal: run.signal });
+        ran = true;
+        await held.report(() =>
+          http.PATCH("/v1/jobs/{id}", {
+            params: { path: { id: jobId } },
+            body: { status: "completed", manifest: report },
+          }),
+        );
         held.release();
 
         // Tell the host what it is now storing. The run report says what was
         // written; it does not say what the relations are CALLED, which is a
-        // reader's answer — so the corpus is opened and asked, here, in the tab
+        // reader's answer — so the corpus is attached and asked, here, in the tab
         // that just produced it.
         //
         // Its own `catch`: the job IS done and its data IS at the sink. A
@@ -164,16 +147,17 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: (
         // a failed run would be a lie about durable data — so it is said, not
         // stored.
         try {
-          const corpus = await openJobCorpus(jobId);
+          const close = await openJobCorpus(jobId);
           try {
-            // The manifest names each table's file relative to the corpus root, which is
-            // how keasy stores it.
+            const { coordinator } = await engine();
+            const { vertex_tables, edge_tables } = await readCatalog(coordinator, jobId);
+            // `fossil_tables` names each table's file relative to the corpus root, which is how
+            // keasy stores it.
             const relation = (t: { name: string; record_count: number; path: string }) => ({
               name: t.name,
               rows: t.record_count,
               files: [t.path],
             });
-            const { vertex_tables, edge_tables } = corpus.manifest;
             const relations = [
               ...vertex_tables.map((t) => ({
                 ...relation(t),
@@ -185,26 +169,27 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: (
               http.PUT("/v1/jobs/{id}/relations", { params: { path: { id: jobId } }, body: { relations } }),
             );
           } finally {
-            await corpus.close();
+            await close();
           }
         } catch (err) {
           toastError(err, "The datasets entry was not published");
         }
       } catch (err) {
-        if (run.signal.aborted) {
+        if (ran) {
+          // The output was written; only its report failed, and reporting a failure would be a lie.
+          toastError(err, "The run finished, but keasy could not record it");
+        } else if (run.signal.aborted) {
           // Stopped here: say so. A closed tab cannot, and the sweep ends the job instead.
           if (run.signal.reason instanceof DOMException && run.signal.reason.message === "Stopped") {
             await held
               .report(() => http.PATCH("/v1/jobs/{id}", { params: { path: { id: jobId } }, body: { status: "cancelled" } }))
               .catch((patchErr: unknown) => toastError(patchErr, "The run stopped, and the job could not be marked so"));
           }
-        } else if (reported.status === "completed") {
-          // The output was written; only its report failed, and reporting a failure would be a lie.
-          toastError(err, "The run finished, but keasy could not record it");
-        } else if (!reported.done) {
-          // A failure before the run reported anything: the executor never loaded, or the job
-          // could not be marked running. Asked again until the lease would lapse; after that the
-          // sweep ends the job anyway, as `job/abandoned`, and the problem is said here.
+        } else {
+          // The run failed — its `FossilError`, whose `problem` is the wire form — or never started:
+          // the executor did not load, or the job could not be marked running. Asked again until the
+          // lease would lapse; after that the sweep ends the job anyway, as `job/abandoned`, and the
+          // problem is said here.
           await held
             .report(() =>
               http.PATCH("/v1/jobs/{id}", {

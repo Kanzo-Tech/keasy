@@ -2,7 +2,6 @@ import {
   PreferencesDensity,
   PreferencesFont,
   PreferencesMonoFont,
-  PreferencesRadius,
   SectionBody,
   SectionDescription,
   SectionHeader,
@@ -21,14 +20,9 @@ const SECTIONS = [
     body: <ThemePicker />,
   },
   {
-    title: "Shape and density",
-    description: "Corner radius and the scale everything else is measured against.",
-    body: (
-      <>
-        <PreferencesRadius />
-        <PreferencesDensity />
-      </>
-    ),
+    title: "Density",
+    description: "How compact the interface is: the scale everything else is measured against.",
+    body: <PreferencesDensity />,
   },
   {
     title: "Typography",

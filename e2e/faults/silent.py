@@ -1,7 +1,7 @@
 """A store that accepts every connection and never answers a byte.
 
 The kernel completes the handshake, so a client's connect succeeds and only its request deadline
-ends the wait. Stands in for MinIO/STS/Azure in the `faults` compose profile (scenario 3).
+ends the wait. Stands in for the S3 store/STS/Azure in the `faults` compose profile (scenario 3).
 """
 
 import socket

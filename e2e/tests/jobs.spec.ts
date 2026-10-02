@@ -47,7 +47,7 @@ test("19 a tab closed mid-run ends the job as job/abandoned, and it can be delet
   const id = await createJob(page, { name: "e2e abandoned" });
   const runner = await context.newPage();
   // The run's reads of the bucket never answer, so it is still running when its tab closes.
-  await runner.route(/minio\.localhost/, () => {});
+  await runner.route(/s3\.localhost/, () => {});
   await runner.goto(`/jobs/${id}`);
   await expect
     .poll(async () => ((await api(page, "GET", `/v1/jobs/${id}`)).body as { status: string }).status, { timeout: 60_000 })

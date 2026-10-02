@@ -1,0 +1,41 @@
+{
+  "sts": {
+    "tokenDuration": "1h",
+    "maxSessionLength": "12h",
+    "issuer": "seaweedfs-sts",
+    "signingKey": "a2Vhc3ktZGV2LXN0cy1zaWduaW5nLWtleS0zMi1ieXRlcyE="
+  },
+  "policy": { "defaultEffect": "Deny" },
+  "policies": [
+    {
+      "name": "KeasyVended",
+      "document": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": ["s3:*"],
+            "Resource": ["arn:aws:s3:::keasy-dev", "arn:aws:s3:::keasy-dev/*"]
+          }
+        ]
+      }
+    }
+  ],
+  "roles": [
+    {
+      "roleName": "keasy-vended",
+      "roleArn": "arn:aws:iam::000000000000:role/keasy-vended",
+      "attachedPolicies": ["KeasyVended"],
+      "trustPolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": { "AWS": "arn:aws:iam::000000000000:user/keasy-admin" },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      }
+    }
+  ]
+}

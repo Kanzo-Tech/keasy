@@ -720,7 +720,9 @@ export interface components {
             region?: string;
             /**
              * @description The role keasy assumes to vend a credential scoped to one prefix.
-             *     AWS needs it; S3-compatible stores (MinIO, Ceph) ignore it.
+             *     AWS needs it. With an endpoint and no role, keasy asks for
+             *     `arn:aws:iam::000000000000:role/keasy-vended`; a store that validates
+             *     roles (Ceph RGW, SeaweedFS) needs that role declared, or this set.
              */
             role_arn?: string | null;
             /** Format: password */

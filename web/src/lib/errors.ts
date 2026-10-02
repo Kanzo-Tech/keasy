@@ -126,6 +126,7 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Auth
     link: { label: "Go to Credentials", href: "/settings/credentials" },
   },
   "resource/in-use": { title: "It is still in use." },
+  "job/folder-taken": { title: "Another job writes to this folder already." },
   "job/still-running": { title: "The job is still running; it can be deleted once it ends." },
   "job/abandoned": {
     title: "The run was abandoned",
@@ -249,6 +250,20 @@ function streamed(err: unknown): Shown | undefined {
 function messageOf(err: unknown): string | undefined {
   const message = (err as { message?: unknown } | null)?.message;
   return typeof message === "string" ? message : undefined;
+}
+
+/** A refusal about one field of the request, as a form says it on that field. */
+export interface FieldProblem {
+  field: string;
+  message: string;
+}
+
+/** The field a server refusal names (`data.field`) and what to say there; `null` when it names none. */
+export function fieldProblem(error: unknown): FieldProblem | null {
+  if (!(error instanceof ApiError)) return null;
+  const field = error.data?.field;
+  if (!field) return null;
+  return { field, message: copyOf(error.code)?.title ?? error.message };
 }
 
 /** Toast a failed action: `title` names the action, the description is the code's copy or the failure's own words. */

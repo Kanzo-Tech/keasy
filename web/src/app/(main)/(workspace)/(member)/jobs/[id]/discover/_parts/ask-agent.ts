@@ -103,7 +103,7 @@ export function askAgent(schema: string, coordinator: Coordinator, key: string) 
         execute: async ({ sql }, { abortSignal }): Promise<QueryAnswer> => {
           try {
             // The coordinator takes no signal: a stopped chat drops the answer when it lands.
-            const answer = (await coordinator.query(sql, { type: "json" })) as Iterable<Row>;
+            const answer = (await coordinator.query(sql)).toArray() as Row[];
             abortSignal?.throwIfAborted();
             const rows = Array.from(answer, (row) =>
               Object.fromEntries(Object.entries(row).map(([column, value]) => [column, plain(value)])),

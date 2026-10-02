@@ -51,7 +51,7 @@ export function RulesPanel() {
     queryFn: () =>
       runRules(
         rules,
-        async (q) => (await coordinator.query(q, { type: "json" })) as unknown as Record<string, unknown>[],
+        async (q) => (await coordinator.query(q)).toArray() as Record<string, unknown>[],
         (name) => new TableRefNode([jobId, name]),
       ),
     staleTime: Infinity,
@@ -107,7 +107,7 @@ export function RulesPanel() {
                     disabled={pending || clean || broken}
                     label={`${rule.typeName} ${sentence(rule)}`}
                     load={() => failingIds(rule)}
-                    source="order"
+                    source="external"
                   >
                     <span className="flex items-center gap-2">
                       <span

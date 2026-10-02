@@ -37,7 +37,7 @@ function ShowOnGraph({ output }: { output: QueryOutput }) {
   if (!output.rows[0] || !(key in output.rows[0])) return null;
   const ids = [...new Set(output.rows.map((row) => Number(row[key])).filter(Number.isFinite))];
   return (
-    <Finding disabled={ids.length === 0} label={output.sql} load={async () => ids} source="ask">
+    <Finding disabled={ids.length === 0} label={output.sql} load={async () => ids} source="external">
       <span className="flex items-baseline gap-2">
         <span className="flex-1 text-xs leading-relaxed">Show these on the graph</span>
         <span className="shrink-0 font-medium text-xs tabular-nums">
@@ -156,7 +156,7 @@ export function AskPanel() {
     useSuspenseQuery({
       queryKey: [...corpusKey(jobId), "data-space"],
       queryFn: ({ signal }) =>
-        describeDataSpace((sql) => coordinator.query(sql, { type: "json", signal }), jobId),
+        describeDataSpace(async (sql) => (await coordinator.query(sql, { signal })).toArray(), jobId),
       ...ONCE,
     }),
   );

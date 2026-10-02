@@ -153,13 +153,14 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: (
           try {
             // `fossil_tables` names each table's file relative to the corpus root, which is how
             // keasy stores it; a vertex table's columns ride along, an edge table's do not.
-            const rows = (await attachedTo.coordinator.query(
-              `SELECT t.table_name, t.rows::DOUBLE AS rows, t.path, c.column_name, c.type
+            const rows = (
+              await attachedTo.coordinator.query(
+                `SELECT t.table_name, t.rows::DOUBLE AS rows, t.path, c.column_name, c.type
                  FROM ${new TableRefNode([jobId, "fossil_tables"])} t
                  LEFT JOIN ${new TableRefNode([jobId, "fossil_columns"])} c ON c.table_name = t.table_name AND t.kind = 'vertex'
                 ORDER BY t.kind DESC, t.table_name, c.ordinal`,
-              { type: "json" },
-            )) as Iterable<{ table_name: string; rows: number; path: string; column_name: string | null; type: string }>;
+              )
+            ).toArray() as { table_name: string; rows: number; path: string; column_name: string | null; type: string }[];
             const byName = new Map<string, Schemas["OutputRelation"]>();
             for (const r of rows) {
               const relation = byName.get(r.table_name) ?? { name: r.table_name, rows: r.rows, files: [r.path] };

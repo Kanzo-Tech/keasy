@@ -93,7 +93,7 @@ export const roleColumns = (jobId: string, role?: "address" | "identity" | "endp
 
 /** A statement's rows, as objects keyed by column. */
 async function rowsOf<Row>(coordinator: Coordinator, query: Query | string): Promise<Row[]> {
-  return Array.from((await coordinator.query(query, { type: "json" })) as Iterable<Row>);
+  return (await coordinator.query(query)).toArray() as Row[];
 }
 
 /**

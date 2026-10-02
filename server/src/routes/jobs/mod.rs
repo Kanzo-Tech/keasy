@@ -7,12 +7,14 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use crate::authentication::role::Member;
-use crate::domain::{Job, JobFolder, JobStatus, OutputRelation, RelativePath, now_iso8601};
+use crate::domain::{
+    Job, JobFolder, JobStatus, OutputRelation, RelativePath, ResourceName, now_iso8601,
+};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::jobs::{owned, persistence};
 use crate::startup::AppState;
@@ -20,13 +22,13 @@ use crate::startup::AppState;
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CreateJobRequest {
     pub script: String,
+    #[schema(value_type = Option<ResourceName>)]
     pub name: Option<String>,
     /// Where the output lands: the sink connection's name.
     pub sink_connection: String,
-    /// The folder under the sink the output lands in: lowercase letters,
-    /// digits and `-`, at most 63 characters, starting with a letter or digit.
-    /// A draft may leave it out; a job to run needs one no other job in the
-    /// sink holds.
+    /// The folder under the sink the output lands in. A draft may leave it
+    /// out; a job to run needs one no other job in the sink holds.
+    #[schema(value_type = Option<JobFolder>)]
     pub folder: Option<String>,
     #[serde(default)]
     pub draft: bool,
@@ -35,9 +37,28 @@ pub struct CreateJobRequest {
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct UpdateJobRequest {
     pub script: Option<String>,
+    #[schema(value_type = Option<ResourceName>)]
     pub name: Option<String>,
     /// The draft's folder under the sink, spelled as on create.
+    #[schema(value_type = Option<JobFolder>)]
     pub folder: Option<String>,
+}
+
+/// A draft's final edits as it becomes a job to run, spelled as on update.
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct SubmitJobRequest {
+    pub script: Option<String>,
+    #[schema(value_type = Option<ResourceName>)]
+    pub name: Option<String>,
+    /// Needed unless the draft holds one already.
+    #[schema(value_type = Option<JobFolder>)]
+    pub folder: Option<String>,
+}
+
+/// Whether a folder of the sink is free for a job to run.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct FolderAvailability {
+    pub available: bool,
 }
 
 /// The folder a request names, parsed.
@@ -45,7 +66,20 @@ fn folder(folder: Option<&str>) -> Result<Option<JobFolder>, Refusal> {
     folder
         .map(JobFolder::parse)
         .transpose()
-        .map_err(Refusal::invalid)
+        .map_err(|e| Refusal::invalid_field("folder", e))
+}
+
+/// The name a request gives the job, checked: a job is named as a connection is.
+fn name(name: Option<String>) -> Result<Option<String>, Refusal> {
+    if let Some(name) = &name {
+        ResourceName::parse(name).map_err(|e| Refusal::invalid_field("name", e))?;
+    }
+    Ok(name)
+}
+
+/// A job leaves draft only with a folder.
+fn no_folder() -> Refusal {
+    Refusal::invalid_field("folder", "A job to run needs a folder for its output")
 }
 
 /// The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
@@ -99,8 +133,8 @@ pub async fn list_jobs(
     responses(
         (status = 201, description = "Draft job created", body = Job),
         (status = 202, description = "Job submitted for execution", body = Job),
-        (status = 400, description = "The destination is not a sink, or the folder is missing or misspelled", body = ErrorBody),
-        (status = 409, description = "Another job writes to that folder already", body = ErrorBody),
+        (status = 400, description = "The destination is not a sink, or the name or folder is missing or misspelled (`data.field`)", body = ErrorBody),
+        (status = 409, description = "Another job writes to that folder already: `job/folder-taken`", body = ErrorBody),
     )
 )]
 pub async fn create_job(
@@ -119,11 +153,10 @@ pub async fn create_job(
         ));
     }
 
+    let name = name(payload.name)?;
     let folder = folder(payload.folder.as_deref())?;
     if !payload.draft && folder.is_none() {
-        return Err(Refusal::invalid(
-            "A job to run needs a folder for its output",
-        ));
+        return Err(no_folder());
     }
 
     // A `Pending` job is run by the browser: sources and output through
@@ -135,7 +168,7 @@ pub async fn create_job(
     };
     let job = Job::new(
         status,
-        payload.name,
+        name,
         payload.sink_connection,
         folder,
         payload.script,
@@ -166,7 +199,7 @@ pub async fn get_job(
     request_body = UpdateJobRequest,
     responses(
         (status = 200, description = "Job updated", body = Job),
-        (status = 400, description = "Job is not a draft, or the folder is misspelled", body = ErrorBody),
+        (status = 400, description = "Job is not a draft, or the name or folder is misspelled (`data.field`)", body = ErrorBody),
         (status = 404, description = "Job not found", body = ErrorBody),
     )
 )]
@@ -183,12 +216,13 @@ pub async fn update_job(
             "Only draft jobs can be updated",
         ));
     }
+    let name = name(payload.name)?;
     let folder = folder(payload.folder.as_deref())?;
     persistence::update(&*state.db.write().await, &id, |job| {
         if let Some(script) = payload.script {
             job.script = Some(script);
         }
-        if let Some(name) = payload.name {
+        if let Some(name) = name {
             job.name = Some(name);
         }
         if let Some(folder) = folder {
@@ -197,6 +231,93 @@ pub async fn update_job(
     })?
     .map(Json)
     .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))
+}
+
+#[utoipa::path(post, path = "/v1/jobs/{id}/submit", tag = "Jobs",
+    params(("id" = String, Path, description = "Job ID")),
+    request_body = SubmitJobRequest,
+    responses(
+        (status = 202, description = "The draft is now the job to run, under the same id", body = Job),
+        (status = 400, description = "Job is not a draft (`job/not-draft`), or the name or folder is missing or misspelled (`data.field`)", body = ErrorBody),
+        (status = 404, description = "Job not found", body = ErrorBody),
+        (status = 409, description = "Another job writes to that folder already: `job/folder-taken`; the job stays a draft, unchanged", body = ErrorBody),
+    )
+)]
+/// A draft becomes the job to run, in place: the edits, the folder check and
+/// the promotion are one write, so a refusal leaves the draft as it was and a
+/// success leaves no draft behind.
+pub async fn submit_job(
+    member: Member,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(payload): Json<SubmitJobRequest>,
+) -> Result<impl IntoResponse, Refusal> {
+    let name = name(payload.name)?;
+    let folder = folder(payload.folder.as_deref())?;
+    crate::jobs::sweep(&state.db).await?;
+
+    let conn = state.db.write().await;
+    let mut job = persistence::get(&conn, &id)?
+        .filter(|job| job.created_by == member.user_id)
+        .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))?;
+    if job.status != JobStatus::Draft {
+        return Err(Refusal::new(
+            StatusCode::BAD_REQUEST,
+            ErrorCode::NotDraft,
+            "Only a draft is submitted",
+        ));
+    }
+    if let Some(script) = payload.script {
+        job.script = Some(script);
+    }
+    if let Some(name) = name {
+        job.name = Some(name);
+    }
+    if let Some(folder) = folder {
+        job.folder = Some(folder.into_inner());
+    }
+    if job.folder.is_none() {
+        return Err(no_folder());
+    }
+    job.status = JobStatus::Pending;
+    // The sweep fails a `pending` job older than the lease by `created_at`: a
+    // draft's would sweep it the moment it is submitted.
+    job.created_at = now_iso8601();
+    persistence::write(&conn, &job)?;
+
+    Ok((StatusCode::ACCEPTED, Json(job)))
+}
+
+#[utoipa::path(get, path = "/v1/connections/{name}/folders/{folder}", tag = "Jobs",
+    params(
+        ("name" = String, Path, description = "The sink connection's name"),
+        ("folder" = JobFolder, Path, description = "The folder under the sink"),
+    ),
+    responses(
+        (status = 200, description = "Whether a job to run may write to the folder", body = FolderAvailability),
+        (status = 400, description = "The connection is not the sink (`job/invalid-destination`), or the folder is misspelled (`data.field`)", body = ErrorBody),
+        (status = 404, description = "Connection not found", body = ErrorBody),
+    )
+)]
+/// Whether a job to run may take `folder` in the sink: no job but a draft
+/// holds it. It reveals only whether the folder is held, never whose job holds
+/// it.
+pub async fn folder_availability(
+    _: Member,
+    State(state): State<AppState>,
+    Path((name, folder_name)): Path<(String, String)>,
+) -> Result<impl IntoResponse, Refusal> {
+    let connection = crate::connections::named(&state.db, &name).await?;
+    if !connection.target.is_sink() {
+        return Err(Refusal::new(
+            StatusCode::BAD_REQUEST,
+            ErrorCode::InvalidDestination,
+            "Only the workspace sink holds job folders",
+        ));
+    }
+    let folder = JobFolder::parse(&folder_name).map_err(|e| Refusal::invalid_field("folder", e))?;
+    let taken = persistence::folder_taken(&*state.db.read().await, &name, folder.as_ref())?;
+    Ok(Json(FolderAvailability { available: !taken }))
 }
 
 #[utoipa::path(patch, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -222,9 +343,7 @@ pub async fn complete_job(
     match owned(&state.db, &member.user_id, &id).await?.status {
         JobStatus::Pending | JobStatus::Running => {}
         JobStatus::Draft => {
-            return Err(Refusal::invalid(
-                "A draft is never run: create the job from it",
-            ));
+            return Err(Refusal::invalid("A draft is never run: submit it first"));
         }
         JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled => {
             return Err(Refusal::new(
@@ -366,4 +485,6 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(get_job, update_job, complete_job, delete_job))
         .routes(routes!(publish_relations))
         .routes(routes!(heartbeat))
+        .routes(routes!(submit_job))
+        .routes(routes!(folder_availability))
 }

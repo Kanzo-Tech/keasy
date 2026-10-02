@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { folderProblem, folderSlug } from "./folder";
+import { schemaOf } from "@/lib/api/spec";
+import { FOLDER_MAX, folderProblem, folderSlug } from "./folder";
 
 describe("folderSlug", () => {
   it("turns a name into a folder the server accepts", () => {
@@ -9,8 +10,8 @@ describe("folderSlug", () => {
     expect(folderSlug("")).toBe("job");
     expect(folderSlug("ñ!")).toBe("n");
     expect(folderSlug("!!!")).toBe("job");
-    const long = folderSlug(`${"a".repeat(62)} b`);
-    expect(long.length).toBeLessThanOrEqual(63);
+    const long = folderSlug(`${"a".repeat(FOLDER_MAX - 1)} b`);
+    expect(long.length).toBeLessThanOrEqual(FOLDER_MAX);
     expect(long.endsWith("-")).toBe(false);
   });
 
@@ -22,11 +23,15 @@ describe("folderSlug", () => {
 });
 
 describe("folderProblem", () => {
+  it("is the contract's JobFolder rule", () => {
+    expect(FOLDER_MAX).toBe(schemaOf("JobFolder").maxLength);
+  });
+
   it("refuses what the server refuses", () => {
-    for (const bad of ["", "-lead", "Upper", "a b", "a/b", "a_b", "x".repeat(64)]) {
+    for (const bad of ["", "-lead", "Upper", "a b", "a/b", "a_b", "x".repeat(FOLDER_MAX + 1)]) {
       expect(folderProblem(bad)).not.toBeNull();
     }
-    for (const ok of ["people", "hr-2026", "0", "a-"]) {
+    for (const ok of ["people", "hr-2026", "0", "a-", "x".repeat(FOLDER_MAX)]) {
       expect(folderProblem(ok)).toBeNull();
     }
   });

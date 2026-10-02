@@ -13,6 +13,12 @@ const WORD = { 1: "error", 2: "warning", 3: "note" } as const;
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+/** Errors and warnings side by side; notes alone leave the program valid. */
+function tallyOf(errors: number, warnings: number): string {
+  const parts = [errors && plural(errors, "error"), warnings && plural(warnings, "warning")].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "Valid";
+}
+
 /** A finding as the one failure view shows it: its code, its line and title, its message and help. */
 function finding(row: CheckRow): Shown {
   return {
@@ -51,8 +57,8 @@ export function FindingsBadge({
     [findings],
   );
   const errors = findings.filter((f) => f.severity === 1).length;
-  const warnings = findings.length - errors;
-  const tally = errors ? plural(errors, "error") : warnings ? plural(warnings, "warning") : "Valid";
+  const warnings = findings.filter((f) => f.severity === 2).length;
+  const tally = tallyOf(errors, warnings);
 
   return (
     <Popover

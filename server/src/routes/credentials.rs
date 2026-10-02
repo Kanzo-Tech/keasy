@@ -16,6 +16,7 @@ use crate::startup::AppState;
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateCredentialRequest {
+    #[schema(value_type = ResourceName)]
     pub name: String,
     pub spec: StorageCredentialInput,
     /// A storage URL to LIST before the credential is stored. A credential has
@@ -32,6 +33,7 @@ pub struct CreateCredentialRequest {
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateCredentialRequest {
     #[serde(default)]
+    #[schema(value_type = Option<ResourceName>)]
     pub name: Option<String>,
     #[serde(default)]
     pub spec: Option<StorageCredentialInput>,
@@ -131,8 +133,8 @@ pub async fn update_credential(
     let db = &state.db;
     let current = named(db, &name).await?;
     may_change(&caller, &current.created_by)?;
-    let new_name =
-        ResourceName::parse(request.name.as_deref().unwrap_or(&name)).map_err(Refusal::invalid)?;
+    let new_name = ResourceName::parse(request.name.as_deref().unwrap_or(&name))
+        .map_err(|e| Refusal::invalid_field("name", e))?;
 
     let (spec, report) = match request.spec {
         Some(spec) => {

@@ -145,11 +145,30 @@ async fn a_job_writes_to_a_folder_of_its_own() {
 
     let (status, body) = create(job(None, false)).await;
     assert_eq!(
-        (status, body["code"].as_str()),
-        (StatusCode::BAD_REQUEST, Some("request/invalid"))
+        (
+            status,
+            body["code"].as_str(),
+            body["data"]["field"].as_str()
+        ),
+        (
+            StatusCode::BAD_REQUEST,
+            Some("request/invalid"),
+            Some("folder")
+        )
     );
-    let (status, _) = create(job(Some("Not A Slug"), false)).await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, body) = create(job(Some("Not A Slug"), false)).await;
+    assert_eq!(
+        (
+            status,
+            body["code"].as_str(),
+            body["data"]["field"].as_str()
+        ),
+        (
+            StatusCode::BAD_REQUEST,
+            Some("request/invalid"),
+            Some("folder")
+        )
+    );
 
     let (status, first) = create(job(Some("people"), false)).await;
     assert_eq!(status, StatusCode::ACCEPTED);
@@ -157,8 +176,16 @@ async fn a_job_writes_to_a_folder_of_its_own() {
 
     let (status, body) = create(job(Some("people"), false)).await;
     assert_eq!(
-        (status, body["code"].as_str()),
-        (StatusCode::CONFLICT, Some("resource/already-exists"))
+        (
+            status,
+            body["code"].as_str(),
+            body["data"]["field"].as_str()
+        ),
+        (
+            StatusCode::CONFLICT,
+            Some("job/folder-taken"),
+            Some("folder")
+        )
     );
 
     let (status, draft) = create(job(None, true)).await;
@@ -172,10 +199,13 @@ async fn a_job_writes_to_a_folder_of_its_own() {
         (status, updated["folder"].as_str()),
         (StatusCode::OK, Some("people"))
     );
-    let (status, _) = app
+    let (status, body) = app
         .send(Method::PUT, &path, &member, json!({ "folder": "-bad" }))
         .await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        (status, body["data"]["field"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("folder"))
+    );
     let (status, _) = app
         .send(
             Method::PATCH,
@@ -314,5 +344,226 @@ async fn a_declared_job_goes_to_the_member_the_realm_vouches_for() {
     assert_eq!(
         list(token("u-2", "other@keasy.local", true)).await,
         json!([])
+    );
+}
+
+/// A job's name is spelled as a connection's: a misspelled one is refused on
+/// the field that holds it, on create and on edit.
+#[tokio::test]
+async fn a_misspelled_name_is_refused_on_its_field() {
+    let app = spawn_app().await;
+    let member = app.token(&["member"]);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+
+    for name in [" lead", "a/b", "@x", ""] {
+        let (status, body) = app
+            .send(
+                Method::POST,
+                "/v1/jobs",
+                &member,
+                json!({ "script": "x", "sink_connection": "sink", "draft": true, "name": name }),
+            )
+            .await;
+        assert_eq!(
+            (
+                status,
+                body["code"].as_str(),
+                body["data"]["field"].as_str()
+            ),
+            (
+                StatusCode::BAD_REQUEST,
+                Some("request/invalid"),
+                Some("name")
+            ),
+            "{name:?}"
+        );
+    }
+
+    let (_, draft) = app
+        .send(
+            Method::POST,
+            "/v1/jobs",
+            &member,
+            json!({ "script": "x", "sink_connection": "sink", "draft": true, "name": "People" }),
+        )
+        .await;
+    assert_eq!(draft["name"], "People");
+    let path = format!("/v1/jobs/{}", draft["id"].as_str().unwrap());
+    let (status, body) = app
+        .send(Method::PUT, &path, &member, json!({ "name": "trail " }))
+        .await;
+    assert_eq!(
+        (status, body["data"]["field"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("name"))
+    );
+}
+
+/// Submitting turns the draft into the job to run in place: the same id, one
+/// job listed, pending, and dated now — a draft written an hour ago is not
+/// swept the moment it is submitted.
+#[tokio::test]
+async fn submitting_a_draft_makes_it_the_job_in_place() {
+    let app = spawn_app().await;
+    let member = app.token(&["member"]);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    let (_, draft) = app
+        .send(
+            Method::POST,
+            "/v1/jobs",
+            &member,
+            json!({ "script": "x", "sink_connection": "sink", "draft": true }),
+        )
+        .await;
+    let id = draft["id"].as_str().unwrap().to_string();
+    let hour_ago = "2000-01-01T00:00:00Z";
+    app.db
+        .write()
+        .await
+        .execute("UPDATE jobs SET created_at = ?1", [hour_ago])
+        .unwrap();
+    let submit = format!("/v1/jobs/{id}/submit");
+
+    let (status, body) = app.send(Method::POST, &submit, &member, json!({})).await;
+    assert_eq!(
+        (status, body["data"]["field"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("folder")),
+        "no folder, no run"
+    );
+    let (status, body) = app
+        .send(Method::POST, &submit, &member, json!({ "name": "/" }))
+        .await;
+    assert_eq!(
+        (status, body["data"]["field"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("name"))
+    );
+
+    let (status, job) = app
+        .send(
+            Method::POST,
+            &submit,
+            &member,
+            json!({ "script": "y", "name": "People", "folder": "people" }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::ACCEPTED);
+    assert_eq!(job["id"], json!(id));
+    assert_eq!(job["status"], "pending");
+    assert_eq!(
+        (job["script"].as_str(), job["name"].as_str()),
+        (Some("y"), Some("People"))
+    );
+    assert_ne!(job["created_at"], hour_ago);
+
+    let (_, listed) = app
+        .send(Method::GET, "/v1/jobs", &member, json!(null))
+        .await;
+    let listed = listed.as_array().unwrap();
+    assert_eq!(listed.len(), 1);
+    assert_eq!(
+        (listed[0]["id"].as_str(), listed[0]["status"].as_str()),
+        (Some(&*id), Some("pending"))
+    );
+
+    let (status, body) = app.send(Method::POST, &submit, &member, json!({})).await;
+    assert_eq!(
+        (status, body["code"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("job/not-draft"))
+    );
+    let theirs = app.token_for("u-2", &["member"]);
+    let (status, _) = app.send(Method::POST, &submit, &theirs, json!({})).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+/// A draft submitted onto a folder another job holds is refused on the
+/// folder, and stays the draft it was.
+#[tokio::test]
+async fn submitting_onto_a_taken_folder_leaves_the_draft() {
+    let app = spawn_app().await;
+    let member = app.token(&["member"]);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    let create = |body: serde_json::Value| app.send(Method::POST, "/v1/jobs", &member, body);
+    create(json!({ "script": "x", "sink_connection": "sink", "folder": "people" })).await;
+    let (_, draft) = create(json!({
+        "script": "x", "sink_connection": "sink", "draft": true, "name": "Mine",
+    }))
+    .await;
+    let path = format!("/v1/jobs/{}", draft["id"].as_str().unwrap());
+
+    let (status, body) = app
+        .send(
+            Method::POST,
+            &format!("{path}/submit"),
+            &member,
+            json!({ "name": "Renamed", "folder": "people" }),
+        )
+        .await;
+    assert_eq!(
+        (
+            status,
+            body["code"].as_str(),
+            body["data"]["field"].as_str()
+        ),
+        (
+            StatusCode::CONFLICT,
+            Some("job/folder-taken"),
+            Some("folder")
+        )
+    );
+    let (_, read) = app.send(Method::GET, &path, &member, json!(null)).await;
+    assert_eq!(read["status"], "draft");
+    assert_eq!(read["name"], "Mine");
+    assert!(read.get("folder").is_none());
+}
+
+/// Whether a folder of the sink is free: held only by a job that is not a
+/// draft, and asked only of the sink.
+#[tokio::test]
+async fn a_folder_is_available_until_a_job_to_run_holds_it() {
+    let app = spawn_app().await;
+    let member = app.token(&["member"]);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("source", "key", Direction::Source, "u-1")
+        .await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    let ask = |path: &'static str| app.send(Method::GET, path, &member, json!(null));
+    let create = |body: serde_json::Value| app.send(Method::POST, "/v1/jobs", &member, body);
+
+    create(json!({ "script": "x", "sink_connection": "sink", "draft": true, "folder": "people" }))
+        .await;
+    assert_eq!(
+        ask("/v1/connections/sink/folders/people").await,
+        (StatusCode::OK, json!({ "available": true }))
+    );
+    create(json!({ "script": "x", "sink_connection": "sink", "folder": "people" })).await;
+    assert_eq!(
+        ask("/v1/connections/sink/folders/people").await,
+        (StatusCode::OK, json!({ "available": false }))
+    );
+
+    let (status, body) = ask("/v1/connections/sink/folders/Not-A-Slug").await;
+    assert_eq!(
+        (
+            status,
+            body["code"].as_str(),
+            body["data"]["field"].as_str()
+        ),
+        (
+            StatusCode::BAD_REQUEST,
+            Some("request/invalid"),
+            Some("folder")
+        )
+    );
+    let (status, body) = ask("/v1/connections/source/folders/people").await;
+    assert_eq!(
+        (status, body["code"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("job/invalid-destination"))
+    );
+    let (status, body) = ask("/v1/connections/gone/folders/people").await;
+    assert_eq!(
+        (status, body["code"].as_str()),
+        (StatusCode::NOT_FOUND, Some("connection/not-found"))
     );
 }

@@ -1,7 +1,7 @@
 import { FossilError, isFossilError } from "@fossil-lang/types";
 import { describe, expect, it } from "vitest";
 import { ApiError } from "@/lib/api/client";
-import { copyOf, pageOf, toProblem } from "./errors";
+import { copyOf, fieldProblem, pageOf, toProblem } from "./errors";
 
 const overBudget = () =>
   FossilError.from({
@@ -122,5 +122,23 @@ describe("a host failure fossil wrapped", () => {
       code: "document/unread",
       cause: { code: "storage/host-refused", cause: { code: "job/not-found" } },
     });
+  });
+});
+
+describe("a refusal about one field", () => {
+  it("names the field and says it in keasy's words", () => {
+    const taken = new ApiError({ code: "job/folder-taken", title: "Folder taken", detail: "people is held", data: { field: "folder" } }, 409);
+    expect(fieldProblem(taken)).toEqual({ field: "folder", message: "Another job writes to this folder already." });
+  });
+
+  it("falls back to the server's detail for a code keasy has no words for", () => {
+    const misspelled = new ApiError({ code: "request/invalid", title: "Invalid", detail: "a name cannot hold '/'", data: { field: "name" } }, 400);
+    expect(fieldProblem(misspelled)).toEqual({ field: "name", message: "a name cannot hold '/'" });
+  });
+
+  it("is null for a refusal about no field, or a failure that is not the server's", () => {
+    expect(fieldProblem(new ApiError({ code: "server/internal", title: "t", detail: "d", data: {} }, 500))).toBeNull();
+    expect(fieldProblem(new ApiError({ code: "request/invalid", title: "t", detail: "d", data: { field: null } }, 400))).toBeNull();
+    expect(fieldProblem(new Error("boom"))).toBeNull();
   });
 });

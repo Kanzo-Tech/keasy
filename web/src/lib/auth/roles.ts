@@ -1,5 +1,7 @@
 import { can, type Session } from "@kanzo-tech/auth";
 
+import type { Schemas } from "@keasy/api";
+
 /**
  * The two roles a workspace grants, and the one place this half of the
  * application reads them.
@@ -22,8 +24,11 @@ import { can, type Session } from "@kanzo-tech/auth";
  *
  * **What this decides is what to draw.** The Rust resource server, validating
  * the bearer token behind `/v1`, is what refuses a request.
+ *
+ * The names are the contract's `Role`: the server publishes them, a server test
+ * holds them to the realm's client roles, and Terraform holds its own copy.
  */
-export type WorkspaceRole = "owner" | "member";
+export type WorkspaceRole = Schemas["Role"];
 
 export const ROLE_LABEL: Record<WorkspaceRole, string> = { owner: "Owner", member: "Member" };
 

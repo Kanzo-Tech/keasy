@@ -1,20 +1,16 @@
 "use client";
 
 /**
- * The descriptors of the sources the job editor's program reads, for
- * source-field completion. Fossil answers which sources those are; they are
- * described only when that answer changes, never on a keystroke that leaves it
- * alone.
+ * What introspection answered for the sources the job editor's program reads, to hand to fossil.
+ * Fossil answers which sources those are; they are described only when that answer changes, never
+ * on a keystroke that leaves it alone.
  */
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { InferredDescriptor } from "@fossil-lang/introspect";
 
 import * as checker from "@/lib/fossil/checker";
-import { describeSources, sourceDescriptorsKey } from "./describe-sources";
-
-const NONE: InferredDescriptor[] = [];
+import { type Described, describeSources, sourceDescriptorsKey } from "./describe-sources";
 
 /** A pause in typing long enough to ask fossil again which sources the program reads. */
 const TYPING_PAUSE_MS = 400;
@@ -37,13 +33,11 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 /**
- * The descriptors that could be read. A source that could not be described is left out and its
- * failure is not shown: fossil's check is the one place the editor reports a problem, and it does
- * not yet say that a source's columns are unknown — so completion simply lacks that source. Not
- * suspending (fossil docs/design/failure, G2.4): it follows every pause in typing, and the editor
- * stays useful without it.
+ * Introspection's whole answer, or `null` until there is one. keasy shows none of it: fossil's check
+ * reports each undescribed source at its call. Not suspending (fossil docs/design/failure, G2.4): it
+ * follows every pause in typing, and the editor stays useful without it.
  */
-export function useSourceDescriptors(script: string): InferredDescriptor[] {
+export function useSourceDescriptors(script: string): Described | null {
   const program = useDebouncedValue(script, TYPING_PAUSE_MS);
 
   const { data: sources } = useQuery({
@@ -62,5 +56,5 @@ export function useSourceDescriptors(script: string): InferredDescriptor[] {
     staleTime: DESCRIPTION_FRESH_MS,
   });
 
-  return data?.descriptors ?? NONE;
+  return data ?? null;
 }

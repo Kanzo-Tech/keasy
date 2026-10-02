@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
@@ -30,21 +30,23 @@ import {
 } from "@kanzo-tech/ui";
 import { Check, ChevronDown, Database, FolderDown, Pencil, Save, X } from "lucide-react";
 import { useRouter } from "@kanzo-tech/navigation/next";
-import { $api, ApiError, http, invalidate, type Schemas } from "@/lib/api/client";
+import { $api, http, invalidate, type Schemas } from "@/lib/api/client";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
 import { storageConnections } from "@/lib/connections";
-import { type Shown, toastError, toProblem } from "@/lib/errors";
+import { type FieldProblem, fieldProblem, type Shown, toastError, toProblem } from "@/lib/errors";
 import * as checker from "@/lib/fossil/checker";
 import { AssistantWizard } from "./assistant-wizard";
 import { ModePicker } from "./mode-picker";
 import { folderProblem, folderSlug } from "./folder";
 import { FindingsBadge } from "./findings-badge";
+import { nameProblem } from "./job-name";
 import { StudioConnections } from "./studio-connections";
 import { type EditorApi, StudioEditor } from "./studio-editor";
 import { StudioOutput, type OutputValues } from "./studio-output";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { useJobEditorStore } from "./job-editor-store";
+import { useFolderAvailability } from "./use-folder-availability";
 
 const PANELS = [
   { id: "connections", label: "Connections", icon: Database },
@@ -103,9 +105,21 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
   const [saved, setSaved] = useState(true);
 
   // The draft's server id: the `?draft=` the member arrived with, or the one the
-  // first autosave minted. Held in state so subsequent saves UPDATE rather than
-  // creating a second draft per keystroke pause.
+  // first autosave minted, so later saves UPDATE it and Create submits it. A ref
+  // beside the state, because a save chained behind another reads it after the
+  // render that closed over it.
   const [draftId, setDraftId] = useState<string | null>(draft?.id ?? null);
+  const draftIdRef = useRef(draftId);
+  // The save in flight, which Create awaits to learn the draft's id; the armed
+  // autosave, which Create disarms; and whether Create has begun, after which
+  // nothing autosaves.
+  const savingRef = useRef<Promise<string> | null>(null);
+  const autosaveRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const submittingRef = useRef(false);
+  const [nameEditing, setNameEditing] = useState(false);
+  // What the server refused on Create, keyed to the value it was about, so
+  // editing that value clears it.
+  const [refused, setRefused] = useState<(FieldProblem & { value: string }) | null>(null);
 
   const allConnections = settled($api.useSuspenseQuery("get", "/v1/connections"));
   const connections = useMemo(() => storageConnections(allConnections), [allConnections]);
@@ -164,12 +178,15 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
   const destination = store.sinkConnectionId;
   const folder = store.folder ?? folderSlug(store.name);
   const folderValid = folderProblem(folder) === null;
-  // The folder the server last said another job holds, so the field can say so
-  // until the member picks another.
-  const [takenFolder, setTakenFolder] = useState<string | null>(null);
+  const name = store.name.trim();
+  const refusedOn = (field: string, value: string) =>
+    refused?.field === field && refused.value === value ? refused.message : null;
+  const nameError = nameProblem(store.name) ?? refusedOn("name", name);
+  const folderRefused = refusedOn("folder", folder);
+  const availability = useFolderAvailability(destination, folder, folderValid);
 
   const errors = diagnostics.filter((d) => d.severity === 1).length;
-  const outputIncomplete = !destination || !folderValid || folder === takenFolder;
+  const outputIncomplete = !destination || !folderValid || !!folderRefused || availability === "taken";
 
   const openPanel = (id: PanelId) => {
     setPanel(id);
@@ -185,44 +202,52 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
           reason: `Fix the program's ${errors === 1 ? "error" : `${errors} errors`} first.`,
           show: () => setFindingsOpen(true),
         }
-      : !destination
-        ? { reason: "Pick where the graph lands, under Output.", show: () => openPanel("output") }
-        : folder === takenFolder
-          ? {
-              reason: "Another job writes to this folder. Pick another under Output.",
-              show: () => openPanel("output"),
-            }
+      : nameError
+        ? { reason: `Fix the job's name: ${nameError}`, show: () => setNameEditing(true) }
+        : !destination
+          ? { reason: "Pick where the graph lands, under Output.", show: () => openPanel("output") }
           : !folderValid
             ? { reason: "Fix the output folder, under Output.", show: () => openPanel("output") }
-            : null;
+            : folderRefused || availability === "taken"
+              ? {
+                  reason: "Another job writes to this folder. Pick another under Output.",
+                  show: () => openPanel("output"),
+                }
+              : availability === "checking"
+                ? { reason: "Checking the output folder…" }
+                : null;
 
   // ── Saving ──────────────────────────────────────────────────────────────
 
+  // Reads the store when it runs, not when it was armed: a save waits its turn
+  // behind the one in flight, and sends what is there by then.
+  const writeDraft = async (): Promise<string> => {
+    const s = useJobEditorStore.getState();
+    const id = draftIdRef.current;
+    if (submittingRef.current && id) return id;
+    const name = s.name.trim() && !nameProblem(s.name) ? s.name.trim() : undefined;
+    const folder = s.folder ?? folderSlug(s.name);
+    const body = { script: s.script, name, folder: folderProblem(folder) ? undefined : folder };
+    if (id) {
+      await http.PUT("/v1/jobs/{id}", { params: { path: { id } }, body });
+      return id;
+    }
+    if (!s.sinkConnectionId) throw new Error("Pick a destination before saving");
+    const { data: created } = await http.POST("/v1/jobs", {
+      body: { ...body, draft: true, sink_connection: s.sinkConnectionId },
+    });
+    return created!.id;
+  };
+
   const draftMutation = useMutation({
-    mutationFn: async () => {
-      const name = store.name.trim() || undefined;
-      if (draftId) {
-        await http.PUT("/v1/jobs/{id}", {
-          params: { path: { id: draftId } },
-          body: {
-            script: store.script,
-            name,
-            folder: folderValid ? folder : undefined,
-          },
-        });
-        return draftId;
-      }
-      if (!destination) throw new Error("Pick a destination before saving");
-      const { data: created } = await http.POST("/v1/jobs", {
-        body: {
-          script: store.script,
-          name,
-          draft: true,
-          sink_connection: destination,
-          folder: folderValid ? folder : undefined,
-        },
-      });
-      return created!.id;
+    mutationFn: () => {
+      // The id lands in the chain itself: Create awaits this promise, and `onSuccess` runs later.
+      const run = (savingRef.current ?? Promise.resolve())
+        .catch(() => undefined) // the last save toasted its own failure
+        .then(writeDraft)
+        .then((id) => (draftIdRef.current = id));
+      savingRef.current = run;
+      return run;
     },
     onSuccess: async (id) => {
       setDraftId(id);
@@ -239,44 +264,50 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
   // would run once at mount and never again, and the strip would say "draft
   // saved" from the first second through every edit after it.
   useEffect(() => {
-    if (!savable || draftMutation.isPending) return;
+    if (!savable || submittingRef.current) return;
     setSaved(false);
-    const id = setTimeout(() => save(), AUTOSAVE_MS);
-    return () => clearTimeout(id);
+    autosaveRef.current = setTimeout(() => {
+      if (!submittingRef.current) save();
+    }, AUTOSAVE_MS);
+    return () => clearTimeout(autosaveRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store.script, store.name, store.folder]);
 
+  // The draft becomes the job, in place and under its id (Linear's draft
+  // becoming the issue): a refusal leaves it a draft, as it was.
   const confirmMutation = useMutation({
-    mutationFn: async () => {
-      // The draft becomes the job: keasy has no promote endpoint, so the draft
-      // is dropped and the real job created in its place.
-      if (!destination) throw new Error("Pick a destination before launching");
-      if (draftId) {
-        // The job is launched either way; a draft left behind is said, not swallowed.
-        await http
-          .DELETE("/v1/jobs/{id}", { params: { path: { id: draftId } } })
-          .catch((err: unknown) => toastError(err, "The draft could not be removed"));
+    mutationFn: async (sent: { name: string; folder: string }) => {
+      submittingRef.current = true;
+      clearTimeout(autosaveRef.current);
+      await savingRef.current?.catch(() => undefined); // a failed save toasted itself; Create sends everything anyway
+      const id = draftIdRef.current;
+      const body = { script: store.script, name: sent.name || undefined, folder: sent.folder };
+      if (id) {
+        const { data: job } = await http.POST("/v1/jobs/{id}/submit", { params: { path: { id } }, body });
+        return job!;
       }
-      const { data: job } = await http.POST("/v1/jobs", {
-        body: {
-          script: store.script,
-          name: store.name.trim() || undefined,
-          sink_connection: destination,
-          folder,
-        },
-      });
+      if (!destination) throw new Error("Pick a destination before launching");
+      const { data: job } = await http.POST("/v1/jobs", { body: { ...body, sink_connection: destination } });
       return job!;
     },
     onSuccess: async (job) => {
       await invalidate("/v1/jobs");
       router.push(`/jobs/${job.id}`);
     },
-    onError: (err) => {
-      if (err instanceof ApiError && err.code === "resource/already-exists") {
-        setTakenFolder(folder);
+    onError: (err, sent) => {
+      submittingRef.current = false;
+      const problem = fieldProblem(err);
+      if (problem?.field === "folder") {
+        setRefused({ ...problem, value: sent.folder });
         openPanel("output");
+      } else if (problem?.field === "name") {
+        setRefused({ ...problem, value: sent.name });
+        setNameEditing(true);
+      } else {
+        toastError(err, "Failed to create job");
       }
-      toastError(err, "Failed to create job");
+      // The edits Create carried were not kept; the draft takes them now.
+      if (savable) save();
     },
   });
 
@@ -316,6 +347,9 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
             fixed width that the input fills, so the cancel button closes the field at its end. */}
         <Editable
           activationMode="dblclick"
+          edit={nameEditing}
+          invalid={!!nameError}
+          onEditChange={(d) => setNameEditing(d.edit)}
           className="w-auto max-w-[10rem] has-[[data-slot=editable-area][data-focus]]:w-64 has-[[data-slot=editable-area][data-focus]]:max-w-[50cqw] @3xl:max-w-[20rem]"
           onValueChange={(d) => store.setName(d.value)}
           placeholder="Unnamed job"
@@ -325,7 +359,7 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
             <EditableInput asChild>
               <Input size="sm" />
             </EditableInput>
-            <EditablePreview className="font-medium" size="sm" variant="ghost" />
+            <EditablePreview className="font-medium data-invalid:text-destructive" size="sm" variant="ghost" />
           </EditableArea>
           <EditableControl>
             <EditableEditTrigger asChild>
@@ -401,10 +435,7 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
               >
                 <Button
                   disabled={!!blocker || submitting}
-                  onClick={() => {
-                    // A create racing the autosave's first POST would leave its draft behind.
-                    if (!draftMutation.isPending) confirmMutation.mutate();
-                  }}
+                  onClick={() => confirmMutation.mutate({ name, folder })}
                   size="sm"
                 >
                   <Show fallback={<Check />} when={submitting}>
@@ -440,7 +471,8 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
                   ) : (
                     <StudioOutput
                       connections={connections}
-                      folderTaken={folder === takenFolder}
+                      availability={availability}
+                      folderRefused={folderRefused}
                       onChange={onOutputChange}
                       values={output}
                     />

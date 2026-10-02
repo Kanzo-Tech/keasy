@@ -23,6 +23,7 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa_axum::router::OpenApiRouter;
 
 use crate::authentication::middleware::{AuthenticatedUser, bearer_required};
+use crate::authentication::role::Role;
 use crate::authentication::token::{SharedValidator, Validator};
 use crate::configuration::{BrandingSettings, DatabaseSettings, Settings};
 use crate::database::Database;
@@ -333,7 +334,7 @@ fn over_rate(error: GovernorError) -> Response {
         version = "1.0.0",
         description = "Keasy host: identity, connections, vended credentials and the job record",
     ),
-    components(schemas(ErrorBody, ErrorCode, ErrorData)),
+    components(schemas(ErrorBody, ErrorCode, ErrorData, Role)),
     modifiers(&Bearer, &Unattributed, &Bounds),
     security(("bearer" = [])),
 )]

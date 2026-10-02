@@ -13,7 +13,7 @@ const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, h
 fn refused(job: &Job, e: rusqlite::Error) -> DbError {
     use rusqlite::ffi;
     match constraint(&e) {
-        Some(ffi::SQLITE_CONSTRAINT_UNIQUE) => DbError::AlreadyExists(format!(
+        Some(ffi::SQLITE_CONSTRAINT_UNIQUE) => DbError::FolderTaken(format!(
             "another job writes to the folder {:?} already",
             job.folder.as_deref().unwrap_or_default()
         )),
@@ -73,10 +73,17 @@ pub fn update(conn: &Connection, id: &str, f: impl FnOnce(&mut Job)) -> DbResult
         return Ok(None);
     };
     f(&mut job);
+    write(conn, &job)?;
+    Ok(Some(job))
+}
 
+/// Store `job` over the row of its id. Refused whole: a refused write leaves
+/// the row as it was.
+pub fn write(conn: &Connection, job: &Job) -> DbResult<()> {
     conn.execute(
         "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, problem = ?5,
-                         script = ?6, manifest = ?7, relations = ?8, folder = ?9, heartbeat_at = ?11
+                         script = ?6, manifest = ?7, relations = ?8, folder = ?9, heartbeat_at = ?11,
+                         created_at = ?12
          WHERE id = ?10",
         params![
             job.name,
@@ -94,12 +101,23 @@ pub fn update(conn: &Connection, id: &str, f: impl FnOnce(&mut Job)) -> DbResult
                 .transpose()?,
             serde_json::to_string(&job.relations)?,
             job.folder,
-            id,
+            job.id,
             job.heartbeat_at,
+            job.created_at,
         ],
     )
-    .map_err(|e| refused(&job, e))?;
-    Ok(Some(job))
+    .map_err(|e| refused(job, e))?;
+    Ok(())
+}
+
+/// Whether a job that is not a draft holds `folder` in `sink`.
+pub fn folder_taken(conn: &Connection, sink: &str, folder: &str) -> DbResult<bool> {
+    Ok(conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM jobs
+                       WHERE sink_connection = ?1 AND folder = ?2 AND status <> 'draft')",
+        [sink, folder],
+        |row| row.get(0),
+    )?)
 }
 
 /// How long a runner may go without a heartbeat, and a `pending` job without
@@ -241,7 +259,7 @@ mod tests {
         let second = filed(JobStatus::Pending, "people");
         assert!(matches!(
             insert(&conn, &second),
-            Err(DbError::AlreadyExists(_))
+            Err(DbError::FolderTaken(_))
         ));
         insert(&conn, &filed(JobStatus::Pending, "orders")).unwrap();
 

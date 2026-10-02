@@ -67,12 +67,15 @@ pub enum ErrorCode {
     InvalidDestination,
     #[serde(rename = "job/no-destination")]
     NoDestination,
+    /// Another job that is not a draft writes to that folder of the sink;
+    /// `field` is `folder`.
+    #[serde(rename = "job/folder-taken")]
+    FolderTaken,
     #[serde(rename = "credential/not-found")]
     CredentialNotFound,
     #[serde(rename = "connection/not-found")]
     ConnectionNotFound,
-    /// A credential or connection of that name exists already, a second sink,
-    /// or a second job writing to one folder.
+    /// A credential or connection of that name exists already, or a second sink.
     #[serde(rename = "resource/already-exists")]
     AlreadyExists,
     /// Still used: `dependents` names what uses it.
@@ -134,6 +137,7 @@ impl ErrorCode {
             Self::Abandoned => "The run was abandoned",
             Self::InvalidDestination => "Not a valid destination",
             Self::NoDestination => "No destination",
+            Self::FolderTaken => "Another job writes to that folder",
             Self::CredentialNotFound => "Credential not found",
             Self::ConnectionNotFound => "Connection not found",
             Self::AlreadyExists => "It exists already",
@@ -172,6 +176,10 @@ pub struct ErrorData {
     /// the `*/silent` codes, and only on them.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub after: Option<u64>,
+    /// The request field the refusal is about, so a form can say it on that
+    /// field: `folder`, `name`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub field: Option<String>,
 }
 
 impl ErrorBody {
@@ -182,7 +190,7 @@ impl ErrorBody {
             detail: detail.into(),
             data: ErrorData {
                 dependents,
-                after: None,
+                ..ErrorData::default()
             },
         }
     }
@@ -212,7 +220,7 @@ pub enum Refusal {
         dependents: Vec<String>,
     },
     /// A body built whole, for a code whose `data` carries more than
-    /// `dependents` — a deadline's `after`.
+    /// `dependents` — a deadline's `after`, a field's name.
     Body(StatusCode, ErrorBody),
     Db(crate::database::DbError),
 }
@@ -242,6 +250,28 @@ impl Refusal {
             StatusCode::BAD_REQUEST,
             ErrorCode::ValidationFailed,
             message,
+        )
+    }
+
+    /// A refusal about one field of the request.
+    pub fn field(
+        status: StatusCode,
+        code: ErrorCode,
+        field: &str,
+        detail: impl Into<String>,
+    ) -> Self {
+        let mut body = ErrorBody::new(code, detail, Vec::new());
+        body.data.field = Some(field.to_string());
+        Self::Body(status, body)
+    }
+
+    /// A field spelled in a way the request may not.
+    pub fn invalid_field(field: &str, detail: impl Into<String>) -> Self {
+        Self::field(
+            StatusCode::BAD_REQUEST,
+            ErrorCode::ValidationFailed,
+            field,
+            detail,
         )
     }
 

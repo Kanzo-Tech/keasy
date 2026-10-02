@@ -10,7 +10,7 @@ use utoipa_axum::routes;
 
 use crate::authentication::role::{AnyRole, Member};
 use crate::connections::{named, persistence};
-use crate::domain::{ConnectionView, StorageTarget, ValidationReport};
+use crate::domain::{ConnectionView, ResourceName, StorageTarget, ValidationReport};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::startup::AppState;
 use crate::storage_client;
@@ -18,6 +18,7 @@ use crate::storage_client;
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateConnectionRequest {
     /// What programs write after `@`, and the connection's key.
+    #[schema(value_type = ResourceName)]
     pub name: String,
     /// The credential it signs with.
     pub credential: String,
@@ -27,6 +28,7 @@ pub struct CreateConnectionRequest {
 #[derive(Debug, Default, Deserialize, ToSchema)]
 pub struct UpdateConnectionRequest {
     #[serde(default)]
+    #[schema(value_type = Option<ResourceName>)]
     pub name: Option<String>,
     #[serde(default)]
     pub credential: Option<String>,

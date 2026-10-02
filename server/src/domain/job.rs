@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{JobFolder, StorageLocation, now_iso8601};
+use super::{JobFolder, ResourceName, StorageLocation, now_iso8601};
 
 #[derive(
     Debug,
@@ -29,6 +29,7 @@ pub struct Job {
     pub id: String,
     pub status: JobStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<ResourceName>)]
     pub name: Option<String>,
     pub created_at: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -53,6 +54,7 @@ pub struct Job {
     /// The folder under the sink the output lands in. A draft may not have one
     /// yet; every other job does, and no two of them share one in a sink.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<JobFolder>)]
     pub folder: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,

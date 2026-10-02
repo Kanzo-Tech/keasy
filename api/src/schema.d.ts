@@ -184,6 +184,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/connections/{name}/folders/{folder}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether a job to run may take `folder` in the sink: no job but a draft
+         *     holds it. It reveals only whether the folder is held, never whose job holds
+         *     it.
+         */
+        get: operations["folder_availability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/connections/{name}/validate": {
         parameters: {
             query?: never;
@@ -393,6 +414,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/jobs/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * A draft becomes the job to run, in place: the edits, the folder check and
+         *     the promotion are one write, so a refusal leaves the draft as it was and a
+         *     success leaves no draft behind.
+         */
+        post: operations["submit_job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/version": {
         parameters: {
             query?: never;
@@ -498,11 +540,11 @@ export interface components {
             /** @description The credential it signs with. */
             credential: string;
             /** @description What programs write after `@`, and the connection's key. */
-            name: string;
+            name: components["schemas"]["ResourceName"];
             target: components["schemas"]["StorageTarget"];
         };
         CreateCredentialRequest: {
-            name: string;
+            name: components["schemas"]["ResourceName"];
             /**
              * Format: uri
              * @description A storage URL to LIST before the credential is stored. A credential has
@@ -514,14 +556,8 @@ export interface components {
         };
         CreateJobRequest: {
             draft?: boolean;
-            /**
-             * @description The folder under the sink the output lands in: lowercase letters,
-             *     digits and `-`, at most 63 characters, starting with a letter or digit.
-             *     A draft may leave it out; a job to run needs one no other job in the
-             *     sink holds.
-             */
-            folder?: string | null;
-            name?: string | null;
+            folder?: null | components["schemas"]["JobFolder"];
+            name?: null | components["schemas"]["ResourceName"];
             script: string;
             /** @description Where the output lands: the sink connection's name. */
             sink_connection: string;
@@ -585,7 +621,7 @@ export interface components {
          *     fossil's (`storage`, `engine`, `run`, …): a code means one thing.
          * @enum {string}
          */
-        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/still-running" | "job/abandoned" | "job/invalid-destination" | "job/no-destination" | "credential/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/list-failed" | "store/refused" | "store/silent" | "gateway/not-configured" | "gateway/unreachable" | "gateway/silent";
+        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/still-running" | "job/abandoned" | "job/invalid-destination" | "job/no-destination" | "job/folder-taken" | "credential/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/list-failed" | "store/refused" | "store/silent" | "gateway/not-configured" | "gateway/unreachable" | "gateway/silent";
         /** @description What a refusal carries beside its words. */
         ErrorData: {
             /**
@@ -599,6 +635,11 @@ export interface components {
              *     or the connections a rotation would break.
              */
             dependents?: string[];
+            /**
+             * @description The request field the refusal is about, so a form can say it on that
+             *     field: `folder`, `name`.
+             */
+            field?: string | null;
         };
         /** @description One object under a connection's prefix. */
         FileEntry: {
@@ -606,6 +647,10 @@ export interface components {
             path: string;
             /** Format: int64 */
             size: number;
+        };
+        /** @description Whether a folder of the sink is free for a job to run. */
+        FolderAvailability: {
+            available: boolean;
         };
         Job: {
             completed_at?: string | null;
@@ -615,11 +660,7 @@ export interface components {
              *     may see, change, run or read it. Taken from the token, never the body.
              */
             created_by: string;
-            /**
-             * @description The folder under the sink the output lands in. A draft may not have one
-             *     yet; every other job does, and no two of them share one in a sink.
-             */
-            folder?: string | null;
+            folder?: null | components["schemas"]["JobFolder"];
             /** @description The runner's last heartbeat while the job runs: its lease. */
             heartbeat_at?: string | null;
             id: string;
@@ -633,7 +674,7 @@ export interface components {
              *     produced output".
              */
             manifest?: unknown;
-            name?: string | null;
+            name?: null | components["schemas"]["ResourceName"];
             /**
              * @description Why a `Failed` run failed, as the browser that ran it reported it: a
              *     problem (`{ code, title, detail, data, … }`), stored verbatim and
@@ -656,6 +697,8 @@ export interface components {
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
         };
+        /** @description The folder a job's output lands in under the sink: lowercase letters, digits and `-`, starting with a letter or digit. */
+        JobFolder: string;
         /** @enum {string} */
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
         /**
@@ -702,6 +745,15 @@ export interface components {
             data_type: string;
             name: string;
         };
+        /** @description A credential's, a connection's or a job's name: no leading or trailing whitespace, and no `/`, `@`, `\` or control character. */
+        ResourceName: string;
+        /**
+         * @description A workspace role, from `resource_access.<client_id>.roles` on the token:
+         *     the owner administers the catalog, a member runs jobs. The realm's client
+         *     roles are these names (`infra/terraform/realm`).
+         * @enum {string}
+         */
+        Role: "owner" | "member";
         /** @description A credential as a request states it, secrets included. */
         StorageCredentialInput: {
             access_key_id: string;
@@ -772,6 +824,12 @@ export interface components {
              */
             url: string;
         };
+        /** @description A draft's final edits as it becomes a job to run, spelled as on update. */
+        SubmitJobRequest: {
+            folder?: null | components["schemas"]["JobFolder"];
+            name?: null | components["schemas"]["ResourceName"];
+            script?: string | null;
+        };
         /** @description One theme: the `data-theme` value it is selected by, and its display name. */
         ThemeChoice: {
             label: string;
@@ -785,7 +843,7 @@ export interface components {
         };
         UpdateConnectionRequest: {
             credential?: string | null;
-            name?: string | null;
+            name?: null | components["schemas"]["ResourceName"];
             target?: null | components["schemas"]["StorageTarget"];
         };
         /**
@@ -794,13 +852,12 @@ export interface components {
          *     still validates with it.
          */
         UpdateCredentialRequest: {
-            name?: string | null;
+            name?: null | components["schemas"]["ResourceName"];
             spec?: null | components["schemas"]["StorageCredentialInput"];
         };
         UpdateJobRequest: {
-            /** @description The draft's folder under the sink, spelled as on create. */
-            folder?: string | null;
-            name?: string | null;
+            folder?: null | components["schemas"]["JobFolder"];
+            name?: null | components["schemas"]["ResourceName"];
             script?: string | null;
         };
         ValidateCredentialRequest: {
@@ -1443,6 +1500,54 @@ export interface operations {
             };
         };
     };
+    folder_availability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The sink connection's name */
+                name: string;
+                /** @description The folder under the sink */
+                folder: components["schemas"]["JobFolder"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Whether a job to run may write to the folder */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FolderAvailability"];
+                };
+            };
+            /** @description The connection is not the sink (`job/invalid-destination`), or the folder is misspelled (`data.field`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Connection not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
     validate_connection: {
         parameters: {
             query?: never;
@@ -1866,7 +1971,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description The destination is not a sink, or the folder is missing or misspelled */
+            /** @description The destination is not a sink, or the name or folder is missing or misspelled (`data.field`) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1877,7 +1982,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            /** @description Another job writes to that folder already */
+            /** @description Another job writes to that folder already: `job/folder-taken` */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1953,7 +2058,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description Job is not a draft, or the folder is misspelled */
+            /** @description Job is not a draft, or the name or folder is misspelled (`data.field`) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2327,6 +2432,65 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    submit_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitJobRequest"];
+            };
+        };
+        responses: {
+            /** @description The draft is now the job to run, under the same id */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            /** @description Job is not a draft (`job/not-draft`), or the name or folder is missing or misspelled (`data.field`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Another job writes to that folder already: `job/folder-taken`; the job stays a draft, unchanged */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -24,16 +24,17 @@ import { settled } from "@/lib/api/settled";
 import { askAgent, type QueryAnswer, type QueryOutput } from "./ask-agent";
 import { describeDataSpace } from "./data-space";
 import { ONCE, useCorpus, useFieldStats } from "./corpus";
+import { graphKey } from "./field-stats";
 import { Finding } from "./finding";
 import { ResultTable } from "./result-table";
 import { generateSuggestions } from "./schema-suggestions";
 
-/** The graph's key column, when the answer carries it: then the answer can be shown on the canvas. */
-const KEY = "dense_id";
-
-/** The answer's vertices as something to press — the showcase's `Finding`, as the Rules panel offers. */
+/**
+ * The answer's vertices as something to press — the showcase's `Finding`, as the Rules panel offers —
+ * when the answer carries the graph's key column.
+ */
 function ShowOnGraph({ output }: { output: QueryOutput }) {
-  const at = output.columns.indexOf(KEY);
+  const at = output.columns.indexOf(graphKey(useCorpus().manifest));
   if (at < 0) return null;
   const ids = [...new Set(output.rows.map((row) => Number(row[at])).filter(Number.isFinite))];
   return (
@@ -138,7 +139,7 @@ function AskChat({ schema, corpus, starters }: { schema: string; corpus: SqlCorp
 }
 
 export function AskPanel() {
-  const { jobId, coordinator, corpus, manifest, relation } = useCorpus();
+  const { jobId, coordinator, corpus, manifest } = useCorpus();
   const tables = useFieldStats();
 
   // The schema the assistant reasons over: DuckDB's own catalog, read back from
@@ -149,7 +150,7 @@ export function AskPanel() {
     useSuspenseQuery({
       queryKey: [...corpusKey(jobId), "data-space"],
       queryFn: ({ signal }) =>
-        describeDataSpace((sql) => coordinator.query(sql, { type: "json", signal }), corpus.url, relation, manifest),
+        describeDataSpace((sql) => coordinator.query(sql, { type: "json", signal }), corpus, manifest),
       ...ONCE,
     }),
   );

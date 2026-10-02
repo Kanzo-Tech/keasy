@@ -24,7 +24,14 @@ import {
 import { useChartQuery } from "@kanzo-tech/ui/analytics";
 import { distinctValuesQuery, isRuleComplete, OPERATOR_META, type Rule, type RuleOperator } from "./rule-engine";
 import { useCorpus } from "./corpus";
-import { fieldsOf, type TableStats } from "./field-stats";
+import { columnsOf, type TableStats } from "./field-stats";
+
+/** The column a new rule starts on: the program's first field, where the table has one. */
+const firstColumn = (table: TableStats) => table.fields[0]?.name ?? table.columns[0] ?? "";
+const firstColumnOf = (tables: readonly TableStats[], name: string) => {
+  const table = tables.find((t) => t.name === name);
+  return table ? firstColumn(table) : "";
+};
 
 type Items = ListCollection<{ label: string; value: string }>;
 
@@ -80,11 +87,11 @@ function RulePart({
 function ValueInput({ rule, onChange }: { rule: Omit<Rule, "id">; onChange: (updated: Omit<Rule, "id">) => void }) {
   const meta = OPERATOR_META[rule.operator];
   const { typeName, fieldKey } = rule;
-  const { relation } = useCorpus();
+  const { corpus } = useCorpus();
   const facets = useChartQuery({
     filterBy: null,
     deps: [typeName, fieldKey],
-    query: () => (typeName && fieldKey ? distinctValuesQuery(fieldKey, relation(typeName)) : null),
+    query: () => (typeName && fieldKey ? distinctValuesQuery(fieldKey, corpus.relation(typeName)) : null),
   });
   const { contains } = useFilter({ sensitivity: "base" });
   const [query, setQuery] = useState("");
@@ -160,17 +167,17 @@ export function RuleBuilder({
   const first = tables[0];
   const [draft, setDraft] = useState<Omit<Rule, "id">>(() => ({
     typeName: first?.name,
-    fieldKey: first?.fields[0]?.name ?? "",
+    fieldKey: first ? firstColumn(first) : "",
     operator: "not_null",
   }));
   const entities = useMemo(
     () => createListCollection({ items: tables.map((t) => ({ label: t.name, value: t.name })) }),
     [tables],
   );
-  const fields = fieldsOf(tables, draft.typeName ?? "");
+  const columns = columnsOf(tables, draft.typeName ?? "");
   const fieldItems = useMemo(
-    () => createListCollection({ items: fields.map((f) => ({ label: f.name, value: f.name })) }),
-    [fields],
+    () => createListCollection({ items: columns.map((name) => ({ label: name, value: name })) }),
+    [columns],
   );
 
   const duplicate = rules.some(
@@ -188,7 +195,7 @@ export function RuleBuilder({
           collection={entities}
           label="Every"
           onChange={(typeName) =>
-            setDraft({ ...draft, typeName, fieldKey: fieldsOf(tables, typeName)[0]?.name ?? "", value: undefined, values: undefined })
+            setDraft({ ...draft, typeName, fieldKey: firstColumnOf(tables, typeName), value: undefined, values: undefined })
           }
           value={draft.typeName ?? ""}
         />

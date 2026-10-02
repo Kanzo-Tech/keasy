@@ -18,24 +18,14 @@ export interface Corpus {
   coordinator: Coordinator;
   corpus: SqlCorpus;
   manifest: Manifest;
-  /** A relation's name as SQL reads it: `"jobs/7"."Person"`, in the corpus's own catalog. */
-  relation: (name: string) => string;
 }
-
-const quote = (name: string) => `"${name.replaceAll('"', '""')}"`;
 
 export function corpusQuery(jobId: string) {
   return queryOptions({
     queryKey: corpusKey(jobId),
     queryFn: async ({ signal }): Promise<Corpus> => {
       const [{ coordinator }, corpus] = await Promise.all([engine({ signal }), openJobCorpus(jobId, { signal })]);
-      const { manifest } = corpus;
-      const names = new Set([...manifest.vertex_tables, ...manifest.edge_tables].map((t) => t.name));
-      const relation = (name: string) => {
-        if (!names.has(name)) throw new Error(`The corpus has no relation ${name}`);
-        return `${quote(corpus.url)}.${quote(name)}`;
-      };
-      return { jobId, coordinator, corpus, manifest, relation };
+      return { jobId, coordinator, corpus, manifest: corpus.manifest };
     },
     ...ONCE,
   });
@@ -78,13 +68,13 @@ export function useCorpus(): Corpus {
 
 /** Every vertex table's column statistics, one `SUMMARIZE` each. Suspends until they land; a failure throws to the boundary. */
 export function useFieldStats(): TableStats[] {
-  const { jobId, corpus, manifest, relation } = useCorpus();
+  const { jobId, corpus, manifest } = useCorpus();
   const stats = useSuspenseQuery({
     queryKey: [...corpusKey(jobId), "stats"],
     queryFn: ({ signal }) =>
       Promise.all(
         manifest.vertex_tables.map(async (table) =>
-          summarize(table, await corpus.sql(`SUMMARIZE ${relation(table.name)}`, { signal })),
+          summarize(table, recordsOf(await corpus.sql(`SUMMARIZE ${corpus.relation(table.name)}`, { signal }))),
         ),
       ),
     ...ONCE,

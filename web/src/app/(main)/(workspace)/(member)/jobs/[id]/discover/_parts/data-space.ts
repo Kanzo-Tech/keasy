@@ -1,4 +1,6 @@
-import type { Manifest } from "@fossil-lang/corpus";
+import type { Corpus, Manifest } from "@fossil-lang/corpus";
+
+const literal = (text: string) => `'${text.replaceAll("'", "''")}'`;
 
 interface ColumnRow {
   table_name: string;
@@ -14,9 +16,9 @@ interface ColumnRow {
  * table names, the column names and the column TYPES are the ones a query will
  * actually meet — the server has no business reconstructing them.
  *
- * The views live in the corpus's own catalog (`"jobs/7"."Person"`), so that is
- * where the columns are read from, and every table is named as a query must
- * write it — `executeSql` runs the SQL it is given, unqualified names included.
+ * The views live in the corpus's own catalog and schema (`corpus.url`,
+ * `corpus.schema`), so that is where the columns are read from, and every table
+ * is named as a query must write it, `corpus.relation` — `executeSql` runs the SQL it is given, unqualified names included.
  *
  * The one fact the catalog cannot carry is which vertex tables an edge table
  * joins: the views have no foreign keys. That comes from the corpus's manifest
@@ -25,14 +27,13 @@ interface ColumnRow {
  */
 export async function describeDataSpace(
   query: (sql: string) => Promise<unknown>,
-  catalog: string,
-  relation: (name: string) => string,
+  corpus: Pick<Corpus, "url" | "schema" | "relation">,
   manifest: Manifest,
 ): Promise<string> {
   const rows = (await query(
     `SELECT table_name, column_name, data_type
        FROM information_schema.columns
-      WHERE table_catalog = '${catalog.replaceAll("'", "''")}' AND table_schema = 'main'
+      WHERE table_catalog = ${literal(corpus.url)} AND table_schema = ${literal(corpus.schema)}
       ORDER BY table_name, ordinal_position`,
   )) as ColumnRow[];
 
@@ -44,8 +45,11 @@ export async function describeDataSpace(
   }
 
   const keys = new Map(manifest.vertex_tables.map((t) => [t.name, t.key] as const));
-  const end = (e: { key: string; references: string }) =>
-    `"${e.key}" -> ${relation(e.references)}."${keys.get(e.references) ?? "dense_id"}"`;
+  const end = (e: { key: string; references: string }) => {
+    const key = keys.get(e.references);
+    if (key === undefined) throw new Error(`An edge table references ${e.references}, which the corpus does not declare`);
+    return `"${e.key}" -> ${corpus.relation(e.references)}."${key}"`;
+  };
   const endpoints = new Map(
     manifest.edge_tables.map(
       (e) => [e.name, `${e.label}: ${end(e.source)}, ${end(e.destination)}`] as const,
@@ -55,7 +59,7 @@ export async function describeDataSpace(
   return [...byTable]
     .map(([table, cols]) => {
       const edge = endpoints.get(table);
-      return `CREATE TABLE ${relation(table)} (\n${cols.join(",\n")}\n);${edge ? ` -- ${edge}` : ""}`;
+      return `CREATE TABLE ${corpus.relation(table)} (\n${cols.join(",\n")}\n);${edge ? ` -- ${edge}` : ""}`;
     })
     .join("\n\n");
 }

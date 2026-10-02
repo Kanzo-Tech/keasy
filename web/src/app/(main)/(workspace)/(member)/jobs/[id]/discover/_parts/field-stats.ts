@@ -1,71 +1,40 @@
-import type { SqlResult, VertexTable } from "@fossil-lang/corpus";
-
-/** What an axis over a field can do with it: bin a range, draw a time axis, or group by value. */
-export type FieldKind = "numeric" | "temporal" | "categorical";
-
-/** The part a field plays in a chart by default. */
-export type FieldRole = "identifier" | "dimension" | "measure";
-
-export interface FieldStat {
-  name: string;
-  /** DuckDB's type for the column, as `SUMMARIZE` reports it. */
-  type: string;
-  kind: FieldKind;
-  role: FieldRole;
-  /** `approx_unique`: an estimate, which is all a default needs. */
-  distinct: number;
-}
+import type { Manifest, VertexTable } from "@fossil-lang/corpus";
+import { type FieldStat, fieldStats, type SummarizeRow } from "@kanzo-tech/ui/analytics";
 
 export interface TableStats {
   name: string;
   count: number;
+  /** The program's columns a chart or a suggestion may name, classified. */
   fields: FieldStat[];
-}
-
-const NUMERIC = /^(U?(TINY|SMALL|BIG|HUGE)?INT(EGER)?|FLOAT|DOUBLE|REAL|DECIMAL.*)$/i;
-const TEMPORAL = /^(DATE|TIME.*|TIMESTAMP.*)$/i;
-const ID_NAME = /(^id$|_id$|Id$|^uri$|^iri$)/;
-
-/** A category with more values than this reads as a key, not as something to group by. */
-const DIMENSION_LIMIT = 50;
-
-export function kindOf(type: string): FieldKind {
-  if (NUMERIC.test(type)) return "numeric";
-  if (TEMPORAL.test(type)) return "temporal";
-  return "categorical";
-}
-
-export function roleOf(name: string, kind: FieldKind, distinct: number, count: number): FieldRole {
-  if (ID_NAME.test(name)) return "identifier";
-  if (kind === "numeric") return "measure";
-  if (kind === "temporal") return "dimension";
-  return distinct <= DIMENSION_LIMIT || distinct < count / 2 ? "dimension" : "identifier";
+  /** Every column of the table, bookkeeping included: what a rule may check. */
+  columns: string[];
 }
 
 /**
- * One table's `SUMMARIZE`, as the fields a chart or a rule may name. The table's key, its identity
- * and a layout's own coordinates are the corpus's bookkeeping rather than the program's data, so
- * they are left out.
+ * The columns fossil wrote rather than the program: every one with a `role`. A corpus written
+ * before fossil 0.3.0-alpha.22 has no roles, so there it is what the manifest has always declared —
+ * the key, the identity and a layout's coordinates; its `cluster_id` and edge endpoints read as data.
  */
-export function summarize(table: VertexTable, result: SqlResult): TableStats {
-  const at = (column: string) => result.columns.indexOf(column);
-  const [name, type, unique] = [at("column_name"), at("column_type"), at("approx_unique")];
-  const hidden = new Set([table.key, table.identity]);
-  if (table.position?.by === "layout") {
-    hidden.add(table.position.x);
-    hidden.add(table.position.y);
-  }
-  const fields = result.rows
-    .filter((row) => !hidden.has(String(row[name])))
-    .map((row): FieldStat => {
-      const field = String(row[name]);
-      const kind = kindOf(String(row[type]));
-      const distinct = Number(row[unique] ?? 0);
-      return { name: field, type: String(row[type]), kind, role: roleOf(field, kind, distinct, table.record_count), distinct };
-    });
-  return { name: table.name, count: table.record_count, fields };
+export function bookkeeping(table: VertexTable): string[] {
+  const roled = table.properties.filter((p) => p.role !== undefined).map((p) => p.name);
+  if (roled.length > 0) return roled;
+  const layout = table.position?.by === "layout" ? [table.position.x, table.position.y] : [];
+  return [table.key, table.identity, ...layout];
 }
 
-/** One table's fields, by its name. */
-export const fieldsOf = (tables: readonly TableStats[], name: string): FieldStat[] =>
-  tables.find((t) => t.name === name)?.fields ?? [];
+/** The column the graph keys a vertex by, the same in every vertex table of one corpus. */
+export function graphKey(manifest: Manifest): string {
+  const key = manifest.vertex_tables[0]?.key;
+  if (key === undefined) throw new Error("The corpus declares no vertex table, so nothing has a key");
+  return key;
+}
+
+/** One table's `SUMMARIZE` rows, as kanzo-ui classifies them, with fossil's bookkeeping left out of its fields. */
+export function summarize(table: VertexTable, rows: readonly Record<string, unknown>[]): TableStats {
+  const { fields, columns } = fieldStats(rows as unknown as SummarizeRow[], { exclude: bookkeeping(table) });
+  return { name: table.name, count: table.record_count, fields, columns };
+}
+
+/** One table's columns, by its name: what a rule may check, fossil's own included. */
+export const columnsOf = (tables: readonly TableStats[], name: string): string[] =>
+  tables.find((t) => t.name === name)?.columns ?? [];

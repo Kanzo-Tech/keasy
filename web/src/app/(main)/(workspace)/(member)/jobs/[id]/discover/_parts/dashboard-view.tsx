@@ -9,6 +9,7 @@ import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { Boundary } from "@/components/boundary";
 import { useCorpus } from "./corpus";
+import { bookkeeping } from "./field-stats";
 
 /**
  * The Dashboard view: kanzo-ui's `Dashboard` over one vertex type at a time, on the crossfilter the
@@ -37,7 +38,7 @@ export default function DashboardView() {
 }
 
 function SavedDashboard() {
-  const { jobId, manifest, relation } = useCorpus();
+  const { jobId, corpus, manifest } = useCorpus();
   const types = manifest.vertex_tables;
   const [type, setType] = useState(types[0]?.name ?? "");
   const table = types.find((t) => t.name === type);
@@ -65,13 +66,7 @@ function SavedDashboard() {
   };
   useEffect(() => () => void (pending.current && clearTimeout(pending.current)), []);
 
-  const exclude = useMemo(
-    () =>
-      table
-        ? [table.key, table.identity, ...(table.position ? [table.position.x, table.position.y] : [])]
-        : [],
-    [table],
-  );
+  const exclude = useMemo(() => (table ? bookkeeping(table) : []), [table]);
 
   if (!table) return <Skeleton className="h-full w-full" />;
 
@@ -102,7 +97,7 @@ function SavedDashboard() {
           key={type}
           onChange={change}
           rowNoun={type}
-          table={verbatim(relation(type))}
+          table={verbatim(corpus.relation(type))}
           value={byType[type]}
         />
       </ScrollArea>

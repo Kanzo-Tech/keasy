@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { VertexTable } from "@fossil-lang/corpus";
-import { kindOf, roleOf, summarize } from "./field-stats";
+import type { Manifest, VertexTable } from "@fossil-lang/corpus";
+import { bookkeeping, graphKey, summarize } from "./field-stats";
 
 const PERSON: VertexTable = {
   name: "Person",
@@ -8,43 +8,43 @@ const PERSON: VertexTable = {
   key: "dense_id",
   identity: "subject",
   record_count: 1000,
-  properties: [],
+  properties: [
+    { name: "dense_id", type: "uint32", role: "address" },
+    { name: "subject", type: "string", role: "identity" },
+    { name: "x", type: "float", role: "coordinate" },
+    { name: "y", type: "float", role: "coordinate" },
+    { name: "cluster_id", type: "uint32", role: "categorical" },
+    { name: "country", type: "string" },
+  ],
   position: { by: "layout", x: "x", y: "y" },
 };
 
+/** The same table as a corpus written before columns carried a role. */
+const UNROLED: VertexTable = { ...PERSON, properties: PERSON.properties.map(({ name, type }) => ({ name, type })) };
+
+const summary = (...names: string[]) =>
+  names.map((name) => ({ column_name: name, column_type: "VARCHAR", approx_unique: 12, min: null, max: null, count: 1000 }));
+
 describe("field-stats", () => {
-  it("reads DuckDB's type words as a kind", () => {
-    expect(kindOf("BIGINT")).toBe("numeric");
-    expect(kindOf("UINTEGER")).toBe("numeric");
-    expect(kindOf("DECIMAL(10,2)")).toBe("numeric");
-    expect(kindOf("TIMESTAMP WITH TIME ZONE")).toBe("temporal");
-    expect(kindOf("DATE")).toBe("temporal");
-    expect(kindOf("VARCHAR")).toBe("categorical");
+  it("hides every column fossil gave a role", () => {
+    expect(bookkeeping(PERSON)).toEqual(["dense_id", "subject", "x", "y", "cluster_id"]);
   });
 
-  it("calls a few-valued string a dimension and a unique one an identifier", () => {
-    expect(roleOf("country", "categorical", 12, 1000)).toBe("dimension");
-    expect(roleOf("email", "categorical", 998, 1000)).toBe("identifier");
-    expect(roleOf("user_id", "numeric", 1000, 1000)).toBe("identifier");
-    expect(roleOf("age", "numeric", 80, 1000)).toBe("measure");
+  it("hides what the manifest has always declared when the corpus predates roles", () => {
+    expect(bookkeeping(UNROLED)).toEqual(["dense_id", "subject", "x", "y"]);
+    expect(bookkeeping({ ...UNROLED, position: { by: "program", x: "lon", y: "lat" } })).toEqual(["dense_id", "subject"]);
   });
 
-  it("leaves the key, the identity and the layout's coordinates out, and reads a bigint count", () => {
-    const stats = summarize(PERSON, {
-      columns: ["column_name", "column_type", "approx_unique"],
-      rows: [
-        ["dense_id", "UINTEGER", BigInt(1000)],
-        ["subject", "VARCHAR", BigInt(1000)],
-        ["x", "FLOAT", BigInt(990)],
-        ["y", "FLOAT", BigInt(990)],
-        ["country", "VARCHAR", BigInt(12)],
-      ],
-      truncated: false,
-    });
-    expect(stats).toEqual({
-      name: "Person",
-      count: 1000,
-      fields: [{ name: "country", type: "VARCHAR", kind: "categorical", role: "dimension", distinct: 12 }],
-    });
+  it("keeps bookkeeping out of the fields and in the columns a rule may check", () => {
+    const stats = summarize(PERSON, summary("dense_id", "subject", "x", "y", "cluster_id", "country"));
+    expect(stats.fields.map((f) => f.name)).toEqual(["country"]);
+    expect(stats.columns).toEqual(["dense_id", "subject", "x", "y", "cluster_id", "country"]);
+    expect(stats.count).toBe(1000);
+  });
+
+  it("reads the graph's key from the manifest, and refuses a corpus with no vertex table", () => {
+    const manifest = (vertex_tables: VertexTable[]): Manifest => ({ format: "fossil/1", vertex_tables, edge_tables: [] });
+    expect(graphKey(manifest([{ ...PERSON, key: "vid" }]))).toBe("vid");
+    expect(() => graphKey(manifest([]))).toThrow();
   });
 });

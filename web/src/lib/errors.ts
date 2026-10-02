@@ -3,6 +3,7 @@ import {
   CODES,
   type Foreign,
   helpUrl,
+  isCode,
   isFossilError,
   type Related,
   type Severity,
@@ -133,6 +134,15 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Auth
   "server/silent": { title: "The server did not answer in time." },
   "store/silent": { title: "The store did not answer in time." },
   "store/refused": { title: "The store refused to open the data." },
+  "source/not-found": {
+    title: "The source names no file",
+    detail: (data) => {
+      const locator = (data as { locator?: unknown } | undefined)?.locator;
+      return typeof locator === "string"
+        ? `Nothing was found at ${locator}. Check the path and the connection it is read through.`
+        : "A file the program reads was not found. Check the path and the connection it is read through.";
+    },
+  },
   "run/over-budget": {
     title: "Too large for the browser",
     detail: (data) => {
@@ -188,9 +198,6 @@ export function toProblem(err: unknown, code: ClientCode = "web/unknown"): Shown
   return cause === undefined ? shown : { ...shown, cause };
 }
 
-/** The `area/kind` grammar fossil's codes follow: digits allowed after a segment's first letter (`source/not-utf8`). */
-const GRAMMAR = /^[a-z][a-z0-9]*(-[a-z0-9]+)*\/[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
-
 /**
  * An error a library coded in the shared grammar — kanzo-ui's `AuthError`, `GraphError`,
  * `EngineError`, `AiError` — keyed by its `code`, its `data` kept.
@@ -198,7 +205,7 @@ const GRAMMAR = /^[a-z][a-z0-9]*(-[a-z0-9]+)*\/[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 function coded(err: unknown): Shown | undefined {
   if (!(err instanceof Error)) return undefined;
   const { code, data } = err as Error & { code?: unknown; data?: unknown };
-  if (typeof code !== "string" || !GRAMMAR.test(code)) return undefined;
+  if (!isCode(code)) return undefined;
   return { code, title: copyOf(code)?.title ?? err.message, detail: err.message, data };
 }
 
@@ -211,7 +218,7 @@ function answered(err: unknown): Shown | undefined {
   if (typeof body !== "string") return undefined;
   try {
     const parsed = JSON.parse(body) as { code?: unknown; title?: unknown; detail?: unknown; data?: unknown };
-    if (typeof parsed.code !== "string" || !GRAMMAR.test(parsed.code)) return undefined;
+    if (!isCode(parsed.code)) return undefined;
     return {
       code: parsed.code,
       title: typeof parsed.title === "string" ? parsed.title : parsed.code,
@@ -233,7 +240,7 @@ function answered(err: unknown): Shown | undefined {
 function streamed(err: unknown): Shown | undefined {
   if (err instanceof Error || typeof err !== "object" || err === null) return undefined;
   const { code } = err as { code?: unknown };
-  if (typeof code !== "string" || !GRAMMAR.test(code)) return undefined;
+  if (!isCode(code)) return undefined;
   const detail = messageOf(err) ?? "";
   return { code, title: copyOf(code)?.title ?? detail, detail };
 }

@@ -28,3 +28,14 @@ export function formatDate(dateStr: string | null | undefined): string {
   }).format(new Date(dateStr));
 }
 
+
+/** The first letters of a name's first two words, for an avatar with no picture. */
+export function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}

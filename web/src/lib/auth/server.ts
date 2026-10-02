@@ -151,11 +151,19 @@ function bff(): Bff {
 }
 
 /**
- * Keycloak's account console for this realm, where the member's password, sign-in
- * methods and sessions live. Keycloak serves it at `{issuer}/account`.
+ * The pages of Keycloak's account console keasy links to, by the route the console (account-ui,
+ * Keycloak 26) declares: personal info at its root, the password and two-factor methods, and the
+ * sessions on each device.
  */
-export function accountConsoleUrl(): string {
-  return `${required("KEASY_OIDC_ISSUER_URL").replace(/\/$/, "")}/account`;
+export type AccountPage = "" | "account-security/signing-in" | "account-security/device-activity";
+
+/**
+ * Keycloak's account console for this realm, where the member's password, sign-in methods and
+ * sessions live: `{issuer}/account`, and one of its pages under it.
+ */
+export function accountConsoleUrl(page: AccountPage = ""): string {
+  const root = `${required("KEASY_OIDC_ISSUER_URL").replace(/\/$/, "")}/account`;
+  return page ? `${root}/${page}` : root;
 }
 
 /** `/api/auth`: sign-in, callback, sign-out, session. */

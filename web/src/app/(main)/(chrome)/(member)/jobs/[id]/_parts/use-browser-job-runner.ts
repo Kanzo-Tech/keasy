@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Job } from "@fossil-lang/executor";
 import { ApiError, http, type Schemas } from "@/lib/api/client";
+import { bounds } from "@/lib/api/spec";
 import { openJobCorpus } from "@/lib/fossil/corpus";
 import { host } from "@/lib/fossil/host";
 import { toastError, toProblem } from "@/lib/errors";
@@ -29,9 +30,13 @@ interface Reported {
   done: boolean;
 }
 
-/** How often a running job says it is still being run, and how long the server waits before it sweeps. */
-export const HEARTBEAT_MS = 15_000;
-export const LEASE_MS = 60_000;
+/**
+ * How long the server waits on a running job before it sweeps it, as the server publishes it, and
+ * how often the job says it is still being run: four times within it, so one lost beat is not an
+ * abandoned run.
+ */
+export const LEASE_MS = bounds.job_lease_ms;
+export const HEARTBEAT_MS = LEASE_MS / 4;
 
 /** A failure worth asking again: no answer, a server failure or a rate limit — never a refusal. */
 function transient(err: unknown): boolean {

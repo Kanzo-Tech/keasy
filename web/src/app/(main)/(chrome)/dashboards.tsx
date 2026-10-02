@@ -111,7 +111,7 @@ export function MemberDashboard() {
 }
 
 function useJobs() {
-  return settled($api.useSuspenseQuery("get", "/v1/jobs", {}, { refetchInterval: pollWhile(hasRunningJobs, 2000) }));
+  return settled($api.useSuspenseQuery("get", "/v1/jobs", {}, { refetchInterval: pollWhile(hasRunningJobs) }));
 }
 
 function Readiness() {

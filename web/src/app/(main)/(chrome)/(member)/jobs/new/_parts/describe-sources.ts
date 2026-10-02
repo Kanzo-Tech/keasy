@@ -14,16 +14,6 @@ import type { ProgramSource } from "@fossil-lang/types";
 import { engine } from "@kanzo-tech/ui/analytics";
 
 import { host } from "@/lib/fossil/host";
-import type { StorageConnection } from "@/lib/connections";
-
-/**
- * A file listed in a connection (its key in the bucket) as the path a program
- * writes after `@conn/`: relative to the connection's own prefix.
- */
-export function connectionPath(connection: StorageConnection, key: string): string {
-  const prefix = new URL(connection.url).pathname.replace(/^\/+|\/+$/g, "");
-  return prefix && key.startsWith(`${prefix}/`) ? key.slice(prefix.length + 1) : key;
-}
 
 export const sourceDescriptorsKey = (sources: readonly string[]) =>
   ["source-descriptors", sources] as const;

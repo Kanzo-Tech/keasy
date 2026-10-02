@@ -16,6 +16,13 @@ import { queryClient } from "@/lib/api/query-client";
  * through the query cache under `/v1/connections`: `invalidate("/v1/connections")`
  * after adding or deleting one drops it.
  */
+/**
+ * How long the connection map answers every check before it is asked again: the editor checks on
+ * every pause in typing, and a connection added in another tab appears within a minute. This tab's
+ * own `invalidate` drops it at once.
+ */
+const CONNECTIONS_FRESH_MS = 60_000;
+
 export const host: Host = {
   // `signal` is fossil's: the caller's Stop, or the 30 s a host has to answer. Passing it to the
   // request stops the request too, rather than leaving it to finish unread.
@@ -24,7 +31,7 @@ export const host: Host = {
       queryClient.fetchQuery({
         queryKey: ["get", "/v1/connections", {}],
         queryFn: async ({ signal: query }) => (await http.GET("/v1/connections", { signal: query })).data ?? [],
-        staleTime: 60_000,
+        staleTime: CONNECTIONS_FRESH_MS,
       }),
       signal,
     );

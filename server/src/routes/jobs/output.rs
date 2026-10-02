@@ -15,7 +15,6 @@ use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::jobs::owned;
 use crate::startup::AppState;
 use crate::storage_client;
-use crate::storage_client::vend::VendError;
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CredentialsRequest {
@@ -84,15 +83,7 @@ pub(crate) async fn vended(
 ) -> Result<Response, Refusal> {
     let credential = storage_client::vend::vend(credential, location, access)
         .await
-        .map_err(|e| match e {
-            VendError::Refused(message) => {
-                Refusal::new(StatusCode::BAD_GATEWAY, ErrorCode::StoreError, message)
-            }
-            silent @ VendError::Silent { after, .. } => Refusal::Body(
-                StatusCode::GATEWAY_TIMEOUT,
-                ErrorBody::silent(ErrorCode::StoreSilent, silent.to_string(), after),
-            ),
-        })?;
+        .map_err(|e| e.refusal(ErrorCode::StoreError))?;
     Ok((
         [(header::CACHE_CONTROL, "no-store")],
         Json(VendedCredentials {

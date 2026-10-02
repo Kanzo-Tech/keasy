@@ -27,3 +27,13 @@ export interface StorageConnection extends Required<Schemas["StorageTarget"]> {
 export function storageConnections(all: Connection[]): StorageConnection[] {
   return all.map((c) => ({ kind: "data", direction: "source", ...c.target, name: c.name, credential: c.credential }));
 }
+
+/**
+ * The reference a program writes for a file listed in `connection` (its key in the bucket):
+ * `@name/` and the key relative to the connection's own prefix.
+ */
+export function reference(connection: Pick<StorageConnection, "name" | "url">, key: string): string {
+  const prefix = new URL(connection.url).pathname.replace(/^\/+|\/+$/g, "");
+  const path = prefix && key.startsWith(`${prefix}/`) ? key.slice(prefix.length + 1) : key;
+  return `@${connection.name}/${path}`;
+}

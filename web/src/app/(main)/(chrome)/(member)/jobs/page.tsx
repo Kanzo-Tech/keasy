@@ -72,7 +72,7 @@ function Jobs() {
   const router = useRouter();
 
   const jobs = settled(
-    $api.useSuspenseQuery("get", "/v1/jobs", {}, { refetchInterval: pollWhile(hasRunningJobs, 2000) }),
+    $api.useSuspenseQuery("get", "/v1/jobs", {}, { refetchInterval: pollWhile(hasRunningJobs) }),
   );
 
   const { mutate: deleteJob } = $api.useMutation("delete", "/v1/jobs/{id}", {

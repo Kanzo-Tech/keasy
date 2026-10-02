@@ -316,3 +316,57 @@ async fn a_burst_over_the_rate_is_refused_as_request_rate_limited() {
         (StatusCode::TOO_MANY_REQUESTS, "request/rate-limited")
     );
 }
+
+/// A store that accepts and never answers is the whole answer, `store/silent` with how long it was
+/// given — from a probe as from a listing, and inside the request deadline, so never a failed check
+/// in a report nor `server/silent`.
+#[tokio::test]
+async fn a_store_that_never_answers_is_store_silent_from_a_probe_and_a_listing() {
+    let app = spawn_app().await;
+    let member = app.token(&["member"]);
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let silent = format!("http://{}", listener.local_addr().unwrap());
+    app.credential("hung", &silent, "u-1").await;
+    app.connection("data", "hung", Direction::Source, "u-1")
+        .await;
+
+    let spec = json!({ "kind": "s3", "access_key_id": "AK", "secret_access_key": "s", "endpoint": silent });
+    let started = std::time::Instant::now();
+    let (created, validated, listed) = tokio::join!(
+        app.send(
+            Method::POST,
+            "/v1/credentials",
+            &member,
+            json!({ "name": "fresh", "spec": spec, "probe_url": "s3://b/" }),
+        ),
+        app.send(
+            Method::POST,
+            "/v1/connections/data/validate",
+            &member,
+            json!({})
+        ),
+        async {
+            let response = app
+                .client
+                .get(url(&app, "/v1/connections/data/files"))
+                .bearer_auth(&member)
+                .send()
+                .await
+                .unwrap();
+            refused(response).await
+        },
+    );
+    for (what, (status, body)) in [
+        ("create", created),
+        ("validate", validated),
+        ("list", listed),
+    ] {
+        assert_eq!(
+            (status, body["code"].as_str()),
+            (StatusCode::GATEWAY_TIMEOUT, Some("store/silent")),
+            "{what}: {body}"
+        );
+        assert!(body["data"]["after"].is_u64(), "{what}: {body}");
+    }
+    assert!(started.elapsed() < keasy_server::startup::REQUEST_DEADLINE);
+}

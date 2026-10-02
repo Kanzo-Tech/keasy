@@ -23,3 +23,10 @@ export function schemaOf(name: string): JsonSchema {
   if (!found) throw new Error(`openapi.json has no schema ${name}`);
   return found;
 }
+
+/**
+ * The figures the server publishes for its clients to keep in step with (`x-keasy-bounds`): its
+ * request deadline, which the browser's own must exceed, and a job's lease, which a runner's
+ * heartbeat divides.
+ */
+export const bounds = spec["x-keasy-bounds"];

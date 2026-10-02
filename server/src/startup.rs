@@ -18,6 +18,7 @@ use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tracing::info;
 use utoipa::Modify;
 use utoipa::OpenApi;
+use utoipa::openapi::extensions::ExtensionsBuilder;
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa_axum::router::OpenApiRouter;
 
@@ -178,17 +179,16 @@ pub fn openapi() -> utoipa::openapi::OpenApi {
 
 pub fn router(state: AppState) -> Router {
     let (public, protected) = routes();
-    // Per caller: 20 requests a second with bursts of 100, relaxed in dev.
-    let (period_ms, burst) = if cfg!(debug_assertions) {
-        (10, 500)
+    let rate = if cfg!(debug_assertions) {
+        DEV_RATE
     } else {
-        (50, 100)
+        RATE
     };
     let per_caller = Arc::new(
         GovernorConfigBuilder::default()
             .key_extractor(Subject)
-            .per_millisecond(period_ms)
-            .burst_size(burst)
+            .per_millisecond(rate.period_ms)
+            .burst_size(rate.burst)
             .finish()
             .expect("a non-zero period and burst"),
     );
@@ -203,13 +203,36 @@ pub fn router(state: AppState) -> Router {
     guarded(router, REQUEST_DEADLINE).with_state(state)
 }
 
+/// A caller's allowance: one request back every `period_ms`, up to `burst` held.
+#[derive(Clone, Copy)]
+struct Rate {
+    period_ms: u64,
+    burst: u32,
+}
+
+/// Per caller: 20 requests a second, bursts of 100.
+const RATE: Rate = Rate {
+    period_ms: 50,
+    burst: 100,
+};
+
+/// Relaxed in a debug build, where one person drives every request a page makes.
+const DEV_RATE: Rate = Rate {
+    period_ms: 10,
+    burst: 500,
+};
+
+/// The largest request body: a credential, a connection, a job's script and
+/// manifest — never data, which goes to the store, not through here.
+const BODY_LIMIT: usize = 2 * 1024 * 1024;
+
 /// What every request passes through, outermost last: a body limit, the
 /// request deadline, a panic caught as a 500, and every failure spoken as an
 /// [`ErrorBody`] — so a client never meets a dropped connection, a hang or a
 /// plain-text body.
 fn guarded<S: Clone + Send + Sync + 'static>(router: Router<S>, deadline: Duration) -> Router<S> {
     router
-        .layer(DefaultBodyLimit::max(2 * 1024 * 1024))
+        .layer(DefaultBodyLimit::max(BODY_LIMIT))
         .layer(middleware::from_fn(move |request, next| {
             within(deadline, request, next)
         }))
@@ -228,11 +251,22 @@ fn guarded<S: Clone + Send + Sync + 'static>(router: Router<S>, deadline: Durati
 /// browser gives up and has to name the server itself.
 pub const REQUEST_DEADLINE: Duration = Duration::from_secs(25);
 
+/// How long the browser waits on an answer: the web's `DEADLINE_MS`
+/// (`web/src/lib/deadline.ts`) for an API request, and `@kanzo-tech/llm`'s
+/// bound on a model stream's next chunk. The web holds its side against the
+/// published `x-keasy-bounds` (`web/src/lib/bounds.test.ts`).
+pub const BROWSER_DEADLINE: Duration = Duration::from_secs(30);
+
+const _: () = assert!(
+    REQUEST_DEADLINE.as_millis() < BROWSER_DEADLINE.as_millis(),
+    "the server names itself before the browser gives up"
+);
+
 /// Answer within `deadline` or with `server/silent`. Dropping the handler's
 /// future is what ends whatever it was waiting on. The AI relay is bounded by
 /// its own idle deadline instead (`routes::ai::IDLE`), which names the gateway.
 pub async fn within(deadline: Duration, request: Request<Body>, next: Next) -> Response {
-    if request.uri().path().starts_with("/v1/ai/") {
+    if routes::ai::relays(request.uri().path()) {
         return next.run(request).await;
     }
     match tokio::time::timeout(deadline, next.run(request)).await {
@@ -300,7 +334,7 @@ fn over_rate(error: GovernorError) -> Response {
         description = "Keasy host: identity, connections, vended credentials and the job record",
     ),
     components(schemas(ErrorBody, ErrorCode, ErrorData)),
-    modifiers(&Bearer, &Unattributed),
+    modifiers(&Bearer, &Unattributed, &Bounds),
     security(("bearer" = [])),
 )]
 pub struct ApiDoc;
@@ -333,6 +367,30 @@ struct Unattributed;
 impl Modify for Unattributed {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
         openapi.info.contact = None;
+    }
+}
+
+/// The figures a client keeps in step with, published beside the routes as
+/// `x-keasy-bounds`: the request deadline its own must exceed, and the job
+/// lease its runner's heartbeat divides.
+struct Bounds;
+
+impl Modify for Bounds {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        openapi
+            .extensions
+            .get_or_insert_with(Default::default)
+            .merge(
+                ExtensionsBuilder::new()
+                    .add(
+                        "x-keasy-bounds",
+                        serde_json::json!({
+                            "request_ms": REQUEST_DEADLINE.as_millis() as u64,
+                            "job_lease_ms": crate::jobs::persistence::LEASE.as_millis() as u64,
+                        }),
+                    )
+                    .build(),
+            );
     }
 }
 

@@ -15,6 +15,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "redis";
 
 import { race } from "@/lib/deadline";
+import { PROBLEM_PAGE } from "@/lib/routes";
 
 import { workspaceRole, type WorkspaceRole } from "./roles";
 
@@ -52,9 +53,6 @@ function required(name: string): string {
   }
   return value;
 }
-
-/** Where a failed sign-in, callback or sign-out lands, with `?code=`; `proxy.ts` keeps it public. */
-export const PROBLEM_PAGE = "/auth/error";
 
 /** Eight hours: a working day, and the lifetime of both the cookie and its ticket. */
 const MAX_AGE = 8 * 60 * 60;

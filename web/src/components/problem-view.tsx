@@ -57,7 +57,7 @@ function raw(problem: Shown): Row {
  * author wrote it; one whose detail keasy rewrites keeps the original one level down, closed.
  */
 function worded(problem: Shown): Row & { link?: { label: string; href: string } } {
-  const copy = copyOf(problem.code);
+  const copy = copyOf(problem.code, problem.data);
   const own = raw(problem);
   if (!copy) return own;
   return {

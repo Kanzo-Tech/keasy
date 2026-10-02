@@ -103,8 +103,9 @@ pub fn update(conn: &Connection, id: &str, f: impl FnOnce(&mut Job)) -> DbResult
 }
 
 /// How long a runner may go without a heartbeat, and a `pending` job without
-/// a runner, before the job is swept as abandoned. Four heartbeats: one lost
-/// request is not an abandoned run.
+/// a runner, before the job is swept as abandoned. Published as
+/// `x-keasy-bounds.job_lease_ms`; the browser's runner beats four times within
+/// it, so one lost request is not an abandoned run.
 pub const LEASE: std::time::Duration = std::time::Duration::from_secs(60);
 
 /// End every job no runner is holding: `running` with a heartbeat (or, before

@@ -13,13 +13,20 @@ let redirected = false;
  * `onError` of its own (a toast, as most have) replaces it, and an expired session read as a toast
  * instead of a sign-in.
  */
+/**
+ * How long a read answers for itself before it is asked again: long enough that moving between
+ * pages does not refetch what was just shown, short enough that another person's change appears
+ * soon. A mutation invalidates what it changed, so this bounds only other people's edits.
+ */
+const FRESH_MS = 30_000;
+
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: (error) => handleAuthError(error) }),
   mutationCache: new MutationCache({ onError: (error) => handleAuthError(error) }),
   defaultOptions: {
     queries: {
       retry: false,
-      staleTime: 30_000,
+      staleTime: FRESH_MS,
       refetchOnWindowFocus: false,
     },
   },

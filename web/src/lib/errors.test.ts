@@ -24,6 +24,9 @@ describe("a failure, shown", () => {
 
   it("says a run too large for the browser in keasy's words", () => {
     expect(copyOf("run/over-budget")).toMatchObject({ title: "Too large for the browser" });
+    expect(copyOf("run/over-budget", { budget: 2 * 2 ** 30 })?.detail).toContain("(2 GiB)");
+    expect(copyOf("run/over-budget", { budget: 1.5 * 2 ** 30 })?.detail).toContain("(1.5 GiB)");
+    expect(copyOf("run/over-budget")?.detail).not.toContain("GiB");
   });
 
   it("leaves a fossil code with no entry in fossil's own words", () => {
@@ -60,6 +63,13 @@ describe("a library's coded failure", () => {
   it("is keyed by its code, its data kept", () => {
     const silent = Object.assign(new Error("The model sent nothing for 30 s"), { code: "ai/silent", data: { after: 30_000 } });
     expect(toProblem(silent)).toMatchObject({ code: "ai/silent", data: { after: 30_000 } });
+  });
+
+  it("is read in fossil's grammar, digits and all", () => {
+    const code = (c: string) => toProblem(Object.assign(new Error("x"), { code: c })).code;
+    expect(code("source/not-utf8")).toBe("source/not-utf8");
+    expect(code("source/-utf8")).toBe("web/unknown");
+    expect(code("Source/x")).toBe("web/unknown");
   });
 
   it("keeps the server's code when the AI SDK carries its answer as the response body", () => {

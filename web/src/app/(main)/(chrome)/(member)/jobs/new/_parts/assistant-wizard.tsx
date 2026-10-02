@@ -40,9 +40,9 @@ import { $api } from "@/lib/api/client";
 import { gateway } from "@/lib/ai";
 import { type CompetencyQuestion, describeFiles, suggestQuestions, writeProgram } from "./assistant-prompts";
 import * as checker from "@/lib/fossil/checker";
-import { connectionPath, describeSources, sourceDescriptorsKey } from "./describe-sources";
+import { describeSources, sourceDescriptorsKey } from "./describe-sources";
 import { providerFor } from "@/lib/fossil/providers";
-import type { StorageConnection } from "@/lib/connections";
+import { reference, type StorageConnection } from "@/lib/connections";
 import { ProblemView } from "@/components/problem-view";
 import { ClientError, toastError, toProblem } from "@/lib/errors";
 
@@ -223,7 +223,7 @@ export function AssistantWizard({
   const bindings = picked.flatMap(({ connection, path }) => {
     const provider = providerFor(path, "data", providers);
     return provider
-      ? [{ constructor: provider.name, uri: `@${connection.name}/${connectionPath(connection, path)}` }]
+      ? [{ constructor: provider.name, uri: reference(connection, path) }]
       : [];
   });
   const program = bindings.map((b, i) => `f${i} := io.${b.constructor}("${b.uri}")`).join("\n");

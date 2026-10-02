@@ -1,6 +1,8 @@
 import { createApiClient, type paths } from "@keasy/api";
 import createQueryHooks from "openapi-react-query";
 
+import { API } from "@/lib/routes";
+
 import { queryClient } from "./query-client";
 import { auth } from "./session";
 
@@ -12,7 +14,7 @@ export type { ErrorCode, Inputs, NoBodyCode, Schemas, paths } from "@keasy/api";
  * path, and a non-2xx has already thrown an `ApiError` by the time it returns.
  * Same origin: `/api/v1` is the BFF, which attaches the session's bearer token.
  */
-export const http = createApiClient({ baseUrl: "/api", fetch: auth.fetch });
+export const http = createApiClient({ baseUrl: API, fetch: auth.fetch });
 
 /** React Query bound to `http`; its keys are `[method, path, init]`. */
 export const $api = createQueryHooks(http);

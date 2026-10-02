@@ -18,6 +18,8 @@ export function race<T>(promise: Promise<T>, ms: number, silent: () => Error): P
   return Promise.race([promise, fired]).finally(() => clearTimeout(timer));
 }
 
+import { MODEL_CALLS } from "./routes";
+
 const NO_BODY = new Set([101, 204, 205, 304]);
 
 /**
@@ -25,11 +27,9 @@ const NO_BODY = new Set([101, 204, 205, 304]);
  * each chunk after — and names `ai/silent`. A second bound here would race it and call the same
  * silence `server/silent`, so the path is passed through whole.
  */
-const MODEL_CALLS = "/api/v1/ai/";
-
 function isModelCall(input: RequestInfo | URL): boolean {
   const url = input instanceof Request ? input.url : input.toString();
-  return new URL(url, "http://origin.invalid").pathname.startsWith(MODEL_CALLS);
+  return new URL(url, "http://origin.invalid").pathname.startsWith(`${MODEL_CALLS}/`);
 }
 
 /**

@@ -16,6 +16,16 @@ import { describeSources, sourceDescriptorsKey } from "./describe-sources";
 
 const NONE: InferredDescriptor[] = [];
 
+/** A pause in typing long enough to ask fossil again which sources the program reads. */
+const TYPING_PAUSE_MS = 400;
+
+/**
+ * How long a description answers for its sources. It describes the files' contents, which change in
+ * the store without keasy hearing of it — not a credential, which fossil renews itself — so it is
+ * read again after a few minutes of editing, never on every pause.
+ */
+const DESCRIPTION_FRESH_MS = 5 * 60_000;
+
 /** Debounce a fast-changing value (editor keystrokes) to one settled value. */
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -34,7 +44,7 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
  * stays useful without it.
  */
 export function useSourceDescriptors(script: string): InferredDescriptor[] {
-  const program = useDebouncedValue(script, 400);
+  const program = useDebouncedValue(script, TYPING_PAUSE_MS);
 
   const { data: sources } = useQuery({
     queryKey: ["program-sources", program],
@@ -49,8 +59,7 @@ export function useSourceDescriptors(script: string): InferredDescriptor[] {
     queryFn: ({ signal }) => describeSources(sources ?? [], signal),
     enabled: !!sources && sources.length > 0,
     retry: false,
-    // Signed URLs live five minutes; a description older than that is re-asked.
-    staleTime: 4 * 60_000,
+    staleTime: DESCRIPTION_FRESH_MS,
   });
 
   return data?.descriptors ?? NONE;

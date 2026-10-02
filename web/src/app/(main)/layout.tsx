@@ -3,6 +3,7 @@ import { SidebarProvider } from "@kanzo-tech/ui";
 import { AuthError } from "@kanzo-tech/auth";
 import { getSession } from "@/lib/auth/server";
 import { workspaceRole } from "@/lib/auth/roles";
+import { PROBLEM_PAGE } from "@/lib/routes";
 import { Shell } from "./shell";
 
 /**
@@ -38,7 +39,7 @@ async function readSession() {
     return await getSession();
   } catch (err) {
     // The store, or the IdP, did not answer: a coded failure, which the problem page renders.
-    if (err instanceof AuthError) redirect(`/auth/error?code=${encodeURIComponent(err.code)}`);
+    if (err instanceof AuthError) redirect(`${PROBLEM_PAGE}?code=${encodeURIComponent(err.code)}`);
     throw err;
   }
 }

@@ -1,5 +1,7 @@
 import { authMiddleware } from "@kanzo-tech/auth/next";
 
+import { API, PROBLEM_PAGE } from "@/lib/routes";
+
 /**
  * Sends an anonymous browser to the sign-in route, and nothing more.
  *
@@ -15,7 +17,7 @@ import { authMiddleware } from "@kanzo-tech/auth/next";
  * failed sign-in lands on — the same path `authRoutes` is given, or a failed
  * sign-in loops back into signing in.
  */
-export const proxy = authMiddleware({ public: ["/api/v1"], problemPage: "/auth/error" });
+export const proxy = authMiddleware({ public: [`${API}/v1`], problemPage: PROBLEM_PAGE });
 
 export const config = {
   // Skip Next internals and any static file (any path with an extension).

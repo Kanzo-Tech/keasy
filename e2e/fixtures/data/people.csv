@@ -1,0 +1,9 @@
+person_id,name,email,city,country,signed_up_on
+p-001,Ada Lovelace,ada@example.org,London,GB,2024-01-14
+p-002,Alan Turing,alan@example.org,Manchester,GB,2024-02-03
+p-003,Grace Hopper,grace@example.org,New York,US,2024-02-27
+p-004,Katherine Johnson,katherine@example.org,Hampton,US,2024-03-11
+p-005,Margaret Hamilton,margaret@example.org,Boston,US,2024-04-02
+p-006,Barbara Liskov,barbara@example.org,Cambridge,US,2024-04-19
+p-007,Edsger Dijkstra,edsger@example.org,Rotterdam,NL,2024-05-08
+p-008,Tim Berners-Lee,tim@example.org,Geneva,CH,2024-06-21

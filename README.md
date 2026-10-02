@@ -60,6 +60,10 @@ make seed   # downloads, checks the SHA-256, unpacks into infra/dev/seed/ldbc/
 ```
 
 Without it the bucket holds the shapes alone and `minio-init` says to run `make seed`.
+The end-to-end suite does not need it: `minio-init` also mirrors the suite's own
+fixtures (`e2e/fixtures/`, a small shop: people, orders and `shop.shex`) to `e2e/`,
+and the suite declares its connections over them (**E2E source**, **E2E shapes**) as
+it signs in.
 
 At boot the instance declares, over that bucket, the **LDBC SNB** source connection
 (`ldbc/`), the **MinIO dev shapes** vocabulary connection (`vocab/`, holding
@@ -165,7 +169,7 @@ make api   # UPDATE_EXPECT=1 cargo test --test api openapi, then pnpm generate
 
 ```
 api/                @keasy/api: the committed spec, its generated types and the client
-e2e/                @keasy/e2e: one Playwright test per failure scenario, and the `faults` profile's servers
+e2e/                @keasy/e2e: one Playwright test per failure scenario, its fixtures, and the `faults` profile's servers
 infra/dev/          MinIO seed and an example program, dev-only
 infra/terraform/    platform/ and realm/ — the Swarm deployment, and dev's realm
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)

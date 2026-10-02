@@ -1,0 +1,13 @@
+order_id,person_id,product,quantity,total_eur,ordered_on
+o-1001,p-001,Analytical Engine manual,1,42.50,2024-03-02
+o-1002,p-001,Punched card set,3,18.00,2024-03-09
+o-1003,p-002,Enigma replica kit,1,310.00,2024-03-15
+o-1004,p-003,COBOL handbook,2,64.90,2024-04-01
+o-1005,p-003,Nanosecond wire,10,9.90,2024-04-07
+o-1006,p-004,Orbital mechanics workbook,1,55.00,2024-04-22
+o-1007,p-005,Apollo guidance notebook,2,78.40,2024-05-03
+o-1008,p-005,Rope memory sampler,1,120.00,2024-05-19
+o-1009,p-006,Abstraction primer,1,33.25,2024-06-01
+o-1010,p-007,Shortest path poster,4,26.00,2024-06-14
+o-1011,p-007,Semaphore set,2,44.00,2024-07-02
+o-1012,p-008,Hypertext field guide,1,29.95,2024-07-18

@@ -62,21 +62,32 @@ test("21 a file listing that fails is store/list-failed, not an empty folder", a
   });
 });
 
-test("25 signing out with Keycloak down lands on /auth/error, not a stuck button", async ({ browser, baseURL }) => {
+test("25 signing out with Keycloak down ends the session and answers, never a stuck button or a 500", async ({ browser, baseURL }) => {
   test.setTimeout(300_000);
   // A session of its own: signing out ends the session it signs out of, and the shared one is the
   // next scenario's.
   const context = await browser.newContext({ storageState: { cookies: [], origins: [] }, baseURL });
   const page = await context.newPage();
   await signIn(page, "dev@keasy.local");
-  await page.goto("/settings/preferences");
   await without(["keycloak"], async () => {
-    // What the Log out button does: a same-origin navigation to the BFF's sign-out.
-    await page.evaluate(() => {
-      window.location.href = "/api/auth/signout?returnTo=/";
+    // What the Log out button navigates to. With the IdP's discovery cached, the BFF sends the
+    // browser on to Keycloak's logout — a host the browser cannot reach, whose error page is the
+    // browser's, not keasy's to draw. What keasy owns is that sign-out answers at once (a redirect
+    // to the IdP, or to /auth/error when it needed the IdP and could not reach it) and that the
+    // session is over.
+    const answer = await page.request.get("/api/auth/signout?returnTo=/", {
+      maxRedirects: 0,
+      headers: { "sec-fetch-site": "same-origin" },
     });
-    await expect(page).toHaveURL(/\/auth\/error\?code=/, { timeout: 45_000 });
-    await expectProblem(page, "idp/unreachable", { within: 5_000 });
+    expect(answer.status(), await answer.text()).toBe(302);
+    const location = answer.headers().location ?? "";
+    if (location.includes("/auth/error")) {
+      await page.goto(location);
+      await expectProblem(page, "idp/unreachable", { within: 5_000 });
+    } else {
+      expect(location).toMatch(/keycloak\.localhost/);
+    }
+    expect((await page.request.get("/api/auth/session")).status()).toBe(401);
   });
   await context.close();
 });

@@ -70,7 +70,7 @@ test("15 a structured answer that does not parse fails the assistant's step, not
   await expectProblem(page, "llm/failed", { within: 20_000 });
 });
 
-test("16 SQL the engine refuses is query/failed in the tool's frame", async ({ page, corpusJob }) => {
+test("16 SQL the engine refuses is engine/failed in the tool's frame", async ({ page, corpusJob }) => {
   let calls = 0;
   await page.route(AI, (route) => {
     calls++;
@@ -98,5 +98,6 @@ test("16 SQL the engine refuses is query/failed in the tool's frame", async ({ p
   });
   await openPanel(page, corpusJob, "Ask");
   await ask(page, "How many people are there?");
-  await expectProblem(page, "query/failed", { within: 20_000 });
+  // fossil's own code for a statement its engine refused: the corpus raised it.
+  await expectProblem(page, "engine/failed", { within: 20_000 });
 });

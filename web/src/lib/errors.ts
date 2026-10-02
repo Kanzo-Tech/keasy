@@ -3,7 +3,6 @@ import {
   CODES,
   type Foreign,
   helpUrl,
-  type FossilError,
   isFossilError,
   type Related,
   type Severity,
@@ -152,7 +151,7 @@ function causeOf(cause: unknown): Shown | Foreign | undefined {
  * value carries is kept, one level down.
  */
 export function toProblem(err: unknown, code: ClientCode = "web/unknown"): Shown {
-  if (isFossilError(err)) return fossilProblem(err);
+  if (isFossilError(err)) return err.problem;
   const cause = err instanceof Error ? causeOf(err.cause) : undefined;
   const shown: Shown =
     err instanceof ApiError
@@ -167,20 +166,6 @@ export function toProblem(err: unknown, code: ClientCode = "web/unknown"): Shown
             detail: err instanceof Error ? err.message : (messageOf(err) ?? String(err)),
           });
   return cause === undefined ? shown : { ...shown, cause };
-}
-
-/**
- * fossil's problem, with its cause read from the error's own `cause` when that is richer: on the
- * wire fossil keeps only its own codes, so a host failure it wrapped (`storage/host-refused` over
- * keasy's `job/not-found` or `store/silent`) arrives as `{ name: "ApiError" }` — while the thrown
- * error still holds the `ApiError` itself.
- */
-function fossilProblem(err: FossilError): Shown {
-  const problem: Shown = err.problem;
-  const inner = (err as Error).cause;
-  if (inner === undefined || inner === null) return problem;
-  const deeper = isFossilError(inner) || inner instanceof ApiError || inner instanceof ClientError || coded(inner);
-  return deeper ? { ...problem, cause: toProblem(inner) } : problem;
 }
 
 const GRAMMAR = /^[a-z][a-z-]*\/[a-z][a-z-]*$/;

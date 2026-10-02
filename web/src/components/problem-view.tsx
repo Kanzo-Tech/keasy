@@ -31,28 +31,18 @@ interface Row {
   children: Row[];
 }
 
-/**
- * A cause a library kept as `{ name, detail }`. keasy's `ApiError` is named by its code so that the
- * code survives that (fossil's wire): a name in the grammar is shown as the code it is.
- */
+/** A cause fossil did not raise, under the host's own code when it kept one. */
 function foreign(cause: Foreign): Row {
-  if (CODED.test(cause.name)) {
-    return {
-      code: cause.name,
-      title: copyOf(cause.name)?.title ?? cause.name,
-      detail: cause.detail,
-      severity: "error",
-      children: [],
-    };
-  }
-  return { title: cause.name, detail: cause.detail, severity: "error", children: [] };
+  const named = cause.code === undefined
+    ? { title: cause.name }
+    : { code: cause.code, title: copyOf(cause.code)?.title ?? cause.name };
+  return { ...named, detail: cause.detail, severity: "error", children: [] };
 }
 
-const CODED = /^[a-z][a-z-]*\/[a-z][a-z-]*$/;
 const related = (r: Related): Row => ({ title: r.detail, help: r.help, severity: r.severity, children: [] });
 
 function rows(problem: Shown): Row[] {
-  const cause = problem.cause === undefined ? [] : ["code" in problem.cause ? raw(problem.cause) : foreign(problem.cause)];
+  const cause = problem.cause === undefined ? [] : ["name" in problem.cause ? foreign(problem.cause) : raw(problem.cause)];
   return [...cause, ...(problem.related ?? []).map(related)];
 }
 

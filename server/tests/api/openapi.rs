@@ -27,3 +27,25 @@ fn the_committed_contract_is_the_one_the_routes_publish() {
         );
     }
 }
+
+fn schema(name: &str) -> serde_json::Value {
+    let spec = serde_json::to_value(keasy_server::startup::openapi()).unwrap();
+    spec["components"]["schemas"][name].clone()
+}
+
+/// What a form checks before it sends: the spellings `parse` holds, published.
+#[test]
+fn the_spellings_are_published_with_their_rule() {
+    use keasy_server::domain::{JobFolder, ResourceName};
+
+    for (name, pattern, max) in [
+        ("JobFolder", JobFolder::PATTERN, JobFolder::MAX_LEN),
+        ("ResourceName", ResourceName::PATTERN, ResourceName::MAX_LEN),
+    ] {
+        let schema = schema(name);
+        assert_eq!(schema["type"], "string", "{name}");
+        assert_eq!(schema["pattern"], pattern, "{name}");
+        assert_eq!(schema["maxLength"], max, "{name}");
+        assert_eq!(schema["minLength"], 1, "{name}");
+    }
+}

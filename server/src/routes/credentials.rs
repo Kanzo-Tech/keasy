@@ -16,6 +16,7 @@ use crate::startup::AppState;
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateCredentialRequest {
+    #[schema(value_type = ResourceName)]
     pub name: String,
     pub spec: StorageCredentialInput,
     /// A storage URL to LIST before the credential is stored. A credential has
@@ -32,6 +33,7 @@ pub struct CreateCredentialRequest {
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateCredentialRequest {
     #[serde(default)]
+    #[schema(value_type = Option<ResourceName>)]
     pub name: Option<String>,
     #[serde(default)]
     pub spec: Option<StorageCredentialInput>,

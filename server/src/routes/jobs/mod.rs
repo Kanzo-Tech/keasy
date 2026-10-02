@@ -22,13 +22,13 @@ use crate::startup::AppState;
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CreateJobRequest {
     pub script: String,
+    #[schema(value_type = Option<ResourceName>)]
     pub name: Option<String>,
     /// Where the output lands: the sink connection's name.
     pub sink_connection: String,
-    /// The folder under the sink the output lands in: lowercase letters,
-    /// digits and `-`, at most 63 characters, starting with a letter or digit.
-    /// A draft may leave it out; a job to run needs one no other job in the
-    /// sink holds.
+    /// The folder under the sink the output lands in. A draft may leave it
+    /// out; a job to run needs one no other job in the sink holds.
+    #[schema(value_type = Option<JobFolder>)]
     pub folder: Option<String>,
     #[serde(default)]
     pub draft: bool,
@@ -37,8 +37,10 @@ pub struct CreateJobRequest {
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct UpdateJobRequest {
     pub script: Option<String>,
+    #[schema(value_type = Option<ResourceName>)]
     pub name: Option<String>,
     /// The draft's folder under the sink, spelled as on create.
+    #[schema(value_type = Option<JobFolder>)]
     pub folder: Option<String>,
 }
 

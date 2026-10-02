@@ -498,11 +498,11 @@ export interface components {
             /** @description The credential it signs with. */
             credential: string;
             /** @description What programs write after `@`, and the connection's key. */
-            name: string;
+            name: components["schemas"]["ResourceName"];
             target: components["schemas"]["StorageTarget"];
         };
         CreateCredentialRequest: {
-            name: string;
+            name: components["schemas"]["ResourceName"];
             /**
              * Format: uri
              * @description A storage URL to LIST before the credential is stored. A credential has
@@ -514,14 +514,8 @@ export interface components {
         };
         CreateJobRequest: {
             draft?: boolean;
-            /**
-             * @description The folder under the sink the output lands in: lowercase letters,
-             *     digits and `-`, at most 63 characters, starting with a letter or digit.
-             *     A draft may leave it out; a job to run needs one no other job in the
-             *     sink holds.
-             */
-            folder?: string | null;
-            name?: string | null;
+            folder?: null | components["schemas"]["JobFolder"];
+            name?: null | components["schemas"]["ResourceName"];
             script: string;
             /** @description Where the output lands: the sink connection's name. */
             sink_connection: string;
@@ -620,11 +614,7 @@ export interface components {
              *     may see, change, run or read it. Taken from the token, never the body.
              */
             created_by: string;
-            /**
-             * @description The folder under the sink the output lands in. A draft may not have one
-             *     yet; every other job does, and no two of them share one in a sink.
-             */
-            folder?: string | null;
+            folder?: null | components["schemas"]["JobFolder"];
             /** @description The runner's last heartbeat while the job runs: its lease. */
             heartbeat_at?: string | null;
             id: string;
@@ -638,7 +628,7 @@ export interface components {
              *     produced output".
              */
             manifest?: unknown;
-            name?: string | null;
+            name?: null | components["schemas"]["ResourceName"];
             /**
              * @description Why a `Failed` run failed, as the browser that ran it reported it: a
              *     problem (`{ code, title, detail, data, … }`), stored verbatim and
@@ -661,6 +651,8 @@ export interface components {
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
         };
+        /** @description The folder a job's output lands in under the sink: lowercase letters, digits and `-`, starting with a letter or digit. */
+        JobFolder: string;
         /** @enum {string} */
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
         /**
@@ -707,6 +699,8 @@ export interface components {
             data_type: string;
             name: string;
         };
+        /** @description A credential's, a connection's or a job's name: no leading or trailing whitespace, and no `/`, `@`, `\` or control character. */
+        ResourceName: string;
         /** @description A credential as a request states it, secrets included. */
         StorageCredentialInput: {
             access_key_id: string;
@@ -790,7 +784,7 @@ export interface components {
         };
         UpdateConnectionRequest: {
             credential?: string | null;
-            name?: string | null;
+            name?: null | components["schemas"]["ResourceName"];
             target?: null | components["schemas"]["StorageTarget"];
         };
         /**
@@ -799,13 +793,12 @@ export interface components {
          *     still validates with it.
          */
         UpdateCredentialRequest: {
-            name?: string | null;
+            name?: null | components["schemas"]["ResourceName"];
             spec?: null | components["schemas"]["StorageCredentialInput"];
         };
         UpdateJobRequest: {
-            /** @description The draft's folder under the sink, spelled as on create. */
-            folder?: string | null;
-            name?: string | null;
+            folder?: null | components["schemas"]["JobFolder"];
+            name?: null | components["schemas"]["ResourceName"];
             script?: string | null;
         };
         ValidateCredentialRequest: {

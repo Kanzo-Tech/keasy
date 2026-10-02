@@ -1,22 +1,11 @@
 /**
- * The one place keasy's web bounds a wait on something outside the process. Every `fetch` goes
- * through {@link deadlineFetch}; every other outside promise (the session store) through
- * {@link race}. A deadline that fires is coded by who did not answer, never as a bare timeout.
+ * The one place keasy's web bounds a wait on something outside the process: every `fetch` goes
+ * through {@link deadlineFetch}. The session store is bounded by `@kanzo-tech/auth`'s `ticketStore`.
+ * A deadline that fires is coded by who did not answer, never as a bare timeout.
  */
 
 /** Any API request from the browser, and a stream's next chunk: the G1 table's figures. */
 export const DEADLINE_MS = 30_000;
-
-/** `promise`, or `silent()` thrown once `ms` pass without it settling. */
-export function race<T>(promise: Promise<T>, ms: number, silent: () => Error): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const fired = new Promise<never>((_, reject) => {
-    // One turn of the loop before rejecting: after a stall (a dev compile, a long GC) the timer
-    // and the answer are due together, and the timer phase runs first.
-    timer = setTimeout(() => setTimeout(() => reject(silent()), 0), ms);
-  });
-  return Promise.race([promise, fired]).finally(() => clearTimeout(timer));
-}
 
 import { MODEL_CALLS } from "./routes";
 

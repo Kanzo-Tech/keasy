@@ -38,13 +38,13 @@ import {
 import { Link } from "@kanzo-tech/navigation/next";
 import { engine } from "@kanzo-tech/ui/analytics";
 import { introspect } from "@fossil-lang/introspect";
+import { providerFor } from "@fossil-lang/wasm";
 import { $api } from "@/lib/api/client";
 import { gateway } from "@/lib/ai";
 import { type CompetencyQuestion, describeFiles, suggestQuestions, writeProgram } from "./assistant-prompts";
 import * as checker from "@/lib/fossil/checker";
 import { host } from "@/lib/fossil/host";
 import { sourceDescriptorsKey } from "./use-source-descriptors";
-import { providerFor } from "@/lib/fossil/providers";
 import { reference, type StorageConnection } from "@/lib/connections";
 import { ProblemView } from "@/components/problem-view";
 import { ClientError, toastError } from "@/lib/errors";

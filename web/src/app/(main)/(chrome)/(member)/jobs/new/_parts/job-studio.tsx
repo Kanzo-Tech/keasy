@@ -35,6 +35,7 @@ import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
 import { storageConnections } from "@/lib/connections";
 import { type FieldProblem, fieldProblem, toastError } from "@/lib/errors";
+import { refs as referencesOf } from "@fossil-lang/wasm";
 import * as checker from "@/lib/fossil/checker";
 import { AssistantWizard } from "./assistant-wizard";
 import { ModePicker } from "./mode-picker";
@@ -142,8 +143,7 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
   useEffect(() => {
     let alive = true;
     const id = setTimeout(() => {
-      void checker
-        .refs(store.script)
+      void referencesOf(store.script)
         .then((rows) => {
           if (!alive) return;
           setRefs(rows);

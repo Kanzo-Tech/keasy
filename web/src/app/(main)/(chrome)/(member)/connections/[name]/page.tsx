@@ -3,6 +3,7 @@
 import { use } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { providerFor } from "@fossil-lang/wasm";
 import {
   Button,
   DataList,
@@ -31,7 +32,6 @@ import {
 import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
 import { providersQuery } from "@/lib/fossil/checker";
-import { providerFor } from "@/lib/fossil/providers";
 import { toastError } from "@/lib/errors";
 import { reference } from "@/lib/connections";
 import { Boundary, Loading } from "@/components/boundary";

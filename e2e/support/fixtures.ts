@@ -1,6 +1,6 @@
 import { expect, test as base, type Page } from "@playwright/test";
 
-import { api, createJob } from "./api";
+import { createJob } from "./api";
 
 /** A job the browser has run to completion, so its corpus opens in Discovery. */
 async function runToCompletion(page: Page): Promise<string> {
@@ -10,30 +10,17 @@ async function runToCompletion(page: Page): Promise<string> {
   return id;
 }
 
-export const MODEL_CREDENTIAL = "e2e-fake-llm";
-export const MODEL_CONNECTION = "e2e-model";
+/** The model calls the page makes, through the BFF to the server's relay to the AI gateway. */
+export const AI = "**/api/v1/ai/chat/completions";
 
-/** A model connection on the fake provider, running `model` — which says how the provider misbehaves. */
-export async function withModel(page: Page, model: string, scenario: () => Promise<void>) {
-  const credential = await api(page, "GET", `/v1/credentials/${MODEL_CREDENTIAL}`);
-  if (credential.status === 404) {
-    const created = await api(page, "POST", "/v1/credentials", {
-      name: MODEL_CREDENTIAL,
-      spec: { model: { kind: "openai", api_key: "e2e-not-a-key", base_url: "http://fake-llm:8000/v1" } },
-    });
-    expect(created.status, JSON.stringify(created.body)).toBeLessThan(300);
-  }
-  const connection = await api(page, "POST", "/v1/connections", {
-    name: MODEL_CONNECTION,
-    credential: MODEL_CREDENTIAL,
-    target: { model: { model } },
-  });
-  expect(connection.status, JSON.stringify(connection.body)).toBeLessThan(300);
-  try {
-    await scenario();
-  } finally {
-    await api(page, "DELETE", `/v1/connections/${encodeURIComponent(MODEL_CONNECTION)}`);
-  }
+/** OpenAI chat completion chunks as the gateway streams them, ending the stream. */
+export function sse(...chunks: unknown[]): string {
+  return [...chunks.map((c) => `data: ${typeof c === "string" ? c : JSON.stringify(c)}\n\n`), "data: [DONE]\n\n"].join("");
+}
+
+/** One chunk of an answer's text. */
+export function text(content: string, finish: string | null = null) {
+  return { id: "e2e", object: "chat.completion.chunk", created: 0, model: "chat", choices: [{ index: 0, delta: { content }, finish_reason: finish }] };
 }
 
 /** Open a job's Discovery on the dock panel `panel` (Info · Ask · Rules · Settings). */

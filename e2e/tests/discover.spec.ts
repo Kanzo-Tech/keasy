@@ -1,5 +1,5 @@
 import { createJob, MISSING } from "../support/api";
-import { ask, openPanel, test, withModel } from "../support/fixtures";
+import { openPanel, test } from "../support/fixtures";
 import { expectProblem } from "../support/problem";
 
 test("01 a job that does not exist opens in discover as job/not-found", async ({ page }) => {
@@ -11,14 +11,6 @@ test("02 a job that has not completed opens in discover as job/not-completed", a
   const id = await createJob(page, { draft: true });
   await page.goto(`/jobs/${id}/discover`);
   await expectProblem(page, "job/not-completed", { within: 10_000 });
-});
-
-test("16 SQL the engine refuses is query/failed in the turn", async ({ page, corpusJob }) => {
-  await withModel(page, "bad-sql", async () => {
-    await openPanel(page, corpusJob, "Ask");
-    await ask(page, "How many people are there?");
-    await expectProblem(page, "query/failed", { within: 20_000 });
-  });
 });
 
 test("17 a rule the engine refuses is query/failed on its row", async ({ page, corpusJob }) => {

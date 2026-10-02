@@ -41,7 +41,7 @@ jobs:
         run: echo "127.0.0.1 keycloak.localhost minio.localhost" | sudo tee -a /etc/hosts
 
       - name: Bring up the stack
-        run: docker compose --profile faults up -d --build --wait --wait-timeout 3600 web fake-llm
+        run: docker compose up -d --build --wait --wait-timeout 3600 web
 
       - run: pnpm --filter @keasy/e2e exec playwright install --with-deps chromium
 

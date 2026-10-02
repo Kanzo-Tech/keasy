@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import { createJob, SOURCE } from "../support/api";
 import { stop, up, without } from "../support/compose";
@@ -61,8 +61,15 @@ test("21 a file listing that fails is store/list-failed, not an empty folder", a
   });
 });
 
-test.fixme("25 signing out with Keycloak down does not leave the button stuck", async () => {
-  // waits on kanzo-ui 0.17: sign-out navigates to the BFF's /api/auth/signout, whose failure is a
-  // bare Next 500 until its route catches it (audit #17); keasy's own half (the button in
-  // try/finally) is in place.
+test("25 signing out with Keycloak down lands on /auth/error, not a stuck button", async ({ page }) => {
+  test.setTimeout(300_000);
+  await page.goto("/settings/preferences");
+  await without(["keycloak"], async () => {
+    // What the Log out button does: a same-origin navigation to the BFF's sign-out.
+    await page.evaluate(() => {
+      window.location.href = "/api/auth/signout?returnTo=/";
+    });
+    await expect(page).toHaveURL(/\/auth\/error\?code=/, { timeout: 45_000 });
+    await expectProblem(page, "idp/unreachable", { within: 5_000 });
+  });
 });

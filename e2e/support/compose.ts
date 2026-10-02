@@ -19,6 +19,11 @@ export function up(...services: string[]) {
   compose("--profile", "faults", "up", "-d", "--wait", ...services);
 }
 
+/** Start `services` without waiting on a health check (LiteLLM's needs its model backend). */
+export function start(...services: string[]) {
+  compose("--profile", "faults", "up", "-d", ...services);
+}
+
 /** Run `scenario` with `services` stopped, and bring them back whatever happens. */
 export async function without(services: string[], scenario: () => Promise<void>) {
   stop(...services);

@@ -241,12 +241,15 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
 
   const draftMutation = useMutation({
     mutationFn: () => {
-      const run = (savingRef.current ?? Promise.resolve()).catch(() => undefined).then(writeDraft); // the last save toasted its own failure
+      // The id lands in the chain itself: Create awaits this promise, and `onSuccess` runs later.
+      const run = (savingRef.current ?? Promise.resolve())
+        .catch(() => undefined) // the last save toasted its own failure
+        .then(writeDraft)
+        .then((id) => (draftIdRef.current = id));
       savingRef.current = run;
       return run;
     },
     onSuccess: async (id) => {
-      draftIdRef.current = id;
       setDraftId(id);
       setSaved(true);
       await invalidate("/v1/jobs");

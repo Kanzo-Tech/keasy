@@ -15,12 +15,19 @@ export function hasRunningJobs(jobs: Schemas["Job"][] | undefined): boolean {
 }
 
 /**
- * A `refetchInterval` that polls every `ms` while `running(data)`, and stops once the query is in
- * error — a dead API is not asked forever, and the failure, not the last good answer, is shown.
+ * How often a page asks after a run under way: soon enough that a finished run shows within a
+ * breath, and a tenth of a request a second against the server's twenty per caller.
  */
-export function pollWhile<T>(running: (data: T | undefined) => boolean, ms: number) {
+export const JOB_POLL_MS = 2_000;
+
+/**
+ * A `refetchInterval` that polls every {@link JOB_POLL_MS} while `running(data)`, and stops once the
+ * query is in error — a dead API is not asked forever, and the failure, not the last good answer,
+ * is shown.
+ */
+export function pollWhile<T>(running: (data: T | undefined) => boolean) {
   return (query: { state: { status: string; data: T | undefined } }): number | false =>
-    query.state.status !== "error" && running(query.state.data) ? ms : false;
+    query.state.status !== "error" && running(query.state.data) ? JOB_POLL_MS : false;
 }
 
 /** Why a failed run failed: the problem the browser stored, opaque to the server. */

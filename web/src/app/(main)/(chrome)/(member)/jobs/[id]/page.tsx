@@ -49,7 +49,7 @@ function JobView({ id }: { id: string }) {
       "get",
       "/v1/jobs/{id}",
       { params: { path: { id } } },
-      { refetchInterval: pollWhile<Schemas["Job"]>((job) => !!job && isRunning(job.status), 3000) },
+      { refetchInterval: pollWhile<Schemas["Job"]>((job) => !!job && isRunning(job.status)) },
     ),
   );
 

@@ -11,12 +11,15 @@ import { toastError, toProblem } from "@/lib/errors";
  * the run report crosses untouched, since `CompleteJobRequest.manifest` is
  * opaque JSON on the server. `runJob` reports both outcomes, `completed` and
  * `failed`, and retries a refused report itself; `reported` says which it tried
- * and whether it got through, so the runner does not report a failure twice.
+ * and whether it got through, so the runner does not report a failure twice. It
+ * retries for {@link LEASE_MS}, the server's sweep, so it stops when the job is
+ * no longer ours to report.
  */
 function makeJob(id: string, reported: Reported): Job {
   return {
     id,
     host,
+    lease: LEASE_MS,
     complete: async ({ status, manifest, problem }, { signal }) => {
       reported.status = status;
       await http.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body: { status, manifest, problem }, signal });

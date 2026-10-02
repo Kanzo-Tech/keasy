@@ -103,7 +103,10 @@ function JobView({ id }: { id: string }) {
           )}
           <DataListItem>
             <DataListItemLabel>Destination</DataListItemLabel>
-            <DataListItemValue className="font-mono">@{job.sink_connection}</DataListItemValue>
+            <DataListItemValue className="font-mono">
+              @{job.sink_connection}
+              {job.folder && `/${job.folder}/`}
+            </DataListItemValue>
           </DataListItem>
         </DataList>
 

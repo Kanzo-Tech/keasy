@@ -1,0 +1,29 @@
+# An instance's look, exactly as kanzo-ui's theme generator exports it (plus an
+# optional `logo`). Not mounted by default; to try it in dev, add to the
+# server in docker-compose.yml:
+#   volumes:     - ./infra/dev/branding.example.yml:/etc/keasy/branding.yml:ro
+#   environment: KEASY_BRANDING_FILE: /etc/keasy/branding.yml
+# The server refuses to start on an invalid file. In prod, point a tenant's
+# `branding_file` (infra/terraform/realm) at the same kind of file.
+branding:
+  logo: https://acme.example/logo.svg
+  theme_css: |
+    /* @family acme */
+    [data-theme="acme"] {
+      --background: oklch(0.99 0.005 30);
+      --foreground: oklch(0.2 0.02 30);
+      --primary: oklch(0.6 0.2 30);
+      --primary-foreground: oklch(0.99 0.005 30);
+    }
+    [data-theme="acme-dark"] {
+      --background: oklch(0.18 0.02 30);
+      --foreground: oklch(0.96 0.01 30);
+      --primary: oklch(0.7 0.18 30);
+      --primary-foreground: oklch(0.18 0.02 30);
+    }
+  families:
+    - family: acme
+      light: { value: acme, label: Acme }
+      dark: { value: acme-dark, label: Acme Dark }
+  default: acme
+  lock: false

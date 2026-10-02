@@ -11,7 +11,7 @@ use secrecy::SecretString;
 use serde_json::json;
 
 use keasy_server::configuration::{
-    AiSettings, ApplicationSettings, DatabaseSettings, OidcSettings, Settings,
+    AiSettings, ApplicationSettings, BrandingSettings, DatabaseSettings, OidcSettings, Settings,
 };
 use keasy_server::credentials::sealing::SecretKey;
 use keasy_server::database::Database;
@@ -41,6 +41,15 @@ pub async fn spawn_app() -> TestApp {
 
 /// The server, relaying model calls to the gateway `ai` names.
 pub async fn spawn_app_with(ai: Option<AiSettings>) -> TestApp {
+    spawn(ai, BrandingSettings::default()).await
+}
+
+/// The server, wearing the look `branding` declares.
+pub async fn spawn_app_branded(branding: BrandingSettings) -> TestApp {
+    spawn(None, branding).await
+}
+
+async fn spawn(ai: Option<AiSettings>, branding: BrandingSettings) -> TestApp {
     let realm = realm("k1").await;
     let dir = tempfile::tempdir().unwrap();
     let database = DatabaseSettings {
@@ -54,6 +63,7 @@ pub async fn spawn_app_with(ai: Option<AiSettings>) -> TestApp {
             workspace_name: "Dev".into(),
             workspace_slug: Some("dev".into()),
             bootstrap_file: None,
+            branding,
         },
         database,
         oidc: OidcSettings {

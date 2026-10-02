@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { useSession } from "@kanzo-tech/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2, LogOut, Settings } from "lucide-react";
@@ -13,12 +13,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AvatarFallback,
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
   isActivePath,
   Menu,
   MenuContent,
@@ -52,6 +46,7 @@ import {
 } from "@kanzo-tech/ui";
 
 import { Link } from "@kanzo-tech/navigation/next";
+import { useBranding } from "@/lib/branding-context";
 import { $api } from "@/lib/api/client";
 import { ROLE_LABEL, workspaceRole, type WorkspaceRole } from "@/lib/auth/roles";
 import { Boundary } from "@/components/boundary";
@@ -60,6 +55,7 @@ import { toProblem } from "@/lib/errors";
 import { settled } from "@/lib/api/settled";
 import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";
 import { HeaderEndContext } from "@/app/(main)/_parts/header-end";
+import { Trail } from "@/app/(main)/_parts/trail";
 
 const titleCase = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
@@ -101,6 +97,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const collapsed = state === "collapsed" && !isMobile;
   const closeMobile = () => setOpenMobile(false);
 
+  const branding = useBranding();
   const userName = session?.user.name ?? session?.user.email ?? "";
   const userEmail = session?.user.email ?? "";
 
@@ -110,7 +107,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <Boundary fallback={<WorkspaceButton collapsed={collapsed} name="Keasy" role={role} />}>
+              <Boundary
+                fallback={
+                  <WorkspaceButton collapsed={collapsed} logo={branding.logo} name={branding.name || "Keasy"} role={role} />
+                }
+              >
                 <WorkspaceSwitcher collapsed={collapsed} isMobile={isMobile} role={role} />
               </Boundary>
             </SidebarMenuItem>
@@ -228,24 +229,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <ShellHeader className="h-12 min-w-0 flex-row items-center gap-2 px-3">
           <SidebarTrigger />
           <Separator className="h-4" orientation="vertical" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              {crumbs.map((crumb, index) => (
-                <Fragment key={crumb.path}>
-                  <BreadcrumbItem>
-                    {index === crumbs.length - 1 ? (
-                      <BreadcrumbPage className="max-w-50 truncate">{crumb.name}</BreadcrumbPage>
-                    ) : (
-                      <BreadcrumbLink asChild className="max-w-38 truncate">
-                        <Link href={crumb.path}>{crumb.name}</Link>
-                      </BreadcrumbLink>
-                    )}
-                  </BreadcrumbItem>
-                  {index < crumbs.length - 1 && <BreadcrumbSeparator />}
-                </Fragment>
-              ))}
-            </BreadcrumbList>
-          </Breadcrumb>
+          <Trail crumbs={crumbs} />
           <div className="ms-auto flex items-center gap-2 empty:hidden" ref={setHeaderEnd} />
         </ShellHeader>
         <HeaderEndContext value={headerEnd}>
@@ -269,6 +253,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
  */
 function WorkspaceButton({
   name,
+  logo,
   role,
   collapsed,
   switching,
@@ -276,6 +261,8 @@ function WorkspaceButton({
   ...trigger
 }: {
   name: string;
+  /** The operator's mark (`/v1/branding`); the generic icon without one. */
+  logo?: string | null;
   role: WorkspaceRole;
   collapsed: boolean;
   switching?: string | null;
@@ -289,7 +276,16 @@ function WorkspaceButton({
       size="lg"
     >
       <SidebarIdentity collapsed={collapsed} responsive>
-        <SidebarIdentityIcon>{switching ? <Loader2 className="animate-spin" /> : <GalleryVerticalEnd />}</SidebarIdentityIcon>
+        <SidebarIdentityIcon>
+          {switching ? (
+            <Loader2 className="animate-spin" />
+          ) : logo ? (
+            // eslint-disable-next-line @next/next/no-img-element -- an operator-declared URL, not a bundled asset
+            <img alt="" className="size-full object-contain" src={logo} />
+          ) : (
+            <GalleryVerticalEnd />
+          )}
+        </SidebarIdentityIcon>
         <SidebarIdentityText>
           <SidebarIdentityLabel>{switching ? `Switching to ${switching}…` : name}</SidebarIdentityLabel>
           <SidebarIdentityDescription>{ROLE_LABEL[role]}</SidebarIdentityDescription>
@@ -306,8 +302,9 @@ function WorkspaceButton({
 function WorkspaceSwitcher({ role, collapsed, isMobile }: { role: WorkspaceRole; collapsed: boolean; isMobile: boolean }) {
   const queryClient = useQueryClient();
   const [switching, setSwitching] = useState<string | null>(null);
+  const branding = useBranding();
   const { workspaces, current, current_name } = settled($api.useSuspenseQuery("get", "/v1/auth/workspaces"));
-  const workspaceName = current_name || titleCase(current ?? "") || "Keasy";
+  const workspaceName = current_name || branding.name || titleCase(current ?? "") || "Keasy";
 
   async function switchTo(slug: string) {
     if (slug === current) return;
@@ -322,6 +319,7 @@ function WorkspaceSwitcher({ role, collapsed, isMobile }: { role: WorkspaceRole;
       <MenuTrigger asChild disabled={workspaces.length <= 1 || !!switching}>
         <WorkspaceButton
           collapsed={collapsed}
+          logo={branding.logo}
           many={workspaces.length > 1}
           name={workspaceName}
           role={role}

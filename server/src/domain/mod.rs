@@ -1,6 +1,8 @@
 mod connection;
 mod credential;
+mod dashboard;
 mod job;
+mod job_folder;
 mod relative_path;
 mod resource_name;
 mod storage_location;
@@ -10,7 +12,9 @@ mod vended;
 
 pub use connection::*;
 pub use credential::*;
+pub use dashboard::Dashboard;
 pub use job::*;
+pub use job_folder::JobFolder;
 pub use relative_path::RelativePath;
 pub use resource_name::ResourceName;
 pub use storage_location::{StorageLocation, Store, StoreKind};

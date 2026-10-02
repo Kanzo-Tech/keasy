@@ -84,6 +84,8 @@ describe("the failure guards", () => {
       "web/src/app/(main)/(chrome)/(member)/jobs/new/_parts/assistant-wizard.tsx",
       // Follows every pause in typing; the editor shows the failure beside the program.
       "web/src/app/(main)/(chrome)/(member)/jobs/new/_parts/use-source-descriptors.ts",
+      // A crumb's label: the route's own name stands until the job's arrives, and the job's page shows its failure.
+      "web/src/app/(main)/_parts/trail.tsx",
     ]);
     expect(offenders(/\b(useQuery|useQueries)\(/, (_, __, path) => EXCEPTIONS.has(path))).toEqual([]);
   });

@@ -140,6 +140,7 @@ services:
       - ./server/src:/src/server/src
       - keasy-data:/var/lib/keasy
       - ./infra/dev/bootstrap.json:/etc/keasy/bootstrap.json:ro
+      - ./infra/dev/snb.fossil:/etc/keasy/snb.fossil:ro
       - server-target:/src/server/target
       - cargo-registry:/usr/local/cargo/registry
     environment:
@@ -226,7 +227,9 @@ services:
       retries: 20
       start_period: 5s
 
-  # Idempotent, so a re-`up` converges. Every file in the seed directory lands.
+  # Idempotent, so a re-`up` converges. The shapes are in git; the graph is
+  # LDBC SNB SF0.1, which `make seed` fetches into infra/dev/seed/ldbc/ — without
+  # it the bucket holds the shapes alone, and this says so.
   minio-init:
     image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
     restart: "no"
@@ -235,10 +238,18 @@ services:
       - |
         mc alias set dev http://minio:9000 minioadmin minioadmin
         mc mb --ignore-existing dev/keasy-dev
-        mc cp --recursive /seed/ dev/keasy-dev/
+        mc mirror --overwrite /seed/vocab dev/keasy-dev/vocab
+        # The end-to-end suite's own fixtures (e2e/fixtures/): it never reads the dev seed.
+        mc mirror --overwrite /e2e dev/keasy-dev/e2e
+        if [ -f /seed/ldbc/.sha256 ]; then
+          mc mirror --overwrite --exclude ".gitignore" --exclude ".sha256" /seed/ldbc dev/keasy-dev/ldbc
+        else
+          echo "minio-init: no LDBC SNB seed — run \`make seed\`, then \`make dev\`"
+        fi
         mc ls --recursive dev/keasy-dev
     volumes:
       - ./infra/dev/seed:/seed:ro
+      - ./e2e/fixtures:/e2e:ro
     depends_on:
       minio:
         condition: service_healthy

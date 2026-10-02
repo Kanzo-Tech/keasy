@@ -1,5 +1,6 @@
 import { expect, type Route } from "@playwright/test";
 
+import { SOURCE } from "../support/api";
 import { start, stop, up } from "../support/compose";
 import { AI, ask, openPanel, sse, test, text } from "../support/fixtures";
 import { expectProblem } from "../support/problem";
@@ -64,13 +65,11 @@ test("15 a structured answer that does not parse fails the assistant's step, not
   await page.goto("/jobs/new");
   await page.getByText("Assistant", { exact: true }).click();
   // Ark draws the checkbox's control over its input.
-  await page.getByRole("checkbox", { name: "Select MinIO dev bucket" }).check({ force: true });
+  await page.getByRole("checkbox", { name: `Select ${SOURCE}` }).check({ force: true });
   // In the dev stack TanStack's devtools button floats over the footer's corner.
   await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
-  const next = page.getByRole("button", { name: "Next", exact: true });
-  await next.click();
-  await expect(next).toBeEnabled({ timeout: 60_000 });
-  await next.click();
+  // Continue waits for the schemas, then asks for requirements on the Requirements screen.
+  await page.getByRole("button", { name: "Continue" }).click({ timeout: 60_000 });
   await expectProblem(page, "llm/failed", { within: 20_000 });
 });
 

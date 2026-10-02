@@ -1,5 +1,4 @@
 import {
-  PreferencesColor,
   PreferencesDensity,
   PreferencesFont,
   PreferencesMonoFont,
@@ -10,6 +9,7 @@ import {
   SectionRoot,
   SectionTitle,
   SectionTitleGroup,
+  ThemePicker,
 } from "@kanzo-tech/ui";
 
 // Each control is wired straight to `KanzoThemeProvider`: no keasy state, no round trip. The graph's
@@ -18,7 +18,7 @@ const SECTIONS = [
   {
     title: "Appearance",
     description: "Control the look and feel of the interface.",
-    body: <PreferencesColor />,
+    body: <ThemePicker />,
   },
   {
     title: "Shape and density",

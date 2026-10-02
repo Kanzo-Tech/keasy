@@ -96,8 +96,9 @@ export function lease(
 
 // Jobs whose browser run has been kicked off this session. Guards the detail
 // view from re-triggering on re-render / poll-refetch. The run is idempotent by
-// deterministic dest (`{owner_base}/{job_id}`), so a stray double-run would only
-// waste work — this avoids even that within a tab.
+// deterministic dest (`{sink}/{folder}`, the prefix of the credential keasy
+// vends), so a stray double-run would only waste work — this avoids even that
+// within a tab.
 const started = new Set<string>();
 
 /**

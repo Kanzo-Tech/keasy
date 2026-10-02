@@ -23,11 +23,15 @@ pnpm-debug.log*
 .planning
 CLAUDE.md
 
-# runtime data
-data/
+# runtime data: the server's KEASY_DATA_DIR default (`./data`), from the root or from server/
+/data/
+/server/data/
 
 # next.js
 .next/
 
 # Local experiments.
 scratch/
+
+# The archive `make seed` downloads. Never committed.
+infra/dev/.cache/

@@ -42,13 +42,21 @@ export function expectRefusal(answer: Answer, status: number, code: string) {
 }
 
 export const SINK = "Workspace output";
-export const SOURCE = "MinIO dev bucket";
+/** The suite's own connections, over its fixtures (e2e/fixtures/, mirrored by `minio-init`). */
+export const SOURCE = "E2E source";
+export const SHAPES = "E2E shapes";
+const CREDENTIAL = "MinIO dev";
 
-/** The dev program over the seeded bucket (infra/dev/shop.fossil). */
-export const SHOP = `type { Person, Order } := io.shex("@MinIO dev shapes/shop.shex")
+export const CONNECTIONS = [
+  { name: SOURCE, credential: CREDENTIAL, target: { url: "s3://keasy-dev/e2e/data/", kind: "data", direction: "source" } },
+  { name: SHAPES, credential: CREDENTIAL, target: { url: "s3://keasy-dev/e2e/vocab/", kind: "vocab", direction: "source" } },
+] as const;
 
-People := io.csv("@MinIO dev bucket/people.csv")
-Orders := io.csv("@MinIO dev bucket/orders.csv")
+/** The program over the fixtures. */
+export const SHOP = `type { Person, Order } := io.shex("@${SHAPES}/shop.shex")
+
+People := io.csv("@${SOURCE}/people.csv")
+Orders := io.csv("@${SOURCE}/orders.csv")
 
 Buyers : Person from People
     @subject = "https://example.org/person/{People.person_id}"
@@ -67,7 +75,9 @@ Purchases : Order from Orders
 
 /** A job created through the API: `draft`, or `pending` for the browser to run when its page opens. */
 export async function createJob(page: Page, { draft = false, name }: { draft?: boolean; name?: string } = {}) {
-  const created = await api(page, "POST", "/v1/jobs", { script: SHOP, name, draft, sink_connection: SINK });
+  // A job to run writes to a folder no other job in the sink writes to.
+  const folder = `e2e-${crypto.randomUUID()}`;
+  const created = await api(page, "POST", "/v1/jobs", { script: SHOP, name, draft, sink_connection: SINK, folder });
   expect(created.status, JSON.stringify(created.body)).toBeLessThan(300);
   return (created.body as { id: string }).id;
 }

@@ -154,6 +154,29 @@
         }
       }
     },
+    "/v1/branding": {
+      "get": {
+        "tags": [
+          "Branding"
+        ],
+        "operationId": "get_branding",
+        "responses": {
+          "200": {
+            "description": "This instance's declared look",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Branding"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {}
+        ]
+      }
+    },
     "/v1/connections": {
       "get": {
         "tags": [
@@ -1199,7 +1222,7 @@
             }
           },
           "400": {
-            "description": "The destination is not a sink",
+            "description": "The destination is not a sink, or the folder is missing or misspelled",
             "content": {
               "application/json": {
                 "schema": {
@@ -1213,6 +1236,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "Another job writes to that folder already",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -1319,7 +1352,7 @@
             }
           },
           "400": {
-            "description": "Job is not a draft",
+            "description": "Job is not a draft, or the folder is misspelled",
             "content": {
               "application/json": {
                 "schema": {
@@ -1450,6 +1483,16 @@
               }
             }
           },
+          "400": {
+            "description": "The job is a draft, which is never run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
@@ -1467,7 +1510,7 @@
             }
           },
           "409": {
-            "description": "The job has already ended, or was never submitted",
+            "description": "The job has already ended",
             "content": {
               "application/json": {
                 "schema": {
@@ -1493,7 +1536,7 @@
         "tags": [
           "Discovery"
         ],
-        "summary": "Vend a credential over the job's dataset, `{sink}/{job_id}/`: to read it\nonce the job has completed, or to write it while the job runs. The store\nholds the boundary, so the credential opens nothing else.",
+        "summary": "Vend a credential over the job's dataset, `{sink}/{folder}/`: to read it\nonce the job has completed, or to write it while the job runs. The store\nholds the boundary, so the credential opens nothing else.",
         "operationId": "vend_job_credentials",
         "parameters": [
           {
@@ -1581,6 +1624,153 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/dashboard": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "get_dashboard",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The job's saved dashboard, or null when none is saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Dashboard"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "put_dashboard",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutDashboardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Dashboard saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The spec is not a JSON object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The spec is larger than a dashboard may be",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
           }
         }
       }
@@ -1765,6 +1955,53 @@
           "complete"
         ]
       },
+      "Branding": {
+        "type": "object",
+        "description": "How this instance looks, as its deployment declares it (`KEASY_BRANDING_FILE`).\nPublic: the web reads it to render the login page and the first paint,\nbefore anyone has signed in.",
+        "required": [
+          "name",
+          "families",
+          "lock"
+        ],
+        "properties": {
+          "default": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The family a visitor starts with; absent leaves the web's own."
+          },
+          "families": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ThemeFamily"
+            },
+            "description": "The theme families members may choose among; empty allows every\nshipped theme."
+          },
+          "lock": {
+            "type": "boolean",
+            "description": "Members wear the default and choose nothing."
+          },
+          "logo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The mark the shell shows: a URL or a path the web serves."
+          },
+          "name": {
+            "type": "string",
+            "description": "This instance's display name (`KEASY_WORKSPACE_NAME`)."
+          },
+          "theme_css": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A theme stylesheet to inline on every page."
+          }
+        }
+      },
       "ChatCompletionRequest": {
         "type": "object",
         "description": "An OpenAI chat completion request. `model` must be an alias; everything\nelse the protocol carries — `stream`, `tools`, `response_format`,\n`temperature` — goes to the gateway untouched.",
@@ -1947,6 +2184,13 @@
           "draft": {
             "type": "boolean"
           },
+          "folder": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The folder under the sink the output lands in: lowercase letters,\ndigits and `-`, at most 63 characters, starting with a letter or digit.\nA draft may leave it out; a job to run needs one no other job in the\nsink holds."
+          },
           "name": {
             "type": [
               "string",
@@ -2019,6 +2263,31 @@
         "properties": {
           "access": {
             "$ref": "#/components/schemas/Access"
+          }
+        }
+      },
+      "Dashboard": {
+        "type": "object",
+        "description": "A job's saved dashboard. `spec` is the dashboard the web's BI kit\nserialises (`DashboardSpec`): keasy stores it and hands it back, and never\nreads a field of it.",
+        "required": [
+          "spec",
+          "updated_at",
+          "updated_by"
+        ],
+        "properties": {
+          "spec": {
+            "type": "object",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": "string",
+            "description": "Keycloak `sub` of the member who saved it last."
           }
         }
       },
@@ -2193,6 +2462,13 @@
             "type": "string",
             "description": "Keycloak `sub` of the member who created the job, and the only one who\nmay see, change, run or read it. Taken from the token, never the body."
           },
+          "folder": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The folder under the sink the output lands in. A draft may not have one\nyet; every other job does, and no two of them share one in a sink."
+          },
           "heartbeat_at": {
             "type": [
               "string",
@@ -2230,7 +2506,7 @@
           },
           "sink_connection": {
             "type": "string",
-            "description": "The sink connection the output lands in, under `{sink.url}/{job_id}`,\nsigned with that connection's credential."
+            "description": "The sink connection the output lands in, under `{sink.url}/{folder}`,\nsigned with that connection's credential."
           },
           "started_at": {
             "type": [
@@ -2313,6 +2589,22 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OutputRelation"
+            }
+          }
+        }
+      },
+      "PutDashboardRequest": {
+        "type": "object",
+        "required": [
+          "spec"
+        ],
+        "properties": {
+          "spec": {
+            "type": "object",
+            "description": "The dashboard, as the web serialises it: any JSON object.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
             }
           }
         }
@@ -2558,6 +2850,44 @@
           }
         }
       },
+      "ThemeChoice": {
+        "type": "object",
+        "description": "One theme: the `data-theme` value it is selected by, and its display name.",
+        "required": [
+          "value",
+          "label"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemeFamily": {
+        "type": "object",
+        "description": "A theme as a pair: what it is called by day and by night.",
+        "required": [
+          "family",
+          "light",
+          "dark"
+        ],
+        "properties": {
+          "dark": {
+            "$ref": "#/components/schemas/ThemeChoice"
+          },
+          "family": {
+            "type": "string"
+          },
+          "light": {
+            "$ref": "#/components/schemas/ThemeChoice"
+          }
+        },
+        "additionalProperties": false
+      },
       "UpdateConnectionRequest": {
         "type": "object",
         "properties": {
@@ -2610,6 +2940,13 @@
       "UpdateJobRequest": {
         "type": "object",
         "properties": {
+          "folder": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The draft's folder under the sink, spelled as on create."
+          },
           "name": {
             "type": [
               "string",

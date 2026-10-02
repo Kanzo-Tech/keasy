@@ -70,3 +70,14 @@ describe("a library's coded failure", () => {
     expect(toProblem(Object.assign(new Error("x"), { responseBody: "<html>" }), "llm/failed").code).toBe("llm/failed");
   });
 });
+
+describe("a host failure fossil wrapped", () => {
+  it("keeps keasy's code from the error's own cause, which fossil's wire drops", () => {
+    const refused = new ApiError({ code: "job/not-found", title: "Job not found", detail: "No such job", data: {} }, 404);
+    const wrapped = new FossilError(
+      { code: "storage/host-refused", title: "The host refused", detail: "the host refused job x", severity: "error", data: { scope: "job x" }, cause: { name: "ApiError", detail: "No such job" } },
+      { cause: refused },
+    );
+    expect(toProblem(wrapped)).toMatchObject({ code: "storage/host-refused", cause: { code: "job/not-found" } });
+  });
+});

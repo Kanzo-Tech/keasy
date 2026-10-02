@@ -66,10 +66,11 @@ test("15 a structured answer that does not parse fails the assistant's step, not
   // Ark draws the checkbox's control over its input.
   await page.getByRole("checkbox", { name: "Select MinIO dev bucket" }).check({ force: true });
   // In the dev stack TanStack's devtools button floats over the footer's corner.
+  await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
   const next = page.getByRole("button", { name: "Next", exact: true });
-  await next.click({ force: true });
+  await next.click();
   await expect(next).toBeEnabled({ timeout: 60_000 });
-  await next.click({ force: true });
+  await next.click();
   await expectProblem(page, "llm/failed", { within: 20_000 });
 });
 

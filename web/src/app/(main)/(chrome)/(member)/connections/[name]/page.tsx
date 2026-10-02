@@ -33,6 +33,7 @@ import { $api, invalidate } from "@/lib/api/client";
 import { providersQuery } from "@/lib/fossil/checker";
 import { providerFor } from "@/lib/fossil/providers";
 import { toastError } from "@/lib/errors";
+import { reference } from "@/lib/connections";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
 
@@ -109,7 +110,7 @@ function ConnectionView({ name }: { name: string }) {
                   </Loading>
                 }
               >
-                <Files kind={storage.kind === "data" ? "data" : "schema"} name={name} />
+                <Files kind={storage.kind === "data" ? "data" : "schema"} name={name} url={storage.url} />
               </Boundary>
             </SectionBody>
           </SectionRoot>
@@ -120,13 +121,13 @@ function ConnectionView({ name }: { name: string }) {
 }
 
 /** What a storage connection's prefix holds that a provider can read. Fails on its own, beside the connection. */
-function Files({ name, kind }: { name: string; kind: "data" | "schema" }) {
+function Files({ name, url, kind }: { name: string; url: string; kind: "data" | "schema" }) {
   const listed = settled($api.useSuspenseQuery("get", "/v1/connections/{name}/files", { params: { path: { name } } }));
   const providers = settled(useSuspenseQuery(providersQuery));
   const readable = listed.filter((f) => providerFor(f.path, kind, providers));
 
   function copyReference(path: string) {
-    navigator.clipboard.writeText(`@${name}/${path}`);
+    navigator.clipboard.writeText(reference({ name, url }, path));
     toast.create({ title: "Reference copied", type: "success" });
   }
 

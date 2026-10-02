@@ -20,3 +20,24 @@ describe("the job program", () => {
     expect(openProgram).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("a check that never answered", () => {
+  it("is one error row on the first character, under fossil's own code", async () => {
+    const { FossilError } = await import("@fossil-lang/types");
+    const { uncheckedRow, JOB_URI } = await import("./checker");
+    const row = uncheckedRow(FossilError.of("api/busy", {} as never));
+    expect(row).toMatchObject({
+      uri: JOB_URI,
+      severity: 1,
+      code: "api/busy",
+      range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+    });
+  });
+
+  it("is internal/bug when fossil did not raise it, as the editor's linter shows it", async () => {
+    const { uncheckedRow } = await import("./checker");
+    const row = uncheckedRow(new Error("the wasm did not download"));
+    expect(row.code).toBe("internal/bug");
+    expect(row.severity).toBe(1);
+  });
+});

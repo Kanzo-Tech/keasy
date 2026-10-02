@@ -1,21 +1,15 @@
 import { mkdirSync } from "node:fs";
-import { expect, test as setup } from "@playwright/test";
+import { test as setup } from "@playwright/test";
 
-/**
- * Sign in once per account through the real flow — the app, the BFF, Keycloak's login form — and
- * keep the session cookie for the scenarios. The accounts and their password are the dev realm's
- * (infra/terraform/realm/dev.tfvars), dev literals, never a real credential.
- */
+import { signIn } from "./support/sign-in";
+
+/** Sign in once per account and keep the session cookie for the scenarios. */
 const ACCOUNTS = { member: "dev@keasy.local", owner: "owner@keasy.local" } as const;
 
 for (const [role, email] of Object.entries(ACCOUNTS)) {
   setup(`sign in as the ${role}`, async ({ page }) => {
     mkdirSync(".auth", { recursive: true });
-    await page.goto("/");
-    await page.locator("#username").fill(email);
-    await page.locator("#password").fill(process.env.KEASY_E2E_PASSWORD ?? "password");
-    await page.locator("#kc-login").click();
-    await expect(page).toHaveURL(/localhost:3000\/?$/, { timeout: 30_000 });
+    await signIn(page, email);
     await page.context().storageState({ path: `.auth/${role}.json` });
   });
 }

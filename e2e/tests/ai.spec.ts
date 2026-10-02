@@ -1,4 +1,4 @@
-import { type Route } from "@playwright/test";
+import { expect, type Route } from "@playwright/test";
 
 import { start, stop, up } from "../support/compose";
 import { AI, ask, openPanel, sse, test, text } from "../support/fixtures";
@@ -63,13 +63,16 @@ test("15 a structured answer that does not parse fails the assistant's step, not
   await page.route(AI, (route) => stream(route, sse(text("You should look at the people table."), text("", "stop"))));
   await page.goto("/jobs/new");
   await page.getByText("Assistant", { exact: true }).click();
-  await page.getByRole("checkbox", { name: "Select MinIO dev bucket" }).check();
+  // Ark draws the checkbox's control over its input.
+  await page.getByRole("checkbox", { name: "Select MinIO dev bucket" }).check({ force: true });
+  // In the dev stack TanStack's devtools button floats over the footer's corner.
+  await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
   // Continue waits for the schemas, then asks for requirements on the Requirements screen.
   await page.getByRole("button", { name: "Continue" }).click({ timeout: 60_000 });
   await expectProblem(page, "llm/failed", { within: 20_000 });
 });
 
-test("16 SQL the engine refuses is query/failed in the tool's frame", async ({ page, corpusJob }) => {
+test("16 SQL the engine refuses is engine/failed in the tool's frame", async ({ page, corpusJob }) => {
   let calls = 0;
   await page.route(AI, (route) => {
     calls++;
@@ -97,5 +100,6 @@ test("16 SQL the engine refuses is query/failed in the tool's frame", async ({ p
   });
   await openPanel(page, corpusJob, "Ask");
   await ask(page, "How many people are there?");
-  await expectProblem(page, "query/failed", { within: 20_000 });
+  // fossil's own code for a statement its engine refused: the corpus raised it.
+  await expectProblem(page, "engine/failed", { within: 20_000 });
 });

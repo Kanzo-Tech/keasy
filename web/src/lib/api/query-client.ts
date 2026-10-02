@@ -1,23 +1,26 @@
 import "client-only";
 
 import { ApiError } from "@keasy/api";
-import { QueryClient } from "@tanstack/react-query";
+import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 
 import { auth } from "./session";
 
 let redirected = false;
 
+/**
+ * Every failed query and mutation passes through the caches' own `onError`, which runs beside
+ * whatever the call site does. A `mutations.onError` default would not: a mutation with an
+ * `onError` of its own (a toast, as most have) replaces it, and an expired session read as a toast
+ * instead of a sign-in.
+ */
 export const queryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: (error) => handleAuthError(error) }),
+  mutationCache: new MutationCache({ onError: (error) => handleAuthError(error) }),
   defaultOptions: {
     queries: {
       retry: false,
       staleTime: 30_000,
       refetchOnWindowFocus: false,
-    },
-    mutations: {
-      onError: (error: unknown) => {
-        handleAuthError(error);
-      },
     },
   },
 });
@@ -33,10 +36,3 @@ function handleAuthError(error: unknown) {
     window.location.href = "/";
   }
 }
-
-// Global query error handler via the cache
-queryClient.getQueryCache().subscribe(({ type, query }) => {
-  if (type === "updated" && query.state.status === "error") {
-    handleAuthError(query.state.error);
-  }
-});

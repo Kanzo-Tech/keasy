@@ -1,6 +1,7 @@
 import type { SqlCorpus, SqlResult } from "@fossil-lang/corpus";
 import { jsonSchema, stepCountIs, tool, ToolLoopAgent } from "@kanzo-tech/llm";
 import { gateway } from "@/lib/ai";
+import { type Shown, toProblem } from "@/lib/errors";
 import { recordsOf } from "./corpus";
 
 /** How much of a result set the model reads; the panel shows all of it. */
@@ -67,6 +68,9 @@ citing actual values. Do not repeat the SQL; the reader can open it.`;
 /** What a `query` call hands the panel: every row it read, plain enough to keep in a message. */
 export type QueryOutput = SqlResult & { readonly sql: string };
 
+/** A `query` call's answer: its rows, or the engine's refusal. */
+export type QueryAnswer = QueryOutput | { readonly sql: string; readonly refused: Shown };
+
 /**
  * The one tool: run SQL over the graph, here in the browser. The panel keeps the whole result —
  * the table, and the vertices it can show on the canvas — and the model reads a sample.
@@ -76,6 +80,9 @@ export function askAgent(schema: string, corpus: SqlCorpus) {
     model: gateway("chat"),
     instructions: askInstructions(schema),
     stopWhen: stepCountIs(5),
+    // Not retried here: the gateway retries its upstreams, and a silent gateway asked three times
+    // is three deadlines where the person waits for one.
+    maxRetries: 0,
     tools: {
       query: tool({
         description: "Run one DuckDB SQL SELECT over the graph and return its rows.",
@@ -85,13 +92,23 @@ export function askAgent(schema: string, corpus: SqlCorpus) {
           required: ["sql"],
           additionalProperties: false,
         }),
-        execute: async ({ sql }, { abortSignal }): Promise<QueryOutput> => {
-          const result = await corpus.sql(sql, { limit: ROWS, signal: abortSignal });
-          return { sql, ...result, rows: result.rows.map((row) => row.map(plain)) };
+        // A query the engine refuses is an answer, not a throw: the model reads the engine's words
+        // and tries again, and the panel shows the refusal as what it is.
+        execute: async ({ sql }, { abortSignal }): Promise<QueryAnswer> => {
+          try {
+            const result = await corpus.sql(sql, { limit: ROWS, signal: abortSignal });
+            return { sql, ...result, rows: result.rows.map((row) => row.map(plain)) };
+          } catch (err) {
+            if (abortSignal?.aborted) throw err;
+            return { sql, refused: toProblem(err, "query/failed") };
+          }
         },
         toModelOutput: ({ output }) => ({
           type: "text",
-          value: `${output.rows.length}${output.truncated ? "+" : ""} rows. First rows: ${sample(output)}`,
+          value:
+            "refused" in output
+              ? `The query failed: ${output.refused.detail}`
+              : `${output.rows.length}${output.truncated ? "+" : ""} rows. First rows: ${sample(output)}`,
         }),
       }),
     },

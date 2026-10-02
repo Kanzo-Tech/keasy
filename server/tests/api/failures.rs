@@ -290,3 +290,29 @@ async fn a_store_that_refuses_to_vend_is_store_refused() {
         (StatusCode::BAD_GATEWAY, "store/refused")
     );
 }
+
+/// A caller over their rate is refused with `request/rate-limited`, in the one shape. The e2e
+/// suite cannot reach the limit through the dev BFF, which serves about as fast as the bucket
+/// refills; the server, asked directly, can be outrun.
+#[tokio::test]
+async fn a_burst_over_the_rate_is_refused_as_request_rate_limited() {
+    let app = spawn_app().await;
+    let member = app.token(&["member"]);
+    let answers = futures::future::join_all((0..1200).map(|_| {
+        app.client
+            .get(url(&app, "/v1/auth/workspaces"))
+            .bearer_auth(&member)
+            .send()
+    }))
+    .await;
+    let over = answers
+        .into_iter()
+        .flatten()
+        .find(|answer| answer.status() == StatusCode::TOO_MANY_REQUESTS)
+        .expect("some of the burst was refused");
+    let (status, body) = refused(over).await;
+    assert_eq!(
+        (status, body["code"].as_str().unwrap()),
+        (StatusCode::TOO_MANY_REQUESTS, "request/rate-limited")
+    );
+}

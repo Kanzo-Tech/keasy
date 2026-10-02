@@ -21,7 +21,7 @@ import { corpusKey } from "@/lib/fossil/corpus";
 import { toProblem } from "@/lib/errors";
 import { ProblemView } from "@/components/problem-view";
 import { settled } from "@/lib/api/settled";
-import { askAgent, type QueryOutput } from "./ask-agent";
+import { askAgent, type QueryAnswer, type QueryOutput } from "./ask-agent";
 import { describeDataSpace } from "./data-space";
 import { ONCE, useCorpus, useFieldStats } from "./corpus";
 import { Finding } from "./finding";
@@ -52,13 +52,11 @@ function ShowOnGraph({ output }: { output: QueryOutput }) {
 /** A `query` call's result, read two ways — and, when it carries vertices, put on the canvas. */
 function QueryResult({ part }: { part: ToolPart }) {
   const [view, setView] = useState<"results" | "query">("results");
-  // The engine refused the model's SQL: the agent reads the error and tries again, and the reader
-  // sees it as what it is.
-  if (part.state === "output-error") {
-    return <ProblemView problem={{ code: "query/failed", title: "The query failed", detail: part.errorText }} />;
-  }
   if (part.state !== "output-available") return null;
-  const output = part.output as QueryOutput;
+  const answer = part.output as QueryAnswer;
+  // The engine refused the model's SQL: the agent reads why and tries again; the reader sees it.
+  if ("refused" in answer) return <ProblemView problem={answer.refused} />;
+  const output = answer;
   return (
     <div className="flex flex-col gap-2">
       {/* Single-select and never empty: two readings of one answer. */}
@@ -98,12 +96,24 @@ const TOOLS = { query: (part: ToolPart) => <QueryResult part={part} /> };
 
 /** The conversation, once there is a schema to reason over. One agent for the panel's life. */
 function AskChat({ schema, corpus, starters }: { schema: string; corpus: SqlCorpus; starters: string[] }) {
-  const [transport] = useState(() => new DirectChatTransport({ agent: askAgent(schema, corpus) }));
+  // What stopped an answer, as thrown: the AI SDK hands `useChat` a sentence, so the transport keeps
+  // the value itself for the failure view.
+  const [failure, setFailure] = useState<unknown>(undefined);
+  const [transport] = useState(
+    () =>
+      new DirectChatTransport({
+        agent: askAgent(schema, corpus),
+        onError: (error) => {
+          setFailure(error);
+          return error instanceof Error ? error.message : String(error);
+        },
+      }),
+  );
   const chat = useChat({ transport });
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* What stopped the answer, by its code: the gateway's refusal, its silence, a broken stream. */}
-      {chat.error && <ProblemView className="m-2" problem={toProblem(chat.error, "llm/failed")} />}
+      {chat.error && <ProblemView className="m-2" problem={toProblem(failure ?? chat.error, "llm/failed")} />}
       <Chat
       chat={chat}
       className="p-2"

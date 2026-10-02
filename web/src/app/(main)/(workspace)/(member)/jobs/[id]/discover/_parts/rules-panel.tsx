@@ -35,7 +35,7 @@ const sentence = (rule: Rule) => {
  * report that changed as you browsed would be a different question every time you looked.
  */
 export function RulesPanel() {
-  const { jobId, coordinator, manifest, relation } = useCorpus();
+  const { jobId, coordinator, corpus, manifest } = useCorpus();
   const tables = useFieldStats();
   const { select } = useGraphContext();
   const [useRules] = useState(() => createRulesStore(jobId));
@@ -50,7 +50,7 @@ export function RulesPanel() {
       runRules(
         rules,
         async (q) => (await coordinator.query(q, { type: "json" })) as unknown as Record<string, unknown>[],
-        relation,
+        (name) => corpus.relation(name),
       ),
     staleTime: Infinity,
   });
@@ -61,7 +61,7 @@ export function RulesPanel() {
 
   const keyOf = (type: string | undefined) => manifest.vertex_tables.find((t) => t.name === type)?.key ?? "dense_id";
   const failingIds = async (rule: Rule) => {
-    const query = ruleIdsQuery(rule, relation(rule.typeName ?? ""), keyOf(rule.typeName));
+    const query = ruleIdsQuery(rule, corpus.relation(rule.typeName ?? ""), keyOf(rule.typeName));
     return query ? numbers(await coordinator.query(query), "id") : [];
   };
 

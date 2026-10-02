@@ -138,7 +138,7 @@ function AskChat({ schema, corpus, starters }: { schema: string; corpus: SqlCorp
 }
 
 export function AskPanel() {
-  const { jobId, coordinator, corpus, manifest, relation } = useCorpus();
+  const { jobId, coordinator, corpus, manifest } = useCorpus();
   const tables = useFieldStats();
 
   // The schema the assistant reasons over: DuckDB's own catalog, read back from
@@ -149,7 +149,7 @@ export function AskPanel() {
     useSuspenseQuery({
       queryKey: [...corpusKey(jobId), "data-space"],
       queryFn: ({ signal }) =>
-        describeDataSpace((sql) => coordinator.query(sql, { type: "json", signal }), corpus.url, relation, manifest),
+        describeDataSpace((sql) => coordinator.query(sql, { type: "json", signal }), corpus, manifest),
       ...ONCE,
     }),
   );

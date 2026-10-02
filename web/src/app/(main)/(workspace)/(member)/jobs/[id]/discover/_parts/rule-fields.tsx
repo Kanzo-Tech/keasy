@@ -80,11 +80,11 @@ function RulePart({
 function ValueInput({ rule, onChange }: { rule: Omit<Rule, "id">; onChange: (updated: Omit<Rule, "id">) => void }) {
   const meta = OPERATOR_META[rule.operator];
   const { typeName, fieldKey } = rule;
-  const { relation } = useCorpus();
+  const { corpus } = useCorpus();
   const facets = useChartQuery({
     filterBy: null,
     deps: [typeName, fieldKey],
-    query: () => (typeName && fieldKey ? distinctValuesQuery(fieldKey, relation(typeName)) : null),
+    query: () => (typeName && fieldKey ? distinctValuesQuery(fieldKey, corpus.relation(typeName)) : null),
   });
   const { contains } = useFilter({ sensitivity: "base" });
   const [query, setQuery] = useState("");

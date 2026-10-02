@@ -37,7 +37,7 @@ export default function DashboardView() {
 }
 
 function SavedDashboard() {
-  const { jobId, manifest, relation } = useCorpus();
+  const { jobId, corpus, manifest } = useCorpus();
   const types = manifest.vertex_tables;
   const [type, setType] = useState(types[0]?.name ?? "");
   const table = types.find((t) => t.name === type);
@@ -102,7 +102,7 @@ function SavedDashboard() {
           key={type}
           onChange={change}
           rowNoun={type}
-          table={verbatim(relation(type))}
+          table={verbatim(corpus.relation(type))}
           value={byType[type]}
         />
       </ScrollArea>

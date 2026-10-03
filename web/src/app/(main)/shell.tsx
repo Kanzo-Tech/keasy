@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSession } from "@kanzo-tech/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2, LogOut, Settings } from "lucide-react";
@@ -53,7 +53,7 @@ import { ProblemView } from "@/components/problem-view";
 import { initials } from "@/lib/ui/format";
 import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";
 import { HeaderEndContext } from "@/app/(main)/_parts/header-end";
-import { Trail } from "@/app/(main)/_parts/trail";
+import { SearchTrail, Trail } from "@/app/(main)/_parts/trail";
 
 const titleCase = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
@@ -210,7 +210,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <ShellHeader className="h-12 min-w-0 flex-row items-center gap-2 px-3">
           <SidebarTrigger />
           <Separator className="h-4" orientation="vertical" />
-          <Trail crumbs={crumbs} />
+          <Suspense fallback={<Trail crumbs={crumbs} />}>
+            <SearchTrail pathname={pathname} />
+          </Suspense>
           <div className="ms-auto flex items-center gap-2 empty:hidden" ref={setHeaderEnd} />
         </ShellHeader>
         <HeaderEndContext value={headerEnd}>

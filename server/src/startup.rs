@@ -162,7 +162,7 @@ fn routes() -> (OpenApiRouter<AppState>, OpenApiRouter<AppState>) {
         .merge(routes::workspaces::router())
         .merge(routes::jobs::router())
         .merge(routes::datasets::router())
-        .merge(routes::jobs::output::router())
+        .merge(routes::storage_credentials::router())
         .merge(routes::jobs::dashboard::router())
         .merge(routes::credentials::router())
         .merge(routes::connections::router())

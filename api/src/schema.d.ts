@@ -147,27 +147,6 @@ export interface paths {
         patch: operations["update_connection"];
         trace?: never;
     };
-    "/v1/connections/{name}/credentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Vend a read credential over a source connection's prefix — Unity Catalog's
-         *     temporary path credentials over an external location. Sources are read,
-         *     never written; the sink is reached only through its jobs.
-         */
-        post: operations["vend_source_credentials"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/connections/{name}/files": {
         parameters: {
             query?: never;
@@ -332,27 +311,6 @@ export interface paths {
         patch: operations["complete_job"];
         trace?: never;
     };
-    "/v1/jobs/{id}/credentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Vend a credential over the job's dataset, `{sink}/{folder}/`: to read it
-         *     once the job has completed, or to write it while the job runs. The store
-         *     holds the boundary, so the credential opens nothing else.
-         */
-        post: operations["vend_job_credentials"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/jobs/{id}/dashboard": {
         parameters: {
             query?: never;
@@ -429,6 +387,29 @@ export interface paths {
          *     success leaves no draft behind.
          */
         post: operations["submit_job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storage-credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Vend a credential over `scope` for `access`. A member reads a source
+         *     connection — Unity Catalog's temporary path credentials over an external
+         *     location — and reads a job of their own once it has completed, or writes
+         *     it while it runs. The owner reads any completed job of the workspace, which
+         *     is what the datasets view opens; the owner never touches a source.
+         */
+        post: operations["vend"];
         delete?: never;
         options?: never;
         head?: never;
@@ -572,9 +553,6 @@ export interface components {
             /** @description The connections that use this credential. */
             used_by: string[];
             validation?: null | components["schemas"]["ValidationReport"];
-        };
-        CredentialsRequest: {
-            access: components["schemas"]["Access"];
         };
         /**
          * @description A job's saved dashboard. `spec` is the dashboard the web's BI kit
@@ -762,6 +740,14 @@ export interface components {
          * @enum {string}
          */
         Role: "owner" | "member";
+        /** @description What a credential is asked for: fossil's `Scope`, verbatim. */
+        Scope: {
+            /** @description A source connection's prefix, by the connection's name. */
+            connection: string;
+        } | {
+            /** @description A job's dataset, by the job's id. */
+            job: string;
+        };
         /** @description A credential as a request states it, secrets included. */
         StorageCredentialInput: {
             access_key_id: string;
@@ -822,6 +808,10 @@ export interface components {
             /** @enum {string} */
             kind: "azure_service_principal";
             tenant_id: string;
+        };
+        StorageCredentialsRequest: {
+            access: components["schemas"]["Access"];
+            scope: components["schemas"]["Scope"];
         };
         StorageTarget: {
             direction?: components["schemas"]["Direction"];
@@ -1366,74 +1356,6 @@ export interface operations {
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
             /** @description The store did not answer the probe in time */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-        };
-    };
-    vend_source_credentials: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Connection name */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CredentialsRequest"];
-            };
-        };
-        responses: {
-            /** @description A credential that opens the source's prefix, and only it, for an hour */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VendedCredentials"];
-                };
-            };
-            /** @description Not a storage source, or an access a source does not give */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description No such connection */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            /** @description The store refused to vend */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            503: components["responses"]["KeysUnavailable"];
-            /** @description The store, or the identity service before it, did not answer in time */
             504: {
                 headers: {
                     [name: string]: unknown;
@@ -2194,74 +2116,6 @@ export interface operations {
             503: components["responses"]["KeysUnavailable"];
         };
     };
-    vend_job_credentials: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CredentialsRequest"];
-            };
-        };
-        responses: {
-            /** @description A credential that opens the job's dataset, and only it, for an hour */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VendedCredentials"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description Read before the job completed, or write while it is not running */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            /** @description The store refused to vend */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            503: components["responses"]["KeysUnavailable"];
-            /** @description The store, or the identity service before it, did not answer in time */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-        };
-    };
     get_dashboard: {
         parameters: {
             query?: never;
@@ -2509,6 +2363,88 @@ export interface operations {
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    vend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageCredentialsRequest"];
+            };
+        };
+        responses: {
+            /** @description A credential that opens the scope's prefix, and only it, for an hour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendedCredentials"];
+                };
+            };
+            /** @description Not a storage source, or an access the scope does not give */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description A source asked by the owner, or a job's dataset written by the owner */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such connection, or no such job of the caller's */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description A job read before it completed (`job/not-completed`), or written before it runs (`job/not-running`) or after it ended (`job/ended`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            /** @description The store refused to vend */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            503: components["responses"]["KeysUnavailable"];
+            /** @description The store, or the identity service before it, did not answer in time */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     version: {

@@ -1,5 +1,4 @@
 pub mod dashboard;
-pub mod output;
 
 use axum::{
     Json,

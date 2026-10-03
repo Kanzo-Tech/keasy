@@ -516,103 +516,6 @@
         }
       }
     },
-    "/v1/connections/{name}/credentials": {
-      "post": {
-        "tags": [
-          "Connections"
-        ],
-        "summary": "Vend a read credential over a source connection's prefix — Unity Catalog's\ntemporary path credentials over an external location. Sources are read,\nnever written; the sink is reached only through its jobs.",
-        "operationId": "vend_source_credentials",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Connection name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CredentialsRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "A credential that opens the source's prefix, and only it, for an hour",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VendedCredentials"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Not a storage source, or an access a source does not give",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "No such connection",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "502": {
-            "description": "The store refused to vend",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
-          "504": {
-            "description": "The store, or the identity service before it, did not answer in time",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/connections/{name}/files": {
       "get": {
         "tags": [
@@ -1677,103 +1580,6 @@
         }
       }
     },
-    "/v1/jobs/{id}/credentials": {
-      "post": {
-        "tags": [
-          "Discovery"
-        ],
-        "summary": "Vend a credential over the job's dataset, `{sink}/{folder}/`: to read it\nonce the job has completed, or to write it while the job runs. The store\nholds the boundary, so the credential opens nothing else.",
-        "operationId": "vend_job_credentials",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CredentialsRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "A credential that opens the job's dataset, and only it, for an hour",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VendedCredentials"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Job not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Read before the job completed, or write while it is not running",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "502": {
-            "description": "The store refused to vend",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
-          "504": {
-            "description": "The store, or the identity service before it, did not answer in time",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/jobs/{id}/dashboard": {
       "get": {
         "tags": [
@@ -2146,6 +1952,109 @@
         }
       }
     },
+    "/v1/storage-credentials": {
+      "post": {
+        "tags": [
+          "Storage"
+        ],
+        "summary": "Vend a credential over `scope` for `access`. A member reads a source\nconnection — Unity Catalog's temporary path credentials over an external\nlocation — and reads a job of their own once it has completed, or writes\nit while it runs. The owner reads any completed job of the workspace, which\nis what the datasets view opens; the owner never touches a source.",
+        "operationId": "vend",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageCredentialsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A credential that opens the scope's prefix, and only it, for an hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendedCredentials"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a storage source, or an access the scope does not give",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "A source asked by the owner, or a job's dataset written by the owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such connection, or no such job of the caller's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A job read before it completed (`job/not-completed`), or written before it runs (`job/not-running`) or after it ended (`job/ended`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "502": {
+            "description": "The store refused to vend",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          },
+          "504": {
+            "description": "The store, or the identity service before it, did not answer in time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/version": {
       "get": {
         "tags": [
@@ -2493,17 +2402,6 @@
                 "$ref": "#/components/schemas/ValidationReport"
               }
             ]
-          }
-        }
-      },
-      "CredentialsRequest": {
-        "type": "object",
-        "required": [
-          "access"
-        ],
-        "properties": {
-          "access": {
-            "$ref": "#/components/schemas/Access"
           }
         }
       },
@@ -2916,6 +2814,37 @@
           "member"
         ]
       },
+      "Scope": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "A source connection's prefix, by the connection's name.",
+            "required": [
+              "connection"
+            ],
+            "properties": {
+              "connection": {
+                "type": "string",
+                "description": "A source connection's prefix, by the connection's name."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A job's dataset, by the job's id.",
+            "required": [
+              "job"
+            ],
+            "properties": {
+              "job": {
+                "type": "string",
+                "description": "A job's dataset, by the job's id."
+              }
+            }
+          }
+        ],
+        "description": "What a credential is asked for: fossil's `Scope`, verbatim."
+      },
       "StorageCredentialInput": {
         "oneOf": [
           {
@@ -3121,6 +3050,21 @@
           }
         ],
         "description": "A credential as a response shows it: what names it, never what signs with it."
+      },
+      "StorageCredentialsRequest": {
+        "type": "object",
+        "required": [
+          "scope",
+          "access"
+        ],
+        "properties": {
+          "access": {
+            "$ref": "#/components/schemas/Access"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          }
+        }
       },
       "StorageTarget": {
         "type": "object",

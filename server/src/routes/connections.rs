@@ -1,7 +1,7 @@
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::response::IntoResponse;
 use object_store::ObjectMeta;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -238,39 +238,6 @@ pub async fn list_connection_files(
         .map_err(Refusal::from)
 }
 
-#[utoipa::path(post, path = "/v1/connections/{name}/credentials", tag = "Connections",
-    params(("name" = String, Path, description = "Connection name")),
-    request_body = super::jobs::output::CredentialsRequest,
-    responses(
-        (status = 200, description = "A credential that opens the source's prefix, and only it, for an hour", body = crate::domain::VendedCredentials),
-        (status = 400, description = "Not a storage source, or an access a source does not give", body = ErrorBody),
-        (status = 404, description = "No such connection", body = ErrorBody),
-        (status = 502, description = "The store refused to vend", body = ErrorBody),
-        (status = 504, description = "The store, or the identity service before it, did not answer in time", body = ErrorBody),
-    )
-)]
-/// Vend a read credential over a source connection's prefix — Unity Catalog's
-/// temporary path credentials over an external location. Sources are read,
-/// never written; the sink is reached only through its jobs.
-pub async fn vend_source_credentials(
-    _: Member,
-    State(state): State<AppState>,
-    Path(name): Path<String>,
-    Json(req): Json<super::jobs::output::CredentialsRequest>,
-) -> Result<Response, Refusal> {
-    let connection = named(&state.db, &name).await?;
-    if connection.target.direction != crate::domain::Direction::Source {
-        return Err(Refusal::invalid(format!(
-            "{name:?} is not a storage source"
-        )));
-    }
-    if req.access != crate::domain::Access::Read {
-        return Err(Refusal::invalid("a source is read, never written"));
-    }
-    let (location, credential) = crate::connections::storage(&state.db, &connection).await?;
-    super::jobs::output::vended(&credential, &location, req.access).await
-}
-
 /// The routes this module serves.
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
@@ -282,5 +249,4 @@ pub fn router() -> OpenApiRouter<AppState> {
         ))
         .routes(routes!(validate_connection))
         .routes(routes!(list_connection_files))
-        .routes(routes!(vend_source_credentials))
 }

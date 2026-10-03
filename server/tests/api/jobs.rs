@@ -67,8 +67,8 @@ async fn a_job_is_its_creators_alone() {
         (Method::DELETE, path.clone(), json!(null)),
         (
             Method::POST,
-            format!("{path}/credentials"),
-            json!({ "access": "read" }),
+            "/v1/storage-credentials".into(),
+            json!({ "scope": { "job": id }, "access": "read" }),
         ),
         (
             Method::PUT,

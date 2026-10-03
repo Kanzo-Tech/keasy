@@ -39,19 +39,7 @@ export const host: Host = {
       connections.flatMap((c) => (c.target.direction === "source" ? [[c.name, c.target.url]] : [])),
     );
   },
-  credentials: async (scope: Scope, access: Access, { signal }): Promise<StorageCredential[]> => {
-    const vended =
-      "job" in scope
-        ? await http.POST("/v1/jobs/{id}/credentials", {
-            params: { path: { id: scope.job } },
-            body: { access },
-            signal,
-          })
-        : await http.POST("/v1/connections/{name}/credentials", {
-            params: { path: { name: scope.connection } },
-            body: { access },
-            signal,
-          });
-    return vended.data!.storage_credentials;
-  },
+  // fossil's scope and access are the request, verbatim: one door, whatever is asked.
+  credentials: async (scope: Scope, access: Access, { signal }): Promise<StorageCredential[]> =>
+    (await http.POST("/v1/storage-credentials", { body: { scope, access }, signal })).data!.storage_credentials,
 };

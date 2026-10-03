@@ -278,9 +278,9 @@ async fn a_store_that_refuses_to_vend_is_store_refused() {
 
     let response = app
         .client
-        .post(url(&app, &format!("{path}/credentials")))
+        .post(url(&app, "/v1/storage-credentials"))
         .bearer_auth(&member)
-        .json(&json!({ "access": "write" }))
+        .json(&json!({ "scope": { "job": id }, "access": "write" }))
         .send()
         .await
         .unwrap();

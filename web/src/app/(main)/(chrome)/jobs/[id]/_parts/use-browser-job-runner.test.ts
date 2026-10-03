@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/api/client", async () => {
   const { ApiError } = await import("@keasy/api");
-  return { ApiError, http: {} };
+  return { ApiError, http: {}, invalidate: vi.fn() };
 });
 vi.mock("@fossil-lang/corpus", () => ({}));
 vi.mock("@/lib/fossil/host", () => ({ host: {} }));
@@ -51,6 +51,20 @@ describe("the job's lease", () => {
     held.release();
     vi.advanceTimersByTime(45_000);
     expect(beat).toHaveBeenCalledTimes(3);
+    vi.useRealTimers();
+  });
+
+  it("hears a stop asked from anywhere in the answer to a beat", async () => {
+    vi.useFakeTimers();
+    const onStopAsked = vi.fn();
+    const beat = vi.fn().mockResolvedValueOnce({ cancel_requested: false }).mockResolvedValue({ cancel_requested: true });
+    const held = lease("j", { beat, onStopAsked });
+    held.hold();
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(onStopAsked).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(onStopAsked).toHaveBeenCalledTimes(1);
+    held.release();
     vi.useRealTimers();
   });
 });

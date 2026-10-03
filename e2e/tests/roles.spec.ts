@@ -5,10 +5,10 @@ import { signIn } from "../support/sign-in";
 test.describe("a reader", () => {
   test.use({ storageState: ".auth/reader.json" });
 
-  test("sees the shared jobs but is offered no Create job", async ({ page }) => {
+  test("sees the shared graphs but is offered no New graph", async ({ page }) => {
     await page.goto("/jobs");
-    await expect(page.getByPlaceholder("Search jobs...").or(page.getByRole("heading", { name: "No jobs yet" }))).toBeVisible();
-    await expect(page.getByRole("link", { name: "Create job" })).toHaveCount(0);
+    await expect(page.getByPlaceholder("Search graphs...").or(page.getByRole("heading", { name: "No graphs yet" }))).toBeVisible();
+    await expect(page.getByRole("link", { name: "New graph" })).toHaveCount(0);
   });
 });
 

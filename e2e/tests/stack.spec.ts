@@ -12,6 +12,7 @@ test("03 a store that accepts and never answers ends the run as store/silent", a
   up("s3-silent");
   try {
     await page.goto(`/jobs/${id}`);
+    await page.getByRole("button", { name: "Run", exact: true }).click();
     // STS is given 10 s; the run reports the failure it got.
     await expectProblem(page, "store/silent", { within: 40_000 });
   } finally {
@@ -25,6 +26,7 @@ test("04 a store that refuses to vend ends the run as store/refused", async ({ p
   const id = await createJob(page, { name: "e2e refused store" });
   await without(["s3"], async () => {
     await page.goto(`/jobs/${id}`);
+    await page.getByRole("button", { name: "Run", exact: true }).click();
     await expectProblem(page, "store/refused", { within: 30_000 });
   });
 });

@@ -605,6 +605,12 @@ export interface components {
             /** Format: int64 */
             size: number;
         };
+        /** @description The objects under a connection's prefix, the first `limit` of them. */
+        FileListing: {
+            files: components["schemas"]["FileEntry"][];
+            /** @description More objects lie under the prefix than were listed. */
+            truncated: boolean;
+        };
         /** @description Whether a folder of the sink is free for a job to run. */
         FolderAvailability: {
             available: boolean;
@@ -1309,7 +1315,15 @@ export interface operations {
     };
     list_connection_files: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description A folder under the connection's prefix (`dynamic/`, `a/b`), to list
+                 *     only what is under it. No `.` or `..` segments.
+                 */
+                prefix?: string;
+                /** @description At most this many objects; [`MAX_FILES`] when left out, and never more. */
+                limit?: number;
+            };
             header?: never;
             path: {
                 /** @description Connection name */
@@ -1319,16 +1333,16 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Every object under the connection's prefix */
+            /** @description The first `limit` objects under the connection's prefix, or under `prefix` within it */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FileEntry"][];
+                    "application/json": components["schemas"]["FileListing"];
                 };
             };
-            /** @description Not a storage connection */
+            /** @description Not a storage connection, or a prefix that leaves it (`data.field`) */
             400: {
                 headers: {
                     [name: string]: unknown;

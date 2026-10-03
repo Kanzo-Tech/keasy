@@ -275,19 +275,26 @@ impl CloudStore {
     }
 }
 
-/// Every object under `location`, within [`STORE_DEADLINE`].
+/// The first `limit` objects under `under` within `location`, within
+/// [`STORE_DEADLINE`], and whether there were more.
 pub async fn list_files(
     credential: &StorageCredentialInput,
     location: &StorageLocation,
-) -> Result<Vec<ObjectMeta>, StoreFailure> {
+    under: &ObjectPath,
+    limit: usize,
+) -> Result<(Vec<ObjectMeta>, bool), StoreFailure> {
     let store = store(credential, location)?;
+    let prefix: ObjectPath = location.path().parts().chain(under.parts()).collect();
     bounded(STORE_DEADLINE, async {
         let mut entries = Vec::new();
-        let mut listing = store.list(location.path());
+        let mut listing = store.list(&prefix);
         while let Some(meta) = listing.next().await {
+            if entries.len() == limit {
+                return Ok((entries, true));
+            }
             entries.push(meta.map_err(failure)?);
         }
-        Ok(entries)
+        Ok((entries, false))
     })
     .await
 }

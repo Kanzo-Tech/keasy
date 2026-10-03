@@ -122,9 +122,14 @@ function ConnectionView({ name }: { name: string }) {
 
 /** What a storage connection's prefix holds that a provider can read. Fails on its own, beside the connection. */
 function Files({ name, url, kind }: { name: string; url: string; kind: "data" | "schema" }) {
-  const listed = settled($api.useSuspenseQuery("get", "/v1/connections/{name}/files", { params: { path: { name } } }));
+  const { files: listed, truncated } = settled(
+    $api.useSuspenseQuery("get", "/v1/connections/{name}/files", { params: { path: { name } } }),
+  );
   const providers = settled(useSuspenseQuery(providersQuery));
   const readable = listed.filter((f) => providerFor(f.path, kind, providers));
+  const cut = truncated && (
+    <p className="text-muted-foreground text-xs">Only the first {listed.length.toLocaleString()} files are listed.</p>
+  );
 
   function copyReference(path: string) {
     navigator.clipboard.writeText(reference({ name, url }, path));
@@ -133,44 +138,50 @@ function Files({ name, url, kind }: { name: string; url: string; kind: "data" | 
 
   if (readable.length === 0) {
     return (
-      <p className="text-muted-foreground text-xs">
-        {listed.length === 0 ? "No files found." : "No supported files found."}
-      </p>
+      <>
+        <p className="text-muted-foreground text-xs">
+          {listed.length === 0 ? "No files found." : "No supported files found."}
+        </p>
+        {cut}
+      </>
     );
   }
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Path</TableHead>
-          <TableHead className="w-24 text-end">Size</TableHead>
-          <TableHead className="w-12" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {readable.map((f) => (
-          <TableRow key={f.path}>
-            <TableCell className="font-mono text-xs">{f.path}</TableCell>
-            <TableCell className="text-end text-muted-foreground text-xs">
-              <FormatByte unitSystem="binary" value={f.size} />
-            </TableCell>
-            <TableCell>
-              <Menu positioning={{ placement: "bottom-end" }}>
-                <MenuTrigger asChild>
-                  <Button aria-label={`Actions for ${f.path}`} size="icon-sm" variant="ghost">
-                    <MoreHorizontal />
-                  </Button>
-                </MenuTrigger>
-                <MenuContent>
-                  <MenuItem onSelect={() => copyReference(f.path)} value="copy-reference">
-                    Copy reference
-                  </MenuItem>
-                </MenuContent>
-              </Menu>
-            </TableCell>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Path</TableHead>
+            <TableHead className="w-24 text-end">Size</TableHead>
+            <TableHead className="w-12" />
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {readable.map((f) => (
+            <TableRow key={f.path}>
+              <TableCell className="font-mono text-xs">{f.path}</TableCell>
+              <TableCell className="text-end text-muted-foreground text-xs">
+                <FormatByte unitSystem="binary" value={f.size} />
+              </TableCell>
+              <TableCell>
+                <Menu positioning={{ placement: "bottom-end" }}>
+                  <MenuTrigger asChild>
+                    <Button aria-label={`Actions for ${f.path}`} size="icon-sm" variant="ghost">
+                      <MoreHorizontal />
+                    </Button>
+                  </MenuTrigger>
+                  <MenuContent>
+                    <MenuItem onSelect={() => copyReference(f.path)} value="copy-reference">
+                      Copy reference
+                    </MenuItem>
+                  </MenuContent>
+                </Menu>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      {cut}
+    </>
   );
 }

@@ -531,24 +531,40 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "prefix",
+            "in": "query",
+            "description": "A folder under the connection's prefix (`dynamic/`, `a/b`), to list\nonly what is under it. No `.` or `..` segments.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "At most this many objects; [`MAX_FILES`] when left out, and never more.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Every object under the connection's prefix",
+            "description": "The first `limit` objects under the connection's prefix, or under `prefix` within it",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FileEntry"
-                  }
+                  "$ref": "#/components/schemas/FileListing"
                 }
               }
             }
           },
           "400": {
-            "description": "Not a storage connection",
+            "description": "Not a storage connection, or a prefix that leaves it (`data.field`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -2446,6 +2462,26 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "FileListing": {
+        "type": "object",
+        "description": "The objects under a connection's prefix, the first `limit` of them.",
+        "required": [
+          "files",
+          "truncated"
+        ],
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileEntry"
+            }
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "More objects lie under the prefix than were listed."
           }
         }
       },

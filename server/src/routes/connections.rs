@@ -1,8 +1,9 @@
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use object_store::ObjectMeta;
+use object_store::path::Path as ObjectPath;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -34,6 +35,32 @@ pub struct UpdateConnectionRequest {
     pub credential: Option<String>,
     #[serde(default)]
     pub target: Option<StorageTarget>,
+}
+
+/// What `GET /v1/connections/{name}/files` lists: a folder under the
+/// connection's prefix, and how many objects at most.
+#[derive(Debug, Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct FilesQuery {
+    /// A folder under the connection's prefix (`dynamic/`, `a/b`), to list
+    /// only what is under it. No `.` or `..` segments.
+    #[serde(default)]
+    pub prefix: Option<String>,
+    /// At most this many objects; [`MAX_FILES`] when left out, and never more.
+    #[serde(default)]
+    pub limit: Option<usize>,
+}
+
+/// The most objects one listing answers: a listing is a page a person reads,
+/// not an inventory of the store.
+pub const MAX_FILES: usize = 1000;
+
+/// The objects under a connection's prefix, the first `limit` of them.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct FileListing {
+    pub files: Vec<FileEntry>,
+    /// More objects lie under the prefix than were listed.
+    pub truncated: bool,
 }
 
 /// One object under a connection's prefix.
@@ -216,10 +243,10 @@ pub async fn validate_connection(
 }
 
 #[utoipa::path(get, path = "/v1/connections/{name}/files", tag = "Connections",
-    params(("name" = String, Path, description = "Connection name")),
+    params(("name" = String, Path, description = "Connection name"), FilesQuery),
     responses(
-        (status = 200, description = "Every object under the connection's prefix", body = Vec<FileEntry>),
-        (status = 400, description = "Not a storage connection", body = ErrorBody),
+        (status = 200, description = "The first `limit` objects under the connection's prefix, or under `prefix` within it", body = FileListing),
+        (status = 400, description = "Not a storage connection, or a prefix that leaves it (`data.field`)", body = ErrorBody),
         (status = 404, description = "No such connection", body = ErrorBody),
         (status = 502, description = "The store refused the listing", body = ErrorBody),
         (status = 504, description = "The store did not answer in time", body = ErrorBody),
@@ -229,13 +256,18 @@ pub async fn list_connection_files(
     _: Member,
     State(state): State<AppState>,
     Path(name): Path<String>,
+    Query(query): Query<FilesQuery>,
 ) -> Result<impl IntoResponse, Refusal> {
+    let under = ObjectPath::parse(query.prefix.as_deref().unwrap_or_default())
+        .map_err(|e| Refusal::invalid_field("prefix", e.to_string()))?;
+    let limit = query.limit.unwrap_or(MAX_FILES).min(MAX_FILES);
     let connection = named(&state.db, &name).await?;
     let (url, credential) = crate::connections::storage(&state.db, &connection).await?;
-    storage_client::list_files(&credential, &url)
-        .await
-        .map(|files| Json(files.into_iter().map(FileEntry::from).collect::<Vec<_>>()))
-        .map_err(Refusal::from)
+    let (files, truncated) = storage_client::list_files(&credential, &url, &under, limit).await?;
+    Ok(Json(FileListing {
+        files: files.into_iter().map(FileEntry::from).collect(),
+        truncated,
+    }))
 }
 
 /// The routes this module serves.

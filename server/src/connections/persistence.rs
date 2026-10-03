@@ -11,7 +11,7 @@ const COLUMNS: &str =
 fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<ConnectionView> {
     Ok(ConnectionView {
         name: r.get("name")?,
-        credential: r.get("credential")?,
+        secret: r.get("credential")?,
         target: json_column(r, "target")?,
         created_by: r.get("created_by")?,
         created_at: r.get("created_at")?,
@@ -34,7 +34,7 @@ fn refused(connection: &ConnectionView, e: rusqlite::Error) -> DbError {
         }
         Some(ffi::SQLITE_CONSTRAINT_FOREIGNKEY) => DbError::Invalid(format!(
             "there is no credential named {:?}",
-            connection.credential
+            connection.secret
         )),
         _ => e.into(),
     }
@@ -49,7 +49,7 @@ pub fn insert(conn: &Connection, connection: &ConnectionView, by: &str) -> DbRes
         ),
         params![
             connection.name,
-            connection.credential,
+            connection.secret,
             serde_json::to_string(&connection.target)?,
             by,
             crate::domain::now_iso8601(),
@@ -115,7 +115,7 @@ pub fn update(conn: &Connection, name: &str, updated: &ConnectionView, by: &str)
          WHERE name = ?7",
         params![
             updated.name,
-            updated.credential,
+            updated.secret,
             serde_json::to_string(&updated.target)?,
             by,
             crate::domain::now_iso8601(),
@@ -171,7 +171,7 @@ pub(crate) mod tests {
     use super::*;
     use crate::credentials::persistence as credentials;
     use crate::credentials::sealing::SecretKey;
-    use crate::domain::{ResourceName, StorageCredentialInput, StorageTarget};
+    use crate::domain::{ResourceName, SecretSpec, StorageTarget};
     use secrecy::SecretString;
 
     fn report() -> ValidationReport {
@@ -206,7 +206,7 @@ pub(crate) mod tests {
     fn connection(name: &str, credential: &str, target: StorageTarget) -> ConnectionView {
         ConnectionView {
             name: name.into(),
-            credential: credential.into(),
+            secret: credential.into(),
             target,
             created_by: String::new(),
             created_at: String::new(),
@@ -216,8 +216,8 @@ pub(crate) mod tests {
         }
     }
 
-    fn s3() -> StorageCredentialInput {
-        StorageCredentialInput::S3 {
+    fn s3() -> SecretSpec {
+        SecretSpec::S3 {
             access_key_id: "AK".into(),
             secret_access_key: SecretString::from("SK"),
             region: "us-east-1".into(),

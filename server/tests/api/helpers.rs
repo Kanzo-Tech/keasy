@@ -16,8 +16,7 @@ use keasy_server::configuration::{
 use keasy_server::credentials::sealing::SecretKey;
 use keasy_server::database::Database;
 use keasy_server::domain::{
-    ConnectionView, Direction, ResourceName, StorageCredentialInput, StorageTarget,
-    ValidationReport,
+    ConnectionView, Direction, ResourceName, SecretSpec, StorageTarget, ValidationReport,
 };
 use keasy_server::startup::Application;
 
@@ -224,7 +223,7 @@ impl TestApp {
         };
         let view = ConnectionView {
             name: name.into(),
-            credential: credential.into(),
+            secret: credential.into(),
             target,
             created_by: by.into(),
             created_at: String::new(),
@@ -243,8 +242,8 @@ pub fn unprobed() -> ValidationReport {
     }
 }
 
-pub fn s3(endpoint: &str, secret: &str) -> StorageCredentialInput {
-    StorageCredentialInput::S3 {
+pub fn s3(endpoint: &str, secret: &str) -> SecretSpec {
+    SecretSpec::S3 {
         access_key_id: "AK".into(),
         secret_access_key: SecretString::from(secret),
         region: "us-east-1".into(),

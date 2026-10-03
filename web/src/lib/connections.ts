@@ -7,7 +7,7 @@ export type Connection = Schemas["ConnectionView"];
 export type Credential = Schemas["SecretView"];
 /** The title the contract gives a credential kind (`Amazon S3 / S3-compatible`). */
 export function kindTitle(kind: string): string {
-  const schema = schemaOf("StorageCredentialInput");
+  const schema = schemaOf("SecretSpec");
   return (
     schema.oneOf?.find((b) => b.properties?.kind?.enum?.[0] === kind)?.title ?? kind.replaceAll("_", " ")
   );
@@ -22,12 +22,13 @@ export function validationStatus(report?: Schemas["ValidationReport"] | null): "
 /** A storage connection, flat: what the editor, the studio and the assistant read. */
 export interface StorageConnection extends Required<Schemas["StorageTarget"]> {
   name: string;
-  credential: string;
+  /** The secret it signs with. */
+  secret: string;
 }
 
 /** The storage connections among `all`, sources and sink alike. */
 export function storageConnections(all: Connection[]): StorageConnection[] {
-  return all.map((c) => ({ kind: "data", direction: "source", ...c.target, name: c.name, credential: c.credential }));
+  return all.map((c) => ({ kind: "data", direction: "source", ...c.target, name: c.name, secret: c.secret }));
 }
 
 /**

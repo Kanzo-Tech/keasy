@@ -89,7 +89,7 @@ pub enum ErrorCode {
     SecretNotFound,
     #[serde(rename = "connection/not-found")]
     ConnectionNotFound,
-    /// A credential or connection of that name exists already, or a second sink.
+    /// A secret or connection of that name exists already, or a second sink.
     #[serde(rename = "resource/already-exists")]
     ResourceAlreadyExists,
     /// Still used: `dependents` names what uses it.
@@ -100,7 +100,7 @@ pub enum ErrorCode {
     /// owner.
     #[serde(rename = "connection/overlaps")]
     ConnectionOverlaps,
-    /// A credential or connection was probed and did not pass; `dependents`
+    /// A secret or connection was probed and did not pass; `dependents`
     /// names the connections that failed.
     #[serde(rename = "probe/failed")]
     ProbeFailed,
@@ -151,7 +151,7 @@ impl ErrorCode {
             Self::JobInvalidDestination => "Not a valid destination",
             Self::JobNoDestination => "No destination",
             Self::JobFolderTaken => "Another job writes to that folder",
-            Self::SecretNotFound => "Credential not found",
+            Self::SecretNotFound => "Secret not found",
             Self::ConnectionNotFound => "Connection not found",
             Self::ResourceAlreadyExists => "It exists already",
             Self::ResourceInUse => "Still in use",
@@ -180,7 +180,7 @@ pub struct ErrorBody {
 /// What a refusal carries beside its words.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, ToSchema)]
 pub struct ErrorData {
-    /// What the refusal is about: what still uses a credential or connection,
+    /// What the refusal is about: what still uses a secret or connection,
     /// or the connections a rotation would break.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub dependents: Vec<String>,

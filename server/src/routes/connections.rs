@@ -21,8 +21,8 @@ pub struct CreateConnectionRequest {
     /// What programs write after `@`, and the connection's key.
     #[schema(value_type = ResourceName)]
     pub name: String,
-    /// The credential it signs with.
-    pub credential: String,
+    /// The secret it signs with.
+    pub secret: String,
     pub target: StorageTarget,
 }
 
@@ -32,7 +32,7 @@ pub struct UpdateConnectionRequest {
     #[schema(value_type = Option<ResourceName>)]
     pub name: Option<String>,
     #[serde(default)]
-    pub credential: Option<String>,
+    pub secret: Option<String>,
     #[serde(default)]
     pub target: Option<StorageTarget>,
 }
@@ -121,7 +121,7 @@ pub async fn list_connections(
     request_body = CreateConnectionRequest,
     responses(
         (status = 201, description = "Validated and stored", body = ConnectionView),
-        (status = 400, description = "No such credential, one of the other purpose, or a URL it does not reach", body = ErrorBody),
+        (status = 400, description = "No such secret, or a URL it does not reach", body = ErrorBody),
         (status = 403, description = "A sink by a member, or a source by the owner", body = ErrorBody),
         (status = 409, description = "A connection of that name, or a second sink", body = ErrorBody),
         (status = 422, description = "The connection did not validate", body = ErrorBody),
@@ -137,7 +137,7 @@ pub async fn create_connection(
     let view = crate::connections::create(
         &state.db,
         request.name,
-        request.credential,
+        request.secret,
         request.target,
         &caller.user_id,
     )
@@ -182,8 +182,8 @@ pub async fn update_connection(
     if let Some(new_name) = request.name {
         updated.name = new_name;
     }
-    if let Some(credential) = request.credential {
-        updated.credential = credential;
+    if let Some(secret) = request.secret {
+        updated.secret = secret;
     }
     if let Some(target) = request.target {
         updated.target = target;
@@ -236,7 +236,7 @@ pub async fn validate_connection(
     let connection = named(&state.db, &name).await?;
     // Validating stores the report on the connection: a change, guarded as one.
     may_change(&caller, Some(&connection), connection.target.is_sink())?;
-    let credential = crate::credentials::named(&state.db, &connection.credential).await?;
+    let credential = crate::credentials::named(&state.db, &connection.secret).await?;
     let report =
         crate::credentials::probe::connection(&credential.spec, &connection.target).await?;
     persistence::set_validation(&*state.db.write().await, &name, &report)?;
@@ -264,7 +264,7 @@ pub async fn list_connection_files(
     let limit = query.limit.unwrap_or(MAX_FILES).min(MAX_FILES);
     let (url, credential) = {
         let conn = state.db.read().await;
-        // The sink is reached through its jobs, here as when a credential is vended.
+        // The sink is reached through its jobs, here as when a credential is vended for it.
         let source = crate::connections::source(&conn, &name)?;
         crate::connections::storage(&conn, state.db.secret_key(), &source)?
     };

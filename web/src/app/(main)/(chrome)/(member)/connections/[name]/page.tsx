@@ -72,7 +72,7 @@ function ConnectionView({ name }: { name: string }) {
         <DataList className="grid gap-x-12 sm:grid-cols-4" orientation="vertical">
           <DataListItem>
             <DataListItemLabel>Credential</DataListItemLabel>
-            <DataListItemValue className="font-medium">{connection.credential}</DataListItemValue>
+            <DataListItemValue className="font-medium">{connection.secret}</DataListItemValue>
           </DataListItem>
           <DataListItem>
             <DataListItemLabel>URL</DataListItemLabel>

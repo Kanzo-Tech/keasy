@@ -10,7 +10,7 @@ use utoipa_axum::routes;
 use crate::authentication::role::AnyRole;
 use crate::connections::persistence as connections;
 use crate::credentials::{named, persistence, probe};
-use crate::domain::{ResourceName, SecretView, StorageCredentialInput, ValidationReport};
+use crate::domain::{ResourceName, SecretSpec, SecretView, ValidationReport};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::startup::AppState;
 
@@ -18,8 +18,8 @@ use crate::startup::AppState;
 pub struct CreateSecretRequest {
     #[schema(value_type = ResourceName)]
     pub name: String,
-    pub spec: StorageCredentialInput,
-    /// A storage URL to LIST before the credential is stored. A credential has
+    pub spec: SecretSpec,
+    /// A storage URL to LIST before the secret is stored. A secret has
     /// no location of its own, so without one it is only checked to build a
     /// client.
     #[serde(default)]
@@ -28,7 +28,7 @@ pub struct CreateSecretRequest {
 }
 
 /// A rename, a rotation or both. `spec` replaces the whole spec, secrets
-/// included, and is stored only if every connection using the credential
+/// included, and is stored only if every connection using the secret
 /// still validates with it.
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateSecretRequest {
@@ -36,12 +36,12 @@ pub struct UpdateSecretRequest {
     #[schema(value_type = Option<ResourceName>)]
     pub name: Option<String>,
     #[serde(default)]
-    pub spec: Option<StorageCredentialInput>,
+    pub spec: Option<SecretSpec>,
 }
 
 #[derive(Debug, Default, Deserialize, ToSchema)]
 pub struct ValidateSecretRequest {
-    /// A storage URL to LIST besides the connections that use the credential.
+    /// A storage URL to LIST besides the connections that use the secret.
     #[serde(default)]
     #[schema(format = "uri")]
     pub url: Option<String>,
@@ -52,13 +52,13 @@ fn may_change(caller: &AnyRole, created_by: &str) -> Result<(), Refusal> {
         Ok(())
     } else {
         Err(Refusal::forbidden(
-            "only who created a credential, or the owner, may change it",
+            "only who created a secret, or the owner, may change it",
         ))
     }
 }
 
 #[utoipa::path(get, path = "/v1/secrets", tag = "Secrets",
-    responses((status = 200, description = "The credentials, with the connections using each; never a secret", body = Vec<SecretView>))
+    responses((status = 200, description = "The secrets, with the connections using each; never a secret's value", body = Vec<SecretView>))
 )]
 pub async fn list_secrets(
     _: AnyRole,
@@ -73,8 +73,8 @@ pub async fn list_secrets(
     responses(
         (status = 201, description = "Validated and stored", body = SecretView),
         (status = 400, description = "An invalid name", body = ErrorBody),
-        (status = 409, description = "A credential of that name exists", body = ErrorBody),
-        (status = 422, description = "The credential did not validate", body = ErrorBody),
+        (status = 409, description = "A secret of that name exists", body = ErrorBody),
+        (status = 422, description = "The secret did not validate", body = ErrorBody),
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
@@ -97,10 +97,10 @@ pub async fn create_secret(
 }
 
 #[utoipa::path(get, path = "/v1/secrets/{name}", tag = "Secrets",
-    params(("name" = String, Path, description = "Credential name")),
+    params(("name" = String, Path, description = "Secret name")),
     responses(
-        (status = 200, description = "The credential; never a secret", body = SecretView),
-        (status = 404, description = "No such credential", body = ErrorBody),
+        (status = 200, description = "The secret; never its value", body = SecretView),
+        (status = 404, description = "No such secret", body = ErrorBody),
     )
 )]
 pub async fn get_secret(
@@ -114,18 +114,18 @@ pub async fn get_secret(
 }
 
 #[utoipa::path(patch, path = "/v1/secrets/{name}", tag = "Secrets",
-    params(("name" = String, Path, description = "Credential name")),
+    params(("name" = String, Path, description = "Secret name")),
     request_body = UpdateSecretRequest,
     responses(
         (status = 200, description = "Renamed and/or rotated", body = SecretView),
         (status = 403, description = "Neither its creator nor the owner", body = ErrorBody),
-        (status = 404, description = "No such credential", body = ErrorBody),
+        (status = 404, description = "No such secret", body = ErrorBody),
         (status = 422, description = "A connection using it would not validate with the new spec; `dependents` names them", body = ErrorBody),
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
 /// Rotation replaces the whole spec, and is committed only if every connection
-/// using the credential still validates with the new one.
+/// using the secret still validates with the new one.
 pub async fn update_secret(
     caller: AnyRole,
     State(state): State<AppState>,
@@ -164,17 +164,17 @@ pub async fn update_secret(
         report.as_ref(),
     )?;
     let stored = persistence::get(&conn, db.secret_key(), new_name.as_ref())?
-        .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such credential"))?;
+        .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such secret"))?;
     let used_by = persistence::users_of(&conn, new_name.as_ref())?;
     Ok(Json(stored.view(used_by)))
 }
 
 #[utoipa::path(delete, path = "/v1/secrets/{name}", tag = "Secrets",
-    params(("name" = String, Path, description = "Credential name")),
+    params(("name" = String, Path, description = "Secret name")),
     responses(
         (status = 204, description = "Deleted"),
         (status = 403, description = "Neither its creator nor the owner", body = ErrorBody),
-        (status = 404, description = "No such credential", body = ErrorBody),
+        (status = 404, description = "No such secret", body = ErrorBody),
         (status = 409, description = "Connections still use it; `dependents` names them", body = ErrorBody),
     )
 )]
@@ -190,16 +190,16 @@ pub async fn delete_secret(
 }
 
 #[utoipa::path(post, path = "/v1/secrets/{name}/validate", tag = "Secrets",
-    params(("name" = String, Path, description = "Credential name")),
+    params(("name" = String, Path, description = "Secret name")),
     request_body = ValidateSecretRequest,
     responses(
-        (status = 200, description = "The probe's report, stored with the credential", body = ValidationReport),
+        (status = 200, description = "The probe's report, stored with the secret", body = ValidationReport),
         (status = 403, description = "Neither its creator nor the owner", body = ErrorBody),
-        (status = 404, description = "No such credential", body = ErrorBody),
+        (status = 404, description = "No such secret", body = ErrorBody),
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
-/// Probe the credential through every connection that uses it, and at `url`.
+/// Probe the secret through every connection that uses it, and at `url`.
 pub async fn validate_secret(
     caller: AnyRole,
     State(state): State<AppState>,

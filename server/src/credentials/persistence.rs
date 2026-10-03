@@ -5,9 +5,7 @@ use rusqlite::{Connection, OptionalExtension, params};
 
 use super::sealing::{self, SecretKey};
 use crate::database::{DbError, DbResult, constraint, json_column_opt};
-use crate::domain::{
-    Credential, ResourceName, SecretView, StorageCredentialInput, ValidationReport,
-};
+use crate::domain::{Credential, ResourceName, SecretSpec, SecretView, ValidationReport};
 
 const COLUMNS: &str = "name, spec, created_by, created_at, updated_by, updated_at, validation";
 
@@ -65,7 +63,7 @@ pub fn insert(
     conn: &Connection,
     key: &SecretKey,
     name: &ResourceName,
-    spec: &StorageCredentialInput,
+    spec: &SecretSpec,
     by: &str,
     validation: &ValidationReport,
 ) -> DbResult<()> {
@@ -127,7 +125,7 @@ pub fn update(
     key: &SecretKey,
     name: &str,
     new_name: &ResourceName,
-    spec: &StorageCredentialInput,
+    spec: &SecretSpec,
     by: &str,
     validation: Option<&ValidationReport>,
 ) -> DbResult<()> {
@@ -214,7 +212,7 @@ pub fn rekey(conn: &mut Connection, old: &SecretKey, new: &SecretKey) -> DbResul
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::StorageCredentialInput;
+    use crate::domain::SecretSpec;
     use base64::Engine;
     use secrecy::{ExposeSecret, SecretString};
 
@@ -236,8 +234,8 @@ mod tests {
         ResourceName::parse(s).unwrap()
     }
 
-    fn s3(secret: &str) -> StorageCredentialInput {
-        StorageCredentialInput::S3 {
+    fn s3(secret: &str) -> SecretSpec {
+        SecretSpec::S3 {
             access_key_id: "AKIA".into(),
             secret_access_key: SecretString::from(secret),
             region: "eu-west-1".into(),
@@ -247,9 +245,9 @@ mod tests {
         }
     }
 
-    fn secret_of(spec: &StorageCredentialInput) -> String {
+    fn secret_of(spec: &SecretSpec) -> String {
         match spec {
-            StorageCredentialInput::S3 {
+            SecretSpec::S3 {
                 secret_access_key, ..
             } => secret_access_key.expose_secret().to_string(),
             _ => panic!("not s3"),

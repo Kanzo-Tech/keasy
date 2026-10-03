@@ -8,7 +8,7 @@ use futures::future::join_all;
 use object_store::PutPayload;
 
 use crate::domain::{
-    Check, ConnectionView, Direction, Operation, Outcome, StorageCredentialInput, StorageLocation,
+    Check, ConnectionView, Direction, Operation, Outcome, SecretSpec, StorageLocation,
     StorageTarget, ValidationReport,
 };
 use crate::storage_client::{self, STORE_DEADLINE, StoreFailure, bounded, refused};
@@ -51,7 +51,7 @@ fn through(name: &str, checks: Vec<Check>) -> Vec<Check> {
 
 /// The store `url` names, opened with `credential`, or why it could not be.
 fn open(
-    credential: &StorageCredentialInput,
+    credential: &SecretSpec,
     url: &str,
 ) -> Result<(storage_client::CloudStore, StorageLocation), String> {
     let url = StorageLocation::parse(url)?;
@@ -59,7 +59,7 @@ fn open(
 }
 
 /// LIST under `url`: the first page is proof enough.
-async fn list(credential: &StorageCredentialInput, url: &str) -> Result<Check, StoreFailure> {
+async fn list(credential: &SecretSpec, url: &str) -> Result<Check, StoreFailure> {
     let (store, url) = match open(credential, url) {
         Ok(opened) => opened,
         Err(e) => return Ok(check(Operation::List, Err(e))),
@@ -76,10 +76,7 @@ async fn list(credential: &StorageCredentialInput, url: &str) -> Result<Check, S
 
 /// WRITE an object under the sink, then DELETE it: a listing would only prove
 /// the credential can read.
-async fn write_delete(
-    credential: &StorageCredentialInput,
-    url: &str,
-) -> Result<Vec<Check>, StoreFailure> {
+async fn write_delete(credential: &SecretSpec, url: &str) -> Result<Vec<Check>, StoreFailure> {
     let (store, url) = match open(credential, url) {
         Ok(opened) => opened,
         Err(e) => return Ok(vec![check(Operation::Write, Err(e))]),
@@ -107,7 +104,7 @@ async fn write_delete(
 }
 
 async fn storage(
-    credential: &StorageCredentialInput,
+    credential: &SecretSpec,
     target: &StorageTarget,
 ) -> Result<Vec<Check>, StoreFailure> {
     match target.direction {
@@ -119,7 +116,7 @@ async fn storage(
 /// What `target` needs of `spec`, probed; a store that does not answer is
 /// the whole answer, not a failed check.
 pub async fn connection(
-    spec: &StorageCredentialInput,
+    spec: &SecretSpec,
     target: &StorageTarget,
 ) -> Result<ValidationReport, StoreFailure> {
     Ok(report(storage(spec, target).await?))
@@ -129,7 +126,7 @@ pub async fn connection(
 /// when given, and the dependents that failed. A credential with nothing to
 /// reach says so; a store that does not answer is the whole answer.
 pub async fn credential(
-    spec: &StorageCredentialInput,
+    spec: &SecretSpec,
     url: Option<&str>,
     dependents: &[ConnectionView],
 ) -> Result<(ValidationReport, Vec<String>), StoreFailure> {

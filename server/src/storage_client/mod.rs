@@ -17,7 +17,7 @@ use object_store::{
 };
 use secrecy::ExposeSecret;
 
-use crate::domain::{StorageCredentialInput, StorageLocation, StoreKind};
+use crate::domain::{SecretSpec, StorageLocation, StoreKind};
 use crate::error::{ErrorCode, Refusal};
 use crate::startup::REQUEST_DEADLINE;
 
@@ -182,10 +182,7 @@ pub enum CloudStore {
 }
 
 /// The client `credential` opens on the bucket or container `location` names.
-pub fn store(
-    credential: &StorageCredentialInput,
-    location: &StorageLocation,
-) -> Result<CloudStore, String> {
+pub fn store(credential: &SecretSpec, location: &StorageLocation) -> Result<CloudStore, String> {
     if StoreKind::of(credential) != location.kind() {
         return Err(format!(
             "this credential reaches {} URLs, not {}",
@@ -196,7 +193,7 @@ pub fn store(
     let bucket = location.bucket();
 
     let store = match credential {
-        StorageCredentialInput::S3 {
+        SecretSpec::S3 {
             access_key_id,
             secret_access_key,
             region,
@@ -219,13 +216,13 @@ pub fn store(
             }
             CloudStore::S3(builder.build().map_err(|e| e.to_string())?)
         }
-        StorageCredentialInput::AzureAccountKey { account, key } => CloudStore::Azure(
+        SecretSpec::AzureAccountKey { account, key } => CloudStore::Azure(
             azure(bucket, account)
                 .with_access_key(key.expose_secret())
                 .build()
                 .map_err(|e| e.to_string())?,
         ),
-        StorageCredentialInput::AzureServicePrincipal {
+        SecretSpec::AzureServicePrincipal {
             account,
             tenant_id,
             client_id,
@@ -278,7 +275,7 @@ impl CloudStore {
 /// The first `limit` objects under `under` within `location`, within
 /// [`STORE_DEADLINE`], and whether there were more.
 pub async fn list_files(
-    credential: &StorageCredentialInput,
+    credential: &SecretSpec,
     location: &StorageLocation,
     under: &ObjectPath,
     limit: usize,
@@ -304,8 +301,8 @@ mod tests {
     use super::*;
     use secrecy::SecretString;
 
-    fn s3() -> StorageCredentialInput {
-        StorageCredentialInput::S3 {
+    fn s3() -> SecretSpec {
+        SecretSpec::S3 {
             access_key_id: "AK".into(),
             secret_access_key: SecretString::from("SK"),
             region: "us-east-1".into(),

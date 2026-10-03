@@ -6,7 +6,7 @@ use rusqlite::Connection;
 
 use crate::credentials::sealing::SecretKey;
 use crate::database::Database;
-use crate::domain::{Job, StorageCredentialInput, StorageLocation};
+use crate::domain::{Job, SecretSpec, StorageLocation};
 use crate::error::{ErrorCode, Refusal};
 
 /// End the jobs no runner holds ([`persistence::sweep`]). Every read of jobs
@@ -60,7 +60,7 @@ pub fn output(
     conn: &Connection,
     key: &SecretKey,
     job: &Job,
-) -> Result<(StorageLocation, StorageCredentialInput), Refusal> {
+) -> Result<(StorageLocation, SecretSpec), Refusal> {
     let sink =
         crate::connections::persistence::get(conn, &job.sink_connection)?.ok_or_else(|| {
             Refusal::new(

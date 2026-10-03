@@ -10,13 +10,13 @@ use sealing::SecretKey;
 
 use crate::configuration::DatabaseSettings;
 use crate::database::Database;
-use crate::domain::{Credential, ResourceName, SecretView, StorageCredentialInput};
+use crate::domain::{Credential, ResourceName, SecretSpec, SecretView};
 use crate::error::{ErrorCode, Refusal};
 
 /// The credential `name`, unsealed, or 404.
 pub async fn named(db: &Database, name: &str) -> Result<Credential, Refusal> {
     persistence::get(&*db.read().await, db.secret_key(), name)?
-        .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such credential"))
+        .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such secret"))
 }
 
 /// Parse, probe, seal and store a credential, LISTing `probe_url` when one is
@@ -24,7 +24,7 @@ pub async fn named(db: &Database, name: &str) -> Result<Credential, Refusal> {
 pub async fn create(
     db: &Database,
     name: &str,
-    spec: &StorageCredentialInput,
+    spec: &SecretSpec,
     probe_url: Option<&str>,
     by: &str,
 ) -> Result<SecretView, Refusal> {
@@ -36,7 +36,7 @@ pub async fn create(
     let conn = db.write().await;
     persistence::insert(&conn, db.secret_key(), &name, spec, by, &report)?;
     let stored = persistence::get(&conn, db.secret_key(), name.as_ref())?
-        .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such credential"))?;
+        .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such secret"))?;
     Ok(stored.view(Vec::new()))
 }
 

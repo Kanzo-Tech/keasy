@@ -61,7 +61,7 @@ export default function NewConnectionPage({ searchParams }: { searchParams: Prom
     if (!inner) return;
     const target = { ...inner, direction: "source" };
     create.mutate({
-      body: { name: name.trim(), credential, target: target as unknown as Inputs["StorageTarget"] },
+      body: { name: name.trim(), secret: credential, target: target as unknown as Inputs["StorageTarget"] },
     });
   };
 

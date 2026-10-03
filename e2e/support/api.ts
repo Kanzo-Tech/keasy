@@ -48,8 +48,8 @@ export const SHAPES = "E2E shapes";
 const CREDENTIAL = "Dev S3";
 
 export const CONNECTIONS = [
-  { name: SOURCE, credential: CREDENTIAL, target: { url: "s3://keasy-dev/e2e/data/", kind: "data", direction: "source" } },
-  { name: SHAPES, credential: CREDENTIAL, target: { url: "s3://keasy-dev/e2e/vocab/", kind: "vocab", direction: "source" } },
+  { name: SOURCE, secret: CREDENTIAL, target: { url: "s3://keasy-dev/e2e/data/", kind: "data", direction: "source" } },
+  { name: SHAPES, secret: CREDENTIAL, target: { url: "s3://keasy-dev/e2e/vocab/", kind: "vocab", direction: "source" } },
 ] as const;
 
 /** The program over the fixtures. */

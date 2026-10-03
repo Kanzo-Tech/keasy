@@ -89,7 +89,7 @@ function CatalogStorage() {
 }
 
 function Form({ credentials, sink }: { credentials: Credential[]; sink?: Connection }) {
-  const [credential, setCredential] = useState(sink?.credential ?? "");
+  const [credential, setCredential] = useState(sink?.secret ?? "");
   const [url, setUrl] = useState(sink?.target.url ?? "");
   const collection = useMemo(
     () => createListCollection({ items: credentials.map((c) => ({ label: c.name, value: c.name })) }),
@@ -107,8 +107,8 @@ function Form({ credentials, sink }: { credentials: Credential[]; sink?: Connect
 
   const save = () =>
     sink
-      ? update.mutate({ params: { path: { name: sink.name } }, body: { credential, target } })
-      : create.mutate({ body: { name: "Workspace output", credential, target } });
+      ? update.mutate({ params: { path: { name: sink.name } }, body: { secret: credential, target } })
+      : create.mutate({ body: { name: "Workspace output", secret: credential, target } });
 
   return (
     <SectionRoot>

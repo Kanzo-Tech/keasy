@@ -330,7 +330,7 @@ export interface paths {
         head?: never;
         /**
          * Rotation replaces the whole spec, and is committed only if every connection
-         *     using the credential still validates with the new one.
+         *     using the secret still validates with the new one.
          */
         patch: operations["update_secret"];
         trace?: never;
@@ -344,7 +344,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Probe the credential through every connection that uses it, and at `url`. */
+        /** Probe the secret through every connection that uses it, and at `url`. */
         post: operations["validate_secret"];
         delete?: never;
         options?: never;
@@ -452,18 +452,18 @@ export interface components {
         ConnectionView: {
             created_at: string;
             created_by: string;
-            credential: string;
             name: string;
+            secret: string;
             target: components["schemas"]["StorageTarget"];
             updated_at: string;
             updated_by: string;
             validation?: null | components["schemas"]["ValidationReport"];
         };
         CreateConnectionRequest: {
-            /** @description The credential it signs with. */
-            credential: string;
             /** @description What programs write after `@`, and the connection's key. */
             name: components["schemas"]["ResourceName"];
+            /** @description The secret it signs with. */
+            secret: string;
             target: components["schemas"]["StorageTarget"];
         };
         CreateJobRequest: {
@@ -477,12 +477,12 @@ export interface components {
             name: components["schemas"]["ResourceName"];
             /**
              * Format: uri
-             * @description A storage URL to LIST before the credential is stored. A credential has
+             * @description A storage URL to LIST before the secret is stored. A secret has
              *     no location of its own, so without one it is only checked to build a
              *     client.
              */
             probe_url?: string | null;
-            spec: components["schemas"]["StorageCredentialInput"];
+            spec: components["schemas"]["SecretSpec"];
         };
         /**
          * @description A job's saved dashboard. `spec` is the dashboard the web's BI kit
@@ -560,7 +560,7 @@ export interface components {
              */
             after?: number | null;
             /**
-             * @description What the refusal is about: what still uses a credential or connection,
+             * @description What the refusal is about: what still uses a secret or connection,
              *     or the connections a rotation would break.
              */
             dependents?: string[];
@@ -677,19 +677,8 @@ export interface components {
             /** @description A job's dataset, by the job's id. */
             job: string;
         };
-        SecretView: {
-            created_at: string;
-            created_by: string;
-            name: string;
-            spec: components["schemas"]["StorageCredentialView"];
-            updated_at: string;
-            updated_by: string;
-            /** @description The connections that use this credential. */
-            used_by: string[];
-            validation?: null | components["schemas"]["ValidationReport"];
-        };
-        /** @description A credential as a request states it, secrets included. */
-        StorageCredentialInput: {
+        /** @description A secret's spec as a request states it, its values included. */
+        SecretSpec: {
             access_key_id: string;
             /**
              * Format: uri
@@ -729,8 +718,8 @@ export interface components {
             kind: "azure_service_principal";
             tenant_id: string;
         };
-        /** @description A credential as a response shows it: what names it, never what signs with it. */
-        StorageCredentialView: {
+        /** @description A secret's spec as a response shows it: what names it, never what signs with it. */
+        SecretSpecView: {
             access_key_id: string;
             endpoint?: string | null;
             external_id?: string | null;
@@ -748,6 +737,17 @@ export interface components {
             /** @enum {string} */
             kind: "azure_service_principal";
             tenant_id: string;
+        };
+        SecretView: {
+            created_at: string;
+            created_by: string;
+            name: string;
+            spec: components["schemas"]["SecretSpecView"];
+            updated_at: string;
+            updated_by: string;
+            /** @description The connections that use this secret. */
+            used_by: string[];
+            validation?: null | components["schemas"]["ValidationReport"];
         };
         StorageCredentialsRequest: {
             access: components["schemas"]["Access"];
@@ -774,23 +774,23 @@ export interface components {
             light: components["schemas"]["ThemeChoice"];
         };
         UpdateConnectionRequest: {
-            credential?: string | null;
             name?: null | components["schemas"]["ResourceName"];
+            secret?: string | null;
             target?: null | components["schemas"]["StorageTarget"];
         };
         /**
          * @description A rename, a rotation or both. `spec` replaces the whole spec, secrets
-         *     included, and is stored only if every connection using the credential
+         *     included, and is stored only if every connection using the secret
          *     still validates with it.
          */
         UpdateSecretRequest: {
             name?: null | components["schemas"]["ResourceName"];
-            spec?: null | components["schemas"]["StorageCredentialInput"];
+            spec?: null | components["schemas"]["SecretSpec"];
         };
         ValidateSecretRequest: {
             /**
              * Format: uri
-             * @description A storage URL to LIST besides the connections that use the credential.
+             * @description A storage URL to LIST besides the connections that use the secret.
              */
             url?: string | null;
         };
@@ -1088,7 +1088,7 @@ export interface operations {
                     "application/json": components["schemas"]["ConnectionView"];
                 };
             };
-            /** @description No such credential, one of the other purpose, or a URL it does not reach */
+            /** @description No such secret, or a URL it does not reach */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1870,7 +1870,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The credentials, with the connections using each; never a secret */
+            /** @description The secrets, with the connections using each; never a secret's value */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1919,7 +1919,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            /** @description A credential of that name exists */
+            /** @description A secret of that name exists */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1928,7 +1928,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description The credential did not validate */
+            /** @description The secret did not validate */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -1956,14 +1956,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Credential name */
+                /** @description Secret name */
                 name: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The credential; never a secret */
+            /** @description The secret; never its value */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1974,7 +1974,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            /** @description No such credential */
+            /** @description No such secret */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1993,7 +1993,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Credential name */
+                /** @description Secret name */
                 name: string;
             };
             cookie?: never;
@@ -2017,7 +2017,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description No such credential */
+            /** @description No such secret */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2045,7 +2045,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Credential name */
+                /** @description Secret name */
                 name: string;
             };
             cookie?: never;
@@ -2075,7 +2075,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description No such credential */
+            /** @description No such secret */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2112,7 +2112,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Credential name */
+                /** @description Secret name */
                 name: string;
             };
             cookie?: never;
@@ -2123,7 +2123,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description The probe's report, stored with the credential */
+            /** @description The probe's report, stored with the secret */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2142,7 +2142,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description No such credential */
+            /** @description No such secret */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -1,11 +1,11 @@
-//! Credentials: who keasy is when it reaches a store. Models are not here:
-//! every model call goes through the platform's AI gateway with the workspace's
-//! own key (`KEASY_AI_URL`), which is configuration, not a stored credential.
+//! Secrets: who keasy is when it reaches a store. Models are not here: every
+//! model call goes through the platform's AI gateway with the workspace's own
+//! key (`KEASY_AI_URL`), which is configuration, not a stored secret.
 //!
-//! Each family comes twice. `…Input` is what a request carries: the secrets
-//! included, as [`SecretString`], and it only deserializes. `…View` is what a
-//! response carries: the same fields minus every secret, so a secret cannot
-//! reach a response because no response type has a field to hold it.
+//! A spec comes twice. [`SecretSpec`] is what a request carries: its values
+//! included, as [`SecretString`], and it only deserializes. [`SecretSpecView`]
+//! is what a response carries: the same fields minus every value, so a value
+//! cannot reach a response because no response type has a field to hold it.
 
 use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
@@ -17,10 +17,10 @@ fn us_east_1() -> String {
     "us-east-1".into()
 }
 
-/// A credential as a request states it, secrets included.
+/// A secret's spec as a request states it, its values included.
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(tag = "kind", rename_all = "snake_case")]
-pub enum StorageCredentialInput {
+pub enum SecretSpec {
     #[schema(title = "Amazon S3 / S3-compatible")]
     S3 {
         access_key_id: String,
@@ -60,10 +60,10 @@ pub enum StorageCredentialInput {
     },
 }
 
-/// A credential as a response shows it: what names it, never what signs with it.
+/// A secret's spec as a response shows it: what names it, never what signs with it.
 #[derive(Debug, Serialize, ToSchema)]
 #[serde(tag = "kind", rename_all = "snake_case")]
-pub enum StorageCredentialView {
+pub enum SecretSpecView {
     #[schema(title = "Amazon S3 / S3-compatible")]
     S3 {
         access_key_id: String,
@@ -85,8 +85,8 @@ pub enum StorageCredentialView {
     },
 }
 
-impl StorageCredentialInput {
-    pub fn view(&self) -> StorageCredentialView {
+impl SecretSpec {
+    pub fn view(&self) -> SecretSpecView {
         match self {
             Self::S3 {
                 access_key_id,
@@ -95,14 +95,14 @@ impl StorageCredentialInput {
                 role_arn,
                 external_id,
                 ..
-            } => StorageCredentialView::S3 {
+            } => SecretSpecView::S3 {
                 access_key_id: access_key_id.clone(),
                 region: region.clone(),
                 endpoint: endpoint.clone(),
                 role_arn: role_arn.clone(),
                 external_id: external_id.clone(),
             },
-            Self::AzureAccountKey { account, .. } => StorageCredentialView::AzureAccountKey {
+            Self::AzureAccountKey { account, .. } => SecretSpecView::AzureAccountKey {
                 account: account.clone(),
             },
             Self::AzureServicePrincipal {
@@ -110,7 +110,7 @@ impl StorageCredentialInput {
                 tenant_id,
                 client_id,
                 ..
-            } => StorageCredentialView::AzureServicePrincipal {
+            } => SecretSpecView::AzureServicePrincipal {
                 account: account.clone(),
                 tenant_id: tenant_id.clone(),
                 client_id: client_id.clone(),
@@ -122,8 +122,8 @@ impl StorageCredentialInput {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct SecretView {
     pub name: String,
-    pub spec: StorageCredentialView,
-    /// The connections that use this credential.
+    pub spec: SecretSpecView,
+    /// The connections that use this secret.
     pub used_by: Vec<String>,
     pub created_by: String,
     pub created_at: String,
@@ -133,10 +133,10 @@ pub struct SecretView {
     pub validation: Option<ValidationReport>,
 }
 
-/// A stored credential, unsealed.
+/// A stored secret, unsealed.
 pub struct Credential {
     pub name: String,
-    pub spec: StorageCredentialInput,
+    pub spec: SecretSpec,
     pub created_by: String,
     pub created_at: String,
     pub updated_by: String,

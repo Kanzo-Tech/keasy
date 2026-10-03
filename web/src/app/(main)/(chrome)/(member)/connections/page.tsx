@@ -118,7 +118,7 @@ function Connections({ tab }: { tab: Tab }) {
         cell: ({ getValue }) => <span className="font-medium">{getValue<string>()}</span>,
       },
       {
-        accessorKey: "credential",
+        accessorKey: "secret",
         header: "Credential",
         cell: ({ getValue }) => <Badge variant="outline">{getValue<string>()}</Badge>,
       },

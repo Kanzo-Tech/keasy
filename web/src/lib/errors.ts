@@ -93,6 +93,7 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
     link: { label: "Go to Credentials", href: "/settings/credentials" },
   },
   "resource/in-use": { title: "It is still in use." },
+  "secret/not-found": { title: "No such credential." },
   "job/folder-taken": { title: "Another job writes to this folder already." },
   "job/still-running": { title: "The job is still running; it can be deleted once it ends." },
   "job/not-running": { title: "The job has not started running yet." },

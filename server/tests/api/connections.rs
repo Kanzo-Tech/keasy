@@ -69,7 +69,7 @@ async fn a_storage_location_never_overlaps_another() {
                 Method::POST,
                 "/v1/connections",
                 &member,
-                json!({ "name": "other", "credential": "key",
+                json!({ "name": "other", "secret": "key",
                         "target": { "url": url, "direction": "source" } }),
             )
             .await;
@@ -83,7 +83,7 @@ async fn a_storage_location_never_overlaps_another() {
             Method::POST,
             "/v1/connections",
             &member,
-            json!({ "name": "other", "credential": "key",
+            json!({ "name": "other", "secret": "key",
                     "target": { "url": "s3://b/data-private/", "direction": "source" } }),
         )
         .await;

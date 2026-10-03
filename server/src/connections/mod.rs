@@ -1,12 +1,11 @@
-//! Connections: a credential put to use — a storage prefix.
+//! Connections: a secret put to use — a storage prefix.
 
 pub mod persistence;
 
 use crate::credentials::sealing::SecretKey;
 use crate::database::Database;
 use crate::domain::{
-    ConnectionView, Credential, Direction, ResourceName, StorageCredentialInput, StorageLocation,
-    StorageTarget,
+    ConnectionView, Credential, Direction, ResourceName, SecretSpec, StorageLocation, StorageTarget,
 };
 use crate::error::{ErrorCode, Refusal};
 
@@ -16,7 +15,7 @@ pub async fn named(db: &Database, name: &str) -> Result<ConnectionView, Refusal>
         .ok_or_else(|| Refusal::not_found(ErrorCode::ConnectionNotFound, "No such connection"))
 }
 
-/// The credential `connection` points at, checked for reaching the URL's
+/// The secret `connection` points at, checked for reaching the URL's
 /// store. The URL is rewritten in its canonical form, which is the form every
 /// reader expands.
 fn fits(
@@ -24,10 +23,7 @@ fn fits(
     connection: &mut ConnectionView,
 ) -> Result<Credential, Refusal> {
     let credential = credential.ok_or_else(|| {
-        Refusal::invalid(format!(
-            "there is no credential named {:?}",
-            connection.credential
-        ))
+        Refusal::invalid(format!("there is no secret named {:?}", connection.secret))
     })?;
     let location = StorageLocation::parse(&connection.target.url)
         .and_then(|l| l.within(&credential.spec))
@@ -82,7 +78,7 @@ pub async fn save(
     let credential = crate::credentials::persistence::get(
         &*db.read().await,
         db.secret_key(),
-        &connection.credential,
+        &connection.secret,
     )?;
     let credential = fits(credential, &mut connection)?;
     disjoint(db, &connection, name).await?;
@@ -105,13 +101,13 @@ pub async fn save(
 pub async fn create(
     db: &Database,
     name: String,
-    credential: String,
+    secret: String,
     target: StorageTarget,
     by: &str,
 ) -> Result<ConnectionView, Refusal> {
     let connection = ConnectionView {
         name,
-        credential,
+        secret,
         target,
         created_by: by.into(),
         created_at: String::new(),
@@ -127,10 +123,10 @@ pub fn storage(
     conn: &rusqlite::Connection,
     key: &SecretKey,
     connection: &ConnectionView,
-) -> Result<(StorageLocation, StorageCredentialInput), Refusal> {
+) -> Result<(StorageLocation, SecretSpec), Refusal> {
     let location = StorageLocation::parse(&connection.target.url).map_err(Refusal::invalid)?;
-    let spec = crate::credentials::persistence::get(conn, key, &connection.credential)?
-        .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such credential"))?
+    let spec = crate::credentials::persistence::get(conn, key, &connection.secret)?
+        .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such secret"))?
         .spec;
     let location = location.within(&spec).map_err(Refusal::invalid)?;
     Ok((location, spec))

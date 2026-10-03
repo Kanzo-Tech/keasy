@@ -1,8 +1,8 @@
-//! The credentials, connections and jobs an instance declares, ensured at boot.
+//! The secrets, connections and jobs an instance declares, ensured at boot.
 //!
 //! `KEASY_BOOTSTRAP_FILE` names a JSON file in the API's own request format:
-//! `{"credentials": [CreateSecretRequest…], "connections":
-//! [CreateConnectionRequest…], "jobs": [DeclaredJob…]}`. Each credential and
+//! `{"secrets": [CreateSecretRequest…], "connections":
+//! [CreateConnectionRequest…], "jobs": [DeclaredJob…]}`. Each secret and
 //! connection takes the path the API does — parse, probe, seal — so the
 //! declaration and the API cannot drift. Idempotent by name and non-fatal: an
 //! existing entry is left as it is, and one that fails is logged and skipped;
@@ -47,7 +47,7 @@ struct DeclaredJob {
 #[derive(Deserialize)]
 struct Declared {
     #[serde(default)]
-    credentials: Vec<CreateSecretRequest>,
+    secrets: Vec<CreateSecretRequest>,
     #[serde(default)]
     connections: Vec<CreateConnectionRequest>,
     #[serde(default)]
@@ -80,13 +80,13 @@ pub async fn ensure_declared(db: &Database, path: &str) {
         Err(e) => return error!(%path, error = %e, "bootstrap file: skipped"),
     };
 
-    for request in declared.credentials {
+    for request in declared.secrets {
         let name = request.name.clone();
         match crate::credentials::named(db, &name).await {
             Ok(_) => continue,
             Err(refusal) if refusal.status == axum::http::StatusCode::NOT_FOUND => {}
             Err(e) => {
-                error!(%name, error = ?e, "declared credential: skipped");
+                error!(%name, error = ?e, "declared secret: skipped");
                 continue;
             }
         }
@@ -99,8 +99,8 @@ pub async fn ensure_declared(db: &Database, path: &str) {
         )
         .await
         {
-            Ok(_) => info!(%name, "declared credential ready"),
-            Err(e) => error!(%name, error = ?e, "declared credential: rejected"),
+            Ok(_) => info!(%name, "declared secret ready"),
+            Err(e) => error!(%name, error = ?e, "declared secret: rejected"),
         }
     }
 
@@ -114,8 +114,7 @@ pub async fn ensure_declared(db: &Database, path: &str) {
                 continue;
             }
         }
-        match crate::connections::create(db, request.name, request.credential, request.target, BY)
-            .await
+        match crate::connections::create(db, request.name, request.secret, request.target, BY).await
         {
             Ok(_) => info!(%name, "declared connection ready"),
             Err(e) => error!(%name, error = ?e, "declared connection: rejected"),

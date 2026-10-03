@@ -241,7 +241,7 @@
             }
           },
           "400": {
-            "description": "No such credential, one of the other purpose, or a URL it does not reach",
+            "description": "No such secret, or a URL it does not reach",
             "content": {
               "application/json": {
                 "schema": {
@@ -1345,7 +1345,7 @@
         "operationId": "list_secrets",
         "responses": {
           "200": {
-            "description": "The credentials, with the connections using each; never a secret",
+            "description": "The secrets, with the connections using each; never a secret's value",
             "content": {
               "application/json": {
                 "schema": {
@@ -1418,7 +1418,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "409": {
-            "description": "A credential of that name exists",
+            "description": "A secret of that name exists",
             "content": {
               "application/json": {
                 "schema": {
@@ -1428,7 +1428,7 @@
             }
           },
           "422": {
-            "description": "The credential did not validate",
+            "description": "The secret did not validate",
             "content": {
               "application/json": {
                 "schema": {
@@ -1469,7 +1469,7 @@
           {
             "name": "name",
             "in": "path",
-            "description": "Credential name",
+            "description": "Secret name",
             "required": true,
             "schema": {
               "type": "string"
@@ -1478,7 +1478,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The credential; never a secret",
+            "description": "The secret; never its value",
             "content": {
               "application/json": {
                 "schema": {
@@ -1494,7 +1494,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "No such credential",
+            "description": "No such secret",
             "content": {
               "application/json": {
                 "schema": {
@@ -1523,7 +1523,7 @@
           {
             "name": "name",
             "in": "path",
-            "description": "Credential name",
+            "description": "Secret name",
             "required": true,
             "schema": {
               "type": "string"
@@ -1548,7 +1548,7 @@
             }
           },
           "404": {
-            "description": "No such credential",
+            "description": "No such secret",
             "content": {
               "application/json": {
                 "schema": {
@@ -1582,13 +1582,13 @@
         "tags": [
           "Secrets"
         ],
-        "summary": "Rotation replaces the whole spec, and is committed only if every connection\nusing the credential still validates with the new one.",
+        "summary": "Rotation replaces the whole spec, and is committed only if every connection\nusing the secret still validates with the new one.",
         "operationId": "update_secret",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Credential name",
+            "description": "Secret name",
             "required": true,
             "schema": {
               "type": "string"
@@ -1630,7 +1630,7 @@
             }
           },
           "404": {
-            "description": "No such credential",
+            "description": "No such secret",
             "content": {
               "application/json": {
                 "schema": {
@@ -1676,13 +1676,13 @@
         "tags": [
           "Secrets"
         ],
-        "summary": "Probe the credential through every connection that uses it, and at `url`.",
+        "summary": "Probe the secret through every connection that uses it, and at `url`.",
         "operationId": "validate_secret",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Credential name",
+            "description": "Secret name",
             "required": true,
             "schema": {
               "type": "string"
@@ -1701,7 +1701,7 @@
         },
         "responses": {
           "200": {
-            "description": "The probe's report, stored with the credential",
+            "description": "The probe's report, stored with the secret",
             "content": {
               "application/json": {
                 "schema": {
@@ -1724,7 +1724,7 @@
             }
           },
           "404": {
-            "description": "No such credential",
+            "description": "No such secret",
             "content": {
               "application/json": {
                 "schema": {
@@ -2015,7 +2015,7 @@
         "type": "object",
         "required": [
           "name",
-          "credential",
+          "secret",
           "target",
           "created_by",
           "created_at",
@@ -2029,10 +2029,10 @@
           "created_by": {
             "type": "string"
           },
-          "credential": {
+          "name": {
             "type": "string"
           },
-          "name": {
+          "secret": {
             "type": "string"
           },
           "target": {
@@ -2060,17 +2060,17 @@
         "type": "object",
         "required": [
           "name",
-          "credential",
+          "secret",
           "target"
         ],
         "properties": {
-          "credential": {
-            "type": "string",
-            "description": "The credential it signs with."
-          },
           "name": {
             "$ref": "#/components/schemas/ResourceName",
             "description": "What programs write after `@`, and the connection's key."
+          },
+          "secret": {
+            "type": "string",
+            "description": "The secret it signs with."
           },
           "target": {
             "$ref": "#/components/schemas/StorageTarget"
@@ -2130,10 +2130,10 @@
               "null"
             ],
             "format": "uri",
-            "description": "A storage URL to LIST before the credential is stored. A credential has\nno location of its own, so without one it is only checked to build a\nclient."
+            "description": "A storage URL to LIST before the secret is stored. A secret has\nno location of its own, so without one it is only checked to build a\nclient."
           },
           "spec": {
-            "$ref": "#/components/schemas/StorageCredentialInput"
+            "$ref": "#/components/schemas/SecretSpec"
           }
         }
       },
@@ -2313,7 +2313,7 @@
             "items": {
               "type": "string"
             },
-            "description": "What the refusal is about: what still uses a credential or connection,\nor the connections a rotation would break."
+            "description": "What the refusal is about: what still uses a secret or connection,\nor the connections a rotation would break."
           },
           "field": {
             "type": [
@@ -2565,56 +2565,7 @@
         ],
         "description": "What a credential is asked for: fossil's `Scope`, verbatim."
       },
-      "SecretView": {
-        "type": "object",
-        "required": [
-          "name",
-          "spec",
-          "used_by",
-          "created_by",
-          "created_at",
-          "updated_by",
-          "updated_at"
-        ],
-        "properties": {
-          "created_at": {
-            "type": "string"
-          },
-          "created_by": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "spec": {
-            "$ref": "#/components/schemas/StorageCredentialView"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "updated_by": {
-            "type": "string"
-          },
-          "used_by": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The connections that use this credential."
-          },
-          "validation": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ValidationReport"
-              }
-            ]
-          }
-        }
-      },
-      "StorageCredentialInput": {
+      "SecretSpec": {
         "oneOf": [
           {
             "type": "object",
@@ -2726,9 +2677,9 @@
             }
           }
         ],
-        "description": "A credential as a request states it, secrets included."
+        "description": "A secret's spec as a request states it, its values included."
       },
-      "StorageCredentialView": {
+      "SecretSpecView": {
         "oneOf": [
           {
             "type": "object",
@@ -2818,7 +2769,56 @@
             }
           }
         ],
-        "description": "A credential as a response shows it: what names it, never what signs with it."
+        "description": "A secret's spec as a response shows it: what names it, never what signs with it."
+      },
+      "SecretView": {
+        "type": "object",
+        "required": [
+          "name",
+          "spec",
+          "used_by",
+          "created_by",
+          "created_at",
+          "updated_by",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/SecretSpecView"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": "string"
+          },
+          "used_by": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The connections that use this secret."
+          },
+          "validation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ValidationReport"
+              }
+            ]
+          }
+        }
       },
       "StorageCredentialsRequest": {
         "type": "object",
@@ -2895,12 +2895,6 @@
       "UpdateConnectionRequest": {
         "type": "object",
         "properties": {
-          "credential": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "name": {
             "oneOf": [
               {
@@ -2909,6 +2903,12 @@
               {
                 "$ref": "#/components/schemas/ResourceName"
               }
+            ]
+          },
+          "secret": {
+            "type": [
+              "string",
+              "null"
             ]
           },
           "target": {
@@ -2925,7 +2925,7 @@
       },
       "UpdateSecretRequest": {
         "type": "object",
-        "description": "A rename, a rotation or both. `spec` replaces the whole spec, secrets\nincluded, and is stored only if every connection using the credential\nstill validates with it.",
+        "description": "A rename, a rotation or both. `spec` replaces the whole spec, secrets\nincluded, and is stored only if every connection using the secret\nstill validates with it.",
         "properties": {
           "name": {
             "oneOf": [
@@ -2943,7 +2943,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/StorageCredentialInput"
+                "$ref": "#/components/schemas/SecretSpec"
               }
             ]
           }
@@ -2958,7 +2958,7 @@
               "null"
             ],
             "format": "uri",
-            "description": "A storage URL to LIST besides the connections that use the credential."
+            "description": "A storage URL to LIST besides the connections that use the secret."
           }
         }
       },

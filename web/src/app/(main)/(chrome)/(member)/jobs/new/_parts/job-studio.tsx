@@ -277,16 +277,14 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
     mutationFn: async (sent: { name: string; folder: string }) => {
       submittingRef.current = true;
       clearTimeout(autosaveRef.current);
-      await savingRef.current?.catch(() => undefined); // a failed save toasted itself; Create sends everything anyway
-      const body = { script: store.script, name: sent.name || undefined, folder: sent.folder };
-      // A job begins as a draft, always; submitting it is what makes it run.
-      let id = draftIdRef.current;
-      if (!id) {
-        if (!destination) throw new Error("Pick a destination before launching");
-        const { data: created } = await http.POST("/v1/jobs", { body: { script: store.script, sink_connection: destination } });
-        id = draftIdRef.current = created!.id;
-        setDraftId(id);
-      }
+      await savingRef.current?.catch(() => undefined); // a failed save toasted itself; Create sends the script anyway
+      // A job begins as a draft, always; submitting it is what makes it run. The script crosses
+      // once: in the draft written now, or in the submit when the last save did not carry it.
+      const existing = draftIdRef.current;
+      const id = existing ?? (draftIdRef.current = await writeDraft());
+      setDraftId(id);
+      const script = existing && !saved ? store.script : undefined;
+      const body = { script, name: sent.name || undefined, folder: sent.folder };
       const { data: job } = await http.POST("/v1/jobs/{id}/submit", { params: { path: { id } }, body });
       return job!;
     },

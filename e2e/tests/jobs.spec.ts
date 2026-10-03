@@ -6,7 +6,7 @@ import { expectProblem } from "../support/problem";
 test("06 a 500 on the job is shown as its code, and the poll stops", async ({ page }) => {
   // Running, with no tab running it, so the page polls it; the first read is real, the rest fail.
   const id = await createJob(page);
-  await api(page, "POST", `/v1/jobs/${id}/status`, { status: "running" });
+  await api(page, "POST", `/v1/jobs/${id}/run`);
   let asked = 0;
   await page.route(`**/api/v1/jobs/${id}`, async (route) => {
     if (route.request().method() !== "GET") return route.fallback();
@@ -29,7 +29,7 @@ test("18 a run too large for the browser is shown as run/over-budget", async ({ 
   // A real 2 GB run is not something to put in CI: the job is failed with the problem the runner
   // stores for one, and what is forced is that the stored problem reaches the screen whole.
   const id = await createJob(page);
-  await api(page, "POST", `/v1/jobs/${id}/status`, { status: "running" });
+  await api(page, "POST", `/v1/jobs/${id}/run`);
   const problem = {
     code: "run/over-budget",
     title: "Over budget",
@@ -49,6 +49,7 @@ test("19 a tab closed mid-run ends the job as job/abandoned, and it can be delet
   // The run's reads of the bucket never answer, so it is still running when its tab closes.
   await runner.route(/s3\.localhost/, () => {});
   await runner.goto(`/jobs/${id}`);
+  await runner.getByRole("button", { name: "Run", exact: true }).click();
   await expect
     .poll(async () => ((await api(page, "GET", `/v1/jobs/${id}`)).body as { status: string }).status, { timeout: 60_000 })
     .toBe("running");
@@ -70,6 +71,7 @@ test("20 deleting a running job is refused as job/still-running", async ({ page 
   // The jobs list offers no Delete for a running job, so the refusal is asked of the API, through
   // the BFF, as the page would ask it.
   const id = await createJob(page);
+  await api(page, "POST", `/v1/jobs/${id}/run`);
   expectRefusal(await api(page, "DELETE", `/v1/jobs/${id}`), 409, "job/still-running");
 });
 

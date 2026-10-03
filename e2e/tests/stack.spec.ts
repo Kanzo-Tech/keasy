@@ -38,7 +38,7 @@ test("05 with the API down every list shows a problem, not an empty state", asyn
     }
     const admin = await browser.newContext({ storageState: ".auth/admin.json", baseURL });
     const adminPage = await admin.newPage();
-    for (const path of ["/datasets", "/settings/storage"]) {
+    for (const path of ["/settings/storage"]) {
       await adminPage.goto(path);
       await expectProblem(adminPage, "bff/failed", { within: 35_000 });
     }

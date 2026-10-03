@@ -1,8 +1,9 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../support/fixtures";
 
 import { SOURCE } from "../support/api";
 import { stop, up } from "../support/compose";
 import { expectProblem } from "../support/problem";
+import { enterPassword, enterUsername } from "../support/sign-in";
 
 test.describe("signed out", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
@@ -14,16 +15,17 @@ test.describe("signed out", () => {
     // does own is the callback's token exchange: Keycloak goes down between the form and that.
     // The callback is a redirect hop, which Playwright does not route; the form's POST is not, so
     // Keycloak answers it, and goes down before the browser follows its redirect to the callback.
-    await page.route("**/login-actions/authenticate**", async (route) => {
-      const answer = await route.fetch({ maxRedirects: 0 });
-      stop("keycloak");
-      await route.fulfill({ response: answer });
-    });
+    // The form asks in two steps, both posted there; the password's is the one before the callback.
     try {
       await page.goto("/");
-      await page.locator("#username").fill("dev@keasy.local");
-      await page.locator("#password").fill(process.env.KEASY_E2E_PASSWORD ?? "password");
-      await page.locator("#kc-login").click();
+      await enterUsername(page, "bruno");
+      await page.locator("#password").waitFor();
+      await page.route("**/login-actions/authenticate**", async (route) => {
+        const answer = await route.fetch({ maxRedirects: 0 });
+        stop("keycloak");
+        await route.fulfill({ response: answer });
+      });
+      await enterPassword(page);
       await expect(page).toHaveURL(/\/auth\/error\?code=/, { timeout: 60_000 });
       await expectProblem(page, "idp/unreachable", { within: 5_000 });
     } finally {
@@ -43,5 +45,5 @@ test("10 a session that expired mid-way sends a mutation back to sign in", async
   await page.getByRole("button", { name: "Test" }).waitFor();
   await page.context().clearCookies();
   await page.getByRole("button", { name: "Test" }).click();
-  await expect(page).toHaveURL(/keycloak\.localhost/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/localhost:8080/, { timeout: 15_000 });
 });

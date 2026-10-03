@@ -10,13 +10,13 @@ const stream = (route: Route, body: string) =>
 
 test("11 an AI gateway that is down is gateway/unreachable in Ask", async ({ page, corpusJob }) => {
   test.setTimeout(180_000);
-  stop("litellm");
+  stop("ai-gateway");
   try {
     await openPanel(page, corpusJob, "Ask");
     await ask(page, "How many people are there?");
     await expectProblem(page, "gateway/unreachable", { within: 20_000 });
   } finally {
-    start("litellm");
+    start("ai-gateway");
   }
 });
 
@@ -37,16 +37,16 @@ test("12 a provider refusal the gateway relays is shown, not an empty answer", a
 
 test("13 an AI gateway that accepts and never answers is gateway/silent", async ({ page, corpusJob }) => {
   test.setTimeout(240_000);
-  stop("litellm");
-  up("litellm-silent");
+  stop("ai-gateway");
+  up("ai-gateway-silent");
   try {
     await openPanel(page, corpusJob, "Ask");
     await ask(page, "How many people are there?");
     // The relay gives the gateway 25 s, under the browser's 30 s.
     await expectProblem(page, "gateway/silent", { within: 45_000 });
   } finally {
-    stop("litellm-silent");
-    start("litellm");
+    stop("ai-gateway-silent");
+    start("ai-gateway");
   }
 });
 

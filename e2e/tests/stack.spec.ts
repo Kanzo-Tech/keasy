@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../support/fixtures";
 
 import { api, createJob, SOURCE } from "../support/api";
 import { stop, up, without } from "../support/compose";
@@ -36,19 +36,19 @@ test("05 with the API down every list shows a problem, not an empty state", asyn
       await page.goto(path);
       await expectProblem(page, "bff/failed", { within: 35_000 });
     }
-    const owner = await browser.newContext({ storageState: ".auth/owner.json", baseURL });
-    const ownerPage = await owner.newPage();
-    for (const path of ["/datasets", "/catalog"]) {
-      await ownerPage.goto(path);
-      await expectProblem(ownerPage, "bff/failed", { within: 35_000 });
+    const admin = await browser.newContext({ storageState: ".auth/admin.json", baseURL });
+    const adminPage = await admin.newPage();
+    for (const path of ["/datasets", "/settings/storage"]) {
+      await adminPage.goto(path);
+      await expectProblem(adminPage, "bff/failed", { within: 35_000 });
     }
-    await owner.close();
+    await admin.close();
   });
   // The server came back with no realm keys cached; its first fetch can miss and start the
   // re-fetch cooldown, refusing with auth/keys-unavailable for a while. The next scenario is not
   // about that, so wait until the API answers again.
   await expect
-    .poll(async () => (await api(page, "GET", "/v1/auth/workspaces")).status, { timeout: 120_000, intervals: [5_000] })
+    .poll(async () => (await api(page, "GET", "/v1/connections")).status, { timeout: 120_000, intervals: [5_000] })
     .toBe(200);
 });
 
@@ -74,7 +74,7 @@ test("25 signing out with Keycloak down ends the session and answers, never a st
   // next scenario's.
   const context = await browser.newContext({ storageState: { cookies: [], origins: [] }, baseURL });
   const page = await context.newPage();
-  await signIn(page, "dev@keasy.local");
+  await signIn(page, "bruno");
   await without(["keycloak"], async () => {
     // What the Log out button navigates to. With the IdP's discovery cached, the BFF sends the
     // browser on to Keycloak's logout — a host the browser cannot reach, whose error page is the
@@ -91,7 +91,7 @@ test("25 signing out with Keycloak down ends the session and answers, never a st
       await page.goto(location);
       await expectProblem(page, "idp/unreachable", { within: 5_000 });
     } else {
-      expect(location).toMatch(/keycloak\.localhost/);
+      expect(location).toMatch(/localhost:8080/);
     }
     expect((await page.request.get("/api/auth/session")).status()).toBe(401);
   });

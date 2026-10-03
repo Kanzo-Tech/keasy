@@ -31,7 +31,7 @@ export default defineConfig({
       name: "scenarios",
       testMatch: /tests\/.*\.spec\.ts/,
       dependencies: ["setup"],
-      use: { storageState: ".auth/member.json" },
+      use: { storageState: ".auth/editor.json" },
     },
   ],
 });

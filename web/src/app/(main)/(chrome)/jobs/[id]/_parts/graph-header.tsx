@@ -55,8 +55,8 @@ const ICON = {
 } as const;
 
 /** Who runs it, as the person reading reads it. */
-export function runnerName(job: Job, me: string | undefined): string {
-  return job.runner === me ? "you" : "another member";
+export function runnerName(runner: Schemas["Actor"], me: string | undefined): string {
+  return runner.id === me ? "you" : runner.name;
 }
 
 /** Seconds since `iso`, ticking while `live`. */
@@ -197,7 +197,8 @@ export function GraphHeader({ id }: { id: string }) {
           {job.status === "running" && (
             <SectionDescription className="flex items-center gap-2">
               <Status variant={job.cancel_requested ? "warning" : "info"} />
-              {job.cancel_requested ? "Stopping" : "Running"} · {runnerName(job, me)}
+              {job.cancel_requested ? "Stopping" : "Running"}
+              {job.runner && ` · ${runnerName(job.runner, me)}`}
               {seen !== undefined && ` · seen ${seen} s ago`}
             </SectionDescription>
           )}

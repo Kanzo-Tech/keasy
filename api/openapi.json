@@ -1785,6 +1785,24 @@
           "write"
         ]
       },
+      "Actor": {
+        "type": "object",
+        "description": "Someone who wrote a resource.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The Keycloak `sub`: what authorization compares."
+          },
+          "name": {
+            "type": "string",
+            "description": "Their display name when they wrote it: for people to read, never to authorize on."
+          }
+        }
+      },
       "Alias": {
         "type": "string",
         "description": "A model, by what it is for. Which upstream answers is the gateway's\nconfiguration (`infra/ai/`), so nothing here names a provider.",
@@ -1910,53 +1928,44 @@
         ]
       },
       "ConnectionView": {
-        "type": "object",
-        "required": [
-          "name",
-          "secret",
-          "target",
-          "created_by",
-          "created_at",
-          "updated_by",
-          "updated_at"
-        ],
-        "properties": {
-          "can_modify": {
-            "type": "boolean",
-            "description": "Whether the caller may change or delete it: the sink is an admin's,\nany other connection its creator's or an admin's."
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Provenance"
           },
-          "created_at": {
-            "type": "string"
-          },
-          "created_by": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "secret": {
-            "type": "string"
-          },
-          "target": {
-            "$ref": "#/components/schemas/StorageTarget"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "updated_by": {
-            "type": "string"
-          },
-          "validation": {
-            "oneOf": [
-              {
-                "type": "null"
+          {
+            "type": "object",
+            "required": [
+              "name",
+              "secret",
+              "target"
+            ],
+            "properties": {
+              "can_modify": {
+                "type": "boolean",
+                "description": "Whether the caller may change or delete it: the sink is an admin's,\nany other connection its creator's or an admin's."
               },
-              {
-                "$ref": "#/components/schemas/ValidationReport"
+              "name": {
+                "type": "string"
+              },
+              "secret": {
+                "type": "string"
+              },
+              "target": {
+                "$ref": "#/components/schemas/StorageTarget"
+              },
+              "validation": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ValidationReport"
+                  }
+                ]
               }
-            ]
+            }
           }
-        }
+        ]
       },
       "CreateConnectionRequest": {
         "type": "object",
@@ -2040,29 +2049,28 @@
         }
       },
       "Dashboard": {
-        "type": "object",
-        "description": "A job's saved dashboard. `spec` is the dashboard the web's BI kit\nserialises (`DashboardSpec`): keasy stores it and hands it back, and never\nreads a field of it.",
-        "required": [
-          "spec",
-          "updated_at",
-          "updated_by"
-        ],
-        "properties": {
-          "spec": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Provenance",
+            "description": "Who saved it first and when, and who saved it last."
+          },
+          {
             "type": "object",
-            "additionalProperties": {},
-            "propertyNames": {
-              "type": "string"
+            "required": [
+              "spec"
+            ],
+            "properties": {
+              "spec": {
+                "type": "object",
+                "additionalProperties": {},
+                "propertyNames": {
+                  "type": "string"
+                }
+              }
             }
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "updated_by": {
-            "type": "string",
-            "description": "Keycloak `sub` of the member who saved it last."
           }
-        }
+        ],
+        "description": "A job's saved dashboard. `spec` is the dashboard the web's BI kit\nserialises (`DashboardSpec`): keasy stores it and hands it back, and never\nreads a field of it."
       },
       "Direction": {
         "type": "string",
@@ -2239,114 +2247,117 @@
         }
       },
       "Job": {
-        "type": "object",
-        "required": [
-          "id",
-          "status",
-          "created_at",
-          "created_by",
-          "sink_connection"
-        ],
-        "properties": {
-          "can_modify": {
-            "type": "boolean",
-            "description": "Whether the caller may change, run or delete this job, worked out for\neach response: the interface draws what this says and does not\nre-derive it."
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Provenance",
+            "description": "Who created the job — with an admin, the one who may change, run or\ndelete it — and when. Taken from the token, never the body."
           },
-          "can_stop": {
-            "type": "boolean",
-            "description": "Whether the caller may stop the run under way — its runner, or an\nadmin — worked out for each response; false when nothing runs."
-          },
-          "cancel_requested": {
-            "type": "boolean",
-            "description": "Someone asked the run to stop: its runner reads it in the answer to its\nnext report, aborts, and reports `cancelled`."
-          },
-          "completed_at": {
-            "type": [
-              "string",
-              "null"
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "status",
+              "sink_connection"
             ],
-            "description": "When the last run ended; unset while it runs."
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "created_by": {
-            "type": "string",
-            "description": "Keycloak `sub` of who created the job: with an admin, the one who may\nchange, run or delete it. Everyone in the workspace reads it. Taken from\nthe token, never the body."
-          },
-          "folder": {
-            "oneOf": [
-              {
-                "type": "null"
+            "properties": {
+              "can_modify": {
+                "type": "boolean",
+                "description": "Whether the caller may change, run or delete this job, worked out for\neach response: the interface draws what this says and does not\nre-derive it."
               },
-              {
-                "$ref": "#/components/schemas/JobFolder",
-                "description": "The folder under the sink the output lands in. A draft may not have one\nyet; every other job does, and no two of them share one in a sink."
-              }
-            ]
-          },
-          "heartbeat_at": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The run's lease: taken by `run`, renewed by every `running` its runner\nreports. A running job whose lease lapses is swept as `job/abandoned`."
-          },
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "oneOf": [
-              {
-                "type": "null"
+              "can_stop": {
+                "type": "boolean",
+                "description": "Whether the caller may stop the run under way — its runner, or an\nadmin — worked out for each response; false when nothing runs."
               },
-              {
-                "$ref": "#/components/schemas/ResourceName"
+              "cancel_requested": {
+                "type": "boolean",
+                "description": "Someone asked the run to stop: its runner reads it in the answer to its\nnext report, aborts, and reports `cancelled`."
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "When the last run ended; unset while it runs."
+              },
+              "folder": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JobFolder",
+                    "description": "The folder under the sink the output lands in. A draft may not have one\nyet; every other job does, and no two of them share one in a sink."
+                  }
+                ]
+              },
+              "heartbeat_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The run's lease: taken by `run`, renewed by every `running` its runner\nreports. A running job whose lease lapses is swept as `job/abandoned`."
+              },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ResourceName"
+                  }
+                ]
+              },
+              "output": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Where the output lands, `{sink}/{folder}/`, as the sink's URL spells\nit: worked out for each response; unset for a draft with no folder."
+              },
+              "problem": {
+                "description": "Why a `Failed` run failed, as the browser that ran it reported it: a\nproblem (`{ code, title, detail, data, … }`), stored verbatim and\n**opaque** — the web branches on its `code`, the server never does."
+              },
+              "report": {
+                "description": "What the last run reported, verbatim and **opaque**: fossil's run report\n(`RunReport`, `{dest, dropped}`). keasy stores it, hands it back and\nnever reads a field of it — the last time a host re-typed this struct,\nit ended up asking for `vertex/<Type>.parquet`, a file the layout pass\ndeletes. What the corpus holds is the corpus's to say: a reader opens\nit and asks its `fossil_tables` and `fossil_columns`."
+              },
+              "runner": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Actor",
+                    "description": "Keycloak `sub` of who runs the job, or ran it last: the one caller\nwhose reports are taken, and the one vended its output to write."
+                  }
+                ]
+              },
+              "script": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The program every run of the job runs."
+              },
+              "sink_connection": {
+                "type": "string",
+                "description": "The sink connection the output lands in, under `{sink.url}/{folder}`,\nreached with a credential vended from that connection's."
+              },
+              "started_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "When the last run started."
+              },
+              "status": {
+                "$ref": "#/components/schemas/JobStatus"
               }
-            ]
-          },
-          "output": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Where the output lands, `{sink}/{folder}/`, as the sink's URL spells\nit: worked out for each response; unset for a draft with no folder."
-          },
-          "problem": {
-            "description": "Why a `Failed` run failed, as the browser that ran it reported it: a\nproblem (`{ code, title, detail, data, … }`), stored verbatim and\n**opaque** — the web branches on its `code`, the server never does."
-          },
-          "report": {
-            "description": "What the last run reported, verbatim and **opaque**: fossil's run report\n(`RunReport`, `{dest, dropped}`). keasy stores it, hands it back and\nnever reads a field of it — the last time a host re-typed this struct,\nit ended up asking for `vertex/<Type>.parquet`, a file the layout pass\ndeletes. What the corpus holds is the corpus's to say: a reader opens\nit and asks its `fossil_tables` and `fossil_columns`."
-          },
-          "runner": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Keycloak `sub` of who runs the job, or ran it last: the one caller\nwhose reports are taken, and the one vended its output to write."
-          },
-          "script": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The program every run of the job runs."
-          },
-          "sink_connection": {
-            "type": "string",
-            "description": "The sink connection the output lands in, under `{sink.url}/{folder}`,\nreached with a credential vended from that connection's."
-          },
-          "started_at": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "When the last run started."
-          },
-          "status": {
-            "$ref": "#/components/schemas/JobStatus"
+            }
           }
-        }
+        ]
       },
       "JobFolder": {
         "type": "string",
@@ -2401,6 +2412,38 @@
           "fail",
           "skip"
         ]
+      },
+      "Provenance": {
+        "type": "object",
+        "description": "Who created a resource and when, and who changed it last and when — absent\nuntil someone has.",
+        "required": [
+          "created_by",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/Actor"
+          },
+          "updated_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Actor"
+              }
+            ]
+          }
+        }
       },
       "PutDashboardRequest": {
         "type": "object",
@@ -2684,57 +2727,48 @@
         "description": "A secret's spec as a response shows it: what names it, never what signs with it."
       },
       "SecretView": {
-        "type": "object",
-        "required": [
-          "name",
-          "spec",
-          "used_by",
-          "created_by",
-          "created_at",
-          "updated_by",
-          "updated_at"
-        ],
-        "properties": {
-          "can_modify": {
-            "type": "boolean",
-            "description": "Whether the caller may change or delete it: its creator or an admin.\nAny editor may use it in a connection; its value is never returned."
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Provenance"
           },
-          "created_at": {
-            "type": "string"
-          },
-          "created_by": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "spec": {
-            "$ref": "#/components/schemas/SecretSpecView"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "updated_by": {
-            "type": "string"
-          },
-          "used_by": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The connections that use this secret."
-          },
-          "validation": {
-            "oneOf": [
-              {
-                "type": "null"
+          {
+            "type": "object",
+            "required": [
+              "name",
+              "spec",
+              "used_by"
+            ],
+            "properties": {
+              "can_modify": {
+                "type": "boolean",
+                "description": "Whether the caller may change or delete it: its creator or an admin.\nAny editor may use it in a connection; its value is never returned."
               },
-              {
-                "$ref": "#/components/schemas/ValidationReport"
+              "name": {
+                "type": "string"
+              },
+              "spec": {
+                "$ref": "#/components/schemas/SecretSpecView"
+              },
+              "used_by": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The connections that use this secret."
+              },
+              "validation": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ValidationReport"
+                  }
+                ]
               }
-            ]
+            }
           }
-        }
+        ]
       },
       "StorageCredentialsRequest": {
         "type": "object",

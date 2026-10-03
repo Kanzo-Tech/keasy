@@ -90,7 +90,7 @@ export function primaryAction(job: Job, { editor, me, runsHere }: Viewer): Prima
       const stop: Primary = { kind: "stop", label: "Stop" };
       if (runsHere) return job.cancel_requested ? { ...stop, blocked: "Stopping…" } : stop;
       // The run is ours, and no tab of this page runs it: the tab that did reloaded or closed.
-      if (me && job.runner === me) return { kind: "recover", label: `Mark failed and ${lower(WORDS.run)} again` };
+      if (me && job.runner?.id === me) return { kind: "recover", label: `Mark failed and ${lower(WORDS.run)} again` };
       if (!job.can_stop) return { ...stop, blocked: "Only whoever runs it, or an admin, can stop it" };
       return job.cancel_requested ? { ...stop, blocked: "Stopping…" } : stop;
     }

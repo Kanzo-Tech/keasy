@@ -57,7 +57,7 @@ pub struct Job {
     /// Keycloak `sub` of who runs the job, or ran it last: the one caller
     /// whose reports are taken, and the one vended its output to write.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub runner: Option<String>,
+    pub runner: Option<Actor>,
     /// Someone asked the run to stop: its runner reads it in the answer to its
     /// next report, aborts, and reports `cancelled`.
     #[serde(default)]
@@ -160,7 +160,7 @@ impl Job {
     /// `runner` starts a run: the job's first, or another over the last one's
     /// output, in the same folder. The last run's end, report and problem go;
     /// the lease starts now. A job runs once at a time.
-    pub fn run(&mut self, runner: &str) -> Result<(), Transition> {
+    pub fn run(&mut self, runner: Actor) -> Result<(), Transition> {
         match self.status {
             JobStatus::Draft => return Err(Transition::NeverRun),
             JobStatus::Running => return Err(Transition::AlreadyRunning),
@@ -168,7 +168,7 @@ impl Job {
         }
         let now = now_iso8601();
         self.status = JobStatus::Running;
-        self.runner = Some(runner.to_owned());
+        self.runner = Some(runner);
         self.started_at = Some(now.clone());
         self.heartbeat_at = Some(now);
         self.completed_at = None;
@@ -188,7 +188,7 @@ impl Job {
         problem: Option<serde_json::Value>,
     ) -> Result<(), Transition> {
         self.running()?;
-        if self.runner.as_deref() != Some(by) {
+        if !self.runs_for(by) {
             return Err(Transition::NotRunner);
         }
         let now = now_iso8601();
@@ -234,12 +234,13 @@ impl Job {
         }
     }
 
-    fn runs_for(&self, caller: &Caller) -> bool {
-        self.runner.as_deref() == Some(caller.user_id.as_str())
+    fn runs_for(&self, sub: &str) -> bool {
+        self.runner.as_ref().is_some_and(|r| r.id == sub)
     }
 
     fn may_stop(&self, caller: &Caller) -> bool {
-        self.status == JobStatus::Running && (caller.holds(Role::Admin) || self.runs_for(caller))
+        self.status == JobStatus::Running
+            && (caller.holds(Role::Admin) || self.runs_for(&caller.user_id))
     }
 
     /// The job as `caller` sees it: [`Job::can_modify`] and [`Job::can_stop`]
@@ -256,7 +257,7 @@ impl Job {
         match (access, &self.status) {
             (Access::Read, JobStatus::Completed) => Ok(()),
             (Access::Read, _) => Err(Transition::NotCompleted),
-            (Access::Write, JobStatus::Running) if self.runs_for(caller) => Ok(()),
+            (Access::Write, JobStatus::Running) if self.runs_for(&caller.user_id) => Ok(()),
             (Access::Write, JobStatus::Running) => Err(Transition::NotRunner),
             (Access::Write, status) if status.has_ended() => Err(Transition::Ended),
             (Access::Write, _) => Err(Transition::NotRunning),
@@ -353,6 +354,13 @@ mod tests {
         }
     }
 
+    fn actor(sub: &str) -> Actor {
+        Actor {
+            id: sub.into(),
+            name: sub.into(),
+        }
+    }
+
     fn draft(folder: Option<&str>) -> Job {
         Job::new(
             None,
@@ -371,7 +379,7 @@ mod tests {
 
     fn running(by: &str) -> Job {
         let mut job = idle();
-        job.run(by).unwrap();
+        job.run(actor(by)).unwrap();
         job
     }
 
@@ -417,7 +425,7 @@ mod tests {
     #[test]
     fn a_draft_is_never_run_nor_reported_on() {
         let mut job = draft(Some("people"));
-        assert_eq!(job.run("u-1"), Err(Transition::NeverRun));
+        assert_eq!(job.run(actor("u-1")), Err(Transition::NeverRun));
         assert_eq!(
             job.report("u-1", JobStatus::Running, None, None),
             Err(Transition::NeverRun)
@@ -429,9 +437,12 @@ mod tests {
     fn running_takes_the_lease_for_the_runner_once_at_a_time() {
         let job = running("u-2");
         assert_eq!(job.status, JobStatus::Running);
-        assert_eq!(job.runner.as_deref(), Some("u-2"));
+        assert_eq!(job.runner, Some(actor("u-2")));
         assert!(job.started_at.is_some() && job.heartbeat_at.is_some());
-        assert_eq!(running("u-2").run("u-3"), Err(Transition::AlreadyRunning));
+        assert_eq!(
+            running("u-2").run(actor("u-3")),
+            Err(Transition::AlreadyRunning)
+        );
     }
 
     #[test]
@@ -443,9 +454,9 @@ mod tests {
         ] {
             let mut job = ended(status.clone());
             assert!(job.completed_at.is_some(), "{status:?} is dated");
-            job.run("u-9").unwrap();
+            job.run(actor("u-9")).unwrap();
             assert_eq!(job.status, JobStatus::Running);
-            assert_eq!(job.runner.as_deref(), Some("u-9"));
+            assert_eq!(job.runner, Some(actor("u-9")));
             assert_eq!(
                 (&job.completed_at, &job.report, &job.problem),
                 (&None, &None, &None),

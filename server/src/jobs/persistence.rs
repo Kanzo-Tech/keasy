@@ -5,11 +5,11 @@ use rusqlite::{Connection, OptionalExtension, params};
 use crate::database::{
     DbError, DbResult, constraint, created_columns, enum_column, json_column_opt,
 };
-use crate::domain::Job;
+use crate::domain::{Actor, Job};
 use crate::error::{ErrorBody, ErrorCode};
 
 const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, heartbeat_at, \
-                       runner, cancel_requested, problem, created_by, created_by_name, \
+                       runner, runner_name, cancel_requested, problem, created_by, created_by_name, \
                        sink_connection, folder, script, report";
 
 /// What the schema refused about `job`, said in its terms.
@@ -31,7 +31,7 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
     conn.execute(
         &format!(
             "INSERT INTO jobs ({COLUMNS})
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)"
         ),
         params![
             job.id,
@@ -41,7 +41,8 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
             job.started_at,
             job.completed_at,
             job.heartbeat_at,
-            job.runner,
+            job.runner.as_ref().map(|r| &r.id),
+            job.runner.as_ref().map(|r| &r.name),
             job.cancel_requested,
             job.problem
                 .as_ref()
@@ -79,8 +80,9 @@ pub fn write(conn: &Connection, job: &Job, was: &Job) -> DbResult<bool> {
         .execute(
             "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4,
                              problem = ?5, script = ?6, report = ?7, folder = ?8,
-                             heartbeat_at = ?10, runner = ?11, cancel_requested = ?12
-             WHERE id = ?9 AND status = ?13 AND runner IS ?14",
+                             heartbeat_at = ?10, runner = ?11, runner_name = ?12,
+                             cancel_requested = ?13
+             WHERE id = ?9 AND status = ?14 AND runner IS ?15",
             params![
                 job.name,
                 job.status.as_ref(),
@@ -95,10 +97,11 @@ pub fn write(conn: &Connection, job: &Job, was: &Job) -> DbResult<bool> {
                 job.folder,
                 job.id,
                 job.heartbeat_at,
-                job.runner,
+                job.runner.as_ref().map(|r| &r.id),
+                job.runner.as_ref().map(|r| &r.name),
                 job.cancel_requested,
                 was.status.as_ref(),
-                was.runner,
+                was.runner.as_ref().map(|r| &r.id),
             ],
         )
         .map_err(|e| refused(job, e))?;
@@ -189,7 +192,10 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
         started_at: row.get("started_at")?,
         completed_at: row.get("completed_at")?,
         heartbeat_at: row.get("heartbeat_at")?,
-        runner: row.get("runner")?,
+        runner: match (row.get("runner")?, row.get("runner_name")?) {
+            (Some(id), Some(name)) => Some(Actor { id, name }),
+            _ => None,
+        },
         cancel_requested: row.get("cancel_requested")?,
         problem: json_column_opt(row, "problem")?,
         provenance: created_columns(row)?,
@@ -229,7 +235,7 @@ mod tests {
 
     fn filed(status: JobStatus, folder: &str) -> Job {
         Job {
-            runner: (status == JobStatus::Running).then(|| "u-1".into()),
+            runner: (status == JobStatus::Running).then(|| actor("u-1")),
             status,
             ..Job::new(
                 None,
@@ -350,13 +356,13 @@ mod tests {
         let idle = filed(JobStatus::Idle, "people");
         insert(&conn, &idle).unwrap();
         let mut mine = idle.clone();
-        mine.run("u-1").unwrap();
+        mine.run(actor("u-1")).unwrap();
         let mut theirs = idle.clone();
-        theirs.run("u-2").unwrap();
+        theirs.run(actor("u-2")).unwrap();
 
         assert!(write(&conn, &mine, &idle).unwrap());
         assert!(!write(&conn, &theirs, &idle).unwrap());
-        assert_eq!(at(&idle, &conn).runner.as_deref(), Some("u-1"));
+        assert_eq!(at(&idle, &conn).runner, Some(actor("u-1")));
     }
 
     #[test]

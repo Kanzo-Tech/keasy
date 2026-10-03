@@ -281,6 +281,7 @@ CREATE TABLE jobs (
     heartbeat_at    TEXT,
     -- Who runs the job, or ran it last: the only one whose reports count.
     runner          TEXT CHECK (status <> 'running' OR runner IS NOT NULL),
+    runner_name     TEXT CHECK ((runner IS NULL) = (runner_name IS NULL)),
     cancel_requested INTEGER NOT NULL DEFAULT 0 CHECK (cancel_requested IN (0, 1)),
     problem         TEXT CHECK (problem IS NULL OR json_valid(problem)),
     created_by      TEXT NOT NULL,

@@ -250,7 +250,7 @@ pub async fn run_job(
 ) -> Result<impl IntoResponse, Refusal> {
     crate::jobs::sweep(&state.db).await?;
     changeable(&*state.db.read().await, &caller, &id)?;
-    let job = transition(&state.db, &id, |job| Ok(job.run(&caller.user_id)?)).await?;
+    let job = transition(&state.db, &id, |job| Ok(job.run(caller.actor())?)).await?;
     Ok(Json(present(&*state.db.read().await, &caller, job)?))
 }
 

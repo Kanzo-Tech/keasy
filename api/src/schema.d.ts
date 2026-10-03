@@ -613,11 +613,7 @@ export interface components {
              *     it and asks its `fossil_tables` and `fossil_columns`.
              */
             report?: unknown;
-            /**
-             * @description Keycloak `sub` of who runs the job, or ran it last: the one caller
-             *     whose reports are taken, and the one vended its output to write.
-             */
-            runner?: string | null;
+            runner?: null | components["schemas"]["Actor"];
             /** @description The program every run of the job runs. */
             script?: string | null;
             /**

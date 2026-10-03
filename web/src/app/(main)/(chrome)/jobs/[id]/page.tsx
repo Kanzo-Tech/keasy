@@ -102,7 +102,7 @@ function LastRun({ job }: { job: Schemas["Job"] }) {
         <DataList className="grid gap-x-12 sm:grid-cols-2 lg:grid-cols-4" orientation="vertical">
           <DataListItem>
             <DataListItemLabel>Run by</DataListItemLabel>
-            <DataListItemValue>{job.runner ? runnerName(job, me) : "Unknown"}</DataListItemValue>
+            <DataListItemValue>{job.runner ? runnerName(job.runner, me) : "Unknown"}</DataListItemValue>
           </DataListItem>
           <DataListItem>
             <DataListItemLabel>Started</DataListItemLabel>

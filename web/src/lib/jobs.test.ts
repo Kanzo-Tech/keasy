@@ -32,12 +32,12 @@ describe("the header's primary action", () => {
   });
 
   it("stops a run here at once, elsewhere if allowed, and recovers one this tab lost", () => {
-    const running = job({ status: "running", runner: "u-1", can_stop: true });
+    const running = job({ status: "running", runner: { id: "u-1", name: "u-1" }, can_stop: true });
     expect(primaryAction(running, { ...editor, runsHere: true })).toMatchObject({ kind: "stop" });
     expect(primaryAction(running, editor)).toMatchObject({ kind: "recover" });
-    const theirs = job({ status: "running", runner: "u-2", can_stop: false });
+    const theirs = job({ status: "running", runner: { id: "u-2", name: "u-2" }, can_stop: false });
     expect(primaryAction(theirs, editor)).toMatchObject({ kind: "stop", blocked: expect.stringMatching(/admin/) });
-    const asAdmin = job({ status: "running", runner: "u-2", can_stop: true, cancel_requested: true });
+    const asAdmin = job({ status: "running", runner: { id: "u-2", name: "u-2" }, can_stop: true, cancel_requested: true });
     expect(primaryAction(asAdmin, editor)).toMatchObject({ kind: "stop", blocked: "Stopping…" });
   });
 });

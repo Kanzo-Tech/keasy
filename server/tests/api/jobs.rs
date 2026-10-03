@@ -565,7 +565,7 @@ async fn a_job_runs_once_at_a_time_for_whoever_started_it() {
     );
     let started = &answers[0].1;
     assert_eq!(started["status"], "running");
-    assert!(started["runner"] == "u-1" || started["runner"] == "u-9");
+    assert!(started["runner"]["id"] == "u-1" || started["runner"]["id"] == "u-9");
     assert_eq!(started["can_stop"], true, "the runner may stop its run");
 }
 

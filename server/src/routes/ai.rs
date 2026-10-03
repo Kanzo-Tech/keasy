@@ -153,7 +153,6 @@ pub struct ChatCompletionRequest {
         (status = 400, description = "Not an alias, or a malformed request", body = ErrorBody),
         (status = 502, description = "The AI gateway could not be reached", body = ErrorBody),
         (status = 504, description = "The AI gateway did not begin its answer in time", body = ErrorBody),
-        (status = 503, description = "This workspace has no AI gateway", body = ErrorBody),
     )
 )]
 /// Relay one chat completion to the gateway. The answer is streamed back as
@@ -166,14 +165,6 @@ pub async fn chat_completions(
     State(state): State<AppState>,
     Json(mut request): Json<ChatCompletionRequest>,
 ) -> Result<Response, Refusal> {
-    let gateway = state.ai.as_ref().ok_or_else(|| {
-        Refusal::new(
-            StatusCode::SERVICE_UNAVAILABLE,
-            ErrorCode::GatewayNotConfigured,
-            "this workspace has no AI gateway (KEASY_AI_URL)",
-        )
-    })?;
-
     let cap = request.model.cap();
     request.max_tokens = Some(request.max_tokens.map_or(cap, |n| n.min(cap)));
     request.max_completion_tokens = request.max_completion_tokens.map(|n| n.min(cap));
@@ -188,7 +179,7 @@ pub async fn chat_completions(
         body["cache"] = json!({ "use-cache": true });
     }
 
-    relay(gateway, &body, IDLE).await
+    relay(&state.ai, &body, IDLE).await
 }
 
 /// Send `body` to the gateway and stream its answer back, every wait bounded by `idle`.

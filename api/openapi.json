@@ -17,7 +17,7 @@
         "operationId": "liveness",
         "responses": {
           "200": {
-            "description": "Service is alive"
+            "description": "The process is serving"
           }
         },
         "security": [
@@ -30,10 +30,21 @@
         "tags": [
           "Health"
         ],
+        "summary": "Ready when the database answers. The identity provider's keys are not a\ncondition: a realm outage would otherwise restart every instance at once,\nand requests already say `auth/keys-unavailable` on their own.",
         "operationId": "readiness",
         "responses": {
           "200": {
-            "description": "Service is ready"
+            "description": "The database answers"
+          },
+          "503": {
+            "description": "The database did not answer in time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -95,14 +106,7 @@
             }
           },
           "503": {
-            "description": "This workspace has no AI gateway",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
+            "$ref": "#/components/responses/KeysUnavailable"
           },
           "504": {
             "description": "The AI gateway did not begin its answer in time",
@@ -1676,7 +1680,7 @@
         "tags": [
           "Secrets"
         ],
-        "summary": "Probe the secret through every connection that uses it, and at `url`.",
+        "summary": "Probe the secret through every connection that uses it.",
         "operationId": "validate_secret",
         "parameters": [
           {
@@ -1689,16 +1693,6 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ValidateSecretRequest"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "200": {
             "description": "The probe's report, stored with the secret",
@@ -1856,29 +1850,6 @@
             }
           }
         }
-      }
-    },
-    "/version": {
-      "get": {
-        "tags": [
-          "Health"
-        ],
-        "operationId": "version",
-        "responses": {
-          "200": {
-            "description": "Running build version",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VersionResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {}
-        ]
       }
     }
   },
@@ -2257,7 +2228,7 @@
       },
       "ErrorCode": {
         "type": "string",
-        "description": "Every error the server answers with. Closed: a code the server does not\ndeclare here cannot be sent, and the web keys its copy by this enum.\n\nOne grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry\nin the web keys all three. The areas are keasy's own and never one of\nfossil's (`storage`, `engine`, `run`, …): a code means one thing. Each\nvariant is its wire name spelled in Rust, `area/kind-x` as `AreaKindX`, so\nthe code a test asserts and the variant a handler names are one word.\n\nEvery refusal the server writes is an [`ErrorBody`] with one of these, with\none exception: the AI relay (`routes::ai`) passes the gateway's own refusal\nthrough in the OpenAI error format the browser's model client reads, status\nand body untouched. Its own failures — no gateway, unreachable, silent —\nare `gateway/*` bodies like any other.",
+        "description": "Every error the server answers with. Closed: a code the server does not\ndeclare here cannot be sent, and the web keys its copy by this enum.\n\nOne grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry\nin the web keys all three. The areas are keasy's own and never one of\nfossil's (`storage`, `engine`, `run`, …): a code means one thing. Each\nvariant is its wire name spelled in Rust, `area/kind-x` as `AreaKindX`, so\nthe code a test asserts and the variant a handler names are one word.\n\nEvery refusal the server writes is an [`ErrorBody`] with one of these, with\none exception: the AI relay (`routes::ai`) passes the gateway's own refusal\nthrough in the OpenAI error format the browser's model client reads, status\nand body untouched. Its own failures — unreachable, silent —\nare `gateway/*` bodies like any other.",
         "enum": [
           "auth/session-required",
           "auth/keys-unavailable",
@@ -2272,6 +2243,7 @@
           "route/not-found",
           "server/internal",
           "server/silent",
+          "server/not-ready",
           "job/not-found",
           "job/not-draft",
           "job/not-completed",
@@ -2290,7 +2262,6 @@
           "probe/failed",
           "store/refused",
           "store/silent",
-          "gateway/not-configured",
           "gateway/unreachable",
           "gateway/silent"
         ]
@@ -2332,12 +2303,6 @@
           "size"
         ],
         "properties": {
-          "last_modified": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "path": {
             "type": "string"
           },
@@ -2949,19 +2914,6 @@
           }
         }
       },
-      "ValidateSecretRequest": {
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "uri",
-            "description": "A storage URL to LIST besides the connections that use the secret."
-          }
-        }
-      },
       "ValidationReport": {
         "type": "object",
         "description": "One probe of a credential or a connection, check by check.",
@@ -3016,30 +2968,6 @@
               "$ref": "#/components/schemas/VendedCredential"
             },
             "description": "One per prefix; a reader picks the longest prefix that holds a path."
-          }
-        }
-      },
-      "VersionResponse": {
-        "type": "object",
-        "description": "The running build's version, so an operator can see which image a tenant is\non. `git_sha`/`built_at` are stamped at build time (CI sets `KEASY_GIT_SHA`/\n`KEASY_BUILT_AT`); `version` is the crate version.",
-        "required": [
-          "version"
-        ],
-        "properties": {
-          "built_at": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "git_sha": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "version": {
-            "type": "string"
           }
         }
       },

@@ -123,7 +123,7 @@ function Credentials() {
           const path = { params: { path: { name: row.original.name } } };
           return (
             <>
-              <MenuItem onSelect={() => validate.mutate({ ...path, body: {} })} value="validate">
+              <MenuItem onSelect={() => validate.mutate(path)} value="validate">
                 Test
               </MenuItem>
               <MenuItem onSelect={() => remove.mutate(path)} value="delete" variant="destructive">

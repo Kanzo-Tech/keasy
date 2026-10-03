@@ -19,23 +19,6 @@ pub async fn sweep(db: &Database) -> Result<(), Refusal> {
     Ok(())
 }
 
-/// Take over the jobs the bootstrap file declared for this member's verified
-/// email: the instance declares people by address before they first sign in,
-/// and a job is its creator's, so the first sight of the address settles whose.
-pub async fn claim_declared(
-    db: &Database,
-    user_id: &str,
-    email: Option<&str>,
-) -> Result<(), Refusal> {
-    let Some(email) = email else { return Ok(()) };
-    let declared = crate::bootstrap::declared_for(email);
-    if persistence::list_of(&*db.read().await, &declared)?.is_empty() {
-        return Ok(());
-    }
-    persistence::reassign(&*db.write().await, &declared, user_id)?;
-    Ok(())
-}
-
 /// The job, whoever created it: for the owner, who reads every completed job
 /// of the workspace and changes none. Not swept: a caller whose answer turns
 /// on whether a run is still held sweeps first.

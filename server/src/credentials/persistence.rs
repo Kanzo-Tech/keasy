@@ -190,30 +190,10 @@ pub fn key_opens(conn: &Connection, key: &SecretKey) -> DbResult<bool> {
     Ok(row.is_none_or(|(name, blob)| sealing::open_spec(&name, &blob, key).is_ok()))
 }
 
-/// Seal every credential again under `new`, in one transaction: either all of
-/// them move to the new key or none does.
-pub fn rekey(conn: &mut Connection, old: &SecretKey, new: &SecretKey) -> DbResult<usize> {
-    let tx = conn.transaction()?;
-    let rows: Vec<(String, Vec<u8>)> = tx
-        .prepare("SELECT name, spec FROM credentials")?
-        .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
-        .collect::<rusqlite::Result<_>>()?;
-    for (name, blob) in &rows {
-        let sealed = sealing::reseal(name, blob, old, new).map_err(DbError::Secret)?;
-        tx.execute(
-            "UPDATE credentials SET spec = ?1 WHERE name = ?2",
-            params![sealed, name],
-        )?;
-    }
-    tx.commit()?;
-    Ok(rows.len())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::domain::SecretSpec;
-    use base64::Engine;
     use secrecy::{ExposeSecret, SecretString};
 
     fn conn() -> Connection {
@@ -288,8 +268,8 @@ mod tests {
     }
 
     #[test]
-    fn a_rename_seals_again_and_a_rekey_moves_every_row() {
-        let mut conn = conn();
+    fn a_rename_seals_again() {
+        let conn = conn();
         let key = SecretKey::for_tests();
         insert(&conn, &key, &name("a"), &s3("one"), "u-1", &report()).unwrap();
         let spec = get(&conn, &key, "a").unwrap().unwrap().spec;
@@ -297,16 +277,6 @@ mod tests {
         assert!(get(&conn, &key, "a").unwrap().is_none());
         assert_eq!(
             secret_of(&get(&conn, &key, "b").unwrap().unwrap().spec),
-            "one"
-        );
-
-        let new =
-            SecretKey::from_base64(&base64::engine::general_purpose::STANDARD.encode([9u8; 32]))
-                .unwrap();
-        assert_eq!(rekey(&mut conn, &key, &new).unwrap(), 1);
-        assert!(!key_opens(&conn, &key).unwrap());
-        assert_eq!(
-            secret_of(&get(&conn, &new, "b").unwrap().unwrap().spec),
             "one"
         );
     }

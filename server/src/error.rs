@@ -19,7 +19,7 @@ use utoipa::openapi::{OpenApi, Ref, RefOr, ResponseBuilder, content::ContentBuil
 /// Every refusal the server writes is an [`ErrorBody`] with one of these, with
 /// one exception: the AI relay (`routes::ai`) passes the gateway's own refusal
 /// through in the OpenAI error format the browser's model client reads, status
-/// and body untouched. Its own failures — no gateway, unreachable, silent —
+/// and body untouched. Its own failures — unreachable, silent —
 /// are `gateway/*` bodies like any other.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema, strum::EnumIter)]
 pub enum ErrorCode {
@@ -55,6 +55,9 @@ pub enum ErrorCode {
     /// it waited.
     #[serde(rename = "server/silent")]
     ServerSilent,
+    /// The server is up but cannot serve: its database did not answer.
+    #[serde(rename = "server/not-ready")]
+    ServerNotReady,
     #[serde(rename = "job/not-found")]
     JobNotFound,
     /// Only a draft is edited or submitted.
@@ -111,9 +114,6 @@ pub enum ErrorCode {
     /// answer within its deadline; `after` says how long it was given.
     #[serde(rename = "store/silent")]
     StoreSilent,
-    /// This workspace has no AI gateway.
-    #[serde(rename = "gateway/not-configured")]
-    GatewayNotConfigured,
     /// The AI gateway could not be reached.
     #[serde(rename = "gateway/unreachable")]
     GatewayUnreachable,
@@ -141,6 +141,7 @@ impl ErrorCode {
             Self::RouteNotFound => "No such route",
             Self::ServerInternal => "The server failed",
             Self::ServerSilent => "The server did not answer in time",
+            Self::ServerNotReady => "The server is not ready",
             Self::JobNotFound => "Job not found",
             Self::JobNotDraft => "Not a draft",
             Self::JobNotCompleted => "The job has not completed",
@@ -159,7 +160,6 @@ impl ErrorCode {
             Self::ProbeFailed => "Validation failed",
             Self::StoreRefused => "The store refused",
             Self::StoreSilent => "The store did not answer in time",
-            Self::GatewayNotConfigured => "AI is not set up for this workspace",
             Self::GatewayUnreachable => "The AI gateway is unreachable",
             Self::GatewaySilent => "The AI gateway did not answer in time",
         }

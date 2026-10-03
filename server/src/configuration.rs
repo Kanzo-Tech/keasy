@@ -14,8 +14,8 @@ pub struct Settings {
     pub application: ApplicationSettings,
     pub database: DatabaseSettings,
     pub oidc: OidcSettings,
-    /// The AI gateway; `None` serves no AI, and says so.
-    pub ai: Option<AiSettings>,
+    /// The AI gateway. Every workspace has one.
+    pub ai: AiSettings,
 }
 
 /// The platform's AI gateway (LiteLLM, OpenAI-compatible) and this workspace's
@@ -224,17 +224,14 @@ pub fn get_configuration() -> Result<Settings, String> {
     })
 }
 
-/// A URL without a key, or a key without a URL, is a deployment mistake.
-fn ai_settings() -> Result<Option<AiSettings>, String> {
-    match (nonblank("KEASY_AI_URL"), resolve_secret("KEASY_AI_KEY")?) {
-        (Some(url), Some(key)) => Ok(Some(AiSettings {
-            url: url.trim_end_matches('/').to_string(),
-            key,
-        })),
-        (None, None) => Ok(None),
-        (Some(_), None) => Err("KEASY_AI_URL is set but KEASY_AI_KEY[_FILE] is not".into()),
-        (None, Some(_)) => Err("KEASY_AI_KEY[_FILE] is set but KEASY_AI_URL is not".into()),
-    }
+/// The gateway and the workspace's key to it, both required.
+fn ai_settings() -> Result<AiSettings, String> {
+    let url = nonblank("KEASY_AI_URL").ok_or("KEASY_AI_URL is required")?;
+    let key = resolve_secret("KEASY_AI_KEY")?.ok_or("KEASY_AI_KEY[_FILE] is required")?;
+    Ok(AiSettings {
+        url: url.trim_end_matches('/').to_string(),
+        key,
+    })
 }
 
 /// The sealing key in `name` (or the file `name_FILE` points to).

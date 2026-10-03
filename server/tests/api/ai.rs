@@ -1,12 +1,12 @@
 use std::sync::{Arc, Mutex};
 
-use axum::http::{HeaderMap, Method, StatusCode, header};
+use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::IntoResponse;
 use axum::{Json, Router, routing::post};
 use secrecy::SecretString;
 use serde_json::{Value, json};
 
-use crate::helpers::{spawn_app, spawn_app_with};
+use crate::helpers::spawn_app_with;
 use keasy_server::configuration::AiSettings;
 
 /// What the fake gateway was sent: the bearer it saw, and the body.
@@ -62,10 +62,10 @@ async fn relay(app: &crate::helpers::TestApp, body: Value) -> (StatusCode, Strin
 #[tokio::test]
 async fn a_call_is_relayed_with_the_workspace_key_and_streamed_back() {
     let (url, seen) = gateway().await;
-    let app = spawn_app_with(Some(AiSettings {
+    let app = spawn_app_with(AiSettings {
         url,
         key: SecretString::from("sk-workspace"),
-    }))
+    })
     .await;
 
     let (status, content_type, body) = relay(
@@ -108,10 +108,10 @@ async fn a_call_is_relayed_with_the_workspace_key_and_streamed_back() {
 #[tokio::test]
 async fn a_field_completion_asks_for_the_cache() {
     let (url, seen) = gateway().await;
-    let app = spawn_app_with(Some(AiSettings {
+    let app = spawn_app_with(AiSettings {
         url,
         key: SecretString::from("k"),
-    }))
+    })
     .await;
     let (status, _, _) = relay(
         &app,
@@ -128,10 +128,10 @@ async fn a_field_completion_asks_for_the_cache() {
 #[tokio::test]
 async fn only_an_alias_is_a_model() {
     let (url, seen) = gateway().await;
-    let app = spawn_app_with(Some(AiSettings {
+    let app = spawn_app_with(AiSettings {
         url,
         key: SecretString::from("k"),
-    }))
+    })
     .await;
     let (status, _, _) = relay(&app, json!({ "model": "gpt-4o", "messages": [] })).await;
     assert!(status.is_client_error(), "{status}");
@@ -139,19 +139,4 @@ async fn only_an_alias_is_a_model() {
         seen.lock().unwrap().is_empty(),
         "nothing reached the gateway"
     );
-}
-
-#[tokio::test]
-async fn a_workspace_without_a_gateway_says_so() {
-    let app = spawn_app().await;
-    let (status, body) = app
-        .send(
-            Method::POST,
-            "/v1/ai/chat/completions",
-            &app.token(&["member"]),
-            json!({ "model": "chat", "messages": [] }),
-        )
-        .await;
-    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE, "{body}");
-    assert_eq!(body["code"], "gateway/not-configured");
 }

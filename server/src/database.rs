@@ -272,13 +272,17 @@ CREATE UNIQUE INDEX connections_one_sink ON connections(direction) WHERE directi
 CREATE TABLE jobs (
     id              TEXT PRIMARY KEY,
     name            TEXT,
-    status          TEXT NOT NULL DEFAULT 'pending',
+    status          TEXT NOT NULL DEFAULT 'draft',
     created_at      TEXT NOT NULL,
     started_at      TEXT,
     completed_at    TEXT,
-    -- The lease: taken at submit and renewed while the job runs; a job
-    -- whose lease has lapsed is swept to failed.
+    -- The run's lease: taken by run and renewed by its runner; a running
+    -- job whose lease has lapsed is swept to failed.
     heartbeat_at    TEXT,
+    -- Who runs the job, or ran it last: the only one whose reports count.
+    runner          TEXT CHECK (status <> 'running' OR runner IS NOT NULL),
+    runner_name     TEXT CHECK ((runner IS NULL) = (runner_name IS NULL)),
+    cancel_requested INTEGER NOT NULL DEFAULT 0 CHECK (cancel_requested IN (0, 1)),
     problem         TEXT CHECK (problem IS NULL OR json_valid(problem)),
     created_by      TEXT NOT NULL,
     created_by_name TEXT NOT NULL,

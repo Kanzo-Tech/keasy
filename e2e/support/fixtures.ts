@@ -7,7 +7,9 @@ import { signIn } from "./sign-in";
 async function runToCompletion(page: Page): Promise<string> {
   const id = await createJob(page, { name: "e2e corpus" });
   await page.goto(`/jobs/${id}`);
-  await expect(page.getByRole("link", { name: "Open Discovery" })).toBeVisible({ timeout: 180_000 });
+  // Opening the page runs nothing: the run is asked for.
+  await page.getByRole("button", { name: "Run", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Explore" })).toBeEnabled({ timeout: 180_000 });
   return id;
 }
 

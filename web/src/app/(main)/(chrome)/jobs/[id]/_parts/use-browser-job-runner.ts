@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { ApiError, http, type Schemas } from "@/lib/api/client";
+import { useSyncExternalStore } from "react";
+import { ApiError, http, invalidate, type Schemas } from "@/lib/api/client";
 import { bounds } from "@/lib/api/spec";
 import { host } from "@/lib/fossil/host";
 import { toastError, wireOf } from "@/lib/errors";
@@ -29,9 +29,16 @@ export interface Lease {
   report<T>(send: () => Promise<T>): Promise<T>;
 }
 
-/** What the runner reports of job `id`: that it runs (again, to renew the lease), or how it ended. */
-export function reportStatus(id: string, body: Schemas["JobStatusReport"]) {
-  return http.POST("/v1/jobs/{id}/status", { params: { path: { id } }, body });
+/**
+ * What the runner reports of job `id`: that it still runs (renewing the lease), or how it ended. The
+ * answer says whether someone asked the run to stop.
+ */
+export async function reportStatus(
+  id: string,
+  body: Schemas["JobStatusReport"],
+): Promise<Schemas["RunSignal"] | undefined> {
+  const { data } = await http.POST("/v1/jobs/{id}/status", { params: { path: { id } }, body });
+  return data;
 }
 
 export function lease(
@@ -39,8 +46,15 @@ export function lease(
   {
     // `running`, sent again, is the heartbeat: it renews the lease.
     beat = () => reportStatus(id, { status: "running" }),
+    // Someone asked the run to stop, from this page or another: the run aborts and reports it.
+    onStopAsked = () => {},
     now = Date.now,
     wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
+  }: {
+    beat?: () => Promise<Schemas["RunSignal"] | undefined>;
+    onStopAsked?: () => void;
+    now?: () => number;
+    wait?: (ms: number) => Promise<void>;
   } = {},
 ): Lease {
   let renewed = now();
@@ -50,8 +64,9 @@ export function lease(
       renewed = now();
       timer = setInterval(() => {
         beat().then(
-          () => {
+          (signal) => {
             renewed = now();
+            if (signal?.cancel_requested) onStopAsked();
           },
           (err: unknown) => {
             // The job ended without us (the sweep, or another tab): nothing left to hold.
@@ -76,91 +91,113 @@ export function lease(
   };
 }
 
-// Jobs whose browser run has been kicked off this session. Guards the detail
-// view from re-triggering on re-render / poll-refetch. The run is idempotent by
-// deterministic dest (`{sink}/{folder}`, the prefix of the credential keasy
-// vends), so a stray double-run would only waste work — this avoids even that
-// within a tab.
-const started = new Set<string>();
+/** A run this tab is running: what the page re-attaches to when it is opened again. */
+export interface LiveRun {
+  /** End it here, now, and report it `cancelled`. */
+  stop(): void;
+}
+
+// The runs this tab runs, by job id. Module-level, so a run outlives the page that started it:
+// navigating inside the app keeps it running, and opening the page again finds it, with its Stop.
+const live = new Map<string, LiveRun>();
+const listeners = new Set<() => void>();
+
+function changed() {
+  for (const listener of listeners) listener();
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => void listeners.delete(listener);
+}
+
+/** The run this tab runs for job `id`, if any. */
+export function useLiveRun(id: string): LiveRun | undefined {
+  return useSyncExternalStore(
+    subscribe,
+    () => live.get(id),
+    () => undefined,
+  );
+}
+
+const STOPPED = "Stopped";
 
 /**
- * Browser-driven execution: when a job is `Pending`, the browser is its worker. Reads the program
- * from the job record, reports it `running`, then runs it with fossil's executor (`run`) — sources
- * read and the corpus written through credentials keasy vends — and reports how it ended, every
- * report through `POST /v1/jobs/{id}/status`. The server never runs a program. The detail view's
- * poll surfaces the end.
+ * Run `job` here — the server has made this caller its runner (`POST /v1/jobs/{id}/run`). The browser
+ * is the worker: it runs the program with fossil's executor (`run`) — sources read and the corpus
+ * written through credentials keasy vends to the runner alone — holding the lease while it does, and
+ * reports how it ended. Only ever called from an explicit Run; opening a page never runs anything.
  */
-export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: () => void } {
-  const ranRef = useRef(false);
-  const [stop, setStop] = useState<(() => void) | undefined>(undefined);
+export function startRun(job: Schemas["Job"]): void {
+  const jobId = job.id;
+  const program = job.script;
+  if (live.has(jobId) || !program) return;
 
-  useEffect(() => {
-    if (!job || job.status !== "pending" || !job.script) return;
-    if (ranRef.current || started.has(job.id)) return;
-    ranRef.current = true;
-    started.add(job.id);
+  const run = new AbortController();
+  const stop = () => run.abort(new DOMException(STOPPED, "AbortError"));
+  const held = lease(jobId, { onStopAsked: stop });
+  // The corpus is written: from here on a failure is keasy's record of it, never the run's.
+  let ran = false;
+  // A closed tab stops the run; it cannot report, so the server's lease sweep ends the job.
+  const closing = () => run.abort(new DOMException("The tab closed", "AbortError"));
+  window.addEventListener("pagehide", closing);
+  live.set(jobId, { stop });
+  changed();
+  held.hold();
 
-    const program = job.script;
-    const jobId = job.id;
-    const held = lease(jobId);
-    const run = new AbortController();
-    // The corpus is written: from here on a failure is keasy's record of it, never the run's.
-    let ran = false;
-    // A closed tab stops the run; it cannot report, so the server's lease sweep ends the job.
-    const closing = () => run.abort(new DOMException("The tab closed", "AbortError"));
-    window.addEventListener("pagehide", closing);
-    // Stop: the person's own end to it, reported as `cancelled`.
-    setStop(() => () => run.abort(new DOMException("Stopped", "AbortError")));
-
-    void (async () => {
-      try {
-        // Start marker: Pending → Running, so the UI (and any other viewer) sees it in progress.
-        await reportStatus(jobId, { status: "running" });
-        // While this tab runs the job it says so; a closed tab stops saying it,
-        // and the server ends the job as `job/abandoned`.
-        held.hold();
-
-        const mod = await import("@fossil-lang/executor");
-        await mod.initFossilExecutor();
-        // `run` reads every document and source the program names through the host, writes the
-        // corpus under the job, and answers its report or throws its `FossilError`. Recording the
-        // outcome is keasy's: the report crosses untouched, since `JobStatusReport.report` is
-        // opaque JSON on the server, and it is asked again for as long as the lease is ours.
-        const report = await mod.run(program, { host, job: jobId, signal: run.signal });
-        ran = true;
-        await held.report(() => reportStatus(jobId, { status: "completed", report }));
-      } catch (err) {
-        if (ran) {
-          // The output was written; only its report failed, and reporting a failure would be a lie.
-          toastError(err, "The run finished, but keasy could not record it");
-        } else if (run.signal.aborted) {
-          // Stopped here: say so. A closed tab cannot, and the sweep ends the job instead.
-          if (run.signal.reason instanceof DOMException && run.signal.reason.message === "Stopped") {
-            await held
-              .report(() => reportStatus(jobId, { status: "cancelled" }))
-              .catch((patchErr: unknown) => toastError(patchErr, "The run stopped, and the job could not be marked so"));
-          }
-        } else {
-          // The run failed — its `FossilError`, whose `problem` is the wire form — or never started:
-          // the executor did not load, or the job could not be marked running. Asked again until the
-          // lease would lapse; after that the sweep ends the job anyway, as `job/abandoned`, and the
-          // problem is said here.
+  void (async () => {
+    try {
+      const mod = await import("@fossil-lang/executor");
+      await mod.initFossilExecutor();
+      // `run` reads every document and source the program names through the host, writes the
+      // corpus under the job, and answers its report or throws its `FossilError`. The report crosses
+      // untouched — `JobStatusReport.report` is opaque JSON on the server — and is asked again for as
+      // long as the lease is ours.
+      const report = await mod.run(program, { host, job: jobId, signal: run.signal });
+      ran = true;
+      await held.report(() => reportStatus(jobId, { status: "completed", report }));
+    } catch (err) {
+      if (ran) {
+        // The output was written; only its report failed, and reporting a failure would be a lie.
+        toastError(err, "The run finished, but keasy could not record it");
+      } else if (run.signal.aborted) {
+        // Stopped — here, or asked from elsewhere and heard in a beat: say so. A closed tab cannot,
+        // and the sweep ends the job instead.
+        if (run.signal.reason instanceof DOMException && run.signal.reason.message === STOPPED) {
           await held
-            .report(() => reportStatus(jobId, { status: "failed", problem: wireOf(err) }))
-            .catch((patchErr: unknown) =>
-              toastError(patchErr, "The run failed, and the job could not be marked failed"),
-            );
+            .report(() => reportStatus(jobId, { status: "cancelled" }))
+            .catch((patchErr: unknown) => toastError(patchErr, "The run stopped, and could not be marked so"));
         }
-      } finally {
-        held.release();
-        window.removeEventListener("pagehide", closing);
-        setStop(undefined);
+      } else {
+        // The run failed — its `FossilError`, whose `problem` is the wire form — or never started:
+        // the executor did not load. Asked again until the lease would lapse; after that the sweep
+        // ends the job anyway, as `job/abandoned`, and the problem is said here.
+        await held
+          .report(() => reportStatus(jobId, { status: "failed", problem: wireOf(err) }))
+          .catch((patchErr: unknown) => toastError(patchErr, "The run failed, and could not be marked failed"));
       }
-    })();
-    // Key off the stable fields, not the `job` object — the 3s poll allocates a
-    // fresh object each tick, which would needlessly re-run the effect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job?.id, job?.status, job?.script]);
+    } finally {
+      held.release();
+      window.removeEventListener("pagehide", closing);
+      live.delete(jobId);
+      changed();
+      await invalidate("/v1/jobs", "/v1/jobs/{id}");
+    }
+  })();
+}
 
-  return { stop };
+/**
+ * End a run of ours that no tab runs any more — the page that ran it reloaded or closed — as
+ * `failed` with `job/interrupted`, so it can be run again at once instead of waiting for the sweep.
+ */
+export async function markInterrupted(id: string): Promise<void> {
+  await reportStatus(id, {
+    status: "failed",
+    problem: {
+      code: "job/interrupted",
+      title: "The run was interrupted",
+      detail: "The tab running it reloaded or closed before it finished.",
+      data: {},
+    },
+  });
 }

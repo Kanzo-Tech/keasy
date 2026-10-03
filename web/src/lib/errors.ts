@@ -6,6 +6,7 @@ import type { EngineError } from "@kanzo-tech/mosaic";
 import { type ProblemCopy, toast } from "@kanzo-tech/ui";
 
 import { ApiError, type ErrorCode, type NoBodyCode } from "@/lib/api/client";
+import { lower, WORDS } from "@/lib/vocabulary";
 
 /**
  * Failures the browser names itself, in the same `area/kind` grammar as fossil's and the server's: a
@@ -93,16 +94,21 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   },
   "resource/in-use": { title: "It is still in use." },
   "secret/not-found": { title: "No such credential." },
-  "job/folder-taken": { title: "Another job writes to this folder already." },
-  "job/still-running": { title: "The job is still running; it can be deleted once it ends." },
-  "job/not-running": { title: "The job has not started running yet." },
+  "job/folder-taken": { title: `Another ${lower(WORDS.graph)} writes to this folder already.` },
+  "job/still-running": { title: `The ${lower(WORDS.graph)} is running; it can be deleted once the run ends.` },
+  "job/not-running": { title: `The ${lower(WORDS.graph)} is not running.` },
+  "job/already-running": { title: `The ${lower(WORDS.graph)} is running already.` },
   "rbac/no-membership": { title: "You have no role in this workspace." },
   "rbac/insufficient-role": { title: "Your role in this workspace does not allow this." },
   "rbac/forbidden": { title: "Only its creator or an admin can change this." },
-  "job/ended": { title: "The job has already ended." },
+  "job/ended": { title: "The run has already ended." },
   "job/abandoned": {
     title: "The run was abandoned",
-    detail: "The tab running this job closed or lost its connection, so the job was ended. Run it again.",
+    detail: `The tab running this ${lower(WORDS.graph)} closed or lost its connection, so the run was ended. ${WORDS.run} it again.`,
+  },
+  "job/interrupted": {
+    title: "The run was interrupted",
+    detail: `The tab running this ${lower(WORDS.graph)} reloaded or closed before it finished.`,
   },
   "server/silent": { title: "The server did not answer in time." },
   "store/silent": { title: "The store did not answer in time." },
@@ -121,7 +127,7 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
     detail: (data) => {
       const budget = (data as { budget?: unknown } | undefined)?.budget;
       const limit = typeof budget === "number" ? ` (${gib(budget)})` : "";
-      return `This job needs more memory than the browser can give it${limit}. Nothing was written — try it with less data.`;
+      return `This ${lower(WORDS.graph)} needs more memory than the browser can give it${limit}. Nothing was written — try it with less data.`;
     },
   },
 };

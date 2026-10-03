@@ -5,11 +5,12 @@ use rusqlite::{Connection, OptionalExtension, params};
 use crate::database::{
     DbError, DbResult, constraint, created_columns, enum_column, json_column_opt,
 };
-use crate::domain::{Job, JobStatus};
+use crate::domain::{Actor, Job};
 use crate::error::{ErrorBody, ErrorCode};
 
 const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, heartbeat_at, \
-                       problem, created_by, created_by_name, sink_connection, folder, script, report";
+                       runner, runner_name, cancel_requested, problem, created_by, created_by_name, \
+                       sink_connection, folder, script, report";
 
 /// What the schema refused about `job`, said in its terms.
 fn refused(job: &Job, e: rusqlite::Error) -> DbError {
@@ -20,7 +21,7 @@ fn refused(job: &Job, e: rusqlite::Error) -> DbError {
             job.folder.as_deref().unwrap_or_default()
         )),
         Some(ffi::SQLITE_CONSTRAINT_CHECK) => {
-            DbError::Invalid("a job that is not a draft needs a folder".into())
+            DbError::Invalid("a job that is not a draft needs a folder, and a run a runner".into())
         }
         _ => e.into(),
     }
@@ -30,7 +31,7 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
     conn.execute(
         &format!(
             "INSERT INTO jobs ({COLUMNS})
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)"
         ),
         params![
             job.id,
@@ -40,6 +41,9 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
             job.started_at,
             job.completed_at,
             job.heartbeat_at,
+            job.runner.as_ref().map(|r| &r.id),
+            job.runner.as_ref().map(|r| &r.name),
+            job.cancel_requested,
             job.problem
                 .as_ref()
                 .map(serde_json::to_string)
@@ -66,45 +70,53 @@ pub fn get(conn: &Connection, id: &str) -> DbResult<Option<Job>> {
         .optional()?)
 }
 
-/// Store `job` over the row of its id. Refused whole: a refused write leaves
+/// Store `job` over its row, if the row is still as `was` read it — in the
+/// same status, held by the same runner: a compare-and-set, so of two moves
+/// made from one reading only the first lands. False when the row moved on
+/// meanwhile; the caller reads it again. Refused whole: a refused write leaves
 /// the row as it was.
-pub fn write(conn: &Connection, job: &Job) -> DbResult<()> {
-    conn.execute(
-        "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, problem = ?5,
-                         script = ?6, report = ?7, folder = ?8, heartbeat_at = ?10,
-                         created_at = ?11
-         WHERE id = ?9",
-        params![
-            job.name,
-            job.status.as_ref(),
-            job.started_at,
-            job.completed_at,
-            job.problem
-                .as_ref()
-                .map(serde_json::to_string)
-                .transpose()?,
-            job.script,
-            job.report.as_ref().map(serde_json::to_string).transpose()?,
-            job.folder,
-            job.id,
-            job.heartbeat_at,
-            job.provenance.created_at,
-        ],
-    )
-    .map_err(|e| refused(job, e))?;
-    Ok(())
+pub fn write(conn: &Connection, job: &Job, was: &Job) -> DbResult<bool> {
+    let written = conn
+        .execute(
+            "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4,
+                             problem = ?5, script = ?6, report = ?7, folder = ?8,
+                             heartbeat_at = ?10, runner = ?11, runner_name = ?12,
+                             cancel_requested = ?13
+             WHERE id = ?9 AND status = ?14 AND runner IS ?15",
+            params![
+                job.name,
+                job.status.as_ref(),
+                job.started_at,
+                job.completed_at,
+                job.problem
+                    .as_ref()
+                    .map(serde_json::to_string)
+                    .transpose()?,
+                job.script,
+                job.report.as_ref().map(serde_json::to_string).transpose()?,
+                job.folder,
+                job.id,
+                job.heartbeat_at,
+                job.runner.as_ref().map(|r| &r.id),
+                job.runner.as_ref().map(|r| &r.name),
+                job.cancel_requested,
+                was.status.as_ref(),
+                was.runner.as_ref().map(|r| &r.id),
+            ],
+        )
+        .map_err(|e| refused(job, e))?;
+    Ok(written == 1)
 }
 
-/// How long a runner may go without a heartbeat, and a `pending` job without
-/// a runner, before the job is swept as abandoned. Published as
-/// `x-keasy-bounds.job_lease_ms`; the browser's runner beats four times within
-/// it, so one lost request is not an abandoned run.
+/// How long a runner may go without a heartbeat before its run is swept as
+/// abandoned. Published as `x-keasy-bounds.job_lease_ms`; the browser's runner
+/// beats four times within it, so one lost request is not an abandoned run.
 pub const LEASE: std::time::Duration = std::time::Duration::from_secs(60);
 
-/// End every job no runner is holding: `pending` or `running` with a lease —
-/// taken at submit, renewed by each `running` — older than [`LEASE`]. Each
-/// becomes `failed` with the problem `job/abandoned`. A row from before the
-/// lease was taken at submit falls back to its start, then its creation.
+/// End every run no runner is holding: `running` with a lease — taken by
+/// `run`, renewed by each `running` — older than [`LEASE`]. Each becomes
+/// `failed` with the problem `job/abandoned`. Nothing else is swept: an idle
+/// job waits for someone to run it, for as long as it takes.
 ///
 /// Run before every read of jobs rather than on a schedule: a tab that closed
 /// cannot say so, and the next person to look is the only one who can notice.
@@ -112,15 +124,14 @@ pub fn sweep(conn: &Connection, now: jiff::Timestamp) -> DbResult<usize> {
     let problem = serde_json::to_string(&ErrorBody::new(
         ErrorCode::JobAbandoned,
         format!(
-            "Nothing ran this job for {} s: the tab that ran it closed, \
-             or never opened it",
+            "Nothing ran this job for {} s: the tab that ran it closed",
             LEASE.as_secs()
         ),
         Vec::new(),
     ))?;
     Ok(conn.execute(
-        "UPDATE jobs SET status = 'failed', completed_at = ?1, problem = ?2
-         WHERE status IN ('pending', 'running')
+        "UPDATE jobs SET status = 'failed', completed_at = ?1, problem = ?2, cancel_requested = 0
+         WHERE status = 'running'
            AND COALESCE(heartbeat_at, started_at, created_at) < ?3",
         params![spell(now), problem, lapsed(now)],
     )?)
@@ -136,36 +147,34 @@ fn lapsed(now: jiff::Timestamp) -> String {
     spell(now - jiff::SignedDuration::try_from(LEASE).expect("a lease fits"))
 }
 
-/// Renew the lease of `id`, `user_id`'s and running, if it has not lapsed:
-/// the runner's beat, one statement. False when there was nothing to renew,
-/// and the caller reads the row to say why.
-pub fn renew(conn: &Connection, id: &str, user_id: &str, now: jiff::Timestamp) -> DbResult<bool> {
-    Ok(conn.execute(
-        "UPDATE jobs SET heartbeat_at = ?1
-         WHERE id = ?2 AND created_by = ?3 AND status = 'running'
-           AND COALESCE(heartbeat_at, started_at, created_at) >= ?4",
-        params![spell(now), id, user_id, lapsed(now)],
-    )? == 1)
-}
-
-/// Every completed job in the workspace, the latest first: the datasets.
-pub fn completed(conn: &Connection) -> DbResult<Vec<Job>> {
-    select(
-        conn,
-        "WHERE status = 'completed' ORDER BY completed_at DESC",
-        None,
-    )
+/// Renew the lease of `id`, run by `runner`, if it has not lapsed: the
+/// runner's beat, one statement. Whether the run is asked to stop, or `None`
+/// when there was nothing to renew, and the caller reads the row to say why.
+pub fn renew(
+    conn: &Connection,
+    id: &str,
+    runner: &str,
+    now: jiff::Timestamp,
+) -> DbResult<Option<bool>> {
+    Ok(conn
+        .query_row(
+            "UPDATE jobs SET heartbeat_at = ?1
+             WHERE id = ?2 AND runner = ?3 AND status = 'running'
+               AND COALESCE(heartbeat_at, started_at, created_at) >= ?4
+             RETURNING cancel_requested",
+            params![spell(now), id, runner, lapsed(now)],
+            |row| row.get(0),
+        )
+        .optional()?)
 }
 
 /// Every job in the workspace, the newest first: the work is shared.
 pub fn list(conn: &Connection) -> DbResult<Vec<Job>> {
-    select(conn, "ORDER BY created_at DESC", None)
-}
-
-fn select(conn: &Connection, clause: &str, param: Option<&str>) -> DbResult<Vec<Job>> {
     let jobs = conn
-        .prepare(&format!("SELECT {COLUMNS} FROM jobs {clause}"))?
-        .query_map(rusqlite::params_from_iter(param), row_to_job)?
+        .prepare(&format!(
+            "SELECT {COLUMNS} FROM jobs ORDER BY created_at DESC"
+        ))?
+        .query_map([], row_to_job)?
         .collect::<rusqlite::Result<_>>()?;
     Ok(jobs)
 }
@@ -176,35 +185,34 @@ pub fn delete(conn: &Connection, id: &str) -> DbResult<()> {
 }
 
 fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
-    let status: JobStatus = enum_column(row, "status")?;
-    // The browser reads the program to run a `Pending` job (and to re-run a
-    // `Running` one); a finished job exposes only its report.
-    let script = if status.has_ended() {
-        None
-    } else {
-        row.get("script")?
-    };
     Ok(Job {
         id: row.get("id")?,
         name: row.get("name")?,
-        status,
+        status: enum_column(row, "status")?,
         started_at: row.get("started_at")?,
         completed_at: row.get("completed_at")?,
         heartbeat_at: row.get("heartbeat_at")?,
+        runner: match (row.get("runner")?, row.get("runner_name")?) {
+            (Some(id), Some(name)) => Some(Actor { id, name }),
+            _ => None,
+        },
+        cancel_requested: row.get("cancel_requested")?,
         problem: json_column_opt(row, "problem")?,
         provenance: created_columns(row)?,
         sink_connection: row.get("sink_connection")?,
         folder: row.get("folder")?,
-        script,
+        output: None,
+        script: row.get("script")?,
         report: json_column_opt(row, "report")?,
         can_modify: false,
+        can_stop: false,
     })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::JobFolder;
+    use crate::domain::{JobFolder, JobStatus};
 
     fn conn() -> Connection {
         let conn = Connection::open_in_memory().unwrap();
@@ -227,6 +235,7 @@ mod tests {
 
     fn filed(status: JobStatus, folder: &str) -> Job {
         Job {
+            runner: (status == JobStatus::Running).then(|| actor("u-1")),
             status,
             ..Job::new(
                 None,
@@ -245,15 +254,15 @@ mod tests {
         let conn = conn();
         insert(&conn, &filed(JobStatus::Draft, "people")).unwrap();
         insert(&conn, &filed(JobStatus::Draft, "people")).unwrap();
-        let first = filed(JobStatus::Pending, "people");
+        let first = filed(JobStatus::Idle, "people");
         insert(&conn, &first).unwrap();
 
-        let second = filed(JobStatus::Pending, "people");
+        let second = filed(JobStatus::Idle, "people");
         assert!(matches!(
             insert(&conn, &second),
             Err(DbError::FolderTaken(_))
         ));
-        insert(&conn, &filed(JobStatus::Pending, "orders")).unwrap();
+        insert(&conn, &filed(JobStatus::Idle, "orders")).unwrap();
 
         delete(&conn, &first.id).unwrap();
         insert(&conn, &second).unwrap();
@@ -263,17 +272,20 @@ mod tests {
     #[test]
     fn only_a_draft_goes_without_a_folder() {
         let conn = conn();
-        let mut pending = job("u-1");
-        pending.status = JobStatus::Pending;
-        assert!(matches!(insert(&conn, &pending), Err(DbError::Invalid(_))));
+        let mut idle = job("u-1");
+        idle.status = JobStatus::Idle;
+        assert!(matches!(insert(&conn, &idle), Err(DbError::Invalid(_))));
 
         let draft = job("u-1");
         insert(&conn, &draft).unwrap();
         let promoted = Job {
-            status: JobStatus::Running,
-            ..draft
+            status: JobStatus::Idle,
+            ..draft.clone()
         };
-        assert!(matches!(write(&conn, &promoted), Err(DbError::Invalid(_))));
+        assert!(matches!(
+            write(&conn, &promoted, &draft),
+            Err(DbError::Invalid(_))
+        ));
     }
 
     /// A row that does not decode is an error, not a job with defaults filled in.
@@ -300,7 +312,7 @@ mod tests {
     }
 
     #[test]
-    fn a_job_no_runner_holds_is_swept_to_failed_as_abandoned() {
+    fn only_a_run_no_runner_holds_is_swept_to_failed_as_abandoned() {
         let conn = conn();
         let now = jiff::Timestamp::now();
         let ago = |s: i64| {
@@ -314,25 +326,55 @@ mod tests {
         let mut alive = filed(JobStatus::Running, "alive");
         alive.started_at = Some(ago(300));
         alive.heartbeat_at = Some(ago(10));
-        let mut orphan = filed(JobStatus::Pending, "orphan");
-        orphan.provenance.created_at = ago(61);
-        let fresh = filed(JobStatus::Pending, "fresh");
+        let mut waiting = filed(JobStatus::Idle, "waiting");
+        waiting.provenance.created_at = ago(3600);
+        let mut done = filed(JobStatus::Completed, "done");
+        done.heartbeat_at = Some(ago(3600));
         let draft = job("u-1");
-        for j in [&stale, &alive, &orphan, &fresh, &draft] {
+        for j in [&stale, &alive, &waiting, &done, &draft] {
             insert(&conn, j).unwrap();
         }
 
-        assert_eq!(sweep(&conn, now).unwrap(), 2);
+        assert_eq!(sweep(&conn, now).unwrap(), 1);
 
-        for gone in [&stale, &orphan] {
-            let read = at(gone, &conn);
-            assert_eq!(read.status, JobStatus::Failed);
-            assert_eq!(read.problem.as_ref().unwrap()["code"], "job/abandoned");
-            assert!(read.completed_at.is_some());
-        }
+        let read = at(&stale, &conn);
+        assert_eq!(read.status, JobStatus::Failed);
+        assert_eq!(read.problem.as_ref().unwrap()["code"], "job/abandoned");
+        assert!(read.completed_at.is_some());
         assert_eq!(at(&alive, &conn).status, JobStatus::Running);
-        assert_eq!(at(&fresh, &conn).status, JobStatus::Pending);
+        assert_eq!(at(&waiting, &conn).status, JobStatus::Idle, "idle waits");
+        assert_eq!(at(&done, &conn).status, JobStatus::Completed);
         assert_eq!(at(&draft, &conn).status, JobStatus::Draft);
         assert_eq!(sweep(&conn, now).unwrap(), 0, "a swept job is swept once");
+    }
+
+    /// Two moves made from one reading: the first lands, the second finds the
+    /// row moved on and writes nothing.
+    #[test]
+    fn a_write_lands_only_on_the_row_it_read() {
+        let conn = conn();
+        let idle = filed(JobStatus::Idle, "people");
+        insert(&conn, &idle).unwrap();
+        let mut mine = idle.clone();
+        mine.run(actor("u-1")).unwrap();
+        let mut theirs = idle.clone();
+        theirs.run(actor("u-2")).unwrap();
+
+        assert!(write(&conn, &mine, &idle).unwrap());
+        assert!(!write(&conn, &theirs, &idle).unwrap());
+        assert_eq!(at(&idle, &conn).runner, Some(actor("u-1")));
+    }
+
+    #[test]
+    fn the_runner_alone_renews_and_hears_a_stop() {
+        let conn = conn();
+        let now = jiff::Timestamp::now();
+        let running = filed(JobStatus::Running, "people");
+        insert(&conn, &running).unwrap();
+        assert_eq!(renew(&conn, &running.id, "u-1", now).unwrap(), Some(false));
+        assert_eq!(renew(&conn, &running.id, "u-2", now).unwrap(), None);
+        conn.execute("UPDATE jobs SET cancel_requested = 1", [])
+            .unwrap();
+        assert_eq!(renew(&conn, &running.id, "u-1", now).unwrap(), Some(true));
     }
 }

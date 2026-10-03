@@ -159,7 +159,6 @@ fn routes() -> (OpenApiRouter<AppState>, OpenApiRouter<AppState>) {
         .merge(routes::branding::router());
     let protected = OpenApiRouter::new()
         .merge(routes::jobs::router())
-        .merge(routes::datasets::router())
         .merge(routes::storage_credentials::router())
         .merge(routes::jobs::dashboard::router())
         .merge(routes::secrets::router())

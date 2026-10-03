@@ -2,22 +2,28 @@
 
 import {
   Badge,
+  Button,
   Float,
   RadioGroup,
   RadioGroupCard,
   RadioGroupIndicator,
   RadioGroupText,
 } from "@kanzo-tech/ui";
-import { Code, Wand2 } from "lucide-react";
+import { ArrowLeft, Code, Wand2 } from "lucide-react";
+import { lower, WORDS } from "@/lib/vocabulary";
 import type { CreationMode } from "./job-editor-store";
 
 /** How the program gets written, asked once before the studio opens. */
-export function ModePicker({ onSelect }: { onSelect: (mode: CreationMode) => void }) {
+export function ModePicker({ onSelect, onBack }: { onSelect: (mode: CreationMode) => void; onBack: () => void }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
+    <div className="relative flex flex-1 flex-col items-center justify-center gap-6 p-6">
+      <Button className="absolute start-3 top-3" onClick={onBack} size="sm" variant="ghost">
+        <ArrowLeft />
+        Back
+      </Button>
       <div className="flex flex-col items-center gap-1.5 text-center">
-        <h1 className="font-heading font-semibold text-xl">New job</h1>
-        <p className="text-muted-foreground text-sm">How do you want to build it?</p>
+        <h1 className="font-heading font-semibold text-xl">New {lower(WORDS.graph)}</h1>
+        <p className="text-muted-foreground text-sm">How do you want to write its {lower(WORDS.recipe)}?</p>
       </div>
 
       <RadioGroup

@@ -47,6 +47,7 @@ import { type EditorApi, StudioEditor } from "./studio-editor";
 import { StudioOutput, type OutputValues } from "./studio-output";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { useJobEditorStore } from "./job-editor-store";
+import { lower, WORDS } from "@/lib/vocabulary";
 
 const PANELS = [
   { id: "connections", label: "Connections", icon: Database },
@@ -203,7 +204,7 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
           show: () => setFindingsOpen(true),
         }
       : nameError
-        ? { reason: `Fix the job's name: ${nameError}`, show: () => setNameEditing(true) }
+        ? { reason: `Fix the ${lower(WORDS.graph)}'s name: ${nameError}`, show: () => setNameEditing(true) }
         : !destination
           ? { reason: "Pick where the graph lands, under Output.", show: () => openPanel("output") }
           : !folderValid
@@ -302,7 +303,7 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
         setRefused({ ...problem, value: sent.name });
         setNameEditing(true);
       } else {
-        toastError(err, "Failed to create job");
+        toastError(err, `Could not create the ${lower(WORDS.graph)}`);
       }
       // The edits Create carried were not kept; the draft takes them now.
       if (savable) save();
@@ -325,13 +326,14 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
   // ── Before the studio opens ─────────────────────────────────────────────
 
   if (store.creationMode === null) {
-    return <ModePicker onSelect={store.setCreationMode} />;
+    return <ModePicker onBack={() => router.push("/jobs")} onSelect={store.setCreationMode} />;
   }
 
   if (store.creationMode === "assistant") {
     return (
       <AssistantWizard
         connections={connections}
+        onBack={() => store.setCreationMode(null)}
         onComplete={store.completeAssistant}
         providers={providers}
       />
@@ -350,7 +352,7 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
           onEditChange={(d) => setNameEditing(d.edit)}
           className="w-auto max-w-[10rem] has-[[data-slot=editable-area][data-focus]]:w-64 has-[[data-slot=editable-area][data-focus]]:max-w-[50cqw] @3xl:max-w-[20rem]"
           onValueChange={(d) => store.setName(d.value)}
-          placeholder="Unnamed job"
+          placeholder={`Unnamed ${lower(WORDS.graph)}`}
           value={store.name}
         >
           <EditableArea className="w-auto data-focus:flex-1">
@@ -361,7 +363,7 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
           </EditableArea>
           <EditableControl>
             <EditableEditTrigger asChild>
-              <Button aria-label="Rename job" size="icon-sm" variant="ghost">
+              <Button aria-label={`Rename the ${lower(WORDS.graph)}`} size="icon-sm" variant="ghost">
                 <Pencil />
               </Button>
             </EditableEditTrigger>
@@ -390,18 +392,21 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
               <Show fallback={<Save />} when={draftMutation.isPending}>
                 <Spinner />
               </Show>
-              <span className="hidden @5xl:inline">Save draft</span>
+              <span>Save draft</span>
             </Button>
             <ButtonGroupSeparator />
             <Menu>
               <MenuTrigger asChild>
-                <Button aria-label="More job actions" size="sm" variant="outline">
+                <Button aria-label={`More ${lower(WORDS.graph)} actions`} size="sm" variant="outline">
                   <ChevronDown />
                 </Button>
               </MenuTrigger>
               <MenuContent>
-                <MenuItem onSelect={() => router.push("/jobs")} value="jobs">
-                  Back to jobs
+                <MenuItem
+                  onSelect={() => router.push(draftId && draft ? `/jobs/${draftId}` : "/jobs")}
+                  value="back"
+                >
+                  {draft ? `Back to the ${lower(WORDS.graph)}` : `Back to ${lower(WORDS.graphs)}`}
                 </MenuItem>
                 <MenuItem
                   onSelect={() => {

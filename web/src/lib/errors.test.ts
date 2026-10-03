@@ -125,7 +125,7 @@ describe("a host failure fossil wrapped", () => {
 describe("a refusal about one field", () => {
   it("names the field and says it in keasy's words", () => {
     const taken = new ApiError({ code: "job/folder-taken", title: "Folder taken", detail: "people is held", data: { field: "folder" } }, 409);
-    expect(fieldProblem(taken)).toEqual({ field: "folder", message: "Another job writes to this folder already." });
+    expect(fieldProblem(taken)).toEqual({ field: "folder", message: "Another graph writes to this folder already." });
   });
 
   it("falls back to the server's detail for a code keasy has no words for", () => {

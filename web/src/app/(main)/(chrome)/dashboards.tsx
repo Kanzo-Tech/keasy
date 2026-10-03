@@ -2,7 +2,18 @@
 
 import { Database, FileText, GalleryVerticalEnd, KeyRound, type LucideIcon } from "lucide-react";
 import {
+  Badge,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyRoot,
+  EmptyTitle,
   FormatNumber,
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
   SectionBody,
   SectionHeader,
   SectionRoot,
@@ -16,7 +27,9 @@ import {
 } from "@kanzo-tech/ui";
 import { Link } from "@kanzo-tech/navigation/next";
 import { $api, type Schemas } from "@/lib/api/client";
-import { hasRunningJobs, pollWhile } from "@/lib/jobs";
+import { hasRunningJobs, pollWhile, STATUS } from "@/lib/jobs";
+import { formatDate } from "@/lib/ui/format";
+import { lower, WORDS } from "@/lib/vocabulary";
 import { Boundary } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
 import { useRole } from "@/lib/auth/use-role";
@@ -37,9 +50,9 @@ const HEADING = "Workspace overview";
 const storageTile = (configured?: boolean): Tile => ({
   href: "/settings/storage",
   icon: GalleryVerticalEnd,
-  title: "Workspace storage",
+  title: WORDS.storage,
   value: configured === undefined ? undefined : configured ? "Configured" : "Not set",
-  description: "where job outputs land",
+  description: `where ${lower(WORDS.graph)} ${lower(WORDS.output)}s land`,
   ok: configured,
 });
 
@@ -66,9 +79,9 @@ const connectionsTile = (n?: number): Tile => ({
 const outputsTile = (n?: number): Tile => ({
   href: "/jobs",
   icon: FileText,
-  title: "Outputs",
+  title: `${WORDS.output}s`,
   value: n === undefined ? undefined : String(n),
-  description: plural(n, "output published", "outputs published"),
+  description: plural(n, `${lower(WORDS.graph)} completed`, `${lower(WORDS.graphs)} completed`),
 });
 
 /** One dashboard for every role: each tile is drawn for the roles that can read its figure. */
@@ -111,6 +124,16 @@ export function Dashboard() {
           <RecentActivity />
         </Boundary>
       </SectionRoot>
+      <SectionRoot className="gap-3" fill={false}>
+        <SectionHeader>
+          <SectionTitleGroup>
+            <SectionTitle>Recent {lower(WORDS.graphs)}</SectionTitle>
+          </SectionTitleGroup>
+        </SectionHeader>
+        <Boundary fallback={null}>
+          <RecentGraphs />
+        </Boundary>
+      </SectionRoot>
     </>
   );
 }
@@ -146,27 +169,68 @@ function RecentActivity() {
   return (
     <Activity
       stats={[
-        { label: "Total jobs", value: jobs.length },
+        { label: `Total ${lower(WORDS.graphs)}`, value: jobs.length },
         { label: "Completed", value: count(["completed"]) },
         { label: "Failed", value: count(["failed"]) },
-        { label: "Running", value: count(["pending", "running"]) },
+        { label: "Running", value: count(["running"]) },
       ]}
     />
   );
 }
 
-const ACTIVITY = ["Total jobs", "Completed", "Failed", "Running"];
+const ACTIVITY = [`Total ${lower(WORDS.graphs)}`, "Completed", "Failed", "Running"];
+
+const RECENT = 5;
+
+/** The newest graphs, each a way into its page. */
+function RecentGraphs() {
+  const recent = useJobs().slice(0, RECENT);
+  if (recent.length === 0) {
+    return (
+      <EmptyRoot>
+        <EmptyHeader>
+          <EmptyTitle>No {lower(WORDS.graphs)} yet</EmptyTitle>
+          <EmptyDescription>
+            <Link href="/jobs">Go to {WORDS.graphs}</Link>
+          </EmptyDescription>
+        </EmptyHeader>
+      </EmptyRoot>
+    );
+  }
+  return (
+    <SectionBody>
+      <ItemGroup>
+        {recent.map((job) => (
+          <Item asChild key={job.id} variant="outline">
+            <Link href={`/jobs/${job.id}`}>
+              <ItemContent>
+                <ItemTitle>{job.name ?? job.id.slice(0, 8)}</ItemTitle>
+                <ItemDescription>{formatDate(job.created_at)}</ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <Badge variant={STATUS[job.status].variant}>{STATUS[job.status].label}</Badge>
+              </ItemActions>
+            </Link>
+          </Item>
+        ))}
+      </ItemGroup>
+    </SectionBody>
+  );
+}
 
 /** The activity figures; loading when `stats` is absent. */
 function Activity({ stats }: { stats?: { label: string; value: number }[] }) {
   return (
     <SectionBody className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {(stats ?? ACTIVITY.map((label) => ({ label, value: 0 }))).map((stat) => (
-        <StatRoot key={stat.label}>
-          <StatLabel>{stat.label}</StatLabel>
-          <StatValue loading={!stats}>
-            <FormatNumber value={stat.value} />
-          </StatValue>
+        // Every figure is a way into the graphs it counts.
+        <StatRoot asChild key={stat.label}>
+          <Link href="/jobs">
+            <StatLabel>{stat.label}</StatLabel>
+            <StatValue loading={!stats}>
+              <FormatNumber value={stat.value} />
+            </StatValue>
+          </Link>
         </StatRoot>
       ))}
     </SectionBody>

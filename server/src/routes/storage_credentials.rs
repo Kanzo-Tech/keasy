@@ -38,7 +38,7 @@ pub struct StorageCredentialsRequest {
     responses(
         (status = 200, description = "A credential that opens the scope's prefix, and only it, for an hour", body = VendedCredentials),
         (status = 400, description = "Not a storage source, or an access the scope does not give", body = ErrorBody),
-        (status = 403, description = "A source read below editor; a job written below editor, or by someone who may not change it", body = ErrorBody),
+        (status = 403, description = "A source read below editor; a job written below editor, or by anyone but its runner", body = ErrorBody),
         (status = 404, description = "No such connection, or no such job", body = ErrorBody),
         (status = 409, description = "A job read before it completed (`job/not-completed`), or written before it runs (`job/not-running`) or after it ended (`job/ended`)", body = ErrorBody),
         (status = 502, description = "The store refused to vend", body = ErrorBody),
@@ -48,7 +48,7 @@ pub struct StorageCredentialsRequest {
 /// Vend a credential over `scope` for `access`. Anyone in the workspace reads a
 /// completed job's dataset. An editor reads a source connection — Unity
 /// Catalog's temporary path credentials over an external location — to build
-/// a job, and writes a job's dataset while it runs, if they may change that job.
+/// a job, and writes a job's dataset while it runs, if they are its runner.
 pub async fn vend(
     caller: Reader,
     State(state): State<AppState>,
@@ -74,14 +74,11 @@ pub async fn vend(
                 crate::connections::storage(&conn, key, &source)?
             }
             Scope::Job(id) => {
-                let job = match access {
-                    Access::Read => crate::jobs::any(&conn, &id)?,
-                    Access::Write => {
-                        caller.require(Role::Editor)?;
-                        crate::jobs::changeable(&conn, &caller, &id)?
-                    }
-                };
-                job.may(access)?;
+                if access == Access::Write {
+                    caller.require(Role::Editor)?;
+                }
+                let job = crate::jobs::any(&conn, &id)?;
+                job.may(access, &caller)?;
                 crate::jobs::output(&conn, key, &job)?
             }
         }

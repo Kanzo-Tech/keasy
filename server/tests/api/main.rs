@@ -2,7 +2,6 @@ mod ai;
 mod authentication;
 mod authorization;
 mod connections;
-mod datasets;
 mod failures;
 mod health_check;
 mod helpers;

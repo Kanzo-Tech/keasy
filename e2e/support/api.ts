@@ -73,14 +73,14 @@ Purchases : Order from Orders
     buyer    = Person(Orders.person_id)
 `;
 
-/** A job created through the API: `draft`, or `pending` for the browser to run when its page opens. */
+/** A job created through the API: `draft`, or submitted (`idle`) for its page's Run to run. */
 export async function createJob(page: Page, { draft = false, name }: { draft?: boolean; name?: string } = {}) {
   // A job to run writes to a folder no other job in the sink writes to.
   const folder = `e2e-${crypto.randomUUID()}`;
   const created = await api(page, "POST", "/v1/jobs", { script: SHOP, name, sink_connection: SINK, folder });
   expect(created.status, JSON.stringify(created.body)).toBeLessThan(300);
   const { id } = created.body as { id: string };
-  // A job begins as a draft; submitting it is what makes it run.
+  // A job begins as a draft; submitting it makes it runnable.
   if (!draft) {
     const submitted = await api(page, "POST", `/v1/jobs/${id}/submit`, {});
     expect(submitted.status, JSON.stringify(submitted.body)).toBeLessThan(300);

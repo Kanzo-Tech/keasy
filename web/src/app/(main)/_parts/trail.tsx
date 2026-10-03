@@ -16,9 +16,10 @@ import {
   cn,
 } from "@kanzo-tech/ui";
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
+import { useSearchParams } from "next/navigation";
 
 import { $api } from "@/lib/api/client";
-import type { Crumb } from "@/app/(main)/_parts/route-config";
+import { type Crumb, generateBreadcrumbs } from "@/app/(main)/_parts/route-config";
 
 /** A crumb's name: its label resolved (a job's own name), else the route's. */
 function useCrumbName(crumb: Crumb): string {
@@ -118,4 +119,10 @@ export function Trail({ crumbs }: { crumbs: Crumb[] }) {
       </BreadcrumbList>
     </Breadcrumb>
   );
+}
+
+/** The trail to `pathname` as the query it was opened with names it. Reads the search params, so it
+ *  renders under a `Suspense` whose fallback is the trail without them. */
+export function SearchTrail({ pathname }: { pathname: string }) {
+  return <Trail crumbs={generateBreadcrumbs(pathname, useSearchParams())} />;
 }

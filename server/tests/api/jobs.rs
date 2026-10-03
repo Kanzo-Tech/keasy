@@ -80,11 +80,7 @@ async fn a_job_is_read_by_all_and_changed_by_its_creator_or_an_admin() {
             format!("{path}/submit"),
             json!({ "folder": "f" }),
         ),
-        (
-            Method::POST,
-            format!("{path}/status"),
-            json!({ "status": "running" }),
-        ),
+        (Method::POST, format!("{path}/run"), json!(null)),
         (Method::DELETE, path.clone(), json!(null)),
     ] {
         let (status, body) = app.send(verb.clone(), &route, &theirs, body).await;
@@ -117,7 +113,7 @@ async fn a_failed_run_keeps_its_problem_whole() {
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
-    let id = app.submitted(&member).await;
+    let id = app.running(&member).await;
     let path = format!("/v1/jobs/{id}");
     let problem = json!({
         "code": "run/over-budget",
@@ -134,7 +130,7 @@ async fn a_failed_run_keeps_its_problem_whole() {
             json!({ "status": "failed", "problem": problem }),
         )
         .await;
-    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert_eq!(status, StatusCode::OK);
     assert_eq!(failed["problem"], problem);
     let (_, read) = app.send(Method::GET, &path, &member, json!(null)).await;
     assert_eq!(read["problem"], problem);
@@ -199,7 +195,7 @@ async fn a_job_writes_to_a_folder_of_its_own() {
     let (status, first) = submit(id(&first), json!({})).await;
     assert_eq!(
         (status, first["folder"].as_str()),
-        (StatusCode::ACCEPTED, Some("people"))
+        (StatusCode::OK, Some("people"))
     );
     let (_, second) = draft(Some("people")).await;
     assert_eq!(
@@ -360,8 +356,8 @@ async fn a_misspelled_name_is_refused_on_its_field() {
 }
 
 /// Submitting turns the draft into the job to run in place: the same id, one
-/// job listed, pending, and dated now — a draft written an hour ago is not
-/// swept the moment it is submitted.
+/// job listed, idle — nothing runs it until someone does, and nothing sweeps
+/// it while it waits.
 #[tokio::test]
 async fn submitting_a_draft_makes_it_the_job_in_place() {
     let app = spawn_app().await;
@@ -407,9 +403,9 @@ async fn submitting_a_draft_makes_it_the_job_in_place() {
             json!({ "script": "y", "name": "People", "folder": "people" }),
         )
         .await;
-    assert_eq!(status, StatusCode::ACCEPTED);
+    assert_eq!(status, StatusCode::OK);
     assert_eq!(job["id"], json!(id));
-    assert_eq!(job["status"], "pending");
+    assert_eq!(job["status"], "idle");
     assert_eq!(
         (job["script"].as_str(), job["name"].as_str()),
         (Some("y"), Some("People"))
@@ -419,9 +415,10 @@ async fn submitting_a_draft_makes_it_the_job_in_place() {
         "a job is dated when it was made"
     );
     assert!(
-        job["heartbeat_at"].as_str() > Some(hour_ago),
-        "its lease starts at submit, so a draft written an hour ago is not swept"
+        job.get("heartbeat_at").is_none(),
+        "no lease: nothing runs it"
     );
+    assert!(job.get("runner").is_none());
 
     let (_, listed) = app
         .send(Method::GET, "/v1/jobs", &member, json!(null))
@@ -430,7 +427,7 @@ async fn submitting_a_draft_makes_it_the_job_in_place() {
     assert_eq!(listed.len(), 1);
     assert_eq!(
         (listed[0]["id"].as_str(), listed[0]["status"].as_str()),
-        (Some(&*id), Some("pending"))
+        (Some(&*id), Some("idle"))
     );
 
     let (status, body) = app.send(Method::POST, &submit, &member, json!({})).await;
@@ -489,7 +486,7 @@ async fn submitting_onto_a_taken_folder_leaves_the_draft() {
 }
 
 /// A run moves forward only: from running it reports running again, or one of
-/// its ends, and every end is dated. Never back to a draft or to pending.
+/// its ends, and every end is dated. Never back to a draft or to idle.
 #[tokio::test]
 async fn a_run_reports_forward_and_every_end_is_dated() {
     let app = spawn_app().await;
@@ -497,19 +494,19 @@ async fn a_run_reports_forward_and_every_end_is_dated() {
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
-    for target in ["completed", "failed", "cancelled", "draft", "pending"] {
-        let id = app.submitted(&member).await;
+    for target in ["completed", "failed", "cancelled", "draft", "idle"] {
+        let id = app.running(&member).await;
         let report = |status: &str| app.report(&member, &id, json!({ "status": status }));
         let (status, running) = report("running").await;
         assert_eq!(
             (status, running["status"].as_str()),
-            (StatusCode::NO_CONTENT, Some("running"))
+            (StatusCode::OK, Some("running"))
         );
         assert!(running.get("completed_at").is_none());
 
         let (status, body) = report(target).await;
         match target {
-            "draft" | "pending" => {
+            "draft" | "idle" => {
                 assert_eq!(status, StatusCode::BAD_REQUEST, "running → {target}");
                 let (_, read) = app
                     .send(Method::GET, &format!("/v1/jobs/{id}"), &member, json!(null))
@@ -517,10 +514,228 @@ async fn a_run_reports_forward_and_every_end_is_dated() {
                 assert_eq!(read["status"], "running", "running → {target}");
             }
             ended => {
-                assert_eq!(status, StatusCode::NO_CONTENT, "running → {ended}");
+                assert_eq!(status, StatusCode::OK, "running → {ended}");
                 assert_eq!(body["status"], ended);
                 assert!(body["completed_at"].is_string(), "{ended} is dated");
             }
         }
     }
+}
+
+/// Running is asked for, once: the caller becomes the runner, and of two runs
+/// asked at once one starts and the other is `job/already-running`. A draft
+/// is submitted before it runs; a job is run by who may change it.
+#[tokio::test]
+async fn a_job_runs_once_at_a_time_for_whoever_started_it() {
+    let app = spawn_app().await;
+    let mine = app.token_for("u-1", EDITOR);
+    let theirs = app.token_for("u-2", EDITOR);
+    let admin = app.token_for("u-9", ADMIN);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+
+    let (_, draft) = app
+        .send(
+            Method::POST,
+            "/v1/jobs",
+            &mine,
+            json!({ "script": "x", "sink_connection": "sink", "folder": "f" }),
+        )
+        .await;
+    assert_eq!(
+        app.run(&mine, draft["id"].as_str().unwrap()).await.0,
+        StatusCode::BAD_REQUEST,
+        "a draft is submitted first"
+    );
+
+    let id = app.submitted(&mine).await;
+    let (status, body) = app.run(&theirs, &id).await;
+    assert_eq!(
+        (status, body["code"].as_str()),
+        (StatusCode::FORBIDDEN, Some("rbac/forbidden"))
+    );
+
+    let ((first, a), (second, b)) = tokio::join!(app.run(&mine, &id), app.run(&admin, &id));
+    let mut answers = [(first, a), (second, b)];
+    answers.sort_by_key(|(status, _)| *status);
+    assert_eq!(answers[0].0, StatusCode::OK, "{:?}", answers);
+    assert_eq!(
+        (answers[1].0, answers[1].1["code"].as_str()),
+        (StatusCode::CONFLICT, Some("job/already-running"))
+    );
+    let started = &answers[0].1;
+    assert_eq!(started["status"], "running");
+    assert!(started["runner"]["id"] == "u-1" || started["runner"]["id"] == "u-9");
+    assert_eq!(started["can_stop"], true, "the runner may stop its run");
+}
+
+/// Only the runner reports on a run — not its creator, not an admin — and
+/// only the runner is vended its output to write.
+#[tokio::test]
+async fn only_the_runner_reports_and_writes() {
+    let app = spawn_app().await;
+    let creator = app.token_for("u-1", EDITOR);
+    let admin = app.token_for("u-9", ADMIN);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    let id = app.submitted(&creator).await;
+    let (status, _) = app.run(&admin, &id).await;
+    assert_eq!(status, StatusCode::OK, "an admin runs anyone's job");
+
+    let (status, body) = app
+        .report(&creator, &id, json!({ "status": "completed" }))
+        .await;
+    assert_eq!(
+        (status, body["code"].as_str()),
+        (StatusCode::FORBIDDEN, Some("rbac/forbidden")),
+        "the creator is not the runner"
+    );
+    assert_eq!(
+        app.vend(&creator, json!({ "job": id }), "write").await,
+        (StatusCode::FORBIDDEN, Some("rbac/forbidden".to_owned()))
+    );
+    assert_eq!(
+        app.vend(&admin, json!({ "job": id }), "write").await.0,
+        StatusCode::BAD_GATEWAY,
+        "the runner is vended, refused only by the dead store"
+    );
+    let (status, body) = app
+        .report(&admin, &id, json!({ "status": "completed" }))
+        .await;
+    assert_eq!(
+        (status, body["status"].as_str()),
+        (StatusCode::OK, Some("completed"))
+    );
+}
+
+/// Stop is cooperative: its runner or an admin asks it, the runner hears it in
+/// the answer to its next report and ends the run cancelled. Another editor
+/// may not ask.
+#[tokio::test]
+async fn a_run_is_stopped_by_its_runner_or_an_admin_through_its_runner() {
+    let app = spawn_app().await;
+    let runner = app.token_for("u-1", EDITOR);
+    let theirs = app.token_for("u-2", EDITOR);
+    let admin = app.token_for("u-9", ADMIN);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    let beat = |id: String| {
+        let runner = runner.clone();
+        let app = &app;
+        async move {
+            app.send(
+                Method::POST,
+                &format!("/v1/jobs/{id}/status"),
+                &runner,
+                json!({ "status": "running" }),
+            )
+            .await
+        }
+    };
+    let stop = |token: String, id: String| {
+        let app = &app;
+        async move {
+            app.send(
+                Method::POST,
+                &format!("/v1/jobs/{id}/stop"),
+                &token,
+                json!(null),
+            )
+            .await
+        }
+    };
+
+    for (who, token) in [("its runner", &runner), ("an admin", &admin)] {
+        let id = app.running(&runner).await;
+        assert_eq!(beat(id.clone()).await.1["cancel_requested"], false, "{who}");
+
+        let (status, body) = stop(theirs.clone(), id.clone()).await;
+        assert_eq!(
+            (status, body["code"].as_str()),
+            (StatusCode::FORBIDDEN, Some("rbac/forbidden")),
+            "another editor, before {who}"
+        );
+        let (status, stopping) = stop(token.clone(), id.clone()).await;
+        assert_eq!(
+            (
+                status,
+                stopping["status"].as_str(),
+                stopping["cancel_requested"].as_bool()
+            ),
+            (StatusCode::OK, Some("running"), Some(true)),
+            "{who} asks; the run goes on until its runner hears it"
+        );
+        assert_eq!(beat(id.clone()).await.1["cancel_requested"], true, "{who}");
+
+        let (status, ended) = app
+            .report(&runner, &id, json!({ "status": "cancelled" }))
+            .await;
+        assert_eq!(
+            (
+                status,
+                ended["status"].as_str(),
+                ended["cancel_requested"].as_bool()
+            ),
+            (StatusCode::OK, Some("cancelled"), Some(false)),
+            "{who}"
+        );
+        let (status, body) = stop(token.clone(), id.clone()).await;
+        assert_eq!(
+            (status, body["code"].as_str()),
+            (StatusCode::CONFLICT, Some("job/ended"))
+        );
+    }
+}
+
+/// Running again re-runs a job that ended, in the same folder: the last run's
+/// report and end go, and the output is written over.
+#[tokio::test]
+async fn running_again_writes_over_the_last_output() {
+    let app = spawn_app().await;
+    let member = app.token(EDITOR);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    let id = app.running(&member).await;
+    let (_, done) = app
+        .report(
+            &member,
+            &id,
+            json!({ "status": "completed", "report": { "dest": "d" } }),
+        )
+        .await;
+    assert_eq!(done["report"], json!({ "dest": "d" }));
+
+    let (status, again) = app.run(&member, &id).await;
+    assert_eq!(status, StatusCode::OK, "{again}");
+    assert_eq!(again["status"], "running");
+    assert_eq!(again["folder"], done["folder"], "the same folder");
+    assert_eq!(again["output"], done["output"]);
+    assert!(again.get("report").is_none() && again.get("completed_at").is_none());
+    assert_eq!(
+        app.vend(&member, json!({ "job": id }), "write").await.0,
+        StatusCode::BAD_GATEWAY,
+        "its runner writes the folder again"
+    );
+}
+
+/// Every job says where its output lands, as the sink's URL spells it.
+#[tokio::test]
+async fn a_job_says_where_its_output_lands() {
+    let app = spawn_app().await;
+    let member = app.token(EDITOR);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    let id = app.submitted(&member).await;
+    let (_, job) = app
+        .send(Method::GET, &format!("/v1/jobs/{id}"), &member, json!(null))
+        .await;
+    let output = job["output"].as_str().unwrap();
+    assert!(
+        output.ends_with(&format!("/{}/", job["folder"].as_str().unwrap())),
+        "{output}"
+    );
+    let (_, listed) = app
+        .send(Method::GET, "/v1/jobs", &member, json!(null))
+        .await;
+    assert_eq!(listed[0]["output"], job["output"]);
 }

@@ -36,6 +36,39 @@ pub fn changeable(conn: &Connection, caller: &Caller, id: &str) -> Result<Job, R
     Ok(job)
 }
 
+/// The job as `caller` is shown it: who may change and stop it, and where its
+/// output lands — as the sink's URL spells it, without reaching for the
+/// sink's secret.
+pub fn present(conn: &Connection, caller: &Caller, mut job: Job) -> Result<Job, Refusal> {
+    let sink = crate::connections::persistence::get(conn, &job.sink_connection)?;
+    job.output = sink
+        .and_then(|sink| StorageLocation::parse(&sink.target.url).ok())
+        .and_then(|sink| job.output_under(&sink))
+        .map(|output| output.to_string());
+    Ok(job.seen_by(caller))
+}
+
+/// Move job `id` as `step` says, from what is stored: read it, step it, and
+/// write it back only if no one moved it meanwhile; if someone did, step what
+/// they left. `step` refuses what the state no longer allows — the second of
+/// two runs started at once meets the first's `running`.
+pub async fn transition(
+    db: &Database,
+    id: &str,
+    mut step: impl FnMut(&mut Job) -> Result<(), Refusal>,
+) -> Result<Job, Refusal> {
+    for _ in 0..3 {
+        let was = any(&*db.read().await, id)?;
+        let mut job = was.clone();
+        step(&mut job)?;
+        if persistence::write(&*db.write().await, &job, &was)? {
+            return Ok(job);
+        }
+    }
+    tracing::warn!(job = id, "a job kept moving under three tries to move it");
+    Err(Refusal::internal())
+}
+
 /// Where `job`'s corpus lives, `{sink}/{folder}/`, as the sink's secret
 /// reaches it, and that secret.
 pub fn output(

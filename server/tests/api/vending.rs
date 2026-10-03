@@ -58,7 +58,7 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
     );
 
     // Reading is everyone's, so another editor meets the job's state like its
-    // creator does; writing is not theirs.
+    // creator does; writing is the runner's, and nothing runs it.
     let theirs = app.token_for("u-2", EDITOR);
     assert_eq!(
         app.vend(&theirs, job.clone(), "read").await.0,
@@ -66,7 +66,7 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
     );
     assert_eq!(
         app.vend(&theirs, job.clone(), "write").await,
-        (StatusCode::FORBIDDEN, Some("rbac/forbidden".to_owned()))
+        conflict("job/not-running")
     );
 
     // A reader explores outputs; building from a source is an editor's.
@@ -101,7 +101,7 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
 #[tokio::test]
 async fn an_ended_job_is_never_written() {
     let (app, member) = workspace().await;
-    let id = app.submitted(&member).await;
+    let id = app.running(&member).await;
     app.report(&member, &id, json!({ "status": "cancelled" }))
         .await;
     assert_eq!(

@@ -169,10 +169,13 @@ function ConnectionFiles({
 
 export function AssistantWizard({
   onComplete,
+  onBack,
   connections,
   providers,
 }: {
   onComplete: (script: string) => void;
+  /** Back from the first screen: to the mode picker. */
+  onBack: () => void;
   connections: Connection[];
   providers: checker.ProviderInfo[];
 }) {
@@ -494,7 +497,7 @@ export function AssistantWizard({
       </SectionBody>
 
       <SectionFooter>
-        <Button disabled={screen === 0} onClick={back} size="sm" variant="ghost">
+        <Button onClick={screen === 0 ? onBack : back} size="sm" variant="ghost">
           <ArrowLeft />
           Back
         </Button>

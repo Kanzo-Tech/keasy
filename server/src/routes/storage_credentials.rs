@@ -5,17 +5,15 @@
 
 use axum::Json;
 use axum::extract::State;
-use axum::http::{StatusCode, header};
+use axum::http::header;
 use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::authentication::role::{AnyRole, RbacError};
-use crate::domain::{
-    Access, Direction, StorageCredentialInput, StorageLocation, VendedCredentials,
-};
-use crate::error::{ErrorBody, ErrorCode, Refusal};
+use crate::authentication::role::AnyRole;
+use crate::domain::{Access, VendedCredentials};
+use crate::error::{ErrorBody, Refusal};
 use crate::startup::AppState;
 use crate::storage_client;
 
@@ -57,11 +55,44 @@ pub async fn vend(
     State(state): State<AppState>,
     Json(req): Json<StorageCredentialsRequest>,
 ) -> Result<Response, Refusal> {
-    let (location, credential) = match req.scope {
-        Scope::Connection(name) => source(&state, &caller, &name, req.access).await?,
-        Scope::Job(id) => dataset(&state, &caller, &id, req.access).await?,
+    let access = req.access;
+    // Whether a job still runs is what the sweep decides: a write asks it.
+    if matches!(req.scope, Scope::Job(_)) && access == Access::Write {
+        crate::jobs::sweep(&state.db).await?;
+    }
+    // What the scope is and the secret that reaches it, read at once; the
+    // store is asked after, with no database held.
+    let (location, credential) = {
+        let conn = state.db.read().await;
+        let key = state.db.secret_key();
+        match req.scope {
+            Scope::Connection(name) => {
+                if caller.is_owner() {
+                    return Err(Refusal::forbidden("sources are the members'"));
+                }
+                if access != Access::Read {
+                    return Err(Refusal::invalid("a source is read, never written"));
+                }
+                let source = crate::connections::source(&conn, &name)?;
+                crate::connections::storage(&conn, key, &source)?
+            }
+            Scope::Job(id) => {
+                let job = if caller.is_owner() {
+                    if access != Access::Read {
+                        return Err(Refusal::forbidden(
+                            "the owner reads a job's dataset, and only its creator writes it",
+                        ));
+                    }
+                    crate::jobs::any(&conn, &id)?
+                } else {
+                    crate::jobs::owned(&conn, &caller.user_id, &id)?
+                };
+                job.may(access)?;
+                crate::jobs::output(&conn, key, &job)?
+            }
+        }
     };
-    let vended = storage_client::vend::vend(&credential, &location, req.access).await?;
+    let vended = storage_client::vend::vend(&credential, &location, access).await?;
     Ok((
         [(header::CACHE_CONTROL, "no-store")],
         Json(VendedCredentials {
@@ -69,68 +100,6 @@ pub async fn vend(
         }),
     )
         .into_response())
-}
-
-/// A source connection's prefix: a member's, to read. Sources are read, never
-/// written; the sink is reached only through its jobs.
-async fn source(
-    state: &AppState,
-    caller: &AnyRole,
-    name: &str,
-    access: Access,
-) -> Result<(StorageLocation, StorageCredentialInput), Refusal> {
-    if caller.is_owner() {
-        return Err(RbacError::InsufficientRole.into());
-    }
-    let connection = crate::connections::named(&state.db, name).await?;
-    if connection.target.direction != Direction::Source {
-        return Err(Refusal::invalid(format!(
-            "{name:?} is not a storage source"
-        )));
-    }
-    if access != Access::Read {
-        return Err(Refusal::invalid("a source is read, never written"));
-    }
-    crate::connections::storage(&state.db, &connection).await
-}
-
-/// A job's dataset, `{sink}/{folder}/`: its creator's, to read once the job has
-/// completed and to write while it runs; the owner's, to read once completed.
-async fn dataset(
-    state: &AppState,
-    caller: &AnyRole,
-    id: &str,
-    access: Access,
-) -> Result<(StorageLocation, StorageCredentialInput), Refusal> {
-    // Whether a job still runs is what the sweep decides: a write asks it.
-    if access == Access::Write {
-        crate::jobs::sweep(&state.db).await?;
-    }
-    let job = if caller.is_owner() {
-        if access != Access::Read {
-            return Err(Refusal::forbidden(
-                "the owner reads a job's dataset, and only its creator writes it",
-            ));
-        }
-        crate::jobs::any(&state.db, id).await?
-    } else {
-        crate::jobs::owned(&state.db, &caller.user_id, id).await?
-    };
-    job.may(access)?;
-    let sink = crate::connections::persistence::get(&*state.db.read().await, &job.sink_connection)?
-        .ok_or_else(|| {
-            Refusal::new(
-                StatusCode::BAD_REQUEST,
-                ErrorCode::JobNoDestination,
-                "The job's destination connection no longer exists",
-            )
-        })?;
-    let (sink, credential) = crate::connections::storage(&state.db, &sink).await?;
-    // Only a draft has no folder, and a draft is neither running nor completed.
-    let output = job
-        .output_under(&sink)
-        .ok_or_else(|| Refusal::invalid("The job has no output folder"))?;
-    Ok((output, credential))
 }
 
 /// The routes this module serves.

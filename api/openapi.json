@@ -544,7 +544,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "At most this many objects; [`MAX_FILES`] when left out, and never more.",
+            "description": "At most this many objects: 1000 when left out, and never more.",
             "required": false,
             "schema": {
               "type": "integer",
@@ -564,7 +564,7 @@
             }
           },
           "400": {
-            "description": "Not a storage connection, or a prefix that leaves it (`data.field`)",
+            "description": "Not a storage source, or a prefix that leaves it (`data.field`)",
             "content": {
               "application/json": {
                 "schema": {

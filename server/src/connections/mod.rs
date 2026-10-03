@@ -2,9 +2,10 @@
 
 pub mod persistence;
 
+use crate::credentials::sealing::SecretKey;
 use crate::database::Database;
 use crate::domain::{
-    ConnectionView, Credential, ResourceName, StorageCredentialInput, StorageLocation,
+    ConnectionView, Credential, Direction, ResourceName, StorageCredentialInput, StorageLocation,
     StorageTarget,
 };
 use crate::error::{ErrorCode, Refusal};
@@ -45,11 +46,14 @@ async fn disjoint(
     connection: &ConnectionView,
     name: Option<&str>,
 ) -> Result<(), Refusal> {
-    let (location, _) = storage(db, connection).await?;
-    let others = persistence::list(&*db.read().await)?;
+    let conn = db.read().await;
+    let (location, _) = storage(&conn, db.secret_key(), connection)?;
     let mut overlapping = Vec::new();
-    for other in others.iter().filter(|o| Some(o.name.as_str()) != name) {
-        let (theirs, _) = storage(db, other).await?;
+    for other in persistence::list(&conn)?
+        .iter()
+        .filter(|o| Some(o.name.as_str()) != name)
+    {
+        let (theirs, _) = storage(&conn, db.secret_key(), other)?;
         if theirs.overlaps(&location) {
             overlapping.push(other.name.clone());
         }
@@ -118,15 +122,29 @@ pub async fn create(
     save(db, None, connection, by).await
 }
 
-/// A storage connection's location, as its credential reaches it, and that credential.
-pub async fn storage(
-    db: &Database,
+/// A storage connection's location, as its secret reaches it, and that secret.
+pub fn storage(
+    conn: &rusqlite::Connection,
+    key: &SecretKey,
     connection: &ConnectionView,
 ) -> Result<(StorageLocation, StorageCredentialInput), Refusal> {
     let location = StorageLocation::parse(&connection.target.url).map_err(Refusal::invalid)?;
-    let spec = crate::credentials::named(db, &connection.credential)
-        .await?
+    let spec = crate::credentials::persistence::get(conn, key, &connection.credential)?
+        .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such credential"))?
         .spec;
     let location = location.within(&spec).map_err(Refusal::invalid)?;
     Ok((location, spec))
+}
+
+/// The source connection `name`: what a member reads, and never writes. The
+/// sink is reached only through its jobs.
+pub fn source(conn: &rusqlite::Connection, name: &str) -> Result<ConnectionView, Refusal> {
+    let connection = persistence::get(conn, name)?
+        .ok_or_else(|| Refusal::not_found(ErrorCode::ConnectionNotFound, "No such connection"))?;
+    if connection.target.direction != Direction::Source {
+        return Err(Refusal::invalid(format!(
+            "{name:?} is not a storage source"
+        )));
+    }
+    Ok(connection)
 }

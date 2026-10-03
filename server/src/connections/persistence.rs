@@ -74,6 +74,17 @@ pub fn get(conn: &Connection, name: &str) -> DbResult<Option<ConnectionView>> {
         .optional()?)
 }
 
+/// The workspace's one sink, if it has one.
+pub fn sink(conn: &Connection) -> DbResult<Option<ConnectionView>> {
+    Ok(conn
+        .query_row(
+            &format!("SELECT {COLUMNS} FROM connections WHERE direction = 'sink'"),
+            [],
+            row,
+        )
+        .optional()?)
+}
+
 /// Every connection.
 pub fn list(conn: &Connection) -> DbResult<Vec<ConnectionView>> {
     let connections = conn

@@ -162,7 +162,7 @@ pub async fn get_job(
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     crate::jobs::sweep(&state.db).await?;
-    Ok(Json(owned(&state.db, &member.user_id, &id).await?))
+    Ok(Json(owned(&*state.db.read().await, &member.user_id, &id)?))
 }
 
 #[utoipa::path(patch, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -181,7 +181,7 @@ pub async fn edit_draft(
     Path(id): Path<String>,
     Json(edits): Json<DraftEdits>,
 ) -> Result<impl IntoResponse, Refusal> {
-    let mut job = owned(&state.db, &member.user_id, &id).await?;
+    let mut job = owned(&*state.db.read().await, &member.user_id, &id)?;
     job.edit()?;
     edits.apply(&mut job)?;
     persistence::write(&*state.db.write().await, &job)?;
@@ -207,7 +207,7 @@ pub async fn submit_job(
     Path(id): Path<String>,
     Json(edits): Json<DraftEdits>,
 ) -> Result<impl IntoResponse, Refusal> {
-    let mut job = owned(&state.db, &member.user_id, &id).await?;
+    let mut job = owned(&*state.db.read().await, &member.user_id, &id)?;
     job.edit()?;
     edits.apply(&mut job)?;
     job.submit()?;
@@ -245,7 +245,7 @@ pub async fn report_status(
         return Ok(StatusCode::NO_CONTENT);
     }
     crate::jobs::sweep(&state.db).await?;
-    let mut job = owned(&state.db, &member.user_id, &id).await?;
+    let mut job = owned(&*state.db.read().await, &member.user_id, &id)?;
     job.report(payload.status, payload.report, payload.problem)?;
     persistence::write(&*state.db.write().await, &job)?;
     Ok(StatusCode::NO_CONTENT)
@@ -265,7 +265,7 @@ pub async fn delete_job(
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     crate::jobs::sweep(&state.db).await?;
-    owned(&state.db, &member.user_id, &id).await?.delete()?;
+    owned(&*state.db.read().await, &member.user_id, &id)?.delete()?;
 
     persistence::delete(&*state.db.write().await, &id)?;
     Ok(StatusCode::NO_CONTENT)

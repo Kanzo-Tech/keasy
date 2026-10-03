@@ -84,8 +84,8 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
 
     let owner = app.token_for("u-9", &["owner"]);
     assert_eq!(
-        vend(&app, &owner, source, "read").await.0,
-        StatusCode::FORBIDDEN,
+        vend(&app, &owner, source, "read").await,
+        (StatusCode::FORBIDDEN, Some("rbac/forbidden".to_owned())),
         "the owner never reads a source"
     );
     assert_eq!(

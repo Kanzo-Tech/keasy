@@ -171,6 +171,20 @@ async fn a_listing_stays_under_its_prefix_and_says_when_it_was_cut() {
     );
     let (paths, truncated) = list("?limit=2").await;
     assert_eq!((paths.len(), truncated), (2, json!(true)));
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    let (status, _) = app
+        .send(
+            Method::GET,
+            "/v1/connections/sink/files",
+            member,
+            json!(null),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "the sink is reached through its jobs"
+    );
     for prefix in ["..", "a/../b", "a//b"] {
         let (status, body) = app
             .send(

@@ -1303,7 +1303,7 @@ export interface operations {
                  *     only what is under it. No `.` or `..` segments.
                  */
                 prefix?: string;
-                /** @description At most this many objects; [`MAX_FILES`] when left out, and never more. */
+                /** @description At most this many objects: 1000 when left out, and never more. */
                 limit?: number;
             };
             header?: never;
@@ -1324,7 +1324,7 @@ export interface operations {
                     "application/json": components["schemas"]["FileListing"];
                 };
             };
-            /** @description Not a storage connection, or a prefix that leaves it (`data.field`) */
+            /** @description Not a storage source, or a prefix that leaves it (`data.field`) */
             400: {
                 headers: {
                     [name: string]: unknown;

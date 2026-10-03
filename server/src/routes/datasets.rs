@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use axum::Json;
 use axum::extract::State;
 use serde::Serialize;
@@ -7,7 +5,6 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use crate::authentication::role::Owner;
-use crate::domain::{JobStatus, StorageLocation};
 use crate::error::Refusal;
 use crate::jobs::persistence;
 use crate::startup::AppState;
@@ -38,34 +35,24 @@ pub async fn list_datasets(
     _: Owner,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Dataset>>, Refusal> {
-    crate::jobs::sweep(&state.db).await?;
     let conn = state.db.read().await;
-    // The sink a job wrote to, by name: one per workspace, read once.
-    let mut sinks = HashMap::new();
-    let mut datasets = Vec::new();
-    for job in persistence::completed(&conn)? {
-        if job.status != JobStatus::Completed {
-            continue;
-        }
-        if !sinks.contains_key(&job.sink_connection) {
-            let sink = crate::connections::persistence::get(&conn, &job.sink_connection)?
-                .and_then(|c| StorageLocation::parse(&c.target.url).ok());
-            sinks.insert(job.sink_connection.clone(), sink);
-        }
-        let Some(dest) = sinks[&job.sink_connection]
-            .as_ref()
-            .and_then(|sink| job.output_under(sink))
-        else {
-            continue;
-        };
-        datasets.push(Dataset {
-            dest: dest.to_string(),
-            completed_at: job.completed_at.unwrap_or_default(),
-            id: job.id,
-            name: job.name,
-        });
-    }
-    datasets.sort_by(|a, b| b.completed_at.cmp(&a.completed_at));
+    // A completed job wrote to the workspace's one sink.
+    let Some(sink) = crate::connections::persistence::sink(&conn)? else {
+        return Ok(Json(Vec::new()));
+    };
+    let (sink_at, _) = crate::connections::storage(&conn, state.db.secret_key(), &sink)?;
+    let datasets = persistence::completed(&conn)?
+        .into_iter()
+        .filter(|job| job.sink_connection == sink.name)
+        .filter_map(|job| {
+            Some(Dataset {
+                dest: job.output_under(&sink_at)?.to_string(),
+                completed_at: job.completed_at.unwrap_or_default(),
+                id: job.id,
+                name: job.name,
+            })
+        })
+        .collect();
     Ok(Json(datasets))
 }
 

@@ -44,16 +44,14 @@ pub struct UpdateConnectionRequest {
 pub struct FilesQuery {
     /// A folder under the connection's prefix (`dynamic/`, `a/b`), to list
     /// only what is under it. No `.` or `..` segments.
-    #[serde(default)]
     pub prefix: Option<String>,
-    /// At most this many objects; [`MAX_FILES`] when left out, and never more.
-    #[serde(default)]
+    /// At most this many objects: 1000 when left out, and never more.
     pub limit: Option<usize>,
 }
 
 /// The most objects one listing answers: a listing is a page a person reads,
 /// not an inventory of the store.
-pub const MAX_FILES: usize = 1000;
+const MAX_FILES: usize = 1000;
 
 /// The objects under a connection's prefix, the first `limit` of them.
 #[derive(Debug, Serialize, ToSchema)]
@@ -249,7 +247,7 @@ pub async fn validate_connection(
     params(("name" = String, Path, description = "Connection name"), FilesQuery),
     responses(
         (status = 200, description = "The first `limit` objects under the connection's prefix, or under `prefix` within it", body = FileListing),
-        (status = 400, description = "Not a storage connection, or a prefix that leaves it (`data.field`)", body = ErrorBody),
+        (status = 400, description = "Not a storage source, or a prefix that leaves it (`data.field`)", body = ErrorBody),
         (status = 404, description = "No such connection", body = ErrorBody),
         (status = 502, description = "The store refused the listing", body = ErrorBody),
         (status = 504, description = "The store did not answer in time", body = ErrorBody),
@@ -264,8 +262,12 @@ pub async fn list_connection_files(
     let under = ObjectPath::parse(query.prefix.as_deref().unwrap_or_default())
         .map_err(|e| Refusal::invalid_field("prefix", e.to_string()))?;
     let limit = query.limit.unwrap_or(MAX_FILES).min(MAX_FILES);
-    let connection = named(&state.db, &name).await?;
-    let (url, credential) = crate::connections::storage(&state.db, &connection).await?;
+    let (url, credential) = {
+        let conn = state.db.read().await;
+        // The sink is reached through its jobs, here as when a credential is vended.
+        let source = crate::connections::source(&conn, &name)?;
+        crate::connections::storage(&conn, state.db.secret_key(), &source)?
+    };
     let (files, truncated) = storage_client::list_files(&credential, &url, &under, limit).await?;
     Ok(Json(FileListing {
         files: files.into_iter().map(FileEntry::from).collect(),

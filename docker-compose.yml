@@ -1,133 +1,45 @@
 # The dev stack. Every value is a dev literal; prod is infra/terraform.
 #
+# Identity and the AI gateway are the platform's: kanzo-ui's services, included
+# at the release in the Makefile (`make deps` checks it out into .deps/kanzo-ui).
+# keasy only registers itself with them (`provision`).
+#
 # `*.localhost` is loopback on the host and a network alias here, so one URL
-# works from the browser and from a container: Keycloak's issuer and the S3
-# endpoint a vended credential names are both addressed that way.
+# works from the browser and from a container: the S3 endpoint a vended
+# credential names is addressed that way.
+
+include:
+  - .deps/kanzo-ui/services/auth/compose.yml
+  - .deps/kanzo-ui/services/ai/compose.yml
 
 services:
-  keycloak-postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: keycloak
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: keycloak
-    volumes:
-      - keycloak-postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloak"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Boots empty; keycloak-realm provisions it with the Terraform prod applies.
-  # Its own origin, like prod's auth host.
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.2
-    command: ["start-dev"]
-    environment:
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: keycloak
-      KC_HOSTNAME: http://keycloak.localhost:8180
-      KC_HTTP_PORT: "8180"
-      KC_HEALTH_ENABLED: "true"
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-    ports:
-      - "8180:8180"
-    networks:
-      default:
-        aliases:
-          - keycloak.localhost
-    depends_on:
-      keycloak-postgres:
-        condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nhost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'",
-        ]
-      interval: 10s
-      timeout: 10s
-      retries: 30
-      start_period: 300s
-
-  # The realm module prod applies, with dev.tfvars. State lives in a volume, so
-  # `make clean` resets it together with Keycloak's database.
-  keycloak-realm:
-    image: hashicorp/terraform:1.9
+  # keasy, registered with the platform: its client and roles (infra/auth), the
+  # dev tenant's AI team and key (infra/ai), and its roles mapped onto the seed's
+  # organization groups. State in a volume, reset by `make clean` with the rest.
+  provision:
+    image: hashicorp/terraform:1.14
     restart: "no"
-    working_dir: /work
     entrypoint: ["/bin/sh", "-ec"]
     command:
-      - terraform init -input=false && terraform apply -input=false -auto-approve -state=/state/terraform.tfstate -var-file=dev.tfvars
+      - |
+        for root in auth ai; do
+          export TF_DATA_DIR=/state/$$root/.terraform
+          terraform -chdir=/infra/$$root init -input=false -backend-config=path=/state/$$root/terraform.tfstate >/dev/null
+          terraform -chdir=/infra/$$root apply -input=false -auto-approve -var-file=dev.tfvars \
+            $$( [ $$root = auth ] && echo "-var kc_admin_password=admin" )
+        done
+        apk add --no-cache --quiet curl jq >/dev/null
+        KC_URL=http://keycloak:8080 sh /infra/auth/dev-roles.sh
     volumes:
-      - ./infra/terraform/realm:/work
-      - keycloak-realm-state:/state
-    environment:
-      TF_DATA_DIR: /state/.terraform
+      - ./infra/auth:/infra/auth:ro
+      - ./infra/ai:/infra/ai:ro
+      - ./.deps/kanzo-ui/services/auth:/kanzo-auth:ro
+      - provision-state:/state
     depends_on:
-      keycloak:
+      auth-seed:
+        condition: service_completed_successfully
+      ai-gateway:
         condition: service_healthy
-      litellm:
-        condition: service_healthy
-
-  litellm-postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: litellm
-      POSTGRES_USER: litellm
-      POSTGRES_PASSWORD: litellm
-    volumes:
-      - litellm-postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U litellm"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # The AI gateway prod runs (platform module), on the dev profile. keycloak-realm
-  # mints the dev tenant's team and key here, as it does in prod. Admin console:
-  # http://localhost:4000/ui (admin / the master key).
-  litellm:
-    image: ghcr.io/berriai/litellm-database:v1.103.0@sha256:f4f114b1996c5923c4d62a7bbdcecb2ccf9df17bdebce76050f609be97f75f5c
-    command: ["--config", "/app/config.yaml", "--port", "4000"]
-    ports:
-      - "4000:4000"
-    volumes:
-      - ./infra/ai/litellm.dev.yaml:/app/config.yaml:ro
-    environment:
-      LITELLM_MASTER_KEY: sk-dev-master-key
-      DATABASE_URL: postgresql://litellm:litellm@litellm-postgres:5432/litellm
-      REDIS_HOST: valkey
-      REDIS_PORT: "6379"
-      STORE_MODEL_IN_DB: "False"
-      # Docker Desktop's VM on Apple silicon advertises SVE2 the CPU lacks, and
-      # cryptography ≥ 49 dies on it with SIGILL (same fault: Parallels KB 131179).
-      # This only turns off OpenSSL's ARM capability probing.
-      OPENSSL_armcap: "0"
-    # The dev models, served by Docker Model Runner on the host's GPU. Compose
-    # pulls them on `up` and hands the gateway each one's endpoint and name.
-    models:
-      chat:
-        endpoint_var: CHAT_URL
-        model_var: CHAT_MODEL
-      complete:
-        endpoint_var: COMPLETE_URL
-        model_var: COMPLETE_MODEL
-    depends_on:
-      litellm-postgres:
-        condition: service_healthy
-      valkey:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:4000/health/liveliness')\""]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 60s
 
   server:
     build:
@@ -135,7 +47,7 @@ services:
       dockerfile: Dockerfile.dev
     # Published for curl only; the app reaches the API through the web's `/api/v1`.
     ports:
-      - "8080:8080"
+      - "8081:8080"
     volumes:
       - ./server/src:/src/server/src
       - keasy-data:/var/lib/keasy
@@ -147,18 +59,19 @@ services:
       KEASY_DATA_DIR: /var/lib/keasy
       # "dev-only-insecure-secret-key!!!!" in base64.
       KEASY_SECRET_KEY: ZGV2LW9ubHktaW5zZWN1cmUtc2VjcmV0LWtleSEhISE=
-      KEASY_ORG_ALIAS: dev
-      KEASY_WORKSPACE_NAME: Dev Workspace
-      KEASY_OIDC_ISSUER_URL: http://keycloak.localhost:8180/realms/keasy
-      KEASY_OIDC_CLIENT_ID: keasy-ws-dev
+      KEASY_ORG_ALIAS: acme
+      KEASY_WORKSPACE_NAME: Acme Corporation
+      KEASY_OIDC_ISSUER_URL: http://localhost:8080/realms/kanzo
+      KEASY_OIDC_INTERNAL_BASE_URL: http://keycloak:8080
+      KEASY_OIDC_CLIENT_ID: keasy
       # The dev S3 credential, its data and shapes sources and the sink, in the
       # API's own request format.
       KEASY_BOOTSTRAP_FILE: /etc/keasy/bootstrap.json
-      # dev.tfvars fixes the dev tenant's gateway key.
-      KEASY_AI_URL: http://litellm:4000
-      KEASY_AI_KEY: sk-keasy-dev-workspace
+      # infra/ai/dev.tfvars fixes the dev tenant's gateway key.
+      KEASY_AI_URL: http://ai-gateway:4000
+      KEASY_AI_KEY: sk-keasy-dev-acme
     depends_on:
-      keycloak-realm:
+      provision:
         condition: service_completed_successfully
       s3-init:
         condition: service_completed_successfully
@@ -184,10 +97,11 @@ services:
       - /app/api/node_modules
     environment:
       KEASY_API_URL: http://server:8080
-      KEASY_OIDC_ISSUER_URL: http://keycloak.localhost:8180/realms/keasy
-      KEASY_OIDC_CLIENT_ID: keasy-ws-dev
-      # dev.tfvars fixes it.
-      KEASY_OIDC_CLIENT_SECRET: keasy-dev-secret
+      KEASY_OIDC_ISSUER_URL: http://localhost:8080/realms/kanzo
+      KEASY_OIDC_INTERNAL_BASE_URL: http://keycloak:8080
+      KEASY_OIDC_CLIENT_ID: keasy
+      # infra/auth/dev.tfvars fixes it.
+      KEASY_OIDC_CLIENT_SECRET: dev-only-keasy-secret
       KEASY_SESSION_SECRET: dev-only-insecure-session-secret-change-me
       KEASY_SESSION_STORE_URL: redis://valkey:6379
     depends_on:
@@ -290,9 +204,9 @@ services:
           - s3.localhost
 
   # The AI gateway, silent: accepts the relay's connection and never answers.
-  # Shares LiteLLM's name, so with `litellm` stopped the server's relay meets
-  # silence instead (scenario 13). Never up beside `litellm`.
-  litellm-silent:
+  # Shares the gateway's name, so with `ai-gateway` stopped the server's relay
+  # meets silence instead (scenario 13). Never up beside `ai-gateway`.
+  ai-gateway-silent:
     profiles: [faults]
     image: python:3.12-alpine
     command: ["python", "-u", "/faults/silent.py", "4000"]
@@ -301,21 +215,12 @@ services:
     networks:
       default:
         aliases:
-          - litellm
+          - ai-gateway
 
 volumes:
   keasy-data:
-  keycloak-postgres-data:
-  keycloak-realm-state:
+  provision-state:
   server-target:
   cargo-registry:
   s3-data:
-  litellm-postgres-data:
 
-# What answers the gateway's aliases in dev: Hermes 3, quantized, on Docker
-# Model Runner — native on the host, so a Mac's GPU, and nothing to install.
-models:
-  chat:
-    model: hf.co/NousResearch/Hermes-3-Llama-3.1-8B-GGUF:Q4_K_M
-  complete:
-    model: hf.co/NousResearch/Hermes-3-Llama-3.2-3B-GGUF:Q4_K_M

@@ -3,6 +3,8 @@
 # the platform's; this is all keasy declares there.
 terraform {
   required_version = ">= 1.6.0"
+  # The state's path is the caller's: `terraform init -backend-config=path=…`.
+  backend "local" {}
   required_providers {
     keycloak = {
       source  = "keycloak/keycloak"

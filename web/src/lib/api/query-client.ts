@@ -32,7 +32,7 @@ export const queryClient = new QueryClient({
   },
 });
 
-/** A refused session signs in again; a workspace the person left sends them home. */
+/** A refused session signs in again; a workspace the person holds no role in any more sends them home. */
 function handleAuthError(error: unknown) {
   if (redirected || !(error instanceof ApiError)) return;
   if (error.status === 401) {

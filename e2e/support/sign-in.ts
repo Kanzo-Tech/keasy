@@ -1,8 +1,8 @@
 import { expect, type Page } from "@playwright/test";
 
 /**
- * Sign in through the real flow — the app, the BFF, Keycloak's form — as one of the dev realm's
- * accounts (infra/terraform/realm/dev.tfvars: dev literals, never a real credential).
+ * Sign in through the real flow — the app, the BFF, Keycloak's form — as one of the platform seed's
+ * accounts (kanzo-ui services/auth/seed: dev literals, never a real credential).
  *
  * The dev realm's password accounts have no name and the User Profile requires one (in production
  * the IdP supplies it), so a fresh realm asks for it on the first sign-in.

@@ -10,15 +10,17 @@ Needs Docker with Compose v2 and ~8 GB RAM (Keycloak + the first Rust compile).
 make dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and log in at Keycloak. The first
+`make dev` first runs `make deps` (kanzo-ui's platform services, identity and the AI
+gateway, checked out into `.deps/kanzo-ui`). Open [http://localhost:3000](http://localhost:3000)
+and log in at Keycloak. The first
 `up` compiles the server's dependencies once; later ones reuse the cached volumes.
 No `.env`: every dev value is a literal in `docker-compose.yml`.
 
 | What | Where |
 |------|-------|
 | App (web BFF, `/api/v1`) | [http://localhost:3000](http://localhost:3000) |
-| Keycloak | [http://keycloak.localhost:8180](http://keycloak.localhost:8180) (admin `admin` / `admin`) |
-| API, for curl | `http://localhost:8080` |
+| Keycloak | [http://localhost:8080](http://localhost:8080) (admin `admin` / `admin`) |
+| API, for curl | `http://localhost:8081` |
 | AI gateway console | [http://localhost:4000/ui](http://localhost:4000/ui) (`admin` / `sk-dev-master-key`) |
 
 AI runs on local models served by Docker Model Runner (Docker Desktop 4.40+,
@@ -27,17 +29,19 @@ pulls them; until then everything but AI works.
 
 ## Dev accounts
 
-Two accounts, because the planes are disjoint: an owner administers members,
-identity and the catalog and has no data plane; a member runs jobs, holds the
-connections and opens Discovery, and administers nothing.
+The platform's seed users (kanzo-ui `services/auth/seed`), all with password `password`.
+This instance serves the `acme` organization; a role is the organization group its admin
+put the user in.
 
-| Email | Password | Role | What it reaches |
-|-------|----------|------|-----------------|
-| `dev@keasy.local` | `password` | Member | Jobs, connections, Discovery, AI |
-| `owner@keasy.local` | `password` | Owner | Members, identity, catalog |
+| User | acme | globex |
+|------|------|--------|
+| `ana` | admin | reader |
+| `bruno` | editor | — |
+| `eva` | reader | — |
+| `fede` | member, no role | — |
 
-Both are declared in `infra/terraform/realm/dev.tfvars` (`tenants`,
-`dev_user_password`). Dev has no upstream IdP; prod has no passwords, only SSO.
+Roles nest: reader ⊂ editor ⊂ admin (`infra/auth`). Prod has no seed: people are
+invited into their organization from Keycloak.
 
 ## Dev data
 
@@ -102,8 +106,10 @@ no session and no cookie. It is reached only through the web's `/api/v1`.
 
 Mappings run in the browser (DuckDB-WASM + `@fossil-lang/*`), and so does source
 introspection; the server hosts connections, vends credentials scoped to one prefix, jobs and the catalog,
-and never reads a data file. Every job names a sink as its destination and is
-visible only to the member who created it.
+and never reads a data file. Every job names a sink as its destination. The work
+is shared: everyone in the workspace reads every job, and its creator or an admin
+changes it (roles `reader ⊂ editor ⊂ admin`, from the Keycloak organization the
+instance serves).
 
 Models are not a credential. Every call goes to the platform's **AI gateway**
 under an alias (`chat`, `complete`) with the workspace's own key, which
@@ -131,8 +137,10 @@ the volume (`make clean`) instead.
 
 Docker Swarm, driven by Terraform — see [`infra/terraform/README.md`](infra/terraform/README.md).
 `make deploy-platform` brings up Traefik, Keycloak (on its own host), Postgres and the AI gateway;
-`make deploy-realm` applies the realm and one server + web + Valkey stack per tenant
-declared in `realm/terraform.tfvars`. Images are published to GHCR by
+`make deploy-auth` applies kanzo-ui's `kanzo` realm (one organization per tenant) and keasy's
+client (`infra/auth`); `make deploy-ai-teams` a team and key per tenant (`infra/ai`); and
+`make deploy-instances` one server + web + Valkey stack per organization
+(`infra/terraform/instances`). Images are published to GHCR by
 `.github/workflows/images.yml` on `v*` tags, after the server and web CI pass.
 
 ## Development
@@ -141,14 +149,14 @@ declared in `realm/terraform.tfvars`. Images are published to GHCR by
 |--------|--------------|
 | `make dev` | Start dev; rebuild only after dep or Dockerfile changes (code hot-reloads) |
 | `make down` | Stop everything |
-| `make clean` | Remove containers, volumes (Keycloak, dev realm state, data) and images |
+| `make clean` | Remove containers, volumes (Keycloak, provisioning state, data) and images |
 | `make logs` / `make logs-<svc>` | Tail logs |
 | `make restart` / `make restart-<svc>` | Restart without rebuilding |
 | `make shell-<svc>` | Shell in a container |
 | `make e2e` | The failure scenarios (`e2e/`, Playwright) against the stack without models (`e2e/compose.yml`, as CI); main checkout only, as Keycloak admits :3000 alone |
 
-`docker-compose.yml` is the dev stack and nothing else. Dev applies the same
-`infra/terraform/realm` module as prod, with `dev.tfvars`.
+`docker-compose.yml` is the dev stack and nothing else. It includes kanzo-ui's services
+and applies the same `infra/auth` and `infra/ai` roots as prod, with their `dev.tfvars`.
 The Rust toolchain is pinned once, in `server/rust-toolchain.toml`.
 
 ## API contract
@@ -169,7 +177,9 @@ make api   # UPDATE_EXPECT=1 cargo test --test api openapi, then pnpm generate
 api/                @keasy/api: the committed spec, its generated types and the client
 e2e/                @keasy/e2e: one Playwright test per failure scenario, its fixtures, and the `faults` profile's servers
 infra/dev/          the S3 store's config and seed, and an example program, dev-only
-infra/terraform/    platform/ and realm/ — the Swarm deployment, and dev's realm
+infra/auth/         keasy's client and roles in the platform realm (dev and prod)
+infra/ai/           keasy's AI profile (litellm.prod.yaml) and its tenants' teams
+infra/terraform/    platform/ and instances/ — the Swarm deployment
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)
   src/main.rs       configures from the environment and serves
   src/startup.rs    Application, AppState, the router and the spec it publishes

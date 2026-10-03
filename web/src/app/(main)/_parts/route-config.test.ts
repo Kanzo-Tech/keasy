@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateBreadcrumbs } from "./route-config";
+import { generateBreadcrumbs, getSidebarRoutes } from "./route-config";
 
 describe("generateBreadcrumbs", () => {
   it("names a job's crumb from the job, not from its id", () => {
@@ -12,5 +12,16 @@ describe("generateBreadcrumbs", () => {
     const crumbs = generateBreadcrumbs("/jobs/new");
     expect(crumbs.at(-1)).toMatchObject({ name: "New Job", path: "/jobs/new" });
     expect(crumbs.at(-1)?.label).toBeUndefined();
+  });
+});
+
+describe("getSidebarRoutes", () => {
+  it("draws the same sidebar for every role", () => {
+    expect(getSidebarRoutes().map((r) => r.path)).toEqual(["/", "/datasets", "/jobs", "/connections"]);
+  });
+
+  it("names the admin's settings", () => {
+    expect(generateBreadcrumbs("/settings/storage").at(-1)?.name).toBe("Workspace storage");
+    expect(generateBreadcrumbs("/settings/members").at(-1)?.name).toBe("Members");
   });
 });

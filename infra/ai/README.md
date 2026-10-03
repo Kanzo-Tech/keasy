@@ -1,11 +1,14 @@
 # The AI gateway
 
 Every model call keasy makes goes through one service: [LiteLLM](https://docs.litellm.ai),
-deployed by the platform module next to Keycloak. It is to models what Keycloak is
+the platform's gateway from kanzo-ui (`services/ai`): its compose in dev, its
+`modules/gateway` in the platform module in prod. keasy owns two things here: its
+**profile**, `litellm.prod.yaml` (which upstream answers each alias), and **its tenants'
+teams**, this directory's Terraform root. It is to models what Keycloak is
 to identity: the apps speak one protocol to it (OpenAI chat completions) and name
 an **alias**, never a provider or a model.
 
-| Alias | Used for | Dev (`litellm.dev.yaml`) | Prod (`litellm.prod.yaml`) |
+| Alias | Used for | Dev (kanzo-ui's `litellm.dev.yaml`) | Prod (`litellm.prod.yaml`) |
 |-------|----------|--------------------------|----------------------------|
 | `chat` | Discovery's Ask, the job assistant | Hermes 3 8B on Docker Model Runner | Claude Sonnet |
 | `complete` | Assisted fields (ghost text, chips) | Hermes 3 3B on Docker Model Runner | Claude Haiku |
@@ -20,9 +23,10 @@ and streams the answer back untouched.
 
 ## Who pays: a team per tenant
 
-The realm module (`infra/terraform/realm/tenants_ai.tf`) gives every workspace a
-LiteLLM **team**, carrying its budget (`ai_budget`, USD per `ai_budget_duration`),
-and a **service-account key** in that team. The key reaches the workspace's server
+This root (kanzo-ui's `services/ai/modules/team`, once per entry of `tenants`, keyed by
+the organization alias) gives every tenant a LiteLLM **team**, carrying its budget
+(`ai_budget`, USD per `budget_duration`), and a **key** in that team. `keys` (output)
+feeds `infra/terraform/instances`' `ai_keys`, and each key reaches its instance's server
 as a Swarm secret (`KEASY_AI_KEY_FILE`). Spend, limits and logs are per workspace in
 the admin console.
 
@@ -34,12 +38,12 @@ run on the GPU (a sentence in about a second) — and compose hands the gateway 
 endpoint and name. The first `up` pulls them (~6.5 GB); after that the loop is offline and
 free. Needs Docker Desktop 4.40+ with Model Runner on (`docker desktop enable model-runner`).
 The admin console is at [http://localhost:4000/ui](http://localhost:4000/ui) (user `admin`,
-password `sk-dev-master-key`). The dev tenant's key is fixed (`sk-keasy-dev-workspace`,
-`dev.tfvars`) so compose can hand it to the server.
+password `sk-dev-master-key`). Compose applies this root with `dev.tfvars`; the acme
+key is fixed (`sk-keasy-dev-acme`) so compose can hand it to the server.
 
 ```bash
 curl -N http://localhost:4000/v1/chat/completions \
-  -H "Authorization: Bearer sk-keasy-dev-workspace" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-keasy-dev-acme" -H "Content-Type: application/json" \
   -d '{"model":"chat","stream":true,"messages":[{"role":"user","content":"hi"}]}'
 ```
 
@@ -68,10 +72,9 @@ would answer the same.
 
 `deploy-platform` takes `ai_upstream_keys` (env name → key), and optionally
 `ai_admin_hostname` + `ai_admin_allow` for an IP-allowlisted route to the admin
-console. `deploy-realm` reads the master key from the platform output and reaches the
+console. `deploy-ai-teams` reads the master key from the platform output and reaches the
 management API at `ai_url` (the admin host), so the operator's address must be in
 `ai_admin_allow`.
 
-The image is pinned by digest. Two LiteLLM releases (1.82.7, 1.82.8) were published
-compromised in March 2026; bump the pin deliberately, from a release that has been
-out for a few days.
+The gateway's images (LiteLLM pinned by digest, Postgres, Valkey) are kanzo-ui's module's;
+a bump comes with a new `KANZO_UI_REF`.

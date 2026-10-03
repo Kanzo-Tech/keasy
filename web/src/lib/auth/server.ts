@@ -14,9 +14,10 @@ import { ticketStore, type RelyingPartyConfig, type TicketAdapter } from "@kanzo
 import { redirect } from "next/navigation";
 import { createClient } from "redis";
 
+import { getBranding } from "@/lib/branding";
 import { PROBLEM_PAGE } from "@/lib/routes";
 
-import { workspaceRole, type WorkspaceRole } from "./roles";
+import { holds, type Role } from "./roles";
 
 /**
  * The relying party, in one place.
@@ -115,6 +116,8 @@ function bff(): Bff {
     secret: required("KEASY_SESSION_SECRET"),
     store: ticketStore(redisAdapter(required("KEASY_SESSION_STORE_URL")), { ttl: MAX_AGE }),
     maxAge: MAX_AGE,
+    // `organization:*` puts every membership, with the roles held in it, into the token.
+    scope: "openid profile email organization:*",
     // Where *this process* reaches Keycloak, when that is not where the browser
     // does. An origin: the issuer's own path is appended to it.
     internalOrigin: process.env.KEASY_OIDC_INTERNAL_BASE_URL?.trim() || undefined,
@@ -152,13 +155,18 @@ export function getSession(): Promise<Session | null> {
   return bff().read();
 }
 
+/** The Keycloak Organization this instance serves, by alias. */
+export async function currentOrganization(): Promise<string> {
+  return (await getBranding()).organization;
+}
+
 /**
- * A layout's guard for one plane. A session holding no role never gets here —
- * `(main)/layout.tsx` has already refused it — so what is left is the other
- * plane, which is sent `elsewhere`.
+ * A layout's guard for one role. A session holding no role here never gets this far —
+ * `(main)/layout.tsx` has already refused it — so what is left is a narrower role, sent `elsewhere`.
  */
-export async function requireRole(role: WorkspaceRole, elsewhere: string): Promise<void> {
-  if (workspaceRole(await getSession()) !== role) redirect(elsewhere);
+export async function requireRole(role: Role, elsewhere: string): Promise<void> {
+  const [session, organization] = await Promise.all([getSession(), currentOrganization()]);
+  if (!holds(session, organization, role)) redirect(elsewhere);
 }
 
 /** `/api/v1`: the browser's API call, forwarded to the resource server with the access token. */

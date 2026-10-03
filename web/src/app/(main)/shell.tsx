@@ -47,11 +47,9 @@ import {
 
 import { Link } from "@kanzo-tech/navigation/next";
 import { useBranding } from "@/lib/branding-context";
-import { $api } from "@/lib/api/client";
-import { ROLE_LABEL, workspaceRole, type WorkspaceRole } from "@/lib/auth/roles";
-import { Boundary } from "@/components/boundary";
+import { ROLE_LABEL, switchable, type Role } from "@/lib/auth/roles";
+import { useRole } from "@/lib/auth/use-role";
 import { ProblemView } from "@/components/problem-view";
-import { settled } from "@/lib/api/settled";
 import { initials } from "@/lib/ui/format";
 import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";
 import { HeaderEndContext } from "@/app/(main)/_parts/header-end";
@@ -59,7 +57,7 @@ import { Trail } from "@/app/(main)/_parts/trail";
 
 const titleCase = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
-// Each workspace is its own subdomain instance: `<current>.<base>` → `<slug>.<base>`.
+// Each workspace is its own subdomain instance, named for its organization: `<current>.<base>` → `<slug>.<base>`.
 function workspaceUrl(slug: string, current: string) {
   const { protocol, host } = window.location;
   const [hostname, port] = host.split(":");
@@ -81,13 +79,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [loggingOut, setLoggingOut] = useState(false);
   const [headerEnd, setHeaderEnd] = useState<HTMLElement | null>(null);
 
-  const role = workspaceRole(session) ?? "member";
-  const routes = getSidebarRoutes(role);
+  const { role } = useRole();
+  const routes = getSidebarRoutes();
   const crumbs = generateBreadcrumbs(pathname);
   const collapsed = state === "collapsed" && !isMobile;
   const closeMobile = () => setOpenMobile(false);
 
-  const branding = useBranding();
   const userName = session?.user.name ?? session?.user.email ?? "";
   const userEmail = session?.user.email ?? "";
 
@@ -97,13 +94,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <Boundary
-                fallback={
-                  <WorkspaceButton collapsed={collapsed} logo={branding.logo} name={branding.name || "Keasy"} role={role} />
-                }
-              >
-                <WorkspaceSwitcher collapsed={collapsed} isMobile={isMobile} role={role} />
-              </Boundary>
+              <WorkspaceSwitcher collapsed={collapsed} isMobile={isMobile} role={role} />
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
@@ -244,7 +235,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 function WorkspaceButton({
   name,
   logo,
-  role,
+  held,
   collapsed,
   switching,
   many = false,
@@ -253,7 +244,8 @@ function WorkspaceButton({
   name: string;
   /** The operator's mark (`/v1/branding`); the generic icon without one. */
   logo?: string | null;
-  role: WorkspaceRole;
+  /** The caller's widest role here; no badge without one. */
+  held: Role | null;
   collapsed: boolean;
   switching?: string | null;
   many?: boolean;
@@ -278,7 +270,7 @@ function WorkspaceButton({
         </SidebarIdentityIcon>
         <SidebarIdentityText>
           <SidebarIdentityLabel>{switching ? `Switching to ${switching}…` : name}</SidebarIdentityLabel>
-          <SidebarIdentityDescription>{ROLE_LABEL[role]}</SidebarIdentityDescription>
+          {held && <SidebarIdentityDescription>{ROLE_LABEL[held]}</SidebarIdentityDescription>}
         </SidebarIdentityText>
       </SidebarIdentity>
       <Show when={many}>
@@ -288,20 +280,22 @@ function WorkspaceButton({
   );
 }
 
-/** The workspaces the caller belongs to, as a menu that switches instance. Fails on its own, in the rail. */
-function WorkspaceSwitcher({ role, collapsed, isMobile }: { role: WorkspaceRole; collapsed: boolean; isMobile: boolean }) {
+/** The organizations the caller holds a role in, as a menu that switches instance. */
+function WorkspaceSwitcher({ role, collapsed, isMobile }: { role: Role | null; collapsed: boolean; isMobile: boolean }) {
   const queryClient = useQueryClient();
   const [switching, setSwitching] = useState<string | null>(null);
   const branding = useBranding();
-  const { workspaces, current, current_name } = settled($api.useSuspenseQuery("get", "/v1/auth/workspaces"));
-  const workspaceName = current_name || branding.name || titleCase(current ?? "") || "Keasy";
+  const { session } = useSession();
+  const current = branding.organization;
+  const workspaces = switchable(session).map((o) => o.alias);
+  const workspaceName = branding.name || titleCase(current) || "Keasy";
 
   async function switchTo(slug: string) {
     if (slug === current) return;
     setSwitching(titleCase(slug));
     await queryClient.resetQueries();
-    // The other instance has its own BFF; its sign-in route is the switch.
-    window.location.assign(`${workspaceUrl(slug, current ?? "")}/api/auth/signin`);
+    // The other instance has its own BFF, which signs the person in on arrival.
+    window.location.assign(`${workspaceUrl(slug, current)}/`);
   }
 
   return (
@@ -312,7 +306,7 @@ function WorkspaceSwitcher({ role, collapsed, isMobile }: { role: WorkspaceRole;
           logo={branding.logo}
           many={workspaces.length > 1}
           name={workspaceName}
-          role={role}
+          held={role}
           switching={switching}
         />
       </MenuTrigger>

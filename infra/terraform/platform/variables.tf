@@ -8,7 +8,7 @@ variable "acme_email" {
 
 variable "keycloak_image" {
   type    = string
-  default = "quay.io/keycloak/keycloak:26.2"
+  default = "quay.io/keycloak/keycloak:26.8.0"
 }
 
 variable "traefik_image" {
@@ -22,17 +22,6 @@ variable "postgres_image" {
 }
 
 # ── AI gateway ───────────────────────────────────────────────────────────────
-variable "ai_gateway_image" {
-  type = string
-  # Pinned by digest: two LiteLLM releases (1.82.7, 1.82.8) shipped compromised.
-  default = "ghcr.io/berriai/litellm-database:v1.103.0@sha256:f4f114b1996c5923c4d62a7bbdcecb2ccf9df17bdebce76050f609be97f75f5c"
-}
-
-variable "valkey_image" {
-  type    = string
-  default = "valkey/valkey:8.1-alpine"
-}
-
 # Env name => key, for every upstream infra/ai/litellm.prod.yaml names
 # (e.g. { ANTHROPIC_API_KEY = "…" }).
 variable "ai_upstream_keys" {

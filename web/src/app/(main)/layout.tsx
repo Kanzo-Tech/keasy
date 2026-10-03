@@ -1,8 +1,8 @@
 import { forbidden, redirect } from "next/navigation";
 import { SidebarProvider } from "@kanzo-tech/ui";
 import { AuthError } from "@kanzo-tech/auth";
-import { getSession } from "@/lib/auth/server";
-import { workspaceRole } from "@/lib/auth/roles";
+import { currentOrganization, getSession } from "@/lib/auth/server";
+import { holds } from "@/lib/auth/roles";
 import { PROBLEM_PAGE } from "@/lib/routes";
 import { Shell } from "./shell";
 
@@ -21,7 +21,7 @@ export default async function MainLayout({
 }>) {
   const session = await readSession();
   if (!session) redirect("/api/auth/signin");
-  if (!workspaceRole(session)) forbidden();
+  if (!holds(session, await currentOrganization(), "reader")) forbidden();
 
   return (
     <SidebarProvider className="h-dvh min-h-0 overflow-hidden">

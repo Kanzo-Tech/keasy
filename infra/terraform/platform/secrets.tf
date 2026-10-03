@@ -1,6 +1,6 @@
 # Generated once, in state. The DB password is a Swarm secret (Postgres reads _FILE);
 # the Keycloak admin password is passed as env (Keycloak does NOT honour _FILE for it)
-# and exported for the realm module's provider auth.
+# and exported for the realm's and infra/auth's provider auth.
 resource "random_password" "kc_db" {
   length  = 32
   special = false

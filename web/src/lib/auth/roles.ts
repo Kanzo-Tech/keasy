@@ -1,42 +1,34 @@
-import { can, type Session } from "@kanzo-tech/auth";
+import { can, type Organization, type Session } from "@kanzo-tech/auth";
 
 import type { Schemas } from "@keasy/api";
 
 /**
- * The two roles a workspace grants, and the one place this half of the
- * application reads them.
+ * The roles a workspace grants, and the one place this application reads them.
  *
- * They are **disjoint planes, not a hierarchy**. An owner administers people,
- * identity and the catalog and has no data plane; a member runs jobs, holds the
- * connections and opens Discovery and administers nothing. Neither contains the
- * other, so there is no ranking here to state — only which of the two a session
- * holds, and `null` when it holds neither.
+ * A workspace serves one Keycloak Organization (`Branding.organization`), and the roles are the
+ * ones held *inside* it: `reader ⊂ editor ⊂ admin`, declared as composite roles in the realm, so
+ * the token carries the expanded set and an admin holds all three. Nothing here ranks them.
  *
- * Holding *both* is also `null`: two disjoint planes at once is a provisioning
- * error (`var.tenants` refuses an email listed in `owners` and in `members`),
- * and guessing which one was meant is how a surface gets drawn that the resource
- * server will refuse. `server/src/authentication/middleware.rs` reads the same claim and
- * reaches the same three answers — that is the agreement between the halves.
- *
- * They come from `resource_access.<clientId>.roles`, scoped to this workspace's
- * client, which is why there is no `organization` argument: a workspace is an
- * instance, not a Keycloak Organization, and `session.organizations` is `[]`.
- *
- * **What this decides is what to draw.** The Rust resource server, validating
- * the bearer token behind `/v1`, is what refuses a request.
- *
- * The names are the contract's `Role`: the server publishes them, a server test
- * holds them to the realm's client roles, and Terraform holds its own copy.
+ * **What this decides is what to draw.** The resource server, validating the bearer token behind
+ * `/v1`, is what refuses a request.
  */
-export type WorkspaceRole = Schemas["Role"];
+export type Role = Schemas["Role"];
 
-export const ROLE_LABEL: Record<WorkspaceRole, string> = { owner: "Owner", member: "Member" };
+export const ROLE_LABEL: Record<Role, string> = { reader: "Reader", editor: "Editor", admin: "Admin" };
 
-export function workspaceRole(session: Session | null | undefined): WorkspaceRole | null {
-  const owner = can(session, "owner");
-  const member = can(session, "member");
-  if (owner && member) return null;
-  if (owner) return "owner";
-  if (member) return "member";
-  return null;
+/** Most to least: the first held is the one a badge names. */
+const BY_REACH: readonly Role[] = ["admin", "editor", "reader"];
+
+export function holds(session: Session | null | undefined, organization: string, role: Role): boolean {
+  return can(session, role, organization);
+}
+
+/** The widest role held in `organization`, for a label only — never for a decision. */
+export function displayRole(session: Session | null | undefined, organization: string): Role | null {
+  return BY_REACH.find((role) => holds(session, organization, role)) ?? null;
+}
+
+/** The organizations this person holds a role in: the workspaces they can switch to. */
+export function switchable(session: Session | null | undefined): readonly Organization[] {
+  return session?.organizations.filter((o) => o.roles.length > 0) ?? [];
 }

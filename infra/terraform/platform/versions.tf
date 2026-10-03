@@ -1,6 +1,6 @@
 # Phase 1 of "Terraform owns everything": the shared platform — the keasy-edge overlay,
-# base secrets, and Traefik + Keycloak + Postgres as Swarm services.
-# Keycloak boots EMPTY; the realm module (phase 2) configures it once it is healthy.
+# base secrets, Traefik + Keycloak + Postgres, and the AI gateway (kanzo-ui services/ai)
+# as Swarm services. Keycloak boots EMPTY; `make deploy-auth` configures it once healthy.
 #
 # One-time prerequisite (the docker provider can't init Swarm): `docker swarm init`.
 terraform {

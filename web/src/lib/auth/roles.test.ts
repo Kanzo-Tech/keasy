@@ -1,42 +1,49 @@
 import { describe, expect, it } from "vitest";
-import type { Session } from "@kanzo-tech/auth";
+import type { Organization, Session } from "@kanzo-tech/auth";
 import { schemaOf } from "@/lib/api/spec";
-import { ROLE_LABEL, workspaceRole } from "./roles";
+import { displayRole, holds, ROLE_LABEL, switchable } from "./roles";
 
-/** A session holding exactly these client roles, and nothing else that matters here. */
-function session(...roles: string[]): Session {
+/** A session holding these organization roles, with the expanded composites the token carries. */
+function session(...organizations: Organization[]): Session {
   return {
     user: { id: "u-1", email: "dev@keasy.local" } as Session["user"],
-    roles,
-    organizations: [],
+    roles: ["admin"],
+    organizations,
     expiresAt: Date.now() + 60_000,
   };
 }
 
-/**
- * These four answers are the TypeScript half of one statement. The other half is
- * `role_from` in `server/src/middleware/bearer.rs`, which reads the same claim
- * and has the same four tests — and the server is the one that refuses, so a
- * disagreement here means the app draws a surface that will 403.
- */
-describe("workspaceRole", () => {
-  it("reads each plane from its own role", () => {
-    expect(workspaceRole(session("owner"))).toBe("owner");
-    expect(workspaceRole(session("member"))).toBe("member");
+const acme = (...roles: string[]): Organization => ({ alias: "acme", roles });
+
+describe("holds", () => {
+  it("asks inside the organization, never the realm roles", () => {
+    expect(holds(session(), "acme", "admin")).toBe(false);
+    expect(holds(session(acme("reader")), "acme", "reader")).toBe(true);
+    expect(holds(session(acme("reader")), "acme", "editor")).toBe(false);
+    expect(holds(session({ alias: "other", roles: ["admin"] }), "acme", "reader")).toBe(false);
+    expect(holds(null, "acme", "reader")).toBe(false);
+  });
+});
+
+describe("displayRole", () => {
+  it("names the widest role held", () => {
+    expect(displayRole(session(acme("admin", "editor", "reader")), "acme")).toBe("admin");
+    expect(displayRole(session(acme("editor", "reader")), "acme")).toBe("editor");
+    expect(displayRole(session(acme("reader")), "acme")).toBe("reader");
   });
 
-  it("is null for a session holding no workspace role", () => {
-    expect(workspaceRole(session())).toBeNull();
-    expect(workspaceRole(session("uma_authorization"))).toBeNull();
-    expect(workspaceRole(null)).toBeNull();
-    expect(workspaceRole(undefined)).toBeNull();
+  it("is null without a role in this organization", () => {
+    expect(displayRole(session(acme()), "acme")).toBeNull();
+    expect(displayRole(session(acme("uma_authorization")), "acme")).toBeNull();
+    expect(displayRole(undefined, "acme")).toBeNull();
   });
+});
 
-  // The planes are disjoint, so there is no "highest" of the two to pick.
-  // Ranking them is what would draw an owner a data plane the server refuses.
-  it("is null when both roles are held at once", () => {
-    expect(workspaceRole(session("owner", "member"))).toBeNull();
-    expect(workspaceRole(session("member", "owner"))).toBeNull();
+describe("switchable", () => {
+  it("lists the organizations holding a role", () => {
+    const other = { alias: "other", roles: [] };
+    expect(switchable(session(acme("reader"), other)).map((o) => o.alias)).toEqual(["acme"]);
+    expect(switchable(null)).toEqual([]);
   });
 });
 

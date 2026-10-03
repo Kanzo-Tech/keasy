@@ -9,7 +9,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::authentication::role::{AnyRole, Member};
+use crate::authentication::role::{Caller, Editor, Reader, Role};
 use crate::connections::{named, persistence};
 use crate::domain::{ConnectionView, ResourceName, StorageTarget, ValidationReport};
 use crate::error::{ErrorBody, Refusal};
@@ -77,57 +77,51 @@ impl From<ObjectMeta> for FileEntry {
     }
 }
 
-/// The sink is the owner's alone; every other connection is a member's, and
-/// once made, its creator's or the owner's to change.
+/// The sink is an admin's to make and change; any other connection an editor
+/// makes, and its creator or an admin changes.
 fn may_change(
-    caller: &AnyRole,
+    caller: &Caller,
     current: Option<&ConnectionView>,
     sink: bool,
 ) -> Result<(), Refusal> {
     if sink {
-        return if caller.is_owner() {
-            Ok(())
-        } else {
-            Err(Refusal::forbidden(
-                "only the owner manages the workspace sink",
-            ))
-        };
+        return caller.require(Role::Admin);
     }
     match current {
-        None if caller.is_owner() => Err(Refusal::forbidden(
-            "the owner manages the sink; sources are the members'",
-        )),
         None => Ok(()),
-        Some(c) if caller.owns(&c.created_by) => Ok(()),
-        Some(_) => Err(Refusal::forbidden(
-            "only who created a connection, or the owner, may change it",
-        )),
+        Some(c) => caller.ensure_may_modify(&c.created_by, "connection"),
     }
 }
 
-#[utoipa::path(get, path = "/v1/connections", tag = "Connections",
+#[utoipa::path(get, path = "/v1/connections", tag = "Connections", security(("bearer" = ["reader"])),
     responses((status = 200, description = "The connections", body = Vec<ConnectionView>))
 )]
 pub async fn list_connections(
-    _: AnyRole,
+    caller: Reader,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, Refusal> {
-    Ok(Json(persistence::list(&*state.db.read().await)?))
+    let connections = persistence::list(&*state.db.read().await)?;
+    Ok(Json(
+        connections
+            .into_iter()
+            .map(|c| c.seen_by(&caller))
+            .collect::<Vec<_>>(),
+    ))
 }
 
-#[utoipa::path(post, path = "/v1/connections", tag = "Connections",
+#[utoipa::path(post, path = "/v1/connections", tag = "Connections", security(("bearer" = ["editor"])),
     request_body = CreateConnectionRequest,
     responses(
         (status = 201, description = "Validated and stored", body = ConnectionView),
         (status = 400, description = "No such secret, or a URL it does not reach", body = ErrorBody),
-        (status = 403, description = "A sink by a member, or a source by the owner", body = ErrorBody),
+        (status = 403, description = "A sink by anyone but an admin", body = ErrorBody),
         (status = 409, description = "A connection of that name, or a second sink", body = ErrorBody),
         (status = 422, description = "The connection did not validate", body = ErrorBody),
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
 pub async fn create_connection(
-    caller: AnyRole,
+    caller: Editor,
     State(state): State<AppState>,
     Json(request): Json<CreateConnectionRequest>,
 ) -> Result<impl IntoResponse, Refusal> {
@@ -140,10 +134,10 @@ pub async fn create_connection(
         &caller.user_id,
     )
     .await?;
-    Ok((StatusCode::CREATED, Json(view)))
+    Ok((StatusCode::CREATED, Json(view.seen_by(&caller))))
 }
 
-#[utoipa::path(get, path = "/v1/connections/{name}", tag = "Connections",
+#[utoipa::path(get, path = "/v1/connections/{name}", tag = "Connections", security(("bearer" = ["reader"])),
     params(("name" = String, Path, description = "Connection name")),
     responses(
         (status = 200, description = "The connection", body = ConnectionView),
@@ -151,14 +145,14 @@ pub async fn create_connection(
     )
 )]
 pub async fn get_connection(
-    _: AnyRole,
+    caller: Reader,
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
-    Ok(Json(named(&state.db, &name).await?))
+    Ok(Json(named(&state.db, &name).await?.seen_by(&caller)))
 }
 
-#[utoipa::path(patch, path = "/v1/connections/{name}", tag = "Connections",
+#[utoipa::path(patch, path = "/v1/connections/{name}", tag = "Connections", security(("bearer" = ["editor"])),
     params(("name" = String, Path, description = "Connection name")),
     request_body = UpdateConnectionRequest,
     responses(
@@ -170,7 +164,7 @@ pub async fn get_connection(
     )
 )]
 pub async fn update_connection(
-    caller: AnyRole,
+    caller: Editor,
     State(state): State<AppState>,
     Path(name): Path<String>,
     Json(request): Json<UpdateConnectionRequest>,
@@ -192,11 +186,13 @@ pub async fn update_connection(
         current.target.is_sink() || updated.target.is_sink(),
     )?;
     Ok(Json(
-        crate::connections::save(&state.db, Some(&name), updated, &caller.user_id).await?,
+        crate::connections::save(&state.db, Some(&name), updated, &caller.user_id)
+            .await?
+            .seen_by(&caller),
     ))
 }
 
-#[utoipa::path(delete, path = "/v1/connections/{name}", tag = "Connections",
+#[utoipa::path(delete, path = "/v1/connections/{name}", tag = "Connections", security(("bearer" = ["editor"])),
     params(("name" = String, Path, description = "Connection name")),
     responses(
         (status = 204, description = "Deleted"),
@@ -206,7 +202,7 @@ pub async fn update_connection(
     )
 )]
 pub async fn delete_connection(
-    caller: AnyRole,
+    caller: Editor,
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
@@ -216,7 +212,7 @@ pub async fn delete_connection(
     Ok(StatusCode::NO_CONTENT)
 }
 
-#[utoipa::path(post, path = "/v1/connections/{name}/validate", tag = "Connections",
+#[utoipa::path(post, path = "/v1/connections/{name}/validate", tag = "Connections", security(("bearer" = ["editor"])),
     params(("name" = String, Path, description = "Connection name")),
     responses(
         (status = 200, description = "The probe's report, stored with the connection", body = ValidationReport),
@@ -227,7 +223,7 @@ pub async fn delete_connection(
 )]
 /// LIST a source, WRITE and DELETE under the sink.
 pub async fn validate_connection(
-    caller: AnyRole,
+    caller: Editor,
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
@@ -241,7 +237,7 @@ pub async fn validate_connection(
     Ok(Json(report))
 }
 
-#[utoipa::path(get, path = "/v1/connections/{name}/files", tag = "Connections",
+#[utoipa::path(get, path = "/v1/connections/{name}/files", tag = "Connections", security(("bearer" = ["reader"])),
     params(("name" = String, Path, description = "Connection name"), FilesQuery),
     responses(
         (status = 200, description = "The first `limit` objects under the connection's prefix, or under `prefix` within it", body = FileListing),
@@ -252,7 +248,7 @@ pub async fn validate_connection(
     )
 )]
 pub async fn list_connection_files(
-    _: Member,
+    _: Reader,
     State(state): State<AppState>,
     Path(name): Path<String>,
     Query(query): Query<FilesQuery>,

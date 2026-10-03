@@ -78,32 +78,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/workspaces": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * GET /v1/auth/workspaces
-         * @description The one thing the web cannot answer from its own session: the switcher's
-         *     list. `Session` carries who you are and what you may do, and the workspaces
-         *     claim is neither — so it is read here, off the token this server verified,
-         *     rather than copied into a shape the browser would have to be trusted about.
-         *
-         *     It takes no role extractor: someone authenticated but
-         *     holding no role here still needs to be told where they *do* belong.
-         */
-        get: operations["list_workspaces"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/branding": {
         parameters: {
             query?: never;
@@ -193,8 +167,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Every dataset the workspace produced: the owner's index over the whole
-         *     workspace. The owner opens one by reading its job's corpus.
+         * Every dataset the workspace produced, for anyone in it: each is opened by
+         *     reading its job's corpus.
          */
         get: operations["list_datasets"];
         put?: never;
@@ -249,6 +223,7 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get_dashboard"];
+        /** The dashboard is the job's: who may change the job may save it. */
         put: operations["put_dashboard"];
         post?: never;
         delete?: never;
@@ -310,8 +285,8 @@ export interface paths {
         get: operations["list_secrets"];
         put?: never;
         /**
-         * Any role may create one: a member for their sources, the owner for the
-         *     sink — and either may change or delete what they made.
+         * An editor creates one, for a source or, as an admin, for the sink; any editor
+         *     may use it in a connection, and its creator or an admin changes it.
          */
         post: operations["create_secret"];
         delete?: never;
@@ -367,11 +342,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Vend a credential over `scope` for `access`. A member reads a source
-         *     connection — Unity Catalog's temporary path credentials over an external
-         *     location — and reads a job of their own once it has completed, or writes
-         *     it while it runs. The owner reads any completed job of the workspace, which
-         *     is what the datasets view opens; the owner never touches a source.
+         * Vend a credential over `scope` for `access`. Anyone in the workspace reads a
+         *     completed job's dataset. An editor reads a source connection — Unity
+         *     Catalog's temporary path credentials over an external location — to build
+         *     a job, and writes a job's dataset while it runs, if they may change that job.
          */
         post: operations["vend"];
         delete?: never;
@@ -414,6 +388,11 @@ export interface components {
             logo?: string | null;
             /** @description This instance's display name (`KEASY_WORKSPACE_NAME`). */
             name: string;
+            /**
+             * @description The Keycloak organization this instance serves, by alias
+             *     (`KEASY_ORG_ALIAS`): which entry of a session's organizations is this one.
+             */
+            organization: string;
             /** @description A theme stylesheet to inline on every page. */
             theme_css?: string | null;
         };
@@ -439,6 +418,11 @@ export interface components {
         /** @enum {string} */
         ConnectionKind: "data" | "vocab";
         ConnectionView: {
+            /**
+             * @description Whether the caller may change or delete it: the sink is an admin's,
+             *     any other connection its creator's or an admin's.
+             */
+            can_modify?: boolean;
             created_at: string;
             created_by: string;
             name: string;
@@ -572,11 +556,18 @@ export interface components {
             truncated: boolean;
         };
         Job: {
+            /**
+             * @description Whether the caller may change, run or delete this job, worked out for
+             *     each response: the interface draws what this says and does not
+             *     re-derive it.
+             */
+            can_modify?: boolean;
             completed_at?: string | null;
             created_at: string;
             /**
-             * @description Keycloak `sub` of the member who created the job, and the only one who
-             *     may see, change, run or read it. Taken from the token, never the body.
+             * @description Keycloak `sub` of who created the job: with an admin, the one who may
+             *     change, run or delete it. Everyone in the workspace reads it. Taken from
+             *     the token, never the body.
              */
             created_by: string;
             folder?: null | components["schemas"]["JobFolder"];
@@ -651,12 +642,10 @@ export interface components {
         /** @description A credential's, a connection's or a job's name: no leading or trailing whitespace, and no `/`, `@`, `\` or control character. */
         ResourceName: string;
         /**
-         * @description A workspace role, from `resource_access.<client_id>.roles` on the token:
-         *     the owner administers the catalog, a member runs jobs. The realm's client
-         *     roles are these names (`infra/terraform/realm`).
+         * @description A role this application declares on its Keycloak client.
          * @enum {string}
          */
-        Role: "owner" | "member";
+        Role: "reader" | "editor" | "admin";
         /** @description What a credential is asked for: fossil's `Scope`, verbatim. */
         Scope: {
             /** @description A source connection's prefix, by the connection's name. */
@@ -727,6 +716,11 @@ export interface components {
             tenant_id: string;
         };
         SecretView: {
+            /**
+             * @description Whether the caller may change or delete it: its creator or an admin.
+             *     Any editor may use it in a connection; its value is never returned.
+             */
+            can_modify?: boolean;
             created_at: string;
             created_by: string;
             name: string;
@@ -798,21 +792,6 @@ export interface components {
         VendedCredentials: {
             /** @description One per prefix; a reader picks the longest prefix that holds a path. */
             storage_credentials: components["schemas"]["VendedCredential"][];
-        };
-        WorkspacesResponse: {
-            /** @description This instance's slug — the "current" entry in the switcher. */
-            current: string;
-            /**
-             * @description This instance's display name (`KEASY_WORKSPACE_NAME`). The other
-             *     entries show their slug: an instance only knows its own name.
-             */
-            current_name: string;
-            /**
-             * @description Slugs of every workspace the user belongs to, read from the `workspaces`
-             *     claim on the token this request carried. The web builds each
-             *     `<slug>.<domain>` link.
-             */
-            workspaces: string[];
         };
     };
     responses: {
@@ -943,10 +922,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
             /** @description The AI gateway could not be reached */
             502: {
                 headers: {
@@ -956,7 +931,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            503: components["responses"]["KeysUnavailable"];
             /** @description The AI gateway did not begin its answer in time */
             504: {
                 headers: {
@@ -966,31 +940,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-        };
-    };
-    list_workspaces: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of accessible workspaces */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorkspacesResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     get_branding: {
@@ -1031,11 +980,6 @@ export interface operations {
                     "application/json": components["schemas"]["ConnectionView"][];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     create_connection: {
@@ -1069,8 +1013,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            /** @description A sink by a member, or a source by the owner */
+            /** @description A sink by anyone but an admin */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1097,9 +1040,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
             /** @description The store did not answer the probe in time */
             504: {
                 headers: {
@@ -1132,8 +1072,6 @@ export interface operations {
                     "application/json": components["schemas"]["ConnectionView"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             /** @description No such connection */
             404: {
                 headers: {
@@ -1143,9 +1081,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     delete_connection: {
@@ -1167,7 +1102,6 @@ export interface operations {
                 };
                 content?: never;
             };
-            401: components["responses"]["Unauthorized"];
             /** @description Not the caller's to delete */
             403: {
                 headers: {
@@ -1195,9 +1129,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     update_connection: {
@@ -1225,7 +1156,6 @@ export interface operations {
                     "application/json": components["schemas"]["ConnectionView"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
             /** @description Not the caller's to change */
             403: {
                 headers: {
@@ -1253,9 +1183,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
             /** @description The store did not answer the probe in time */
             504: {
                 headers: {
@@ -1305,8 +1232,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             /** @description No such connection */
             404: {
                 headers: {
@@ -1316,8 +1241,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
             /** @description The store refused the listing */
             502: {
                 headers: {
@@ -1327,7 +1250,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            503: components["responses"]["KeysUnavailable"];
             /** @description The store did not answer in time */
             504: {
                 headers: {
@@ -1360,7 +1282,6 @@ export interface operations {
                     "application/json": components["schemas"]["ValidationReport"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
             /** @description Not the caller's to change */
             403: {
                 headers: {
@@ -1379,9 +1300,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
             /** @description The store did not answer the probe in time */
             504: {
                 headers: {
@@ -1411,11 +1329,6 @@ export interface operations {
                     "application/json": components["schemas"]["Dataset"][];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     list_jobs: {
@@ -1427,7 +1340,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The caller's jobs */
+            /** @description Every job in the workspace */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1436,11 +1349,6 @@ export interface operations {
                     "application/json": components["schemas"]["Job"][];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     create_job: {
@@ -1474,11 +1382,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     get_job: {
@@ -1502,8 +1405,6 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
                 headers: {
@@ -1513,9 +1414,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     delete_job: {
@@ -1537,8 +1435,6 @@ export interface operations {
                 };
                 content?: never;
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
                 headers: {
@@ -1557,9 +1453,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     edit_draft: {
@@ -1596,8 +1489,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
                 headers: {
@@ -1616,9 +1507,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     get_dashboard: {
@@ -1642,8 +1530,6 @@ export interface operations {
                     "application/json": null | components["schemas"]["Dashboard"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
                 headers: {
@@ -1653,9 +1539,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     put_dashboard: {
@@ -1692,8 +1575,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
                 headers: {
@@ -1712,9 +1593,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     report_status: {
@@ -1749,8 +1627,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
                 headers: {
@@ -1769,9 +1645,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     submit_job: {
@@ -1808,8 +1681,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
                 headers: {
@@ -1828,9 +1699,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     list_secrets: {
@@ -1851,11 +1719,6 @@ export interface operations {
                     "application/json": components["schemas"]["SecretView"][];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     create_secret: {
@@ -1889,8 +1752,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             /** @description A secret of that name exists */
             409: {
                 headers: {
@@ -1909,9 +1770,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
             /** @description The store did not answer the probe in time */
             504: {
                 headers: {
@@ -1944,8 +1802,6 @@ export interface operations {
                     "application/json": components["schemas"]["SecretView"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             /** @description No such secret */
             404: {
                 headers: {
@@ -1955,9 +1811,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     delete_secret: {
@@ -1979,8 +1832,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            401: components["responses"]["Unauthorized"];
-            /** @description Neither its creator nor the owner */
+            /** @description Neither its creator nor an admin */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2007,9 +1859,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
         };
     };
     update_secret: {
@@ -2037,8 +1886,7 @@ export interface operations {
                     "application/json": components["schemas"]["SecretView"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            /** @description Neither its creator nor the owner */
+            /** @description Neither its creator nor an admin */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2065,9 +1913,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
             /** @description The store did not answer the probe in time */
             504: {
                 headers: {
@@ -2100,8 +1945,7 @@ export interface operations {
                     "application/json": components["schemas"]["ValidationReport"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            /** @description Neither its creator nor the owner */
+            /** @description Neither its creator nor an admin */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2119,9 +1963,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
             /** @description The store did not answer the probe in time */
             504: {
                 headers: {
@@ -2164,8 +2005,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            /** @description A source asked by the owner, or a job's dataset written by the owner */
+            /** @description A source read below editor; a job written below editor, or by someone who may not change it */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2174,7 +2014,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description No such connection, or no such job of the caller's */
+            /** @description No such connection, or no such job */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2192,8 +2032,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
             /** @description The store refused to vend */
             502: {
                 headers: {
@@ -2203,7 +2041,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            503: components["responses"]["KeysUnavailable"];
             /** @description The store, or the identity service before it, did not answer in time */
             504: {
                 headers: {

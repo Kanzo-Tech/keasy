@@ -5,7 +5,7 @@
 use axum::http::{Method, StatusCode, header};
 use serde_json::json;
 
-use crate::helpers::{DEAD, TestApp, spawn_app};
+use crate::helpers::{DEAD, EDITOR, TestApp, spawn_app};
 use keasy_server::domain::Direction;
 
 /// The status and the whole body, which must be an `ErrorBody`.
@@ -26,7 +26,7 @@ fn url(app: &TestApp, path: &str) -> String {
 #[tokio::test]
 async fn what_axum_refuses_before_a_handler_speaks_error_body_too() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     let c = &app.client;
 
     let cases = [
@@ -90,7 +90,7 @@ async fn what_axum_refuses_before_a_handler_speaks_error_body_too() {
 #[tokio::test]
 async fn a_rejection_keeps_axums_words_as_the_detail() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     let response = app
         .client
         .post(url(&app, "/v1/jobs"))
@@ -109,7 +109,7 @@ async fn a_rejection_keeps_axums_words_as_the_detail() {
 #[tokio::test]
 async fn each_resource_that_is_not_there_says_which() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     for (path, code) in [
         ("/v1/jobs/nope", "job/not-found"),
         ("/v1/connections/nope", "connection/not-found"),
@@ -152,7 +152,7 @@ async fn age(app: &TestApp, id: &str, column: &str, seconds: i64) {
 #[tokio::test]
 async fn a_running_job_is_refused_deletion_with_its_code() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     sink(&app).await;
     let id = app.submitted(&member).await;
     let (status, body) = app
@@ -173,7 +173,7 @@ async fn a_running_job_is_refused_deletion_with_its_code() {
 #[tokio::test]
 async fn a_run_whose_runner_went_silent_ends_as_abandoned_and_can_be_deleted() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     sink(&app).await;
     let id = app.submitted(&member).await;
     let path = format!("/v1/jobs/{id}");
@@ -226,7 +226,7 @@ async fn a_run_whose_runner_went_silent_ends_as_abandoned_and_can_be_deleted() {
 #[tokio::test]
 async fn a_pending_job_no_runner_picked_up_ends_as_abandoned() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     sink(&app).await;
     let id = app.submitted(&member).await;
     age(&app, &id, "heartbeat_at", 61).await;
@@ -241,7 +241,7 @@ async fn a_pending_job_no_runner_picked_up_ends_as_abandoned() {
 #[tokio::test]
 async fn a_store_that_refuses_to_vend_is_store_refused() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     sink(&app).await;
     let id = app.submitted(&member).await;
     app.report(&member, &id, json!({ "status": "running" }))
@@ -259,7 +259,7 @@ async fn a_store_that_refuses_to_vend_is_store_refused() {
 #[tokio::test]
 async fn a_burst_over_the_rate_is_refused_as_request_rate_limited() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     let answers = futures::future::join_all((0..1200).map(|_| {
         app.client
             .get(url(&app, "/v1/auth/workspaces"))
@@ -285,7 +285,7 @@ async fn a_burst_over_the_rate_is_refused_as_request_rate_limited() {
 #[tokio::test]
 async fn a_store_that_never_answers_is_store_silent_from_a_probe_and_a_listing() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let silent = format!("http://{}", listener.local_addr().unwrap());
     app.credential("hung", &silent, "u-1").await;

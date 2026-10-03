@@ -1,0 +1,2 @@
+# Operator-local tfvars and state of the auth/ai roots (make deploy-*).
+.operator/

@@ -19,6 +19,7 @@ import { $api, type Schemas } from "@/lib/api/client";
 import { hasRunningJobs, pollWhile } from "@/lib/jobs";
 import { Boundary } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
+import { useRole } from "@/lib/auth/use-role";
 
 interface Tile {
   href: string;
@@ -31,71 +32,75 @@ interface Tile {
   ok?: boolean;
 }
 
-const OWNER_HEADING = "Workspace overview";
-const ownerTiles = (value?: string): Tile[] => [
-  {
-    href: "/catalog",
-    icon: GalleryVerticalEnd,
-    title: "Catalog Storage",
-    value,
-    description: "where the catalog is published",
-  },
-];
+const HEADING = "Workspace overview";
 
-export function OwnerDashboard() {
-  return (
-    <Boundary fallback={<Tiles heading={OWNER_HEADING} tiles={ownerTiles()} />}>
-      <OwnerTiles />
-    </Boundary>
-  );
-}
+const storageTile = (configured?: boolean): Tile => ({
+  href: "/settings/storage",
+  icon: GalleryVerticalEnd,
+  title: "Workspace storage",
+  value: configured === undefined ? undefined : configured ? "Configured" : "Not set",
+  description: "where job outputs land",
+  ok: configured,
+});
 
-function OwnerTiles() {
-  const catalog = settled(
-    $api.useSuspenseQuery("get", "/v1/connections"),
-  );
-  const sink = catalog.find((c) => c.target.direction === "sink");
-  return <Tiles heading={OWNER_HEADING} tiles={ownerTiles(sink ? "Configured" : "Not set")} />;
-}
+const plural = (n: number | undefined, one: string, many: string) => (n === 1 ? one : many);
 
-const READINESS_HEADING = "Workspace readiness";
+const credentialsTile = (n?: number): Tile => ({
+  href: "/settings/credentials",
+  icon: KeyRound,
+  title: "Credentials",
+  value: n === undefined ? undefined : String(n),
+  description: plural(n, "credential configured", "credentials configured"),
+  ok: n === undefined ? undefined : n > 0,
+});
 
-/** The three readiness tiles; every figure `undefined` while loading. */
-function readinessTiles(figures?: { credentials: number; connections: number; outputs: number }): Tile[] {
-  const plural = (n: number | undefined, one: string, many: string) => (n === 1 ? one : many);
-  return [
-    {
-      href: "/settings/credentials",
-      icon: KeyRound,
-      title: "Credentials",
-      value: figures && String(figures.credentials),
-      description: plural(figures?.credentials, "credential configured", "credentials configured"),
-      ok: figures && figures.credentials > 0,
-    },
-    {
-      href: "/connections",
-      icon: Database,
-      title: "Connections",
-      value: figures && String(figures.connections),
-      description: plural(figures?.connections, "connection configured", "connections configured"),
-      ok: figures && figures.connections > 0,
-    },
-    {
-      href: "/jobs",
-      icon: FileText,
-      title: "Outputs",
-      value: figures && String(figures.outputs),
-      description: plural(figures?.outputs, "output published", "outputs published"),
-    },
-  ];
-}
+const connectionsTile = (n?: number): Tile => ({
+  href: "/connections",
+  icon: Database,
+  title: "Connections",
+  value: n === undefined ? undefined : String(n),
+  description: plural(n, "connection configured", "connections configured"),
+  ok: n === undefined ? undefined : n > 0,
+});
 
-export function MemberDashboard() {
+const outputsTile = (n?: number): Tile => ({
+  href: "/jobs",
+  icon: FileText,
+  title: "Outputs",
+  value: n === undefined ? undefined : String(n),
+  description: plural(n, "output published", "outputs published"),
+});
+
+/** One dashboard for every role: each tile is drawn for the roles that can read its figure. */
+export function Dashboard() {
+  const { holds } = useRole();
   return (
     <>
-      <Boundary fallback={<Tiles heading={READINESS_HEADING} tiles={readinessTiles()} />}>
-        <Readiness />
-      </Boundary>
+      <SectionRoot className="gap-3" fill={false}>
+        <SectionHeader>
+          <SectionTitleGroup>
+            <SectionTitle>{HEADING}</SectionTitle>
+          </SectionTitleGroup>
+        </SectionHeader>
+        <SectionBody className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {holds("admin") && (
+            <Boundary fallback={<TileView tile={storageTile()} />}>
+              <StorageTile />
+            </Boundary>
+          )}
+          {holds("editor") && (
+            <Boundary fallback={<TileView tile={credentialsTile()} />}>
+              <CredentialsTile />
+            </Boundary>
+          )}
+          <Boundary fallback={<TileView tile={connectionsTile()} />}>
+            <ConnectionsTile />
+          </Boundary>
+          <Boundary fallback={<TileView tile={outputsTile()} />}>
+            <OutputsTile />
+          </Boundary>
+        </SectionBody>
+      </SectionRoot>
       <SectionRoot className="gap-3" fill={false}>
         <SectionHeader>
           <SectionTitleGroup>
@@ -110,21 +115,29 @@ export function MemberDashboard() {
   );
 }
 
-function useJobs() {
-  return settled($api.useSuspenseQuery("get", "/v1/jobs", {}, { refetchInterval: pollWhile(hasRunningJobs) }));
+function useConnections() {
+  return settled($api.useSuspenseQuery("get", "/v1/connections"));
 }
 
-function Readiness() {
-  const jobs = useJobs();
-  const credentials = settled($api.useSuspenseQuery("get", "/v1/secrets"));
-  const connections = settled($api.useSuspenseQuery("get", "/v1/connections"));
-  const outputs = jobs.filter((j) => j.status === "completed" && j.report).length;
-  return (
-    <Tiles
-      heading={READINESS_HEADING}
-      tiles={readinessTiles({ credentials: credentials.length, connections: connections.length, outputs })}
-    />
-  );
+function StorageTile() {
+  return <TileView tile={storageTile(useConnections().some((c) => c.target.direction === "sink"))} />;
+}
+
+function CredentialsTile() {
+  return <TileView tile={credentialsTile(settled($api.useSuspenseQuery("get", "/v1/secrets")).length)} />;
+}
+
+function ConnectionsTile() {
+  return <TileView tile={connectionsTile(useConnections().length)} />;
+}
+
+function OutputsTile() {
+  const outputs = useJobs().filter((j) => j.status === "completed" && j.report).length;
+  return <TileView tile={outputsTile(outputs)} />;
+}
+
+function useJobs() {
+  return settled($api.useSuspenseQuery("get", "/v1/jobs", {}, { refetchInterval: pollWhile(hasRunningJobs) }));
 }
 
 function RecentActivity() {
@@ -160,32 +173,17 @@ function Activity({ stats }: { stats?: { label: string; value: number }[] }) {
   );
 }
 
-function Tiles({ heading, tiles }: { heading: string; tiles: Tile[] }) {
+function TileView({ tile }: { tile: Tile }) {
   return (
-    <SectionRoot className="gap-3" fill={false}>
-      <SectionHeader>
-        <SectionTitleGroup>
-          <SectionTitle>{heading}</SectionTitle>
-        </SectionTitleGroup>
-      </SectionHeader>
-      <SectionBody className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {tiles.map((tile) => (
-          <StatRoot
-            asChild
-            key={tile.href}
-            variant={tile.ok === undefined ? "default" : tile.ok ? "success" : "warning"}
-          >
-            <Link href={tile.href}>
-              <StatIndicator>
-                <tile.icon />
-              </StatIndicator>
-              <StatLabel>{tile.title}</StatLabel>
-              <StatValue loading={tile.value === undefined}>{tile.value}</StatValue>
-              <StatDescription>{tile.description}</StatDescription>
-            </Link>
-          </StatRoot>
-        ))}
-      </SectionBody>
-    </SectionRoot>
+    <StatRoot asChild variant={tile.ok === undefined ? "default" : tile.ok ? "success" : "warning"}>
+      <Link href={tile.href}>
+        <StatIndicator>
+          <tile.icon />
+        </StatIndicator>
+        <StatLabel>{tile.title}</StatLabel>
+        <StatValue loading={tile.value === undefined}>{tile.value}</StatValue>
+        <StatDescription>{tile.description}</StatDescription>
+      </Link>
+    </StatRoot>
   );
 }

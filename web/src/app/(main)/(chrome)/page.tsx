@@ -1,15 +1,11 @@
 import { SectionBody, SectionRoot } from "@kanzo-tech/ui";
-import { getSession } from "@/lib/auth/server";
-import { workspaceRole } from "@/lib/auth/roles";
-import { MemberDashboard, OwnerDashboard } from "./dashboards";
+import { Dashboard } from "./dashboards";
 
-export default async function HomePage() {
-  const role = workspaceRole(await getSession());
-
+export default function HomePage() {
   return (
     <SectionRoot>
       <SectionBody className="gap-8" scale="page">
-        {role === "owner" ? <OwnerDashboard /> : <MemberDashboard />}
+        <Dashboard />
       </SectionBody>
     </SectionRoot>
   );

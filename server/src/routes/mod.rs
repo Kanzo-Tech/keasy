@@ -6,4 +6,3 @@ pub mod health_check;
 pub mod jobs;
 pub mod secrets;
 pub mod storage_credentials;
-pub mod workspaces;

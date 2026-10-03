@@ -1,7 +1,7 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{DEAD, fake_s3, spawn_app};
+use crate::helpers::{ADMIN, DEAD, EDITOR, fake_s3, spawn_app};
 use keasy_server::domain::{Direction, SecretSpec};
 
 /// A secret goes in and never comes out: not in a create's answer, not in a
@@ -9,7 +9,7 @@ use keasy_server::domain::{Direction, SecretSpec};
 #[tokio::test]
 async fn no_response_carries_a_secret() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     let (status, created) = app
         .send(
             Method::POST,
@@ -56,11 +56,11 @@ async fn no_response_carries_a_secret() {
 /// A credential or connection is its creator's or the owner's to change; the
 /// sink is the owner's alone, and sources are the members'.
 #[tokio::test]
-async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_the_sink() {
+async fn only_the_creator_or_an_admin_changes_a_secret_and_only_an_admin_the_sink() {
     let app = spawn_app().await;
-    let creator = app.token_for("u-1", &["member"]);
-    let other = app.token_for("u-2", &["member"]);
-    let owner = app.token_for("u-owner", &["owner"]);
+    let creator = app.token_for("u-1", EDITOR);
+    let other = app.token_for("u-2", EDITOR);
+    let owner = app.token_for("u-owner", ADMIN);
     app.credential("key", DEAD, "u-1").await;
     app.credential("spare", DEAD, "u-1").await;
     app.connection("data", "key", Direction::Source, "u-1")
@@ -136,11 +136,13 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
             .0,
         StatusCode::FORBIDDEN
     );
+    // An admin is an editor too: a source of theirs is refused only by the
+    // probe (the store here is dead), never by role.
     assert_eq!(
         app.send(Method::POST, "/v1/connections", &owner, source)
             .await
             .0,
-        StatusCode::FORBIDDEN
+        StatusCode::UNPROCESSABLE_ENTITY
     );
     assert_eq!(
         app.send(
@@ -169,8 +171,8 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
 #[tokio::test]
 async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
-    let owner = app.token_for("u-owner", &["owner"]);
+    let member = app.token(EDITOR);
+    let owner = app.token_for("u-owner", ADMIN);
     let s3 = fake_s3().await;
     let spec = |endpoint: &str, secret: &str| {
         json!({

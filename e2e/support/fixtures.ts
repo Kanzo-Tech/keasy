@@ -1,6 +1,7 @@
-import { expect, test as base, type Page } from "@playwright/test";
+import { type BrowserContext, expect, test as base, type Page } from "@playwright/test";
 
 import { createJob } from "./api";
+import { signIn } from "./sign-in";
 
 /** A job the browser has run to completion, so its corpus opens in Discovery. */
 async function runToCompletion(page: Page): Promise<string> {
@@ -36,11 +37,35 @@ export async function ask(page: Page, question: string) {
   await box.press("Enter");
 }
 
-export const test = base.extend<object, { corpusJob: string }>({
+/** The BFF's session cookie, as `@kanzo-tech/auth` names it. */
+const SESSION = "__Host-kanzo-session";
+
+/**
+ * A token refresh rotates the session's ticket and drops the old one, so a context that refreshed
+ * leaves its state file naming a dead ticket, and the next context opened from it starts signed out.
+ * Write the live session back, unless the context lost it on purpose (10 clears the cookies).
+ */
+async function keepSession(context: BrowserContext, path: string) {
+  if ((await context.cookies()).some((cookie) => cookie.name === SESSION)) await context.storageState({ path });
+}
+
+export const test = base.extend<{ session: void }, { corpusJob: string }>({
+  session: [
+    async ({ context, storageState }, use) => {
+      await use();
+      if (typeof storageState === "string") await keepSession(context, storageState);
+    },
+    { auto: true },
+  ],
   corpusJob: [
     async ({ browser }, use) => {
-      const context = await browser.newContext({ storageState: ".auth/member.json", baseURL: process.env.KEASY_URL ?? "http://localhost:3000" });
+      // A session of its own: a refresh here would rotate the ticket the test's context holds.
+      const context = await browser.newContext({
+        storageState: { cookies: [], origins: [] },
+        baseURL: process.env.KEASY_URL ?? "http://localhost:3000",
+      });
       const page = await context.newPage();
+      await signIn(page, "bruno");
       const id = await runToCompletion(page);
       await context.close();
       await use(id);

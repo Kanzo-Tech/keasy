@@ -8,11 +8,11 @@ use axum::{Json, Router, routing::get};
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
 use serde_json::json;
 
-use crate::helpers::{Realm, good, mint, realm};
+use crate::helpers::{CLIENT, ORG, Realm, good, mint, realm};
 use keasy_server::authentication::token::{CLOCK_LEEWAY, REQUEST_TIMEOUT, TokenError, Validator};
 
 fn validating(realm: &Realm) -> Validator {
-    Validator::new(&realm.issuer, "keasy-api", "keasy-ws-dev", None)
+    Validator::new(&realm.issuer, "keasy-api", CLIENT, None)
 }
 
 #[tokio::test]
@@ -24,15 +24,21 @@ async fn a_token_the_realm_signed_is_accepted_and_read() {
         .expect("a well-formed token from this realm");
 
     assert_eq!(claims.sub, "u-1");
-    assert_eq!(claims.workspaces, ["dev", "acme"]);
-    assert_eq!(claims.roles_for("keasy-ws-dev"), ["owner"]);
+    assert_eq!(
+        claims.org_roles(ORG, CLIENT),
+        Some(["admin", "editor", "reader"].map(String::from).as_slice())
+    );
+    assert_eq!(
+        claims.org_roles("globex", CLIENT),
+        Some(["reader".to_string()].as_slice())
+    );
 }
 
 #[tokio::test]
 async fn a_token_that_does_not_name_this_api_is_refused() {
     let realm = realm("k1").await;
     let mut claims = good(&realm);
-    claims["aud"] = json!(["keasy-ws-dev"]);
+    claims["aud"] = json!(["account"]);
 
     assert!(matches!(
         validating(&realm).verify(&mint(&realm, claims)).await,
@@ -67,16 +73,14 @@ async fn an_expired_token_is_refused() {
 
 /// The tenancy check, and the reason it is separate from `aud`.
 ///
-/// This token is valid, unexpired, and names this API — a sibling workspace
-/// in the same realm minted it. Its roles would come up empty here anyway,
-/// but refusing on the credential says *why* instead of looking like an
-/// authorization failure.
+/// This token is valid, unexpired, and names this API — another application
+/// in the same realm obtained it. Refusing on the credential says *why*
+/// instead of looking like an authorization failure.
 #[tokio::test]
-async fn a_token_minted_for_another_workspace_is_refused() {
+async fn a_token_minted_for_another_application_is_refused() {
     let realm = realm("k1").await;
     let mut claims = good(&realm);
-    claims["azp"] = json!("keasy-ws-other");
-    claims["resource_access"] = json!({ "keasy-ws-other": { "roles": ["owner"] } });
+    claims["azp"] = json!("board");
 
     assert!(matches!(
         validating(&realm).verify(&mint(&realm, claims)).await,
@@ -286,4 +290,35 @@ async fn a_realm_that_accepts_and_never_answers_is_a_503_too() {
     .expect("the validator gives up on a hung realm rather than waiting on it");
 
     assert!(matches!(answered, Err(TokenError::KeysUnavailable)));
+}
+
+/// One client serves every instance, so a token is the person's across every
+/// organization they belong to. What it grants here is the entry for this
+/// instance's organization alone: an admin of globex is nobody in acme, and a
+/// role in the top-level `resource_access` is never read.
+#[tokio::test]
+async fn a_role_counts_only_inside_this_instances_organization() {
+    let app = crate::helpers::spawn_app().await;
+    let globex_admin = app.token_in("u-1", "globex", crate::helpers::ADMIN);
+    assert_eq!(
+        app.answer(axum::http::Method::GET, "/v1/jobs", Some(&globex_admin))
+            .await,
+        (
+            axum::http::StatusCode::FORBIDDEN,
+            Some("rbac/no-membership".to_string())
+        )
+    );
+
+    let mut top_level_only = good(&app.realm);
+    top_level_only["organization"] = json!({});
+    top_level_only["resource_access"] =
+        json!({ CLIENT: { "roles": ["admin", "editor", "reader"] } });
+    let token = mint(&app.realm, top_level_only);
+    assert_eq!(
+        app.answer(axum::http::Method::GET, "/v1/jobs", Some(&token))
+            .await
+            .1
+            .as_deref(),
+        Some("rbac/no-membership")
+    );
 }

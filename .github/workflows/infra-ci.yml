@@ -2,10 +2,10 @@ name: infra-ci
 
 on:
   pull_request:
-    paths: ["infra/terraform/**", ".github/workflows/infra-ci.yml"]
+    paths: ["infra/terraform/**", "infra/auth/**", "infra/ai/**", ".github/workflows/infra-ci.yml"]
   push:
     branches: [main]
-    paths: ["infra/terraform/**", ".github/workflows/infra-ci.yml"]
+    paths: ["infra/terraform/**", "infra/auth/**", "infra/ai/**", ".github/workflows/infra-ci.yml"]
 
 concurrency:
   group: infra-ci-${{ github.ref }}
@@ -18,17 +18,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [platform, realm]
+        # auth, ai and platform use kanzo-ui's modules by git: init fetches them.
+        module: [terraform/platform, terraform/instances, auth, ai]
     defaults:
       run:
-        working-directory: infra/terraform/${{ matrix.module }}
+        working-directory: infra/${{ matrix.module }}
     steps:
       - uses: actions/checkout@v4
 
-      # The version the dev stack's keycloak-realm service runs.
+      # The version the dev stack's provision service runs.
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.9"
+          terraform_version: "1.14"
           terraform_wrapper: false
 
       - run: terraform fmt -check -diff

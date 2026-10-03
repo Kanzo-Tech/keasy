@@ -11,12 +11,23 @@
 # Crates compile at runtime into the persistent `server-target` + `cargo-registry`
 # volumes, so only the first `up` (or one after `make clean`) pays a cold compile.
 
-.PHONY: help dev seed down logs restart clean ps api e2e deploy-platform deploy-realm
+.PHONY: help dev seed down logs restart clean ps api e2e deps deploy-platform deploy-auth deploy-ai-teams deploy-instances
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-dev: ## Start/rebuild dev env (only needed for dep/Dockerfile changes — code hot-reloads)
+# The platform's services (identity, the AI gateway) come from kanzo-ui, at the
+# release keasy is built against: the same tag its @kanzo-tech/* packages pin.
+KANZO_UI_REF ?= v0.28.0
+
+deps: ## Check out kanzo-ui's services at $(KANZO_UI_REF) into .deps/kanzo-ui
+	@if [ -d .deps/kanzo-ui/.git ]; then \
+	  git -C .deps/kanzo-ui fetch --quiet --depth 1 origin tag $(KANZO_UI_REF) && git -C .deps/kanzo-ui checkout --quiet $(KANZO_UI_REF); \
+	else \
+	  git -c advice.detachedHead=false clone --quiet --depth 1 --branch $(KANZO_UI_REF) https://github.com/Kanzo-Tech/ui.git .deps/kanzo-ui; \
+	fi
+
+dev: deps ## Start/rebuild dev env (only needed for dep/Dockerfile changes — code hot-reloads)
 	docker compose up --build -d
 
 seed: ## Fetch the dev graph (LDBC SNB SF0.1, ~17 MB, checksummed) for the next `make dev` to upload
@@ -38,7 +49,7 @@ restart-%: ## Restart one service (e.g., make restart-web)
 	docker compose restart $*
 
 clean: ## Nuclear reset: remove containers, volumes, images
-	docker compose down -v --rmi local
+	docker compose down -v --rmi local --remove-orphans
 
 shell-%: ## Open shell in container (e.g., make shell-server)
 	docker compose exec $* sh
@@ -58,20 +69,43 @@ api: ## Regenerate api/openapi.json and api/src/schema.d.ts from the server's ro
 # failure scenario against it on :3000 — the only origin Keycloak admits, so it
 # runs from the main checkout, not a worktree. Scenarios stop and start services
 # themselves, and leave them running.
-e2e: ## Run the e2e suite against the compose stack (main checkout only: Keycloak admits :3000)
+e2e: deps ## Run the e2e suite against the compose stack (main checkout only: Keycloak admits :3000)
 	docker compose -f docker-compose.yml -f e2e/compose.yml up -d --wait --wait-timeout 1800 web
 	pnpm --filter @keasy/e2e exec playwright install chromium
 	pnpm --filter @keasy/e2e test
 
 # ── Prod / Swarm deploy — Terraform owns everything (see infra/terraform/README.md) ──
-# Two phases: platform (Traefik+Keycloak+Postgres+AI gateway) then realm (SSO + tenants). Adding a
-# tenant = edit infra/terraform/realm/terraform.tfvars + `make deploy-realm`. No shell, no CLI.
-deploy-platform: ## Phase 1 — apply the platform (needs -var kc_hostname=… acme_email=…)
-	terraform -chdir=infra/terraform/platform init -input=false
-	terraform -chdir=infra/terraform/platform apply
+# platform (Traefik + Keycloak + Postgres + AI gateway) → auth (the kanzo realm + keasy's
+# client) and ai-teams (a team + key per tenant) → instances (keasy per organization).
+# Adding a tenant = its organization in realm.tfvars, its team in ai.tfvars, an entry in
+# instances/terraform.tfvars, then deploy-auth, deploy-ai-teams, deploy-instances.
+#
+# The tfvars and the state of the auth/ai roots are operator-local, in $(DEPLOY_DIR)
+# (gitignored): realm.tfvars (organizations), auth.tfvars (redirect_uris), ai.tfvars (ai_url,
+# tenants). platform and instances keep theirs beside them (terraform.tfvars, gitignored).
+DEPLOY_DIR ?= $(CURDIR)/infra/terraform/.operator
+TF_PLATFORM = terraform -chdir=infra/terraform/platform
+KC_ADMIN_PASSWORD = $$($(TF_PLATFORM) output -raw kc_admin_password)
 
-deploy-realm: ## Phase 2 — apply the realm + tenants (reads realm/terraform.tfvars; feeds the platform admin pw)
-	terraform -chdir=infra/terraform/realm init -input=false
-	terraform -chdir=infra/terraform/realm apply \
-	  -var kc_admin_password="$$(terraform -chdir=infra/terraform/platform output -raw kc_admin_password)" \
-	  -var ai_master_key="$$(terraform -chdir=infra/terraform/platform output -raw ai_master_key)"
+# $(call tf-apply,<root>,<name>,<extra args>): init with its state in $(DEPLOY_DIR), apply.
+define tf-apply
+	TF_DATA_DIR=$(DEPLOY_DIR)/$(2).terraform terraform -chdir=$(1) init -input=false -reconfigure -backend-config=path=$(DEPLOY_DIR)/$(2).tfstate
+	TF_DATA_DIR=$(DEPLOY_DIR)/$(2).terraform terraform -chdir=$(1) apply -var-file=$(DEPLOY_DIR)/$(2).tfvars $(3)
+endef
+
+deploy-platform: ## Phase 1 — apply the platform (reads platform/terraform.tfvars: kc_hostname, acme_email, ai_*)
+	$(TF_PLATFORM) init -input=false
+	$(TF_PLATFORM) apply
+
+deploy-auth: deps ## Phase 2 — apply kanzo-ui's realm (organizations), then keasy's client (infra/auth)
+	$(call tf-apply,.deps/kanzo-ui/services/auth/realm,realm,-var kc_admin_password="$(KC_ADMIN_PASSWORD)")
+	$(call tf-apply,infra/auth,auth,-var kc_admin_password="$(KC_ADMIN_PASSWORD)")
+
+deploy-ai-teams: ## Phase 2 — apply each tenant's AI team and key (infra/ai; reads the platform's master key)
+	$(call tf-apply,infra/ai,ai,-var ai_master_key="$$($(TF_PLATFORM) output -raw ai_master_key)")
+
+deploy-instances: ## Phase 3 — apply keasy per organization (instances/terraform.tfvars + the auth secret and AI keys)
+	terraform -chdir=infra/terraform/instances init -input=false
+	terraform -chdir=infra/terraform/instances apply \
+	  -var oidc_client_secret="$$(TF_DATA_DIR=$(DEPLOY_DIR)/auth.terraform terraform -chdir=infra/auth output -raw client_secret)" \
+	  -var ai_keys="$$(TF_DATA_DIR=$(DEPLOY_DIR)/ai.terraform terraform -chdir=infra/ai output -json keys)"

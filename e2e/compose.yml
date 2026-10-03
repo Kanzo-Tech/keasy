@@ -1,10 +1,10 @@
 # The end-to-end suite's override: the stack without Docker Model Runner. No
 # scenario needs a model (the AI ones mock the route, stop the gateway or swap in
-# `litellm-silent`), and CI's runners have no Model plugin. Every compose call the
+# `ai-gateway-silent`), and CI's runners have no Model plugin. Every compose call the
 # suite makes names this file after docker-compose.yml (e2e/support/compose.ts,
 # `make e2e`, .github/workflows/e2e.yml), so they all see one project.
 services:
-  litellm:
+  ai-gateway:
     models: !reset {}
     # What compose would have injected for `models:`. The gateway refuses to boot
     # without them; nothing listens there, so a request that did reach a model

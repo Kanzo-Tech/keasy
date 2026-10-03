@@ -114,6 +114,7 @@ pub async fn create(
         updated_by: by.into(),
         updated_at: String::new(),
         validation: None,
+        can_modify: false,
     };
     save(db, None, connection, by).await
 }

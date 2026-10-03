@@ -1,6 +1,7 @@
 //! Connections: where a secret is used — a storage location. None of these
 //! types can hold a secret.
 
+use crate::authentication::role::{Caller, Role};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -59,4 +60,26 @@ pub struct ConnectionView {
     pub updated_at: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub validation: Option<ValidationReport>,
+    /// Whether the caller may change or delete it: the sink is an admin's,
+    /// any other connection its creator's or an admin's.
+    #[serde(default)]
+    pub can_modify: bool,
+}
+
+impl ConnectionView {
+    /// Who may change a connection: an admin the sink, and an admin or its
+    /// creator any other.
+    pub fn may_be_changed_by(&self, caller: &Caller) -> bool {
+        if self.target.is_sink() {
+            caller.holds(Role::Admin)
+        } else {
+            caller.may_modify(&self.created_by)
+        }
+    }
+
+    /// The connection as `caller` sees it: [`Self::can_modify`] filled in.
+    pub fn seen_by(mut self, caller: &Caller) -> Self {
+        self.can_modify = self.may_be_changed_by(caller);
+        self
+    }
 }

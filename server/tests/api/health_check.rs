@@ -76,6 +76,7 @@ branding:
         body,
         serde_json::json!({
             "name": "Dev",
+            "organization": "acme",
             "logo": "/acme.svg",
             "theme_css": "[data-theme=\"acme\"] {}",
             "families": [{

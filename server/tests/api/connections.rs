@@ -1,7 +1,7 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{DEAD, spawn_app};
+use crate::helpers::{ADMIN, DEAD, EDITOR, spawn_app};
 use keasy_server::domain::Direction;
 
 /// The credential a connection uses cannot be deleted, nor the sink a job wrote
@@ -9,8 +9,8 @@ use keasy_server::domain::Direction;
 #[tokio::test]
 async fn what_is_in_use_is_not_deleted() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
-    let owner = app.token_for("u-owner", &["owner"]);
+    let member = app.token(EDITOR);
+    let owner = app.token_for("u-owner", ADMIN);
     app.credential("key", DEAD, "u-1").await;
     app.connection("data", "key", Direction::Source, "u-1")
         .await;
@@ -52,7 +52,7 @@ async fn what_is_in_use_is_not_deleted() {
 #[tokio::test]
 async fn a_storage_location_never_overlaps_another() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     app.credential("key", DEAD, "u-1").await;
     app.connection("data", "key", Direction::Source, "u-1")
         .await;
@@ -134,7 +134,7 @@ async fn three_objects() -> String {
 #[tokio::test]
 async fn a_listing_stays_under_its_prefix_and_says_when_it_was_cut() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     app.credential("key", &three_objects().await, "u-1").await;
     app.connection("data", "key", Direction::Source, "u-1")
         .await;

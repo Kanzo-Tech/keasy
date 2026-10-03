@@ -145,7 +145,7 @@ pub fn renew(conn: &Connection, id: &str, user_id: &str, now: jiff::Timestamp) -
     )? == 1)
 }
 
-/// Every completed job in the workspace, the latest first: the owner's datasets.
+/// Every completed job in the workspace, the latest first: the datasets.
 pub fn completed(conn: &Connection) -> DbResult<Vec<Job>> {
     select(
         conn,
@@ -154,13 +154,9 @@ pub fn completed(conn: &Connection) -> DbResult<Vec<Job>> {
     )
 }
 
-/// The jobs `user_id` created, the newest first.
-pub fn list_of(conn: &Connection, user_id: &str) -> DbResult<Vec<Job>> {
-    select(
-        conn,
-        "WHERE created_by = ?1 ORDER BY created_at DESC",
-        Some(user_id),
-    )
+/// Every job in the workspace, the newest first: the work is shared.
+pub fn list(conn: &Connection) -> DbResult<Vec<Job>> {
+    select(conn, "ORDER BY created_at DESC", None)
 }
 
 fn select(conn: &Connection, clause: &str, param: Option<&str>) -> DbResult<Vec<Job>> {
@@ -199,6 +195,7 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
         folder: row.get("folder")?,
         script,
         report: json_column_opt(row, "report")?,
+        can_modify: false,
     })
 }
 
@@ -280,7 +277,7 @@ mod tests {
             .unwrap();
 
         assert!(get(&conn, &stored.id).is_err());
-        assert!(list_of(&conn, "u-1").is_err());
+        assert!(list(&conn).is_err());
 
         assert!(
             conn.execute("UPDATE jobs SET status = 'draft', report = 'not json'", [])

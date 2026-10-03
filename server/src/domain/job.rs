@@ -1,3 +1,4 @@
+use crate::authentication::role::Caller;
 use serde::{Deserialize, Serialize};
 
 use super::{Access, JobFolder, ResourceName, StorageLocation, now_iso8601};
@@ -54,9 +55,15 @@ pub struct Job {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schema(value_type = Option<Value>)]
     pub problem: Option<serde_json::Value>,
-    /// Keycloak `sub` of the member who created the job, and the only one who
-    /// may see, change, run or read it. Taken from the token, never the body.
+    /// Keycloak `sub` of who created the job: with an admin, the one who may
+    /// change, run or delete it. Everyone in the workspace reads it. Taken from
+    /// the token, never the body.
     pub created_by: String,
+    /// Whether the caller may change, run or delete this job, worked out for
+    /// each response: the interface draws what this says and does not
+    /// re-derive it.
+    #[serde(default)]
+    pub can_modify: bool,
     /// The sink connection the output lands in, under `{sink.url}/{folder}`,
     /// reached with a credential vended from that connection's.
     pub sink_connection: String,
@@ -101,6 +108,7 @@ impl Job {
             folder: folder.map(JobFolder::into_inner),
             script: Some(script),
             report: None,
+            can_modify: false,
             id,
         }
     }
@@ -161,6 +169,12 @@ impl Job {
         }
         self.status = status;
         Ok(())
+    }
+
+    /// The job as `caller` sees it: [`Job::can_modify`] filled in.
+    pub fn seen_by(mut self, caller: &Caller) -> Self {
+        self.can_modify = caller.may_modify(&self.created_by);
+        self
     }
 
     /// Whether its dataset may be opened for `access`: read once it has

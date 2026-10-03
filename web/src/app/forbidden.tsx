@@ -9,8 +9,7 @@ export default function Forbidden() {
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">Access denied</h1>
         <p className="text-sm text-muted-foreground max-w-sm">
-          You don&apos;t have access to this workspace. Contact the administrator to receive an
-          invite.
+          You have no role in this workspace. Ask an admin of your organization.
         </p>
       </div>
     </div>

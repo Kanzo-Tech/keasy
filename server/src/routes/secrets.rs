@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::authentication::role::AnyRole;
+use crate::authentication::role::Editor;
 use crate::connections::persistence as connections;
 use crate::credentials::{named, persistence, probe};
 use crate::domain::{ResourceName, SecretSpec, SecretView, ValidationReport};
@@ -39,28 +39,24 @@ pub struct UpdateSecretRequest {
     pub spec: Option<SecretSpec>,
 }
 
-fn may_change(caller: &AnyRole, created_by: &str) -> Result<(), Refusal> {
-    if caller.owns(created_by) {
-        Ok(())
-    } else {
-        Err(Refusal::forbidden(
-            "only who created a secret, or the owner, may change it",
-        ))
-    }
-}
-
-#[utoipa::path(get, path = "/v1/secrets", tag = "Secrets",
+#[utoipa::path(get, path = "/v1/secrets", tag = "Secrets", security(("bearer" = ["editor"])),
     responses((status = 200, description = "The secrets, with the connections using each; never a secret's value", body = Vec<SecretView>))
 )]
 pub async fn list_secrets(
-    _: AnyRole,
+    caller: Editor,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, Refusal> {
     let db = &state.db;
-    Ok(Json(persistence::list(&*db.read().await, db.secret_key())?))
+    let secrets = persistence::list(&*db.read().await, db.secret_key())?;
+    Ok(Json(
+        secrets
+            .into_iter()
+            .map(|s| s.seen_by(&caller))
+            .collect::<Vec<_>>(),
+    ))
 }
 
-#[utoipa::path(post, path = "/v1/secrets", tag = "Secrets",
+#[utoipa::path(post, path = "/v1/secrets", tag = "Secrets", security(("bearer" = ["editor"])),
     request_body = CreateSecretRequest,
     responses(
         (status = 201, description = "Validated and stored", body = SecretView),
@@ -70,10 +66,10 @@ pub async fn list_secrets(
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
-/// Any role may create one: a member for their sources, the owner for the
-/// sink — and either may change or delete what they made.
+/// An editor creates one, for a source or, as an admin, for the sink; any editor
+/// may use it in a connection, and its creator or an admin changes it.
 pub async fn create_secret(
-    caller: AnyRole,
+    caller: Editor,
     State(state): State<AppState>,
     Json(request): Json<CreateSecretRequest>,
 ) -> Result<impl IntoResponse, Refusal> {
@@ -85,10 +81,10 @@ pub async fn create_secret(
         &caller.user_id,
     )
     .await?;
-    Ok((StatusCode::CREATED, Json(view)))
+    Ok((StatusCode::CREATED, Json(view.seen_by(&caller))))
 }
 
-#[utoipa::path(get, path = "/v1/secrets/{name}", tag = "Secrets",
+#[utoipa::path(get, path = "/v1/secrets/{name}", tag = "Secrets", security(("bearer" = ["editor"])),
     params(("name" = String, Path, description = "Secret name")),
     responses(
         (status = 200, description = "The secret; never its value", body = SecretView),
@@ -96,21 +92,21 @@ pub async fn create_secret(
     )
 )]
 pub async fn get_secret(
-    _: AnyRole,
+    caller: Editor,
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     let credential = named(&state.db, &name).await?;
     let used_by = persistence::users_of(&*state.db.read().await, &name)?;
-    Ok(Json(credential.view(used_by)))
+    Ok(Json(credential.view(used_by).seen_by(&caller)))
 }
 
-#[utoipa::path(patch, path = "/v1/secrets/{name}", tag = "Secrets",
+#[utoipa::path(patch, path = "/v1/secrets/{name}", tag = "Secrets", security(("bearer" = ["editor"])),
     params(("name" = String, Path, description = "Secret name")),
     request_body = UpdateSecretRequest,
     responses(
         (status = 200, description = "Renamed and/or rotated", body = SecretView),
-        (status = 403, description = "Neither its creator nor the owner", body = ErrorBody),
+        (status = 403, description = "Neither its creator nor an admin", body = ErrorBody),
         (status = 404, description = "No such secret", body = ErrorBody),
         (status = 422, description = "A connection using it would not validate with the new spec; `dependents` names them", body = ErrorBody),
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
@@ -119,14 +115,14 @@ pub async fn get_secret(
 /// Rotation replaces the whole spec, and is committed only if every connection
 /// using the secret still validates with the new one.
 pub async fn update_secret(
-    caller: AnyRole,
+    caller: Editor,
     State(state): State<AppState>,
     Path(name): Path<String>,
     Json(request): Json<UpdateSecretRequest>,
 ) -> Result<impl IntoResponse, Refusal> {
     let db = &state.db;
     let current = named(db, &name).await?;
-    may_change(&caller, &current.created_by)?;
+    caller.ensure_may_modify(&current.created_by, "secret")?;
     let new_name = ResourceName::parse(request.name.as_deref().unwrap_or(&name))
         .map_err(|e| Refusal::invalid_field("name", e))?;
 
@@ -158,48 +154,48 @@ pub async fn update_secret(
     let stored = persistence::get(&conn, db.secret_key(), new_name.as_ref())?
         .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such secret"))?;
     let used_by = persistence::users_of(&conn, new_name.as_ref())?;
-    Ok(Json(stored.view(used_by)))
+    Ok(Json(stored.view(used_by).seen_by(&caller)))
 }
 
-#[utoipa::path(delete, path = "/v1/secrets/{name}", tag = "Secrets",
+#[utoipa::path(delete, path = "/v1/secrets/{name}", tag = "Secrets", security(("bearer" = ["editor"])),
     params(("name" = String, Path, description = "Secret name")),
     responses(
         (status = 204, description = "Deleted"),
-        (status = 403, description = "Neither its creator nor the owner", body = ErrorBody),
+        (status = 403, description = "Neither its creator nor an admin", body = ErrorBody),
         (status = 404, description = "No such secret", body = ErrorBody),
         (status = 409, description = "Connections still use it; `dependents` names them", body = ErrorBody),
     )
 )]
 pub async fn delete_secret(
-    caller: AnyRole,
+    caller: Editor,
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     let current = named(&state.db, &name).await?;
-    may_change(&caller, &current.created_by)?;
+    caller.ensure_may_modify(&current.created_by, "secret")?;
     persistence::delete(&*state.db.write().await, &name)?;
     Ok(StatusCode::NO_CONTENT)
 }
 
-#[utoipa::path(post, path = "/v1/secrets/{name}/validate", tag = "Secrets",
+#[utoipa::path(post, path = "/v1/secrets/{name}/validate", tag = "Secrets", security(("bearer" = ["editor"])),
     params(("name" = String, Path, description = "Secret name")),
     responses(
         (status = 200, description = "The probe's report, stored with the secret", body = ValidationReport),
-        (status = 403, description = "Neither its creator nor the owner", body = ErrorBody),
+        (status = 403, description = "Neither its creator nor an admin", body = ErrorBody),
         (status = 404, description = "No such secret", body = ErrorBody),
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
 /// Probe the secret through every connection that uses it.
 pub async fn validate_secret(
-    caller: AnyRole,
+    caller: Editor,
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     let db = &state.db;
     let credential = named(db, &name).await?;
     // Validating stores the report on the secret: a change, guarded as one.
-    may_change(&caller, &credential.created_by)?;
+    caller.ensure_may_modify(&credential.created_by, "secret")?;
     let dependents = connections::using(&*db.read().await, &name)?;
     let (report, _) = probe::credential(&credential.spec, None, &dependents).await?;
     persistence::set_validation(&*db.write().await, &name, &report)?;

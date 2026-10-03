@@ -54,8 +54,10 @@ resource "docker_volume" "keycloak_postgres" {
   name = "keasy-base-keycloak-postgres"
 }
 
-# Keycloak boots EMPTY — the realm module configures it. The bootstrap admin is the
-# realm module's provider identity (KC_BOOTSTRAP_ADMIN_*). KC_DB_PASSWORD is passed as
+# Keycloak boots EMPTY. Deploying the server is this platform's (kanzo-ui ships no
+# Keycloak deploy module); configuring it is kanzo-ui's services/auth/realm, applied
+# with the prod tfvars (`make deploy-auth`). The bootstrap admin (KC_BOOTSTRAP_ADMIN_*)
+# is that module's and infra/auth's provider identity. KC_DB_PASSWORD is passed as
 # env (no _FILE support); the value lives in state.
 resource "docker_service" "keycloak" {
   name = "keasy-base-keycloak"

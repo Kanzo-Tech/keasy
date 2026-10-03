@@ -1,7 +1,6 @@
 "use client";
 
-import { KeyRound, Paintbrush, ShieldCheck } from "lucide-react";
-import { useSession } from "@kanzo-tech/auth";
+import { GalleryVerticalEnd, KeyRound, Paintbrush, ShieldCheck, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
   isActivePath,
@@ -14,22 +13,29 @@ import {
   SidebarMenuItem,
 } from "@kanzo-tech/ui";
 import { Link } from "@kanzo-tech/navigation/next";
-import { workspaceRole } from "@/lib/auth/roles";
+import { useRole } from "@/lib/auth/use-role";
 
 const GENERAL = [
   { href: "/settings/preferences", label: "Preferences", icon: Paintbrush },
   { href: "/settings/security", label: "Security", icon: ShieldCheck },
 ];
 
-// Storage and AI credentials are the member's own data-plane infrastructure.
+// Cloud accounts and AI keys: an editor's.
 const DATA = [{ href: "/settings/credentials", label: "Credentials", icon: KeyRound }];
+
+// Where job outputs land, and who belongs: an admin's.
+const WORKSPACE = [
+  { href: "/settings/storage", label: "Workspace storage", icon: GalleryVerticalEnd },
+  { href: "/settings/members", label: "Members", icon: Users },
+];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { session } = useSession();
+  const { holds } = useRole();
   const groups = [
     { heading: "General", items: GENERAL },
-    ...(workspaceRole(session) === "member" ? [{ heading: "Data", items: DATA }] : []),
+    ...(holds("editor") ? [{ heading: "Data", items: DATA }] : []),
+    ...(holds("admin") ? [{ heading: "Workspace", items: WORKSPACE }] : []),
   ];
 
   return (

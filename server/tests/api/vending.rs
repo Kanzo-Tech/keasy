@@ -1,12 +1,12 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{DEAD, TestApp, spawn_app};
+use crate::helpers::{ADMIN, DEAD, EDITOR, READER, TestApp, spawn_app};
 use keasy_server::domain::Direction;
 
 async fn workspace() -> (TestApp, String) {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     app.credential("key", DEAD, "u-1").await;
     app.connection("source", "key", Direction::Source, "u-1")
         .await;
@@ -57,27 +57,43 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
         StatusCode::NOT_FOUND
     );
 
-    let theirs = app.token_for("u-2", &["member"]);
+    // Reading is everyone's, so another editor meets the job's state like its
+    // creator does; writing is not theirs.
+    let theirs = app.token_for("u-2", EDITOR);
     assert_eq!(
         app.vend(&theirs, job.clone(), "read").await.0,
-        StatusCode::NOT_FOUND
+        StatusCode::CONFLICT
+    );
+    assert_eq!(
+        app.vend(&theirs, job.clone(), "write").await,
+        (StatusCode::FORBIDDEN, Some("rbac/forbidden".to_owned()))
     );
 
-    let owner = app.token_for("u-9", &["owner"]);
+    // A reader explores outputs; building from a source is an editor's.
+    let reader = app.token_for("u-3", READER);
     assert_eq!(
-        app.vend(&owner, source, "read").await,
-        (StatusCode::FORBIDDEN, Some("rbac/forbidden".to_owned())),
-        "the owner never reads a source"
+        app.vend(&reader, source.clone(), "read").await,
+        (
+            StatusCode::FORBIDDEN,
+            Some("rbac/insufficient-role".to_owned())
+        )
     );
     assert_eq!(
-        app.vend(&owner, job.clone(), "write").await.0,
-        StatusCode::FORBIDDEN,
-        "the owner never writes a dataset"
-    );
-    assert_eq!(
-        app.vend(&owner, job, "read").await,
+        app.vend(&reader, job.clone(), "read").await,
         conflict("job/not-completed"),
-        "the owner reads a member's job, once it has completed"
+        "a reader reads any job, once it has completed"
+    );
+
+    // An admin is an editor too, and may change anyone's job.
+    let admin = app.token_for("u-9", ADMIN);
+    assert_eq!(
+        app.vend(&admin, source, "read").await.0,
+        StatusCode::BAD_GATEWAY,
+        "refused by the store, never by role"
+    );
+    assert_eq!(
+        app.vend(&admin, job, "write").await,
+        conflict("job/not-running")
     );
 }
 

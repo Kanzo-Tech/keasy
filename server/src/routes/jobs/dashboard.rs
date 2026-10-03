@@ -8,10 +8,10 @@ use serde::Deserialize;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::authentication::role::Member;
+use crate::authentication::role::{Editor, Reader};
 use crate::domain::Dashboard;
 use crate::error::{ErrorBody, ErrorCode, Refusal};
-use crate::jobs::{dashboards, owned};
+use crate::jobs::{any, changeable, dashboards};
 use crate::startup::AppState;
 
 /// The most a saved dashboard may weigh, as stored JSON. A layout and its
@@ -25,7 +25,7 @@ pub struct PutDashboardRequest {
     pub spec: serde_json::Value,
 }
 
-#[utoipa::path(get, path = "/v1/jobs/{id}/dashboard", tag = "Jobs",
+#[utoipa::path(get, path = "/v1/jobs/{id}/dashboard", tag = "Jobs", security(("bearer" = ["reader"])),
     params(("id" = String, Path, description = "Job ID")),
     responses(
         (status = 200, description = "The job's saved dashboard, or null when none is saved", body = Option<Dashboard>),
@@ -33,15 +33,15 @@ pub struct PutDashboardRequest {
     )
 )]
 pub async fn get_dashboard(
-    member: Member,
+    _: Reader,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<Json<Option<Dashboard>>, Refusal> {
-    owned(&*state.db.read().await, &member.user_id, &id)?;
+    any(&*state.db.read().await, &id)?;
     Ok(Json(dashboards::get(&*state.db.read().await, &id)?))
 }
 
-#[utoipa::path(put, path = "/v1/jobs/{id}/dashboard", tag = "Jobs",
+#[utoipa::path(put, path = "/v1/jobs/{id}/dashboard", tag = "Jobs", security(("bearer" = ["editor"])),
     params(("id" = String, Path, description = "Job ID")),
     request_body = PutDashboardRequest,
     responses(
@@ -51,13 +51,14 @@ pub async fn get_dashboard(
         (status = 413, description = "The spec is larger than a dashboard may be", body = ErrorBody),
     )
 )]
+/// The dashboard is the job's: who may change the job may save it.
 pub async fn put_dashboard(
-    member: Member,
+    caller: Editor,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<PutDashboardRequest>,
 ) -> Result<Json<Dashboard>, Refusal> {
-    owned(&*state.db.read().await, &member.user_id, &id)?;
+    changeable(&*state.db.read().await, &caller, &id)?;
     let serde_json::Value::Object(spec) = payload.spec else {
         return Err(Refusal::invalid("A dashboard spec is a JSON object"));
     };
@@ -75,7 +76,7 @@ pub async fn put_dashboard(
         &*state.db.write().await,
         &id,
         spec,
-        &member.user_id,
+        &caller.user_id,
     )?))
 }
 

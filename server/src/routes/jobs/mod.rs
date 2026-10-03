@@ -10,10 +10,10 @@ use serde::Deserialize;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::authentication::role::Member;
+use crate::authentication::role::{Editor, Reader};
 use crate::domain::{Job, JobFolder, JobStatus, ResourceName};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
-use crate::jobs::{owned, persistence};
+use crate::jobs::{any, changeable, persistence};
 use crate::startup::AppState;
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -95,23 +95,25 @@ pub struct JobStatusReport {
     pub problem: Option<serde_json::Value>,
 }
 
-#[utoipa::path(get, path = "/v1/jobs", tag = "Jobs",
+#[utoipa::path(get, path = "/v1/jobs", tag = "Jobs", security(("bearer" = ["reader"])),
     responses(
-        (status = 200, description = "The caller's jobs", body = Vec<Job>),
+        (status = 200, description = "Every job in the workspace", body = Vec<Job>),
     )
 )]
 pub async fn list_jobs(
-    member: Member,
+    caller: Reader,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, Refusal> {
     crate::jobs::sweep(&state.db).await?;
-    Ok(Json(persistence::list_of(
-        &*state.db.read().await,
-        &member.user_id,
-    )?))
+    let jobs = persistence::list(&*state.db.read().await)?;
+    Ok(Json(
+        jobs.into_iter()
+            .map(|job| job.seen_by(&caller))
+            .collect::<Vec<_>>(),
+    ))
 }
 
-#[utoipa::path(post, path = "/v1/jobs", tag = "Jobs",
+#[utoipa::path(post, path = "/v1/jobs", tag = "Jobs", security(("bearer" = ["editor"])),
     request_body = CreateJobRequest,
     responses(
         (status = 201, description = "The draft, created; `POST /v1/jobs/{id}/submit` makes it the job to run", body = Job),
@@ -121,7 +123,7 @@ pub async fn list_jobs(
 /// A job begins as a draft, always: what it runs, where it lands. Submitting
 /// it is the one way a job comes to run.
 pub async fn create_job(
-    member: Member,
+    caller: Editor,
     State(state): State<AppState>,
     Json(payload): Json<CreateJobRequest>,
 ) -> Result<impl IntoResponse, Refusal> {
@@ -141,14 +143,14 @@ pub async fn create_job(
         payload.sink_connection,
         folder(payload.folder.as_deref())?,
         payload.script,
-        member.user_id,
+        caller.user_id.clone(),
     );
     persistence::insert(&*state.db.write().await, &job)?;
 
-    Ok((StatusCode::CREATED, Json(job)))
+    Ok((StatusCode::CREATED, Json(job.seen_by(&caller))))
 }
 
-#[utoipa::path(get, path = "/v1/jobs/{id}", tag = "Jobs",
+#[utoipa::path(get, path = "/v1/jobs/{id}", tag = "Jobs", security(("bearer" = ["reader"])),
     params(("id" = String, Path, description = "Job ID")),
     responses(
         (status = 200, description = "Job details", body = Job),
@@ -156,15 +158,15 @@ pub async fn create_job(
     )
 )]
 pub async fn get_job(
-    member: Member,
+    caller: Reader,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     crate::jobs::sweep(&state.db).await?;
-    Ok(Json(owned(&*state.db.read().await, &member.user_id, &id)?))
+    Ok(Json(any(&*state.db.read().await, &id)?.seen_by(&caller)))
 }
 
-#[utoipa::path(patch, path = "/v1/jobs/{id}", tag = "Jobs",
+#[utoipa::path(patch, path = "/v1/jobs/{id}", tag = "Jobs", security(("bearer" = ["editor"])),
     params(("id" = String, Path, description = "Job ID")),
     request_body = DraftEdits,
     responses(
@@ -175,19 +177,19 @@ pub async fn get_job(
     )
 )]
 pub async fn edit_draft(
-    member: Member,
+    caller: Editor,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(edits): Json<DraftEdits>,
 ) -> Result<impl IntoResponse, Refusal> {
-    let mut job = owned(&*state.db.read().await, &member.user_id, &id)?;
+    let mut job = changeable(&*state.db.read().await, &caller, &id)?;
     job.edit()?;
     edits.apply(&mut job)?;
     persistence::write(&*state.db.write().await, &job)?;
-    Ok(Json(job))
+    Ok(Json(job.seen_by(&caller)))
 }
 
-#[utoipa::path(post, path = "/v1/jobs/{id}/submit", tag = "Jobs",
+#[utoipa::path(post, path = "/v1/jobs/{id}/submit", tag = "Jobs", security(("bearer" = ["editor"])),
     params(("id" = String, Path, description = "Job ID")),
     request_body = DraftEdits,
     responses(
@@ -201,21 +203,21 @@ pub async fn edit_draft(
 /// the promotion are one write, so a refusal leaves the draft as it was and a
 /// success leaves no draft behind. The only way a job comes to be pending.
 pub async fn submit_job(
-    member: Member,
+    caller: Editor,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(edits): Json<DraftEdits>,
 ) -> Result<impl IntoResponse, Refusal> {
-    let mut job = owned(&*state.db.read().await, &member.user_id, &id)?;
+    let mut job = changeable(&*state.db.read().await, &caller, &id)?;
     job.edit()?;
     edits.apply(&mut job)?;
     job.submit()?;
     persistence::write(&*state.db.write().await, &job)?;
 
-    Ok((StatusCode::ACCEPTED, Json(job)))
+    Ok((StatusCode::ACCEPTED, Json(job.seen_by(&caller))))
 }
 
-#[utoipa::path(post, path = "/v1/jobs/{id}/status", tag = "Jobs",
+#[utoipa::path(post, path = "/v1/jobs/{id}/status", tag = "Jobs", security(("bearer" = ["editor"])),
     params(("id" = String, Path, description = "Job ID")),
     request_body = JobStatusReport,
     responses(
@@ -230,27 +232,28 @@ pub async fn submit_job(
 /// swept as `job/abandoned`; an end records how the run ended, and dates it.
 /// `completed` stores the run report verbatim, unread.
 pub async fn report_status(
-    member: Member,
+    caller: Editor,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<JobStatusReport>,
 ) -> Result<StatusCode, Refusal> {
-    // The beat, every 15 s of every run: one statement. Anything else — a
-    // start, an end, a lease that lapsed — reads the job and moves it.
+    // The beat, every 15 s of every run: one statement, for the creator's run.
+    // Anything else — a start, an end, a lease that lapsed, an admin's run —
+    // reads the job, checks who may change it, and moves it.
     let now = jiff::Timestamp::now();
     if payload.status == JobStatus::Running
-        && persistence::renew(&*state.db.write().await, &id, &member.user_id, now)?
+        && persistence::renew(&*state.db.write().await, &id, &caller.user_id, now)?
     {
         return Ok(StatusCode::NO_CONTENT);
     }
     crate::jobs::sweep(&state.db).await?;
-    let mut job = owned(&*state.db.read().await, &member.user_id, &id)?;
+    let mut job = changeable(&*state.db.read().await, &caller, &id)?;
     job.report(payload.status, payload.report, payload.problem)?;
     persistence::write(&*state.db.write().await, &job)?;
     Ok(StatusCode::NO_CONTENT)
 }
 
-#[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs",
+#[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs", security(("bearer" = ["editor"])),
     params(("id" = String, Path, description = "Job ID")),
     responses(
         (status = 204, description = "Job deleted"),
@@ -259,12 +262,12 @@ pub async fn report_status(
     )
 )]
 pub async fn delete_job(
-    member: Member,
+    caller: Editor,
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     crate::jobs::sweep(&state.db).await?;
-    owned(&*state.db.read().await, &member.user_id, &id)?.delete()?;
+    changeable(&*state.db.read().await, &caller, &id)?.delete()?;
 
     persistence::delete(&*state.db.write().await, &id)?;
     Ok(StatusCode::NO_CONTENT)

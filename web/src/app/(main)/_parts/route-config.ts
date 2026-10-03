@@ -5,18 +5,18 @@ import {
   Home,
   KeyRound,
   Settings2,
+  Users,
   Workflow,
   type LucideIcon,
 } from "lucide-react";
-import type { WorkspaceRole } from "@/lib/auth/roles";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type RouteDef = {
   name: string;
   icon?: LucideIcon;
-  /** Which workspace roles see this in the sidebar. Omit = not in sidebar. */
-  sidebar?: readonly WorkspaceRole[];
+  /** In the sidebar, for every role. */
+  sidebar?: true;
 };
 
 type RouteEntry = RouteDef & { path: string };
@@ -33,21 +33,19 @@ export type Crumb = RouteEntry & { label?: CrumbLabel };
  * Keyed by path, O(1) lookup, sidebar/breadcrumbs derive from this.
  */
 const ROUTES: Record<string, RouteDef> = {
-  // Shared
-  "/":                            { name: "Dashboard", icon: Home, sidebar: ["owner", "member"] },
-  // Member plane (data)
-  "/connections":                 { name: "Connections", icon: Database, sidebar: ["member"] },
-  "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: ["member"] },
+  "/":                            { name: "Dashboard", icon: Home, sidebar: true },
+  "/datasets":                    { name: "Datasets", icon: Boxes, sidebar: true },
+  "/jobs":                        { name: "Jobs", icon: Workflow, sidebar: true },
   "/jobs/new":                    { name: "New Job" },
-  // Owner plane (metadata)
-  "/datasets":                    { name: "Data Catalog", icon: Boxes, sidebar: ["owner"] },
-  "/catalog":                     { name: "Catalog Storage", icon: GalleryVerticalEnd, sidebar: ["owner"] },
+  "/connections":                 { name: "Connections", icon: Database, sidebar: true },
   // Settings (not in main sidebar — reached via the user menu)
   "/settings":                    { name: "Settings", icon: Settings2 },
   "/settings/preferences":        { name: "Preferences" },
   "/settings/security":           { name: "Security" },
   "/settings/credentials":        { name: "Credentials", icon: KeyRound },
   "/settings/credentials/new":    { name: "New Credential" },
+  "/settings/storage":            { name: "Workspace storage", icon: GalleryVerticalEnd },
+  "/settings/members":            { name: "Members", icon: Users },
 };
 
 /**
@@ -92,10 +90,9 @@ export function generateBreadcrumbs(path: string): Crumb[] {
   return crumbs;
 }
 
-export function getSidebarRoutes(role: WorkspaceRole): RouteEntry[] {
-  // Two disjoint planes: the member sees the data surface, the owner sees the
-  // metadata/people surface. Each role sees only its own plane (plus Dashboard).
+/** The sidebar is the same for every role: the work is shared, and what a role may change is drawn on the page. */
+export function getSidebarRoutes(): RouteEntry[] {
   return Object.entries(ROUTES)
-    .filter(([, def]) => def.sidebar?.includes(role))
+    .filter(([, def]) => def.sidebar)
     .map(([path, def]) => ({ ...def, path }));
 }

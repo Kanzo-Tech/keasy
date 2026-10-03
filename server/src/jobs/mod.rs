@@ -4,6 +4,7 @@ pub mod persistence;
 use axum::http::StatusCode;
 use rusqlite::Connection;
 
+use crate::authentication::role::Caller;
 use crate::credentials::sealing::SecretKey;
 use crate::database::Database;
 use crate::domain::{Job, SecretSpec, StorageLocation};
@@ -19,21 +20,19 @@ pub async fn sweep(db: &Database) -> Result<(), Refusal> {
     Ok(())
 }
 
-/// The job, whoever created it: for the owner, who reads every completed job
-/// of the workspace and changes none. Not swept: a caller whose answer turns
-/// on whether a run is still held sweeps first.
+/// The job, whoever created it: everyone in the workspace reads it. Not swept:
+/// a caller whose answer turns on whether a run is still held sweeps first.
 pub fn any(conn: &Connection, id: &str) -> Result<Job, Refusal> {
     persistence::get(conn, id)?
         .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))
 }
 
-/// The job, if it exists and `user_id` created it. Anyone else's job is not
-/// found: a job is its creator's alone.
-pub fn owned(conn: &Connection, user_id: &str, id: &str) -> Result<Job, Refusal> {
+/// The job, if `caller` may change it — an admin, or the editor who created
+/// it. Anyone else's is read, never changed: `rbac/forbidden`, not a 404, for
+/// a job everyone can see exists.
+pub fn changeable(conn: &Connection, caller: &Caller, id: &str) -> Result<Job, Refusal> {
     let job = any(conn, id)?;
-    if job.created_by != user_id {
-        return Err(Refusal::not_found(ErrorCode::JobNotFound, "No such job"));
-    }
+    caller.ensure_may_modify(&job.created_by, "job")?;
     Ok(job)
 }
 

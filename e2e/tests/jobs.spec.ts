@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../support/fixtures";
 
 import { api, createJob, expectRefusal, MISSING } from "../support/api";
 import { expectProblem } from "../support/problem";

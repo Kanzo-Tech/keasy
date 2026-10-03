@@ -1,0 +1,9 @@
+# State holds every tenant secret — manager-only, never committed.
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.tfstate.lock.info
+# Operator-local tenant registry.
+*.auto.tfvars
+terraform.tfvars
+# Keep .terraform.lock.hcl tracked.

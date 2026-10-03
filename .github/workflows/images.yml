@@ -1,7 +1,7 @@
 name: images
 
 # Publishes the server and web images to GHCR on release tags, once both CI
-# suites pass. Terraform pins them per tenant (infra/terraform/realm).
+# suites pass. Terraform pins them per tenant (infra/terraform/instances).
 
 on:
   push:

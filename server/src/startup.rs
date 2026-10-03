@@ -33,9 +33,8 @@ use crate::routes;
 #[derive(Clone)]
 pub struct AppState {
     pub db: Database,
-    /// This instance's workspace slug (`KEASY_ORG_ALIAS`), the "current" entry
-    /// in the workspace switcher.
-    pub workspace_slug: Option<String>,
+    /// The Keycloak organization this instance serves (`KEASY_ORG_ALIAS`).
+    pub org_alias: String,
     /// This instance's display name (`KEASY_WORKSPACE_NAME`).
     pub workspace_name: String,
     /// This instance's declared look (`KEASY_BRANDING_FILE`).
@@ -87,7 +86,7 @@ impl Application {
 
         let state = AppState {
             db,
-            workspace_slug: application.workspace_slug,
+            org_alias: application.org_alias,
             workspace_name: application.workspace_name,
             branding: Arc::new(application.branding),
             auth,
@@ -159,7 +158,6 @@ fn routes() -> (OpenApiRouter<AppState>, OpenApiRouter<AppState>) {
         .merge(routes::health_check::router())
         .merge(routes::branding::router());
     let protected = OpenApiRouter::new()
-        .merge(routes::workspaces::router())
         .merge(routes::jobs::router())
         .merge(routes::datasets::router())
         .merge(routes::storage_credentials::router())

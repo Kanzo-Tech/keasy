@@ -3,7 +3,7 @@
 import { createContext, use, useMemo, type Dispatch, type SetStateAction } from "react";
 import { createListCollection, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@kanzo-tech/ui";
 import type { Channels } from "@kanzo-tech/graph";
-import { useFieldStats } from "./corpus";
+import { useFieldStats } from "@/lib/fossil/corpus";
 import type { TableStats } from "./field-stats";
 
 /**

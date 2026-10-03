@@ -12,12 +12,15 @@ import {
   useMosaic,
   useQueryRows,
   type Coordinator,
+  type FieldStats,
 } from "@kanzo-tech/ui/analytics";
 import { queryClient } from "@/lib/api/query-client";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { host } from "@/lib/fossil/host";
-import type { TableStats } from "./field-stats";
+
+/** A vertex table's `SUMMARIZE`: its fields a chart or a suggestion may name, and every column a rule may check. */
+export type TableStats = FieldStats & { name: string };
 
 /** Everything read off a corpus is read once, and dropped with the page. */
 export const ONCE = { staleTime: Infinity, gcTime: 0, retry: false } as const;

@@ -24,7 +24,7 @@ import {
 import { useChartQuery } from "@kanzo-tech/ui/analytics";
 import { TableRefNode } from "@uwdata/mosaic-sql";
 import { distinctValuesQuery, isRuleComplete, OPERATOR_META, type Rule, type RuleOperator } from "./rule-engine";
-import { useCorpus } from "./corpus";
+import { useCorpus } from "@/lib/fossil/corpus";
 import { columnsOf, type TableStats } from "./field-stats";
 
 /** The column a new rule starts on: the program's first field, where the table has one. */

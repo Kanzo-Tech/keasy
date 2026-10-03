@@ -35,7 +35,7 @@ import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
 import { $api, type Schemas } from "@/lib/api/client";
 import { formatDate } from "@/lib/ui/format";
-import { CorpusProvider, corpusQuery } from "@/app/(main)/(workspace)/(member)/jobs/[id]/discover/_parts/corpus";
+import { CorpusProvider, corpusQuery, useCorpus } from "@/lib/fossil/corpus";
 
 export default function DatasetsPage() {
   return (
@@ -130,7 +130,7 @@ function Opened({ dataset }: { dataset: Schemas["Dataset"] }) {
   const corpus = settled(useSuspenseQuery(corpusQuery(dataset.id)));
   return (
     <CorpusProvider value={corpus}>
-      <Holds dataset={dataset} />
+      <Holds title={dataset.name ?? dataset.id} />
     </CorpusProvider>
   );
 }
@@ -143,11 +143,12 @@ interface Column {
 }
 
 /** What the corpus says it holds: each table of its `fossil_tables`, with its `fossil_columns`. */
-function Holds({ dataset }: { dataset: Schemas["Dataset"] }) {
+function Holds({ title }: { title: string }) {
+  const { jobId } = useCorpus();
   const rows = useQueryRows<Column>(
     `SELECT t.table_name, t.rows::DOUBLE AS rows, c.column_name, c.type
-     FROM ${new TableRefNode([dataset.id, "fossil_tables"])} t
-     LEFT JOIN ${new TableRefNode([dataset.id, "fossil_columns"])} c ON c.table_name = t.table_name
+     FROM ${new TableRefNode([jobId, "fossil_tables"])} t
+     LEFT JOIN ${new TableRefNode([jobId, "fossil_columns"])} c ON c.table_name = t.table_name
      ORDER BY t.kind DESC, t.table_name, c.ordinal`,
   );
   const tables = Map.groupBy(rows, (r) => r.table_name);
@@ -156,7 +157,7 @@ function Holds({ dataset }: { dataset: Schemas["Dataset"] }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-mono text-sm">
           <Boxes size={15} className="text-muted-foreground" />
-          {dataset.name ?? dataset.id}
+          {title}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -182,16 +183,14 @@ function Holds({ dataset }: { dataset: Schemas["Dataset"] }) {
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    {columns.flatMap((c) =>
-                      c.column_name === null
-                        ? []
-                        : [
-                            <Badge key={c.column_name} variant="secondary" className="font-normal">
-                              {c.column_name}
-                              <span className="ml-1 text-muted-foreground">{c.type?.toLowerCase()}</span>
-                            </Badge>,
-                          ],
-                    )}
+                    {columns
+                      .filter((c) => c.column_name !== null)
+                      .map((c) => (
+                        <Badge key={c.column_name} variant="secondary" className="font-normal">
+                          {c.column_name}
+                          <span className="ml-1 text-muted-foreground">{c.type?.toLowerCase()}</span>
+                        </Badge>
+                      ))}
                   </div>
                 </TableCell>
               </TableRow>

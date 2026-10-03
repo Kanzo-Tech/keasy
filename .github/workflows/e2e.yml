@@ -38,7 +38,11 @@ jobs:
       # The issuer and the store are addressed as *.localhost from both sides; Chromium resolves
       # them to loopback itself, this makes curl and Node agree.
       - name: Resolve the dev hostnames
-        run: echo "127.0.0.1 keycloak.localhost s3.localhost" | sudo tee -a /etc/hosts
+        run: echo "127.0.0.1 s3.localhost" | sudo tee -a /etc/hosts
+
+      # kanzo-ui's identity and AI services, at the release the compose includes.
+      - name: Check out the platform services
+        run: make deps
 
       # Without models: the runners have no Docker Model plugin and no scenario needs one.
       - name: Bring up the stack

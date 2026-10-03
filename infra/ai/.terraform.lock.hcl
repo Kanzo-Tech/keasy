@@ -5,6 +5,9 @@ provider "registry.terraform.io/ncecere/litellm" {
   version     = "2.1.0"
   constraints = "~> 2.1"
   hashes = [
+    "h1:0COQkSxqjEFCm44G7c7W8NW6Hl1b5mzS9ozFW41HvoA=",
+    "h1:a+f9crCnIxWfcdx62zqr5rV5sZJBWqZyJ5vVLgj3LQ4=",
+    "h1:fy6AF+YD8MK3gBafRpJOTk/P7WIyp2sSCClw7Oh9wEs=",
     "h1:sdltxCVXo2CC17bAQ5U9uBw52bcwYei4bLNHDL6clzo=",
     "zh:0dfe620e3969951dec437384c7bdfa6701327abae8a0b73d6ac0acad4df4b5fa",
     "zh:0e6f75381d920c897db9cf7776552f67e94997e08f614475753fe4e1e1b3feab",

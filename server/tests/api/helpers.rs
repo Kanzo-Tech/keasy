@@ -149,6 +149,49 @@ impl TestApp {
         (status, code)
     }
 
+    /// A job to run on the sink `sink`: a draft, submitted with a folder of
+    /// its own. Its id.
+    pub async fn submitted(&self, token: &str) -> String {
+        static FOLDERS: AtomicUsize = AtomicUsize::new(0);
+        let folder = format!("out-{}", FOLDERS.fetch_add(1, Ordering::Relaxed));
+        let (status, draft) = self
+            .send(
+                Method::POST,
+                "/v1/jobs",
+                token,
+                json!({ "script": "x", "sink_connection": "sink" }),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CREATED, "{draft}");
+        let id = draft["id"].as_str().unwrap();
+        let (status, job) = self
+            .send(
+                Method::POST,
+                &format!("/v1/jobs/{id}/submit"),
+                token,
+                json!({ "folder": folder }),
+            )
+            .await;
+        assert_eq!(status, StatusCode::ACCEPTED, "{job}");
+        id.to_string()
+    }
+
+    /// What the runner reports of job `id`: `POST /v1/jobs/{id}/status`.
+    pub async fn report(
+        &self,
+        token: &str,
+        id: &str,
+        report: serde_json::Value,
+    ) -> (StatusCode, serde_json::Value) {
+        self.send(
+            Method::POST,
+            &format!("/v1/jobs/{id}/status"),
+            token,
+            report,
+        )
+        .await
+    }
+
     /// A stored S3 credential on `endpoint`, unprobed, created by `by`.
     pub async fn credential(&self, name: &str, endpoint: &str, by: &str) {
         keasy_server::credentials::persistence::insert(

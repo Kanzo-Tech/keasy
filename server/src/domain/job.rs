@@ -84,9 +84,8 @@ pub struct Job {
 }
 
 impl Job {
-    /// A job as a create request asks for it: `Draft` or `Pending`, not yet run.
+    /// A job as it begins: a draft.
     pub fn new(
-        status: JobStatus,
         name: Option<String>,
         sink_connection: String,
         folder: Option<JobFolder>,
@@ -95,7 +94,7 @@ impl Job {
     ) -> Self {
         let id = uuid::Uuid::new_v4().to_string();
         Self {
-            status,
+            status: JobStatus::Draft,
             name: name.or_else(|| Some(id[..8].to_string())),
             created_at: now_iso8601(),
             started_at: None,
@@ -157,7 +156,6 @@ mod tests {
         let sink = StorageLocation::parse("s3://b/output/").unwrap();
         let folder = |f: Option<&str>| {
             Job::new(
-                JobStatus::Pending,
                 None,
                 "sink".into(),
                 f.map(|f| JobFolder::parse(f).unwrap()),

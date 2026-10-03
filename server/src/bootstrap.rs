@@ -15,7 +15,7 @@ use sha2::{Digest, Sha256};
 use tracing::{error, info};
 
 use crate::database::Database;
-use crate::domain::{Job, JobFolder, JobStatus};
+use crate::domain::{Job, JobFolder};
 use crate::routes::connections::CreateConnectionRequest;
 use crate::routes::credentials::CreateCredentialRequest;
 
@@ -160,7 +160,6 @@ async fn ensure_job(db: &Database, dir: &Path, declared: DeclaredJob) -> Result<
         .map_err(|e| format!("{}: {e}", script_path.display()))?;
 
     let mut job = Job::new(
-        JobStatus::Draft,
         Some(declared.name),
         declared.sink_connection,
         Some(folder),

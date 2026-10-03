@@ -77,9 +77,15 @@ Purchases : Order from Orders
 export async function createJob(page: Page, { draft = false, name }: { draft?: boolean; name?: string } = {}) {
   // A job to run writes to a folder no other job in the sink writes to.
   const folder = `e2e-${crypto.randomUUID()}`;
-  const created = await api(page, "POST", "/v1/jobs", { script: SHOP, name, draft, sink_connection: SINK, folder });
+  const created = await api(page, "POST", "/v1/jobs", { script: SHOP, name, sink_connection: SINK, folder });
   expect(created.status, JSON.stringify(created.body)).toBeLessThan(300);
-  return (created.body as { id: string }).id;
+  const { id } = created.body as { id: string };
+  // A job begins as a draft; submitting it is what makes it run.
+  if (!draft) {
+    const submitted = await api(page, "POST", `/v1/jobs/${id}/submit`, {});
+    expect(submitted.status, JSON.stringify(submitted.body)).toBeLessThan(300);
+  }
+  return id;
 }
 
 export const MISSING = "00000000-0000-4000-8000-000000000000";

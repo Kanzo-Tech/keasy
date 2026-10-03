@@ -44,7 +44,7 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
             Method::POST,
             "/v1/jobs",
             &member,
-            json!({ "script": "x", "draft": true, "sink_connection": "sink" }),
+            json!({ "script": "x", "sink_connection": "sink" }),
         )
         .await;
     let job = json!({ "job": job["id"] });
@@ -104,22 +104,9 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
 #[tokio::test]
 async fn an_ended_job_is_never_written() {
     let (app, member) = workspace().await;
-    let (_, job) = app
-        .send(
-            Method::POST,
-            "/v1/jobs",
-            &member,
-            json!({ "script": "x", "sink_connection": "sink", "folder": "out" }),
-        )
+    let id = app.submitted(&member).await;
+    app.report(&member, &id, json!({ "status": "cancelled" }))
         .await;
-    let id = job["id"].as_str().unwrap();
-    app.send(
-        Method::PATCH,
-        &format!("/v1/jobs/{id}"),
-        &member,
-        json!({ "status": "cancelled" }),
-    )
-    .await;
     assert_eq!(
         vend(&app, &member, json!({ "job": id }), "write").await,
         (StatusCode::CONFLICT, Some("job/ended".to_owned()))

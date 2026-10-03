@@ -225,25 +225,20 @@ mod tests {
     }
 
     fn job(owner: &str) -> Job {
-        Job::new(
-            JobStatus::Draft,
-            None,
-            "sink".into(),
-            None,
-            "x".into(),
-            owner.into(),
-        )
+        Job::new(None, "sink".into(), None, "x".into(), owner.into())
     }
 
     fn filed(status: JobStatus, folder: &str) -> Job {
-        Job::new(
+        Job {
             status,
-            None,
-            "sink".into(),
-            Some(JobFolder::parse(folder).unwrap()),
-            "x".into(),
-            "u-1".into(),
-        )
+            ..Job::new(
+                None,
+                "sink".into(),
+                Some(JobFolder::parse(folder).unwrap()),
+                "x".into(),
+                "u-1".into(),
+            )
+        }
     }
 
     /// One folder, one job's output: drafts may share it, and the folder is

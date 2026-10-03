@@ -32,10 +32,16 @@ export interface Lease {
   report<T>(send: () => Promise<T>): Promise<T>;
 }
 
+/** What the runner reports of job `id`: that it runs (again, to renew the lease), or how it ended. */
+export function reportStatus(id: string, body: Schemas["JobStatusReport"]) {
+  return http.POST("/v1/jobs/{id}/status", { params: { path: { id } }, body });
+}
+
 export function lease(
   id: string,
   {
-    beat = () => http.POST("/v1/jobs/{id}/heartbeat", { params: { path: { id } } }),
+    // `running`, sent again, is the heartbeat: it renews the lease.
+    beat = () => reportStatus(id, { status: "running" }),
     now = Date.now,
     wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
   } = {},
@@ -81,12 +87,11 @@ export function lease(
 const started = new Set<string>();
 
 /**
- * Browser-driven execution (client-compute): when a job is `Pending`, the
- * browser is its worker. Reads the program from the job record, marks it
- * `Running` (reusing the completion PATCH), then runs the mapping on
- * DataFusion-WASM end-to-end via `run` — sources and GraphAr output through
- * credentials keasy vends, outcome by `PATCH /v1/jobs/{id}`. The server never runs
- * the mapping. The detail view's existing poll surfaces the terminal status.
+ * Browser-driven execution: when a job is `Pending`, the browser is its worker. Reads the program
+ * from the job record, reports it `running`, then runs it with fossil's executor (`run`) — sources
+ * read and the corpus written through credentials keasy vends — and reports how it ended, every
+ * report through `POST /v1/jobs/{id}/status`. The server never runs a program. The detail view's
+ * poll surfaces the end.
  */
 export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: () => void } {
   const ranRef = useRef(false);
@@ -112,12 +117,8 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: (
 
     void (async () => {
       try {
-        // Start marker: flip Pending → Running. Reuses the completion PATCH so
-        // the UI (and any other viewer) sees it in progress.
-        await http.PATCH("/v1/jobs/{id}", {
-          params: { path: { id: jobId } },
-          body: { status: "running" },
-        });
+        // Start marker: Pending → Running, so the UI (and any other viewer) sees it in progress.
+        await reportStatus(jobId, { status: "running" });
         // While this tab runs the job it says so; a closed tab stops saying it,
         // and the server ends the job as `job/abandoned`.
         held.hold();
@@ -126,16 +127,11 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: (
         await mod.initFossilExecutor();
         // `run` reads every document and source the program names through the host, writes the
         // corpus under the job, and answers its report or throws its `FossilError`. Recording the
-        // outcome is keasy's: the report crosses untouched, since `CompleteJobRequest.manifest` is
+        // outcome is keasy's: the report crosses untouched, since `JobStatusReport.report` is
         // opaque JSON on the server, and it is asked again for as long as the lease is ours.
         const report = await mod.run(program, { host, job: jobId, signal: run.signal });
         ran = true;
-        await held.report(() =>
-          http.PATCH("/v1/jobs/{id}", {
-            params: { path: { id: jobId } },
-            body: { status: "completed", manifest: report },
-          }),
-        );
+        await held.report(() => reportStatus(jobId, { status: "completed", report }));
         held.release();
 
         // Tell the host what it is now storing. The run report says what was
@@ -185,7 +181,7 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: (
           // Stopped here: say so. A closed tab cannot, and the sweep ends the job instead.
           if (run.signal.reason instanceof DOMException && run.signal.reason.message === "Stopped") {
             await held
-              .report(() => http.PATCH("/v1/jobs/{id}", { params: { path: { id: jobId } }, body: { status: "cancelled" } }))
+              .report(() => reportStatus(jobId, { status: "cancelled" }))
               .catch((patchErr: unknown) => toastError(patchErr, "The run stopped, and the job could not be marked so"));
           }
         } else {
@@ -194,12 +190,7 @@ export function useBrowserJobRunner(job: Schemas["Job"] | undefined): { stop?: (
           // lease would lapse; after that the sweep ends the job anyway, as `job/abandoned`, and the
           // problem is said here.
           await held
-            .report(() =>
-              http.PATCH("/v1/jobs/{id}", {
-                params: { path: { id: jobId } },
-                body: { status: "failed", problem: wireOf(err) },
-              }),
-            )
+            .report(() => reportStatus(jobId, { status: "failed", problem: wireOf(err) }))
             .catch((patchErr: unknown) =>
               toastError(patchErr, "The run failed, and the job could not be marked failed"),
             );

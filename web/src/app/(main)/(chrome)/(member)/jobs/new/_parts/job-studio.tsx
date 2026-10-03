@@ -229,12 +229,12 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
     const folder = s.folder ?? folderSlug(s.name);
     const body = { script: s.script, name, folder: folderProblem(folder) ? undefined : folder };
     if (id) {
-      await http.PUT("/v1/jobs/{id}", { params: { path: { id } }, body });
+      await http.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body });
       return id;
     }
     if (!s.sinkConnectionId) throw new Error("Pick a destination before saving");
     const { data: created } = await http.POST("/v1/jobs", {
-      body: { ...body, draft: true, sink_connection: s.sinkConnectionId },
+      body: { ...body, sink_connection: s.sinkConnectionId },
     });
     return created!.id;
   };
@@ -280,14 +280,16 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
       submittingRef.current = true;
       clearTimeout(autosaveRef.current);
       await savingRef.current?.catch(() => undefined); // a failed save toasted itself; Create sends everything anyway
-      const id = draftIdRef.current;
       const body = { script: store.script, name: sent.name || undefined, folder: sent.folder };
-      if (id) {
-        const { data: job } = await http.POST("/v1/jobs/{id}/submit", { params: { path: { id } }, body });
-        return job!;
+      // A job begins as a draft, always; submitting it is what makes it run.
+      let id = draftIdRef.current;
+      if (!id) {
+        if (!destination) throw new Error("Pick a destination before launching");
+        const { data: created } = await http.POST("/v1/jobs", { body: { script: store.script, sink_connection: destination } });
+        id = draftIdRef.current = created!.id;
+        setDraftId(id);
       }
-      if (!destination) throw new Error("Pick a destination before launching");
-      const { data: job } = await http.POST("/v1/jobs", { body: { ...body, sink_connection: destination } });
+      const { data: job } = await http.POST("/v1/jobs/{id}/submit", { params: { path: { id } }, body });
       return job!;
     },
     onSuccess: async (job) => {

@@ -1238,6 +1238,7 @@
         "tags": [
           "Jobs"
         ],
+        "summary": "A job begins as a draft, always: what it runs, where it lands. Submitting\nit is the one way a job comes to run.",
         "operationId": "create_job",
         "requestBody": {
           "content": {
@@ -1251,17 +1252,7 @@
         },
         "responses": {
           "201": {
-            "description": "Draft job created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Job"
-                }
-              }
-            }
-          },
-          "202": {
-            "description": "Job submitted for execution",
+            "description": "The draft, created; `POST /v1/jobs/{id}/submit` makes it the job to run",
             "content": {
               "application/json": {
                 "schema": {
@@ -1271,7 +1262,7 @@
             }
           },
           "400": {
-            "description": "The destination is not a sink, or the name or folder is missing or misspelled (`data.field`)",
+            "description": "The destination is not a sink, or the name or folder is misspelled (`data.field`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1285,16 +1276,6 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
-          },
-          "409": {
-            "description": "Another job writes to that folder already: `job/folder-taken`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -1332,80 +1313,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Job"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Job not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Jobs"
-        ],
-        "operationId": "update_job",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateJobRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Job updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Job"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Job is not a draft, or the name or folder is misspelled (`data.field`)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -1498,8 +1405,7 @@
         "tags": [
           "Jobs"
         ],
-        "summary": "The browser ran the mapping and uploaded the output; this records the\noutcome. `Completed` stores the run report verbatim, unread.",
-        "operationId": "complete_job",
+        "operationId": "edit_draft",
         "parameters": [
           {
             "name": "id",
@@ -1515,7 +1421,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CompleteJobRequest"
+                "$ref": "#/components/schemas/DraftEdits"
               }
             }
           },
@@ -1523,7 +1429,7 @@
         },
         "responses": {
           "200": {
-            "description": "Job status updated from the browser run",
+            "description": "The draft, edited",
             "content": {
               "application/json": {
                 "schema": {
@@ -1533,7 +1439,7 @@
             }
           },
           "400": {
-            "description": "The job is a draft, which is never run, or the status is not running or an end",
+            "description": "The name or folder is misspelled (`data.field`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1559,7 +1465,7 @@
             }
           },
           "409": {
-            "description": "The job has already ended",
+            "description": "Not a draft: `job/not-draft`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1727,66 +1633,6 @@
         }
       }
     },
-    "/v1/jobs/{id}/heartbeat": {
-      "post": {
-        "tags": [
-          "Jobs"
-        ],
-        "summary": "The runner is still there. Sent every 15 s while the job runs; a running\njob with no heartbeat for the lease (60 s) is swept as `job/abandoned`.",
-        "operationId": "heartbeat",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "The lease is renewed"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Job not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The job is not running: it ended, or the sweep ended it",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
     "/v1/jobs/{id}/relations": {
       "put": {
         "tags": [
@@ -1865,13 +1711,13 @@
         }
       }
     },
-    "/v1/jobs/{id}/submit": {
+    "/v1/jobs/{id}/status": {
       "post": {
         "tags": [
           "Jobs"
         ],
-        "summary": "A draft becomes the job to run, in place: the edits, the folder check and\nthe promotion are one write, so a refusal leaves the draft as it was and a\nsuccess leaves no draft behind.",
-        "operationId": "submit_job",
+        "summary": "The runner's one report: `running` starts the run and, sent again, renews\nits lease — a running job no report has renewed for the lease (60 s) is\nswept as `job/abandoned`; an end records how the run ended, and dates it.\n`completed` stores the run report verbatim, unread.",
+        "operationId": "report_status",
         "parameters": [
           {
             "name": "id",
@@ -1887,15 +1733,15 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SubmitJobRequest"
+                "$ref": "#/components/schemas/JobStatusReport"
               }
             }
           },
           "required": true
         },
         "responses": {
-          "202": {
-            "description": "The draft is now the job to run, under the same id",
+          "200": {
+            "description": "The job, as the report leaves it",
             "content": {
               "application/json": {
                 "schema": {
@@ -1905,7 +1751,7 @@
             }
           },
           "400": {
-            "description": "Job is not a draft (`job/not-draft`), or the name or folder is missing or misspelled (`data.field`)",
+            "description": "The job is a draft, which is never run, or the status is not running or an end",
             "content": {
               "application/json": {
                 "schema": {
@@ -1931,7 +1777,94 @@
             }
           },
           "409": {
-            "description": "Another job writes to that folder already: `job/folder-taken`; the job stays a draft, unchanged",
+            "description": "The job has already ended (`job/ended`): the sweep's `job/abandoned` among them",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/jobs/{id}/submit": {
+      "post": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "A draft becomes the job to run, in place: the edits, the folder check and\nthe promotion are one write, so a refusal leaves the draft as it was and a\nsuccess leaves no draft behind. The only way a job comes to be pending.",
+        "operationId": "submit_job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftEdits"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "The draft is now the job to run, under the same id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The name or folder is missing or misspelled (`data.field`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not a draft (`job/not-draft`), or another job writes to that folder already (`job/folder-taken`; the job stays a draft, unchanged)",
             "content": {
               "application/json": {
                 "schema": {
@@ -2201,25 +2134,6 @@
           }
         }
       },
-      "CompleteJobRequest": {
-        "type": "object",
-        "description": "The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running\nthe mapping in the browser (`@fossil-lang/executor`) and writing the output\nwith the credential vended for the job, the client reports the run's outcome. `manifest` is the\nexecutor's run report, stored verbatim and never read.",
-        "required": [
-          "status"
-        ],
-        "properties": {
-          "manifest": {
-            "description": "The run report for the uploaded output (on `Completed`) — opaque JSON."
-          },
-          "problem": {
-            "description": "Why the run failed (on `Failed`): the run's problem, stored verbatim\nand opaque."
-          },
-          "status": {
-            "$ref": "#/components/schemas/JobStatus",
-            "description": "The terminal (or `Running`) status the client is transitioning the job to."
-          }
-        }
-      },
       "ConnectionKind": {
         "type": "string",
         "enum": [
@@ -2323,9 +2237,6 @@
           "sink_connection"
         ],
         "properties": {
-          "draft": {
-            "type": "boolean"
-          },
           "folder": {
             "oneOf": [
               {
@@ -2333,7 +2244,7 @@
               },
               {
                 "$ref": "#/components/schemas/JobFolder",
-                "description": "The folder under the sink the output lands in. A draft may leave it\nout; a job to run needs one no other job in the sink holds."
+                "description": "The folder under the sink the output lands in. A draft may leave it\nout; it needs one, no other job's, to be submitted."
               }
             ]
           },
@@ -2468,6 +2379,39 @@
           "source",
           "sink"
         ]
+      },
+      "DraftEdits": {
+        "type": "object",
+        "description": "Edits to a draft: as it is written (PATCH), and as it is submitted.",
+        "properties": {
+          "folder": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JobFolder",
+                "description": "The draft's folder under the sink, spelled as on create. Submitting\nneeds one, unless the draft holds one already."
+              }
+            ]
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResourceName"
+              }
+            ]
+          },
+          "script": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
       },
       "ErrorBody": {
         "type": "object",
@@ -2703,6 +2647,25 @@
           "failed",
           "cancelled"
         ]
+      },
+      "JobStatusReport": {
+        "type": "object",
+        "description": "What the runner reports of a job's run (POST `/v1/jobs/{id}/status`): that\nit runs, again every so often to hold its lease, and how it ended. The\nbrowser runs the program (`@fossil-lang/executor`) and writes the output\nwith a credential vended for the job; keasy only records.",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "problem": {
+            "description": "Why the run failed (on `failed`): the run's problem, stored verbatim\nand opaque."
+          },
+          "report": {
+            "description": "fossil's run report (on `completed`), stored verbatim and never read."
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "`running` (the first time it starts the run, every time after it renews\nthe lease), or the end: `completed`, `failed` or `cancelled`."
+          }
+        }
       },
       "Operation": {
         "type": "string",
@@ -3085,39 +3048,6 @@
           }
         }
       },
-      "SubmitJobRequest": {
-        "type": "object",
-        "description": "A draft's final edits as it becomes a job to run, spelled as on update.",
-        "properties": {
-          "folder": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/JobFolder",
-                "description": "Needed unless the draft holds one already."
-              }
-            ]
-          },
-          "name": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ResourceName"
-              }
-            ]
-          },
-          "script": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
       "ThemeChoice": {
         "type": "object",
         "description": "One theme: the `data-theme` value it is selected by, and its display name.",
@@ -3209,38 +3139,6 @@
               {
                 "$ref": "#/components/schemas/StorageCredentialInput"
               }
-            ]
-          }
-        }
-      },
-      "UpdateJobRequest": {
-        "type": "object",
-        "properties": {
-          "folder": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/JobFolder",
-                "description": "The draft's folder under the sink, spelled as on create."
-              }
-            ]
-          },
-          "name": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ResourceName"
-              }
-            ]
-          },
-          "script": {
-            "type": [
-              "string",
-              "null"
             ]
           }
         }

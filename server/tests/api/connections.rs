@@ -28,7 +28,7 @@ async fn what_is_in_use_is_not_deleted() {
             Method::POST,
             "/v1/jobs",
             &member,
-            json!({ "script": "x", "draft": true, "sink_connection": "sink" }),
+            json!({ "script": "x", "sink_connection": "sink" }),
         )
         .await;
     let (status, body) = app

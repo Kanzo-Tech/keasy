@@ -284,6 +284,10 @@ export interface paths {
         };
         get: operations["list_jobs"];
         put?: never;
+        /**
+         * A job begins as a draft, always: what it runs, where it lands. Submitting
+         *     it is the one way a job comes to run.
+         */
         post: operations["create_job"];
         delete?: never;
         options?: never;
@@ -299,16 +303,12 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get_job"];
-        put: operations["update_job"];
+        put?: never;
         post?: never;
         delete: operations["delete_job"];
         options?: never;
         head?: never;
-        /**
-         * The browser ran the mapping and uploaded the output; this records the
-         *     outcome. `Completed` stores the run report verbatim, unread.
-         */
-        patch: operations["complete_job"];
+        patch: operations["edit_draft"];
         trace?: never;
     };
     "/v1/jobs/{id}/dashboard": {
@@ -321,26 +321,6 @@ export interface paths {
         get: operations["get_dashboard"];
         put: operations["put_dashboard"];
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/heartbeat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * The runner is still there. Sent every 15 s while the job runs; a running
-         *     job with no heartbeat for the lease (60 s) is swept as `job/abandoned`.
-         */
-        post: operations["heartbeat"];
         delete?: never;
         options?: never;
         head?: never;
@@ -372,6 +352,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/jobs/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The runner's one report: `running` starts the run and, sent again, renews
+         *     its lease — a running job no report has renewed for the lease (60 s) is
+         *     swept as `job/abandoned`; an end records how the run ended, and dates it.
+         *     `completed` stores the run report verbatim, unread.
+         */
+        post: operations["report_status"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/jobs/{id}/submit": {
         parameters: {
             query?: never;
@@ -384,7 +386,7 @@ export interface paths {
         /**
          * A draft becomes the job to run, in place: the edits, the folder check and
          *     the promotion are one write, so a refusal leaves the draft as it was and a
-         *     success leaves no draft behind.
+         *     success leaves no draft behind. The only way a job comes to be pending.
          */
         post: operations["submit_job"];
         delete?: never;
@@ -488,23 +490,6 @@ export interface components {
             operation: components["schemas"]["Operation"];
             result: components["schemas"]["Outcome"];
         };
-        /**
-         * @description The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
-         *     the mapping in the browser (`@fossil-lang/executor`) and writing the output
-         *     with the credential vended for the job, the client reports the run's outcome. `manifest` is the
-         *     executor's run report, stored verbatim and never read.
-         */
-        CompleteJobRequest: {
-            /** @description The run report for the uploaded output (on `Completed`) — opaque JSON. */
-            manifest?: unknown;
-            /**
-             * @description Why the run failed (on `Failed`): the run's problem, stored verbatim
-             *     and opaque.
-             */
-            problem?: unknown;
-            /** @description The terminal (or `Running`) status the client is transitioning the job to. */
-            status: components["schemas"]["JobStatus"];
-        };
         /** @enum {string} */
         ConnectionKind: "data" | "vocab";
         ConnectionView: {
@@ -536,7 +521,6 @@ export interface components {
             spec: components["schemas"]["StorageCredentialInput"];
         };
         CreateJobRequest: {
-            draft?: boolean;
             folder?: null | components["schemas"]["JobFolder"];
             name?: null | components["schemas"]["ResourceName"];
             script: string;
@@ -579,6 +563,12 @@ export interface components {
          * @enum {string}
          */
         Direction: "source" | "sink";
+        /** @description Edits to a draft: as it is written (PATCH), and as it is submitted. */
+        DraftEdits: {
+            folder?: null | components["schemas"]["JobFolder"];
+            name?: null | components["schemas"]["ResourceName"];
+            script?: string | null;
+        };
         /**
          * @description The body of every 4xx/5xx, and the payload of an SSE `error` frame — the
          *     shape fossil's problems have: a code, its fixed title, a detail for a
@@ -687,6 +677,26 @@ export interface components {
         JobFolder: string;
         /** @enum {string} */
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
+        /**
+         * @description What the runner reports of a job's run (POST `/v1/jobs/{id}/status`): that
+         *     it runs, again every so often to hold its lease, and how it ended. The
+         *     browser runs the program (`@fossil-lang/executor`) and writes the output
+         *     with a credential vended for the job; keasy only records.
+         */
+        JobStatusReport: {
+            /**
+             * @description Why the run failed (on `failed`): the run's problem, stored verbatim
+             *     and opaque.
+             */
+            problem?: unknown;
+            /** @description fossil's run report (on `completed`), stored verbatim and never read. */
+            report?: unknown;
+            /**
+             * @description `running` (the first time it starts the run, every time after it renews
+             *     the lease), or the end: `completed`, `failed` or `cancelled`.
+             */
+            status: components["schemas"]["JobStatus"];
+        };
         /**
          * @description What a probe tried.
          * @enum {string}
@@ -822,12 +832,6 @@ export interface components {
              */
             url: string;
         };
-        /** @description A draft's final edits as it becomes a job to run, spelled as on update. */
-        SubmitJobRequest: {
-            folder?: null | components["schemas"]["JobFolder"];
-            name?: null | components["schemas"]["ResourceName"];
-            script?: string | null;
-        };
         /** @description One theme: the `data-theme` value it is selected by, and its display name. */
         ThemeChoice: {
             label: string;
@@ -852,11 +856,6 @@ export interface components {
         UpdateCredentialRequest: {
             name?: null | components["schemas"]["ResourceName"];
             spec?: null | components["schemas"]["StorageCredentialInput"];
-        };
-        UpdateJobRequest: {
-            folder?: null | components["schemas"]["JobFolder"];
-            name?: null | components["schemas"]["ResourceName"];
-            script?: string | null;
         };
         ValidateCredentialRequest: {
             /**
@@ -1883,7 +1882,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Draft job created */
+            /** @description The draft, created; `POST /v1/jobs/{id}/submit` makes it the job to run */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -1892,16 +1891,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description Job submitted for execution */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Job"];
-                };
-            };
-            /** @description The destination is not a sink, or the name or folder is missing or misspelled (`data.field`) */
+            /** @description The destination is not a sink, or the name or folder is misspelled (`data.field`) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1912,15 +1902,6 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            /** @description Another job writes to that folder already: `job/folder-taken` */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
@@ -1945,56 +1926,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Job"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    update_job: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateJobRequest"];
-            };
-        };
-        responses: {
-            /** @description Job updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Job"];
-                };
-            };
-            /** @description Job is not a draft, or the name or folder is misspelled (`data.field`) */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -2057,7 +1988,7 @@ export interface operations {
             503: components["responses"]["KeysUnavailable"];
         };
     };
-    complete_job: {
+    edit_draft: {
         parameters: {
             query?: never;
             header?: never;
@@ -2069,11 +2000,11 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CompleteJobRequest"];
+                "application/json": components["schemas"]["DraftEdits"];
             };
         };
         responses: {
-            /** @description Job status updated from the browser run */
+            /** @description The draft, edited */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2082,7 +2013,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description The job is a draft, which is never run, or the status is not running or an end */
+            /** @description The name or folder is misspelled (`data.field`) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2102,7 +2033,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description The job has already ended */
+            /** @description Not a draft: `job/not-draft` */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2212,50 +2143,6 @@ export interface operations {
             503: components["responses"]["KeysUnavailable"];
         };
     };
-    heartbeat: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The lease is renewed */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description The job is not running: it ended, or the sweep ended it */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
     publish_relations: {
         parameters: {
             query?: never;
@@ -2306,7 +2193,7 @@ export interface operations {
             503: components["responses"]["KeysUnavailable"];
         };
     };
-    submit_job: {
+    report_status: {
         parameters: {
             query?: never;
             header?: never;
@@ -2318,12 +2205,12 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SubmitJobRequest"];
+                "application/json": components["schemas"]["JobStatusReport"];
             };
         };
         responses: {
-            /** @description The draft is now the job to run, under the same id */
-            202: {
+            /** @description The job, as the report leaves it */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2331,7 +2218,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description Job is not a draft (`job/not-draft`), or the name or folder is missing or misspelled (`data.field`) */
+            /** @description The job is a draft, which is never run, or the status is not running or an end */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2351,7 +2238,66 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Another job writes to that folder already: `job/folder-taken`; the job stays a draft, unchanged */
+            /** @description The job has already ended (`job/ended`): the sweep's `job/abandoned` among them */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    submit_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftEdits"];
+            };
+        };
+        responses: {
+            /** @description The draft is now the job to run, under the same id */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            /** @description The name or folder is missing or misspelled (`data.field`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not a draft (`job/not-draft`), or another job writes to that folder already (`job/folder-taken`; the job stays a draft, unchanged) */
             409: {
                 headers: {
                     [name: string]: unknown;

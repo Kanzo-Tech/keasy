@@ -26,32 +26,39 @@ pub struct CreateJobRequest {
     /// Where the output lands: the sink connection's name.
     pub sink_connection: String,
     /// The folder under the sink the output lands in. A draft may leave it
-    /// out; a job to run needs one no other job in the sink holds.
-    #[schema(value_type = Option<JobFolder>)]
-    pub folder: Option<String>,
-    #[serde(default)]
-    pub draft: bool,
-}
-
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct UpdateJobRequest {
-    pub script: Option<String>,
-    #[schema(value_type = Option<ResourceName>)]
-    pub name: Option<String>,
-    /// The draft's folder under the sink, spelled as on create.
+    /// out; it needs one, no other job's, to be submitted.
     #[schema(value_type = Option<JobFolder>)]
     pub folder: Option<String>,
 }
 
-/// A draft's final edits as it becomes a job to run, spelled as on update.
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct SubmitJobRequest {
+/// Edits to a draft: as it is written (PATCH), and as it is submitted.
+#[derive(Debug, Default, Deserialize, utoipa::ToSchema)]
+pub struct DraftEdits {
     pub script: Option<String>,
     #[schema(value_type = Option<ResourceName>)]
     pub name: Option<String>,
-    /// Needed unless the draft holds one already.
+    /// The draft's folder under the sink, spelled as on create. Submitting
+    /// needs one, unless the draft holds one already.
     #[schema(value_type = Option<JobFolder>)]
     pub folder: Option<String>,
+}
+
+impl DraftEdits {
+    /// Checked, then applied to `job`.
+    fn apply(self, job: &mut Job) -> Result<(), Refusal> {
+        let name = name(self.name)?;
+        let folder = folder(self.folder.as_deref())?;
+        if let Some(script) = self.script {
+            job.script = Some(script);
+        }
+        if let Some(name) = name {
+            job.name = Some(name);
+        }
+        if let Some(folder) = folder {
+            job.folder = Some(folder.into_inner());
+        }
+        Ok(())
+    }
 }
 
 /// Whether a folder of the sink is free for a job to run.
@@ -76,24 +83,20 @@ fn name(name: Option<String>) -> Result<Option<String>, Refusal> {
     Ok(name)
 }
 
-/// A job leaves draft only with a folder.
-fn no_folder() -> Refusal {
-    Refusal::invalid_field("folder", "A job to run needs a folder for its output")
-}
-
-/// The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
-/// the mapping in the browser (`@fossil-lang/executor`) and writing the output
-/// with the credential vended for the job, the client reports the run's outcome. `manifest` is the
-/// executor's run report, stored verbatim and never read.
+/// What the runner reports of a job's run (POST `/v1/jobs/{id}/status`): that
+/// it runs, again every so often to hold its lease, and how it ended. The
+/// browser runs the program (`@fossil-lang/executor`) and writes the output
+/// with a credential vended for the job; keasy only records.
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct CompleteJobRequest {
-    /// The terminal (or `Running`) status the client is transitioning the job to.
+pub struct JobStatusReport {
+    /// `running` (the first time it starts the run, every time after it renews
+    /// the lease), or the end: `completed`, `failed` or `cancelled`.
     pub status: JobStatus,
-    /// The run report for the uploaded output (on `Completed`) — opaque JSON.
+    /// fossil's run report (on `completed`), stored verbatim and never read.
     #[serde(default)]
     #[schema(value_type = Option<Value>)]
-    pub manifest: Option<serde_json::Value>,
-    /// Why the run failed (on `Failed`): the run's problem, stored verbatim
+    pub report: Option<serde_json::Value>,
+    /// Why the run failed (on `failed`): the run's problem, stored verbatim
     /// and opaque.
     #[serde(default)]
     #[schema(value_type = Option<Value>)]
@@ -130,12 +133,12 @@ pub async fn list_jobs(
 #[utoipa::path(post, path = "/v1/jobs", tag = "Jobs",
     request_body = CreateJobRequest,
     responses(
-        (status = 201, description = "Draft job created", body = Job),
-        (status = 202, description = "Job submitted for execution", body = Job),
-        (status = 400, description = "The destination is not a sink, or the name or folder is missing or misspelled (`data.field`)", body = ErrorBody),
-        (status = 409, description = "Another job writes to that folder already: `job/folder-taken`", body = ErrorBody),
+        (status = 201, description = "The draft, created; `POST /v1/jobs/{id}/submit` makes it the job to run", body = Job),
+        (status = 400, description = "The destination is not a sink, or the name or folder is misspelled (`data.field`)", body = ErrorBody),
     )
 )]
+/// A job begins as a draft, always: what it runs, where it lands. Submitting
+/// it is the one way a job comes to run.
 pub async fn create_job(
     member: Member,
     State(state): State<AppState>,
@@ -152,30 +155,16 @@ pub async fn create_job(
         ));
     }
 
-    let name = name(payload.name)?;
-    let folder = folder(payload.folder.as_deref())?;
-    if !payload.draft && folder.is_none() {
-        return Err(no_folder());
-    }
-
-    // A `Pending` job is run by the browser: sources and output through
-    // credentials vended per prefix, outcome by `PATCH /v1/jobs/{id}`.
-    let (status, code) = if payload.draft {
-        (JobStatus::Draft, StatusCode::CREATED)
-    } else {
-        (JobStatus::Pending, StatusCode::ACCEPTED)
-    };
     let job = Job::new(
-        status,
-        name,
+        name(payload.name)?,
         payload.sink_connection,
-        folder,
+        folder(payload.folder.as_deref())?,
         payload.script,
         member.user_id,
     );
     persistence::insert(&*state.db.write().await, &job)?;
 
-    Ok((code, Json(job)).into_response())
+    Ok((StatusCode::CREATED, Json(job)))
 }
 
 #[utoipa::path(get, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -193,96 +182,74 @@ pub async fn get_job(
     Ok(Json(owned(&state.db, &member.user_id, &id).await?))
 }
 
-#[utoipa::path(put, path = "/v1/jobs/{id}", tag = "Jobs",
+#[utoipa::path(patch, path = "/v1/jobs/{id}", tag = "Jobs",
     params(("id" = String, Path, description = "Job ID")),
-    request_body = UpdateJobRequest,
+    request_body = DraftEdits,
     responses(
-        (status = 200, description = "Job updated", body = Job),
-        (status = 400, description = "Job is not a draft, or the name or folder is misspelled (`data.field`)", body = ErrorBody),
+        (status = 200, description = "The draft, edited", body = Job),
+        (status = 400, description = "The name or folder is misspelled (`data.field`)", body = ErrorBody),
         (status = 404, description = "Job not found", body = ErrorBody),
+        (status = 409, description = "Not a draft: `job/not-draft`", body = ErrorBody),
     )
 )]
-pub async fn update_job(
+pub async fn edit_draft(
     member: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
-    Json(payload): Json<UpdateJobRequest>,
+    Json(edits): Json<DraftEdits>,
 ) -> Result<impl IntoResponse, Refusal> {
-    if owned(&state.db, &member.user_id, &id).await?.status != JobStatus::Draft {
-        return Err(Refusal::conflict(
-            ErrorCode::JobNotDraft,
-            "Only draft jobs can be updated",
-        ));
-    }
-    let name = name(payload.name)?;
-    let folder = folder(payload.folder.as_deref())?;
-    persistence::update(&*state.db.write().await, &id, |job| {
-        if let Some(script) = payload.script {
-            job.script = Some(script);
-        }
-        if let Some(name) = name {
-            job.name = Some(name);
-        }
-        if let Some(folder) = folder {
-            job.folder = Some(folder.into_inner());
-        }
-    })?
-    .map(Json)
-    .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))
+    let mut job = draft(&state, &member, &id).await?;
+    edits.apply(&mut job)?;
+    persistence::write(&*state.db.write().await, &job)?;
+    Ok(Json(job))
 }
 
 #[utoipa::path(post, path = "/v1/jobs/{id}/submit", tag = "Jobs",
     params(("id" = String, Path, description = "Job ID")),
-    request_body = SubmitJobRequest,
+    request_body = DraftEdits,
     responses(
         (status = 202, description = "The draft is now the job to run, under the same id", body = Job),
-        (status = 400, description = "Job is not a draft (`job/not-draft`), or the name or folder is missing or misspelled (`data.field`)", body = ErrorBody),
+        (status = 400, description = "The name or folder is missing or misspelled (`data.field`)", body = ErrorBody),
         (status = 404, description = "Job not found", body = ErrorBody),
-        (status = 409, description = "Another job writes to that folder already: `job/folder-taken`; the job stays a draft, unchanged", body = ErrorBody),
+        (status = 409, description = "Not a draft (`job/not-draft`), or another job writes to that folder already (`job/folder-taken`; the job stays a draft, unchanged)", body = ErrorBody),
     )
 )]
 /// A draft becomes the job to run, in place: the edits, the folder check and
 /// the promotion are one write, so a refusal leaves the draft as it was and a
-/// success leaves no draft behind.
+/// success leaves no draft behind. The only way a job comes to be pending.
 pub async fn submit_job(
     member: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
-    Json(payload): Json<SubmitJobRequest>,
+    Json(edits): Json<DraftEdits>,
 ) -> Result<impl IntoResponse, Refusal> {
-    let name = name(payload.name)?;
-    let folder = folder(payload.folder.as_deref())?;
-    crate::jobs::sweep(&state.db).await?;
-
-    let conn = state.db.write().await;
-    let mut job = persistence::get(&conn, &id)?
-        .filter(|job| job.created_by == member.user_id)
-        .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))?;
-    if job.status != JobStatus::Draft {
-        return Err(Refusal::conflict(
-            ErrorCode::JobNotDraft,
-            "Only a draft is submitted",
-        ));
-    }
-    if let Some(script) = payload.script {
-        job.script = Some(script);
-    }
-    if let Some(name) = name {
-        job.name = Some(name);
-    }
-    if let Some(folder) = folder {
-        job.folder = Some(folder.into_inner());
-    }
+    let mut job = draft(&state, &member, &id).await?;
+    edits.apply(&mut job)?;
     if job.folder.is_none() {
-        return Err(no_folder());
+        return Err(Refusal::invalid_field(
+            "folder",
+            "A job to run needs a folder for its output",
+        ));
     }
     job.status = JobStatus::Pending;
     // The sweep fails a `pending` job older than the lease by `created_at`: a
     // draft's would sweep it the moment it is submitted.
     job.created_at = now_iso8601();
-    persistence::write(&conn, &job)?;
+    persistence::write(&*state.db.write().await, &job)?;
 
     Ok((StatusCode::ACCEPTED, Json(job)))
+}
+
+/// The caller's job, if it is still a draft.
+async fn draft(state: &AppState, member: &Member, id: &str) -> Result<Job, Refusal> {
+    let job = owned(&state.db, &member.user_id, id).await?;
+    if job.status != JobStatus::Draft {
+        return Err(Refusal::conflict(
+            ErrorCode::JobNotDraft,
+            "Only a draft is edited or submitted",
+        ));
+    }
+    Ok(job)
 }
 
 #[utoipa::path(get, path = "/v1/connections/{name}/folders/{folder}", tag = "Jobs",
@@ -317,27 +284,42 @@ pub async fn folder_availability(
     Ok(Json(FolderAvailability { available: !taken }))
 }
 
-#[utoipa::path(patch, path = "/v1/jobs/{id}", tag = "Jobs",
+#[utoipa::path(post, path = "/v1/jobs/{id}/status", tag = "Jobs",
     params(("id" = String, Path, description = "Job ID")),
-    request_body = CompleteJobRequest,
+    request_body = JobStatusReport,
     responses(
-        (status = 200, description = "Job status updated from the browser run", body = Job),
+        (status = 200, description = "The job, as the report leaves it", body = Job),
         (status = 400, description = "The job is a draft, which is never run, or the status is not running or an end", body = ErrorBody),
         (status = 404, description = "Job not found", body = ErrorBody),
-        (status = 409, description = "The job has already ended", body = ErrorBody),
+        (status = 409, description = "The job has already ended (`job/ended`): the sweep's `job/abandoned` among them", body = ErrorBody),
     )
 )]
-/// The browser ran the mapping and uploaded the output; this records the
-/// outcome. `Completed` stores the run report verbatim, unread.
-pub async fn complete_job(
+/// The runner's one report: `running` starts the run and, sent again, renews
+/// its lease — a running job no report has renewed for the lease (60 s) is
+/// swept as `job/abandoned`; an end records how the run ended, and dates it.
+/// `completed` stores the run report verbatim, unread.
+pub async fn report_status(
     member: Member,
     State(state): State<AppState>,
     Path(id): Path<String>,
-    Json(payload): Json<CompleteJobRequest>,
+    Json(payload): Json<JobStatusReport>,
 ) -> Result<impl IntoResponse, Refusal> {
+    let JobStatusReport {
+        status,
+        report,
+        problem,
+    } = payload;
+    // A run moves forward only: to running, or to an end. Never back to a
+    // draft or to pending.
+    if matches!(status, JobStatus::Draft | JobStatus::Pending) {
+        return Err(Refusal::invalid(
+            "A run reports running, completed, failed or cancelled",
+        ));
+    }
     // Only a submitted job is run: a draft never is, and an ended one — the
     // sweep's `job/abandoned` among them — stays ended.
-    match owned(&state.db, &member.user_id, &id).await?.status {
+    let mut job = owned(&state.db, &member.user_id, &id).await?;
+    match job.status {
         JobStatus::Pending | JobStatus::Running => {}
         JobStatus::Draft => {
             return Err(Refusal::invalid("A draft is never run: submit it first"));
@@ -349,68 +331,27 @@ pub async fn complete_job(
             ));
         }
     }
-    let CompleteJobRequest {
-        status,
-        manifest,
-        problem,
-    } = payload;
-    // A run moves forward only: to running, or to an end. Never back to a
-    // draft or to pending.
-    if matches!(status, JobStatus::Draft | JobStatus::Pending) {
-        return Err(Refusal::invalid(
-            "A run reports running, completed, failed or cancelled",
-        ));
-    }
+
     let now = now_iso8601();
-
-    persistence::update(&*state.db.write().await, &id, move |job| {
-        // A cancelled job may have been stopped before it ever started.
-        if status != JobStatus::Cancelled {
-            job.started_at.get_or_insert_with(|| now.clone());
+    // A cancelled job may have been stopped before it ever started.
+    if status != JobStatus::Cancelled {
+        job.started_at.get_or_insert_with(|| now.clone());
+    }
+    match &status {
+        JobStatus::Running => job.heartbeat_at = Some(now.clone()),
+        JobStatus::Completed => {
+            job.manifest = report;
+            job.problem = None;
         }
-        match &status {
-            JobStatus::Running => job.heartbeat_at = Some(now.clone()),
-            JobStatus::Completed => {
-                job.manifest = manifest;
-                job.problem = None;
-            }
-            JobStatus::Failed => job.problem = problem,
-            _ => {}
-        }
-        if status != JobStatus::Running {
-            job.completed_at = Some(now);
-        }
-        job.status = status;
-    })?
-    .map(Json)
-    .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))
-}
-
-#[utoipa::path(post, path = "/v1/jobs/{id}/heartbeat", tag = "Jobs",
-    params(("id" = String, Path, description = "Job ID")),
-    responses(
-        (status = 204, description = "The lease is renewed"),
-        (status = 404, description = "Job not found", body = ErrorBody),
-        (status = 409, description = "The job is not running: it ended, or the sweep ended it", body = ErrorBody),
-    )
-)]
-/// The runner is still there. Sent every 15 s while the job runs; a running
-/// job with no heartbeat for the lease (60 s) is swept as `job/abandoned`.
-pub async fn heartbeat(
-    member: Member,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> Result<StatusCode, Refusal> {
-    let status = owned(&state.db, &member.user_id, &id).await?.status;
+        JobStatus::Failed => job.problem = problem,
+        _ => {}
+    }
     if status != JobStatus::Running {
-        return Err(not_running(&status));
+        job.completed_at = Some(now);
     }
-    let now = now_iso8601();
-    persistence::update(&*state.db.write().await, &id, move |job| {
-        job.heartbeat_at = Some(now)
-    })?
-    .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))?;
-    Ok(StatusCode::NO_CONTENT)
+    job.status = status;
+    persistence::write(&*state.db.write().await, &job)?;
+    Ok(Json(job))
 }
 
 #[utoipa::path(put, path = "/v1/jobs/{id}/relations", tag = "Jobs",
@@ -489,9 +430,9 @@ pub(crate) fn not_running(status: &JobStatus) -> Refusal {
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(list_jobs, create_job))
-        .routes(routes!(get_job, update_job, complete_job, delete_job))
-        .routes(routes!(publish_relations))
-        .routes(routes!(heartbeat))
+        .routes(routes!(get_job, edit_draft, delete_job))
         .routes(routes!(submit_job))
+        .routes(routes!(report_status))
+        .routes(routes!(publish_relations))
         .routes(routes!(folder_availability))
 }

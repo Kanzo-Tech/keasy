@@ -35,9 +35,9 @@ pub struct ApplicationSettings {
     /// Display name of this workspace. Read from `KEASY_WORKSPACE_NAME`,
     /// default `"Workspace"`. The switcher's name for this instance.
     pub workspace_name: String,
-    /// This instance's workspace slug. Read from `KEASY_ORG_ALIAS`. The "current"
-    /// entry in the workspace switcher.
-    pub workspace_slug: Option<String>,
+    /// The Keycloak organization this instance serves, by alias. Read from
+    /// `KEASY_ORG_ALIAS`, required: a token's roles count only inside it.
+    pub org_alias: String,
     /// The credentials and connections to ensure at boot, in the API's own
     /// request format. Read from `KEASY_BOOTSTRAP_FILE`.
     pub bootstrap_file: Option<String>,
@@ -202,14 +202,16 @@ pub fn get_configuration() -> Result<Settings, String> {
     let issuer_url = nonblank("KEASY_OIDC_ISSUER_URL")
         .ok_or("KEASY_OIDC_ISSUER_URL is required — it is what tokens are validated against")?;
     let client_id = nonblank("KEASY_OIDC_CLIENT_ID")
-        .ok_or("KEASY_OIDC_CLIENT_ID is required — it names this workspace's client")?;
+        .ok_or("KEASY_OIDC_CLIENT_ID is required — it names this application's client")?;
 
     Ok(Settings {
         application: ApplicationSettings {
             bind_addr,
             workspace_name: nonblank("KEASY_WORKSPACE_NAME")
                 .unwrap_or_else(|| "Workspace".to_string()),
-            workspace_slug: nonblank("KEASY_ORG_ALIAS"),
+            org_alias: nonblank("KEASY_ORG_ALIAS").ok_or(
+                "KEASY_ORG_ALIAS is required — it names the organization this instance serves",
+            )?,
             bootstrap_file: nonblank("KEASY_BOOTSTRAP_FILE"),
             branding: BrandingSettings::from_env()?,
         },

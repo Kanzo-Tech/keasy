@@ -4,7 +4,7 @@ use serde::Serialize;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::authentication::role::Owner;
+use crate::authentication::role::Reader;
 use crate::error::Refusal;
 use crate::jobs::persistence;
 use crate::startup::AppState;
@@ -24,15 +24,15 @@ pub struct Dataset {
     pub completed_at: String,
 }
 
-#[utoipa::path(get, path = "/v1/datasets", tag = "Datasets",
+#[utoipa::path(get, path = "/v1/datasets", tag = "Datasets", security(("bearer" = ["reader"])),
     responses(
         (status = 200, description = "Every completed job's output, newest first", body = Vec<Dataset>),
     )
 )]
-/// Every dataset the workspace produced: the owner's index over the whole
-/// workspace. The owner opens one by reading its job's corpus.
+/// Every dataset the workspace produced, for anyone in it: each is opened by
+/// reading its job's corpus.
 pub async fn list_datasets(
-    _: Owner,
+    _: Reader,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Dataset>>, Refusal> {
     let conn = state.db.read().await;

@@ -1,12 +1,12 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{DEAD, TestApp, spawn_app};
+use crate::helpers::{ADMIN, DEAD, EDITOR, TestApp, spawn_app};
 use keasy_server::domain::Direction;
 
 async fn workspace() -> (TestApp, String) {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     app.credential("key", DEAD, "u-1").await;
     app.connection("source", "key", Direction::Source, "u-1")
         .await;
@@ -57,13 +57,13 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
         StatusCode::NOT_FOUND
     );
 
-    let theirs = app.token_for("u-2", &["member"]);
+    let theirs = app.token_for("u-2", EDITOR);
     assert_eq!(
         app.vend(&theirs, job.clone(), "read").await.0,
         StatusCode::NOT_FOUND
     );
 
-    let owner = app.token_for("u-9", &["owner"]);
+    let owner = app.token_for("u-9", ADMIN);
     assert_eq!(
         app.vend(&owner, source, "read").await,
         (StatusCode::FORBIDDEN, Some("rbac/forbidden".to_owned())),

@@ -30,6 +30,15 @@ pub struct TestApp {
     _dir: tempfile::TempDir,
 }
 
+/// The organization the test instance serves, and the application's client.
+pub const ORG: &str = "acme";
+pub const CLIENT: &str = "keasy";
+
+/// The roles a token carries for each role, as Keycloak expands the composites.
+pub const READER: &[&str] = &["reader"];
+pub const EDITOR: &[&str] = &["editor", "reader"];
+pub const ADMIN: &[&str] = &["admin", "editor", "reader"];
+
 pub fn secret_key() -> SecretKey {
     SecretKey::from_base64(&base64::engine::general_purpose::STANDARD.encode([42u8; 32])).unwrap()
 }
@@ -68,14 +77,14 @@ async fn spawn(ai: AiSettings, branding: BrandingSettings) -> TestApp {
         application: ApplicationSettings {
             bind_addr: "127.0.0.1:0".parse().unwrap(),
             workspace_name: "Dev".into(),
-            workspace_slug: Some("dev".into()),
+            org_alias: ORG.into(),
             bootstrap_file: None,
             branding,
         },
         database,
         oidc: OidcSettings {
             issuer_url: realm.issuer.clone(),
-            client_id: "keasy-ws-dev".into(),
+            client_id: CLIENT.into(),
             audience: "keasy-api".into(),
             internal_base_url: None,
         },
@@ -96,14 +105,20 @@ async fn spawn(ai: AiSettings, branding: BrandingSettings) -> TestApp {
 
 impl TestApp {
     /// A token for `u-1` carrying exactly `roles` on this workspace's client.
+    /// `u-1`, holding `roles` in this instance's organization.
     pub fn token(&self, roles: &[&str]) -> String {
         self.token_for("u-1", roles)
     }
 
     pub fn token_for(&self, sub: &str, roles: &[&str]) -> String {
+        self.token_in(sub, ORG, roles)
+    }
+
+    /// `sub`, holding `roles` in organization `org` only.
+    pub fn token_in(&self, sub: &str, org: &str, roles: &[&str]) -> String {
         let mut claims = good(&self.realm);
         claims["sub"] = json!(sub);
-        claims["resource_access"] = json!({ "keasy-ws-dev": { "roles": roles } });
+        claims["organization"] = json!({ org: { "id": format!("{org}-id"), "resource_access": { CLIENT: { "roles": roles } } } });
         mint(&self.realm, claims)
     }
 
@@ -257,6 +272,7 @@ impl TestApp {
             updated_by: by.into(),
             updated_at: String::new(),
             validation: None,
+            can_modify: false,
         };
         keasy_server::connections::persistence::insert(&*self.db.write().await, &view, by).unwrap();
     }
@@ -388,11 +404,13 @@ pub fn good(realm: &Realm) -> serde_json::Value {
     json!({
         "sub": "u-1",
         "iss": realm.issuer,
-        "aud": ["keasy-api", "keasy-ws-dev"],
-        "azp": "keasy-ws-dev",
+        "aud": ["keasy-api", "account"],
+        "azp": CLIENT,
         "exp": in_an_hour(),
         "email": "dev@keasy.local",
-        "workspaces": ["dev", "acme"],
-        "resource_access": { "keasy-ws-dev": { "roles": ["owner"] } },
+        "organization": {
+            ORG: { "id": "acme-id", "resource_access": { CLIENT: { "roles": ADMIN } } },
+            "globex": { "id": "globex-id", "resource_access": { CLIENT: { "roles": READER } } },
+        },
     })
 }

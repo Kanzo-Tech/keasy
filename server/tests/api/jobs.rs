@@ -1,14 +1,14 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{DEAD, spawn_app};
+use crate::helpers::{DEAD, EDITOR, spawn_app};
 use keasy_server::domain::Direction;
 
 /// A job needs a destination, and it must be the sink.
 #[tokio::test]
 async fn a_job_goes_to_the_sink_or_is_refused() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     app.credential("key", DEAD, "u-1").await;
     app.connection("source", "key", Direction::Source, "u-1")
         .await;
@@ -37,8 +37,8 @@ async fn a_job_goes_to_the_sink_or_is_refused() {
 #[tokio::test]
 async fn a_job_is_its_creators_alone() {
     let app = spawn_app().await;
-    let mine = app.token_for("u-1", &["member"]);
-    let theirs = app.token_for("u-2", &["member"]);
+    let mine = app.token_for("u-1", EDITOR);
+    let theirs = app.token_for("u-2", EDITOR);
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
@@ -94,7 +94,7 @@ async fn a_job_is_its_creators_alone() {
 #[tokio::test]
 async fn a_failed_run_keeps_its_problem_whole() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
@@ -126,7 +126,7 @@ async fn a_failed_run_keeps_its_problem_whole() {
 #[tokio::test]
 async fn a_job_writes_to_a_folder_of_its_own() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
@@ -229,8 +229,8 @@ async fn a_job_writes_to_a_folder_of_its_own() {
 #[tokio::test]
 async fn a_job_keeps_one_dashboard() {
     let app = spawn_app().await;
-    let mine = app.token_for("u-1", &["member"]);
-    let theirs = app.token_for("u-2", &["member"]);
+    let mine = app.token_for("u-1", EDITOR);
+    let theirs = app.token_for("u-2", EDITOR);
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let (_, job) = app
@@ -285,7 +285,7 @@ async fn a_job_keeps_one_dashboard() {
 #[tokio::test]
 async fn a_misspelled_name_is_refused_on_its_field() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
@@ -338,7 +338,7 @@ async fn a_misspelled_name_is_refused_on_its_field() {
 #[tokio::test]
 async fn submitting_a_draft_makes_it_the_job_in_place() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let (_, draft) = app
@@ -411,7 +411,7 @@ async fn submitting_a_draft_makes_it_the_job_in_place() {
         (status, body["code"].as_str()),
         (StatusCode::CONFLICT, Some("job/not-draft"))
     );
-    let theirs = app.token_for("u-2", &["member"]);
+    let theirs = app.token_for("u-2", EDITOR);
     let (status, _) = app.send(Method::POST, &submit, &theirs, json!({})).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
@@ -421,7 +421,7 @@ async fn submitting_a_draft_makes_it_the_job_in_place() {
 #[tokio::test]
 async fn submitting_onto_a_taken_folder_leaves_the_draft() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let create = |body: serde_json::Value| app.send(Method::POST, "/v1/jobs", &member, body);
@@ -466,7 +466,7 @@ async fn submitting_onto_a_taken_folder_leaves_the_draft() {
 #[tokio::test]
 async fn a_run_reports_forward_and_every_end_is_dated() {
     let app = spawn_app().await;
-    let member = app.token(&["member"]);
+    let member = app.token(EDITOR);
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 

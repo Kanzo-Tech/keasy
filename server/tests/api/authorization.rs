@@ -1,125 +1,131 @@
+//! The authorization contract, read off the spec the server publishes.
+//!
+//! Every operation declares the least role it admits as its security
+//! requirement (`security(("bearer" = ["editor"]))`), so the table is the
+//! contract itself and a route added without one fails here, not in review.
+//! What depends on the request rather than the route — the sink is an admin's,
+//! a job is changed by its creator or an admin — is `ownership.rs`.
+
 use axum::http::{Method, StatusCode};
 
-use crate::helpers::spawn_app;
+use crate::helpers::{ADMIN, EDITOR, ORG, READER, spawn_app};
 
-/// Who a route admits.
-#[derive(Clone, Copy, Debug, PartialEq)]
-enum Admits {
-    Owner,
-    Member,
-    AnyRole,
+/// The roles in ascending order: holding one is holding every one before it.
+const LADDER: [&str; 3] = ["reader", "editor", "admin"];
+
+/// Every operation in the published spec: method, path with each parameter as
+/// `x`, and the security requirement's roles — `None` for a public route.
+fn operations() -> Vec<(Method, String, Option<Vec<String>>)> {
+    let spec = serde_json::to_value(keasy_server::startup::openapi()).unwrap();
+    let mut ops = Vec::new();
+    for (path, item) in spec["paths"].as_object().unwrap() {
+        let concrete = path
+            .split('/')
+            .map(|s| if s.starts_with('{') { "x" } else { s })
+            .collect::<Vec<_>>()
+            .join("/");
+        for (verb, op) in item.as_object().unwrap() {
+            let Ok(method) = Method::from_bytes(verb.to_uppercase().as_bytes()) else {
+                continue;
+            };
+            let security = op["security"].as_array().expect("every operation says");
+            let roles = security.iter().find_map(|req| {
+                req.get("bearer").map(|roles| {
+                    roles
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|r| r.as_str().unwrap().to_owned())
+                        .collect::<Vec<_>>()
+                })
+            });
+            ops.push((method, concrete.clone(), roles));
+        }
+    }
+    ops
 }
 
-/// Every role-gated route. A route added without a row here fails
-/// `every_role_gated_route_is_in_the_table`.
-const ROUTES: &[(&str, &str, Admits)] = &[
-    ("GET", "/v1/jobs", Admits::Member),
-    ("POST", "/v1/jobs", Admits::Member),
-    ("GET", "/v1/jobs/x", Admits::Member),
-    ("PATCH", "/v1/jobs/x", Admits::Member),
-    ("DELETE", "/v1/jobs/x", Admits::Member),
-    ("POST", "/v1/jobs/x/submit", Admits::Member),
-    ("POST", "/v1/jobs/x/status", Admits::Member),
-    ("POST", "/v1/storage-credentials", Admits::AnyRole),
-    ("GET", "/v1/jobs/x/dashboard", Admits::Member),
-    ("PUT", "/v1/jobs/x/dashboard", Admits::Member),
-    ("POST", "/v1/ai/chat/completions", Admits::Member),
-    ("GET", "/v1/secrets", Admits::AnyRole),
-    ("POST", "/v1/secrets", Admits::AnyRole),
-    ("GET", "/v1/secrets/x", Admits::AnyRole),
-    ("PATCH", "/v1/secrets/x", Admits::AnyRole),
-    ("DELETE", "/v1/secrets/x", Admits::AnyRole),
-    ("POST", "/v1/secrets/x/validate", Admits::AnyRole),
-    ("GET", "/v1/connections", Admits::AnyRole),
-    ("POST", "/v1/connections", Admits::AnyRole),
-    ("GET", "/v1/connections/x", Admits::AnyRole),
-    ("PATCH", "/v1/connections/x", Admits::AnyRole),
-    ("DELETE", "/v1/connections/x", Admits::AnyRole),
-    ("POST", "/v1/connections/x/validate", Admits::AnyRole),
-    ("GET", "/v1/connections/x/files", Admits::Member),
-    ("GET", "/v1/datasets", Admits::Owner),
-];
-
-fn method(name: &str) -> Method {
-    Method::from_bytes(name.as_bytes()).unwrap()
+#[test]
+fn every_protected_operation_names_exactly_one_role_of_the_ladder() {
+    for (method, path, roles) in operations() {
+        let Some(roles) = roles else { continue };
+        assert!(
+            roles.len() == 1 && LADDER.contains(&roles[0].as_str()),
+            "{method} {path} declares {roles:?}"
+        );
+    }
 }
 
-/// The authorization contract, route by route: each role is admitted exactly
-/// where the table says, refused with `rbac/insufficient-role` everywhere else,
-/// a token with no workspace role gets `rbac/no-membership`, and no token 401.
+#[test]
+fn the_public_routes_are_the_probes_and_the_look() {
+    let mut public: Vec<_> = operations()
+        .into_iter()
+        .filter(|(_, _, roles)| roles.is_none())
+        .map(|(m, p, _)| format!("{m} {p}"))
+        .collect();
+    public.sort();
+    assert_eq!(
+        public,
+        [
+            "GET /healthz/live",
+            "GET /healthz/ready",
+            "GET /v1/branding"
+        ]
+    );
+}
+
+/// Each operation admits exactly who holds its least role, and refuses the
+/// rest with the code that says why: no token 401, a role in another
+/// organization or none here `rbac/no-membership`, too little
+/// `rbac/insufficient-role`.
 #[tokio::test]
-async fn every_route_admits_exactly_its_roles() {
+async fn every_operation_admits_exactly_its_least_role_and_up() {
     let app = spawn_app().await;
-    let owner = app.token(&["owner"]);
-    let member = app.token(&["member"]);
-    let nobody = app.token(&[]);
+    let reader = app.token(READER);
+    let editor = app.token(EDITOR);
+    let admin = app.token(ADMIN);
+    let elsewhere = app.token_in("u-1", "globex", ADMIN);
+    let nothing_here = app.token(&[]);
+    assert_ne!(ORG, "globex");
 
-    for &(verb, path, admits) in ROUTES {
-        for (role, token) in [(Admits::Owner, &owner), (Admits::Member, &member)] {
-            let admitted = admits == Admits::AnyRole || admits == role;
-            let (status, code) = app.answer(method(verb), path, Some(token)).await;
-            if admitted {
+    for (method, path, roles) in operations() {
+        let Some(roles) = roles else { continue };
+        let least = LADDER.iter().position(|r| *r == roles[0]).unwrap();
+
+        for (rank, token) in [&reader, &editor, &admin].into_iter().enumerate() {
+            let (status, code) = app.answer(method.clone(), &path, Some(token)).await;
+            if rank >= least {
                 assert!(
                     status != StatusCode::FORBIDDEN && status != StatusCode::UNAUTHORIZED,
-                    "{verb} {path} must admit {role:?}, got {status} {code:?}"
+                    "{method} {path} must admit {}, got {status} {code:?}",
+                    LADDER[rank]
                 );
             } else {
                 assert_eq!(
                     (status, code.as_deref()),
                     (StatusCode::FORBIDDEN, Some("rbac/insufficient-role")),
-                    "{verb} {path} must refuse {role:?}"
+                    "{method} {path} must refuse {}",
+                    LADDER[rank]
                 );
             }
         }
-        assert_eq!(
-            app.answer(method(verb), path, Some(&nobody)).await,
-            (
-                StatusCode::FORBIDDEN,
-                Some("rbac/no-membership".to_string())
-            ),
-            "{verb} {path} without a workspace role"
-        );
-        assert_eq!(
-            app.call(method(verb), path, None).await,
-            StatusCode::UNAUTHORIZED,
-            "{verb} {path} without a token"
-        );
-    }
-}
-
-/// The table is the whole of the gated surface: every route under the role
-/// layer appears in it, and nothing else does.
-#[tokio::test]
-async fn every_role_gated_route_is_in_the_table() {
-    let app = spawn_app().await;
-    let nobody = app.token(&[]);
-    let member = app.token(&["member"]);
-    let candidates = [
-        "/v1/jobs",
-        "/v1/jobs/x",
-        "/v1/jobs/x/submit",
-        "/v1/jobs/x/status",
-        "/v1/storage-credentials",
-        "/v1/jobs/x/dashboard",
-        "/v1/ai/chat/completions",
-        "/v1/secrets",
-        "/v1/secrets/x",
-        "/v1/secrets/x/validate",
-        "/v1/connections",
-        "/v1/connections/x",
-        "/v1/connections/x/validate",
-        "/v1/connections/x/files",
-        "/v1/datasets",
-        "/v1/auth/workspaces",
-    ];
-    for path in candidates {
-        for verb in ["GET", "POST", "PUT", "PATCH", "DELETE"] {
-            let listed = ROUTES.iter().any(|&(v, p, _)| v == verb && p == path);
-            let exists =
-                app.call(method(verb), path, Some(&member)).await != StatusCode::METHOD_NOT_ALLOWED;
-            let (_, code) = app.answer(method(verb), path, Some(&nobody)).await;
-            let gated = exists && code.as_deref() == Some("rbac/no-membership");
-            assert_eq!(gated, listed, "{verb} {path}");
+        for (who, token) in [
+            ("another organization", &elsewhere),
+            ("no role here", &nothing_here),
+        ] {
+            assert_eq!(
+                app.answer(method.clone(), &path, Some(token)).await,
+                (
+                    StatusCode::FORBIDDEN,
+                    Some("rbac/no-membership".to_string())
+                ),
+                "{method} {path} with {who}"
+            );
         }
+        assert_eq!(
+            app.call(method.clone(), &path, None).await,
+            StatusCode::UNAUTHORIZED,
+            "{method} {path} without a token"
+        );
     }
 }

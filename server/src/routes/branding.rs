@@ -14,6 +14,9 @@ use crate::startup::AppState;
 pub struct Branding {
     /// This instance's display name (`KEASY_WORKSPACE_NAME`).
     pub name: String,
+    /// The Keycloak organization this instance serves, by alias
+    /// (`KEASY_ORG_ALIAS`): which entry of a session's organizations is this one.
+    pub organization: String,
     /// The mark the shell shows: a URL or a path the web serves.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logo: Option<String>,
@@ -37,6 +40,7 @@ pub async fn get_branding(State(state): State<AppState>) -> Json<Branding> {
     let b = &*state.branding;
     Json(Branding {
         name: state.workspace_name.clone(),
+        organization: state.org_alias.clone(),
         logo: b.logo.clone(),
         theme_css: b.theme_css.clone(),
         families: b.families.clone(),

@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use axum::http::{Method, StatusCode};
 use tracing_subscriber::fmt::MakeWriter;
 
-use crate::helpers::spawn_app;
+use crate::helpers::{EDITOR, spawn_app};
 use keasy_server::telemetry;
 
 #[derive(Clone, Default)]
@@ -46,7 +46,7 @@ fn captured_logs() -> Captured {
 async fn the_request_log_names_the_authenticated_caller() {
     let logs = captured_logs();
     let app = spawn_app().await;
-    let token = app.token_for("u-logged", &["member"]);
+    let token = app.token_for("u-logged", EDITOR);
     assert_eq!(
         app.call(Method::GET, "/v1/jobs", Some(&token)).await,
         StatusCode::OK

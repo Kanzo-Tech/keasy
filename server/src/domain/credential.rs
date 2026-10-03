@@ -7,6 +7,7 @@
 //! is what a response carries: the same fields minus every value, so a value
 //! cannot reach a response because no response type has a field to hold it.
 
+use crate::authentication::role::Caller;
 use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -131,6 +132,18 @@ pub struct SecretView {
     pub updated_at: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub validation: Option<ValidationReport>,
+    /// Whether the caller may change or delete it: its creator or an admin.
+    /// Any editor may use it in a connection; its value is never returned.
+    #[serde(default)]
+    pub can_modify: bool,
+}
+
+impl SecretView {
+    /// The secret as `caller` sees it: [`Self::can_modify`] filled in.
+    pub fn seen_by(mut self, caller: &Caller) -> Self {
+        self.can_modify = caller.may_modify(&self.created_by);
+        self
+    }
 }
 
 /// A stored secret, unsealed.
@@ -155,6 +168,7 @@ impl Credential {
             updated_by: self.updated_by.clone(),
             updated_at: self.updated_at.clone(),
             validation: self.validation.clone(),
+            can_modify: false,
         }
     }
 }

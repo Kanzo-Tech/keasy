@@ -23,13 +23,16 @@ pub fn init_subscriber(subscriber: impl Subscriber + Send + Sync + 'static) {
     subscriber.init();
 }
 
-/// The one request log. `bearer_required` records `user_id` into this span
-/// once the token verifies, so the response line names the caller.
+/// The one request log. `bearer_required` records `user_id`, `org` and `roles`
+/// into this span once the token verifies, so the response line names the
+/// caller and what they held; a refusal logs its `authz` reason inside it.
 pub fn request_span(request: &Request) -> Span {
     tracing::info_span!(
         "request",
         method = %request.method(),
         path = %request.uri().path(),
         user_id = tracing::field::Empty,
+        org = tracing::field::Empty,
+        roles = tracing::field::Empty,
     )
 }

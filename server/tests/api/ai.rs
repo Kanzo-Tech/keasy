@@ -6,7 +6,7 @@ use axum::{Json, Router, routing::post};
 use secrecy::SecretString;
 use serde_json::{Value, json};
 
-use crate::helpers::spawn_app_with;
+use crate::helpers::{EDITOR, spawn_app_with};
 use keasy_server::configuration::AiSettings;
 
 /// What the fake gateway was sent: the bearer it saw, and the body.
@@ -42,7 +42,7 @@ async fn relay(app: &crate::helpers::TestApp, body: Value) -> (StatusCode, Strin
     let response = app
         .client
         .post(format!("{}/v1/ai/chat/completions", app.address))
-        .bearer_auth(app.token(&["member"]))
+        .bearer_auth(app.token(EDITOR))
         .json(&body)
         .send()
         .await

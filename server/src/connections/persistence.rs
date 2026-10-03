@@ -18,6 +18,7 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<ConnectionView> {
         updated_by: r.get("updated_by")?,
         updated_at: r.get("updated_at")?,
         validation: json_column_opt(r, "validation")?,
+        can_modify: false,
     })
 }
 
@@ -213,6 +214,7 @@ pub(crate) mod tests {
             updated_by: String::new(),
             updated_at: String::new(),
             validation: None,
+            can_modify: false,
         }
     }
 

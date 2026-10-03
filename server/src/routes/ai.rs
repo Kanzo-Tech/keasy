@@ -18,7 +18,7 @@ use tracing::warn;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::authentication::role::Member;
+use crate::authentication::role::Reader;
 use crate::configuration::AiSettings;
 use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::startup::AppState;
@@ -146,7 +146,7 @@ pub struct ChatCompletionRequest {
     pub rest: Map<String, Value>,
 }
 
-#[utoipa::path(post, path = "/v1/ai/chat/completions", tag = "AI",
+#[utoipa::path(post, path = "/v1/ai/chat/completions", tag = "AI", security(("bearer" = ["reader"])),
     request_body = ChatCompletionRequest,
     responses(
         (status = 200, description = "The gateway's answer as it streams: OpenAI chat completion chunks (`text/event-stream`), ended by an error event carrying `gateway/silent` if the gateway goes quiet mid-answer, or one completion (`application/json`)"),
@@ -161,7 +161,7 @@ pub struct ChatCompletionRequest {
 /// budget, an upstream failure — arrives in the protocol's error format, with
 /// its status.
 pub async fn chat_completions(
-    member: Member,
+    caller: Reader,
     State(state): State<AppState>,
     Json(mut request): Json<ChatCompletionRequest>,
 ) -> Result<Response, Refusal> {
@@ -172,7 +172,7 @@ pub async fn chat_completions(
     request.rest.remove("user");
     request.rest.remove("cache");
     let mut body = serde_json::to_value(&request).map_err(|e| Refusal::invalid(e.to_string()))?;
-    body["user"] = json!(member.user_id);
+    body["user"] = json!(caller.user_id);
     if request.model == Alias::Complete {
         // The gateway caches nothing unless asked; a field asks the same
         // question often, and a conversation never twice on purpose.

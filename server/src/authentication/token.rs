@@ -18,12 +18,13 @@
 //! Both time checks are read with [`CLOCK_LEEWAY`] of slack, which is this
 //! deployment's number rather than a library default.
 //!
-//! Plus one this deployment adds, because a workspace is an instance rather than
-//! an organization: `azp` must be **this** workspace's client. Every tenant has
-//! its own Keycloak client, so a token minted for `keasy-ws-a` naming the shared
-//! API audience would otherwise be spendable at `keasy-ws-b` — the roles would
-//! not match and the request would fail anyway, but failing on the *credential*
-//! is the check that says why.
+//! Plus one this deployment adds: `azp` must be this application's client. A
+//! token another application obtained for the same audience is refused on the
+//! credential, before any role is read.
+//!
+//! The token is the person's across every organization they belong to — one
+//! client serves every instance — so which roles count is the organization this
+//! instance serves: [`Claims::org_roles`].
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -59,16 +60,21 @@ pub const CLOCK_LEEWAY: Duration = Duration::from_secs(30);
 pub struct Claims {
     /// The Keycloak user id. Stable, and never an email.
     pub sub: String,
-    /// The client the token was issued to — this workspace's, or the request is refused.
+    /// The client the token was issued to — this application's, or the request is refused.
     #[serde(default)]
     pub azp: Option<String>,
-    /// Slugs of every workspace this user belongs to — feeds the switcher. A
-    /// per-user Keycloak attribute mapper emits it.
-    #[serde(default)]
-    pub workspaces: Vec<String>,
-    /// Keycloak's own client-role claim. `resource_access.<client_id>.roles` is
-    /// what the realm publishes for free; renaming it into something like
-    /// `keasy:role` was this codebase's own invention and is gone.
+    /// Every organization the person belongs to, by alias (the `organization:*`
+    /// scope), each with what they hold there. The top-level `resource_access`
+    /// is never read: a role is held in an organization, and one held in
+    /// another says nothing here.
+    #[serde(default, deserialize_with = "organizations")]
+    pub organization: HashMap<String, OrgClaim>,
+}
+
+/// One organization's entry: Keycloak writes into it the role mappings of the
+/// person's groups there (`addGroupRoleMappings`), composites expanded.
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct OrgClaim {
     #[serde(default)]
     pub resource_access: HashMap<String, RoleSet>,
 }
@@ -80,14 +86,39 @@ pub struct RoleSet {
 }
 
 impl Claims {
-    /// The roles this person holds **in this application**, and nowhere else. A
-    /// role granted on another client authorizes nothing here.
-    pub fn roles_for(&self, client_id: &str) -> &[String] {
-        self.resource_access
-            .get(client_id)
-            .map(|r| r.roles.as_slice())
-            .unwrap_or_default()
+    /// The roles this person holds in organization `alias`, in application
+    /// `client_id` — `None` when they do not belong to it. Another
+    /// organization's roles, or another application's, authorize nothing here.
+    pub fn org_roles(&self, alias: &str, client_id: &str) -> Option<&[String]> {
+        let org = self.organization.get(alias)?;
+        Some(
+            org.resource_access
+                .get(client_id)
+                .map(|r| r.roles.as_slice())
+                .unwrap_or_default(),
+        )
     }
+}
+
+/// The `organization` claim, read in both shapes Keycloak emits: an object
+/// keyed by alias, or, from a mapper set to omit the ids, the aliases alone.
+/// Anything else is no membership at all rather than a refused token.
+fn organizations<'de, D>(deserializer: D) -> Result<HashMap<String, OrgClaim>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value = <serde_json::Value as serde::Deserialize>::deserialize(deserializer)?;
+    Ok(match value {
+        serde_json::Value::Object(map) => map
+            .into_iter()
+            .map(|(alias, entry)| (alias, serde_json::from_value(entry).unwrap_or_default()))
+            .collect(),
+        serde_json::Value::Array(aliases) => aliases
+            .into_iter()
+            .filter_map(|a| a.as_str().map(|a| (a.to_string(), OrgClaim::default())))
+            .collect(),
+        _ => HashMap::new(),
+    })
 }
 
 /// Why a credential was refused. Opaque to the caller, specific in the log.
@@ -136,8 +167,8 @@ pub struct Validator {
     issuer: String,
     /// This API's audience. The tenant client carries an audience mapper naming it.
     audience: String,
-    /// This workspace's Keycloak client: the expected `azp`, and the key into
-    /// `resource_access` that carries the roles.
+    /// This application's Keycloak client: the expected `azp`, and the key into
+    /// each organization's `resource_access`.
     client_id: String,
     /// Where *this process* reaches Keycloak when that is not where the browser
     /// does — `http://keycloak:8080`. Only the origin is replaced; the path is
@@ -458,19 +489,52 @@ mod tests {
         );
     }
 
+    /// The shape Keycloak 26.8 emits with `addGroupRoleMappings`, recorded off
+    /// `services/auth`'s verify script (kanzo-ui v0.28.0).
     #[test]
-    fn roles_are_read_per_client_and_never_merged() {
+    fn roles_are_read_per_organization_and_client_and_never_merged() {
         let claims: Claims = serde_json::from_value(serde_json::json!({
             "sub": "u-1",
-            "resource_access": {
-                "keasy-ws-dev": { "roles": ["owner"] },
-                "keasy-ws-other": { "roles": ["member"] }
+            "resource_access": { "keasy": { "roles": ["admin"] } },
+            "organization": {
+                "acme": {
+                    "id": "3fe7a56b",
+                    "groups": ["/Admins"],
+                    "resource_access": {
+                        "keasy": { "roles": ["admin", "editor", "reader"] },
+                        "board": { "roles": ["owner"] }
+                    }
+                },
+                "globex": { "id": "94b69c97", "groups": [] }
             }
         }))
         .unwrap();
-        assert_eq!(claims.roles_for("keasy-ws-dev"), ["owner"]);
-        assert_eq!(claims.roles_for("keasy-ws-other"), ["member"]);
-        assert!(claims.roles_for("keasy-ws-absent").is_empty());
+        assert_eq!(
+            claims.org_roles("acme", "keasy"),
+            Some(["admin", "editor", "reader"].map(String::from).as_slice())
+        );
+        assert_eq!(
+            claims.org_roles("globex", "keasy"),
+            Some([].as_slice()),
+            "a member holding nothing here"
+        );
+        assert_eq!(
+            claims.org_roles("initech", "keasy"),
+            None,
+            "the top-level resource_access grants nothing"
+        );
+    }
+
+    #[test]
+    fn an_organization_claim_of_aliases_alone_is_membership_without_roles() {
+        let claims: Claims = serde_json::from_value(serde_json::json!({
+            "sub": "u-1", "organization": ["acme"]
+        }))
+        .unwrap();
+        assert_eq!(claims.org_roles("acme", "keasy"), Some([].as_slice()));
+        let odd: Claims =
+            serde_json::from_value(serde_json::json!({ "sub": "u-1", "organization": 3 })).unwrap();
+        assert!(odd.organization.is_empty());
     }
 
     #[test]

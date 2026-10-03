@@ -1,7 +1,7 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{DEAD, spawn_app};
+use crate::helpers::{ADMIN, DEAD, EDITOR, spawn_app};
 use keasy_server::domain::Direction;
 
 /// The owner's datasets are the workspace's completed jobs, each where its
@@ -11,8 +11,8 @@ use keasy_server::domain::Direction;
 #[tokio::test]
 async fn a_completed_job_is_a_dataset_the_owner_opens() {
     let app = spawn_app().await;
-    let member = app.token_for("u-1", &["member"]);
-    let owner = app.token_for("u-9", &["owner"]);
+    let member = app.token_for("u-1", EDITOR);
+    let owner = app.token_for("u-9", ADMIN);
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
@@ -57,7 +57,7 @@ async fn a_completed_job_is_a_dataset_the_owner_opens() {
         app.vend(&owner, read(&running), "read").await,
         (StatusCode::CONFLICT, Some("job/not-completed".to_owned()))
     );
-    let theirs = app.token_for("u-2", &["member"]);
+    let theirs = app.token_for("u-2", EDITOR);
     assert_eq!(
         app.vend(&theirs, read(&done), "read").await.0,
         StatusCode::NOT_FOUND

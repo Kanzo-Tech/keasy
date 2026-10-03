@@ -45,25 +45,18 @@ pub async fn vend_job_credentials(
     match (req.access, &job.status) {
         (Access::Read, JobStatus::Completed) | (Access::Write, JobStatus::Running) => {}
         (Access::Read, _) => {
-            return Err(Refusal::new(
-                StatusCode::CONFLICT,
-                ErrorCode::NotCompleted,
+            return Err(Refusal::conflict(
+                ErrorCode::JobNotCompleted,
                 "The job has not completed, so it has no output to read",
             ));
         }
-        (Access::Write, _) => {
-            return Err(Refusal::new(
-                StatusCode::CONFLICT,
-                ErrorCode::NotRunning,
-                "A job's output is written only while the job runs",
-            ));
-        }
+        (Access::Write, status) => return Err(super::not_running(status)),
     }
     let sink = crate::connections::persistence::get(&*state.db.read().await, &job.sink_connection)?
         .ok_or_else(|| {
             Refusal::new(
                 StatusCode::BAD_REQUEST,
-                ErrorCode::NoDestination,
+                ErrorCode::JobNoDestination,
                 "The job's destination connection no longer exists",
             )
         })?;
@@ -81,9 +74,7 @@ pub(crate) async fn vended(
     location: &crate::domain::StorageLocation,
     access: Access,
 ) -> Result<Response, Refusal> {
-    let credential = storage_client::vend::vend(credential, location, access)
-        .await
-        .map_err(|e| e.refusal(ErrorCode::StoreError))?;
+    let credential = storage_client::vend::vend(credential, location, access).await?;
     Ok((
         [(header::CACHE_CONTROL, "no-store")],
         Json(VendedCredentials {

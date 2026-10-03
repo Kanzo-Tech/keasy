@@ -148,7 +148,7 @@ pub async fn create_job(
     if !is_sink {
         return Err(Refusal::new(
             StatusCode::BAD_REQUEST,
-            ErrorCode::InvalidDestination,
+            ErrorCode::JobInvalidDestination,
             "sink_connection must name the workspace sink",
         ));
     }
@@ -210,9 +210,8 @@ pub async fn update_job(
     Json(payload): Json<UpdateJobRequest>,
 ) -> Result<impl IntoResponse, Refusal> {
     if owned(&state.db, &member.user_id, &id).await?.status != JobStatus::Draft {
-        return Err(Refusal::new(
-            StatusCode::BAD_REQUEST,
-            ErrorCode::NotDraft,
+        return Err(Refusal::conflict(
+            ErrorCode::JobNotDraft,
             "Only draft jobs can be updated",
         ));
     }
@@ -261,9 +260,8 @@ pub async fn submit_job(
         .filter(|job| job.created_by == member.user_id)
         .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))?;
     if job.status != JobStatus::Draft {
-        return Err(Refusal::new(
-            StatusCode::BAD_REQUEST,
-            ErrorCode::NotDraft,
+        return Err(Refusal::conflict(
+            ErrorCode::JobNotDraft,
             "Only a draft is submitted",
         ));
     }
@@ -311,7 +309,7 @@ pub async fn folder_availability(
     if !connection.target.is_sink() {
         return Err(Refusal::new(
             StatusCode::BAD_REQUEST,
-            ErrorCode::InvalidDestination,
+            ErrorCode::JobInvalidDestination,
             "Only the workspace sink holds job folders",
         ));
     }
@@ -346,9 +344,8 @@ pub async fn complete_job(
             return Err(Refusal::invalid("A draft is never run: submit it first"));
         }
         JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled => {
-            return Err(Refusal::new(
-                StatusCode::CONFLICT,
-                ErrorCode::NotRunning,
+            return Err(Refusal::conflict(
+                ErrorCode::JobEnded,
                 "The job has already ended, so it has no run to report",
             ));
         }
@@ -405,12 +402,9 @@ pub async fn heartbeat(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<StatusCode, Refusal> {
-    if owned(&state.db, &member.user_id, &id).await?.status != JobStatus::Running {
-        return Err(Refusal::new(
-            StatusCode::CONFLICT,
-            ErrorCode::NotRunning,
-            "The job is not running, so it holds no lease",
-        ));
+    let status = owned(&state.db, &member.user_id, &id).await?.status;
+    if status != JobStatus::Running {
+        return Err(not_running(&status));
     }
     let now = now_iso8601();
     persistence::update(&*state.db.write().await, &id, move |job| {
@@ -448,7 +442,7 @@ pub async fn publish_relations(
     let relations = payload.relations;
     for file in relations.iter().flat_map(|r| &r.files) {
         RelativePath::parse(file)
-            .map_err(|e| Refusal::new(StatusCode::BAD_REQUEST, ErrorCode::InvalidFormat, e))?;
+            .map_err(|e| Refusal::new(StatusCode::BAD_REQUEST, ErrorCode::RequestMalformed, e))?;
     }
     persistence::update(&*state.db.write().await, &id, move |job| {
         job.relations = relations
@@ -472,15 +466,24 @@ pub async fn delete_job(
 ) -> Result<impl IntoResponse, Refusal> {
     let job = owned(&state.db, &member.user_id, &id).await?;
     if matches!(job.status, JobStatus::Pending | JobStatus::Running) {
-        return Err(Refusal::new(
-            StatusCode::CONFLICT,
-            ErrorCode::StillRunning,
+        return Err(Refusal::conflict(
+            ErrorCode::JobStillRunning,
             "Cannot delete a job that is still running",
         ));
     }
 
     persistence::delete(&*state.db.write().await, &id)?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// Why a job that is not running cannot be written or reported on: it has
+/// ended, or it has not begun.
+pub(crate) fn not_running(status: &JobStatus) -> Refusal {
+    if status.has_ended() {
+        Refusal::conflict(ErrorCode::JobEnded, "The job has ended")
+    } else {
+        Refusal::conflict(ErrorCode::JobNotRunning, "The job is not running yet")
+    }
 }
 
 /// The routes this module serves.

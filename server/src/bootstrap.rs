@@ -84,7 +84,7 @@ pub async fn ensure_declared(db: &Database, path: &str) {
         let name = request.name.clone();
         match crate::credentials::named(db, &name).await {
             Ok(_) => continue,
-            Err(crate::error::Refusal::Status { status, .. }) if status == 404 => {}
+            Err(refusal) if refusal.status == axum::http::StatusCode::NOT_FOUND => {}
             Err(e) => {
                 error!(%name, error = ?e, "declared credential: skipped");
                 continue;
@@ -108,7 +108,7 @@ pub async fn ensure_declared(db: &Database, path: &str) {
         let name = request.name.clone();
         match crate::connections::named(db, &name).await {
             Ok(_) => continue,
-            Err(crate::error::Refusal::Status { status, .. }) if status == 404 => {}
+            Err(refusal) if refusal.status == axum::http::StatusCode::NOT_FOUND => {}
             Err(e) => {
                 error!(%name, error = ?e, "declared connection: skipped");
                 continue;

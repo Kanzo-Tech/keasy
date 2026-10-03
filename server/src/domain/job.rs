@@ -24,6 +24,13 @@ pub enum JobStatus {
     Cancelled,
 }
 
+impl JobStatus {
+    /// Completed, failed or cancelled: nothing more happens to the job.
+    pub fn has_ended(&self) -> bool {
+        matches!(self, Self::Completed | Self::Failed | Self::Cancelled)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct Job {
     pub id: String,

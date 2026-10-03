@@ -2597,7 +2597,7 @@
       },
       "ErrorCode": {
         "type": "string",
-        "description": "Every error the server answers with. Closed: a code the server does not\ndeclare here cannot be sent, and the web keys its copy by this enum.\n\nOne grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry\nin the web keys all three. The areas are keasy's own and never one of\nfossil's (`storage`, `engine`, `run`, …): a code means one thing.",
+        "description": "Every error the server answers with. Closed: a code the server does not\ndeclare here cannot be sent, and the web keys its copy by this enum.\n\nOne grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry\nin the web keys all three. The areas are keasy's own and never one of\nfossil's (`storage`, `engine`, `run`, …): a code means one thing. Each\nvariant is its wire name spelled in Rust, `area/kind-x` as `AreaKindX`, so\nthe code a test asserts and the variant a handler names are one word.\n\nEvery refusal the server writes is an [`ErrorBody`] with one of these, with\none exception: the AI relay (`routes::ai`) passes the gateway's own refusal\nthrough in the OpenAI error format the browser's model client reads, status\nand body untouched. Its own failures — no gateway, unreachable, silent —\nare `gateway/*` bodies like any other.",
         "enum": [
           "auth/session-required",
           "auth/keys-unavailable",
@@ -2616,6 +2616,7 @@
           "job/not-draft",
           "job/not-completed",
           "job/not-running",
+          "job/ended",
           "job/still-running",
           "job/abandoned",
           "job/invalid-destination",
@@ -2627,7 +2628,6 @@
           "resource/in-use",
           "connection/overlaps",
           "probe/failed",
-          "store/list-failed",
           "store/refused",
           "store/silent",
           "gateway/not-configured",

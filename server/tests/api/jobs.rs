@@ -469,7 +469,7 @@ async fn submitting_a_draft_makes_it_the_job_in_place() {
     let (status, body) = app.send(Method::POST, &submit, &member, json!({})).await;
     assert_eq!(
         (status, body["code"].as_str()),
-        (StatusCode::BAD_REQUEST, Some("job/not-draft"))
+        (StatusCode::CONFLICT, Some("job/not-draft"))
     );
     let theirs = app.token_for("u-2", &["member"]);
     let (status, _) = app.send(Method::POST, &submit, &theirs, json!({})).await;

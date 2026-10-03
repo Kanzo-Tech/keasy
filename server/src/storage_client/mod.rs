@@ -18,7 +18,7 @@ use object_store::{
 use secrecy::ExposeSecret;
 
 use crate::domain::{StorageCredentialInput, StorageLocation, StoreKind};
-use crate::error::{ErrorBody, ErrorCode, Refusal};
+use crate::error::{ErrorCode, Refusal};
 use crate::startup::REQUEST_DEADLINE;
 
 /// How long the store may take to accept a connection.
@@ -101,15 +101,19 @@ impl From<&str> for StoreFailure {
     }
 }
 
-impl StoreFailure {
-    /// The refusal a route answers with: `refused` for a no, `store/silent`
-    /// for a silence.
-    pub fn refusal(self, refused: ErrorCode) -> Refusal {
-        match self {
-            Self::Refused(message) => Refusal::new(StatusCode::BAD_GATEWAY, refused, message),
-            silent @ Self::Silent { after, .. } => Refusal::Body(
+/// A store that said no is `store/refused` (502), one that said nothing in
+/// time `store/silent` (504) — whatever the server asked it.
+impl From<StoreFailure> for Refusal {
+    fn from(e: StoreFailure) -> Self {
+        match e {
+            StoreFailure::Refused(message) => {
+                Refusal::new(StatusCode::BAD_GATEWAY, ErrorCode::StoreRefused, message)
+            }
+            silent @ StoreFailure::Silent { after, .. } => Refusal::silent(
                 StatusCode::GATEWAY_TIMEOUT,
-                ErrorBody::silent(ErrorCode::StoreSilent, silent.to_string(), after),
+                ErrorCode::StoreSilent,
+                silent.to_string(),
+                after,
             ),
         }
     }

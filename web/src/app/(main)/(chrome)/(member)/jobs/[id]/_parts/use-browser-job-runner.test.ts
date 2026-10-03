@@ -35,7 +35,7 @@ describe("the job's lease", () => {
   });
 
   it("does not ask again when the server refused, as for a job the sweep already ended", async () => {
-    const ended = new ApiError({ code: "job/not-running", title: "", detail: "", data: {} }, 409);
+    const ended = new ApiError({ code: "job/ended", title: "", detail: "", data: {} }, 409);
     const send = vi.fn().mockRejectedValue(ended);
     await expect(lease("j", clock()).report(send)).rejects.toBe(ended);
     expect(send).toHaveBeenCalledTimes(1);

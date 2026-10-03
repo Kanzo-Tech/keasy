@@ -67,7 +67,7 @@ pub async fn put_dashboard(
     if size > MAX_SPEC_BYTES {
         return Err(Refusal::new(
             StatusCode::PAYLOAD_TOO_LARGE,
-            ErrorCode::TooLarge,
+            ErrorCode::RequestTooLarge,
             format!("A dashboard spec is at most {MAX_SPEC_BYTES} bytes; this one is {size}"),
         ));
     }

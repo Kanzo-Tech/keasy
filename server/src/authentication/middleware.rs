@@ -4,6 +4,7 @@ use axum::response::Response;
 
 use super::role::Role;
 use super::token::{Claims, TokenError, bearer};
+use crate::error::Refusal;
 use crate::startup::AppState;
 
 /// Inserted into request extensions by [`bearer_required`]: who the caller is
@@ -25,7 +26,7 @@ pub async fn bearer_required(
     State(state): State<AppState>,
     mut request: Request,
     next: Next,
-) -> Result<Response, TokenError> {
+) -> Result<Response, Refusal> {
     let token = bearer(request.headers()).ok_or(TokenError::Missing)?;
     let claims = state.auth.verify(token).await?;
     tracing::Span::current().record("user_id", claims.sub.as_str());

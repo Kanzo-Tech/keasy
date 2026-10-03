@@ -12,103 +12,115 @@ use utoipa::openapi::{OpenApi, Ref, RefOr, ResponseBuilder, content::ContentBuil
 ///
 /// One grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry
 /// in the web keys all three. The areas are keasy's own and never one of
-/// fossil's (`storage`, `engine`, `run`, …): a code means one thing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+/// fossil's (`storage`, `engine`, `run`, …): a code means one thing. Each
+/// variant is its wire name spelled in Rust, `area/kind-x` as `AreaKindX`, so
+/// the code a test asserts and the variant a handler names are one word.
+///
+/// Every refusal the server writes is an [`ErrorBody`] with one of these, with
+/// one exception: the AI relay (`routes::ai`) passes the gateway's own refusal
+/// through in the OpenAI error format the browser's model client reads, status
+/// and body untouched. Its own failures — no gateway, unreachable, silent —
+/// are `gateway/*` bodies like any other.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema, strum::EnumIter)]
 pub enum ErrorCode {
     #[serde(rename = "auth/session-required")]
-    SessionRequired,
+    AuthSessionRequired,
     #[serde(rename = "auth/keys-unavailable")]
-    KeysUnavailable,
+    AuthKeysUnavailable,
     #[serde(rename = "rbac/no-membership")]
-    NoMembership,
+    RbacNoMembership,
     #[serde(rename = "rbac/insufficient-role")]
-    InsufficientRole,
+    RbacInsufficientRole,
     /// The caller holds the role, but not this resource: another member's.
     #[serde(rename = "rbac/forbidden")]
-    Forbidden,
+    RbacForbidden,
     #[serde(rename = "request/rate-limited")]
-    RateLimited,
+    RequestRateLimited,
     /// Well-formed, but what it asks for is not allowed.
     #[serde(rename = "request/invalid")]
-    ValidationFailed,
+    RequestInvalid,
     /// Not well-formed: a body, path or query that does not parse.
     #[serde(rename = "request/malformed")]
-    InvalidFormat,
+    RequestMalformed,
     #[serde(rename = "request/method-not-allowed")]
-    MethodNotAllowed,
+    RequestMethodNotAllowed,
     #[serde(rename = "request/too-large")]
-    TooLarge,
+    RequestTooLarge,
     /// No route answers at this path.
     #[serde(rename = "route/not-found")]
     RouteNotFound,
     #[serde(rename = "server/internal")]
-    InternalError,
+    ServerInternal,
     /// The server did not answer within its own bound; `after` says how long
     /// it waited.
     #[serde(rename = "server/silent")]
     ServerSilent,
     #[serde(rename = "job/not-found")]
     JobNotFound,
+    /// Only a draft is edited or submitted.
     #[serde(rename = "job/not-draft")]
-    NotDraft,
+    JobNotDraft,
     /// A job's output is read once the job has completed.
     #[serde(rename = "job/not-completed")]
-    NotCompleted,
-    /// A job's output is written only while the job runs.
+    JobNotCompleted,
+    /// Not running yet: a job's output is written, and its run reported, only
+    /// once it runs.
     #[serde(rename = "job/not-running")]
-    NotRunning,
+    JobNotRunning,
+    /// The job has ended — completed, failed, cancelled or swept — so it has
+    /// no run left to report or write.
+    #[serde(rename = "job/ended")]
+    JobEnded,
     #[serde(rename = "job/still-running")]
-    StillRunning,
+    JobStillRunning,
     /// The runner went silent: no heartbeat within the lease, or a pending
     /// job no runner picked up. Stored as the job's problem by the sweep.
     #[serde(rename = "job/abandoned")]
-    Abandoned,
+    JobAbandoned,
     #[serde(rename = "job/invalid-destination")]
-    InvalidDestination,
+    JobInvalidDestination,
     #[serde(rename = "job/no-destination")]
-    NoDestination,
+    JobNoDestination,
     /// Another job that is not a draft writes to that folder of the sink;
     /// `field` is `folder`.
     #[serde(rename = "job/folder-taken")]
-    FolderTaken,
+    JobFolderTaken,
     #[serde(rename = "credential/not-found")]
     CredentialNotFound,
     #[serde(rename = "connection/not-found")]
     ConnectionNotFound,
     /// A credential or connection of that name exists already, or a second sink.
     #[serde(rename = "resource/already-exists")]
-    AlreadyExists,
+    ResourceAlreadyExists,
     /// Still used: `dependents` names what uses it.
     #[serde(rename = "resource/in-use")]
-    InUse,
+    ResourceInUse,
     /// A storage connection's location lies within another's, or holds one:
     /// `dependents` names them. Locations never overlap, so a prefix has one
     /// owner.
     #[serde(rename = "connection/overlaps")]
-    Overlaps,
-    /// A credential or connection did not validate against its store or
-    /// provider; `dependents` names the connections that failed.
+    ConnectionOverlaps,
+    /// A credential or connection was probed and did not pass; `dependents`
+    /// names the connections that failed.
     #[serde(rename = "probe/failed")]
     ProbeFailed,
-    #[serde(rename = "store/list-failed")]
-    ListFilesFailed,
-    /// The store answered and refused to vend.
+    /// The store answered and refused: to vend, or to list.
     #[serde(rename = "store/refused")]
-    StoreError,
+    StoreRefused,
     /// The store, or the identity service in front of it (Entra, STS), did not
     /// answer within its deadline; `after` says how long it was given.
     #[serde(rename = "store/silent")]
     StoreSilent,
     /// This workspace has no AI gateway.
     #[serde(rename = "gateway/not-configured")]
-    AiNotConfigured,
+    GatewayNotConfigured,
     /// The AI gateway could not be reached.
     #[serde(rename = "gateway/unreachable")]
-    AiUnreachable,
+    GatewayUnreachable,
     /// The AI gateway sent nothing within its deadline — before its answer
     /// began, or in the middle of it; `after` says how long it was given.
     #[serde(rename = "gateway/silent")]
-    AiSilent,
+    GatewaySilent,
 }
 
 impl ErrorCode {
@@ -116,40 +128,40 @@ impl ErrorCode {
     /// that carries it. What this refusal is about goes in `detail`.
     pub fn title(self) -> &'static str {
         match self {
-            Self::SessionRequired => "Sign in required",
-            Self::KeysUnavailable => "The identity provider is unreachable",
-            Self::NoMembership => "Not a member of this workspace",
-            Self::InsufficientRole => "Your role does not allow this",
-            Self::Forbidden => "Not allowed",
-            Self::RateLimited => "Too many requests",
-            Self::ValidationFailed => "The request is not valid",
-            Self::InvalidFormat => "The request is malformed",
-            Self::MethodNotAllowed => "The method is not allowed here",
-            Self::TooLarge => "The request is too large",
+            Self::AuthSessionRequired => "Sign in required",
+            Self::AuthKeysUnavailable => "The identity provider is unreachable",
+            Self::RbacNoMembership => "Not a member of this workspace",
+            Self::RbacInsufficientRole => "Your role does not allow this",
+            Self::RbacForbidden => "Not allowed",
+            Self::RequestRateLimited => "Too many requests",
+            Self::RequestInvalid => "The request is not valid",
+            Self::RequestMalformed => "The request is malformed",
+            Self::RequestMethodNotAllowed => "The method is not allowed here",
+            Self::RequestTooLarge => "The request is too large",
             Self::RouteNotFound => "No such route",
-            Self::InternalError => "The server failed",
+            Self::ServerInternal => "The server failed",
             Self::ServerSilent => "The server did not answer in time",
             Self::JobNotFound => "Job not found",
-            Self::NotDraft => "Not a draft",
-            Self::NotCompleted => "The job has not completed",
-            Self::NotRunning => "The job is not running",
-            Self::StillRunning => "The job is still running",
-            Self::Abandoned => "The run was abandoned",
-            Self::InvalidDestination => "Not a valid destination",
-            Self::NoDestination => "No destination",
-            Self::FolderTaken => "Another job writes to that folder",
+            Self::JobNotDraft => "Not a draft",
+            Self::JobNotCompleted => "The job has not completed",
+            Self::JobNotRunning => "The job is not running",
+            Self::JobEnded => "The job has ended",
+            Self::JobStillRunning => "The job is still running",
+            Self::JobAbandoned => "The run was abandoned",
+            Self::JobInvalidDestination => "Not a valid destination",
+            Self::JobNoDestination => "No destination",
+            Self::JobFolderTaken => "Another job writes to that folder",
             Self::CredentialNotFound => "Credential not found",
             Self::ConnectionNotFound => "Connection not found",
-            Self::AlreadyExists => "It exists already",
-            Self::InUse => "Still in use",
-            Self::Overlaps => "The location overlaps another",
+            Self::ResourceAlreadyExists => "It exists already",
+            Self::ResourceInUse => "Still in use",
+            Self::ConnectionOverlaps => "The location overlaps another",
             Self::ProbeFailed => "Validation failed",
-            Self::ListFilesFailed => "The files could not be listed",
-            Self::StoreError => "The store refused",
+            Self::StoreRefused => "The store refused",
             Self::StoreSilent => "The store did not answer in time",
-            Self::AiNotConfigured => "AI is not set up for this workspace",
-            Self::AiUnreachable => "The AI gateway is unreachable",
-            Self::AiSilent => "The AI gateway did not answer in time",
+            Self::GatewayNotConfigured => "AI is not set up for this workspace",
+            Self::GatewayUnreachable => "The AI gateway is unreachable",
+            Self::GatewaySilent => "The AI gateway did not answer in time",
         }
     }
 }
@@ -204,34 +216,47 @@ impl ErrorBody {
     }
 }
 
-/// The one way the server refuses: a status and an [`ErrorBody`].
-pub fn fail(status: StatusCode, code: ErrorCode, detail: impl Into<String>) -> Response {
-    fail_about(status, code, detail, Vec::new())
-}
-
-/// Why a request was refused: a status, a code and a message, or a store
-/// failure that maps itself.
+/// Why a request was refused, and the one way the server refuses: a status
+/// and the [`ErrorBody`] it carries. Every failure a handler meets — the
+/// database's, the role check's, the token check's, the store's — converts into
+/// one, so a route has one error type and the wire has one shape.
 #[derive(Debug)]
-pub enum Refusal {
-    Status {
-        status: StatusCode,
-        code: ErrorCode,
-        detail: String,
-        dependents: Vec<String>,
-    },
-    /// A body built whole, for a code whose `data` carries more than
-    /// `dependents` — a deadline's `after`, a field's name.
-    Body(StatusCode, ErrorBody),
-    Db(crate::database::DbError),
+pub struct Refusal {
+    pub status: StatusCode,
+    /// Boxed: a refusal is the `Err` of nearly every function here, and the
+    /// body is the large part of it.
+    pub body: Box<ErrorBody>,
 }
 
 impl Refusal {
     pub fn new(status: StatusCode, code: ErrorCode, detail: impl Into<String>) -> Self {
-        Self::Status {
+        Self::about(status, code, detail, Vec::new())
+    }
+
+    /// A refusal that names the resources it is about.
+    pub fn about(
+        status: StatusCode,
+        code: ErrorCode,
+        detail: impl Into<String>,
+        dependents: Vec<String>,
+    ) -> Self {
+        Self {
             status,
-            code,
-            detail: detail.into(),
-            dependents: Vec::new(),
+            body: Box::new(ErrorBody::new(code, detail, dependents)),
+        }
+    }
+
+    /// A deadline that fired: `code` names who did not answer, `after` how
+    /// long they were given.
+    pub fn silent(
+        status: StatusCode,
+        code: ErrorCode,
+        detail: impl Into<String>,
+        after: Duration,
+    ) -> Self {
+        Self {
+            status,
+            body: Box::new(ErrorBody::silent(code, detail, after)),
         }
     }
 
@@ -242,15 +267,16 @@ impl Refusal {
     }
 
     pub fn forbidden(message: impl Into<String>) -> Self {
-        Self::new(StatusCode::FORBIDDEN, ErrorCode::Forbidden, message)
+        Self::new(StatusCode::FORBIDDEN, ErrorCode::RbacForbidden, message)
     }
 
     pub fn invalid(message: impl Into<String>) -> Self {
-        Self::new(
-            StatusCode::BAD_REQUEST,
-            ErrorCode::ValidationFailed,
-            message,
-        )
+        Self::new(StatusCode::BAD_REQUEST, ErrorCode::RequestInvalid, message)
+    }
+
+    /// The resource is in a state that does not allow this: 409 and its code.
+    pub fn conflict(code: ErrorCode, detail: impl Into<String>) -> Self {
+        Self::new(StatusCode::CONFLICT, code, detail)
     }
 
     /// A refusal about one field of the request.
@@ -260,16 +286,16 @@ impl Refusal {
         field: &str,
         detail: impl Into<String>,
     ) -> Self {
-        let mut body = ErrorBody::new(code, detail, Vec::new());
-        body.data.field = Some(field.to_string());
-        Self::Body(status, body)
+        let mut refusal = Self::new(status, code, detail);
+        refusal.body.data.field = Some(field.to_string());
+        refusal
     }
 
     /// A field spelled in a way the request may not.
     pub fn invalid_field(field: &str, detail: impl Into<String>) -> Self {
         Self::field(
             StatusCode::BAD_REQUEST,
-            ErrorCode::ValidationFailed,
+            ErrorCode::RequestInvalid,
             field,
             detail,
         )
@@ -277,54 +303,40 @@ impl Refusal {
 
     /// A storage location that would share a prefix with `dependents`.
     pub fn overlaps(message: impl Into<String>, dependents: Vec<String>) -> Self {
-        Self::Status {
-            status: StatusCode::CONFLICT,
-            code: ErrorCode::Overlaps,
-            detail: message.into(),
+        Self::about(
+            StatusCode::CONFLICT,
+            ErrorCode::ConnectionOverlaps,
+            message,
             dependents,
-        }
+        )
     }
 
-    /// A probe failed: the store or provider did not accept what it was shown.
+    /// A probe ran and did not pass: the store or provider answered, and did
+    /// not accept what it was shown. A store that refused to answer at all is
+    /// `store/refused`, a 502, not this.
     pub fn probe_failed(message: impl Into<String>, dependents: Vec<String>) -> Self {
-        Self::Status {
-            status: StatusCode::UNPROCESSABLE_ENTITY,
-            code: ErrorCode::ProbeFailed,
-            detail: message.into(),
+        Self::about(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            ErrorCode::ProbeFailed,
+            message,
             dependents,
-        }
+        )
     }
-}
 
-impl From<crate::database::DbError> for Refusal {
-    fn from(e: crate::database::DbError) -> Self {
-        Self::Db(e)
+    /// The server failed; what failed is logged, never sent.
+    pub fn internal() -> Self {
+        Self::new(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            ErrorCode::ServerInternal,
+            "An internal error occurred",
+        )
     }
 }
 
 impl IntoResponse for Refusal {
     fn into_response(self) -> Response {
-        match self {
-            Self::Status {
-                status,
-                code,
-                detail,
-                dependents,
-            } => fail_about(status, code, detail, dependents),
-            Self::Body(status, body) => (status, Json(body)).into_response(),
-            Self::Db(e) => e.into_response(),
-        }
+        (self.status, Json(self.body)).into_response()
     }
-}
-
-/// A refusal that names the resources it is about.
-pub fn fail_about(
-    status: StatusCode,
-    code: ErrorCode,
-    detail: impl Into<String>,
-    dependents: Vec<String>,
-) -> Response {
-    (status, Json(ErrorBody::new(code, detail, dependents))).into_response()
 }
 
 /// The backstop that makes every 4xx/5xx an [`ErrorBody`], whoever produced
@@ -332,7 +344,8 @@ pub fn fail_about(
 /// axum's own answer — no route (404), a method the route does not take (405),
 /// a body over the limit (413), and the `Json`, `Path` and `Query` rejections
 /// (400/415/422) — whose plain-text message becomes the `detail`. A JSON error
-/// body passes untouched: the only ones the server writes are `ErrorBody`.
+/// body passes untouched: the server writes only `ErrorBody`, save the AI
+/// relay's pass-through of the gateway's own refusal (see [`ErrorCode`]).
 pub async fn as_error_body(response: Response) -> Response {
     let status = response.status();
     if !(status.is_client_error() || status.is_server_error()) {
@@ -349,12 +362,12 @@ pub async fn as_error_body(response: Response) -> Response {
     let (parts, body) = response.into_parts();
     let code = match status {
         StatusCode::NOT_FOUND => ErrorCode::RouteNotFound,
-        StatusCode::METHOD_NOT_ALLOWED => ErrorCode::MethodNotAllowed,
-        StatusCode::PAYLOAD_TOO_LARGE => ErrorCode::TooLarge,
-        StatusCode::TOO_MANY_REQUESTS => ErrorCode::RateLimited,
-        StatusCode::UNAUTHORIZED => ErrorCode::SessionRequired,
-        s if s.is_server_error() => ErrorCode::InternalError,
-        _ => ErrorCode::InvalidFormat,
+        StatusCode::METHOD_NOT_ALLOWED => ErrorCode::RequestMethodNotAllowed,
+        StatusCode::PAYLOAD_TOO_LARGE => ErrorCode::RequestTooLarge,
+        StatusCode::TOO_MANY_REQUESTS => ErrorCode::RequestRateLimited,
+        StatusCode::UNAUTHORIZED => ErrorCode::AuthSessionRequired,
+        s if s.is_server_error() => ErrorCode::ServerInternal,
+        _ => ErrorCode::RequestMalformed,
     };
     // A rejection's message is a sentence; anything longer is not one, and
     // an unreadable body is no reason to fail the failure.
@@ -367,7 +380,7 @@ pub async fn as_error_body(response: Response) -> Response {
     } else {
         text
     };
-    let mut out = fail(status, code, detail);
+    let mut out = Refusal::new(status, code, detail).into_response();
     if let Some(allow) = parts.headers.get(header::ALLOW) {
         out.headers_mut().insert(header::ALLOW, allow.clone());
     }
@@ -382,11 +395,7 @@ pub fn panicked(cause: Box<dyn std::any::Any + Send + 'static>) -> Response {
         .or_else(|| cause.downcast_ref::<&str>().copied())
         .unwrap_or("a handler panicked");
     tracing::error!(panic = message, "handler panicked");
-    fail(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        ErrorCode::InternalError,
-        "An internal error occurred",
-    )
+    Refusal::internal().into_response()
 }
 
 /// Every route behind the bearer scheme can be refused before its handler runs:
@@ -449,6 +458,34 @@ pub fn document_refusals(openapi: &mut OpenApi) {
                     .entry(status.to_string())
                     .or_insert_with(|| RefOr::Ref(Ref::from_response_name(name)));
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use strum::IntoEnumIterator;
+
+    /// `area/kind-x` is `AreaKindX`: the variant a handler names is the code
+    /// the wire carries, spelled in Rust.
+    #[test]
+    fn each_variant_is_its_wire_name() {
+        for code in ErrorCode::iter() {
+            let wire = serde_json::to_value(code).unwrap();
+            let wire = wire.as_str().unwrap();
+            let spelled: String = wire
+                .split(['/', '-'])
+                .map(|w| {
+                    let mut c = w.chars();
+                    c.next()
+                        .unwrap()
+                        .to_uppercase()
+                        .chain(c)
+                        .collect::<String>()
+                })
+                .collect();
+            assert_eq!(format!("{code:?}"), spelled, "{wire}");
         }
     }
 }

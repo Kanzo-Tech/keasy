@@ -187,7 +187,7 @@ async fn a_running_job_is_refused_deletion_with_its_code() {
 }
 
 /// A run whose tab closed ends: its heartbeat stops, the next read sweeps it
-/// to failed with `job/abandoned`, the runner can no longer report on it,
+/// to failed with `job/abandoned`, the runner can no longer report on it (`job/ended`),
 /// and it can be deleted.
 #[tokio::test]
 async fn a_run_whose_runner_went_silent_ends_as_abandoned_and_can_be_deleted() {
@@ -225,7 +225,7 @@ async fn a_run_whose_runner_went_silent_ends_as_abandoned_and_can_be_deleted() {
     let (status, code) = app.answer(Method::POST, &beat, Some(&member)).await;
     assert_eq!(
         (status, code.as_deref()),
-        (StatusCode::CONFLICT, Some("job/not-running"))
+        (StatusCode::CONFLICT, Some("job/ended"))
     );
     let (status, body) = app
         .send(
@@ -237,7 +237,7 @@ async fn a_run_whose_runner_went_silent_ends_as_abandoned_and_can_be_deleted() {
         .await;
     assert_eq!(
         (status, body["code"].clone()),
-        (StatusCode::CONFLICT, json!("job/not-running"))
+        (StatusCode::CONFLICT, json!("job/ended"))
     );
 
     assert_eq!(

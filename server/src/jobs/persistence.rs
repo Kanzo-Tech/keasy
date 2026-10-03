@@ -136,7 +136,7 @@ pub fn sweep(conn: &Connection, now: jiff::Timestamp) -> DbResult<usize> {
     let spell = |t: jiff::Timestamp| t.strftime("%Y-%m-%dT%H:%M:%SZ").to_string();
     let cutoff = spell(now - jiff::SignedDuration::try_from(LEASE).expect("a lease fits"));
     let problem = serde_json::to_string(&ErrorBody::new(
-        ErrorCode::Abandoned,
+        ErrorCode::JobAbandoned,
         format!(
             "Nothing ran this job for {} s: the tab that ran it closed, \
              or never opened it",

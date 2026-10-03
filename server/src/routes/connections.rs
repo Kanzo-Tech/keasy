@@ -11,7 +11,7 @@ use utoipa_axum::routes;
 use crate::authentication::role::{AnyRole, Member};
 use crate::connections::{named, persistence};
 use crate::domain::{ConnectionView, ResourceName, StorageTarget, ValidationReport};
-use crate::error::{ErrorBody, ErrorCode, Refusal};
+use crate::error::{ErrorBody, Refusal};
 use crate::startup::AppState;
 use crate::storage_client;
 
@@ -209,9 +209,8 @@ pub async fn validate_connection(
 ) -> Result<impl IntoResponse, Refusal> {
     let connection = named(&state.db, &name).await?;
     let credential = crate::credentials::named(&state.db, &connection.credential).await?;
-    let report = crate::credentials::probe::connection(&credential.spec, &connection.target)
-        .await
-        .map_err(|e| e.refusal(ErrorCode::ProbeFailed))?;
+    let report =
+        crate::credentials::probe::connection(&credential.spec, &connection.target).await?;
     persistence::set_validation(&*state.db.write().await, &name, &report)?;
     Ok(Json(report))
 }
@@ -236,7 +235,7 @@ pub async fn list_connection_files(
     storage_client::list_files(&credential, &url)
         .await
         .map(|files| Json(files.into_iter().map(FileEntry::from).collect::<Vec<_>>()))
-        .map_err(|e| e.refusal(ErrorCode::ListFilesFailed))
+        .map_err(Refusal::from)
 }
 
 #[utoipa::path(post, path = "/v1/connections/{name}/credentials", tag = "Connections",

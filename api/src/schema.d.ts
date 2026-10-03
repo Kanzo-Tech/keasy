@@ -618,10 +618,18 @@ export interface components {
          *
          *     One grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry
          *     in the web keys all three. The areas are keasy's own and never one of
-         *     fossil's (`storage`, `engine`, `run`, …): a code means one thing.
+         *     fossil's (`storage`, `engine`, `run`, …): a code means one thing. Each
+         *     variant is its wire name spelled in Rust, `area/kind-x` as `AreaKindX`, so
+         *     the code a test asserts and the variant a handler names are one word.
+         *
+         *     Every refusal the server writes is an [`ErrorBody`] with one of these, with
+         *     one exception: the AI relay (`routes::ai`) passes the gateway's own refusal
+         *     through in the OpenAI error format the browser's model client reads, status
+         *     and body untouched. Its own failures — no gateway, unreachable, silent —
+         *     are `gateway/*` bodies like any other.
          * @enum {string}
          */
-        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/still-running" | "job/abandoned" | "job/invalid-destination" | "job/no-destination" | "job/folder-taken" | "credential/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/list-failed" | "store/refused" | "store/silent" | "gateway/not-configured" | "gateway/unreachable" | "gateway/silent";
+        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/ended" | "job/still-running" | "job/abandoned" | "job/invalid-destination" | "job/no-destination" | "job/folder-taken" | "credential/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "gateway/not-configured" | "gateway/unreachable" | "gateway/silent";
         /** @description What a refusal carries beside its words. */
         ErrorData: {
             /**

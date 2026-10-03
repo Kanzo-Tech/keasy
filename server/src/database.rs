@@ -11,13 +11,12 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
 use rusqlite::Connection;
 use serde::de::DeserializeOwned;
 use tokio::sync::{Mutex, MutexGuard};
 
 use crate::credentials::sealing::SecretKey;
-use crate::error::{ErrorCode, fail};
+use crate::error::{ErrorCode, Refusal};
 
 const READ_POOL_SIZE: usize = 4;
 
@@ -50,40 +49,31 @@ pub enum DbError {
 
 pub type DbResult<T> = Result<T, DbError>;
 
-impl IntoResponse for DbError {
-    fn into_response(self) -> Response {
-        match self {
-            DbError::Invalid(message) => fail(
-                StatusCode::BAD_REQUEST,
-                ErrorCode::ValidationFailed,
-                message,
-            ),
+impl From<DbError> for Refusal {
+    fn from(e: DbError) -> Self {
+        match e {
+            DbError::Invalid(message) => Refusal::invalid(message),
             DbError::AlreadyExists(message) => {
-                fail(StatusCode::CONFLICT, ErrorCode::AlreadyExists, message)
+                Refusal::conflict(ErrorCode::ResourceAlreadyExists, message)
             }
-            DbError::FolderTaken(message) => crate::error::Refusal::field(
+            DbError::FolderTaken(message) => Refusal::field(
                 StatusCode::CONFLICT,
-                ErrorCode::FolderTaken,
+                ErrorCode::JobFolderTaken,
                 "folder",
                 message,
-            )
-            .into_response(),
+            ),
             DbError::InUse {
                 message,
                 dependents,
-            } => crate::error::fail_about(
+            } => Refusal::about(
                 StatusCode::CONFLICT,
-                ErrorCode::InUse,
+                ErrorCode::ResourceInUse,
                 message,
                 dependents,
             ),
             e => {
                 tracing::error!(error = %e, "database failure");
-                fail(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    ErrorCode::InternalError,
-                    "An internal error occurred",
-                )
+                Refusal::internal()
             }
         }
     }

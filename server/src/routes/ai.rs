@@ -169,7 +169,7 @@ pub async fn chat_completions(
     let gateway = state.ai.as_ref().ok_or_else(|| {
         Refusal::new(
             StatusCode::SERVICE_UNAVAILABLE,
-            ErrorCode::AiNotConfigured,
+            ErrorCode::GatewayNotConfigured,
             "this workspace has no AI gateway (KEASY_AI_URL)",
         )
     })?;
@@ -202,20 +202,18 @@ async fn relay(gateway: &Gateway, body: &Value, idle: Duration) -> Result<Respon
     let upstream = tokio::time::timeout(idle, sent)
         .await
         .map_err(|_| {
-            Refusal::Body(
+            Refusal::silent(
                 StatusCode::GATEWAY_TIMEOUT,
-                ErrorBody::silent(
-                    ErrorCode::AiSilent,
-                    "the AI gateway did not begin its answer within its deadline",
-                    idle,
-                ),
+                ErrorCode::GatewaySilent,
+                "the AI gateway did not begin its answer within its deadline",
+                idle,
             )
         })?
         .map_err(|e| {
             warn!("AI gateway unreachable: {e}");
             Refusal::new(
                 StatusCode::BAD_GATEWAY,
-                ErrorCode::AiUnreachable,
+                ErrorCode::GatewayUnreachable,
                 "the AI gateway could not be reached",
             )
         })?;
@@ -230,7 +228,7 @@ async fn relay(gateway: &Gateway, body: &Value, idle: Duration) -> Result<Respon
         upstream.status().is_success() && content_type.as_bytes().starts_with(b"text/event-stream");
     let silence = streams.then(|| {
         error_event(&ErrorBody::silent(
-            ErrorCode::AiSilent,
+            ErrorCode::GatewaySilent,
             "the AI gateway went silent mid-answer",
             idle,
         ))
@@ -247,7 +245,7 @@ async fn relay(gateway: &Gateway, body: &Value, idle: Duration) -> Result<Respon
         .map_err(|e| {
             Refusal::new(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                ErrorCode::InternalError,
+                ErrorCode::ServerInternal,
                 e.to_string(),
             )
         })

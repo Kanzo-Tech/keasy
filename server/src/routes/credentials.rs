@@ -139,9 +139,7 @@ pub async fn update_credential(
     let (spec, report) = match request.spec {
         Some(spec) => {
             let dependents = connections::using(&*db.read().await, &name)?;
-            let (report, failing) = probe::credential(&spec, None, &dependents)
-                .await
-                .map_err(|e| e.refusal(ErrorCode::ProbeFailed))?;
+            let (report, failing) = probe::credential(&spec, None, &dependents).await?;
             if !report.passed() {
                 return Err(Refusal::probe_failed(
                     format!("the new spec was not stored: {}", report.failures()),
@@ -208,9 +206,8 @@ pub async fn validate_credential(
     let db = &state.db;
     let credential = named(db, &name).await?;
     let dependents = connections::using(&*db.read().await, &name)?;
-    let (report, _) = probe::credential(&credential.spec, request.url.as_deref(), &dependents)
-        .await
-        .map_err(|e| e.refusal(ErrorCode::ProbeFailed))?;
+    let (report, _) =
+        probe::credential(&credential.spec, request.url.as_deref(), &dependents).await?;
     persistence::set_validation(&*db.write().await, &name, &report)?;
     Ok(Json(report))
 }

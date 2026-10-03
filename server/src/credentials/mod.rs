@@ -28,9 +28,7 @@ pub async fn create(
     by: &str,
 ) -> Result<CredentialView, Refusal> {
     let name = ResourceName::parse(name).map_err(|e| Refusal::invalid_field("name", e))?;
-    let (report, _) = probe::credential(spec, probe_url, &[])
-        .await
-        .map_err(|e| e.refusal(ErrorCode::ProbeFailed))?;
+    let (report, _) = probe::credential(spec, probe_url, &[]).await?;
     if !report.passed() {
         return Err(Refusal::probe_failed(report.failures(), Vec::new()));
     }

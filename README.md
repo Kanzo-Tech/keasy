@@ -14,7 +14,8 @@ make dev
 gateway, checked out into `.deps/kanzo-ui`). Open [http://localhost:3000](http://localhost:3000)
 and log in at Keycloak. The first
 `up` compiles the server's dependencies once; later ones reuse the cached volumes.
-No `.env`: every dev value is a literal in `docker-compose.yml`.
+Every dev value is a literal in `docker-compose.yml`; a local `.env` overrides the
+included services' variables (e.g. `KC_ADMIN_PASSWORD`), and `provision` follows it.
 
 | What | Where |
 |------|-------|
@@ -30,18 +31,21 @@ pulls them; until then everything but AI works.
 ## Dev accounts
 
 The platform's seed users (kanzo-ui `services/auth/seed`), all with password `password`.
-This instance serves the `acme` organization; a role is the organization group its admin
-put the user in.
+This instance serves the `acme` organization. A role comes from the organization group
+the user is in, which `provision` maps onto keasy's roles (`infra/auth/dev-roles.sh`):
 
-| User | acme | globex |
-|------|------|--------|
-| `ana` | admin | reader |
-| `bruno` | editor | — |
-| `eva` | reader | — |
-| `fede` | member, no role | — |
+| User | acme (this instance) | globex | What it shows |
+|------|----------------------|--------|---------------|
+| `ana` | admin (*Admins*) | reader (*Readers*) | everything; the switcher between two organizations |
+| `bruno` | editor (*Data team*) | — | builds jobs, connections and secrets; changes what he made |
+| `eva` | reader (*Analysts*) | — | reads jobs, outputs and connections; creates nothing |
+| `fede` | member, no group | — | signed in, no role here: the forbidden page |
+| `carla` | — | admin (*Platform*) | a member of another organization only: no role here |
+| `dan` | — | — | no organization at all |
 
-Roles nest: reader ⊂ editor ⊂ admin (`infra/auth`). Prod has no seed: people are
-invited into their organization from Keycloak.
+Roles nest: reader ⊂ editor ⊂ admin, composites in `infra/auth`, so a token carries the
+expanded set. Prod has no seed: people are invited into their organization from Keycloak,
+and its admin maps keasy's roles onto the organization's groups.
 
 ## Dev data
 
@@ -76,9 +80,11 @@ At boot the instance declares, over that bucket, the **LDBC SNB** source connect
 written, and an existing sink is never overwritten. `infra/dev/snb.fossil` is a
 program over them: paste it into the studio to map SF0.1 into `output/`.
 
-`s3.localhost` and `keycloak.localhost` are load-bearing: Docker's DNS answers
-them inside the compose network and `*.localhost` is loopback on the host, so the
-endpoint a vended credential names, and the issuer a token names, work from both sides.
+`s3.localhost` is load-bearing: Docker's DNS answers it inside the compose network
+and `*.localhost` is loopback on the host, so the endpoint a vended credential names
+works from both sides. The issuer is `http://localhost:8080/realms/kanzo`, the one the
+browser sees; the server and the BFF fetch its keys at `http://keycloak:8080`
+(`KEASY_OIDC_INTERNAL_BASE_URL`).
 
 ## Architecture
 

@@ -113,7 +113,7 @@ async fn each_resource_that_is_not_there_says_which() {
     for (path, code) in [
         ("/v1/jobs/nope", "job/not-found"),
         ("/v1/connections/nope", "connection/not-found"),
-        ("/v1/credentials/nope", "credential/not-found"),
+        ("/v1/secrets/nope", "secret/not-found"),
     ] {
         let response = app
             .client
@@ -302,7 +302,7 @@ async fn a_store_that_never_answers_is_store_silent_from_a_probe_and_a_listing()
     let (created, validated, listed) = tokio::join!(
         app.send(
             Method::POST,
-            "/v1/credentials",
+            "/v1/secrets",
             &member,
             json!({ "name": "fresh", "spec": spec, "probe_url": "s3://b/" }),
         ),

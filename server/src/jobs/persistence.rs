@@ -92,16 +92,6 @@ pub fn write(conn: &Connection, job: &Job) -> DbResult<()> {
     Ok(())
 }
 
-/// Whether a job that is not a draft holds `folder` in `sink`.
-pub fn folder_taken(conn: &Connection, sink: &str, folder: &str) -> DbResult<bool> {
-    Ok(conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM jobs
-                       WHERE sink_connection = ?1 AND folder = ?2 AND status <> 'draft')",
-        [sink, folder],
-        |row| row.get(0),
-    )?)
-}
-
 /// How long a runner may go without a heartbeat, and a `pending` job without
 /// a runner, before the job is swept as abandoned. Published as
 /// `x-keasy-bounds.job_lease_ms`; the browser's runner beats four times within

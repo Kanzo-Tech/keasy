@@ -120,7 +120,7 @@ impl StorageCredentialInput {
 }
 
 #[derive(Debug, Serialize, ToSchema)]
-pub struct CredentialView {
+pub struct SecretView {
     pub name: String,
     pub spec: StorageCredentialView,
     /// The connections that use this credential.
@@ -145,8 +145,8 @@ pub struct Credential {
 }
 
 impl Credential {
-    pub fn view(&self, used_by: Vec<String>) -> CredentialView {
-        CredentialView {
+    pub fn view(&self, used_by: Vec<String>) -> SecretView {
+        SecretView {
             name: self.name.clone(),
             spec: self.spec.view(),
             used_by,

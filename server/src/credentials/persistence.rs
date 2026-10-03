@@ -1,12 +1,12 @@
 //! The `credentials` table. Every spec is sealed whole; it is opened only here
-//! and never leaves the server as anything but a [`CredentialView`].
+//! and never leaves the server as anything but a [`SecretView`].
 
 use rusqlite::{Connection, OptionalExtension, params};
 
 use super::sealing::{self, SecretKey};
 use crate::database::{DbError, DbResult, constraint, json_column_opt};
 use crate::domain::{
-    Credential, CredentialView, ResourceName, StorageCredentialInput, ValidationReport,
+    Credential, ResourceName, SecretView, StorageCredentialInput, ValidationReport,
 };
 
 const COLUMNS: &str = "name, spec, created_by, created_at, updated_by, updated_at, validation";
@@ -96,7 +96,7 @@ pub fn get(conn: &Connection, key: &SecretKey, name: &str) -> DbResult<Option<Cr
 }
 
 /// Every credential, each with the connections that use it.
-pub fn list(conn: &Connection, key: &SecretKey) -> DbResult<Vec<CredentialView>> {
+pub fn list(conn: &Connection, key: &SecretKey) -> DbResult<Vec<SecretView>> {
     let rows = conn
         .prepare(&format!("SELECT {COLUMNS} FROM credentials ORDER BY name"))?
         .query_map([], row)?

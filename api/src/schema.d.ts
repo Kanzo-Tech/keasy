@@ -163,27 +163,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/connections/{name}/folders/{folder}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Whether a job to run may take `folder` in the sink: no job but a draft
-         *     holds it. It reveals only whether the folder is held, never whose job holds
-         *     it.
-         */
-        get: operations["folder_availability"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/connections/{name}/validate": {
         parameters: {
             query?: never;
@@ -195,59 +174,6 @@ export interface paths {
         put?: never;
         /** LIST a source, WRITE and DELETE under the sink, list a model's provider. */
         post: operations["validate_connection"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/credentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_credentials"];
-        put?: never;
-        post: operations["create_credential"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/credentials/{name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_credential"];
-        put?: never;
-        post?: never;
-        delete: operations["delete_credential"];
-        options?: never;
-        head?: never;
-        /**
-         * Rotation replaces the whole spec, and is committed only if every connection
-         *     using the credential still validates with the new one.
-         */
-        patch: operations["update_credential"];
-        trace?: never;
-    };
-    "/v1/credentials/{name}/validate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Probe the credential through every connection that uses it, and at `url`. */
-        post: operations["validate_credential"];
         delete?: never;
         options?: never;
         head?: never;
@@ -369,6 +295,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/secrets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_secrets"];
+        put?: never;
+        post: operations["create_secret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/secrets/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_secret"];
+        put?: never;
+        post?: never;
+        delete: operations["delete_secret"];
+        options?: never;
+        head?: never;
+        /**
+         * Rotation replaces the whole spec, and is committed only if every connection
+         *     using the credential still validates with the new one.
+         */
+        patch: operations["update_secret"];
+        trace?: never;
+    };
+    "/v1/secrets/{name}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Probe the credential through every connection that uses it, and at `url`. */
+        post: operations["validate_secret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/storage-credentials": {
         parameters: {
             query?: never;
@@ -483,7 +462,14 @@ export interface components {
             name: components["schemas"]["ResourceName"];
             target: components["schemas"]["StorageTarget"];
         };
-        CreateCredentialRequest: {
+        CreateJobRequest: {
+            folder?: null | components["schemas"]["JobFolder"];
+            name?: null | components["schemas"]["ResourceName"];
+            script: string;
+            /** @description Where the output lands: the sink connection's name. */
+            sink_connection: string;
+        };
+        CreateSecretRequest: {
             name: components["schemas"]["ResourceName"];
             /**
              * Format: uri
@@ -493,24 +479,6 @@ export interface components {
              */
             probe_url?: string | null;
             spec: components["schemas"]["StorageCredentialInput"];
-        };
-        CreateJobRequest: {
-            folder?: null | components["schemas"]["JobFolder"];
-            name?: null | components["schemas"]["ResourceName"];
-            script: string;
-            /** @description Where the output lands: the sink connection's name. */
-            sink_connection: string;
-        };
-        CredentialView: {
-            created_at: string;
-            created_by: string;
-            name: string;
-            spec: components["schemas"]["StorageCredentialView"];
-            updated_at: string;
-            updated_by: string;
-            /** @description The connections that use this credential. */
-            used_by: string[];
-            validation?: null | components["schemas"]["ValidationReport"];
         };
         /**
          * @description A job's saved dashboard. `spec` is the dashboard the web's BI kit
@@ -578,7 +546,7 @@ export interface components {
          *     are `gateway/*` bodies like any other.
          * @enum {string}
          */
-        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/ended" | "job/still-running" | "job/abandoned" | "job/invalid-destination" | "job/no-destination" | "job/folder-taken" | "credential/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "gateway/not-configured" | "gateway/unreachable" | "gateway/silent";
+        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/ended" | "job/still-running" | "job/abandoned" | "job/invalid-destination" | "job/no-destination" | "job/folder-taken" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "gateway/not-configured" | "gateway/unreachable" | "gateway/silent";
         /** @description What a refusal carries beside its words. */
         ErrorData: {
             /**
@@ -610,10 +578,6 @@ export interface components {
             files: components["schemas"]["FileEntry"][];
             /** @description More objects lie under the prefix than were listed. */
             truncated: boolean;
-        };
-        /** @description Whether a folder of the sink is free for a job to run. */
-        FolderAvailability: {
-            available: boolean;
         };
         Job: {
             completed_at?: string | null;
@@ -705,6 +669,17 @@ export interface components {
         } | {
             /** @description A job's dataset, by the job's id. */
             job: string;
+        };
+        SecretView: {
+            created_at: string;
+            created_by: string;
+            name: string;
+            spec: components["schemas"]["StorageCredentialView"];
+            updated_at: string;
+            updated_by: string;
+            /** @description The connections that use this credential. */
+            used_by: string[];
+            validation?: null | components["schemas"]["ValidationReport"];
         };
         /** @description A credential as a request states it, secrets included. */
         StorageCredentialInput: {
@@ -801,11 +776,11 @@ export interface components {
          *     included, and is stored only if every connection using the credential
          *     still validates with it.
          */
-        UpdateCredentialRequest: {
+        UpdateSecretRequest: {
             name?: null | components["schemas"]["ResourceName"];
             spec?: null | components["schemas"]["StorageCredentialInput"];
         };
-        ValidateCredentialRequest: {
+        ValidateSecretRequest: {
             /**
              * Format: uri
              * @description A storage URL to LIST besides the connections that use the credential.
@@ -1385,54 +1360,6 @@ export interface operations {
             };
         };
     };
-    folder_availability: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The sink connection's name */
-                name: string;
-                /** @description The folder under the sink */
-                folder: components["schemas"]["JobFolder"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Whether a job to run may write to the folder */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FolderAvailability"];
-                };
-            };
-            /** @description The connection is not the sink (`job/invalid-destination`), or the folder is misspelled (`data.field`) */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description Connection not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
     validate_connection: {
         parameters: {
             query?: never;
@@ -1457,302 +1384,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             /** @description No such connection */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-            /** @description The store did not answer the probe in time */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-        };
-    };
-    list_credentials: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The credentials, with the connections using each; never a secret */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CredentialView"][];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    create_credential: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateCredentialRequest"];
-            };
-        };
-        responses: {
-            /** @description Validated and stored */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CredentialView"];
-                };
-            };
-            /** @description An invalid name */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description A credential of that name exists */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description The credential did not validate */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-            /** @description The store did not answer the probe in time */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-        };
-    };
-    get_credential: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Credential name */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The credential; never a secret */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CredentialView"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description No such credential */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    delete_credential: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Credential name */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Deleted */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            /** @description Neither its creator nor the owner */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description No such credential */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description Connections still use it; `dependents` names them */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    update_credential: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Credential name */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateCredentialRequest"];
-            };
-        };
-        responses: {
-            /** @description Renamed and/or rotated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CredentialView"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            /** @description Neither its creator nor the owner */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description No such credential */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description A connection using it would not validate with the new spec; `dependents` names them */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-            /** @description The store did not answer the probe in time */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-        };
-    };
-    validate_credential: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Credential name */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ValidateCredentialRequest"];
-            };
-        };
-        responses: {
-            /** @description The probe's report, stored with the credential */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ValidationReport"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description No such credential */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2215,6 +1846,302 @@ export interface operations {
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    list_secrets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The credentials, with the connections using each; never a secret */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretView"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    create_secret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSecretRequest"];
+            };
+        };
+        responses: {
+            /** @description Validated and stored */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretView"];
+                };
+            };
+            /** @description An invalid name */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description A credential of that name exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The credential did not validate */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+            /** @description The store did not answer the probe in time */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_secret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Credential name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The credential; never a secret */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretView"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description No such credential */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    delete_secret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Credential name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Neither its creator nor the owner */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such credential */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Connections still use it; `dependents` names them */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    update_secret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Credential name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSecretRequest"];
+            };
+        };
+        responses: {
+            /** @description Renamed and/or rotated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretView"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Neither its creator nor the owner */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such credential */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description A connection using it would not validate with the new spec; `dependents` names them */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+            /** @description The store did not answer the probe in time */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    validate_secret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Credential name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateSecretRequest"];
+            };
+        };
+        responses: {
+            /** @description The probe's report, stored with the credential */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationReport"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description No such credential */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+            /** @description The store did not answer the probe in time */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     vend: {

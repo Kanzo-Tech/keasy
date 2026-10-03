@@ -85,8 +85,8 @@ pub enum ErrorCode {
     /// `field` is `folder`.
     #[serde(rename = "job/folder-taken")]
     JobFolderTaken,
-    #[serde(rename = "credential/not-found")]
-    CredentialNotFound,
+    #[serde(rename = "secret/not-found")]
+    SecretNotFound,
     #[serde(rename = "connection/not-found")]
     ConnectionNotFound,
     /// A credential or connection of that name exists already, or a second sink.
@@ -151,7 +151,7 @@ impl ErrorCode {
             Self::JobInvalidDestination => "Not a valid destination",
             Self::JobNoDestination => "No destination",
             Self::JobFolderTaken => "Another job writes to that folder",
-            Self::CredentialNotFound => "Credential not found",
+            Self::SecretNotFound => "Credential not found",
             Self::ConnectionNotFound => "Connection not found",
             Self::ResourceAlreadyExists => "It exists already",
             Self::ResourceInUse => "Still in use",

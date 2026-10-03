@@ -1,7 +1,7 @@
 //! The credentials, connections and jobs an instance declares, ensured at boot.
 //!
 //! `KEASY_BOOTSTRAP_FILE` names a JSON file in the API's own request format:
-//! `{"credentials": [CreateCredentialRequest…], "connections":
+//! `{"credentials": [CreateSecretRequest…], "connections":
 //! [CreateConnectionRequest…], "jobs": [DeclaredJob…]}`. Each credential and
 //! connection takes the path the API does — parse, probe, seal — so the
 //! declaration and the API cannot drift. Idempotent by name and non-fatal: an
@@ -17,7 +17,7 @@ use tracing::{error, info};
 use crate::database::Database;
 use crate::domain::{Job, JobFolder};
 use crate::routes::connections::CreateConnectionRequest;
-use crate::routes::credentials::CreateCredentialRequest;
+use crate::routes::secrets::CreateSecretRequest;
 
 /// Who a declared entry was created by: nobody who signs in, so only the
 /// owner may change it.
@@ -47,7 +47,7 @@ struct DeclaredJob {
 #[derive(Deserialize)]
 struct Declared {
     #[serde(default)]
-    credentials: Vec<CreateCredentialRequest>,
+    credentials: Vec<CreateSecretRequest>,
     #[serde(default)]
     connections: Vec<CreateConnectionRequest>,
     #[serde(default)]

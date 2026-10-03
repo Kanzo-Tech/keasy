@@ -6,7 +6,7 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
@@ -57,12 +57,6 @@ impl DraftEdits {
         }
         Ok(())
     }
-}
-
-/// Whether a folder of the sink is free for a job to run.
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-pub struct FolderAvailability {
-    pub available: bool,
 }
 
 /// The folder a request names, parsed.
@@ -240,38 +234,6 @@ async fn draft(state: &AppState, member: &Member, id: &str) -> Result<Job, Refus
     Ok(job)
 }
 
-#[utoipa::path(get, path = "/v1/connections/{name}/folders/{folder}", tag = "Jobs",
-    params(
-        ("name" = String, Path, description = "The sink connection's name"),
-        ("folder" = JobFolder, Path, description = "The folder under the sink"),
-    ),
-    responses(
-        (status = 200, description = "Whether a job to run may write to the folder", body = FolderAvailability),
-        (status = 400, description = "The connection is not the sink (`job/invalid-destination`), or the folder is misspelled (`data.field`)", body = ErrorBody),
-        (status = 404, description = "Connection not found", body = ErrorBody),
-    )
-)]
-/// Whether a job to run may take `folder` in the sink: no job but a draft
-/// holds it. It reveals only whether the folder is held, never whose job holds
-/// it.
-pub async fn folder_availability(
-    _: Member,
-    State(state): State<AppState>,
-    Path((name, folder_name)): Path<(String, String)>,
-) -> Result<impl IntoResponse, Refusal> {
-    let connection = crate::connections::named(&state.db, &name).await?;
-    if !connection.target.is_sink() {
-        return Err(Refusal::new(
-            StatusCode::BAD_REQUEST,
-            ErrorCode::JobInvalidDestination,
-            "Only the workspace sink holds job folders",
-        ));
-    }
-    let folder = JobFolder::parse(&folder_name).map_err(|e| Refusal::invalid_field("folder", e))?;
-    let taken = persistence::folder_taken(&*state.db.read().await, &name, folder.as_ref())?;
-    Ok(Json(FolderAvailability { available: !taken }))
-}
-
 #[utoipa::path(post, path = "/v1/jobs/{id}/status", tag = "Jobs",
     params(("id" = String, Path, description = "Job ID")),
     request_body = JobStatusReport,
@@ -384,5 +346,4 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(get_job, edit_draft, delete_job))
         .routes(routes!(submit_job))
         .routes(routes!(report_status))
-        .routes(routes!(folder_availability))
 }

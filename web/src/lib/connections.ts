@@ -4,7 +4,7 @@ import type { Schemas } from "@/lib/api/client";
 import { schemaOf } from "@/lib/api/spec";
 
 export type Connection = Schemas["ConnectionView"];
-export type Credential = Schemas["CredentialView"];
+export type Credential = Schemas["SecretView"];
 /** The title the contract gives a credential kind (`Amazon S3 / S3-compatible`). */
 export function kindTitle(kind: string): string {
   const schema = schemaOf("StorageCredentialInput");

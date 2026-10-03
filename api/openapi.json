@@ -621,82 +621,6 @@
         }
       }
     },
-    "/v1/connections/{name}/folders/{folder}": {
-      "get": {
-        "tags": [
-          "Jobs"
-        ],
-        "summary": "Whether a job to run may take `folder` in the sink: no job but a draft\nholds it. It reveals only whether the folder is held, never whose job holds\nit.",
-        "operationId": "folder_availability",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "The sink connection's name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "folder",
-            "in": "path",
-            "description": "The folder under the sink",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/JobFolder"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Whether a job to run may write to the folder",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FolderAvailability"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The connection is not the sink (`job/invalid-destination`), or the folder is misspelled (`data.field`)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Connection not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
     "/v1/connections/{name}/validate": {
       "post": {
         "tags": [
@@ -734,416 +658,6 @@
           },
           "404": {
             "description": "No such connection",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
-          "504": {
-            "description": "The store did not answer the probe in time",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/credentials": {
-      "get": {
-        "tags": [
-          "Credentials"
-        ],
-        "operationId": "list_credentials",
-        "responses": {
-          "200": {
-            "description": "The credentials, with the connections using each; never a secret",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CredentialView"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Credentials"
-        ],
-        "operationId": "create_credential",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateCredentialRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Validated and stored",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CredentialView"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An invalid name",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "409": {
-            "description": "A credential of that name exists",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The credential did not validate",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
-          "504": {
-            "description": "The store did not answer the probe in time",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/credentials/{name}": {
-      "get": {
-        "tags": [
-          "Credentials"
-        ],
-        "operationId": "get_credential",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Credential name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The credential; never a secret",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CredentialView"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "No such credential",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Credentials"
-        ],
-        "operationId": "delete_credential",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Credential name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Deleted"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "description": "Neither its creator nor the owner",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No such credential",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Connections still use it; `dependents` names them",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Credentials"
-        ],
-        "summary": "Rotation replaces the whole spec, and is committed only if every connection\nusing the credential still validates with the new one.",
-        "operationId": "update_credential",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Credential name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateCredentialRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Renamed and/or rotated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CredentialView"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "description": "Neither its creator nor the owner",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No such credential",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "A connection using it would not validate with the new spec; `dependents` names them",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
-          "504": {
-            "description": "The store did not answer the probe in time",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/credentials/{name}/validate": {
-      "post": {
-        "tags": [
-          "Credentials"
-        ],
-        "summary": "Probe the credential through every connection that uses it, and at `url`.",
-        "operationId": "validate_credential",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Credential name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ValidateCredentialRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "The probe's report, stored with the credential",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidationReport"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "No such credential",
             "content": {
               "application/json": {
                 "schema": {
@@ -1823,6 +1337,416 @@
         }
       }
     },
+    "/v1/secrets": {
+      "get": {
+        "tags": [
+          "Secrets"
+        ],
+        "operationId": "list_secrets",
+        "responses": {
+          "200": {
+            "description": "The credentials, with the connections using each; never a secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SecretView"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Secrets"
+        ],
+        "operationId": "create_secret",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSecretRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Validated and stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An invalid name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "A credential of that name exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The credential did not validate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          },
+          "504": {
+            "description": "The store did not answer the probe in time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/secrets/{name}": {
+      "get": {
+        "tags": [
+          "Secrets"
+        ],
+        "operationId": "get_secret",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Credential name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The credential; never a secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretView"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Secrets"
+        ],
+        "operationId": "delete_secret",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Credential name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Neither its creator nor the owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connections still use it; `dependents` names them",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Secrets"
+        ],
+        "summary": "Rotation replaces the whole spec, and is committed only if every connection\nusing the credential still validates with the new one.",
+        "operationId": "update_secret",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Credential name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSecretRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Renamed and/or rotated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretView"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Neither its creator nor the owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A connection using it would not validate with the new spec; `dependents` names them",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          },
+          "504": {
+            "description": "The store did not answer the probe in time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/secrets/{name}/validate": {
+      "post": {
+        "tags": [
+          "Secrets"
+        ],
+        "summary": "Probe the credential through every connection that uses it, and at `url`.",
+        "operationId": "validate_secret",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Credential name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateSecretRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The probe's report, stored with the credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReport"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          },
+          "504": {
+            "description": "The store did not answer the probe in time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/storage-credentials": {
       "post": {
         "tags": [
@@ -2145,29 +2069,6 @@
           }
         }
       },
-      "CreateCredentialRequest": {
-        "type": "object",
-        "required": [
-          "name",
-          "spec"
-        ],
-        "properties": {
-          "name": {
-            "$ref": "#/components/schemas/ResourceName"
-          },
-          "probe_url": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "uri",
-            "description": "A storage URL to LIST before the credential is stored. A credential has\nno location of its own, so without one it is only checked to build a\nclient."
-          },
-          "spec": {
-            "$ref": "#/components/schemas/StorageCredentialInput"
-          }
-        }
-      },
       "CreateJobRequest": {
         "type": "object",
         "required": [
@@ -2205,52 +2106,26 @@
           }
         }
       },
-      "CredentialView": {
+      "CreateSecretRequest": {
         "type": "object",
         "required": [
           "name",
-          "spec",
-          "used_by",
-          "created_by",
-          "created_at",
-          "updated_by",
-          "updated_at"
+          "spec"
         ],
         "properties": {
-          "created_at": {
-            "type": "string"
-          },
-          "created_by": {
-            "type": "string"
-          },
           "name": {
-            "type": "string"
+            "$ref": "#/components/schemas/ResourceName"
+          },
+          "probe_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "A storage URL to LIST before the credential is stored. A credential has\nno location of its own, so without one it is only checked to build a\nclient."
           },
           "spec": {
-            "$ref": "#/components/schemas/StorageCredentialView"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "updated_by": {
-            "type": "string"
-          },
-          "used_by": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The connections that use this credential."
-          },
-          "validation": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ValidationReport"
-              }
-            ]
+            "$ref": "#/components/schemas/StorageCredentialInput"
           }
         }
       },
@@ -2399,7 +2274,7 @@
           "job/invalid-destination",
           "job/no-destination",
           "job/folder-taken",
-          "credential/not-found",
+          "secret/not-found",
           "connection/not-found",
           "resource/already-exists",
           "resource/in-use",
@@ -2482,18 +2357,6 @@
           "truncated": {
             "type": "boolean",
             "description": "More objects lie under the prefix than were listed."
-          }
-        }
-      },
-      "FolderAvailability": {
-        "type": "object",
-        "description": "Whether a folder of the sink is free for a job to run.",
-        "required": [
-          "available"
-        ],
-        "properties": {
-          "available": {
-            "type": "boolean"
           }
         }
       },
@@ -2693,6 +2556,55 @@
           }
         ],
         "description": "What a credential is asked for: fossil's `Scope`, verbatim."
+      },
+      "SecretView": {
+        "type": "object",
+        "required": [
+          "name",
+          "spec",
+          "used_by",
+          "created_by",
+          "created_at",
+          "updated_by",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/StorageCredentialView"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": "string"
+          },
+          "used_by": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The connections that use this credential."
+          },
+          "validation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ValidationReport"
+              }
+            ]
+          }
+        }
       },
       "StorageCredentialInput": {
         "oneOf": [
@@ -3003,7 +2915,7 @@
           }
         }
       },
-      "UpdateCredentialRequest": {
+      "UpdateSecretRequest": {
         "type": "object",
         "description": "A rename, a rotation or both. `spec` replaces the whole spec, secrets\nincluded, and is stored only if every connection using the credential\nstill validates with it.",
         "properties": {
@@ -3029,7 +2941,7 @@
           }
         }
       },
-      "ValidateCredentialRequest": {
+      "ValidateSecretRequest": {
         "type": "object",
         "properties": {
           "url": {

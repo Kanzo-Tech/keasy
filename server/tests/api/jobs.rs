@@ -528,57 +528,6 @@ async fn submitting_onto_a_taken_folder_leaves_the_draft() {
     assert!(read.get("folder").is_none());
 }
 
-/// Whether a folder of the sink is free: held only by a job that is not a
-/// draft, and asked only of the sink.
-#[tokio::test]
-async fn a_folder_is_available_until_a_job_to_run_holds_it() {
-    let app = spawn_app().await;
-    let member = app.token(&["member"]);
-    app.credential("key", DEAD, "u-1").await;
-    app.connection("source", "key", Direction::Source, "u-1")
-        .await;
-    app.connection("sink", "key", Direction::Sink, "u-1").await;
-    let ask = |path: &'static str| app.send(Method::GET, path, &member, json!(null));
-    let create = |body: serde_json::Value| app.send(Method::POST, "/v1/jobs", &member, body);
-
-    let (_, draft) =
-        create(json!({ "script": "x", "sink_connection": "sink", "folder": "people" })).await;
-    assert_eq!(
-        ask("/v1/connections/sink/folders/people").await,
-        (StatusCode::OK, json!({ "available": true }))
-    );
-    let submit = format!("/v1/jobs/{}/submit", draft["id"].as_str().unwrap());
-    app.send(Method::POST, &submit, &member, json!({})).await;
-    assert_eq!(
-        ask("/v1/connections/sink/folders/people").await,
-        (StatusCode::OK, json!({ "available": false }))
-    );
-
-    let (status, body) = ask("/v1/connections/sink/folders/Not-A-Slug").await;
-    assert_eq!(
-        (
-            status,
-            body["code"].as_str(),
-            body["data"]["field"].as_str()
-        ),
-        (
-            StatusCode::BAD_REQUEST,
-            Some("request/invalid"),
-            Some("folder")
-        )
-    );
-    let (status, body) = ask("/v1/connections/source/folders/people").await;
-    assert_eq!(
-        (status, body["code"].as_str()),
-        (StatusCode::BAD_REQUEST, Some("job/invalid-destination"))
-    );
-    let (status, body) = ask("/v1/connections/gone/folders/people").await;
-    assert_eq!(
-        (status, body["code"].as_str()),
-        (StatusCode::NOT_FOUND, Some("connection/not-found"))
-    );
-}
-
 /// A run moves forward only: from running it reports running again, or one of
 /// its ends, and every end is dated. Never back to a draft or to pending.
 #[tokio::test]

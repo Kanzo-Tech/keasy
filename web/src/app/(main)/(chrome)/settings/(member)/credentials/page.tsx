@@ -58,17 +58,17 @@ export default function CredentialsPage() {
 
 function Credentials() {
   const router = useRouter();
-  const credentials = settled($api.useSuspenseQuery("get", "/v1/credentials"));
+  const credentials = settled($api.useSuspenseQuery("get", "/v1/secrets"));
 
-  const refresh = () => invalidate("/v1/credentials", "/v1/connections");
-  const remove = $api.useMutation("delete", "/v1/credentials/{name}", {
+  const refresh = () => invalidate("/v1/secrets", "/v1/connections");
+  const remove = $api.useMutation("delete", "/v1/secrets/{name}", {
     onSuccess: () => {
       toast.create({ title: "Credential deleted", type: "success" });
       return refresh();
     },
     onError: (err) => toastError(err, "Failed to delete credential"),
   });
-  const validate = $api.useMutation("post", "/v1/credentials/{name}/validate", {
+  const validate = $api.useMutation("post", "/v1/secrets/{name}/validate", {
     onSuccess: (report) => {
       const failed = report.results.some((c) => c.result === "fail");
       toast.create({ title: failed ? "Validation failed" : "Validation passed", type: failed ? "error" : "success" });

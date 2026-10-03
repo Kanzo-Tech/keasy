@@ -47,7 +47,6 @@ import { type EditorApi, StudioEditor } from "./studio-editor";
 import { StudioOutput, type OutputValues } from "./studio-output";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { useJobEditorStore } from "./job-editor-store";
-import { useFolderAvailability } from "./use-folder-availability";
 
 const PANELS = [
   { id: "connections", label: "Connections", icon: Database },
@@ -182,11 +181,12 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
   const refusedOn = (field: string, value: string) =>
     refused?.field === field && refused.value === value ? refused.message : null;
   const nameError = nameProblem(store.name) ?? refusedOn("name", name);
+  // A folder another job holds is said by Create's own refusal (409, `data.field` "folder"): there
+  // is no asking ahead, which would only race the answer that counts.
   const folderRefused = refusedOn("folder", folder);
-  const availability = useFolderAvailability(destination, folder, folderValid);
 
   const errors = diagnostics.filter((d) => d.severity === 1).length;
-  const outputIncomplete = !destination || !folderValid || !!folderRefused || availability === "taken";
+  const outputIncomplete = !destination || !folderValid || !!folderRefused;
 
   const openPanel = (id: PanelId) => {
     setPanel(id);
@@ -208,14 +208,12 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
           ? { reason: "Pick where the graph lands, under Output.", show: () => openPanel("output") }
           : !folderValid
             ? { reason: "Fix the output folder, under Output.", show: () => openPanel("output") }
-            : folderRefused || availability === "taken"
+            : folderRefused
               ? {
-                  reason: "Another job writes to this folder. Pick another under Output.",
+                  reason: `Fix the output folder, under Output: ${folderRefused}`,
                   show: () => openPanel("output"),
                 }
-              : availability === "checking"
-                ? { reason: "Checking the output folder…" }
-                : null;
+              : null;
 
   // ── Saving ──────────────────────────────────────────────────────────────
 
@@ -470,7 +468,6 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
                   ) : (
                     <StudioOutput
                       connections={connections}
-                      availability={availability}
                       folderRefused={folderRefused}
                       onChange={onOutputChange}
                       values={output}

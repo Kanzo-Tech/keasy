@@ -55,7 +55,7 @@ export default function CatalogStoragePage() {
 
 function CatalogStorage() {
   const credentials = settled(
-    $api.useSuspenseQuery("get", "/v1/credentials"),
+    $api.useSuspenseQuery("get", "/v1/secrets"),
   );
   const connections = settled(
     $api.useSuspenseQuery("get", "/v1/connections"),
@@ -98,7 +98,7 @@ function Form({ credentials, sink }: { credentials: Credential[]; sink?: Connect
 
   const onSuccess = async () => {
     toast.create({ title: "Catalog storage validated and saved", type: "success" });
-    await invalidate("/v1/connections", "/v1/credentials");
+    await invalidate("/v1/connections", "/v1/secrets");
   };
   const onError = (err: unknown) => toastError(err, "Catalog storage was not saved");
   const create = $api.useMutation("post", "/v1/connections", { onSuccess, onError });

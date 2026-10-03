@@ -17,7 +17,7 @@ async fn what_is_in_use_is_not_deleted() {
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
     let (status, body) = app
-        .send(Method::DELETE, "/v1/credentials/key", &member, json!(null))
+        .send(Method::DELETE, "/v1/secrets/key", &member, json!(null))
         .await;
     assert_eq!(status, StatusCode::CONFLICT);
     assert_eq!(body["code"], "resource/in-use");

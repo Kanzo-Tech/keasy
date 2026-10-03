@@ -13,7 +13,7 @@ async fn no_response_carries_a_secret() {
     let (status, created) = app
         .send(
             Method::POST,
-            "/v1/credentials",
+            "/v1/secrets",
             &member,
             json!({ "name": "minio", "spec": {
                 "kind": "s3", "access_key_id": "AK", "secret_access_key": "top-secret"
@@ -24,9 +24,9 @@ async fn no_response_carries_a_secret() {
     assert_eq!(created["spec"]["region"], "us-east-1");
     for (_, body) in [
         (status, created),
-        app.send(Method::GET, "/v1/credentials", &member, json!(null))
+        app.send(Method::GET, "/v1/secrets", &member, json!(null))
             .await,
-        app.send(Method::GET, "/v1/credentials/minio", &member, json!(null))
+        app.send(Method::GET, "/v1/secrets/minio", &member, json!(null))
             .await,
     ] {
         assert!(!body.to_string().contains("top-secret"), "{body}");
@@ -34,7 +34,7 @@ async fn no_response_carries_a_secret() {
     }
 
     let spec = serde_json::to_value(keasy_server::startup::openapi()).unwrap();
-    for view in ["StorageCredentialView", "CredentialView", "ConnectionView"] {
+    for view in ["StorageCredentialView", "SecretView", "ConnectionView"] {
         let schema = spec["components"]["schemas"][view].to_string();
         for secret in [
             "writeOnly",
@@ -68,14 +68,14 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
 
     let rename = json!({ "name": "renamed" });
     let refused = app
-        .send(Method::PATCH, "/v1/credentials/key", &other, rename.clone())
+        .send(Method::PATCH, "/v1/secrets/key", &other, rename.clone())
         .await;
     assert_eq!(
         (refused.0, refused.1["code"].clone()),
         (StatusCode::FORBIDDEN, json!("rbac/forbidden"))
     );
     assert_eq!(
-        app.send(Method::DELETE, "/v1/credentials/spare", &other, json!(null))
+        app.send(Method::DELETE, "/v1/secrets/spare", &other, json!(null))
             .await
             .0,
         StatusCode::FORBIDDEN
@@ -88,7 +88,7 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
     );
 
     let (status, renamed) = app
-        .send(Method::PATCH, "/v1/credentials/key", &creator, rename)
+        .send(Method::PATCH, "/v1/secrets/key", &creator, rename)
         .await;
     assert_eq!(status, StatusCode::OK, "{renamed}");
     assert_eq!(
@@ -97,7 +97,7 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
         "the rename cascades"
     );
     assert_eq!(
-        app.send(Method::DELETE, "/v1/credentials/spare", &owner, json!(null))
+        app.send(Method::DELETE, "/v1/secrets/spare", &owner, json!(null))
             .await
             .0,
         StatusCode::NO_CONTENT
@@ -158,7 +158,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
     let (status, body) = app
         .send(
             Method::POST,
-            "/v1/credentials",
+            "/v1/secrets",
             &member,
             json!({ "name": "minio", "spec": spec(DEAD, "s"), "probe_url": "s3://b/" }),
         )
@@ -172,7 +172,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
     let (status, body) = app
         .send(
             Method::POST,
-            "/v1/credentials",
+            "/v1/secrets",
             &member,
             json!({ "name": "minio", "spec": spec(&s3, "first"), "probe_url": "s3://b/" }),
         )
@@ -217,7 +217,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
     let (status, body) = app
         .send(
             Method::PATCH,
-            "/v1/credentials/minio",
+            "/v1/secrets/minio",
             &member,
             json!({ "spec": spec(DEAD, "second") }),
         )
@@ -236,7 +236,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
     let (status, body) = app
         .send(
             Method::PATCH,
-            "/v1/credentials/minio",
+            "/v1/secrets/minio",
             &member,
             json!({ "spec": spec(&s3, "second") }),
         )

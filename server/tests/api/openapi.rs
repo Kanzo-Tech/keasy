@@ -50,28 +50,27 @@ fn the_spellings_are_published_with_their_rule() {
     }
 }
 
-/// The roles the spec publishes are the realm's: Terraform keeps its copy of
-/// the names, and this holds the two together.
+/// The roles the spec publishes are the ones keasy registers on its client
+/// (`infra/auth/main.tf`), in the order their composites nest.
 #[test]
-fn the_published_roles_are_the_realms() {
+fn the_published_roles_are_the_registered_ones() {
     let terraform = std::fs::read_to_string(
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../infra/terraform/realm/tenants_keycloak.tf"),
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../infra/auth/main.tf"),
     )
     .unwrap();
-    let mut realm = Vec::new();
-    let mut in_role = false;
-    for line in terraform.lines().map(str::trim) {
-        if line.starts_with("resource \"keycloak_role\"") {
-            in_role = true;
-        } else if in_role && line.starts_with("name") {
-            let name = line.split('"').nth(1).expect("a quoted role name");
-            realm.push(serde_json::Value::from(name));
-            in_role = false;
-        }
-    }
-    assert_eq!(schema("Role")["enum"], serde_json::Value::from(realm));
+    let block = terraform
+        .split("roles = {")
+        .nth(1)
+        .and_then(|rest| rest.split("\n  }").next())
+        .expect("a roles block");
+    let registered: Vec<_> = block
+        .lines()
+        .filter_map(|l| l.trim().split_once(" = {").map(|(name, _)| name.trim()))
+        .map(serde_json::Value::from)
+        .collect();
+    assert_eq!(schema("Role")["enum"], serde_json::Value::from(registered));
     assert_eq!(
         schema("Role")["enum"],
-        serde_json::json!(["owner", "member"])
+        serde_json::json!(["reader", "editor", "admin"])
     );
 }

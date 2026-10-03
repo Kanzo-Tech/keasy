@@ -56,7 +56,7 @@ async fn no_response_carries_a_secret() {
 /// A credential or connection is its creator's or the owner's to change; the
 /// sink is the owner's alone, and sources are the members'.
 #[tokio::test]
-async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_the_sink() {
+async fn only_the_creator_or_an_admin_changes_a_secret_and_only_an_admin_the_sink() {
     let app = spawn_app().await;
     let creator = app.token_for("u-1", EDITOR);
     let other = app.token_for("u-2", EDITOR);
@@ -136,11 +136,13 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
             .0,
         StatusCode::FORBIDDEN
     );
+    // An admin is an editor too: a source of theirs is refused only by the
+    // probe (the store here is dead), never by role.
     assert_eq!(
         app.send(Method::POST, "/v1/connections", &owner, source)
             .await
             .0,
-        StatusCode::FORBIDDEN
+        StatusCode::UNPROCESSABLE_ENTITY
     );
     assert_eq!(
         app.send(

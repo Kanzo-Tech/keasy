@@ -1,7 +1,7 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{DEAD, EDITOR, spawn_app};
+use crate::helpers::{ADMIN, DEAD, EDITOR, READER, spawn_app};
 use keasy_server::domain::Direction;
 
 /// A job needs a destination, and it must be the sink.
@@ -32,13 +32,16 @@ async fn a_job_goes_to_the_sink_or_is_refused() {
     assert_eq!(job["sink_connection"], json!("sink"));
 }
 
-/// A job is its creator's: another member neither lists, reads, edits, runs,
-/// signs nor deletes it — to them it does not exist.
+/// The work in a workspace is shared: everyone lists and reads a job. Its
+/// creator or an admin changes, runs and deletes it; another editor is refused
+/// with `rbac/forbidden` — the job exists for them, it is not theirs to change.
 #[tokio::test]
-async fn a_job_is_its_creators_alone() {
+async fn a_job_is_read_by_all_and_changed_by_its_creator_or_an_admin() {
     let app = spawn_app().await;
     let mine = app.token_for("u-1", EDITOR);
     let theirs = app.token_for("u-2", EDITOR);
+    let reader = app.token_for("u-3", READER);
+    let admin = app.token_for("u-9", ADMIN);
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
@@ -50,18 +53,27 @@ async fn a_job_is_its_creators_alone() {
             json!({ "script": "x", "sink_connection": "sink" }),
         )
         .await;
+    assert_eq!(job["can_modify"], true);
     let id = job["id"].as_str().unwrap().to_string();
     let path = format!("/v1/jobs/{id}");
 
-    let (_, listed) = app
-        .send(Method::GET, "/v1/jobs", &theirs, json!(null))
-        .await;
-    assert_eq!(listed, json!([]));
-    let (_, listed) = app.send(Method::GET, "/v1/jobs", &mine, json!(null)).await;
-    assert_eq!(listed.as_array().unwrap().len(), 1);
+    for (who, token, can_modify) in [
+        ("another editor", &theirs, false),
+        ("a reader", &reader, false),
+        ("an admin", &admin, true),
+    ] {
+        let (_, listed) = app.send(Method::GET, "/v1/jobs", token, json!(null)).await;
+        assert_eq!(listed.as_array().unwrap().len(), 1, "{who} lists it");
+        assert_eq!(listed[0]["can_modify"], can_modify, "{who}");
+        let (status, read) = app.send(Method::GET, &path, token, json!(null)).await;
+        assert_eq!(
+            (status, read["can_modify"].as_bool()),
+            (StatusCode::OK, Some(can_modify)),
+            "{who}"
+        );
+    }
 
     for (verb, route, body) in [
-        (Method::GET, path.clone(), json!(null)),
         (Method::PATCH, path.clone(), json!({ "name": "stolen" })),
         (
             Method::POST,
@@ -74,19 +86,26 @@ async fn a_job_is_its_creators_alone() {
             json!({ "status": "running" }),
         ),
         (Method::DELETE, path.clone(), json!(null)),
-        (
-            Method::POST,
-            "/v1/storage-credentials".into(),
-            json!({ "scope": { "job": id }, "access": "read" }),
-        ),
     ] {
-        let (status, _) = app.send(verb.clone(), &route, &theirs, body).await;
-        assert_eq!(status, StatusCode::NOT_FOUND, "{verb} {route}");
+        let (status, body) = app.send(verb.clone(), &route, &theirs, body).await;
+        assert_eq!(
+            (status, body["code"].as_str()),
+            (StatusCode::FORBIDDEN, Some("rbac/forbidden")),
+            "{verb} {route}"
+        );
     }
 
-    let (status, job) = app.send(Method::GET, &path, &mine, json!(null)).await;
-    assert_eq!(status, StatusCode::OK);
-    assert_eq!(job["id"], json!(id));
+    let (status, edited) = app
+        .send(Method::PATCH, &path, &admin, json!({ "name": "renamed" }))
+        .await;
+    assert_eq!(
+        (status, edited["name"].as_str()),
+        (StatusCode::OK, Some("renamed"))
+    );
+    assert_eq!(
+        edited["created_by"], "u-1",
+        "an admin's edit keeps who made it"
+    );
 }
 
 /// A failed run keeps the problem the browser reported, whole: the web
@@ -272,12 +291,20 @@ async fn a_job_keeps_one_dashboard() {
     let (_, read) = app.send(Method::GET, &path, &mine, json!(null)).await;
     assert_eq!(read["spec"], spec);
 
-    let (status, _) = app.send(Method::GET, &path, &theirs, json!(null)).await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
-    let (status, _) = app
+    let (status, read) = app.send(Method::GET, &path, &theirs, json!(null)).await;
+    assert_eq!(
+        (status, &read["spec"]),
+        (StatusCode::OK, &spec),
+        "everyone reads it"
+    );
+    let (status, body) = app
         .send(Method::PUT, &path, &theirs, json!({ "spec": {} }))
         .await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(
+        (status, body["code"].as_str()),
+        (StatusCode::FORBIDDEN, Some("rbac/forbidden")),
+        "only who may change the job saves its dashboard"
+    );
 }
 
 /// A job's name is spelled as a connection's: a misspelled one is refused on
@@ -413,7 +440,7 @@ async fn submitting_a_draft_makes_it_the_job_in_place() {
     );
     let theirs = app.token_for("u-2", EDITOR);
     let (status, _) = app.send(Method::POST, &submit, &theirs, json!({})).await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(status, StatusCode::FORBIDDEN);
 }
 
 /// A draft submitted onto a folder another job holds is refused on the

@@ -9,7 +9,7 @@ use keasy_server::domain::Direction;
 /// with a read credential for its job — asked of the store here, which is
 /// dead, so the guard's yes is a 502 and not a 403 or 409.
 #[tokio::test]
-async fn a_completed_job_is_a_dataset_the_owner_opens() {
+async fn a_completed_job_is_a_dataset_anyone_opens() {
     let app = spawn_app().await;
     let member = app.token_for("u-1", EDITOR);
     let owner = app.token_for("u-9", ADMIN);
@@ -57,9 +57,10 @@ async fn a_completed_job_is_a_dataset_the_owner_opens() {
         app.vend(&owner, read(&running), "read").await,
         (StatusCode::CONFLICT, Some("job/not-completed".to_owned()))
     );
+    // A completed job's dataset is read by anyone in the workspace.
     let theirs = app.token_for("u-2", EDITOR);
     assert_eq!(
-        app.vend(&theirs, read(&done), "read").await.0,
-        StatusCode::NOT_FOUND
+        app.vend(&theirs, read(&done), "read").await,
+        (StatusCode::BAD_GATEWAY, Some("store/refused".to_owned()))
     );
 }

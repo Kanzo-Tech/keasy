@@ -83,18 +83,6 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
           "502": {
             "description": "The AI gateway could not be reached",
             "content": {
@@ -104,9 +92,6 @@
                 }
               }
             }
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           },
           "504": {
             "description": "The AI gateway did not begin its answer in time",
@@ -118,44 +103,14 @@
               }
             }
           }
-        }
-      }
-    },
-    "/v1/auth/workspaces": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "summary": "GET /v1/auth/workspaces",
-        "description": "The one thing the web cannot answer from its own session: the switcher's\nlist. `Session` carries who you are and what you may do, and the workspaces\nclaim is neither — so it is read here, off the token this server verified,\nrather than copied into a shape the browser would have to be trusted about.\n\nIt takes no role extractor: someone authenticated but\nholding no role here still needs to be told where they *do* belong.",
-        "operationId": "list_workspaces",
-        "responses": {
-          "200": {
-            "description": "List of accessible workspaces",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkspacesResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
+        },
+        "security": [
+          {
+            "bearer": [
+              "reader"
+            ]
           }
-        }
+        ]
       }
     },
     "/v1/branding": {
@@ -200,23 +155,15 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "reader"
+            ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -254,11 +201,8 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "403": {
-            "description": "A sink by a member, or a source by the owner",
+            "description": "A sink by anyone but an admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -287,15 +231,6 @@
               }
             }
           },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
           "504": {
             "description": "The store did not answer the probe in time",
             "content": {
@@ -306,7 +241,14 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       }
     },
     "/v1/connections/{name}": {
@@ -337,12 +279,6 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
           "404": {
             "description": "No such connection",
             "content": {
@@ -352,17 +288,15 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "reader"
+            ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -383,9 +317,6 @@
         "responses": {
           "204": {
             "description": "Deleted"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "description": "Not the caller's to delete",
@@ -416,17 +347,15 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       },
       "patch": {
         "tags": [
@@ -465,9 +394,6 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "403": {
             "description": "Not the caller's to change",
             "content": {
@@ -498,15 +424,6 @@
               }
             }
           },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
           "504": {
             "description": "The store did not answer the probe in time",
             "content": {
@@ -517,7 +434,14 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       }
     },
     "/v1/connections/{name}/files": {
@@ -577,12 +501,6 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
           "404": {
             "description": "No such connection",
             "content": {
@@ -592,12 +510,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
           },
           "502": {
             "description": "The store refused the listing",
@@ -609,9 +521,6 @@
               }
             }
           },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
           "504": {
             "description": "The store did not answer in time",
             "content": {
@@ -622,7 +531,14 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "reader"
+            ]
+          }
+        ]
       }
     },
     "/v1/connections/{name}/validate": {
@@ -654,9 +570,6 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "403": {
             "description": "Not the caller's to change",
             "content": {
@@ -677,15 +590,6 @@
               }
             }
           },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
           "504": {
             "description": "The store did not answer the probe in time",
             "content": {
@@ -696,7 +600,14 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       }
     },
     "/v1/datasets": {
@@ -704,7 +615,7 @@
         "tags": [
           "Datasets"
         ],
-        "summary": "Every dataset the workspace produced: the owner's index over the whole\nworkspace. The owner opens one by reading its job's corpus.",
+        "summary": "Every dataset the workspace produced, for anyone in it: each is opened by\nreading its job's corpus.",
         "operationId": "list_datasets",
         "responses": {
           "200": {
@@ -719,23 +630,15 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "reader"
+            ]
+          }
+        ]
       }
     },
     "/v1/jobs": {
@@ -746,7 +649,7 @@
         "operationId": "list_jobs",
         "responses": {
           "200": {
-            "description": "The caller's jobs",
+            "description": "Every job in the workspace",
             "content": {
               "application/json": {
                 "schema": {
@@ -757,23 +660,15 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "reader"
+            ]
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -811,23 +706,15 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       }
     },
     "/v1/jobs/{id}": {
@@ -858,12 +745,6 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
           "404": {
             "description": "Job not found",
             "content": {
@@ -873,17 +754,15 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "reader"
+            ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -905,12 +784,6 @@
           "204": {
             "description": "Job deleted"
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
           "404": {
             "description": "Job not found",
             "content": {
@@ -930,17 +803,15 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       },
       "patch": {
         "tags": [
@@ -989,12 +860,6 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
           "404": {
             "description": "Job not found",
             "content": {
@@ -1014,17 +879,15 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       }
     },
     "/v1/jobs/{id}/dashboard": {
@@ -1062,12 +925,6 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
           "404": {
             "description": "Job not found",
             "content": {
@@ -1077,22 +934,21 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "reader"
+            ]
+          }
+        ]
       },
       "put": {
         "tags": [
           "Jobs"
         ],
+        "summary": "The dashboard is the job's: who may change the job may save it.",
         "operationId": "put_dashboard",
         "parameters": [
           {
@@ -1136,12 +992,6 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
           "404": {
             "description": "Job not found",
             "content": {
@@ -1161,17 +1011,15 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       }
     },
     "/v1/jobs/{id}/status": {
@@ -1216,12 +1064,6 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
           "404": {
             "description": "Job not found",
             "content": {
@@ -1241,17 +1083,15 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       }
     },
     "/v1/jobs/{id}/submit": {
@@ -1303,12 +1143,6 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
           "404": {
             "description": "Job not found",
             "content": {
@@ -1328,17 +1162,15 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       }
     },
     "/v1/secrets": {
@@ -1360,29 +1192,21 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       },
       "post": {
         "tags": [
           "Secrets"
         ],
-        "summary": "Any role may create one: a member for their sources, the owner for the\nsink — and either may change or delete what they made.",
+        "summary": "An editor creates one, for a source or, as an admin, for the sink; any editor\nmay use it in a connection, and its creator or an admin changes it.",
         "operationId": "create_secret",
         "requestBody": {
           "content": {
@@ -1415,12 +1239,6 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
           "409": {
             "description": "A secret of that name exists",
             "content": {
@@ -1441,15 +1259,6 @@
               }
             }
           },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
           "504": {
             "description": "The store did not answer the probe in time",
             "content": {
@@ -1460,7 +1269,14 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       }
     },
     "/v1/secrets/{name}": {
@@ -1491,12 +1307,6 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
           "404": {
             "description": "No such secret",
             "content": {
@@ -1506,17 +1316,15 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -1538,11 +1346,8 @@
           "204": {
             "description": "Deleted"
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "403": {
-            "description": "Neither its creator nor the owner",
+            "description": "Neither its creator nor an admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -1570,17 +1375,15 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       },
       "patch": {
         "tags": [
@@ -1620,11 +1423,8 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "403": {
-            "description": "Neither its creator nor the owner",
+            "description": "Neither its creator nor an admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -1653,15 +1453,6 @@
               }
             }
           },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
           "504": {
             "description": "The store did not answer the probe in time",
             "content": {
@@ -1672,7 +1463,14 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       }
     },
     "/v1/secrets/{name}/validate": {
@@ -1704,11 +1502,8 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "403": {
-            "description": "Neither its creator nor the owner",
+            "description": "Neither its creator nor an admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -1727,15 +1522,6 @@
               }
             }
           },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
           "504": {
             "description": "The store did not answer the probe in time",
             "content": {
@@ -1746,7 +1532,14 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
       }
     },
     "/v1/storage-credentials": {
@@ -1754,7 +1547,7 @@
         "tags": [
           "Storage"
         ],
-        "summary": "Vend a credential over `scope` for `access`. A member reads a source\nconnection — Unity Catalog's temporary path credentials over an external\nlocation — and reads a job of their own once it has completed, or writes\nit while it runs. The owner reads any completed job of the workspace, which\nis what the datasets view opens; the owner never touches a source.",
+        "summary": "Vend a credential over `scope` for `access`. Anyone in the workspace reads a\ncompleted job's dataset. An editor reads a source connection — Unity\nCatalog's temporary path credentials over an external location — to build\na job, and writes a job's dataset while it runs, if they may change that job.",
         "operationId": "vend",
         "requestBody": {
           "content": {
@@ -1787,11 +1580,8 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "403": {
-            "description": "A source asked by the owner, or a job's dataset written by the owner",
+            "description": "A source read below editor; a job written below editor, or by someone who may not change it",
             "content": {
               "application/json": {
                 "schema": {
@@ -1801,7 +1591,7 @@
             }
           },
           "404": {
-            "description": "No such connection, or no such job of the caller's",
+            "description": "No such connection, or no such job",
             "content": {
               "application/json": {
                 "schema": {
@@ -1820,12 +1610,6 @@
               }
             }
           },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
           "502": {
             "description": "The store refused to vend",
             "content": {
@@ -1835,9 +1619,6 @@
                 }
               }
             }
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
           },
           "504": {
             "description": "The store, or the identity service before it, did not answer in time",
@@ -1849,7 +1630,14 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearer": [
+              "reader"
+            ]
+          }
+        ]
       }
     }
   },
@@ -1876,6 +1664,7 @@
         "description": "How this instance looks, as its deployment declares it (`KEASY_BRANDING_FILE`).\nPublic: the web reads it to render the login page and the first paint,\nbefore anyone has signed in.",
         "required": [
           "name",
+          "organization",
           "families",
           "lock"
         ],
@@ -1908,6 +1697,10 @@
           "name": {
             "type": "string",
             "description": "This instance's display name (`KEASY_WORKSPACE_NAME`)."
+          },
+          "organization": {
+            "type": "string",
+            "description": "The Keycloak organization this instance serves, by alias\n(`KEASY_ORG_ALIAS`): which entry of a session's organizations is this one."
           },
           "theme_css": {
             "type": [
@@ -1994,6 +1787,10 @@
           "updated_at"
         ],
         "properties": {
+          "can_modify": {
+            "type": "boolean",
+            "description": "Whether the caller may change or delete it: the sink is an admin's,\nany other connection its creator's or an admin's."
+          },
           "created_at": {
             "type": "string"
           },
@@ -2343,6 +2140,10 @@
           "sink_connection"
         ],
         "properties": {
+          "can_modify": {
+            "type": "boolean",
+            "description": "Whether the caller may change, run or delete this job, worked out for\neach response: the interface draws what this says and does not\nre-derive it."
+          },
           "completed_at": {
             "type": [
               "string",
@@ -2354,7 +2155,7 @@
           },
           "created_by": {
             "type": "string",
-            "description": "Keycloak `sub` of the member who created the job, and the only one who\nmay see, change, run or read it. Taken from the token, never the body."
+            "description": "Keycloak `sub` of who created the job: with an admin, the one who may\nchange, run or delete it. Everyone in the workspace reads it. Taken from\nthe token, never the body."
           },
           "folder": {
             "oneOf": [
@@ -2493,10 +2294,11 @@
       },
       "Role": {
         "type": "string",
-        "description": "A workspace role, from `resource_access.<client_id>.roles` on the token:\nthe owner administers the catalog, a member runs jobs. The realm's client\nroles are these names (`infra/terraform/realm`).",
+        "description": "A role this application declares on its Keycloak client.",
         "enum": [
-          "owner",
-          "member"
+          "reader",
+          "editor",
+          "admin"
         ]
       },
       "Scope": {
@@ -2748,6 +2550,10 @@
           "updated_at"
         ],
         "properties": {
+          "can_modify": {
+            "type": "boolean",
+            "description": "Whether the caller may change or delete it: its creator or an admin.\nAny editor may use it in a connection; its value is never returned."
+          },
           "created_at": {
             "type": "string"
           },
@@ -2968,31 +2774,6 @@
               "$ref": "#/components/schemas/VendedCredential"
             },
             "description": "One per prefix; a reader picks the longest prefix that holds a path."
-          }
-        }
-      },
-      "WorkspacesResponse": {
-        "type": "object",
-        "required": [
-          "workspaces",
-          "current",
-          "current_name"
-        ],
-        "properties": {
-          "current": {
-            "type": "string",
-            "description": "This instance's slug — the \"current\" entry in the switcher."
-          },
-          "current_name": {
-            "type": "string",
-            "description": "This instance's display name (`KEASY_WORKSPACE_NAME`). The other\nentries show their slug: an instance only knows its own name."
-          },
-          "workspaces": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Slugs of every workspace the user belongs to, read from the `workspaces`\nclaim on the token this request carried. The web builds each\n`<slug>.<domain>` link."
           }
         }
       }

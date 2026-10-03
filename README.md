@@ -69,11 +69,8 @@ it signs in.
 At boot the instance declares, over that bucket, the **LDBC SNB** source connection
 (`ldbc/`), the **Dev shapes** vocabulary connection (`vocab/`, holding
 `snb.shex`) and the sink (`output/`). Access is proved before each connection row is
-written, and an existing sink is never overwritten. It also declares the job **LDBC
-SNB SF0.1** for `dev@keasy.local`, running `infra/dev/snb.fossil` into
-`output/ldbc-snb/`: it is in that
-member's job list on first sign-in as a draft: open it in the studio and create it to
-run it in the browser.
+written, and an existing sink is never overwritten. `infra/dev/snb.fossil` is a
+program over them: paste it into the studio to map SF0.1 into `output/`.
 
 `s3.localhost` and `keycloak.localhost` are load-bearing: Docker's DNS answers
 them inside the compose network and `*.localhost` is loopback on the host, so the
@@ -126,8 +123,7 @@ boot and served publicly at `GET /v1/branding`. Without it every shipped theme i
 offered. Example: `infra/dev/branding.example.yml`; in prod, a tenant's `branding_file`.
 
 Stored credentials are sealed with `KEASY_SECRET_KEY`: 32 random bytes in base64
-(`openssl rand -base64 32`); `keasy-server rekey` seals them again under
-`KEASY_NEW_SECRET_KEY`. The server refuses to start without one, and refuses
+(`openssl rand -base64 32`). The server refuses to start without one, and refuses
 a database whose schema is not the one it ships — there are no migrations; wipe
 the volume (`make clean`) instead.
 
@@ -175,7 +171,7 @@ e2e/                @keasy/e2e: one Playwright test per failure scenario, its fi
 infra/dev/          the S3 store's config and seed, and an example program, dev-only
 infra/terraform/    platform/ and realm/ — the Swarm deployment, and dev's realm
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)
-  src/main.rs       subcommands: none serves, `rekey` reseals the credentials
+  src/main.rs       configures from the environment and serves
   src/startup.rs    Application, AppState, the router and the spec it publishes
   src/routes/       one file per resource: handlers with their bodies
   src/domain/       the records and parse-don't-validate types

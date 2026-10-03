@@ -145,17 +145,6 @@ pub fn open_spec(name: &str, sealed: &[u8], key: &SecretKey) -> Result<SecretSpe
     serde_json::from_slice(&plain).map_err(|e| format!("the sealed spec does not parse: {e}"))
 }
 
-/// The same credential, sealed under `new` instead of `old`.
-pub fn reseal(
-    name: &str,
-    sealed: &[u8],
-    old: &SecretKey,
-    new: &SecretKey,
-) -> Result<Vec<u8>, String> {
-    let plain = Zeroizing::new(open(sealed, &aad(name), old)?);
-    seal(&plain, &aad(name), new)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

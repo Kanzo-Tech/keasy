@@ -41,6 +41,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * Ready when the database answers. The identity provider's keys are not a
+         *     condition: a realm outage would otherwise restart every instance at once,
+         *     and requests already say `auth/keys-unavailable` on their own.
+         */
         get: operations["readiness"];
         put?: never;
         post?: never;
@@ -344,7 +349,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Probe the secret through every connection that uses it, and at `url`. */
+        /** Probe the secret through every connection that uses it. */
         post: operations["validate_secret"];
         delete?: never;
         options?: never;
@@ -369,22 +374,6 @@ export interface paths {
          *     is what the datasets view opens; the owner never touches a source.
          */
         post: operations["vend"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/version": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["version"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -546,11 +535,11 @@ export interface components {
          *     Every refusal the server writes is an [`ErrorBody`] with one of these, with
          *     one exception: the AI relay (`routes::ai`) passes the gateway's own refusal
          *     through in the OpenAI error format the browser's model client reads, status
-         *     and body untouched. Its own failures — no gateway, unreachable, silent —
+         *     and body untouched. Its own failures — unreachable, silent —
          *     are `gateway/*` bodies like any other.
          * @enum {string}
          */
-        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/ended" | "job/still-running" | "job/abandoned" | "job/invalid-destination" | "job/no-destination" | "job/folder-taken" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "gateway/not-configured" | "gateway/unreachable" | "gateway/silent";
+        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/ended" | "job/still-running" | "job/abandoned" | "job/invalid-destination" | "job/no-destination" | "job/folder-taken" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "gateway/unreachable" | "gateway/silent";
         /** @description What a refusal carries beside its words. */
         ErrorData: {
             /**
@@ -572,7 +561,6 @@ export interface components {
         };
         /** @description One object under a connection's prefix. */
         FileEntry: {
-            last_modified?: string | null;
             path: string;
             /** Format: int64 */
             size: number;
@@ -787,13 +775,6 @@ export interface components {
             name?: null | components["schemas"]["ResourceName"];
             spec?: null | components["schemas"]["SecretSpec"];
         };
-        ValidateSecretRequest: {
-            /**
-             * Format: uri
-             * @description A storage URL to LIST besides the connections that use the secret.
-             */
-            url?: string | null;
-        };
         /** @description One probe of a credential or a connection, check by check. */
         ValidationReport: {
             at: string;
@@ -817,16 +798,6 @@ export interface components {
         VendedCredentials: {
             /** @description One per prefix; a reader picks the longest prefix that holds a path. */
             storage_credentials: components["schemas"]["VendedCredential"][];
-        };
-        /**
-         * @description The running build's version, so an operator can see which image a tenant is
-         *     on. `git_sha`/`built_at` are stamped at build time (CI sets `KEASY_GIT_SHA`/
-         *     `KEASY_BUILT_AT`); `version` is the crate version.
-         */
-        VersionResponse: {
-            built_at?: string | null;
-            git_sha?: string | null;
-            version: string;
         };
         WorkspacesResponse: {
             /** @description This instance's slug — the "current" entry in the switcher. */
@@ -907,7 +878,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Service is alive */
+            /** @description The process is serving */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -925,12 +896,21 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Service is ready */
+            /** @description The database answers */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description The database did not answer in time */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
         };
     };
@@ -976,15 +956,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description This workspace has no AI gateway */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
+            503: components["responses"]["KeysUnavailable"];
             /** @description The AI gateway did not begin its answer in time */
             504: {
                 headers: {
@@ -2117,11 +2089,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ValidateSecretRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description The probe's report, stored with the secret */
             200: {
@@ -2243,26 +2211,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-        };
-    };
-    version: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Running build version */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VersionResponse"];
                 };
             };
         };

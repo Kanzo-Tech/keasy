@@ -104,7 +104,6 @@ pub async fn list_jobs(
     member: Member,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, Refusal> {
-    crate::jobs::claim_declared(&state.db, &member.user_id, member.email.as_deref()).await?;
     crate::jobs::sweep(&state.db).await?;
     Ok(Json(persistence::list_of(
         &*state.db.read().await,

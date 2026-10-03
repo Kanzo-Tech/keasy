@@ -140,7 +140,6 @@ services:
       - ./server/src:/src/server/src
       - keasy-data:/var/lib/keasy
       - ./infra/dev/bootstrap.json:/etc/keasy/bootstrap.json:ro
-      - ./infra/dev/snb.fossil:/etc/keasy/snb.fossil:ro
       - server-target:/src/server/target
       - cargo-registry:/usr/local/cargo/registry
     environment:
@@ -164,7 +163,7 @@ services:
       s3-init:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz/ready"]
       interval: 10s
       timeout: 5s
       retries: 30

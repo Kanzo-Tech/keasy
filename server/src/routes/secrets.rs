@@ -39,14 +39,6 @@ pub struct UpdateSecretRequest {
     pub spec: Option<SecretSpec>,
 }
 
-#[derive(Debug, Default, Deserialize, ToSchema)]
-pub struct ValidateSecretRequest {
-    /// A storage URL to LIST besides the connections that use the secret.
-    #[serde(default)]
-    #[schema(format = "uri")]
-    pub url: Option<String>,
-}
-
 fn may_change(caller: &AnyRole, created_by: &str) -> Result<(), Refusal> {
     if caller.owns(created_by) {
         Ok(())
@@ -191,7 +183,6 @@ pub async fn delete_secret(
 
 #[utoipa::path(post, path = "/v1/secrets/{name}/validate", tag = "Secrets",
     params(("name" = String, Path, description = "Secret name")),
-    request_body = ValidateSecretRequest,
     responses(
         (status = 200, description = "The probe's report, stored with the secret", body = ValidationReport),
         (status = 403, description = "Neither its creator nor the owner", body = ErrorBody),
@@ -199,20 +190,18 @@ pub async fn delete_secret(
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
-/// Probe the secret through every connection that uses it, and at `url`.
+/// Probe the secret through every connection that uses it.
 pub async fn validate_secret(
     caller: AnyRole,
     State(state): State<AppState>,
     Path(name): Path<String>,
-    Json(request): Json<ValidateSecretRequest>,
 ) -> Result<impl IntoResponse, Refusal> {
     let db = &state.db;
     let credential = named(db, &name).await?;
     // Validating stores the report on the secret: a change, guarded as one.
     may_change(&caller, &credential.created_by)?;
     let dependents = connections::using(&*db.read().await, &name)?;
-    let (report, _) =
-        probe::credential(&credential.spec, request.url.as_deref(), &dependents).await?;
+    let (report, _) = probe::credential(&credential.spec, None, &dependents).await?;
     persistence::set_validation(&*db.write().await, &name, &report)?;
     Ok(Json(report))
 }

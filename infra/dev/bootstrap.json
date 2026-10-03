@@ -27,14 +27,5 @@
       "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/output/", "kind": "data", "direction": "sink" }
     }
-  ],
-  "jobs": [
-    {
-      "name": "LDBC SNB SF0.1",
-      "owner": "dev@keasy.local",
-      "sink_connection": "Workspace output",
-      "folder": "ldbc-snb",
-      "script_file": "snb.fossil"
-    }
   ]
 }

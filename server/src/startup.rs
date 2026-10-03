@@ -43,7 +43,7 @@ pub struct AppState {
     /// Verifies the bearer token every protected request carries.
     pub auth: SharedValidator,
     /// The AI gateway every model call is relayed to, if this workspace has one.
-    pub ai: Option<Arc<crate::routes::ai::Gateway>>,
+    pub ai: Arc<crate::routes::ai::Gateway>,
 }
 
 /// The server, bound and ready to serve.
@@ -91,7 +91,7 @@ impl Application {
             workspace_name: application.workspace_name,
             branding: Arc::new(application.branding),
             auth,
-            ai: ai.map(|ai| Arc::new(crate::routes::ai::Gateway::new(ai))),
+            ai: Arc::new(crate::routes::ai::Gateway::new(ai)),
         };
 
         let listener = TcpListener::bind(application.bind_addr)

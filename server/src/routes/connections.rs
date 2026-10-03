@@ -66,7 +66,6 @@ pub struct FileListing {
 pub struct FileEntry {
     pub path: String,
     pub size: u64,
-    pub last_modified: Option<String>,
 }
 
 impl From<ObjectMeta> for FileEntry {
@@ -74,7 +73,6 @@ impl From<ObjectMeta> for FileEntry {
         Self {
             path: meta.location.to_string(),
             size: meta.size,
-            last_modified: Some(meta.last_modified.to_string()),
         }
     }
 }

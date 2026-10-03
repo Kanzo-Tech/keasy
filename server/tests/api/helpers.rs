@@ -35,20 +35,28 @@ pub fn secret_key() -> SecretKey {
 }
 
 pub async fn spawn_app() -> TestApp {
-    spawn_app_with(None).await
+    spawn_app_with(no_gateway()).await
 }
 
 /// The server, relaying model calls to the gateway `ai` names.
-pub async fn spawn_app_with(ai: Option<AiSettings>) -> TestApp {
+pub async fn spawn_app_with(ai: AiSettings) -> TestApp {
     spawn(ai, BrandingSettings::default()).await
 }
 
 /// The server, wearing the look `branding` declares.
 pub async fn spawn_app_branded(branding: BrandingSettings) -> TestApp {
-    spawn(None, branding).await
+    spawn(no_gateway(), branding).await
 }
 
-async fn spawn(ai: Option<AiSettings>, branding: BrandingSettings) -> TestApp {
+/// A gateway nothing listens on, for the tests that never call a model.
+fn no_gateway() -> AiSettings {
+    AiSettings {
+        url: "http://127.0.0.1:9".into(),
+        key: SecretString::from("unused"),
+    }
+}
+
+async fn spawn(ai: AiSettings, branding: BrandingSettings) -> TestApp {
     let realm = realm("k1").await;
     let dir = tempfile::tempdir().unwrap();
     let database = DatabaseSettings {

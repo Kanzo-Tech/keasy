@@ -14,6 +14,19 @@ async fn liveness_answers_without_a_token() {
     assert!(response.status().is_success());
 }
 
+/// Ready is the database answering, asked without a token.
+#[tokio::test]
+async fn readiness_answers_when_the_database_does() {
+    let app = spawn_app().await;
+    let response = app
+        .client
+        .get(format!("{}/healthz/ready", app.address))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), reqwest::StatusCode::OK);
+}
+
 /// The look is read before anyone signs in: no token, and the instance's name.
 #[tokio::test]
 async fn branding_answers_without_a_token() {

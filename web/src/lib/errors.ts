@@ -70,7 +70,6 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   "session/silent": { title: "Your session could not be read in time.", link: signIn },
   "idp/silent": { title: "The identity provider did not answer in time.", link: signIn },
   "idp/unreachable": { title: "The identity provider could not be reached.", link: signIn },
-  "gateway/not-configured": { title: "AI is not set up for this workspace." },
   "gateway/unreachable": { title: "The AI gateway could not be reached." },
   "gateway/silent": { title: "The AI gateway did not answer in time." },
   "ai/silent": { title: "The model stopped answering." },

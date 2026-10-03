@@ -9,7 +9,7 @@ import { Button, cn, ScrollArea, Skeleton } from "@kanzo-tech/ui";
 import { numbers, useMosaic, useQueryRows } from "@kanzo-tech/ui/analytics";
 import { GraphSelect, useGraphContext } from "@kanzo-tech/graph";
 import { TableRefNode } from "@uwdata/mosaic-sql";
-import { corpusKey, roleColumns, useCorpus, useFieldStats } from "./corpus";
+import { corpusKey, roleColumns, useCorpus, useFieldStats } from "@/lib/fossil/corpus";
 import { OPERATOR_META, type Rule, ruleIdsQuery, runRules } from "./rule-engine";
 import { RuleBuilder } from "./rule-fields";
 import { ProblemView } from "@/components/problem-view";

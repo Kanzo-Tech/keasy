@@ -203,7 +203,7 @@ export function AssistantWizard({
     ),
   });
   const readable = selected.map((connection, i) => {
-    const files = (listings[i]?.data ?? []).filter((f) => providerFor(f.path, "data", providers));
+    const files = (listings[i]?.data?.files ?? []).filter((f) => providerFor(f.path, "data", providers));
     const selection =
       fileSelection[connection.name] ?? Object.fromEntries(files.map((f) => [f.path, true]));
     const listing = listings[i];

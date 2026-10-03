@@ -8,10 +8,9 @@
 use axum::extract::FromRequestParts;
 use axum::http::StatusCode;
 use axum::http::request::Parts;
-use axum::response::{IntoResponse, Response};
 
 use super::middleware::AuthenticatedUser;
-use crate::error::{ErrorCode, fail};
+use crate::error::{ErrorCode, Refusal};
 
 /// A workspace role, from `resource_access.<client_id>.roles` on the token:
 /// the owner administers the catalog, a member runs jobs. The realm's client
@@ -31,22 +30,22 @@ pub enum RbacError {
     InsufficientRole,
 }
 
-impl IntoResponse for RbacError {
-    fn into_response(self) -> Response {
-        match self {
-            RbacError::AuthRequired => fail(
+impl From<RbacError> for Refusal {
+    fn from(e: RbacError) -> Self {
+        match e {
+            RbacError::AuthRequired => Refusal::new(
                 StatusCode::UNAUTHORIZED,
-                ErrorCode::SessionRequired,
+                ErrorCode::AuthSessionRequired,
                 "Authentication required",
             ),
-            RbacError::NoMembership => fail(
+            RbacError::NoMembership => Refusal::new(
                 StatusCode::FORBIDDEN,
-                ErrorCode::NoMembership,
+                ErrorCode::RbacNoMembership,
                 "No membership in this workspace found",
             ),
-            RbacError::InsufficientRole => fail(
+            RbacError::InsufficientRole => Refusal::new(
                 StatusCode::FORBIDDEN,
-                ErrorCode::InsufficientRole,
+                ErrorCode::RbacInsufficientRole,
                 "Insufficient permissions",
             ),
         }
@@ -92,35 +91,36 @@ impl AnyRole {
 }
 
 impl<S: Send + Sync> FromRequestParts<S> for Owner {
-    type Rejection = RbacError;
+    type Rejection = Refusal;
 
-    async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, RbacError> {
+    async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Refusal> {
         match role(parts)? {
             (Role::Owner, _) => Ok(Owner),
-            _ => Err(RbacError::InsufficientRole),
+            _ => Err(RbacError::InsufficientRole.into()),
         }
     }
 }
 
 impl<S: Send + Sync> FromRequestParts<S> for Member {
-    type Rejection = RbacError;
+    type Rejection = Refusal;
 
-    async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, RbacError> {
+    async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Refusal> {
         match role(parts)? {
             (Role::Member, user) => Ok(Member {
                 user_id: user.user_id.clone(),
                 email: user.claims.verified_email().map(str::to_owned),
             }),
-            _ => Err(RbacError::InsufficientRole),
+            _ => Err(RbacError::InsufficientRole.into()),
         }
     }
 }
 
 impl<S: Send + Sync> FromRequestParts<S> for AnyRole {
-    type Rejection = RbacError;
+    type Rejection = Refusal;
 
-    async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, RbacError> {
-        role(parts).map(|(role, user)| AnyRole {
+    async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Refusal> {
+        let (role, user) = role(parts)?;
+        Ok(AnyRole {
             user_id: user.user_id.clone(),
             role,
         })

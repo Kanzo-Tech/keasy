@@ -15,7 +15,7 @@ async fn a_job_goes_to_the_sink_or_is_refused() {
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
     let create = |sink: Option<&str>| {
-        let mut body = json!({ "script": "x", "draft": true });
+        let mut body = json!({ "script": "x" });
         if let Some(sink) = sink {
             body["sink_connection"] = json!(sink);
         }
@@ -47,7 +47,7 @@ async fn a_job_is_its_creators_alone() {
             Method::POST,
             "/v1/jobs",
             &mine,
-            json!({ "script": "x", "draft": true, "sink_connection": "sink" }),
+            json!({ "script": "x", "sink_connection": "sink" }),
         )
         .await;
     let id = job["id"].as_str().unwrap().to_string();
@@ -62,18 +62,22 @@ async fn a_job_is_its_creators_alone() {
 
     for (verb, route, body) in [
         (Method::GET, path.clone(), json!(null)),
-        (Method::PUT, path.clone(), json!({ "name": "stolen" })),
-        (Method::PATCH, path.clone(), json!({ "status": "running" })),
+        (Method::PATCH, path.clone(), json!({ "name": "stolen" })),
+        (
+            Method::POST,
+            format!("{path}/submit"),
+            json!({ "folder": "f" }),
+        ),
+        (
+            Method::POST,
+            format!("{path}/status"),
+            json!({ "status": "running" }),
+        ),
         (Method::DELETE, path.clone(), json!(null)),
         (
             Method::POST,
-            format!("{path}/credentials"),
-            json!({ "access": "read" }),
-        ),
-        (
-            Method::PUT,
-            format!("{path}/relations"),
-            json!({ "relations": [] }),
+            "/v1/storage-credentials".into(),
+            json!({ "scope": { "job": id }, "access": "read" }),
         ),
     ] {
         let (status, _) = app.send(verb.clone(), &route, &theirs, body).await;
@@ -94,15 +98,8 @@ async fn a_failed_run_keeps_its_problem_whole() {
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
-    let (_, job) = app
-        .send(
-            Method::POST,
-            "/v1/jobs",
-            &member,
-            json!({ "script": "x", "sink_connection": "sink", "folder": "out" }),
-        )
-        .await;
-    let path = format!("/v1/jobs/{}", job["id"].as_str().unwrap());
+    let id = app.submitted(&member).await;
+    let path = format!("/v1/jobs/{id}");
     let problem = json!({
         "code": "run/over-budget",
         "title": "Over budget",
@@ -112,14 +109,13 @@ async fn a_failed_run_keeps_its_problem_whole() {
     });
 
     let (status, failed) = app
-        .send(
-            Method::PATCH,
-            &path,
+        .report(
             &member,
+            &id,
             json!({ "status": "failed", "problem": problem }),
         )
         .await;
-    assert_eq!(status, StatusCode::OK);
+    assert_eq!(status, StatusCode::NO_CONTENT);
     assert_eq!(failed["problem"], problem);
     let (_, read) = app.send(Method::GET, &path, &member, json!(null)).await;
     assert_eq!(read["problem"], problem);
@@ -134,87 +130,98 @@ async fn a_job_writes_to_a_folder_of_its_own() {
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
-    let create = |body: serde_json::Value| app.send(Method::POST, "/v1/jobs", &member, body);
-    let job = |folder: Option<&str>, draft: bool| {
-        let mut body = json!({ "script": "x", "sink_connection": "sink", "draft": draft });
+    let draft = |folder: Option<&str>| {
+        let mut body = json!({ "script": "x", "sink_connection": "sink" });
         if let Some(folder) = folder {
             body["folder"] = json!(folder);
         }
-        body
+        app.send(Method::POST, "/v1/jobs", &member, body)
     };
-
-    let (status, body) = create(job(None, false)).await;
-    assert_eq!(
+    let submit = |id: String, body: serde_json::Value| {
+        let member = member.clone();
+        let app = &app;
+        async move {
+            app.send(
+                Method::POST,
+                &format!("/v1/jobs/{id}/submit"),
+                &member,
+                body,
+            )
+            .await
+        }
+    };
+    let id = |job: &serde_json::Value| job["id"].as_str().unwrap().to_string();
+    let refused_on = |(status, body): (StatusCode, serde_json::Value)| {
         (
             status,
-            body["code"].as_str(),
-            body["data"]["field"].as_str()
-        ),
-        (
-            StatusCode::BAD_REQUEST,
-            Some("request/invalid"),
-            Some("folder")
+            body["code"].as_str().map(str::to_owned),
+            body["data"]["field"].as_str().map(str::to_owned),
         )
-    );
-    let (status, body) = create(job(Some("Not A Slug"), false)).await;
+    };
+    let on_folder = |status, code: &str| (status, Some(code.to_owned()), Some("folder".to_owned()));
+
+    let (status, body) = draft(Some("Not A Slug")).await;
     assert_eq!(
-        (
-            status,
-            body["code"].as_str(),
-            body["data"]["field"].as_str()
-        ),
-        (
-            StatusCode::BAD_REQUEST,
-            Some("request/invalid"),
-            Some("folder")
-        )
+        refused_on((status, body)),
+        on_folder(StatusCode::BAD_REQUEST, "request/invalid")
     );
 
-    let (status, first) = create(job(Some("people"), false)).await;
-    assert_eq!(status, StatusCode::ACCEPTED);
-    assert_eq!(first["folder"], "people");
-
-    let (status, body) = create(job(Some("people"), false)).await;
-    assert_eq!(
-        (
-            status,
-            body["code"].as_str(),
-            body["data"]["field"].as_str()
-        ),
-        (
-            StatusCode::CONFLICT,
-            Some("job/folder-taken"),
-            Some("folder")
-        )
-    );
-
-    let (status, draft) = create(job(None, true)).await;
+    let (status, unfiled) = draft(None).await;
     assert_eq!(status, StatusCode::CREATED);
-    assert!(draft.get("folder").is_none());
-    let path = format!("/v1/jobs/{}", draft["id"].as_str().unwrap());
-    let (status, updated) = app
-        .send(Method::PUT, &path, &member, json!({ "folder": "people" }))
+    assert_eq!(unfiled["status"], "draft", "a job begins as a draft");
+    assert!(unfiled.get("folder").is_none());
+    assert_eq!(
+        refused_on(submit(id(&unfiled), json!({})).await),
+        on_folder(StatusCode::BAD_REQUEST, "request/invalid"),
+        "no folder, no run"
+    );
+
+    let (_, first) = draft(Some("people")).await;
+    let (status, first) = submit(id(&first), json!({})).await;
+    assert_eq!(
+        (status, first["folder"].as_str()),
+        (StatusCode::ACCEPTED, Some("people"))
+    );
+    let (_, second) = draft(Some("people")).await;
+    assert_eq!(
+        refused_on(submit(id(&second), json!({})).await),
+        on_folder(StatusCode::CONFLICT, "job/folder-taken")
+    );
+
+    let path = format!("/v1/jobs/{}", id(&unfiled));
+    let (status, edited) = app
+        .send(Method::PATCH, &path, &member, json!({ "folder": "people" }))
         .await;
     assert_eq!(
-        (status, updated["folder"].as_str()),
-        (StatusCode::OK, Some("people"))
+        (status, edited["folder"].as_str()),
+        (StatusCode::OK, Some("people")),
+        "drafts may share a folder"
     );
     let (status, body) = app
-        .send(Method::PUT, &path, &member, json!({ "folder": "-bad" }))
+        .send(Method::PATCH, &path, &member, json!({ "folder": "-bad" }))
         .await;
     assert_eq!(
         (status, body["data"]["field"].as_str()),
         (StatusCode::BAD_REQUEST, Some("folder"))
     );
     let (status, _) = app
-        .send(
-            Method::PATCH,
-            &path,
-            &member,
-            json!({ "status": "running" }),
-        )
+        .report(&member, &id(&unfiled), json!({ "status": "running" }))
         .await;
     assert_eq!(status, StatusCode::BAD_REQUEST, "a draft is never run");
+
+    let (status, body) = app
+        .send(
+            Method::PATCH,
+            &format!("/v1/jobs/{}", id(&first)),
+            &member,
+            json!({ "name": "late" }),
+        )
+        .await;
+    assert_eq!(
+        (status, body["code"].as_str()),
+        (StatusCode::CONFLICT, Some("job/not-draft")),
+        "a submitted job is not edited"
+    );
 }
 
 /// A job's dashboard: none until saved, an object no larger than the cap, and
@@ -231,7 +238,7 @@ async fn a_job_keeps_one_dashboard() {
             Method::POST,
             "/v1/jobs",
             &mine,
-            json!({ "script": "x", "draft": true, "sink_connection": "sink" }),
+            json!({ "script": "x", "sink_connection": "sink" }),
         )
         .await;
     let path = format!("/v1/jobs/{}/dashboard", job["id"].as_str().unwrap());
@@ -362,7 +369,7 @@ async fn a_misspelled_name_is_refused_on_its_field() {
                 Method::POST,
                 "/v1/jobs",
                 &member,
-                json!({ "script": "x", "sink_connection": "sink", "draft": true, "name": name }),
+                json!({ "script": "x", "sink_connection": "sink", "name": name }),
             )
             .await;
         assert_eq!(
@@ -385,13 +392,13 @@ async fn a_misspelled_name_is_refused_on_its_field() {
             Method::POST,
             "/v1/jobs",
             &member,
-            json!({ "script": "x", "sink_connection": "sink", "draft": true, "name": "People" }),
+            json!({ "script": "x", "sink_connection": "sink", "name": "People" }),
         )
         .await;
     assert_eq!(draft["name"], "People");
     let path = format!("/v1/jobs/{}", draft["id"].as_str().unwrap());
     let (status, body) = app
-        .send(Method::PUT, &path, &member, json!({ "name": "trail " }))
+        .send(Method::PATCH, &path, &member, json!({ "name": "trail " }))
         .await;
     assert_eq!(
         (status, body["data"]["field"].as_str()),
@@ -413,7 +420,7 @@ async fn submitting_a_draft_makes_it_the_job_in_place() {
             Method::POST,
             "/v1/jobs",
             &member,
-            json!({ "script": "x", "sink_connection": "sink", "draft": true }),
+            json!({ "script": "x", "sink_connection": "sink" }),
         )
         .await;
     let id = draft["id"].as_str().unwrap().to_string();
@@ -454,7 +461,14 @@ async fn submitting_a_draft_makes_it_the_job_in_place() {
         (job["script"].as_str(), job["name"].as_str()),
         (Some("y"), Some("People"))
     );
-    assert_ne!(job["created_at"], hour_ago);
+    assert_eq!(
+        job["created_at"], hour_ago,
+        "a job is dated when it was made"
+    );
+    assert!(
+        job["heartbeat_at"].as_str() > Some(hour_ago),
+        "its lease starts at submit, so a draft written an hour ago is not swept"
+    );
 
     let (_, listed) = app
         .send(Method::GET, "/v1/jobs", &member, json!(null))
@@ -469,7 +483,7 @@ async fn submitting_a_draft_makes_it_the_job_in_place() {
     let (status, body) = app.send(Method::POST, &submit, &member, json!({})).await;
     assert_eq!(
         (status, body["code"].as_str()),
-        (StatusCode::BAD_REQUEST, Some("job/not-draft"))
+        (StatusCode::CONFLICT, Some("job/not-draft"))
     );
     let theirs = app.token_for("u-2", &["member"]);
     let (status, _) = app.send(Method::POST, &submit, &theirs, json!({})).await;
@@ -485,9 +499,12 @@ async fn submitting_onto_a_taken_folder_leaves_the_draft() {
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let create = |body: serde_json::Value| app.send(Method::POST, "/v1/jobs", &member, body);
-    create(json!({ "script": "x", "sink_connection": "sink", "folder": "people" })).await;
+    let (_, held) =
+        create(json!({ "script": "x", "sink_connection": "sink", "folder": "people" })).await;
+    let held = format!("/v1/jobs/{}/submit", held["id"].as_str().unwrap());
+    app.send(Method::POST, &held, &member, json!({})).await;
     let (_, draft) = create(json!({
-        "script": "x", "sink_connection": "sink", "draft": true, "name": "Mine",
+        "script": "x", "sink_connection": "sink", "name": "Mine",
     }))
     .await;
     let path = format!("/v1/jobs/{}", draft["id"].as_str().unwrap());
@@ -518,52 +535,39 @@ async fn submitting_onto_a_taken_folder_leaves_the_draft() {
     assert!(read.get("folder").is_none());
 }
 
-/// Whether a folder of the sink is free: held only by a job that is not a
-/// draft, and asked only of the sink.
+/// A run moves forward only: from running it reports running again, or one of
+/// its ends, and every end is dated. Never back to a draft or to pending.
 #[tokio::test]
-async fn a_folder_is_available_until_a_job_to_run_holds_it() {
+async fn a_run_reports_forward_and_every_end_is_dated() {
     let app = spawn_app().await;
     let member = app.token(&["member"]);
     app.credential("key", DEAD, "u-1").await;
-    app.connection("source", "key", Direction::Source, "u-1")
-        .await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
-    let ask = |path: &'static str| app.send(Method::GET, path, &member, json!(null));
-    let create = |body: serde_json::Value| app.send(Method::POST, "/v1/jobs", &member, body);
 
-    create(json!({ "script": "x", "sink_connection": "sink", "draft": true, "folder": "people" }))
-        .await;
-    assert_eq!(
-        ask("/v1/connections/sink/folders/people").await,
-        (StatusCode::OK, json!({ "available": true }))
-    );
-    create(json!({ "script": "x", "sink_connection": "sink", "folder": "people" })).await;
-    assert_eq!(
-        ask("/v1/connections/sink/folders/people").await,
-        (StatusCode::OK, json!({ "available": false }))
-    );
+    for target in ["completed", "failed", "cancelled", "draft", "pending"] {
+        let id = app.submitted(&member).await;
+        let report = |status: &str| app.report(&member, &id, json!({ "status": status }));
+        let (status, running) = report("running").await;
+        assert_eq!(
+            (status, running["status"].as_str()),
+            (StatusCode::NO_CONTENT, Some("running"))
+        );
+        assert!(running.get("completed_at").is_none());
 
-    let (status, body) = ask("/v1/connections/sink/folders/Not-A-Slug").await;
-    assert_eq!(
-        (
-            status,
-            body["code"].as_str(),
-            body["data"]["field"].as_str()
-        ),
-        (
-            StatusCode::BAD_REQUEST,
-            Some("request/invalid"),
-            Some("folder")
-        )
-    );
-    let (status, body) = ask("/v1/connections/source/folders/people").await;
-    assert_eq!(
-        (status, body["code"].as_str()),
-        (StatusCode::BAD_REQUEST, Some("job/invalid-destination"))
-    );
-    let (status, body) = ask("/v1/connections/gone/folders/people").await;
-    assert_eq!(
-        (status, body["code"].as_str()),
-        (StatusCode::NOT_FOUND, Some("connection/not-found"))
-    );
+        let (status, body) = report(target).await;
+        match target {
+            "draft" | "pending" => {
+                assert_eq!(status, StatusCode::BAD_REQUEST, "running → {target}");
+                let (_, read) = app
+                    .send(Method::GET, &format!("/v1/jobs/{id}"), &member, json!(null))
+                    .await;
+                assert_eq!(read["status"], "running", "running → {target}");
+            }
+            ended => {
+                assert_eq!(status, StatusCode::NO_CONTENT, "running → {ended}");
+                assert_eq!(body["status"], ended);
+                assert!(body["completed_at"].is_string(), "{ended} is dated");
+            }
+        }
+    }
 }

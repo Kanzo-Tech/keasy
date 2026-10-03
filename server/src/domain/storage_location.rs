@@ -2,7 +2,7 @@ use std::fmt;
 
 use object_store::path::Path as ObjectPath;
 
-use super::StorageCredentialInput;
+use super::SecretSpec;
 
 const S3: &[&str] = &["s3", "s3a"];
 const AZURE: &[&str] = &["az", "azure", "abfs", "abfss", "adl"];
@@ -29,11 +29,12 @@ impl StoreKind {
             .join(", ")
     }
 
-    pub fn of(credential: &StorageCredentialInput) -> Self {
+    pub fn of(credential: &SecretSpec) -> Self {
         match credential {
-            StorageCredentialInput::S3 { .. } => Self::S3,
-            StorageCredentialInput::AzureAccountKey { .. }
-            | StorageCredentialInput::AzureServicePrincipal { .. } => Self::Azure,
+            SecretSpec::S3 { .. } => Self::S3,
+            SecretSpec::AzureAccountKey { .. } | SecretSpec::AzureServicePrincipal { .. } => {
+                Self::Azure
+            }
         }
     }
 }
@@ -139,7 +140,7 @@ impl StorageLocation {
 
     /// This location as reached through `credential`: the credential names
     /// the service the text leaves implicit.
-    pub fn within(mut self, credential: &StorageCredentialInput) -> Result<Self, String> {
+    pub fn within(mut self, credential: &SecretSpec) -> Result<Self, String> {
         if StoreKind::of(credential) != self.kind() {
             return Err(format!(
                 "this credential reaches {} URLs, not {}",
@@ -148,15 +149,15 @@ impl StorageLocation {
             ));
         }
         match (&mut self.store, credential) {
-            (Store::S3 { endpoint, .. }, StorageCredentialInput::S3 { endpoint: e, .. }) => {
+            (Store::S3 { endpoint, .. }, SecretSpec::S3 { endpoint: e, .. }) => {
                 *endpoint = e
                     .as_deref()
                     .map(|e| e.trim_end_matches('/').to_ascii_lowercase());
             }
             (
                 Store::Azure { account, .. },
-                StorageCredentialInput::AzureAccountKey { account: a, .. }
-                | StorageCredentialInput::AzureServicePrincipal { account: a, .. },
+                SecretSpec::AzureAccountKey { account: a, .. }
+                | SecretSpec::AzureServicePrincipal { account: a, .. },
             ) => match account {
                 Some(named) if named != a => {
                     return Err(format!(
@@ -221,8 +222,8 @@ mod tests {
         StorageLocation::parse(s).unwrap()
     }
 
-    fn s3(endpoint: Option<&str>) -> StorageCredentialInput {
-        StorageCredentialInput::S3 {
+    fn s3(endpoint: Option<&str>) -> SecretSpec {
+        SecretSpec::S3 {
             access_key_id: "AK".into(),
             secret_access_key: SecretString::from("SK"),
             region: "us-east-1".into(),
@@ -303,7 +304,7 @@ mod tests {
                     .unwrap()
             )
         );
-        let az = StorageCredentialInput::AzureAccountKey {
+        let az = SecretSpec::AzureAccountKey {
             account: "acct".into(),
             key: SecretString::from("k"),
         };

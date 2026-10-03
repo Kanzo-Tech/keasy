@@ -147,27 +147,6 @@ export interface paths {
         patch: operations["update_connection"];
         trace?: never;
     };
-    "/v1/connections/{name}/credentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Vend a read credential over a source connection's prefix — Unity Catalog's
-         *     temporary path credentials over an external location. Sources are read,
-         *     never written; the sink is reached only through its jobs.
-         */
-        post: operations["vend_source_credentials"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/connections/{name}/files": {
         parameters: {
             query?: never;
@@ -176,27 +155,6 @@ export interface paths {
             cookie?: never;
         };
         get: operations["list_connection_files"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/connections/{name}/folders/{folder}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Whether a job to run may take `folder` in the sink: no job but a draft
-         *     holds it. It reveals only whether the folder is held, never whose job holds
-         *     it.
-         */
-        get: operations["folder_availability"];
         put?: never;
         post?: never;
         delete?: never;
@@ -214,61 +172,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** LIST a source, WRITE and DELETE under the sink, list a model's provider. */
+        /** LIST a source, WRITE and DELETE under the sink. */
         post: operations["validate_connection"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/credentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_credentials"];
-        put?: never;
-        post: operations["create_credential"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/credentials/{name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_credential"];
-        put?: never;
-        post?: never;
-        delete: operations["delete_credential"];
-        options?: never;
-        head?: never;
-        /**
-         * Rotation replaces the whole spec, and is committed only if every connection
-         *     using the credential still validates with the new one.
-         */
-        patch: operations["update_credential"];
-        trace?: never;
-    };
-    "/v1/credentials/{name}/validate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Probe the credential through every connection that uses it, and at `url`. */
-        post: operations["validate_credential"];
         delete?: never;
         options?: never;
         head?: never;
@@ -283,9 +188,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Every dataset the workspace produced, as the corpus reader named it: the
-         *     owner's index over the whole workspace. It carries metadata only; the
-         *     member reaches the bytes through the job that made them.
+         * Every dataset the workspace produced: the owner's index over the whole
+         *     workspace. The owner opens one by reading its job's corpus.
          */
         get: operations["list_datasets"];
         put?: never;
@@ -305,6 +209,10 @@ export interface paths {
         };
         get: operations["list_jobs"];
         put?: never;
+        /**
+         * A job begins as a draft, always: what it runs, where it lands. Submitting
+         *     it is the one way a job comes to run.
+         */
         post: operations["create_job"];
         delete?: never;
         options?: never;
@@ -320,37 +228,12 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get_job"];
-        put: operations["update_job"];
+        put?: never;
         post?: never;
         delete: operations["delete_job"];
         options?: never;
         head?: never;
-        /**
-         * The browser ran the mapping and uploaded the output; this records the
-         *     outcome. `Completed` stores the run report verbatim, unread.
-         */
-        patch: operations["complete_job"];
-        trace?: never;
-    };
-    "/v1/jobs/{id}/credentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Vend a credential over the job's dataset, `{sink}/{folder}/`: to read it
-         *     once the job has completed, or to write it while the job runs. The store
-         *     holds the boundary, so the credential opens nothing else.
-         */
-        post: operations["vend_job_credentials"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
+        patch: operations["edit_draft"];
         trace?: never;
     };
     "/v1/jobs/{id}/dashboard": {
@@ -369,7 +252,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/heartbeat": {
+    "/v1/jobs/{id}/status": {
         parameters: {
             query?: never;
             header?: never;
@@ -379,35 +262,12 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * The runner is still there. Sent every 15 s while the job runs; a running
-         *     job with no heartbeat for the lease (60 s) is swept as `job/abandoned`.
+         * The runner's one report: `running` starts the run and, sent again, renews
+         *     its lease — a running job no report has renewed for the lease (60 s) is
+         *     swept as `job/abandoned`; an end records how the run ended, and dates it.
+         *     `completed` stores the run report verbatim, unread.
          */
-        post: operations["heartbeat"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/relations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * What the corpus reader found: the relations a finished job's output holds,
-         *     their names and the files that carry them, as `@fossil-lang/corpus`
-         *     enumerated them in the browser.
-         * @description It is a second call and not a field of the completion because naming a
-         *     relation is an answer only a reader holding the manifests can give, and the
-         *     run report is not that reader. keasy stores the answer verbatim; it is what
-         *     the owner's datasets view lists.
-         */
-        put: operations["publish_relations"];
-        post?: never;
+        post: operations["report_status"];
         delete?: never;
         options?: never;
         head?: never;
@@ -426,9 +286,89 @@ export interface paths {
         /**
          * A draft becomes the job to run, in place: the edits, the folder check and
          *     the promotion are one write, so a refusal leaves the draft as it was and a
-         *     success leaves no draft behind.
+         *     success leaves no draft behind. The only way a job comes to be pending.
          */
         post: operations["submit_job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/secrets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_secrets"];
+        put?: never;
+        /**
+         * Any role may create one: a member for their sources, the owner for the
+         *     sink — and either may change or delete what they made.
+         */
+        post: operations["create_secret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/secrets/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_secret"];
+        put?: never;
+        post?: never;
+        delete: operations["delete_secret"];
+        options?: never;
+        head?: never;
+        /**
+         * Rotation replaces the whole spec, and is committed only if every connection
+         *     using the secret still validates with the new one.
+         */
+        patch: operations["update_secret"];
+        trace?: never;
+    };
+    "/v1/secrets/{name}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Probe the secret through every connection that uses it, and at `url`. */
+        post: operations["validate_secret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storage-credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Vend a credential over `scope` for `access`. A member reads a source
+         *     connection — Unity Catalog's temporary path credentials over an external
+         *     location — and reads a job of their own once it has completed, or writes
+         *     it while it runs. The owner reads any completed job of the workspace, which
+         *     is what the datasets view opens; the owner never touches a source.
+         */
+        post: operations["vend"];
         delete?: never;
         options?: never;
         head?: never;
@@ -507,74 +447,42 @@ export interface components {
             operation: components["schemas"]["Operation"];
             result: components["schemas"]["Outcome"];
         };
-        /**
-         * @description The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running
-         *     the mapping in the browser (`@fossil-lang/executor`) and writing the output
-         *     with the credential vended for the job, the client reports the run's outcome. `manifest` is the
-         *     executor's run report, stored verbatim and never read.
-         */
-        CompleteJobRequest: {
-            /** @description The run report for the uploaded output (on `Completed`) — opaque JSON. */
-            manifest?: unknown;
-            /**
-             * @description Why the run failed (on `Failed`): the run's problem, stored verbatim
-             *     and opaque.
-             */
-            problem?: unknown;
-            /** @description The terminal (or `Running`) status the client is transitioning the job to. */
-            status: components["schemas"]["JobStatus"];
-        };
         /** @enum {string} */
         ConnectionKind: "data" | "vocab";
         ConnectionView: {
             created_at: string;
             created_by: string;
-            credential: string;
             name: string;
+            secret: string;
             target: components["schemas"]["StorageTarget"];
             updated_at: string;
             updated_by: string;
             validation?: null | components["schemas"]["ValidationReport"];
         };
         CreateConnectionRequest: {
-            /** @description The credential it signs with. */
-            credential: string;
             /** @description What programs write after `@`, and the connection's key. */
             name: components["schemas"]["ResourceName"];
+            /** @description The secret it signs with. */
+            secret: string;
             target: components["schemas"]["StorageTarget"];
         };
-        CreateCredentialRequest: {
-            name: components["schemas"]["ResourceName"];
-            /**
-             * Format: uri
-             * @description A storage URL to LIST before the credential is stored. A credential has
-             *     no location of its own, so without one it is only checked to build a
-             *     client.
-             */
-            probe_url?: string | null;
-            spec: components["schemas"]["StorageCredentialInput"];
-        };
         CreateJobRequest: {
-            draft?: boolean;
             folder?: null | components["schemas"]["JobFolder"];
             name?: null | components["schemas"]["ResourceName"];
             script: string;
             /** @description Where the output lands: the sink connection's name. */
             sink_connection: string;
         };
-        CredentialView: {
-            created_at: string;
-            created_by: string;
-            name: string;
-            spec: components["schemas"]["StorageCredentialView"];
-            updated_at: string;
-            updated_by: string;
-            /** @description The connections that use this credential. */
-            used_by: string[];
-            validation?: null | components["schemas"]["ValidationReport"];
-        };
-        CredentialsRequest: {
-            access: components["schemas"]["Access"];
+        CreateSecretRequest: {
+            name: components["schemas"]["ResourceName"];
+            /**
+             * Format: uri
+             * @description A storage URL to LIST before the secret is stored. A secret has
+             *     no location of its own, so without one it is only checked to build a
+             *     client.
+             */
+            probe_url?: string | null;
+            spec: components["schemas"]["SecretSpec"];
         };
         /**
          * @description A job's saved dashboard. `spec` is the dashboard the web's BI kit
@@ -589,18 +497,31 @@ export interface components {
             /** @description Keycloak `sub` of the member who saved it last. */
             updated_by: string;
         };
-        /** @description A completed job's output, as the owner's datasets view lists it. */
+        /**
+         * @description A completed job's output: where its corpus is, and when it was written.
+         *     What the corpus holds is the corpus's own to say — a reader opens it (with
+         *     a credential vended for the job) and asks its `fossil_tables` and
+         *     `fossil_columns`; keasy keeps no copy of it.
+         */
         Dataset: {
-            completed_at?: string | null;
-            job_id: string;
+            completed_at: string;
+            /** @description The corpus's root, `{sink}/{folder}/`. */
+            dest: string;
+            /** @description The job that wrote it, which is the scope its read credential is asked for. */
+            id: string;
             name?: string | null;
-            relations: components["schemas"]["OutputRelation"][];
         };
         /**
          * @description A source is read through `@name/…`; the one sink is where job output lands.
          * @enum {string}
          */
         Direction: "source" | "sink";
+        /** @description Edits to a draft: as it is written (PATCH), and as it is submitted. */
+        DraftEdits: {
+            folder?: null | components["schemas"]["JobFolder"];
+            name?: null | components["schemas"]["ResourceName"];
+            script?: string | null;
+        };
         /**
          * @description The body of every 4xx/5xx, and the payload of an SSE `error` frame — the
          *     shape fossil's problems have: a code, its fixed title, a detail for a
@@ -618,10 +539,18 @@ export interface components {
          *
          *     One grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry
          *     in the web keys all three. The areas are keasy's own and never one of
-         *     fossil's (`storage`, `engine`, `run`, …): a code means one thing.
+         *     fossil's (`storage`, `engine`, `run`, …): a code means one thing. Each
+         *     variant is its wire name spelled in Rust, `area/kind-x` as `AreaKindX`, so
+         *     the code a test asserts and the variant a handler names are one word.
+         *
+         *     Every refusal the server writes is an [`ErrorBody`] with one of these, with
+         *     one exception: the AI relay (`routes::ai`) passes the gateway's own refusal
+         *     through in the OpenAI error format the browser's model client reads, status
+         *     and body untouched. Its own failures — no gateway, unreachable, silent —
+         *     are `gateway/*` bodies like any other.
          * @enum {string}
          */
-        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/still-running" | "job/abandoned" | "job/invalid-destination" | "job/no-destination" | "job/folder-taken" | "credential/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/list-failed" | "store/refused" | "store/silent" | "gateway/not-configured" | "gateway/unreachable" | "gateway/silent";
+        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/ended" | "job/still-running" | "job/abandoned" | "job/invalid-destination" | "job/no-destination" | "job/folder-taken" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "gateway/not-configured" | "gateway/unreachable" | "gateway/silent";
         /** @description What a refusal carries beside its words. */
         ErrorData: {
             /**
@@ -631,7 +560,7 @@ export interface components {
              */
             after?: number | null;
             /**
-             * @description What the refusal is about: what still uses a credential or connection,
+             * @description What the refusal is about: what still uses a secret or connection,
              *     or the connections a rotation would break.
              */
             dependents?: string[];
@@ -648,9 +577,11 @@ export interface components {
             /** Format: int64 */
             size: number;
         };
-        /** @description Whether a folder of the sink is free for a job to run. */
-        FolderAvailability: {
-            available: boolean;
+        /** @description The objects under a connection's prefix, the first `limit` of them. */
+        FileListing: {
+            files: components["schemas"]["FileEntry"][];
+            /** @description More objects lie under the prefix than were listed. */
+            truncated: boolean;
         };
         Job: {
             completed_at?: string | null;
@@ -661,19 +592,12 @@ export interface components {
              */
             created_by: string;
             folder?: null | components["schemas"]["JobFolder"];
-            /** @description The runner's last heartbeat while the job runs: its lease. */
+            /**
+             * @description The job's lease: taken when it is submitted, renewed by every
+             *     `running` its runner reports. A job whose lease lapses is swept.
+             */
             heartbeat_at?: string | null;
             id: string;
-            /**
-             * @description What the run reported, verbatim and **opaque**: fossil's own run report
-             *     (`RunReport`, `{dest, dropped}`) — not the manifest, which is the
-             *     corpus's own `fossil.json`. keasy stores it, hands it back and never
-             *     reads a field of it — the last time a host re-typed this struct, it
-             *     ended up asking for `vertex/<Type>.parquet`, a file the layout pass
-             *     deletes. Its presence is the one thing keasy asks of it: "this job
-             *     produced output".
-             */
-            manifest?: unknown;
             name?: null | components["schemas"]["ResourceName"];
             /**
              * @description Why a `Failed` run failed, as the browser that ran it reported it: a
@@ -682,12 +606,14 @@ export interface components {
              */
             problem?: unknown;
             /**
-             * @description What the corpus holds and what it is called, as the corpus reader
-             *     enumerated it (`@fossil-lang/corpus`). fossil names every relation and
-             *     every file; keasy joins them to the destination it owns, which a
-             *     credential vended over the job's folder reads.
+             * @description What the run reported, verbatim and **opaque**: fossil's run report
+             *     (`RunReport`, `{dest, dropped}`). keasy stores it, hands it back and
+             *     never reads a field of it — the last time a host re-typed this struct,
+             *     it ended up asking for `vertex/<Type>.parquet`, a file the layout pass
+             *     deletes. What the corpus holds is the corpus's to say: a reader opens
+             *     it and asks its `fossil_tables` and `fossil_columns`.
              */
-            relations?: components["schemas"]["OutputRelation"][];
+            report?: unknown;
             script?: string | null;
             /**
              * @description The sink connection the output lands in, under `{sink.url}/{folder}`,
@@ -702,48 +628,37 @@ export interface components {
         /** @enum {string} */
         JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
         /**
+         * @description What the runner reports of a job's run (POST `/v1/jobs/{id}/status`): that
+         *     it runs, again every so often to hold its lease, and how it ended. The
+         *     browser runs the program (`@fossil-lang/executor`) and writes the output
+         *     with a credential vended for the job; keasy only records.
+         */
+        JobStatusReport: {
+            /**
+             * @description Why the run failed (on `failed`): the run's problem, stored verbatim
+             *     and opaque.
+             */
+            problem?: unknown;
+            /** @description fossil's run report (on `completed`), stored verbatim and never read. */
+            report?: unknown;
+            /**
+             * @description `running` (the first time it starts the run, every time after it renews
+             *     the lease), or the end: `completed`, `failed` or `cancelled`.
+             */
+            status: components["schemas"]["JobStatus"];
+        };
+        /**
          * @description What a probe tried.
          * @enum {string}
          */
         Operation: "list" | "write" | "delete";
         /** @enum {string} */
         Outcome: "pass" | "fail" | "skip";
-        /**
-         * @description One addressable relation of a job's output, named by fossil.
-         *
-         *     `name` is the relation the corpus registers and queries by (`Person`,
-         *     `Person_knows_Person`) — **keasy does not compose it**; it is what the
-         *     corpus reader answered. `files` are the dataset-relative payload files the
-         *     corpus addressing enumerated, `rows` the count it reported and `columns`
-         *     what a row carries.
-         */
-        OutputRelation: {
-            columns?: components["schemas"]["RelationColumn"][];
-            files?: string[];
-            name: string;
-            /** Format: int64 */
-            rows?: number | null;
-        };
-        /**
-         * @description What the corpus reader enumerated for a finished job (PUT
-         *     `/v1/jobs/{id}/relations`). It arrives after completion because naming a
-         *     relation is the corpus's answer, not the report's: only a reader with the
-         *     manifests in hand can say what the dataset is called and which files carry
-         *     it.
-         */
-        PublishRelationsRequest: {
-            relations: components["schemas"]["OutputRelation"][];
-        };
         PutDashboardRequest: {
             /** @description The dashboard, as the web serialises it: any JSON object. */
             spec: {
                 [key: string]: unknown;
             };
-        };
-        RelationColumn: {
-            /** @description The engine's spelling of the Parquet type (`VARCHAR`, `BIGINT`, …). */
-            data_type: string;
-            name: string;
         };
         /** @description A credential's, a connection's or a job's name: no leading or trailing whitespace, and no `/`, `@`, `\` or control character. */
         ResourceName: string;
@@ -754,8 +669,16 @@ export interface components {
          * @enum {string}
          */
         Role: "owner" | "member";
-        /** @description A credential as a request states it, secrets included. */
-        StorageCredentialInput: {
+        /** @description What a credential is asked for: fossil's `Scope`, verbatim. */
+        Scope: {
+            /** @description A source connection's prefix, by the connection's name. */
+            connection: string;
+        } | {
+            /** @description A job's dataset, by the job's id. */
+            job: string;
+        };
+        /** @description A secret's spec as a request states it, its values included. */
+        SecretSpec: {
             access_key_id: string;
             /**
              * Format: uri
@@ -795,8 +718,8 @@ export interface components {
             kind: "azure_service_principal";
             tenant_id: string;
         };
-        /** @description A credential as a response shows it: what names it, never what signs with it. */
-        StorageCredentialView: {
+        /** @description A secret's spec as a response shows it: what names it, never what signs with it. */
+        SecretSpecView: {
             access_key_id: string;
             endpoint?: string | null;
             external_id?: string | null;
@@ -815,6 +738,21 @@ export interface components {
             kind: "azure_service_principal";
             tenant_id: string;
         };
+        SecretView: {
+            created_at: string;
+            created_by: string;
+            name: string;
+            spec: components["schemas"]["SecretSpecView"];
+            updated_at: string;
+            updated_by: string;
+            /** @description The connections that use this secret. */
+            used_by: string[];
+            validation?: null | components["schemas"]["ValidationReport"];
+        };
+        StorageCredentialsRequest: {
+            access: components["schemas"]["Access"];
+            scope: components["schemas"]["Scope"];
+        };
         StorageTarget: {
             direction?: components["schemas"]["Direction"];
             kind?: components["schemas"]["ConnectionKind"];
@@ -823,12 +761,6 @@ export interface components {
              * @description The prefix the connection is: `s3://bucket/prefix/` or `az://container/prefix/`.
              */
             url: string;
-        };
-        /** @description A draft's final edits as it becomes a job to run, spelled as on update. */
-        SubmitJobRequest: {
-            folder?: null | components["schemas"]["JobFolder"];
-            name?: null | components["schemas"]["ResourceName"];
-            script?: string | null;
         };
         /** @description One theme: the `data-theme` value it is selected by, and its display name. */
         ThemeChoice: {
@@ -842,28 +774,23 @@ export interface components {
             light: components["schemas"]["ThemeChoice"];
         };
         UpdateConnectionRequest: {
-            credential?: string | null;
             name?: null | components["schemas"]["ResourceName"];
+            secret?: string | null;
             target?: null | components["schemas"]["StorageTarget"];
         };
         /**
          * @description A rename, a rotation or both. `spec` replaces the whole spec, secrets
-         *     included, and is stored only if every connection using the credential
+         *     included, and is stored only if every connection using the secret
          *     still validates with it.
          */
-        UpdateCredentialRequest: {
+        UpdateSecretRequest: {
             name?: null | components["schemas"]["ResourceName"];
-            spec?: null | components["schemas"]["StorageCredentialInput"];
+            spec?: null | components["schemas"]["SecretSpec"];
         };
-        UpdateJobRequest: {
-            folder?: null | components["schemas"]["JobFolder"];
-            name?: null | components["schemas"]["ResourceName"];
-            script?: string | null;
-        };
-        ValidateCredentialRequest: {
+        ValidateSecretRequest: {
             /**
              * Format: uri
-             * @description A storage URL to LIST besides the connections that use the credential.
+             * @description A storage URL to LIST besides the connections that use the secret.
              */
             url?: string | null;
         };
@@ -1161,7 +1088,7 @@ export interface operations {
                     "application/json": components["schemas"]["ConnectionView"];
                 };
             };
-            /** @description No such credential, one of the other purpose, or a URL it does not reach */
+            /** @description No such secret, or a URL it does not reach */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1171,7 +1098,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            /** @description A sink by a member, or a source or model by the owner */
+            /** @description A sink by a member, or a source by the owner */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1368,77 +1295,17 @@ export interface operations {
             };
         };
     };
-    vend_source_credentials: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Connection name */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CredentialsRequest"];
-            };
-        };
-        responses: {
-            /** @description A credential that opens the source's prefix, and only it, for an hour */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VendedCredentials"];
-                };
-            };
-            /** @description Not a storage source, or an access a source does not give */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description No such connection */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            /** @description The store refused to vend */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            503: components["responses"]["KeysUnavailable"];
-            /** @description The store, or the identity service before it, did not answer in time */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-        };
-    };
     list_connection_files: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description A folder under the connection's prefix (`dynamic/`, `a/b`), to list
+                 *     only what is under it. No `.` or `..` segments.
+                 */
+                prefix?: string;
+                /** @description At most this many objects: 1000 when left out, and never more. */
+                limit?: number;
+            };
             header?: never;
             path: {
                 /** @description Connection name */
@@ -1448,16 +1315,16 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Every object under the connection's prefix */
+            /** @description The first `limit` objects under the connection's prefix, or under `prefix` within it */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FileEntry"][];
+                    "application/json": components["schemas"]["FileListing"];
                 };
             };
-            /** @description Not a storage connection */
+            /** @description Not a storage source, or a prefix that leaves it (`data.field`) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1500,54 +1367,6 @@ export interface operations {
             };
         };
     };
-    folder_availability: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The sink connection's name */
-                name: string;
-                /** @description The folder under the sink */
-                folder: components["schemas"]["JobFolder"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Whether a job to run may write to the folder */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FolderAvailability"];
-                };
-            };
-            /** @description The connection is not the sink (`job/invalid-destination`), or the folder is misspelled (`data.field`) */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description Connection not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
     validate_connection: {
         parameters: {
             query?: never;
@@ -1570,304 +1389,16 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
+            /** @description Not the caller's to change */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description No such connection */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-            /** @description The store did not answer the probe in time */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-        };
-    };
-    list_credentials: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The credentials, with the connections using each; never a secret */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CredentialView"][];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    create_credential: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateCredentialRequest"];
-            };
-        };
-        responses: {
-            /** @description Validated and stored */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CredentialView"];
-                };
-            };
-            /** @description An invalid name */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description A credential of that name exists */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description The credential did not validate */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-            /** @description The store did not answer the probe in time */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-        };
-    };
-    get_credential: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Credential name */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The credential; never a secret */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CredentialView"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description No such credential */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    delete_credential: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Credential name */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Deleted */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            /** @description Neither its creator nor the owner */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description No such credential */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description Connections still use it; `dependents` names them */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    update_credential: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Credential name */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateCredentialRequest"];
-            };
-        };
-        responses: {
-            /** @description Renamed and/or rotated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CredentialView"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            /** @description Neither its creator nor the owner */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description No such credential */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description A connection using it would not validate with the new spec; `dependents` names them */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-            /** @description The store did not answer the probe in time */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-        };
-    };
-    validate_credential: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Credential name */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ValidateCredentialRequest"];
-            };
-        };
-        responses: {
-            /** @description The probe's report, stored with the credential */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ValidationReport"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description No such credential */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1899,7 +1430,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Every completed job's output */
+            /** @description Every completed job's output, newest first */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1953,7 +1484,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Draft job created */
+            /** @description The draft, created; `POST /v1/jobs/{id}/submit` makes it the job to run */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -1962,16 +1493,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description Job submitted for execution */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Job"];
-                };
-            };
-            /** @description The destination is not a sink, or the name or folder is missing or misspelled (`data.field`) */
+            /** @description The destination is not a sink, or the name or folder is misspelled (`data.field`) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1982,15 +1504,6 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            /** @description Another job writes to that folder already: `job/folder-taken` */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
@@ -2015,56 +1528,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Job"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    update_job: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateJobRequest"];
-            };
-        };
-        responses: {
-            /** @description Job updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Job"];
-                };
-            };
-            /** @description Job is not a draft, or the name or folder is misspelled (`data.field`) */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -2127,7 +1590,7 @@ export interface operations {
             503: components["responses"]["KeysUnavailable"];
         };
     };
-    complete_job: {
+    edit_draft: {
         parameters: {
             query?: never;
             header?: never;
@@ -2139,11 +1602,11 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CompleteJobRequest"];
+                "application/json": components["schemas"]["DraftEdits"];
             };
         };
         responses: {
-            /** @description Job status updated from the browser run */
+            /** @description The draft, edited */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2152,7 +1615,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description The job is a draft, which is never run */
+            /** @description The name or folder is misspelled (`data.field`) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2172,7 +1635,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description The job has already ended */
+            /** @description Not a draft: `job/not-draft` */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2184,74 +1647,6 @@ export interface operations {
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    vend_job_credentials: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CredentialsRequest"];
-            };
-        };
-        responses: {
-            /** @description A credential that opens the job's dataset, and only it, for an hour */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VendedCredentials"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description Read before the job completed, or write while it is not running */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            /** @description The store refused to vend */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            503: components["responses"]["KeysUnavailable"];
-            /** @description The store, or the identity service before it, did not answer in time */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
         };
     };
     get_dashboard: {
@@ -2350,51 +1745,7 @@ export interface operations {
             503: components["responses"]["KeysUnavailable"];
         };
     };
-    heartbeat: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The lease is renewed */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description Job not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description The job is not running: it ended, or the sweep ended it */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    publish_relations: {
+    report_status: {
         parameters: {
             query?: never;
             header?: never;
@@ -2406,20 +1757,18 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PublishRelationsRequest"];
+                "application/json": components["schemas"]["JobStatusReport"];
             };
         };
         responses: {
-            /** @description Relations stored */
-            200: {
+            /** @description Recorded: the run started, its lease renewed, or its end */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["Job"];
-                };
+                content?: never;
             };
-            /** @description A file path outside the dataset */
+            /** @description The job is a draft, which is never run, or the status is not running or an end */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2432,6 +1781,15 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             /** @description Job not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The job has already ended (`job/ended`): the sweep's `job/abandoned` among them */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2456,7 +1814,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SubmitJobRequest"];
+                "application/json": components["schemas"]["DraftEdits"];
             };
         };
         responses: {
@@ -2469,7 +1827,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description Job is not a draft (`job/not-draft`), or the name or folder is missing or misspelled (`data.field`) */
+            /** @description The name or folder is missing or misspelled (`data.field`) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2489,7 +1847,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Another job writes to that folder already: `job/folder-taken`; the job stays a draft, unchanged */
+            /** @description Not a draft (`job/not-draft`), or another job writes to that folder already (`job/folder-taken`; the job stays a draft, unchanged) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2501,6 +1859,392 @@ export interface operations {
             429: components["responses"]["RateLimited"];
             500: components["responses"]["InternalError"];
             503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    list_secrets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The secrets, with the connections using each; never a secret's value */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretView"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    create_secret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSecretRequest"];
+            };
+        };
+        responses: {
+            /** @description Validated and stored */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretView"];
+                };
+            };
+            /** @description An invalid name */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description A secret of that name exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The secret did not validate */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+            /** @description The store did not answer the probe in time */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_secret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Secret name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The secret; never its value */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretView"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description No such secret */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    delete_secret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Secret name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Neither its creator nor the owner */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such secret */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Connections still use it; `dependents` names them */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+        };
+    };
+    update_secret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Secret name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSecretRequest"];
+            };
+        };
+        responses: {
+            /** @description Renamed and/or rotated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretView"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Neither its creator nor the owner */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such secret */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description A connection using it would not validate with the new spec; `dependents` names them */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+            /** @description The store did not answer the probe in time */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    validate_secret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Secret name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateSecretRequest"];
+            };
+        };
+        responses: {
+            /** @description The probe's report, stored with the secret */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationReport"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Neither its creator nor the owner */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such secret */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["KeysUnavailable"];
+            /** @description The store did not answer the probe in time */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    vend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageCredentialsRequest"];
+            };
+        };
+        responses: {
+            /** @description A credential that opens the scope's prefix, and only it, for an hour */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendedCredentials"];
+                };
+            };
+            /** @description Not a storage source, or an access the scope does not give */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description A source asked by the owner, or a job's dataset written by the owner */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such connection, or no such job of the caller's */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description A job read before it completed (`job/not-completed`), or written before it runs (`job/not-running`) or after it ended (`job/ended`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            500: components["responses"]["InternalError"];
+            /** @description The store refused to vend */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            503: components["responses"]["KeysUnavailable"];
+            /** @description The store, or the identity service before it, did not answer in time */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     version: {

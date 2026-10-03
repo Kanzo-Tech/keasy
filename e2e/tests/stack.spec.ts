@@ -60,11 +60,11 @@ test("07 with Valkey down a page fails in seconds as session/unavailable", async
   });
 });
 
-test("21 a file listing that fails is store/list-failed, not an empty folder", async ({ page }) => {
+test("21 a file listing that fails is store/refused, not an empty folder", async ({ page }) => {
   test.setTimeout(300_000);
   await without(["s3"], async () => {
     await page.goto(`/connections/${encodeURIComponent(SOURCE)}`);
-    await expectProblem(page, "store/list-failed", { within: 30_000 });
+    await expectProblem(page, "store/refused", { within: 30_000 });
   });
 });
 

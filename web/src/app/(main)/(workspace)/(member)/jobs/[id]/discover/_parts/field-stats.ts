@@ -1,7 +1,6 @@
-import type { FieldStats } from "@kanzo-tech/ui/analytics";
+import type { TableStats } from "@/lib/fossil/corpus";
 
-/** A vertex table's `SUMMARIZE`: its fields a chart or a suggestion may name, and every column a rule may check. */
-export type TableStats = FieldStats & { name: string };
+export type { TableStats };
 
 /** One table's columns, by its name: what a rule may check, fossil's own included. */
 export const columnsOf = (tables: readonly TableStats[], name: string): string[] =>

@@ -1,4 +1,4 @@
-//! Connections: where a credential is used — a storage location. None of these
+//! Connections: where a secret is used — a storage location. None of these
 //! types can hold a secret.
 
 use serde::{Deserialize, Serialize};
@@ -51,7 +51,7 @@ impl StorageTarget {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct ConnectionView {
     pub name: String,
-    pub credential: String,
+    pub secret: String,
     pub target: StorageTarget,
     pub created_by: String,
     pub created_at: String,

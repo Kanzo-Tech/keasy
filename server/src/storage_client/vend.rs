@@ -20,7 +20,7 @@ use serde::Deserialize;
 use sha2::Sha256;
 
 use super::StoreFailure;
-use crate::domain::{Access, StorageCredentialInput, StorageLocation, Store, VendedCredential};
+use crate::domain::{Access, SecretSpec, StorageLocation, Store, VendedCredential};
 
 /// How long a vended credential lives: Unity Catalog's and Polaris's default.
 /// Readers renew it before it lapses.
@@ -82,7 +82,7 @@ fn http(deadlines: Deadlines) -> reqwest::Client {
 
 /// A credential that opens `location` for `access`, and nothing else.
 pub async fn vend(
-    credential: &StorageCredentialInput,
+    credential: &SecretSpec,
     location: &StorageLocation,
     access: Access,
 ) -> Result<VendedCredential, StoreFailure> {
@@ -90,13 +90,13 @@ pub async fn vend(
 }
 
 async fn vend_within(
-    credential: &StorageCredentialInput,
+    credential: &SecretSpec,
     location: &StorageLocation,
     access: Access,
     deadlines: Deadlines,
 ) -> Result<VendedCredential, StoreFailure> {
     match credential {
-        StorageCredentialInput::S3 {
+        SecretSpec::S3 {
             access_key_id,
             secret_access_key,
             region,
@@ -128,7 +128,7 @@ async fn vend_within(
             )
             .await
         }
-        StorageCredentialInput::AzureServicePrincipal {
+        SecretSpec::AzureServicePrincipal {
             account,
             tenant_id,
             client_id,
@@ -154,7 +154,7 @@ async fn vend_within(
                 user_delegation_sas(account, location, access, start, expiry, &key)?,
             ))
         }
-        StorageCredentialInput::AzureAccountKey { account, key } => {
+        SecretSpec::AzureAccountKey { account, key } => {
             let (start, expiry) = window();
             Ok(azure_credential(
                 account,
@@ -648,7 +648,7 @@ mod tests {
     #[tokio::test]
     async fn an_sts_that_accepts_and_never_answers_is_named_silent() {
         let (_held, url) = silent().await;
-        let credential = StorageCredentialInput::S3 {
+        let credential = SecretSpec::S3 {
             access_key_id: "AK".into(),
             secret_access_key: SecretString::from("secret"),
             region: "us-east-1".into(),

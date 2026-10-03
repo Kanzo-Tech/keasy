@@ -37,7 +37,7 @@ pub async fn get_dashboard(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<Json<Option<Dashboard>>, Refusal> {
-    owned(&state.db, &member.user_id, &id).await?;
+    owned(&*state.db.read().await, &member.user_id, &id)?;
     Ok(Json(dashboards::get(&*state.db.read().await, &id)?))
 }
 
@@ -57,7 +57,7 @@ pub async fn put_dashboard(
     Path(id): Path<String>,
     Json(payload): Json<PutDashboardRequest>,
 ) -> Result<Json<Dashboard>, Refusal> {
-    owned(&state.db, &member.user_id, &id).await?;
+    owned(&*state.db.read().await, &member.user_id, &id)?;
     let serde_json::Value::Object(spec) = payload.spec else {
         return Err(Refusal::invalid("A dashboard spec is a JSON object"));
     };
@@ -67,7 +67,7 @@ pub async fn put_dashboard(
     if size > MAX_SPEC_BYTES {
         return Err(Refusal::new(
             StatusCode::PAYLOAD_TOO_LARGE,
-            ErrorCode::TooLarge,
+            ErrorCode::RequestTooLarge,
             format!("A dashboard spec is at most {MAX_SPEC_BYTES} bytes; this one is {size}"),
         ));
     }

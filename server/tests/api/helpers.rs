@@ -16,8 +16,7 @@ use keasy_server::configuration::{
 use keasy_server::credentials::sealing::SecretKey;
 use keasy_server::database::Database;
 use keasy_server::domain::{
-    ConnectionView, Direction, ResourceName, StorageCredentialInput, StorageTarget,
-    ValidationReport,
+    ConnectionView, Direction, ResourceName, SecretSpec, StorageTarget, ValidationReport,
 };
 use keasy_server::startup::Application;
 
@@ -149,6 +148,78 @@ impl TestApp {
         (status, code)
     }
 
+    /// A job to run on the sink `sink`: a draft, submitted with a folder of
+    /// its own. Its id.
+    pub async fn submitted(&self, token: &str) -> String {
+        static FOLDERS: AtomicUsize = AtomicUsize::new(0);
+        let folder = format!("out-{}", FOLDERS.fetch_add(1, Ordering::Relaxed));
+        let (status, draft) = self
+            .send(
+                Method::POST,
+                "/v1/jobs",
+                token,
+                json!({ "script": "x", "sink_connection": "sink" }),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CREATED, "{draft}");
+        let id = draft["id"].as_str().unwrap();
+        let (status, job) = self
+            .send(
+                Method::POST,
+                &format!("/v1/jobs/{id}/submit"),
+                token,
+                json!({ "folder": folder }),
+            )
+            .await;
+        assert_eq!(status, StatusCode::ACCEPTED, "{job}");
+        id.to_string()
+    }
+
+    /// What the runner reports of job `id`: `POST /v1/jobs/{id}/status`. The
+    /// status, and the job as the report left it — read back, since a report
+    /// answers 204 — or the refusal's body.
+    pub async fn report(
+        &self,
+        token: &str,
+        id: &str,
+        report: serde_json::Value,
+    ) -> (StatusCode, serde_json::Value) {
+        let (status, body) = self
+            .send(
+                Method::POST,
+                &format!("/v1/jobs/{id}/status"),
+                token,
+                report,
+            )
+            .await;
+        if status != StatusCode::NO_CONTENT {
+            return (status, body);
+        }
+        let (_, job) = self
+            .send(Method::GET, &format!("/v1/jobs/{id}"), token, json!(null))
+            .await;
+        (status, job)
+    }
+
+    /// What fossil's host asks the one vend door: `scope`, for `access`. The
+    /// status, and the refusal's code when there is one.
+    pub async fn vend(
+        &self,
+        token: &str,
+        scope: serde_json::Value,
+        access: &str,
+    ) -> (StatusCode, Option<String>) {
+        let (status, body) = self
+            .send(
+                Method::POST,
+                "/v1/storage-credentials",
+                token,
+                json!({ "scope": scope, "access": access }),
+            )
+            .await;
+        (status, body["code"].as_str().map(str::to_owned))
+    }
+
     /// A stored S3 credential on `endpoint`, unprobed, created by `by`.
     pub async fn credential(&self, name: &str, endpoint: &str, by: &str) {
         keasy_server::credentials::persistence::insert(
@@ -171,7 +242,7 @@ impl TestApp {
         };
         let view = ConnectionView {
             name: name.into(),
-            credential: credential.into(),
+            secret: credential.into(),
             target,
             created_by: by.into(),
             created_at: String::new(),
@@ -190,8 +261,8 @@ pub fn unprobed() -> ValidationReport {
     }
 }
 
-pub fn s3(endpoint: &str, secret: &str) -> StorageCredentialInput {
-    StorageCredentialInput::S3 {
+pub fn s3(endpoint: &str, secret: &str) -> SecretSpec {
+    SecretSpec::S3 {
         access_key_id: "AK".into(),
         secret_access_key: SecretString::from(secret),
         region: "us-east-1".into(),

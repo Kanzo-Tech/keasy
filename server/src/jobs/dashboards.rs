@@ -52,7 +52,7 @@ pub fn put(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{Job, JobStatus};
+    use crate::domain::Job;
     use serde_json::json;
 
     fn conn_with_job() -> (Connection, String) {
@@ -60,14 +60,7 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
         crate::database::apply_schema(&conn).unwrap();
         crate::connections::persistence::tests::seed_sink(&conn, "sink");
-        let job = Job::new(
-            JobStatus::Draft,
-            None,
-            "sink".into(),
-            None,
-            "x".into(),
-            "u-1".into(),
-        );
+        let job = Job::new(None, "sink".into(), None, "x".into(), "u-1".into());
         crate::jobs::persistence::insert(&conn, &job).unwrap();
         (conn, job.id)
     }

@@ -6,7 +6,7 @@ import { expectProblem } from "../support/problem";
 test("06 a 500 on the job is shown as its code, and the poll stops", async ({ page }) => {
   // Running, with no tab running it, so the page polls it; the first read is real, the rest fail.
   const id = await createJob(page);
-  await api(page, "PATCH", `/v1/jobs/${id}`, { status: "running" });
+  await api(page, "POST", `/v1/jobs/${id}/status`, { status: "running" });
   let asked = 0;
   await page.route(`**/api/v1/jobs/${id}`, async (route) => {
     if (route.request().method() !== "GET") return route.fallback();
@@ -29,7 +29,7 @@ test("18 a run too large for the browser is shown as run/over-budget", async ({ 
   // A real 2 GB run is not something to put in CI: the job is failed with the problem the runner
   // stores for one, and what is forced is that the stored problem reaches the screen whole.
   const id = await createJob(page);
-  await api(page, "PATCH", `/v1/jobs/${id}`, { status: "running" });
+  await api(page, "POST", `/v1/jobs/${id}/status`, { status: "running" });
   const problem = {
     code: "run/over-budget",
     title: "Over budget",
@@ -37,7 +37,7 @@ test("18 a run too large for the browser is shown as run/over-budget", async ({ 
     severity: "error",
     data: { budget: 2_147_483_648, consumer: "join", requested: 3_221_225_472, reserved: 0 },
   };
-  await api(page, "PATCH", `/v1/jobs/${id}`, { status: "failed", problem });
+  await api(page, "POST", `/v1/jobs/${id}/status`, { status: "failed", problem });
   await page.goto(`/jobs/${id}`);
   await expectProblem(page, "run/over-budget", { within: 10_000 });
 });
@@ -76,7 +76,7 @@ test("20 deleting a running job is refused as job/still-running", async ({ page 
 test("22 a draft that does not exist opens as job/not-found, and nothing autosaves", async ({ page }) => {
   let saves = 0;
   await page.route(`**/api/v1/jobs/${MISSING}`, (route) => {
-    if (route.request().method() === "PUT") saves++;
+    if (route.request().method() === "PATCH") saves++;
     return route.fallback();
   });
   await page.goto(`/jobs/new?draft=${MISSING}`);

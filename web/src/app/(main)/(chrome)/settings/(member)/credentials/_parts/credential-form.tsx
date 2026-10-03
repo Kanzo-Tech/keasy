@@ -25,7 +25,7 @@ import { toastError } from "@/lib/errors";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
 
-type Spec = Inputs["StorageCredentialInput"];
+type Spec = Inputs["SecretSpec"];
 
 /** Adds a credential, or renames and rotates `name`. */
 export function CredentialForm({ name }: { name?: string }) {
@@ -49,13 +49,13 @@ export function CredentialForm({ name }: { name?: string }) {
 }
 
 function Stored({ name }: { name: string }) {
-  const credential = settled($api.useSuspenseQuery("get", "/v1/credentials/{name}", { params: { path: { name } } }));
+  const credential = settled($api.useSuspenseQuery("get", "/v1/secrets/{name}", { params: { path: { name } } }));
   return <Form credential={credential} />;
 }
 
 function Form({ credential }: { credential?: Credential }) {
   const router = useRouter();
-  const schema = schemaOf("StorageCredentialInput");
+  const schema = schemaOf("SecretSpec");
   const [name, setName] = useState(credential?.name ?? "");
   const [probeUrl, setProbeUrl] = useState("");
   const [values, setValues] = useState(() =>
@@ -66,14 +66,14 @@ function Form({ credential }: { credential?: Credential }) {
 
   const done = async (title: string) => {
     toast.create({ title, type: "success" });
-    await invalidate("/v1/credentials", "/v1/connections");
+    await invalidate("/v1/secrets", "/v1/connections");
     router.push("/settings/credentials");
   };
-  const create = $api.useMutation("post", "/v1/credentials", {
+  const create = $api.useMutation("post", "/v1/secrets", {
     onSuccess: () => done("Credential validated and saved"),
     onError: (err) => toastError(err, "The credential was not saved"),
   });
-  const update = $api.useMutation("patch", "/v1/credentials/{name}", {
+  const update = $api.useMutation("patch", "/v1/secrets/{name}", {
     onSuccess: () => done("Credential rotated"),
     onError: (err) => toastError(err, "The credential was not rotated"),
   });

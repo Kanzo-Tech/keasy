@@ -2,7 +2,7 @@ use axum::http::{Method, StatusCode};
 use serde_json::json;
 
 use crate::helpers::{DEAD, fake_s3, spawn_app};
-use keasy_server::domain::{Direction, StorageCredentialInput};
+use keasy_server::domain::{Direction, SecretSpec};
 
 /// A secret goes in and never comes out: not in a create's answer, not in a
 /// listing, not in a read, and no response schema has a field to carry one.
@@ -13,7 +13,7 @@ async fn no_response_carries_a_secret() {
     let (status, created) = app
         .send(
             Method::POST,
-            "/v1/credentials",
+            "/v1/secrets",
             &member,
             json!({ "name": "minio", "spec": {
                 "kind": "s3", "access_key_id": "AK", "secret_access_key": "top-secret"
@@ -24,9 +24,9 @@ async fn no_response_carries_a_secret() {
     assert_eq!(created["spec"]["region"], "us-east-1");
     for (_, body) in [
         (status, created),
-        app.send(Method::GET, "/v1/credentials", &member, json!(null))
+        app.send(Method::GET, "/v1/secrets", &member, json!(null))
             .await,
-        app.send(Method::GET, "/v1/credentials/minio", &member, json!(null))
+        app.send(Method::GET, "/v1/secrets/minio", &member, json!(null))
             .await,
     ] {
         assert!(!body.to_string().contains("top-secret"), "{body}");
@@ -34,12 +34,13 @@ async fn no_response_carries_a_secret() {
     }
 
     let spec = serde_json::to_value(keasy_server::startup::openapi()).unwrap();
-    for view in ["StorageCredentialView", "CredentialView", "ConnectionView"] {
+    for view in ["SecretSpecView", "SecretView", "ConnectionView"] {
         let schema = spec["components"]["schemas"][view].to_string();
         for secret in [
             "writeOnly",
             "password",
-            "secret",
+            "secret_access_key",
+            "client_secret",
             "api_key",
             "sas_token",
             "\"key\"",
@@ -53,7 +54,7 @@ async fn no_response_carries_a_secret() {
 }
 
 /// A credential or connection is its creator's or the owner's to change; the
-/// sink is the owner's alone, and sources and models are the members'.
+/// sink is the owner's alone, and sources are the members'.
 #[tokio::test]
 async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_the_sink() {
     let app = spawn_app().await;
@@ -68,14 +69,14 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
 
     let rename = json!({ "name": "renamed" });
     let refused = app
-        .send(Method::PATCH, "/v1/credentials/key", &other, rename.clone())
+        .send(Method::PATCH, "/v1/secrets/key", &other, rename.clone())
         .await;
     assert_eq!(
         (refused.0, refused.1["code"].clone()),
         (StatusCode::FORBIDDEN, json!("rbac/forbidden"))
     );
     assert_eq!(
-        app.send(Method::DELETE, "/v1/credentials/spare", &other, json!(null))
+        app.send(Method::DELETE, "/v1/secrets/spare", &other, json!(null))
             .await
             .0,
         StatusCode::FORBIDDEN
@@ -86,9 +87,31 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
             .0,
         StatusCode::FORBIDDEN
     );
+    for validate in ["/v1/secrets/key/validate", "/v1/connections/data/validate"] {
+        assert_eq!(
+            app.send(Method::POST, validate, &other, json!({})).await.0,
+            StatusCode::FORBIDDEN,
+            "validating stores a report: {validate} is a change"
+        );
+    }
+    let spec =
+        json!({ "kind": "s3", "access_key_id": "AK", "secret_access_key": "s", "endpoint": DEAD });
+    let (status, made) = app
+        .send(
+            Method::POST,
+            "/v1/secrets",
+            &owner,
+            json!({ "name": "owners", "spec": spec }),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::CREATED,
+        "the owner makes a secret: {made}"
+    );
 
     let (status, renamed) = app
-        .send(Method::PATCH, "/v1/credentials/key", &creator, rename)
+        .send(Method::PATCH, "/v1/secrets/key", &creator, rename)
         .await;
     assert_eq!(status, StatusCode::OK, "{renamed}");
     assert_eq!(
@@ -97,15 +120,15 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
         "the rename cascades"
     );
     assert_eq!(
-        app.send(Method::DELETE, "/v1/credentials/spare", &owner, json!(null))
+        app.send(Method::DELETE, "/v1/secrets/spare", &owner, json!(null))
             .await
             .0,
         StatusCode::NO_CONTENT
     );
 
-    let sink = json!({ "name": "sink2", "credential": "renamed", "target": {
+    let sink = json!({ "name": "sink2", "secret": "renamed", "target": {
         "url": "s3://b/out2/", "direction": "sink" } });
-    let source = json!({ "name": "more", "credential": "renamed", "target": {
+    let source = json!({ "name": "more", "secret": "renamed", "target": {
         "url": "s3://b/more/" } });
     assert_eq!(
         app.send(Method::POST, "/v1/connections", &creator, sink)
@@ -158,7 +181,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
     let (status, body) = app
         .send(
             Method::POST,
-            "/v1/credentials",
+            "/v1/secrets",
             &member,
             json!({ "name": "minio", "spec": spec(DEAD, "s"), "probe_url": "s3://b/" }),
         )
@@ -172,7 +195,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
     let (status, body) = app
         .send(
             Method::POST,
-            "/v1/credentials",
+            "/v1/secrets",
             &member,
             json!({ "name": "minio", "spec": spec(&s3, "first"), "probe_url": "s3://b/" }),
         )
@@ -185,7 +208,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
             Method::POST,
             "/v1/connections",
             &member,
-            json!({ "name": "data", "credential": "minio",
+            json!({ "name": "data", "secret": "minio",
             "target": { "url": "s3://b/data/" } }),
         )
         .await;
@@ -195,7 +218,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
             Method::POST,
             "/v1/connections",
             &owner,
-            json!({ "name": "out", "credential": "minio",
+            json!({ "name": "out", "secret": "minio",
             "target": { "url": "s3://b/out/", "direction": "sink" } }),
         )
         .await;
@@ -217,7 +240,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
     let (status, body) = app
         .send(
             Method::PATCH,
-            "/v1/credentials/minio",
+            "/v1/secrets/minio",
             &member,
             json!({ "spec": spec(DEAD, "second") }),
         )
@@ -228,7 +251,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
         .await
         .unwrap();
     assert!(
-        matches!(&kept.spec, StorageCredentialInput::S3 { endpoint, .. }
+        matches!(&kept.spec, SecretSpec::S3 { endpoint, .. }
         if endpoint.as_deref() == Some(s3.as_str())),
         "the old spec stands"
     );
@@ -236,7 +259,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
     let (status, body) = app
         .send(
             Method::PATCH,
-            "/v1/credentials/minio",
+            "/v1/secrets/minio",
             &member,
             json!({ "spec": spec(&s3, "second") }),
         )
@@ -246,7 +269,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
         .await
         .unwrap();
     assert!(
-        matches!(&rotated.spec, StorageCredentialInput::S3 { secret_access_key, .. }
+        matches!(&rotated.spec, SecretSpec::S3 { secret_access_key, .. }
         if secrecy::ExposeSecret::expose_secret(secret_access_key) == "second")
     );
 

@@ -1,9 +1,12 @@
 //! The instance database: one SQLite file, one writer and a few readers, and
-//! its schema — one statement list, no migrations.
+//! its schema — one statement list.
 //!
 //! A fresh database gets the schema. An existing one must already hold exactly
-//! what the schema creates, or the server refuses to start: the schema changes
-//! by deleting the data volume and rebuilding, never by migrating a live file.
+//! what the schema creates, or the server refuses to start. The one exception
+//! is the schema just before this one, which [`UPGRADE`] brings forward in
+//! place, its rows kept; anything older is refused, and changes by deleting
+//! the data volume. There is no chain of migrations: each change replaces the
+//! previous upgrade with its own.
 
 use std::path::Path;
 use std::str::FromStr;
@@ -11,13 +14,12 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
 use rusqlite::Connection;
 use serde::de::DeserializeOwned;
 use tokio::sync::{Mutex, MutexGuard};
 
 use crate::credentials::sealing::SecretKey;
-use crate::error::{ErrorCode, fail};
+use crate::error::{ErrorCode, Refusal};
 
 const READ_POOL_SIZE: usize = 4;
 
@@ -50,40 +52,31 @@ pub enum DbError {
 
 pub type DbResult<T> = Result<T, DbError>;
 
-impl IntoResponse for DbError {
-    fn into_response(self) -> Response {
-        match self {
-            DbError::Invalid(message) => fail(
-                StatusCode::BAD_REQUEST,
-                ErrorCode::ValidationFailed,
-                message,
-            ),
+impl From<DbError> for Refusal {
+    fn from(e: DbError) -> Self {
+        match e {
+            DbError::Invalid(message) => Refusal::invalid(message),
             DbError::AlreadyExists(message) => {
-                fail(StatusCode::CONFLICT, ErrorCode::AlreadyExists, message)
+                Refusal::conflict(ErrorCode::ResourceAlreadyExists, message)
             }
-            DbError::FolderTaken(message) => crate::error::Refusal::field(
+            DbError::FolderTaken(message) => Refusal::field(
                 StatusCode::CONFLICT,
-                ErrorCode::FolderTaken,
+                ErrorCode::JobFolderTaken,
                 "folder",
                 message,
-            )
-            .into_response(),
+            ),
             DbError::InUse {
                 message,
                 dependents,
-            } => crate::error::fail_about(
+            } => Refusal::about(
                 StatusCode::CONFLICT,
-                ErrorCode::InUse,
+                ErrorCode::ResourceInUse,
                 message,
                 dependents,
             ),
             e => {
                 tracing::error!(error = %e, "database failure");
-                fail(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    ErrorCode::InternalError,
-                    "An internal error occurred",
-                )
+                Refusal::internal()
             }
         }
     }
@@ -212,7 +205,11 @@ fn open_conn(path: &Path) -> Result<Connection, String> {
     Connection::open(path).map_err(|e| format!("failed to open connection: {e}"))
 }
 
-const SCHEMA: &str = "
+// The schema in pieces, so the statements an upgrade replays are the
+// schema's own, word for word: SQLite compares them as text.
+macro_rules! schema_head {
+    () => {
+        "
 -- The spec is sealed whole (AES-256-GCM, AAD = 'credential:' || name).
 CREATE TABLE credentials (
     name        TEXT PRIMARY KEY,
@@ -241,7 +238,68 @@ CREATE TABLE connections (
 -- Exactly one write sink per workspace.
 CREATE UNIQUE INDEX connections_one_sink ON connections(direction) WHERE direction = 'sink';
 
-CREATE TABLE jobs (
+"
+    };
+}
+macro_rules! jobs_table {
+    () => {
+        "CREATE TABLE jobs (
+    id              TEXT PRIMARY KEY,
+    name            TEXT,
+    status          TEXT NOT NULL DEFAULT 'pending',
+    created_at      TEXT NOT NULL,
+    started_at      TEXT,
+    completed_at    TEXT,
+    -- The lease: taken at submit and renewed while the job runs; a job
+    -- whose lease has lapsed is swept to failed.
+    heartbeat_at    TEXT,
+    problem         TEXT CHECK (problem IS NULL OR json_valid(problem)),
+    created_by      TEXT NOT NULL,
+    sink_connection TEXT NOT NULL REFERENCES connections (name)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    folder          TEXT CHECK (status = 'draft' OR folder IS NOT NULL),
+    script          TEXT,
+    -- fossil's run report, opaque. What the corpus holds, the corpus says.
+    report          TEXT CHECK (report IS NULL OR json_valid(report))
+);"
+    };
+}
+macro_rules! jobs_index {
+    () => {
+        "CREATE UNIQUE INDEX jobs_one_folder ON jobs(sink_connection, folder) WHERE status <> 'draft';"
+    };
+}
+macro_rules! schema_tail {
+    () => {
+        "
+
+-- A job's saved dashboard: opaque to keasy, gone with the job.
+CREATE TABLE dashboards (
+    job_id      TEXT PRIMARY KEY REFERENCES jobs (id) ON DELETE CASCADE,
+    spec        TEXT NOT NULL CHECK (json_type(spec) = 'object'),
+    updated_at  TEXT NOT NULL,
+    updated_by  TEXT NOT NULL
+);
+"
+    };
+}
+
+const SCHEMA: &str = concat!(
+    schema_head!(),
+    jobs_table!(),
+    "
+-- A folder holds one job's output: drafts may share one, nothing else does.
+",
+    jobs_index!(),
+    schema_tail!()
+);
+
+/// The schema before this one, as a fresh database of it holds it: its `jobs`
+/// kept a copy of the corpus's own description (`relations`), and the run
+/// report under the name `manifest`.
+const PREVIOUS_SCHEMA: &str = concat!(
+    schema_head!(),
+    "CREATE TABLE jobs (
     id              TEXT PRIMARY KEY,
     name            TEXT,
     status          TEXT NOT NULL DEFAULT 'pending',
@@ -259,21 +317,56 @@ CREATE TABLE jobs (
     script          TEXT,
     manifest        TEXT,
     relations       TEXT
-);
+);",
+    "
 -- A folder holds one job's output: drafts may share one, nothing else does.
-CREATE UNIQUE INDEX jobs_one_folder ON jobs(sink_connection, folder) WHERE status <> 'draft';
-
--- A job's saved dashboard: opaque to keasy, gone with the job.
-CREATE TABLE dashboards (
-    job_id      TEXT PRIMARY KEY REFERENCES jobs (id) ON DELETE CASCADE,
-    spec        TEXT NOT NULL CHECK (json_type(spec) = 'object'),
-    updated_at  TEXT NOT NULL,
-    updated_by  TEXT NOT NULL
+",
+    jobs_index!(),
+    schema_tail!()
 );
-";
 
-/// Create the schema in an empty database, or check that a non-empty one holds
-/// exactly it.
+/// From the previous schema to this one: `jobs` is rebuilt without
+/// `relations`, its `manifest` kept as `report`. The old table is moved aside
+/// rather than the new one renamed into place, so the new one's statement is
+/// [`SCHEMA`]'s, word for word; `legacy_alter_table` keeps the move from
+/// rewriting `dashboards`' reference to `jobs`, and with foreign keys off the
+/// old table goes without taking the dashboards with it.
+const UPGRADE: &str = concat!(
+    "
+PRAGMA foreign_keys=OFF;
+PRAGMA legacy_alter_table=ON;
+BEGIN;
+ALTER TABLE jobs RENAME TO jobs_previous;
+",
+    jobs_table!(),
+    "
+INSERT INTO jobs (id, name, status, created_at, started_at, completed_at, heartbeat_at,
+                  problem, created_by, sink_connection, folder, script, report)
+    SELECT id, name, status, created_at, started_at, completed_at, heartbeat_at,
+           problem, created_by, sink_connection, folder, script, manifest
+    FROM jobs_previous;
+DROP TABLE jobs_previous;
+",
+    jobs_index!(),
+    "
+COMMIT;
+PRAGMA legacy_alter_table=OFF;
+PRAGMA foreign_keys=ON;
+"
+);
+
+/// Every table and index a fresh database of `schema` holds.
+fn objects_of(schema: &str) -> Result<Vec<(String, String)>, String> {
+    rusqlite::Connection::open_in_memory()
+        .and_then(|fresh| {
+            fresh.execute_batch(schema)?;
+            objects(&fresh)
+        })
+        .map_err(|e| format!("build expected schema: {e}"))
+}
+
+/// Create the schema in an empty database, bring one of the previous schema
+/// forward, or check that a non-empty one holds exactly it.
 pub fn apply_schema(conn: &rusqlite::Connection) -> Result<(), String> {
     let existing = objects(conn).map_err(|e| format!("read schema: {e}"))?;
     if existing.is_empty() {
@@ -282,12 +375,28 @@ pub fn apply_schema(conn: &rusqlite::Connection) -> Result<(), String> {
             .map_err(|e| format!("create schema: {e}"));
     }
 
-    let expected = rusqlite::Connection::open_in_memory()
-        .and_then(|fresh| {
-            fresh.execute_batch(SCHEMA)?;
-            objects(&fresh)
-        })
-        .map_err(|e| format!("build expected schema: {e}"))?;
+    let expected = objects_of(SCHEMA)?;
+    if existing == expected {
+        return Ok(());
+    }
+    if existing == objects_of(PREVIOUS_SCHEMA)? {
+        if let Err(e) = conn.execute_batch(UPGRADE) {
+            // A failed statement leaves the transaction open; nothing of it is kept.
+            let _ = conn
+                .execute_batch("ROLLBACK; PRAGMA legacy_alter_table=OFF; PRAGMA foreign_keys=ON;");
+            return Err(format!("upgrade the schema: {e}"));
+        }
+        let violations: i64 = conn
+            .query_row("SELECT count(*) FROM pragma_foreign_key_check", [], |r| {
+                r.get(0)
+            })
+            .map_err(|e| format!("check the upgrade: {e}"))?;
+        if violations > 0 {
+            return Err(format!("the upgrade left {violations} broken references"));
+        }
+        tracing::info!("schema upgraded: jobs.relations dropped, jobs.manifest is jobs.report");
+    }
+    let existing = objects(conn).map_err(|e| format!("read schema: {e}"))?;
     if existing != expected {
         return Err(
             "the database was created by a different schema than this build's. \
@@ -328,6 +437,60 @@ mod tests {
             )
             .unwrap();
         assert_eq!(tables, 4);
+    }
+
+    /// A database of the previous schema is brought forward in place: its jobs
+    /// keep their rows and their run report, the copy of the corpus's
+    /// description goes, and a job's dashboard survives its table's rebuild.
+    #[test]
+    fn a_database_of_the_previous_schema_is_upgraded_with_its_rows() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
+        conn.execute_batch(PREVIOUS_SCHEMA).unwrap();
+        conn.execute_batch(
+            r#"
+            INSERT INTO credentials VALUES ('key', x'00', 'u', 't', 'u', 't', NULL);
+            INSERT INTO connections (name, credential, target, created_by, created_at, updated_by, updated_at)
+                VALUES ('sink', 'key', '{"direction":"sink"}', 'u', 't', 'u', 't');
+            INSERT INTO jobs (id, status, created_at, created_by, sink_connection, folder, manifest, relations)
+                VALUES ('done', 'completed', 't', 'u', 'sink', 'people', '{"dest":"s3://b/people/"}', '[{"name":"Person"}]'),
+                       ('draft', 'draft', 't', 'u', 'sink', NULL, NULL, NULL);
+            INSERT INTO dashboards VALUES ('done', '{"cards":[]}', 't', 'u');
+            "#,
+        )
+        .unwrap();
+
+        apply_schema(&conn).unwrap();
+        apply_schema(&conn).unwrap();
+
+        let report: String = conn
+            .query_row("SELECT report FROM jobs WHERE id = 'done'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(report, r#"{"dest":"s3://b/people/"}"#);
+        let jobs: i64 = conn
+            .query_row("SELECT count(*) FROM jobs", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(jobs, 2);
+        let dashboards: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM dashboards WHERE job_id = 'done'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(dashboards, 1, "the dashboard outlives the rebuild");
+        let foreign_keys: i64 = conn
+            .query_row("PRAGMA foreign_keys", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(foreign_keys, 1, "foreign keys are enforced again");
+        conn.execute("DELETE FROM jobs WHERE id = 'done'", [])
+            .unwrap();
+        let dashboards: i64 = conn
+            .query_row("SELECT count(*) FROM dashboards", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(dashboards, 0, "and still dies with its job");
     }
 
     #[test]

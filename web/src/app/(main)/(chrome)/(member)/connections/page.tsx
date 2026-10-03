@@ -92,7 +92,7 @@ function Connections({ tab }: { tab: Tab }) {
     [all, tab],
   );
 
-  const refresh = () => invalidate("/v1/connections", "/v1/credentials");
+  const refresh = () => invalidate("/v1/connections", "/v1/secrets");
   const { mutate: remove } = $api.useMutation("delete", "/v1/connections/{name}", {
     onSuccess: () => {
       toast.create({ title: "Connection deleted", type: "success" });
@@ -118,7 +118,7 @@ function Connections({ tab }: { tab: Tab }) {
         cell: ({ getValue }) => <span className="font-medium">{getValue<string>()}</span>,
       },
       {
-        accessorKey: "credential",
+        accessorKey: "secret",
         header: "Credential",
         cell: ({ getValue }) => <Badge variant="outline">{getValue<string>()}</Badge>,
       },

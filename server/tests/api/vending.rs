@@ -25,43 +25,71 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
             Method::POST,
             "/v1/jobs",
             &member,
-            json!({ "script": "x", "draft": true, "sink_connection": "sink" }),
+            json!({ "script": "x", "sink_connection": "sink" }),
         )
         .await;
-    let id = job["id"].as_str().unwrap();
-    let vend = |path: String, access: &'static str| {
-        let app = &app;
-        let member = member.clone();
-        async move {
-            app.send(Method::POST, &path, &member, json!({ "access": access }))
-                .await
-        }
-    };
+    let job = json!({ "job": job["id"] });
+    let conflict = |code: &str| (StatusCode::CONFLICT, Some(code.to_owned()));
 
-    let (status, body) = vend(format!("/v1/jobs/{id}/credentials"), "read").await;
     assert_eq!(
-        (status, body["code"].as_str()),
-        (StatusCode::CONFLICT, Some("job/not-completed"))
+        app.vend(&member, job.clone(), "read").await,
+        conflict("job/not-completed")
     );
-    let (status, body) = vend(format!("/v1/jobs/{id}/credentials"), "write").await;
     assert_eq!(
-        (status, body["code"].as_str()),
-        (StatusCode::CONFLICT, Some("job/not-running"))
+        app.vend(&member, job.clone(), "write").await,
+        conflict("job/not-running")
     );
 
-    let (status, _) = vend("/v1/connections/sink/credentials".into(), "read").await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    let (status, _) = vend("/v1/connections/source/credentials".into(), "write").await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let sink = json!({ "connection": "sink" });
+    let source = json!({ "connection": "source" });
+    assert_eq!(
+        app.vend(&member, sink, "read").await.0,
+        StatusCode::BAD_REQUEST
+    );
+    assert_eq!(
+        app.vend(&member, source.clone(), "write").await.0,
+        StatusCode::BAD_REQUEST
+    );
+    assert_eq!(
+        app.vend(&member, json!({ "connection": "gone" }), "read")
+            .await
+            .0,
+        StatusCode::NOT_FOUND
+    );
 
     let theirs = app.token_for("u-2", &["member"]);
-    let (status, _) = app
-        .send(
-            Method::POST,
-            &format!("/v1/jobs/{id}/credentials"),
-            &theirs,
-            json!({ "access": "read" }),
-        )
+    assert_eq!(
+        app.vend(&theirs, job.clone(), "read").await.0,
+        StatusCode::NOT_FOUND
+    );
+
+    let owner = app.token_for("u-9", &["owner"]);
+    assert_eq!(
+        app.vend(&owner, source, "read").await,
+        (StatusCode::FORBIDDEN, Some("rbac/forbidden".to_owned())),
+        "the owner never reads a source"
+    );
+    assert_eq!(
+        app.vend(&owner, job.clone(), "write").await.0,
+        StatusCode::FORBIDDEN,
+        "the owner never writes a dataset"
+    );
+    assert_eq!(
+        app.vend(&owner, job, "read").await,
+        conflict("job/not-completed"),
+        "the owner reads a member's job, once it has completed"
+    );
+}
+
+/// A job that ended has nothing left to write: `job/ended`, not "not yet".
+#[tokio::test]
+async fn an_ended_job_is_never_written() {
+    let (app, member) = workspace().await;
+    let id = app.submitted(&member).await;
+    app.report(&member, &id, json!({ "status": "cancelled" }))
         .await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(
+        app.vend(&member, json!({ "job": id }), "write").await,
+        (StatusCode::CONFLICT, Some("job/ended".to_owned()))
+    );
 }

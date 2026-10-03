@@ -47,7 +47,6 @@ import { type EditorApi, StudioEditor } from "./studio-editor";
 import { StudioOutput, type OutputValues } from "./studio-output";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { useJobEditorStore } from "./job-editor-store";
-import { useFolderAvailability } from "./use-folder-availability";
 
 const PANELS = [
   { id: "connections", label: "Connections", icon: Database },
@@ -182,11 +181,12 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
   const refusedOn = (field: string, value: string) =>
     refused?.field === field && refused.value === value ? refused.message : null;
   const nameError = nameProblem(store.name) ?? refusedOn("name", name);
+  // A folder another job holds is said by Create's own refusal (409, `data.field` "folder"): there
+  // is no asking ahead, which would only race the answer that counts.
   const folderRefused = refusedOn("folder", folder);
-  const availability = useFolderAvailability(destination, folder, folderValid);
 
   const errors = diagnostics.filter((d) => d.severity === 1).length;
-  const outputIncomplete = !destination || !folderValid || !!folderRefused || availability === "taken";
+  const outputIncomplete = !destination || !folderValid || !!folderRefused;
 
   const openPanel = (id: PanelId) => {
     setPanel(id);
@@ -208,14 +208,12 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
           ? { reason: "Pick where the graph lands, under Output.", show: () => openPanel("output") }
           : !folderValid
             ? { reason: "Fix the output folder, under Output.", show: () => openPanel("output") }
-            : folderRefused || availability === "taken"
+            : folderRefused
               ? {
-                  reason: "Another job writes to this folder. Pick another under Output.",
+                  reason: `Fix the output folder, under Output: ${folderRefused}`,
                   show: () => openPanel("output"),
                 }
-              : availability === "checking"
-                ? { reason: "Checking the output folder…" }
-                : null;
+              : null;
 
   // ── Saving ──────────────────────────────────────────────────────────────
 
@@ -229,12 +227,12 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
     const folder = s.folder ?? folderSlug(s.name);
     const body = { script: s.script, name, folder: folderProblem(folder) ? undefined : folder };
     if (id) {
-      await http.PUT("/v1/jobs/{id}", { params: { path: { id } }, body });
+      await http.PATCH("/v1/jobs/{id}", { params: { path: { id } }, body });
       return id;
     }
     if (!s.sinkConnectionId) throw new Error("Pick a destination before saving");
     const { data: created } = await http.POST("/v1/jobs", {
-      body: { ...body, draft: true, sink_connection: s.sinkConnectionId },
+      body: { ...body, sink_connection: s.sinkConnectionId },
     });
     return created!.id;
   };
@@ -279,15 +277,15 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
     mutationFn: async (sent: { name: string; folder: string }) => {
       submittingRef.current = true;
       clearTimeout(autosaveRef.current);
-      await savingRef.current?.catch(() => undefined); // a failed save toasted itself; Create sends everything anyway
-      const id = draftIdRef.current;
-      const body = { script: store.script, name: sent.name || undefined, folder: sent.folder };
-      if (id) {
-        const { data: job } = await http.POST("/v1/jobs/{id}/submit", { params: { path: { id } }, body });
-        return job!;
-      }
-      if (!destination) throw new Error("Pick a destination before launching");
-      const { data: job } = await http.POST("/v1/jobs", { body: { ...body, sink_connection: destination } });
+      await savingRef.current?.catch(() => undefined); // a failed save toasted itself; Create sends the script anyway
+      // A job begins as a draft, always; submitting it is what makes it run. The script crosses
+      // once: in the draft written now, or in the submit when the last save did not carry it.
+      const existing = draftIdRef.current;
+      const id = existing ?? (draftIdRef.current = await writeDraft());
+      setDraftId(id);
+      const script = existing && !saved ? store.script : undefined;
+      const body = { script, name: sent.name || undefined, folder: sent.folder };
+      const { data: job } = await http.POST("/v1/jobs/{id}/submit", { params: { path: { id } }, body });
       return job!;
     },
     onSuccess: async (job) => {
@@ -468,7 +466,6 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
                   ) : (
                     <StudioOutput
                       connections={connections}
-                      availability={availability}
                       folderRefused={folderRefused}
                       onChange={onOutputChange}
                       values={output}

@@ -7,7 +7,7 @@ use axum::extract::DefaultBodyLimit;
 use axum::http::{Request, StatusCode};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
-use axum::{Json, Router, middleware};
+use axum::{Router, middleware};
 use tokio::net::TcpListener;
 use tower_governor::GovernorError;
 use tower_governor::GovernorLayer;
@@ -27,7 +27,7 @@ use crate::authentication::role::Role;
 use crate::authentication::token::{SharedValidator, Validator};
 use crate::configuration::{BrandingSettings, DatabaseSettings, Settings};
 use crate::database::Database;
-use crate::error::{ErrorBody, ErrorCode, ErrorData, fail};
+use crate::error::{ErrorBody, ErrorCode, ErrorData, Refusal};
 use crate::routes;
 
 #[derive(Clone)]
@@ -162,9 +162,9 @@ fn routes() -> (OpenApiRouter<AppState>, OpenApiRouter<AppState>) {
         .merge(routes::workspaces::router())
         .merge(routes::jobs::router())
         .merge(routes::datasets::router())
-        .merge(routes::jobs::output::router())
+        .merge(routes::storage_credentials::router())
         .merge(routes::jobs::dashboard::router())
-        .merge(routes::credentials::router())
+        .merge(routes::secrets::router())
         .merge(routes::connections::router())
         .merge(routes::ai::router());
     (public, protected)
@@ -224,7 +224,7 @@ const DEV_RATE: Rate = Rate {
 };
 
 /// The largest request body: a credential, a connection, a job's script and
-/// manifest — never data, which goes to the store, not through here.
+/// run report — never data, which goes to the store, not through here.
 const BODY_LIMIT: usize = 2 * 1024 * 1024;
 
 /// What every request passes through, outermost last: a body limit, the
@@ -277,15 +277,13 @@ pub async fn within(deadline: Duration, request: Request<Body>, next: Next) -> R
                 after_ms = deadline.as_millis() as u64,
                 "request deadline fired"
             );
-            (
+            Refusal::silent(
                 StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorBody::silent(
-                    ErrorCode::ServerSilent,
-                    "The server did not answer within its deadline",
-                    deadline,
-                )),
+                ErrorCode::ServerSilent,
+                "The server did not answer within its deadline",
+                deadline,
             )
-                .into_response()
+            .into_response()
         }
     }
 }
@@ -312,16 +310,13 @@ impl KeyExtractor for Subject {
 /// The refusal a caller over their rate gets.
 fn over_rate(error: GovernorError) -> Response {
     match error {
-        GovernorError::TooManyRequests { .. } => fail(
+        GovernorError::TooManyRequests { .. } => Refusal::new(
             StatusCode::TOO_MANY_REQUESTS,
-            ErrorCode::RateLimited,
+            ErrorCode::RequestRateLimited,
             "Too many requests",
-        ),
-        _ => fail(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            ErrorCode::InternalError,
-            "An internal error occurred",
-        ),
+        )
+        .into_response(),
+        _ => Refusal::internal().into_response(),
     }
 }
 

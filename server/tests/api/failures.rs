@@ -113,7 +113,7 @@ async fn each_resource_that_is_not_there_says_which() {
     for (path, code) in [
         ("/v1/jobs/nope", "job/not-found"),
         ("/v1/connections/nope", "connection/not-found"),
-        ("/v1/credentials/nope", "credential/not-found"),
+        ("/v1/secrets/nope", "secret/not-found"),
     ] {
         let response = app
             .client
@@ -135,25 +135,6 @@ async fn sink(app: &TestApp) {
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 }
 
-async fn submitted(app: &TestApp, member: &str) -> String {
-    // A job to run writes to a folder of its own.
-    static FOLDERS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-    let folder = format!(
-        "out-{}",
-        FOLDERS.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-    );
-    let (status, job) = app
-        .send(
-            Method::POST,
-            "/v1/jobs",
-            member,
-            json!({ "script": "x", "sink_connection": "sink", "folder": folder }),
-        )
-        .await;
-    assert_eq!(status, StatusCode::ACCEPTED);
-    job["id"].as_str().unwrap().to_string()
-}
-
 async fn age(app: &TestApp, id: &str, column: &str, seconds: i64) {
     let then = (jiff::Timestamp::now() - jiff::SignedDuration::from_secs(seconds))
         .strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -173,7 +154,7 @@ async fn a_running_job_is_refused_deletion_with_its_code() {
     let app = spawn_app().await;
     let member = app.token(&["member"]);
     sink(&app).await;
-    let id = submitted(&app, &member).await;
+    let id = app.submitted(&member).await;
     let (status, body) = app
         .send(
             Method::DELETE,
@@ -187,31 +168,36 @@ async fn a_running_job_is_refused_deletion_with_its_code() {
 }
 
 /// A run whose tab closed ends: its heartbeat stops, the next read sweeps it
-/// to failed with `job/abandoned`, the runner can no longer report on it,
+/// to failed with `job/abandoned`, the runner can no longer report on it (`job/ended`),
 /// and it can be deleted.
 #[tokio::test]
 async fn a_run_whose_runner_went_silent_ends_as_abandoned_and_can_be_deleted() {
     let app = spawn_app().await;
     let member = app.token(&["member"]);
     sink(&app).await;
-    let id = submitted(&app, &member).await;
+    let id = app.submitted(&member).await;
     let path = format!("/v1/jobs/{id}");
 
     let (status, running) = app
-        .send(
-            Method::PATCH,
-            &path,
-            &member,
-            json!({ "status": "running" }),
-        )
+        .report(&member, &id, json!({ "status": "running" }))
         .await;
-    assert_eq!(status, StatusCode::OK);
-    assert!(running["heartbeat_at"].is_string());
-    let beat = format!("{path}/heartbeat");
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let started = running["heartbeat_at"].clone();
+    assert!(started.is_string());
+    age(&app, &id, "heartbeat_at", 30).await;
+    let (status, renewed) = app
+        .report(&member, &id, json!({ "status": "running" }))
+        .await;
     assert_eq!(
-        app.call(Method::POST, &beat, Some(&member)).await,
-        StatusCode::NO_CONTENT
+        status,
+        StatusCode::NO_CONTENT,
+        "running again renews the lease"
     );
+    assert!(
+        renewed["heartbeat_at"].as_str() >= started.as_str(),
+        "the lease aged 30 s is renewed to now"
+    );
+    assert_eq!(renewed["started_at"], running["started_at"]);
 
     age(&app, &id, "heartbeat_at", 61).await;
 
@@ -222,23 +208,14 @@ async fn a_run_whose_runner_went_silent_ends_as_abandoned_and_can_be_deleted() {
     assert_eq!(job["status"], "failed");
     assert_eq!(job["problem"]["code"], "job/abandoned");
 
-    let (status, code) = app.answer(Method::POST, &beat, Some(&member)).await;
-    assert_eq!(
-        (status, code.as_deref()),
-        (StatusCode::CONFLICT, Some("job/not-running"))
-    );
-    let (status, body) = app
-        .send(
-            Method::PATCH,
-            &path,
-            &member,
-            json!({ "status": "completed" }),
-        )
-        .await;
-    assert_eq!(
-        (status, body["code"].clone()),
-        (StatusCode::CONFLICT, json!("job/not-running"))
-    );
+    for status in ["running", "completed"] {
+        let (got, body) = app.report(&member, &id, json!({ "status": status })).await;
+        assert_eq!(
+            (got, body["code"].as_str()),
+            (StatusCode::CONFLICT, Some("job/ended")),
+            "{status}"
+        );
+    }
 
     assert_eq!(
         app.call(Method::DELETE, &path, Some(&member)).await,
@@ -251,8 +228,8 @@ async fn a_pending_job_no_runner_picked_up_ends_as_abandoned() {
     let app = spawn_app().await;
     let member = app.token(&["member"]);
     sink(&app).await;
-    let id = submitted(&app, &member).await;
-    age(&app, &id, "created_at", 61).await;
+    let id = app.submitted(&member).await;
+    age(&app, &id, "heartbeat_at", 61).await;
 
     let (_, job) = app
         .send(Method::GET, &format!("/v1/jobs/{id}"), &member, json!(null))
@@ -266,28 +243,13 @@ async fn a_store_that_refuses_to_vend_is_store_refused() {
     let app = spawn_app().await;
     let member = app.token(&["member"]);
     sink(&app).await;
-    let id = submitted(&app, &member).await;
-    let path = format!("/v1/jobs/{id}");
-    app.send(
-        Method::PATCH,
-        &path,
-        &member,
-        json!({ "status": "running" }),
-    )
-    .await;
+    let id = app.submitted(&member).await;
+    app.report(&member, &id, json!({ "status": "running" }))
+        .await;
 
-    let response = app
-        .client
-        .post(url(&app, &format!("{path}/credentials")))
-        .bearer_auth(&member)
-        .json(&json!({ "access": "write" }))
-        .send()
-        .await
-        .unwrap();
-    let (status, body) = refused(response).await;
     assert_eq!(
-        (status, body["code"].as_str().unwrap()),
-        (StatusCode::BAD_GATEWAY, "store/refused")
+        app.vend(&member, json!({ "job": id }), "write").await,
+        (StatusCode::BAD_GATEWAY, Some("store/refused".to_owned()))
     );
 }
 
@@ -335,7 +297,7 @@ async fn a_store_that_never_answers_is_store_silent_from_a_probe_and_a_listing()
     let (created, validated, listed) = tokio::join!(
         app.send(
             Method::POST,
-            "/v1/credentials",
+            "/v1/secrets",
             &member,
             json!({ "name": "fresh", "spec": spec, "probe_url": "s3://b/" }),
         ),

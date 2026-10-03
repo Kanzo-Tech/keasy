@@ -93,8 +93,11 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
     link: { label: "Go to Credentials", href: "/settings/credentials" },
   },
   "resource/in-use": { title: "It is still in use." },
+  "secret/not-found": { title: "No such credential." },
   "job/folder-taken": { title: "Another job writes to this folder already." },
   "job/still-running": { title: "The job is still running; it can be deleted once it ends." },
+  "job/not-running": { title: "The job has not started running yet." },
+  "job/ended": { title: "The job has already ended." },
   "job/abandoned": {
     title: "The run was abandoned",
     detail: "The tab running this job closed or lost its connection, so the job was ended. Run it again.",

@@ -17,7 +17,6 @@ import {
 } from "@kanzo-tech/ui";
 import type { StorageConnection } from "@/lib/connections";
 import { folderProblem } from "./folder";
-import type { Availability } from "./use-folder-availability";
 
 export interface OutputValues {
   sinkConnectionId: string | null;
@@ -32,15 +31,12 @@ export const sinkBase = (sink: StorageConnection | undefined) => sink?.url.repla
 export function StudioOutput({
   values,
   onChange,
-  availability,
   folderRefused,
   connections,
 }: {
   values: OutputValues;
   onChange: (patch: Partial<OutputValues>) => void;
-  /** Whether another job writes to this folder, as asked while typing. */
-  availability: Availability | null;
-  /** What the server said about this folder when Create sent it. */
+  /** What the server said about this folder when Create sent it: another job's, or misspelled. */
   folderRefused: string | null;
   connections: StorageConnection[];
 }) {
@@ -59,10 +55,7 @@ export function StudioOutput({
   );
 
   const destination = sinks.find((c) => c.name === values.sinkConnectionId);
-  const folderError =
-    folderProblem(values.folder) ??
-    folderRefused ??
-    (availability === "taken" ? "Another job writes to this folder already." : null);
+  const folderError = folderProblem(values.folder) ?? folderRefused;
 
   return (
     <div className="flex flex-col gap-5 p-3">
@@ -101,12 +94,9 @@ export function StudioOutput({
           value={values.folder}
         />
         <FieldError>{folderError}</FieldError>
-        <Show when={!folderError && availability === "checking"}>
-          <FieldDescription>Checking the folder…</FieldDescription>
-        </Show>
-        <Show when={!!destination && !folderError && availability !== "checking"}>
+        <Show when={!!destination && !folderError}>
           <FieldDescription className="break-all">
-            <Show when={availability === "available"}>Free. </Show>Writes to{" "}
+            Writes to{" "}
             <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
               {sinkBase(destination)}/{values.folder}/
             </code>

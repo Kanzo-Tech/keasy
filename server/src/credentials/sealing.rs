@@ -5,7 +5,7 @@ use secrecy::ExposeSecret;
 use secrecy::zeroize::Zeroizing;
 use serde_json::json;
 
-use crate::domain::StorageCredentialInput;
+use crate::domain::SecretSpec;
 
 const NONCE_LEN: usize = 12;
 const VERSION: u8 = 0x03;
@@ -95,9 +95,9 @@ fn aad(name: &str) -> String {
 
 /// The spec as it is sealed: the one place a secret is exposed as JSON, and the
 /// JSON goes straight into the cipher.
-fn plaintext(spec: &StorageCredentialInput) -> Vec<u8> {
+fn plaintext(spec: &SecretSpec) -> Vec<u8> {
     let value = match spec {
-        StorageCredentialInput::S3 {
+        SecretSpec::S3 {
             access_key_id,
             secret_access_key,
             region,
@@ -113,12 +113,12 @@ fn plaintext(spec: &StorageCredentialInput) -> Vec<u8> {
             "role_arn": role_arn,
             "external_id": external_id,
         }),
-        StorageCredentialInput::AzureAccountKey { account, key } => json!({
+        SecretSpec::AzureAccountKey { account, key } => json!({
             "kind": "azure_account_key",
             "account": account,
             "key": key.expose_secret(),
         }),
-        StorageCredentialInput::AzureServicePrincipal {
+        SecretSpec::AzureServicePrincipal {
             account,
             tenant_id,
             client_id,
@@ -135,20 +135,12 @@ fn plaintext(spec: &StorageCredentialInput) -> Vec<u8> {
 }
 
 /// Seal the credential `name` holds.
-pub fn seal_spec(
-    name: &str,
-    spec: &StorageCredentialInput,
-    key: &SecretKey,
-) -> Result<Vec<u8>, String> {
+pub fn seal_spec(name: &str, spec: &SecretSpec, key: &SecretKey) -> Result<Vec<u8>, String> {
     seal(&Zeroizing::new(plaintext(spec)), &aad(name), key)
 }
 
 /// Open the credential `name` holds.
-pub fn open_spec(
-    name: &str,
-    sealed: &[u8],
-    key: &SecretKey,
-) -> Result<StorageCredentialInput, String> {
+pub fn open_spec(name: &str, sealed: &[u8], key: &SecretKey) -> Result<SecretSpec, String> {
     let plain = Zeroizing::new(open(sealed, &aad(name), key)?);
     serde_json::from_slice(&plain).map_err(|e| format!("the sealed spec does not parse: {e}"))
 }

@@ -116,9 +116,9 @@ function useJobs() {
 
 function Readiness() {
   const jobs = useJobs();
-  const credentials = settled($api.useSuspenseQuery("get", "/v1/credentials"));
+  const credentials = settled($api.useSuspenseQuery("get", "/v1/secrets"));
   const connections = settled($api.useSuspenseQuery("get", "/v1/connections"));
-  const outputs = jobs.filter((j) => j.status === "completed" && j.manifest).length;
+  const outputs = jobs.filter((j) => j.status === "completed" && j.report).length;
   return (
     <Tiles
       heading={READINESS_HEADING}

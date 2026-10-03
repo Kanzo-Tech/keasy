@@ -8,7 +8,7 @@ import { $api, http } from "@/lib/api/client";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { Boundary } from "@/components/boundary";
-import { roleColumns, useCorpus, vertexTables } from "./corpus";
+import { roleColumns, useCorpus, vertexTables } from "@/lib/fossil/corpus";
 
 /**
  * The Dashboard view: kanzo-ui's `Dashboard` over one vertex type at a time, on the crossfilter the

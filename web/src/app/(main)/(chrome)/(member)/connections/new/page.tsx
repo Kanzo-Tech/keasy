@@ -49,7 +49,7 @@ export default function NewConnectionPage({ searchParams }: { searchParams: Prom
   const create = $api.useMutation("post", "/v1/connections", {
     onSuccess: async () => {
       toast.create({ title: "Connection validated and created", type: "success" });
-      await invalidate("/v1/connections", "/v1/credentials");
+      await invalidate("/v1/connections", "/v1/secrets");
       router.push(`/connections?type=${type}`);
     },
     onError: (err) => toastError(err, "The connection was not created"),
@@ -61,7 +61,7 @@ export default function NewConnectionPage({ searchParams }: { searchParams: Prom
     if (!inner) return;
     const target = { ...inner, direction: "source" };
     create.mutate({
-      body: { name: name.trim(), credential, target: target as unknown as Inputs["StorageTarget"] },
+      body: { name: name.trim(), secret: credential, target: target as unknown as Inputs["StorageTarget"] },
     });
   };
 
@@ -108,7 +108,7 @@ export default function NewConnectionPage({ searchParams }: { searchParams: Prom
 
 /** The credentials a connection can use, as a select; a link to add one when there is none. */
 function CredentialPicker({ value, onChange }: { value: string; onChange: (credential: string) => void }) {
-  const credentials = settled($api.useSuspenseQuery("get", "/v1/credentials"));
+  const credentials = settled($api.useSuspenseQuery("get", "/v1/secrets"));
   const collection = useMemo(
     () =>
       createListCollection({

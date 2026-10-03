@@ -41,7 +41,7 @@ import {
 } from "@kanzo-tech/ui";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import { AskPanel } from "./_parts/ask-panel";
-import { CorpusProvider, corpusQuery, useCorpus } from "./_parts/corpus";
+import { CorpusProvider, corpusQuery, useCorpus } from "@/lib/fossil/corpus";
 import { GraphInfo } from "./_parts/graph-info";
 import { GraphSettings } from "./_parts/graph-settings";
 import { channelsOf, PlacementContext, type Placement } from "./_parts/graph-placement";

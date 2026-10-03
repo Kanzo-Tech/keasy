@@ -7,7 +7,7 @@ use crate::domain::{Job, JobStatus};
 use crate::error::{ErrorBody, ErrorCode};
 
 const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, heartbeat_at, \
-                       problem, created_by, sink_connection, folder, script, manifest, relations";
+                       problem, created_by, sink_connection, folder, script, report";
 
 /// What the schema refused about `job`, said in its terms.
 fn refused(job: &Job, e: rusqlite::Error) -> DbError {
@@ -28,7 +28,7 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
     conn.execute(
         &format!(
             "INSERT INTO jobs ({COLUMNS})
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)"
         ),
         params![
             job.id,
@@ -46,11 +46,7 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
             job.sink_connection,
             job.folder,
             job.script,
-            job.manifest
-                .as_ref()
-                .map(serde_json::to_string)
-                .transpose()?,
-            serde_json::to_string(&job.relations)?,
+            job.report.as_ref().map(serde_json::to_string).transpose()?,
         ],
     )
     .map_err(|e| refused(job, e))?;
@@ -67,24 +63,14 @@ pub fn get(conn: &Connection, id: &str) -> DbResult<Option<Job>> {
         .optional()?)
 }
 
-/// Apply `f` to the stored job and write it back; `None` if there is none.
-pub fn update(conn: &Connection, id: &str, f: impl FnOnce(&mut Job)) -> DbResult<Option<Job>> {
-    let Some(mut job) = get(conn, id)? else {
-        return Ok(None);
-    };
-    f(&mut job);
-    write(conn, &job)?;
-    Ok(Some(job))
-}
-
 /// Store `job` over the row of its id. Refused whole: a refused write leaves
 /// the row as it was.
 pub fn write(conn: &Connection, job: &Job) -> DbResult<()> {
     conn.execute(
         "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, problem = ?5,
-                         script = ?6, manifest = ?7, relations = ?8, folder = ?9, heartbeat_at = ?11,
-                         created_at = ?12
-         WHERE id = ?10",
+                         script = ?6, report = ?7, folder = ?8, heartbeat_at = ?10,
+                         created_at = ?11
+         WHERE id = ?9",
         params![
             job.name,
             job.status.as_ref(),
@@ -95,11 +81,7 @@ pub fn write(conn: &Connection, job: &Job) -> DbResult<()> {
                 .map(serde_json::to_string)
                 .transpose()?,
             job.script,
-            job.manifest
-                .as_ref()
-                .map(serde_json::to_string)
-                .transpose()?,
-            serde_json::to_string(&job.relations)?,
+            job.report.as_ref().map(serde_json::to_string).transpose()?,
             job.folder,
             job.id,
             job.heartbeat_at,
@@ -110,33 +92,22 @@ pub fn write(conn: &Connection, job: &Job) -> DbResult<()> {
     Ok(())
 }
 
-/// Whether a job that is not a draft holds `folder` in `sink`.
-pub fn folder_taken(conn: &Connection, sink: &str, folder: &str) -> DbResult<bool> {
-    Ok(conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM jobs
-                       WHERE sink_connection = ?1 AND folder = ?2 AND status <> 'draft')",
-        [sink, folder],
-        |row| row.get(0),
-    )?)
-}
-
 /// How long a runner may go without a heartbeat, and a `pending` job without
 /// a runner, before the job is swept as abandoned. Published as
 /// `x-keasy-bounds.job_lease_ms`; the browser's runner beats four times within
 /// it, so one lost request is not an abandoned run.
 pub const LEASE: std::time::Duration = std::time::Duration::from_secs(60);
 
-/// End every job no runner is holding: `running` with a heartbeat (or, before
-/// the first one, a start) older than [`LEASE`], and `pending` created longer
-/// ago than it. Each becomes `failed` with the problem `job/abandoned`.
+/// End every job no runner is holding: `pending` or `running` with a lease —
+/// taken at submit, renewed by each `running` — older than [`LEASE`]. Each
+/// becomes `failed` with the problem `job/abandoned`. A row from before the
+/// lease was taken at submit falls back to its start, then its creation.
 ///
 /// Run before every read of jobs rather than on a schedule: a tab that closed
 /// cannot say so, and the next person to look is the only one who can notice.
 pub fn sweep(conn: &Connection, now: jiff::Timestamp) -> DbResult<usize> {
-    let spell = |t: jiff::Timestamp| t.strftime("%Y-%m-%dT%H:%M:%SZ").to_string();
-    let cutoff = spell(now - jiff::SignedDuration::try_from(LEASE).expect("a lease fits"));
     let problem = serde_json::to_string(&ErrorBody::new(
-        ErrorCode::Abandoned,
+        ErrorCode::JobAbandoned,
         format!(
             "Nothing ran this job for {} s: the tab that ran it closed, \
              or never opened it",
@@ -146,27 +117,55 @@ pub fn sweep(conn: &Connection, now: jiff::Timestamp) -> DbResult<usize> {
     ))?;
     Ok(conn.execute(
         "UPDATE jobs SET status = 'failed', completed_at = ?1, problem = ?2
-         WHERE (status = 'running' AND COALESCE(heartbeat_at, started_at, created_at) < ?3)
-            OR (status = 'pending' AND created_at < ?3)",
-        params![spell(now), problem, cutoff],
+         WHERE status IN ('pending', 'running')
+           AND COALESCE(heartbeat_at, started_at, created_at) < ?3",
+        params![spell(now), problem, lapsed(now)],
     )?)
 }
 
-/// Every job in the workspace (the owner's datasets view).
-pub fn list(conn: &Connection) -> DbResult<Vec<Job>> {
-    select(conn, "", None)
+/// A timestamp as the table stores it.
+fn spell(t: jiff::Timestamp) -> String {
+    t.strftime("%Y-%m-%dT%H:%M:%SZ").to_string()
 }
 
-/// The jobs `user_id` created.
+/// A lease taken before this has lapsed.
+fn lapsed(now: jiff::Timestamp) -> String {
+    spell(now - jiff::SignedDuration::try_from(LEASE).expect("a lease fits"))
+}
+
+/// Renew the lease of `id`, `user_id`'s and running, if it has not lapsed:
+/// the runner's beat, one statement. False when there was nothing to renew,
+/// and the caller reads the row to say why.
+pub fn renew(conn: &Connection, id: &str, user_id: &str, now: jiff::Timestamp) -> DbResult<bool> {
+    Ok(conn.execute(
+        "UPDATE jobs SET heartbeat_at = ?1
+         WHERE id = ?2 AND created_by = ?3 AND status = 'running'
+           AND COALESCE(heartbeat_at, started_at, created_at) >= ?4",
+        params![spell(now), id, user_id, lapsed(now)],
+    )? == 1)
+}
+
+/// Every completed job in the workspace, the latest first: the owner's datasets.
+pub fn completed(conn: &Connection) -> DbResult<Vec<Job>> {
+    select(
+        conn,
+        "WHERE status = 'completed' ORDER BY completed_at DESC",
+        None,
+    )
+}
+
+/// The jobs `user_id` created, the newest first.
 pub fn list_of(conn: &Connection, user_id: &str) -> DbResult<Vec<Job>> {
-    select(conn, "WHERE created_by = ?1", Some(user_id))
+    select(
+        conn,
+        "WHERE created_by = ?1 ORDER BY created_at DESC",
+        Some(user_id),
+    )
 }
 
-fn select(conn: &Connection, filter: &str, param: Option<&str>) -> DbResult<Vec<Job>> {
+fn select(conn: &Connection, clause: &str, param: Option<&str>) -> DbResult<Vec<Job>> {
     let jobs = conn
-        .prepare(&format!(
-            "SELECT {COLUMNS} FROM jobs {filter} ORDER BY created_at DESC"
-        ))?
+        .prepare(&format!("SELECT {COLUMNS} FROM jobs {clause}"))?
         .query_map(rusqlite::params_from_iter(param), row_to_job)?
         .collect::<rusqlite::Result<_>>()?;
     Ok(jobs)
@@ -188,10 +187,11 @@ pub fn delete(conn: &Connection, id: &str) -> DbResult<()> {
 fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
     let status: JobStatus = enum_column(row, "status")?;
     // The browser reads the program to run a `Pending` job (and to re-run a
-    // `Running` one); a finished job exposes only its manifest.
-    let script = match status {
-        JobStatus::Draft | JobStatus::Pending | JobStatus::Running => row.get("script")?,
-        JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled => None,
+    // `Running` one); a finished job exposes only its report.
+    let script = if status.has_ended() {
+        None
+    } else {
+        row.get("script")?
     };
     Ok(Job {
         id: row.get("id")?,
@@ -206,8 +206,7 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
         sink_connection: row.get("sink_connection")?,
         folder: row.get("folder")?,
         script,
-        manifest: json_column_opt(row, "manifest")?,
-        relations: json_column_opt(row, "relations")?.unwrap_or_default(),
+        report: json_column_opt(row, "report")?,
     })
 }
 
@@ -225,25 +224,20 @@ mod tests {
     }
 
     fn job(owner: &str) -> Job {
-        Job::new(
-            JobStatus::Draft,
-            None,
-            "sink".into(),
-            None,
-            "x".into(),
-            owner.into(),
-        )
+        Job::new(None, "sink".into(), None, "x".into(), owner.into())
     }
 
     fn filed(status: JobStatus, folder: &str) -> Job {
-        Job::new(
+        Job {
             status,
-            None,
-            "sink".into(),
-            Some(JobFolder::parse(folder).unwrap()),
-            "x".into(),
-            "u-1".into(),
-        )
+            ..Job::new(
+                None,
+                "sink".into(),
+                Some(JobFolder::parse(folder).unwrap()),
+                "x".into(),
+                "u-1".into(),
+            )
+        }
     }
 
     /// One folder, one job's output: drafts may share it, and the folder is
@@ -277,8 +271,11 @@ mod tests {
 
         let draft = job("u-1");
         insert(&conn, &draft).unwrap();
-        let promoted = update(&conn, &draft.id, |j| j.status = JobStatus::Running);
-        assert!(matches!(promoted, Err(DbError::Invalid(_))));
+        let promoted = Job {
+            status: JobStatus::Running,
+            ..draft
+        };
+        assert!(matches!(write(&conn, &promoted), Err(DbError::Invalid(_))));
     }
 
     /// A row that does not decode is an error, not a job with defaults filled in.
@@ -291,14 +288,13 @@ mod tests {
             .unwrap();
 
         assert!(get(&conn, &stored.id).is_err());
-        assert!(list(&conn).is_err());
+        assert!(list_of(&conn, "u-1").is_err());
 
-        conn.execute(
-            "UPDATE jobs SET status = 'draft', relations = 'not json'",
-            [],
-        )
-        .unwrap();
-        assert!(get(&conn, &stored.id).is_err());
+        assert!(
+            conn.execute("UPDATE jobs SET status = 'draft', report = 'not json'", [])
+                .is_err(),
+            "a report that is not JSON is never stored"
+        );
     }
 
     fn at(job: &Job, conn: &Connection) -> Job {

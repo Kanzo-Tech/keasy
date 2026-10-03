@@ -1,5 +1,5 @@
 {
-  "credentials": [
+  "secrets": [
     {
       "name": "Dev S3",
       "spec": {
@@ -14,17 +14,17 @@
   "connections": [
     {
       "name": "LDBC SNB",
-      "credential": "Dev S3",
+      "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/ldbc/", "kind": "data", "direction": "source" }
     },
     {
       "name": "Dev shapes",
-      "credential": "Dev S3",
+      "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/vocab/", "kind": "vocab", "direction": "source" }
     },
     {
       "name": "Workspace output",
-      "credential": "Dev S3",
+      "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/output/", "kind": "data", "direction": "sink" }
     }
   ],

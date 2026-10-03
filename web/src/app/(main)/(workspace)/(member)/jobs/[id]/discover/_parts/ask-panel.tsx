@@ -23,7 +23,7 @@ import { ProblemView } from "@/components/problem-view";
 import { settled } from "@/lib/api/settled";
 import { askAgent, type QueryAnswer, type QueryOutput } from "./ask-agent";
 import { describeDataSpace } from "./data-space";
-import { corpusKey, ONCE, useCorpus, useFieldStats, useGraphKey } from "./corpus";
+import { corpusKey, ONCE, useCorpus, useFieldStats, useGraphKey } from "@/lib/fossil/corpus";
 import { ResultTable } from "./result-table";
 import { type Edge, generateSuggestions } from "./schema-suggestions";
 

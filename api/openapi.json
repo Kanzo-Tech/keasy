@@ -241,7 +241,7 @@
             }
           },
           "400": {
-            "description": "No such credential, one of the other purpose, or a URL it does not reach",
+            "description": "No such secret, or a URL it does not reach",
             "content": {
               "application/json": {
                 "schema": {
@@ -254,7 +254,7 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "A sink by a member, or a source or model by the owner",
+            "description": "A sink by a member, or a source by the owner",
             "content": {
               "application/json": {
                 "schema": {
@@ -516,103 +516,6 @@
         }
       }
     },
-    "/v1/connections/{name}/credentials": {
-      "post": {
-        "tags": [
-          "Connections"
-        ],
-        "summary": "Vend a read credential over a source connection's prefix — Unity Catalog's\ntemporary path credentials over an external location. Sources are read,\nnever written; the sink is reached only through its jobs.",
-        "operationId": "vend_source_credentials",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Connection name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CredentialsRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "A credential that opens the source's prefix, and only it, for an hour",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VendedCredentials"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Not a storage source, or an access a source does not give",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "No such connection",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "502": {
-            "description": "The store refused to vend",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
-          "504": {
-            "description": "The store, or the identity service before it, did not answer in time",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/connections/{name}/files": {
       "get": {
         "tags": [
@@ -628,24 +531,40 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "prefix",
+            "in": "query",
+            "description": "A folder under the connection's prefix (`dynamic/`, `a/b`), to list\nonly what is under it. No `.` or `..` segments.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "At most this many objects: 1000 when left out, and never more.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Every object under the connection's prefix",
+            "description": "The first `limit` objects under the connection's prefix, or under `prefix` within it",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FileEntry"
-                  }
+                  "$ref": "#/components/schemas/FileListing"
                 }
               }
             }
           },
           "400": {
-            "description": "Not a storage connection",
+            "description": "Not a storage source, or a prefix that leaves it (`data.field`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -702,88 +621,12 @@
         }
       }
     },
-    "/v1/connections/{name}/folders/{folder}": {
-      "get": {
-        "tags": [
-          "Jobs"
-        ],
-        "summary": "Whether a job to run may take `folder` in the sink: no job but a draft\nholds it. It reveals only whether the folder is held, never whose job holds\nit.",
-        "operationId": "folder_availability",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "The sink connection's name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "folder",
-            "in": "path",
-            "description": "The folder under the sink",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/JobFolder"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Whether a job to run may write to the folder",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FolderAvailability"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The connection is not the sink (`job/invalid-destination`), or the folder is misspelled (`data.field`)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Connection not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
     "/v1/connections/{name}/validate": {
       "post": {
         "tags": [
           "Connections"
         ],
-        "summary": "LIST a source, WRITE and DELETE under the sink, list a model's provider.",
+        "summary": "LIST a source, WRITE and DELETE under the sink.",
         "operationId": "validate_connection",
         "parameters": [
           {
@@ -811,7 +654,14 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Not the caller's to change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           },
           "404": {
             "description": "No such connection",
@@ -845,426 +695,16 @@
         }
       }
     },
-    "/v1/credentials": {
-      "get": {
-        "tags": [
-          "Credentials"
-        ],
-        "operationId": "list_credentials",
-        "responses": {
-          "200": {
-            "description": "The credentials, with the connections using each; never a secret",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CredentialView"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Credentials"
-        ],
-        "operationId": "create_credential",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateCredentialRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Validated and stored",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CredentialView"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An invalid name",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "409": {
-            "description": "A credential of that name exists",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The credential did not validate",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
-          "504": {
-            "description": "The store did not answer the probe in time",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/credentials/{name}": {
-      "get": {
-        "tags": [
-          "Credentials"
-        ],
-        "operationId": "get_credential",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Credential name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The credential; never a secret",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CredentialView"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "No such credential",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Credentials"
-        ],
-        "operationId": "delete_credential",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Credential name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Deleted"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "description": "Neither its creator nor the owner",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No such credential",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Connections still use it; `dependents` names them",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Credentials"
-        ],
-        "summary": "Rotation replaces the whole spec, and is committed only if every connection\nusing the credential still validates with the new one.",
-        "operationId": "update_credential",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Credential name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateCredentialRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Renamed and/or rotated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CredentialView"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "description": "Neither its creator nor the owner",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No such credential",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "A connection using it would not validate with the new spec; `dependents` names them",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
-          "504": {
-            "description": "The store did not answer the probe in time",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/credentials/{name}/validate": {
-      "post": {
-        "tags": [
-          "Credentials"
-        ],
-        "summary": "Probe the credential through every connection that uses it, and at `url`.",
-        "operationId": "validate_credential",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Credential name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ValidateCredentialRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "The probe's report, stored with the credential",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidationReport"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "No such credential",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
-          "504": {
-            "description": "The store did not answer the probe in time",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/datasets": {
       "get": {
         "tags": [
-          "Jobs"
+          "Datasets"
         ],
-        "summary": "Every dataset the workspace produced, as the corpus reader named it: the\nowner's index over the whole workspace. It carries metadata only; the\nmember reaches the bytes through the job that made them.",
+        "summary": "Every dataset the workspace produced: the owner's index over the whole\nworkspace. The owner opens one by reading its job's corpus.",
         "operationId": "list_datasets",
         "responses": {
           "200": {
-            "description": "Every completed job's output",
+            "description": "Every completed job's output, newest first",
             "content": {
               "application/json": {
                 "schema": {
@@ -1335,6 +775,7 @@
         "tags": [
           "Jobs"
         ],
+        "summary": "A job begins as a draft, always: what it runs, where it lands. Submitting\nit is the one way a job comes to run.",
         "operationId": "create_job",
         "requestBody": {
           "content": {
@@ -1348,17 +789,7 @@
         },
         "responses": {
           "201": {
-            "description": "Draft job created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Job"
-                }
-              }
-            }
-          },
-          "202": {
-            "description": "Job submitted for execution",
+            "description": "The draft, created; `POST /v1/jobs/{id}/submit` makes it the job to run",
             "content": {
               "application/json": {
                 "schema": {
@@ -1368,7 +799,7 @@
             }
           },
           "400": {
-            "description": "The destination is not a sink, or the name or folder is missing or misspelled (`data.field`)",
+            "description": "The destination is not a sink, or the name or folder is misspelled (`data.field`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1382,16 +813,6 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
-          },
-          "409": {
-            "description": "Another job writes to that folder already: `job/folder-taken`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -1429,80 +850,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Job"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Job not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Jobs"
-        ],
-        "operationId": "update_job",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateJobRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Job updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Job"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Job is not a draft, or the name or folder is misspelled (`data.field`)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -1595,8 +942,7 @@
         "tags": [
           "Jobs"
         ],
-        "summary": "The browser ran the mapping and uploaded the output; this records the\noutcome. `Completed` stores the run report verbatim, unread.",
-        "operationId": "complete_job",
+        "operationId": "edit_draft",
         "parameters": [
           {
             "name": "id",
@@ -1612,7 +958,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CompleteJobRequest"
+                "$ref": "#/components/schemas/DraftEdits"
               }
             }
           },
@@ -1620,7 +966,7 @@
         },
         "responses": {
           "200": {
-            "description": "Job status updated from the browser run",
+            "description": "The draft, edited",
             "content": {
               "application/json": {
                 "schema": {
@@ -1630,7 +976,7 @@
             }
           },
           "400": {
-            "description": "The job is a draft, which is never run",
+            "description": "The name or folder is misspelled (`data.field`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1656,7 +1002,7 @@
             }
           },
           "409": {
-            "description": "The job has already ended",
+            "description": "Not a draft: `job/not-draft`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1673,103 +1019,6 @@
           },
           "503": {
             "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/credentials": {
-      "post": {
-        "tags": [
-          "Discovery"
-        ],
-        "summary": "Vend a credential over the job's dataset, `{sink}/{folder}/`: to read it\nonce the job has completed, or to write it while the job runs. The store\nholds the boundary, so the credential opens nothing else.",
-        "operationId": "vend_job_credentials",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CredentialsRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "A credential that opens the job's dataset, and only it, for an hour",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VendedCredentials"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Job not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Read before the job completed, or write while it is not running",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "502": {
-            "description": "The store refused to vend",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          },
-          "504": {
-            "description": "The store, or the identity service before it, did not answer in time",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
           }
         }
       }
@@ -1921,13 +1170,13 @@
         }
       }
     },
-    "/v1/jobs/{id}/heartbeat": {
+    "/v1/jobs/{id}/status": {
       "post": {
         "tags": [
           "Jobs"
         ],
-        "summary": "The runner is still there. Sent every 15 s while the job runs; a running\njob with no heartbeat for the lease (60 s) is swept as `job/abandoned`.",
-        "operationId": "heartbeat",
+        "summary": "The runner's one report: `running` starts the run and, sent again, renews\nits lease — a running job no report has renewed for the lease (60 s) is\nswept as `job/abandoned`; an end records how the run ended, and dates it.\n`completed` stores the run report verbatim, unread.",
+        "operationId": "report_status",
         "parameters": [
           {
             "name": "id",
@@ -1939,9 +1188,29 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobStatusReport"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "204": {
-            "description": "The lease is renewed"
+            "description": "Recorded: the run started, its lease renewed, or its end"
+          },
+          "400": {
+            "description": "The job is a draft, which is never run, or the status is not running or an end",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -1960,85 +1229,7 @@
             }
           },
           "409": {
-            "description": "The job is not running: it ended, or the sweep ended it",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/relations": {
-      "put": {
-        "tags": [
-          "Jobs"
-        ],
-        "summary": "What the corpus reader found: the relations a finished job's output holds,\ntheir names and the files that carry them, as `@fossil-lang/corpus`\nenumerated them in the browser.",
-        "description": "It is a second call and not a field of the completion because naming a\nrelation is an answer only a reader holding the manifests can give, and the\nrun report is not that reader. keasy stores the answer verbatim; it is what\nthe owner's datasets view lists.",
-        "operationId": "publish_relations",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PublishRelationsRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Relations stored",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Job"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "A file path outside the dataset",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Job not found",
+            "description": "The job has already ended (`job/ended`): the sweep's `job/abandoned` among them",
             "content": {
               "application/json": {
                 "schema": {
@@ -2064,7 +1255,7 @@
         "tags": [
           "Jobs"
         ],
-        "summary": "A draft becomes the job to run, in place: the edits, the folder check and\nthe promotion are one write, so a refusal leaves the draft as it was and a\nsuccess leaves no draft behind.",
+        "summary": "A draft becomes the job to run, in place: the edits, the folder check and\nthe promotion are one write, so a refusal leaves the draft as it was and a\nsuccess leaves no draft behind. The only way a job comes to be pending.",
         "operationId": "submit_job",
         "parameters": [
           {
@@ -2081,7 +1272,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SubmitJobRequest"
+                "$ref": "#/components/schemas/DraftEdits"
               }
             }
           },
@@ -2099,7 +1290,7 @@
             }
           },
           "400": {
-            "description": "Job is not a draft (`job/not-draft`), or the name or folder is missing or misspelled (`data.field`)",
+            "description": "The name or folder is missing or misspelled (`data.field`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -2125,7 +1316,7 @@
             }
           },
           "409": {
-            "description": "Another job writes to that folder already: `job/folder-taken`; the job stays a draft, unchanged",
+            "description": "Not a draft (`job/not-draft`), or another job writes to that folder already (`job/folder-taken`; the job stays a draft, unchanged)",
             "content": {
               "application/json": {
                 "schema": {
@@ -2142,6 +1333,527 @@
           },
           "503": {
             "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      }
+    },
+    "/v1/secrets": {
+      "get": {
+        "tags": [
+          "Secrets"
+        ],
+        "operationId": "list_secrets",
+        "responses": {
+          "200": {
+            "description": "The secrets, with the connections using each; never a secret's value",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SecretView"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Secrets"
+        ],
+        "summary": "Any role may create one: a member for their sources, the owner for the\nsink — and either may change or delete what they made.",
+        "operationId": "create_secret",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSecretRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Validated and stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An invalid name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "A secret of that name exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The secret did not validate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          },
+          "504": {
+            "description": "The store did not answer the probe in time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/secrets/{name}": {
+      "get": {
+        "tags": [
+          "Secrets"
+        ],
+        "operationId": "get_secret",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Secret name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The secret; never its value",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretView"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Secrets"
+        ],
+        "operationId": "delete_secret",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Secret name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Neither its creator nor the owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Connections still use it; `dependents` names them",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Secrets"
+        ],
+        "summary": "Rotation replaces the whole spec, and is committed only if every connection\nusing the secret still validates with the new one.",
+        "operationId": "update_secret",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Secret name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSecretRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Renamed and/or rotated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretView"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Neither its creator nor the owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A connection using it would not validate with the new spec; `dependents` names them",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          },
+          "504": {
+            "description": "The store did not answer the probe in time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/secrets/{name}/validate": {
+      "post": {
+        "tags": [
+          "Secrets"
+        ],
+        "summary": "Probe the secret through every connection that uses it, and at `url`.",
+        "operationId": "validate_secret",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Secret name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateSecretRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The probe's report, stored with the secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReport"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Neither its creator nor the owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          },
+          "504": {
+            "description": "The store did not answer the probe in time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/storage-credentials": {
+      "post": {
+        "tags": [
+          "Storage"
+        ],
+        "summary": "Vend a credential over `scope` for `access`. A member reads a source\nconnection — Unity Catalog's temporary path credentials over an external\nlocation — and reads a job of their own once it has completed, or writes\nit while it runs. The owner reads any completed job of the workspace, which\nis what the datasets view opens; the owner never touches a source.",
+        "operationId": "vend",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageCredentialsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A credential that opens the scope's prefix, and only it, for an hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendedCredentials"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a storage source, or an access the scope does not give",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "A source asked by the owner, or a job's dataset written by the owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such connection, or no such job of the caller's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A job read before it completed (`job/not-completed`), or written before it runs (`job/not-running`) or after it ended (`job/ended`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "502": {
+            "description": "The store refused to vend",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/KeysUnavailable"
+          },
+          "504": {
+            "description": "The store, or the identity service before it, did not answer in time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -2292,25 +2004,6 @@
           }
         }
       },
-      "CompleteJobRequest": {
-        "type": "object",
-        "description": "The browser-driven completion payload (PATCH `/v1/jobs/{id}`): after running\nthe mapping in the browser (`@fossil-lang/executor`) and writing the output\nwith the credential vended for the job, the client reports the run's outcome. `manifest` is the\nexecutor's run report, stored verbatim and never read.",
-        "required": [
-          "status"
-        ],
-        "properties": {
-          "manifest": {
-            "description": "The run report for the uploaded output (on `Completed`) — opaque JSON."
-          },
-          "problem": {
-            "description": "Why the run failed (on `Failed`): the run's problem, stored verbatim\nand opaque."
-          },
-          "status": {
-            "$ref": "#/components/schemas/JobStatus",
-            "description": "The terminal (or `Running`) status the client is transitioning the job to."
-          }
-        }
-      },
       "ConnectionKind": {
         "type": "string",
         "enum": [
@@ -2322,7 +2015,7 @@
         "type": "object",
         "required": [
           "name",
-          "credential",
+          "secret",
           "target",
           "created_by",
           "created_at",
@@ -2336,10 +2029,10 @@
           "created_by": {
             "type": "string"
           },
-          "credential": {
+          "name": {
             "type": "string"
           },
-          "name": {
+          "secret": {
             "type": "string"
           },
           "target": {
@@ -2367,43 +2060,20 @@
         "type": "object",
         "required": [
           "name",
-          "credential",
+          "secret",
           "target"
         ],
         "properties": {
-          "credential": {
-            "type": "string",
-            "description": "The credential it signs with."
-          },
           "name": {
             "$ref": "#/components/schemas/ResourceName",
             "description": "What programs write after `@`, and the connection's key."
           },
+          "secret": {
+            "type": "string",
+            "description": "The secret it signs with."
+          },
           "target": {
             "$ref": "#/components/schemas/StorageTarget"
-          }
-        }
-      },
-      "CreateCredentialRequest": {
-        "type": "object",
-        "required": [
-          "name",
-          "spec"
-        ],
-        "properties": {
-          "name": {
-            "$ref": "#/components/schemas/ResourceName"
-          },
-          "probe_url": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "uri",
-            "description": "A storage URL to LIST before the credential is stored. A credential has\nno location of its own, so without one it is only checked to build a\nclient."
-          },
-          "spec": {
-            "$ref": "#/components/schemas/StorageCredentialInput"
           }
         }
       },
@@ -2414,9 +2084,6 @@
           "sink_connection"
         ],
         "properties": {
-          "draft": {
-            "type": "boolean"
-          },
           "folder": {
             "oneOf": [
               {
@@ -2424,7 +2091,7 @@
               },
               {
                 "$ref": "#/components/schemas/JobFolder",
-                "description": "The folder under the sink the output lands in. A draft may leave it\nout; a job to run needs one no other job in the sink holds."
+                "description": "The folder under the sink the output lands in. A draft may leave it\nout; it needs one, no other job's, to be submitted."
               }
             ]
           },
@@ -2447,63 +2114,26 @@
           }
         }
       },
-      "CredentialView": {
+      "CreateSecretRequest": {
         "type": "object",
         "required": [
           "name",
-          "spec",
-          "used_by",
-          "created_by",
-          "created_at",
-          "updated_by",
-          "updated_at"
+          "spec"
         ],
         "properties": {
-          "created_at": {
-            "type": "string"
-          },
-          "created_by": {
-            "type": "string"
-          },
           "name": {
-            "type": "string"
+            "$ref": "#/components/schemas/ResourceName"
+          },
+          "probe_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "A storage URL to LIST before the secret is stored. A secret has\nno location of its own, so without one it is only checked to build a\nclient."
           },
           "spec": {
-            "$ref": "#/components/schemas/StorageCredentialView"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "updated_by": {
-            "type": "string"
-          },
-          "used_by": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The connections that use this credential."
-          },
-          "validation": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ValidationReport"
-              }
-            ]
-          }
-        }
-      },
-      "CredentialsRequest": {
-        "type": "object",
-        "required": [
-          "access"
-        ],
-        "properties": {
-          "access": {
-            "$ref": "#/components/schemas/Access"
+            "$ref": "#/components/schemas/SecretSpec"
           }
         }
       },
@@ -2534,32 +2164,29 @@
       },
       "Dataset": {
         "type": "object",
-        "description": "A completed job's output, as the owner's datasets view lists it.",
+        "description": "A completed job's output: where its corpus is, and when it was written.\nWhat the corpus holds is the corpus's own to say — a reader opens it (with\na credential vended for the job) and asks its `fossil_tables` and\n`fossil_columns`; keasy keeps no copy of it.",
         "required": [
-          "job_id",
-          "relations"
+          "id",
+          "dest",
+          "completed_at"
         ],
         "properties": {
           "completed_at": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "job_id": {
             "type": "string"
+          },
+          "dest": {
+            "type": "string",
+            "description": "The corpus's root, `{sink}/{folder}/`."
+          },
+          "id": {
+            "type": "string",
+            "description": "The job that wrote it, which is the scope its read credential is asked for."
           },
           "name": {
             "type": [
               "string",
               "null"
             ]
-          },
-          "relations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OutputRelation"
-            }
           }
         }
       },
@@ -2570,6 +2197,39 @@
           "source",
           "sink"
         ]
+      },
+      "DraftEdits": {
+        "type": "object",
+        "description": "Edits to a draft: as it is written (PATCH), and as it is submitted.",
+        "properties": {
+          "folder": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JobFolder",
+                "description": "The draft's folder under the sink, spelled as on create. Submitting\nneeds one, unless the draft holds one already."
+              }
+            ]
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResourceName"
+              }
+            ]
+          },
+          "script": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
       },
       "ErrorBody": {
         "type": "object",
@@ -2597,7 +2257,7 @@
       },
       "ErrorCode": {
         "type": "string",
-        "description": "Every error the server answers with. Closed: a code the server does not\ndeclare here cannot be sent, and the web keys its copy by this enum.\n\nOne grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry\nin the web keys all three. The areas are keasy's own and never one of\nfossil's (`storage`, `engine`, `run`, …): a code means one thing.",
+        "description": "Every error the server answers with. Closed: a code the server does not\ndeclare here cannot be sent, and the web keys its copy by this enum.\n\nOne grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry\nin the web keys all three. The areas are keasy's own and never one of\nfossil's (`storage`, `engine`, `run`, …): a code means one thing. Each\nvariant is its wire name spelled in Rust, `area/kind-x` as `AreaKindX`, so\nthe code a test asserts and the variant a handler names are one word.\n\nEvery refusal the server writes is an [`ErrorBody`] with one of these, with\none exception: the AI relay (`routes::ai`) passes the gateway's own refusal\nthrough in the OpenAI error format the browser's model client reads, status\nand body untouched. Its own failures — no gateway, unreachable, silent —\nare `gateway/*` bodies like any other.",
         "enum": [
           "auth/session-required",
           "auth/keys-unavailable",
@@ -2616,18 +2276,18 @@
           "job/not-draft",
           "job/not-completed",
           "job/not-running",
+          "job/ended",
           "job/still-running",
           "job/abandoned",
           "job/invalid-destination",
           "job/no-destination",
           "job/folder-taken",
-          "credential/not-found",
+          "secret/not-found",
           "connection/not-found",
           "resource/already-exists",
           "resource/in-use",
           "connection/overlaps",
           "probe/failed",
-          "store/list-failed",
           "store/refused",
           "store/silent",
           "gateway/not-configured",
@@ -2653,7 +2313,7 @@
             "items": {
               "type": "string"
             },
-            "description": "What the refusal is about: what still uses a credential or connection,\nor the connections a rotation would break."
+            "description": "What the refusal is about: what still uses a secret or connection,\nor the connections a rotation would break."
           },
           "field": {
             "type": [
@@ -2688,15 +2348,23 @@
           }
         }
       },
-      "FolderAvailability": {
+      "FileListing": {
         "type": "object",
-        "description": "Whether a folder of the sink is free for a job to run.",
+        "description": "The objects under a connection's prefix, the first `limit` of them.",
         "required": [
-          "available"
+          "files",
+          "truncated"
         ],
         "properties": {
-          "available": {
-            "type": "boolean"
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileEntry"
+            }
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "More objects lie under the prefix than were listed."
           }
         }
       },
@@ -2739,13 +2407,10 @@
               "string",
               "null"
             ],
-            "description": "The runner's last heartbeat while the job runs: its lease."
+            "description": "The job's lease: taken when it is submitted, renewed by every\n`running` its runner reports. A job whose lease lapses is swept."
           },
           "id": {
             "type": "string"
-          },
-          "manifest": {
-            "description": "What the run reported, verbatim and **opaque**: fossil's own run report\n(`RunReport`, `{dest, dropped}`) — not the manifest, which is the\ncorpus's own `fossil.json`. keasy stores it, hands it back and never\nreads a field of it — the last time a host re-typed this struct, it\nended up asking for `vertex/<Type>.parquet`, a file the layout pass\ndeletes. Its presence is the one thing keasy asks of it: \"this job\nproduced output\"."
           },
           "name": {
             "oneOf": [
@@ -2760,12 +2425,8 @@
           "problem": {
             "description": "Why a `Failed` run failed, as the browser that ran it reported it: a\nproblem (`{ code, title, detail, data, … }`), stored verbatim and\n**opaque** — the web branches on its `code`, the server never does."
           },
-          "relations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OutputRelation"
-            },
-            "description": "What the corpus holds and what it is called, as the corpus reader\nenumerated it (`@fossil-lang/corpus`). fossil names every relation and\nevery file; keasy joins them to the destination it owns, which a\ncredential vended over the job's folder reads."
+          "report": {
+            "description": "What the run reported, verbatim and **opaque**: fossil's run report\n(`RunReport`, `{dest, dropped}`). keasy stores it, hands it back and\nnever reads a field of it — the last time a host re-typed this struct,\nit ended up asking for `vertex/<Type>.parquet`, a file the layout pass\ndeletes. What the corpus holds is the corpus's to say: a reader opens\nit and asks its `fossil_tables` and `fossil_columns`."
           },
           "script": {
             "type": [
@@ -2806,6 +2467,25 @@
           "cancelled"
         ]
       },
+      "JobStatusReport": {
+        "type": "object",
+        "description": "What the runner reports of a job's run (POST `/v1/jobs/{id}/status`): that\nit runs, again every so often to hold its lease, and how it ended. The\nbrowser runs the program (`@fossil-lang/executor`) and writes the output\nwith a credential vended for the job; keasy only records.",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "problem": {
+            "description": "Why the run failed (on `failed`): the run's problem, stored verbatim\nand opaque."
+          },
+          "report": {
+            "description": "fossil's run report (on `completed`), stored verbatim and never read."
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "`running` (the first time it starts the run, every time after it renews\nthe lease), or the end: `completed`, `failed` or `cancelled`."
+          }
+        }
+      },
       "Operation": {
         "type": "string",
         "description": "What a probe tried.",
@@ -2823,52 +2503,6 @@
           "skip"
         ]
       },
-      "OutputRelation": {
-        "type": "object",
-        "description": "One addressable relation of a job's output, named by fossil.\n\n`name` is the relation the corpus registers and queries by (`Person`,\n`Person_knows_Person`) — **keasy does not compose it**; it is what the\ncorpus reader answered. `files` are the dataset-relative payload files the\ncorpus addressing enumerated, `rows` the count it reported and `columns`\nwhat a row carries.",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "columns": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RelationColumn"
-            }
-          },
-          "files": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "name": {
-            "type": "string"
-          },
-          "rows": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64"
-          }
-        }
-      },
-      "PublishRelationsRequest": {
-        "type": "object",
-        "description": "What the corpus reader enumerated for a finished job (PUT\n`/v1/jobs/{id}/relations`). It arrives after completion because naming a\nrelation is the corpus's answer, not the report's: only a reader with the\nmanifests in hand can say what the dataset is called and which files carry\nit.",
-        "required": [
-          "relations"
-        ],
-        "properties": {
-          "relations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OutputRelation"
-            }
-          }
-        }
-      },
       "PutDashboardRequest": {
         "type": "object",
         "required": [
@@ -2882,22 +2516,6 @@
             "propertyNames": {
               "type": "string"
             }
-          }
-        }
-      },
-      "RelationColumn": {
-        "type": "object",
-        "required": [
-          "name",
-          "data_type"
-        ],
-        "properties": {
-          "data_type": {
-            "type": "string",
-            "description": "The engine's spelling of the Parquet type (`VARCHAR`, `BIGINT`, …)."
-          },
-          "name": {
-            "type": "string"
           }
         }
       },
@@ -2916,7 +2534,38 @@
           "member"
         ]
       },
-      "StorageCredentialInput": {
+      "Scope": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "A source connection's prefix, by the connection's name.",
+            "required": [
+              "connection"
+            ],
+            "properties": {
+              "connection": {
+                "type": "string",
+                "description": "A source connection's prefix, by the connection's name."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A job's dataset, by the job's id.",
+            "required": [
+              "job"
+            ],
+            "properties": {
+              "job": {
+                "type": "string",
+                "description": "A job's dataset, by the job's id."
+              }
+            }
+          }
+        ],
+        "description": "What a credential is asked for: fossil's `Scope`, verbatim."
+      },
+      "SecretSpec": {
         "oneOf": [
           {
             "type": "object",
@@ -3028,9 +2677,9 @@
             }
           }
         ],
-        "description": "A credential as a request states it, secrets included."
+        "description": "A secret's spec as a request states it, its values included."
       },
-      "StorageCredentialView": {
+      "SecretSpecView": {
         "oneOf": [
           {
             "type": "object",
@@ -3120,7 +2769,71 @@
             }
           }
         ],
-        "description": "A credential as a response shows it: what names it, never what signs with it."
+        "description": "A secret's spec as a response shows it: what names it, never what signs with it."
+      },
+      "SecretView": {
+        "type": "object",
+        "required": [
+          "name",
+          "spec",
+          "used_by",
+          "created_by",
+          "created_at",
+          "updated_by",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/SecretSpecView"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": "string"
+          },
+          "used_by": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The connections that use this secret."
+          },
+          "validation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ValidationReport"
+              }
+            ]
+          }
+        }
+      },
+      "StorageCredentialsRequest": {
+        "type": "object",
+        "required": [
+          "scope",
+          "access"
+        ],
+        "properties": {
+          "access": {
+            "$ref": "#/components/schemas/Access"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          }
+        }
       },
       "StorageTarget": {
         "type": "object",
@@ -3138,39 +2851,6 @@
             "type": "string",
             "format": "uri",
             "description": "The prefix the connection is: `s3://bucket/prefix/` or `az://container/prefix/`."
-          }
-        }
-      },
-      "SubmitJobRequest": {
-        "type": "object",
-        "description": "A draft's final edits as it becomes a job to run, spelled as on update.",
-        "properties": {
-          "folder": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/JobFolder",
-                "description": "Needed unless the draft holds one already."
-              }
-            ]
-          },
-          "name": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ResourceName"
-              }
-            ]
-          },
-          "script": {
-            "type": [
-              "string",
-              "null"
-            ]
           }
         }
       },
@@ -3215,12 +2895,6 @@
       "UpdateConnectionRequest": {
         "type": "object",
         "properties": {
-          "credential": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "name": {
             "oneOf": [
               {
@@ -3229,6 +2903,12 @@
               {
                 "$ref": "#/components/schemas/ResourceName"
               }
+            ]
+          },
+          "secret": {
+            "type": [
+              "string",
+              "null"
             ]
           },
           "target": {
@@ -3243,9 +2923,9 @@
           }
         }
       },
-      "UpdateCredentialRequest": {
+      "UpdateSecretRequest": {
         "type": "object",
-        "description": "A rename, a rotation or both. `spec` replaces the whole spec, secrets\nincluded, and is stored only if every connection using the credential\nstill validates with it.",
+        "description": "A rename, a rotation or both. `spec` replaces the whole spec, secrets\nincluded, and is stored only if every connection using the secret\nstill validates with it.",
         "properties": {
           "name": {
             "oneOf": [
@@ -3263,45 +2943,13 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/StorageCredentialInput"
+                "$ref": "#/components/schemas/SecretSpec"
               }
             ]
           }
         }
       },
-      "UpdateJobRequest": {
-        "type": "object",
-        "properties": {
-          "folder": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/JobFolder",
-                "description": "The draft's folder under the sink, spelled as on create."
-              }
-            ]
-          },
-          "name": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ResourceName"
-              }
-            ]
-          },
-          "script": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "ValidateCredentialRequest": {
+      "ValidateSecretRequest": {
         "type": "object",
         "properties": {
           "url": {
@@ -3310,7 +2958,7 @@
               "null"
             ],
             "format": "uri",
-            "description": "A storage URL to LIST besides the connections that use the credential."
+            "description": "A storage URL to LIST besides the connections that use the secret."
           }
         }
       },

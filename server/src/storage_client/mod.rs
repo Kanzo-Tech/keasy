@@ -17,8 +17,8 @@ use object_store::{
 };
 use secrecy::ExposeSecret;
 
-use crate::domain::{StorageCredentialInput, StorageLocation, StoreKind};
-use crate::error::{ErrorBody, ErrorCode, Refusal};
+use crate::domain::{SecretSpec, StorageLocation, StoreKind};
+use crate::error::{ErrorCode, Refusal};
 use crate::startup::REQUEST_DEADLINE;
 
 /// How long the store may take to accept a connection.
@@ -101,15 +101,19 @@ impl From<&str> for StoreFailure {
     }
 }
 
-impl StoreFailure {
-    /// The refusal a route answers with: `refused` for a no, `store/silent`
-    /// for a silence.
-    pub fn refusal(self, refused: ErrorCode) -> Refusal {
-        match self {
-            Self::Refused(message) => Refusal::new(StatusCode::BAD_GATEWAY, refused, message),
-            silent @ Self::Silent { after, .. } => Refusal::Body(
+/// A store that said no is `store/refused` (502), one that said nothing in
+/// time `store/silent` (504) — whatever the server asked it.
+impl From<StoreFailure> for Refusal {
+    fn from(e: StoreFailure) -> Self {
+        match e {
+            StoreFailure::Refused(message) => {
+                Refusal::new(StatusCode::BAD_GATEWAY, ErrorCode::StoreRefused, message)
+            }
+            silent @ StoreFailure::Silent { after, .. } => Refusal::silent(
                 StatusCode::GATEWAY_TIMEOUT,
-                ErrorBody::silent(ErrorCode::StoreSilent, silent.to_string(), after),
+                ErrorCode::StoreSilent,
+                silent.to_string(),
+                after,
             ),
         }
     }
@@ -178,10 +182,7 @@ pub enum CloudStore {
 }
 
 /// The client `credential` opens on the bucket or container `location` names.
-pub fn store(
-    credential: &StorageCredentialInput,
-    location: &StorageLocation,
-) -> Result<CloudStore, String> {
+pub fn store(credential: &SecretSpec, location: &StorageLocation) -> Result<CloudStore, String> {
     if StoreKind::of(credential) != location.kind() {
         return Err(format!(
             "this credential reaches {} URLs, not {}",
@@ -192,7 +193,7 @@ pub fn store(
     let bucket = location.bucket();
 
     let store = match credential {
-        StorageCredentialInput::S3 {
+        SecretSpec::S3 {
             access_key_id,
             secret_access_key,
             region,
@@ -215,13 +216,13 @@ pub fn store(
             }
             CloudStore::S3(builder.build().map_err(|e| e.to_string())?)
         }
-        StorageCredentialInput::AzureAccountKey { account, key } => CloudStore::Azure(
+        SecretSpec::AzureAccountKey { account, key } => CloudStore::Azure(
             azure(bucket, account)
                 .with_access_key(key.expose_secret())
                 .build()
                 .map_err(|e| e.to_string())?,
         ),
-        StorageCredentialInput::AzureServicePrincipal {
+        SecretSpec::AzureServicePrincipal {
             account,
             tenant_id,
             client_id,
@@ -271,19 +272,26 @@ impl CloudStore {
     }
 }
 
-/// Every object under `location`, within [`STORE_DEADLINE`].
+/// The first `limit` objects under `under` within `location`, within
+/// [`STORE_DEADLINE`], and whether there were more.
 pub async fn list_files(
-    credential: &StorageCredentialInput,
+    credential: &SecretSpec,
     location: &StorageLocation,
-) -> Result<Vec<ObjectMeta>, StoreFailure> {
+    under: &ObjectPath,
+    limit: usize,
+) -> Result<(Vec<ObjectMeta>, bool), StoreFailure> {
     let store = store(credential, location)?;
+    let prefix: ObjectPath = location.path().parts().chain(under.parts()).collect();
     bounded(STORE_DEADLINE, async {
         let mut entries = Vec::new();
-        let mut listing = store.list(location.path());
+        let mut listing = store.list(&prefix);
         while let Some(meta) = listing.next().await {
+            if entries.len() == limit {
+                return Ok((entries, true));
+            }
             entries.push(meta.map_err(failure)?);
         }
-        Ok(entries)
+        Ok((entries, false))
     })
     .await
 }
@@ -293,8 +301,8 @@ mod tests {
     use super::*;
     use secrecy::SecretString;
 
-    fn s3() -> StorageCredentialInput {
-        StorageCredentialInput::S3 {
+    fn s3() -> SecretSpec {
+        SecretSpec::S3 {
             access_key_id: "AK".into(),
             secret_access_key: SecretString::from("SK"),
             region: "us-east-1".into(),

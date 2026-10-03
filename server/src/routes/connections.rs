@@ -1,8 +1,9 @@
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::response::IntoResponse;
 use object_store::ObjectMeta;
+use object_store::path::Path as ObjectPath;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -11,7 +12,7 @@ use utoipa_axum::routes;
 use crate::authentication::role::{AnyRole, Member};
 use crate::connections::{named, persistence};
 use crate::domain::{ConnectionView, ResourceName, StorageTarget, ValidationReport};
-use crate::error::{ErrorBody, ErrorCode, Refusal};
+use crate::error::{ErrorBody, Refusal};
 use crate::startup::AppState;
 use crate::storage_client;
 
@@ -20,8 +21,8 @@ pub struct CreateConnectionRequest {
     /// What programs write after `@`, and the connection's key.
     #[schema(value_type = ResourceName)]
     pub name: String,
-    /// The credential it signs with.
-    pub credential: String,
+    /// The secret it signs with.
+    pub secret: String,
     pub target: StorageTarget,
 }
 
@@ -31,9 +32,33 @@ pub struct UpdateConnectionRequest {
     #[schema(value_type = Option<ResourceName>)]
     pub name: Option<String>,
     #[serde(default)]
-    pub credential: Option<String>,
+    pub secret: Option<String>,
     #[serde(default)]
     pub target: Option<StorageTarget>,
+}
+
+/// What `GET /v1/connections/{name}/files` lists: a folder under the
+/// connection's prefix, and how many objects at most.
+#[derive(Debug, Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct FilesQuery {
+    /// A folder under the connection's prefix (`dynamic/`, `a/b`), to list
+    /// only what is under it. No `.` or `..` segments.
+    pub prefix: Option<String>,
+    /// At most this many objects: 1000 when left out, and never more.
+    pub limit: Option<usize>,
+}
+
+/// The most objects one listing answers: a listing is a page a person reads,
+/// not an inventory of the store.
+const MAX_FILES: usize = 1000;
+
+/// The objects under a connection's prefix, the first `limit` of them.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct FileListing {
+    pub files: Vec<FileEntry>,
+    /// More objects lie under the prefix than were listed.
+    pub truncated: bool,
 }
 
 /// One object under a connection's prefix.
@@ -72,7 +97,7 @@ fn may_change(
     }
     match current {
         None if caller.is_owner() => Err(Refusal::forbidden(
-            "the owner manages the sink; sources and models are the members'",
+            "the owner manages the sink; sources are the members'",
         )),
         None => Ok(()),
         Some(c) if caller.owns(&c.created_by) => Ok(()),
@@ -96,8 +121,8 @@ pub async fn list_connections(
     request_body = CreateConnectionRequest,
     responses(
         (status = 201, description = "Validated and stored", body = ConnectionView),
-        (status = 400, description = "No such credential, one of the other purpose, or a URL it does not reach", body = ErrorBody),
-        (status = 403, description = "A sink by a member, or a source or model by the owner", body = ErrorBody),
+        (status = 400, description = "No such secret, or a URL it does not reach", body = ErrorBody),
+        (status = 403, description = "A sink by a member, or a source by the owner", body = ErrorBody),
         (status = 409, description = "A connection of that name, or a second sink", body = ErrorBody),
         (status = 422, description = "The connection did not validate", body = ErrorBody),
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
@@ -112,7 +137,7 @@ pub async fn create_connection(
     let view = crate::connections::create(
         &state.db,
         request.name,
-        request.credential,
+        request.secret,
         request.target,
         &caller.user_id,
     )
@@ -157,8 +182,8 @@ pub async fn update_connection(
     if let Some(new_name) = request.name {
         updated.name = new_name;
     }
-    if let Some(credential) = request.credential {
-        updated.credential = credential;
+    if let Some(secret) = request.secret {
+        updated.secret = secret;
     }
     if let Some(target) = request.target {
         updated.target = target;
@@ -197,30 +222,32 @@ pub async fn delete_connection(
     params(("name" = String, Path, description = "Connection name")),
     responses(
         (status = 200, description = "The probe's report, stored with the connection", body = ValidationReport),
+        (status = 403, description = "Not the caller's to change", body = ErrorBody),
         (status = 404, description = "No such connection", body = ErrorBody),
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
-/// LIST a source, WRITE and DELETE under the sink, list a model's provider.
+/// LIST a source, WRITE and DELETE under the sink.
 pub async fn validate_connection(
-    _: AnyRole,
+    caller: AnyRole,
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     let connection = named(&state.db, &name).await?;
-    let credential = crate::credentials::named(&state.db, &connection.credential).await?;
-    let report = crate::credentials::probe::connection(&credential.spec, &connection.target)
-        .await
-        .map_err(|e| e.refusal(ErrorCode::ProbeFailed))?;
+    // Validating stores the report on the connection: a change, guarded as one.
+    may_change(&caller, Some(&connection), connection.target.is_sink())?;
+    let credential = crate::credentials::named(&state.db, &connection.secret).await?;
+    let report =
+        crate::credentials::probe::connection(&credential.spec, &connection.target).await?;
     persistence::set_validation(&*state.db.write().await, &name, &report)?;
     Ok(Json(report))
 }
 
 #[utoipa::path(get, path = "/v1/connections/{name}/files", tag = "Connections",
-    params(("name" = String, Path, description = "Connection name")),
+    params(("name" = String, Path, description = "Connection name"), FilesQuery),
     responses(
-        (status = 200, description = "Every object under the connection's prefix", body = Vec<FileEntry>),
-        (status = 400, description = "Not a storage connection", body = ErrorBody),
+        (status = 200, description = "The first `limit` objects under the connection's prefix, or under `prefix` within it", body = FileListing),
+        (status = 400, description = "Not a storage source, or a prefix that leaves it (`data.field`)", body = ErrorBody),
         (status = 404, description = "No such connection", body = ErrorBody),
         (status = 502, description = "The store refused the listing", body = ErrorBody),
         (status = 504, description = "The store did not answer in time", body = ErrorBody),
@@ -230,46 +257,22 @@ pub async fn list_connection_files(
     _: Member,
     State(state): State<AppState>,
     Path(name): Path<String>,
+    Query(query): Query<FilesQuery>,
 ) -> Result<impl IntoResponse, Refusal> {
-    let connection = named(&state.db, &name).await?;
-    let (url, credential) = crate::connections::storage(&state.db, &connection).await?;
-    storage_client::list_files(&credential, &url)
-        .await
-        .map(|files| Json(files.into_iter().map(FileEntry::from).collect::<Vec<_>>()))
-        .map_err(|e| e.refusal(ErrorCode::ListFilesFailed))
-}
-
-#[utoipa::path(post, path = "/v1/connections/{name}/credentials", tag = "Connections",
-    params(("name" = String, Path, description = "Connection name")),
-    request_body = super::jobs::output::CredentialsRequest,
-    responses(
-        (status = 200, description = "A credential that opens the source's prefix, and only it, for an hour", body = crate::domain::VendedCredentials),
-        (status = 400, description = "Not a storage source, or an access a source does not give", body = ErrorBody),
-        (status = 404, description = "No such connection", body = ErrorBody),
-        (status = 502, description = "The store refused to vend", body = ErrorBody),
-        (status = 504, description = "The store, or the identity service before it, did not answer in time", body = ErrorBody),
-    )
-)]
-/// Vend a read credential over a source connection's prefix — Unity Catalog's
-/// temporary path credentials over an external location. Sources are read,
-/// never written; the sink is reached only through its jobs.
-pub async fn vend_source_credentials(
-    _: Member,
-    State(state): State<AppState>,
-    Path(name): Path<String>,
-    Json(req): Json<super::jobs::output::CredentialsRequest>,
-) -> Result<Response, Refusal> {
-    let connection = named(&state.db, &name).await?;
-    if connection.target.direction != crate::domain::Direction::Source {
-        return Err(Refusal::invalid(format!(
-            "{name:?} is not a storage source"
-        )));
-    }
-    if req.access != crate::domain::Access::Read {
-        return Err(Refusal::invalid("a source is read, never written"));
-    }
-    let (location, credential) = crate::connections::storage(&state.db, &connection).await?;
-    super::jobs::output::vended(&credential, &location, req.access).await
+    let under = ObjectPath::parse(query.prefix.as_deref().unwrap_or_default())
+        .map_err(|e| Refusal::invalid_field("prefix", e.to_string()))?;
+    let limit = query.limit.unwrap_or(MAX_FILES).min(MAX_FILES);
+    let (url, credential) = {
+        let conn = state.db.read().await;
+        // The sink is reached through its jobs, here as when a credential is vended for it.
+        let source = crate::connections::source(&conn, &name)?;
+        crate::connections::storage(&conn, state.db.secret_key(), &source)?
+    };
+    let (files, truncated) = storage_client::list_files(&credential, &url, &under, limit).await?;
+    Ok(Json(FileListing {
+        files: files.into_iter().map(FileEntry::from).collect(),
+        truncated,
+    }))
 }
 
 /// The routes this module serves.
@@ -283,5 +286,4 @@ pub fn router() -> OpenApiRouter<AppState> {
         ))
         .routes(routes!(validate_connection))
         .routes(routes!(list_connection_files))
-        .routes(routes!(vend_source_credentials))
 }

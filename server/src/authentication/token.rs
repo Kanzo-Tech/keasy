@@ -119,19 +119,19 @@ pub enum TokenError {
     KeysUnavailable,
 }
 
-impl axum::response::IntoResponse for TokenError {
-    fn into_response(self) -> axum::response::Response {
-        use crate::error::ErrorCode;
+impl From<TokenError> for crate::error::Refusal {
+    fn from(e: TokenError) -> Self {
+        use crate::error::{ErrorCode, Refusal};
         use axum::http::StatusCode;
-        match self {
-            TokenError::Missing | TokenError::Invalid | TokenError::Foreign => crate::error::fail(
+        match e {
+            TokenError::Missing | TokenError::Invalid | TokenError::Foreign => Refusal::new(
                 StatusCode::UNAUTHORIZED,
-                ErrorCode::SessionRequired,
+                ErrorCode::AuthSessionRequired,
                 "Authentication required",
             ),
-            TokenError::KeysUnavailable => crate::error::fail(
+            TokenError::KeysUnavailable => Refusal::new(
                 StatusCode::SERVICE_UNAVAILABLE,
-                ErrorCode::KeysUnavailable,
+                ErrorCode::AuthKeysUnavailable,
                 "The identity provider is unreachable",
             ),
         }

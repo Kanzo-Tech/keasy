@@ -55,7 +55,7 @@ export default function CatalogStoragePage() {
 
 function CatalogStorage() {
   const credentials = settled(
-    $api.useSuspenseQuery("get", "/v1/credentials"),
+    $api.useSuspenseQuery("get", "/v1/secrets"),
   );
   const connections = settled(
     $api.useSuspenseQuery("get", "/v1/connections"),
@@ -89,7 +89,7 @@ function CatalogStorage() {
 }
 
 function Form({ credentials, sink }: { credentials: Credential[]; sink?: Connection }) {
-  const [credential, setCredential] = useState(sink?.credential ?? "");
+  const [credential, setCredential] = useState(sink?.secret ?? "");
   const [url, setUrl] = useState(sink?.target.url ?? "");
   const collection = useMemo(
     () => createListCollection({ items: credentials.map((c) => ({ label: c.name, value: c.name })) }),
@@ -98,7 +98,7 @@ function Form({ credentials, sink }: { credentials: Credential[]; sink?: Connect
 
   const onSuccess = async () => {
     toast.create({ title: "Catalog storage validated and saved", type: "success" });
-    await invalidate("/v1/connections", "/v1/credentials");
+    await invalidate("/v1/connections", "/v1/secrets");
   };
   const onError = (err: unknown) => toastError(err, "Catalog storage was not saved");
   const create = $api.useMutation("post", "/v1/connections", { onSuccess, onError });
@@ -107,8 +107,8 @@ function Form({ credentials, sink }: { credentials: Credential[]; sink?: Connect
 
   const save = () =>
     sink
-      ? update.mutate({ params: { path: { name: sink.name } }, body: { credential, target } })
-      : create.mutate({ body: { name: "Workspace output", credential, target } });
+      ? update.mutate({ params: { path: { name: sink.name } }, body: { secret: credential, target } })
+      : create.mutate({ body: { name: "Workspace output", secret: credential, target } });
 
   return (
     <SectionRoot>

@@ -76,10 +76,18 @@ pub enum ErrorCode {
     JobEnded,
     #[serde(rename = "job/still-running")]
     JobStillRunning,
-    /// The runner went silent: no heartbeat within the lease, or a pending
-    /// job no runner picked up. Stored as the job's problem by the sweep.
+    /// A run is under way already: a job runs once at a time.
+    #[serde(rename = "job/already-running")]
+    JobAlreadyRunning,
+    /// The runner went silent: no heartbeat within the lease. Stored as the
+    /// job's problem by the sweep.
     #[serde(rename = "job/abandoned")]
     JobAbandoned,
+    /// The runner's own tab lost the run (it reloaded, or closed and came
+    /// back) and its runner ended it, to run it again. Stored as the job's
+    /// problem; reported by the runner, never raised by the server.
+    #[serde(rename = "job/interrupted")]
+    JobInterrupted,
     #[serde(rename = "job/invalid-destination")]
     JobInvalidDestination,
     #[serde(rename = "job/no-destination")]
@@ -148,7 +156,9 @@ impl ErrorCode {
             Self::JobNotRunning => "The job is not running",
             Self::JobEnded => "The job has ended",
             Self::JobStillRunning => "The job is still running",
+            Self::JobAlreadyRunning => "The job is running already",
             Self::JobAbandoned => "The run was abandoned",
+            Self::JobInterrupted => "The run was interrupted",
             Self::JobInvalidDestination => "Not a valid destination",
             Self::JobNoDestination => "No destination",
             Self::JobFolderTaken => "Another job writes to that folder",

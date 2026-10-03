@@ -154,7 +154,7 @@ async fn a_running_job_is_refused_deletion_with_its_code() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
     sink(&app).await;
-    let id = app.submitted(&member).await;
+    let id = app.running(&member).await;
     let (status, body) = app
         .send(
             Method::DELETE,
@@ -175,24 +175,20 @@ async fn a_run_whose_runner_went_silent_ends_as_abandoned_and_can_be_deleted() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
     sink(&app).await;
-    let id = app.submitted(&member).await;
+    let id = app.running(&member).await;
     let path = format!("/v1/jobs/{id}");
 
     let (status, running) = app
         .report(&member, &id, json!({ "status": "running" }))
         .await;
-    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert_eq!(status, StatusCode::OK);
     let started = running["heartbeat_at"].clone();
     assert!(started.is_string());
     age(&app, &id, "heartbeat_at", 30).await;
     let (status, renewed) = app
         .report(&member, &id, json!({ "status": "running" }))
         .await;
-    assert_eq!(
-        status,
-        StatusCode::NO_CONTENT,
-        "running again renews the lease"
-    );
+    assert_eq!(status, StatusCode::OK, "running again renews the lease");
     assert!(
         renewed["heartbeat_at"].as_str() >= started.as_str(),
         "the lease aged 30 s is renewed to now"
@@ -223,19 +219,19 @@ async fn a_run_whose_runner_went_silent_ends_as_abandoned_and_can_be_deleted() {
     );
 }
 
+/// Only a run is swept: an idle job waits for someone to run it, however long.
 #[tokio::test]
-async fn a_pending_job_no_runner_picked_up_ends_as_abandoned() {
+async fn an_idle_job_waits_and_is_never_swept() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
     sink(&app).await;
     let id = app.submitted(&member).await;
-    age(&app, &id, "heartbeat_at", 61).await;
+    age(&app, &id, "created_at", 3600).await;
 
     let (_, job) = app
         .send(Method::GET, &format!("/v1/jobs/{id}"), &member, json!(null))
         .await;
-    assert_eq!(job["status"], "failed");
-    assert_eq!(job["problem"]["code"], "job/abandoned");
+    assert_eq!(job["status"], "idle");
 }
 
 #[tokio::test]
@@ -243,9 +239,7 @@ async fn a_store_that_refuses_to_vend_is_store_refused() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
     sink(&app).await;
-    let id = app.submitted(&member).await;
-    app.report(&member, &id, json!({ "status": "running" }))
-        .await;
+    let id = app.running(&member).await;
 
     assert_eq!(
         app.vend(&member, json!({ "job": id }), "write").await,

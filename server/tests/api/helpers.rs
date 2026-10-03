@@ -186,7 +186,7 @@ impl TestApp {
     }
 
     /// A job to run on the sink `sink`: a draft, submitted with a folder of
-    /// its own. Its id.
+    /// its own, idle. Its id.
     pub async fn submitted(&self, token: &str) -> String {
         static FOLDERS: AtomicUsize = AtomicUsize::new(0);
         let folder = format!("out-{}", FOLDERS.fetch_add(1, Ordering::Relaxed));
@@ -208,13 +208,32 @@ impl TestApp {
                 json!({ "folder": folder }),
             )
             .await;
-        assert_eq!(status, StatusCode::ACCEPTED, "{job}");
+        assert_eq!(status, StatusCode::OK, "{job}");
         id.to_string()
+    }
+
+    /// A job submitted and run by `token`'s caller, who is its runner. Its id.
+    pub async fn running(&self, token: &str) -> String {
+        let id = self.submitted(token).await;
+        let (status, job) = self.run(token, &id).await;
+        assert_eq!(status, StatusCode::OK, "{job}");
+        id
+    }
+
+    /// `POST /v1/jobs/{id}/run`: the status, and the job or the refusal.
+    pub async fn run(&self, token: &str, id: &str) -> (StatusCode, serde_json::Value) {
+        self.send(
+            Method::POST,
+            &format!("/v1/jobs/{id}/run"),
+            token,
+            json!(null),
+        )
+        .await
     }
 
     /// What the runner reports of job `id`: `POST /v1/jobs/{id}/status`. The
     /// status, and the job as the report left it — read back, since a report
-    /// answers 204 — or the refusal's body.
+    /// answers only whether to stop — or the refusal's body.
     pub async fn report(
         &self,
         token: &str,
@@ -229,7 +248,7 @@ impl TestApp {
                 report,
             )
             .await;
-        if status != StatusCode::NO_CONTENT {
+        if status != StatusCode::OK {
             return (status, body);
         }
         let (_, job) = self

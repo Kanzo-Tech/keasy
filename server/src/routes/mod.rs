@@ -1,7 +1,6 @@
 pub mod ai;
 pub mod branding;
 pub mod connections;
-pub mod datasets;
 pub mod health_check;
 pub mod jobs;
 pub mod secrets;

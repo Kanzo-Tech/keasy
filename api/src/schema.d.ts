@@ -159,26 +159,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/datasets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Every dataset the workspace produced, for anyone in it: each is opened by
-         *     reading its job's corpus.
-         */
-        get: operations["list_datasets"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/jobs": {
         parameters: {
             query?: never;
@@ -190,7 +170,7 @@ export interface paths {
         put?: never;
         /**
          * A job begins as a draft, always: what it runs, where it lands. Submitting
-         *     it is the one way a job comes to run.
+         *     it makes it a job to run; running it is asked for on its own.
          */
         post: operations["create_job"];
         delete?: never;
@@ -232,6 +212,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/jobs/{id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a run, with the caller as its runner: of a job never run, or again —
+         *     over the last run's output, in the same folder. One compare-and-set on the
+         *     stored status, so of two runs asked at once one starts and the other is
+         *     `job/already-running`. The run's lease starts now.
+         */
+        post: operations["run_job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/jobs/{id}/status": {
         parameters: {
             query?: never;
@@ -242,12 +244,35 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * The runner's one report: `running` starts the run and, sent again, renews
-         *     its lease — a running job no report has renewed for the lease (60 s) is
-         *     swept as `job/abandoned`; an end records how the run ended, and dates it.
-         *     `completed` stores the run report verbatim, unread.
+         * The runner's one report, taken from the runner alone: `running` renews the
+         *     lease — a run no report has renewed for the lease (60 s) is swept as
+         *     `job/abandoned`; an end records how the run ended, and dates it.
+         *     `completed` stores the run report verbatim, unread. The answer says
+         *     whether someone asked the run to stop.
          */
         post: operations["report_status"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs/{id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask a run to stop, from wherever it is watched: its runner may, and an
+         *     admin. Cooperative — the browser running it hears it in the answer to its
+         *     next report and ends the run `cancelled`; if that browser is gone, the
+         *     sweep ends it `job/abandoned` once the lease lapses.
+         */
+        post: operations["stop_job"];
         delete?: never;
         options?: never;
         head?: never;
@@ -264,9 +289,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * A draft becomes the job to run, in place: the edits, the folder check and
+         * A draft becomes a job to run, in place: the edits, the folder check and
          *     the promotion are one write, so a refusal leaves the draft as it was and a
-         *     success leaves no draft behind. The only way a job comes to be pending.
+         *     success leaves no draft behind. It waits `idle` until someone runs it.
          */
         post: operations["submit_job"];
         delete?: never;
@@ -345,7 +370,7 @@ export interface paths {
          * Vend a credential over `scope` for `access`. Anyone in the workspace reads a
          *     completed job's dataset. An editor reads a source connection — Unity
          *     Catalog's temporary path credentials over an external location — to build
-         *     a job, and writes a job's dataset while it runs, if they may change that job.
+         *     a job, and writes a job's dataset while it runs, if they are its runner.
          */
         post: operations["vend"];
         delete?: never;
@@ -471,20 +496,6 @@ export interface components {
             };
         };
         /**
-         * @description A completed job's output: where its corpus is, and when it was written.
-         *     What the corpus holds is the corpus's own to say — a reader opens it (with
-         *     a credential vended for the job) and asks its `fossil_tables` and
-         *     `fossil_columns`; keasy keeps no copy of it.
-         */
-        Dataset: {
-            completed_at: string;
-            /** @description The corpus's root, `{sink}/{folder}/`. */
-            dest: string;
-            /** @description The job that wrote it, which is the scope its read credential is asked for. */
-            id: string;
-            name?: string | null;
-        };
-        /**
          * @description A source is read through `@name/…`; the one sink is where job output lands.
          * @enum {string}
          */
@@ -523,7 +534,7 @@ export interface components {
          *     are `gateway/*` bodies like any other.
          * @enum {string}
          */
-        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/ended" | "job/still-running" | "job/abandoned" | "job/invalid-destination" | "job/no-destination" | "job/folder-taken" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "gateway/unreachable" | "gateway/silent";
+        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/ended" | "job/still-running" | "job/already-running" | "job/abandoned" | "job/interrupted" | "job/invalid-destination" | "job/no-destination" | "job/folder-taken" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "gateway/unreachable" | "gateway/silent";
         /** @description What a refusal carries beside its words. */
         ErrorData: {
             /**
@@ -562,15 +573,31 @@ export interface components {
              *     re-derive it.
              */
             can_modify?: boolean;
+            /**
+             * @description Whether the caller may stop the run under way — its runner, or an
+             *     admin — worked out for each response; false when nothing runs.
+             */
+            can_stop?: boolean;
+            /**
+             * @description Someone asked the run to stop: its runner reads it in the answer to its
+             *     next report, aborts, and reports `cancelled`.
+             */
+            cancel_requested?: boolean;
+            /** @description When the last run ended; unset while it runs. */
             completed_at?: string | null;
             folder?: null | components["schemas"]["JobFolder"];
             /**
-             * @description The job's lease: taken when it is submitted, renewed by every
-             *     `running` its runner reports. A job whose lease lapses is swept.
+             * @description The run's lease: taken by `run`, renewed by every `running` its runner
+             *     reports. A running job whose lease lapses is swept as `job/abandoned`.
              */
             heartbeat_at?: string | null;
             id: string;
             name?: null | components["schemas"]["ResourceName"];
+            /**
+             * @description Where the output lands, `{sink}/{folder}/`, as the sink's URL spells
+             *     it: worked out for each response; unset for a draft with no folder.
+             */
+            output?: string | null;
             /**
              * @description Why a `Failed` run failed, as the browser that ran it reported it: a
              *     problem (`{ code, title, detail, data, … }`), stored verbatim and
@@ -578,7 +605,7 @@ export interface components {
              */
             problem?: unknown;
             /**
-             * @description What the run reported, verbatim and **opaque**: fossil's run report
+             * @description What the last run reported, verbatim and **opaque**: fossil's run report
              *     (`RunReport`, `{dest, dropped}`). keasy stores it, hands it back and
              *     never reads a field of it — the last time a host re-typed this struct,
              *     it ended up asking for `vertex/<Type>.parquet`, a file the layout pass
@@ -586,22 +613,29 @@ export interface components {
              *     it and asks its `fossil_tables` and `fossil_columns`.
              */
             report?: unknown;
+            /**
+             * @description Keycloak `sub` of who runs the job, or ran it last: the one caller
+             *     whose reports are taken, and the one vended its output to write.
+             */
+            runner?: string | null;
+            /** @description The program every run of the job runs. */
             script?: string | null;
             /**
              * @description The sink connection the output lands in, under `{sink.url}/{folder}`,
              *     reached with a credential vended from that connection's.
              */
             sink_connection: string;
+            /** @description When the last run started. */
             started_at?: string | null;
             status: components["schemas"]["JobStatus"];
         };
         /** @description The folder a job's output lands in under the sink: lowercase letters, digits and `-`, starting with a letter or digit. */
         JobFolder: string;
         /** @enum {string} */
-        JobStatus: "draft" | "pending" | "running" | "completed" | "failed" | "cancelled";
+        JobStatus: "draft" | "idle" | "running" | "completed" | "failed" | "cancelled";
         /**
          * @description What the runner reports of a job's run (POST `/v1/jobs/{id}/status`): that
-         *     it runs, again every so often to hold its lease, and how it ended. The
+         *     it still runs, every so often to hold its lease, and how it ended. The
          *     browser runs the program (`@fossil-lang/executor`) and writes the output
          *     with a credential vended for the job; keasy only records.
          */
@@ -614,8 +648,8 @@ export interface components {
             /** @description fossil's run report (on `completed`), stored verbatim and never read. */
             report?: unknown;
             /**
-             * @description `running` (the first time it starts the run, every time after it renews
-             *     the lease), or the end: `completed`, `failed` or `cancelled`.
+             * @description `running` (renews the lease), or the end: `completed`, `failed` or
+             *     `cancelled`.
              */
             status: components["schemas"]["JobStatus"];
         };
@@ -649,6 +683,13 @@ export interface components {
          * @enum {string}
          */
         Role: "reader" | "editor" | "admin";
+        /**
+         * @description What a report is answered with: whether the run is asked to stop. A runner
+         *     told so aborts and reports `cancelled`.
+         */
+        RunSignal: {
+            cancel_requested: boolean;
+        };
         /** @description What a credential is asked for: fossil's `Scope`, verbatim. */
         Scope: {
             /** @description A source connection's prefix, by the connection's name. */
@@ -1310,26 +1351,6 @@ export interface operations {
             };
         };
     };
-    list_datasets: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Every completed job's output, newest first */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Dataset"][];
-                };
-            };
-        };
-    };
     list_jobs: {
         parameters: {
             query?: never;
@@ -1363,7 +1384,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description The draft, created; `POST /v1/jobs/{id}/submit` makes it the job to run */
+            /** @description The draft, created; `POST /v1/jobs/{id}/submit` makes it a job to run */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -1594,7 +1615,7 @@ export interface operations {
             };
         };
     };
-    report_status: {
+    run_job: {
         parameters: {
             query?: never;
             header?: never;
@@ -1604,21 +1625,28 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["JobStatusReport"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description Recorded: the run started, its lease renewed, or its end */
-            204: {
+            /** @description The job runs, and the caller is its runner: the browser that asked runs the program and reports on it */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
             };
-            /** @description The job is a draft, which is never run, or the status is not running or an end */
+            /** @description A draft, which is submitted before it runs */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Neither its creator nor an admin (`rbac/forbidden`) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1635,7 +1663,120 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description The job has already ended (`job/ended`): the sweep's `job/abandoned` among them */
+            /** @description It runs already (`job/already-running`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    report_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobStatusReport"];
+            };
+        };
+        responses: {
+            /** @description Recorded: the lease renewed, or the run's end; and whether the run is asked to stop */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunSignal"];
+                };
+            };
+            /** @description The status is not running or an end, or the job is a draft */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not the job's runner (`rbac/forbidden`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Nothing runs (`job/not-running`), or the run has ended (`job/ended`): the sweep's `job/abandoned` among them */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    stop_job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The run is asked to stop: its runner aborts on its next report and reports `cancelled` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            /** @description Neither its runner nor an admin (`rbac/forbidden`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Nothing runs (`job/not-running`), or the run has ended (`job/ended`) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1662,8 +1803,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description The draft is now the job to run, under the same id */
-            202: {
+            /** @description The draft is now a job to run, idle, under the same id */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2004,7 +2145,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description A source read below editor; a job written below editor, or by someone who may not change it */
+            /** @description A source read below editor; a job written below editor, or by anyone but its runner */
             403: {
                 headers: {
                     [name: string]: unknown;

@@ -6,14 +6,14 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use crate::authentication::role::{Editor, Reader};
 use crate::domain::{Job, JobFolder, JobStatus, ResourceName};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
-use crate::jobs::{any, changeable, persistence};
+use crate::jobs::{any, changeable, persistence, present, transition};
 use crate::startup::AppState;
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -30,7 +30,7 @@ pub struct CreateJobRequest {
 }
 
 /// Edits to a draft: as it is written (PATCH), and as it is submitted.
-#[derive(Debug, Default, Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Default, Deserialize, utoipa::ToSchema)]
 pub struct DraftEdits {
     pub script: Option<String>,
     #[schema(value_type = Option<ResourceName>)]
@@ -76,13 +76,13 @@ fn name(name: Option<String>) -> Result<Option<String>, Refusal> {
 }
 
 /// What the runner reports of a job's run (POST `/v1/jobs/{id}/status`): that
-/// it runs, again every so often to hold its lease, and how it ended. The
+/// it still runs, every so often to hold its lease, and how it ended. The
 /// browser runs the program (`@fossil-lang/executor`) and writes the output
 /// with a credential vended for the job; keasy only records.
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct JobStatusReport {
-    /// `running` (the first time it starts the run, every time after it renews
-    /// the lease), or the end: `completed`, `failed` or `cancelled`.
+    /// `running` (renews the lease), or the end: `completed`, `failed` or
+    /// `cancelled`.
     pub status: JobStatus,
     /// fossil's run report (on `completed`), stored verbatim and never read.
     #[serde(default)]
@@ -95,6 +95,13 @@ pub struct JobStatusReport {
     pub problem: Option<serde_json::Value>,
 }
 
+/// What a report is answered with: whether the run is asked to stop. A runner
+/// told so aborts and reports `cancelled`.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct RunSignal {
+    pub cancel_requested: bool,
+}
+
 #[utoipa::path(get, path = "/v1/jobs", tag = "Jobs", security(("bearer" = ["reader"])),
     responses(
         (status = 200, description = "Every job in the workspace", body = Vec<Job>),
@@ -105,23 +112,23 @@ pub async fn list_jobs(
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, Refusal> {
     crate::jobs::sweep(&state.db).await?;
-    let jobs = persistence::list(&*state.db.read().await)?;
-    Ok(Json(
-        jobs.into_iter()
-            .map(|job| job.seen_by(&caller))
-            .collect::<Vec<_>>(),
-    ))
+    let conn = state.db.read().await;
+    let jobs = persistence::list(&conn)?
+        .into_iter()
+        .map(|job| present(&conn, &caller, job))
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(Json(jobs))
 }
 
 #[utoipa::path(post, path = "/v1/jobs", tag = "Jobs", security(("bearer" = ["editor"])),
     request_body = CreateJobRequest,
     responses(
-        (status = 201, description = "The draft, created; `POST /v1/jobs/{id}/submit` makes it the job to run", body = Job),
+        (status = 201, description = "The draft, created; `POST /v1/jobs/{id}/submit` makes it a job to run", body = Job),
         (status = 400, description = "The destination is not a sink, or the name or folder is misspelled (`data.field`)", body = ErrorBody),
     )
 )]
 /// A job begins as a draft, always: what it runs, where it lands. Submitting
-/// it is the one way a job comes to run.
+/// it makes it a job to run; running it is asked for on its own.
 pub async fn create_job(
     caller: Editor,
     State(state): State<AppState>,
@@ -147,7 +154,8 @@ pub async fn create_job(
     );
     persistence::insert(&*state.db.write().await, &job)?;
 
-    Ok((StatusCode::CREATED, Json(job.seen_by(&caller))))
+    let job = present(&*state.db.read().await, &caller, job)?;
+    Ok((StatusCode::CREATED, Json(job)))
 }
 
 #[utoipa::path(get, path = "/v1/jobs/{id}", tag = "Jobs", security(("bearer" = ["reader"])),
@@ -163,7 +171,8 @@ pub async fn get_job(
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     crate::jobs::sweep(&state.db).await?;
-    Ok(Json(any(&*state.db.read().await, &id)?.seen_by(&caller)))
+    let conn = state.db.read().await;
+    Ok(Json(present(&conn, &caller, any(&conn, &id)?)?))
 }
 
 #[utoipa::path(patch, path = "/v1/jobs/{id}", tag = "Jobs", security(("bearer" = ["editor"])),
@@ -182,75 +191,137 @@ pub async fn edit_draft(
     Path(id): Path<String>,
     Json(edits): Json<DraftEdits>,
 ) -> Result<impl IntoResponse, Refusal> {
-    let mut job = changeable(&*state.db.read().await, &caller, &id)?;
-    job.edit()?;
-    edits.apply(&mut job)?;
-    persistence::write(&*state.db.write().await, &job)?;
-    Ok(Json(job.seen_by(&caller)))
+    changeable(&*state.db.read().await, &caller, &id)?;
+    let job = transition(&state.db, &id, |job| {
+        job.edit()?;
+        edits.clone().apply(job)
+    })
+    .await?;
+    Ok(Json(present(&*state.db.read().await, &caller, job)?))
 }
 
 #[utoipa::path(post, path = "/v1/jobs/{id}/submit", tag = "Jobs", security(("bearer" = ["editor"])),
     params(("id" = String, Path, description = "Job ID")),
     request_body = DraftEdits,
     responses(
-        (status = 202, description = "The draft is now the job to run, under the same id", body = Job),
+        (status = 200, description = "The draft is now a job to run, idle, under the same id", body = Job),
         (status = 400, description = "The name or folder is missing or misspelled (`data.field`)", body = ErrorBody),
         (status = 404, description = "Job not found", body = ErrorBody),
         (status = 409, description = "Not a draft (`job/not-draft`), or another job writes to that folder already (`job/folder-taken`; the job stays a draft, unchanged)", body = ErrorBody),
     )
 )]
-/// A draft becomes the job to run, in place: the edits, the folder check and
+/// A draft becomes a job to run, in place: the edits, the folder check and
 /// the promotion are one write, so a refusal leaves the draft as it was and a
-/// success leaves no draft behind. The only way a job comes to be pending.
+/// success leaves no draft behind. It waits `idle` until someone runs it.
 pub async fn submit_job(
     caller: Editor,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(edits): Json<DraftEdits>,
 ) -> Result<impl IntoResponse, Refusal> {
-    let mut job = changeable(&*state.db.read().await, &caller, &id)?;
-    job.edit()?;
-    edits.apply(&mut job)?;
-    job.submit()?;
-    persistence::write(&*state.db.write().await, &job)?;
+    changeable(&*state.db.read().await, &caller, &id)?;
+    let job = transition(&state.db, &id, |job| {
+        job.edit()?;
+        edits.clone().apply(job)?;
+        Ok(job.submit()?)
+    })
+    .await?;
+    Ok(Json(present(&*state.db.read().await, &caller, job)?))
+}
 
-    Ok((StatusCode::ACCEPTED, Json(job.seen_by(&caller))))
+#[utoipa::path(post, path = "/v1/jobs/{id}/run", tag = "Jobs", security(("bearer" = ["editor"])),
+    params(("id" = String, Path, description = "Job ID")),
+    responses(
+        (status = 200, description = "The job runs, and the caller is its runner: the browser that asked runs the program and reports on it", body = Job),
+        (status = 400, description = "A draft, which is submitted before it runs", body = ErrorBody),
+        (status = 403, description = "Neither its creator nor an admin (`rbac/forbidden`)", body = ErrorBody),
+        (status = 404, description = "Job not found", body = ErrorBody),
+        (status = 409, description = "It runs already (`job/already-running`)", body = ErrorBody),
+    )
+)]
+/// Start a run, with the caller as its runner: of a job never run, or again —
+/// over the last run's output, in the same folder. One compare-and-set on the
+/// stored status, so of two runs asked at once one starts and the other is
+/// `job/already-running`. The run's lease starts now.
+pub async fn run_job(
+    caller: Editor,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<impl IntoResponse, Refusal> {
+    crate::jobs::sweep(&state.db).await?;
+    changeable(&*state.db.read().await, &caller, &id)?;
+    let job = transition(&state.db, &id, |job| Ok(job.run(&caller.user_id)?)).await?;
+    Ok(Json(present(&*state.db.read().await, &caller, job)?))
 }
 
 #[utoipa::path(post, path = "/v1/jobs/{id}/status", tag = "Jobs", security(("bearer" = ["editor"])),
     params(("id" = String, Path, description = "Job ID")),
     request_body = JobStatusReport,
     responses(
-        (status = 204, description = "Recorded: the run started, its lease renewed, or its end"),
-        (status = 400, description = "The job is a draft, which is never run, or the status is not running or an end", body = ErrorBody),
+        (status = 200, description = "Recorded: the lease renewed, or the run's end; and whether the run is asked to stop", body = RunSignal),
+        (status = 400, description = "The status is not running or an end, or the job is a draft", body = ErrorBody),
+        (status = 403, description = "Not the job's runner (`rbac/forbidden`)", body = ErrorBody),
         (status = 404, description = "Job not found", body = ErrorBody),
-        (status = 409, description = "The job has already ended (`job/ended`): the sweep's `job/abandoned` among them", body = ErrorBody),
+        (status = 409, description = "Nothing runs (`job/not-running`), or the run has ended (`job/ended`): the sweep's `job/abandoned` among them", body = ErrorBody),
     )
 )]
-/// The runner's one report: `running` starts the run and, sent again, renews
-/// its lease — a running job no report has renewed for the lease (60 s) is
-/// swept as `job/abandoned`; an end records how the run ended, and dates it.
-/// `completed` stores the run report verbatim, unread.
+/// The runner's one report, taken from the runner alone: `running` renews the
+/// lease — a run no report has renewed for the lease (60 s) is swept as
+/// `job/abandoned`; an end records how the run ended, and dates it.
+/// `completed` stores the run report verbatim, unread. The answer says
+/// whether someone asked the run to stop.
 pub async fn report_status(
     caller: Editor,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<JobStatusReport>,
-) -> Result<StatusCode, Refusal> {
-    // The beat, every 15 s of every run: one statement, for the creator's run.
-    // Anything else — a start, an end, a lease that lapsed, an admin's run —
-    // reads the job, checks who may change it, and moves it.
+) -> Result<Json<RunSignal>, Refusal> {
+    // The beat, every 15 s of every run: one statement, for the runner's run.
+    // Anything else — an end, a lease that lapsed, someone not the runner —
+    // reads the job and moves it, or says why not.
     let now = jiff::Timestamp::now();
     if payload.status == JobStatus::Running
-        && persistence::renew(&*state.db.write().await, &id, &caller.user_id, now)?
+        && let Some(cancel_requested) =
+            persistence::renew(&*state.db.write().await, &id, &caller.user_id, now)?
     {
-        return Ok(StatusCode::NO_CONTENT);
+        return Ok(Json(RunSignal { cancel_requested }));
     }
     crate::jobs::sweep(&state.db).await?;
-    let mut job = changeable(&*state.db.read().await, &caller, &id)?;
-    job.report(payload.status, payload.report, payload.problem)?;
-    persistence::write(&*state.db.write().await, &job)?;
-    Ok(StatusCode::NO_CONTENT)
+    let job = transition(&state.db, &id, |job| {
+        Ok(job.report(
+            &caller.user_id,
+            payload.status.clone(),
+            payload.report.clone(),
+            payload.problem.clone(),
+        )?)
+    })
+    .await?;
+    Ok(Json(RunSignal {
+        cancel_requested: job.cancel_requested,
+    }))
+}
+
+#[utoipa::path(post, path = "/v1/jobs/{id}/stop", tag = "Jobs", security(("bearer" = ["editor"])),
+    params(("id" = String, Path, description = "Job ID")),
+    responses(
+        (status = 200, description = "The run is asked to stop: its runner aborts on its next report and reports `cancelled`", body = Job),
+        (status = 403, description = "Neither its runner nor an admin (`rbac/forbidden`)", body = ErrorBody),
+        (status = 404, description = "Job not found", body = ErrorBody),
+        (status = 409, description = "Nothing runs (`job/not-running`), or the run has ended (`job/ended`)", body = ErrorBody),
+    )
+)]
+/// Ask a run to stop, from wherever it is watched: its runner may, and an
+/// admin. Cooperative — the browser running it hears it in the answer to its
+/// next report and ends the run `cancelled`; if that browser is gone, the
+/// sweep ends it `job/abandoned` once the lease lapses.
+pub async fn stop_job(
+    caller: Editor,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<impl IntoResponse, Refusal> {
+    crate::jobs::sweep(&state.db).await?;
+    let job = transition(&state.db, &id, |job| Ok(job.stop(&caller)?)).await?;
+    Ok(Json(present(&*state.db.read().await, &caller, job)?))
 }
 
 #[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs", security(("bearer" = ["editor"])),
@@ -279,5 +350,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(list_jobs, create_job))
         .routes(routes!(get_job, edit_draft, delete_job))
         .routes(routes!(submit_job))
+        .routes(routes!(run_job))
         .routes(routes!(report_status))
+        .routes(routes!(stop_job))
 }
